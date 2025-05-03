@@ -1,0 +1,13 @@
+<div class="card h-100 border-0 shadow-sm testimonial-card p-4">
+  <div class="d-flex align-items-center mb-4">
+    <img [src]="testimonio.imagen" [alt]="testimonio.nombre" class="testimonial-img rounded-circle">
+    <div class="ms-3">
+      <h4 class="mb-0 h5">{{ testimonio.nombre }}</h4>
+      <p class="mb-0 text-primary">{{ testimonio.cargo }}</p>
+    </div>
+  </div>
+  <div class="testimonial-rating mb-3">
+    <i class="fas fa-star text-warning" *ngFor="let star of getEstrellas()"></i>
+  </div>
+  <p class="testimonial-text">{{ testimonio.texto }}</p>
+</div>
