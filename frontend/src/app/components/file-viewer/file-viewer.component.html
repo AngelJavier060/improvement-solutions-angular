@@ -1,0 +1,59 @@
+<div class="file-viewer-container">
+  <div class="file-card" [ngClass]="{ 'loading': isLoading, 'error': hasError }">
+    <!-- Loading state -->
+    <div *ngIf="isLoading" class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Cargando...</span>
+    </div>
+    
+    <!-- Error state -->
+    <div *ngIf="hasError" class="error-message">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ errorMessage }}</span>
+      <button (click)="refreshTemporaryUrl()" class="refresh-button">
+        <i class="fas fa-sync-alt"></i> Reintentar
+      </button>
+    </div>
+    
+    <!-- File preview -->
+    <div class="file-preview" *ngIf="!isLoading && !hasError">
+      <!-- Preview for image -->
+      <div *ngIf="isImage && tempUrl" class="image-preview">
+        <img [src]="tempUrl" [alt]="fileName || 'Vista previa de imagen'" />
+      </div>
+      
+      <!-- Preview for PDF -->
+      <div *ngIf="isPdf && tempUrl" class="pdf-preview">
+        <iframe [src]="tempUrl | safe:'resourceUrl'" frameborder="0"></iframe>
+      </div>
+      
+      <!-- Generic file icon -->
+      <div *ngIf="!isImage && !isPdf" class="generic-preview">
+        <i [class]="getFileIcon()"></i>
+      </div>
+    </div>
+    
+    <!-- File info -->
+    <div class="file-info" *ngIf="!isLoading && !hasError">
+      <div class="file-name" [title]="fileName || ''">
+        {{ fileName || 'Archivo' }}
+      </div>
+      <div class="file-meta">
+        <span class="file-size" *ngIf="fileSize">{{ getFormattedSize() }}</span>
+        <span class="file-type" *ngIf="fileContentType">{{ fileContentType }}</span>
+      </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="file-actions" *ngIf="!isLoading && !hasError">
+      <button (click)="handleDownload()" class="action-button download-button" [disabled]="!fileUrl">
+        <i class="fas fa-download"></i>
+        <span>Descargar</span>
+      </button>
+      <button (click)="handleDelete()" class="action-button delete-button">
+        <i class="fas fa-trash-alt"></i>
+        <span>Eliminar</span>
+      </button>
+    </div>
+  </div>
+</div>

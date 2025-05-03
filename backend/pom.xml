@@ -19,6 +19,7 @@
 	<properties>
 		<java.version>17</java.version>
 		<jjwt.version>0.11.5</jjwt.version>
+		<aws.version>1.12.556</aws.version>
 	</properties>
 	
 	<dependencies>
@@ -64,6 +65,13 @@
 			<artifactId>jjwt-jackson</artifactId>
 			<version>${jjwt.version}</version>
 			<scope>runtime</scope>
+		</dependency>
+		
+		 <!-- Amazon S3 para almacenamiento en la nube -->
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-s3</artifactId>
+			<version>${aws.version}</version>
 		</dependency>
 		
 		<!-- Lombok para reducir código boilerplate -->

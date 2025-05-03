@@ -1,0 +1,49 @@
+<div class="file-upload-container">
+  <div class="file-input" *ngIf="!selectedFile">
+    <label for="file-input" class="file-label">
+      <span class="file-icon">
+        <i class="fas fa-cloud-upload-alt"></i>
+      </span>
+      <span class="file-text">Seleccionar archivo</span>
+    </label>
+    <input 
+      type="file" 
+      id="file-input" 
+      class="hidden-input"
+      [accept]="acceptedFileTypes" 
+      (change)="onFileSelected($event)" 
+      [disabled]="uploading"
+    >
+  </div>
+
+  <div class="file-details" *ngIf="selectedFile">
+    <div class="file-info">
+      <span class="file-name">{{ selectedFile.name }}</span>
+      <span class="file-size">{{ (selectedFile.size / 1024).toFixed(2) }} KB</span>
+    </div>
+    <div class="file-actions">
+      <button 
+        type="button" 
+        class="upload-button" 
+        (click)="uploadFile()" 
+        [disabled]="uploading"
+      >
+        <span *ngIf="!uploading">Subir</span>
+        <span *ngIf="uploading">Subiendo...</span>
+      </button>
+      <button 
+        type="button" 
+        class="remove-button" 
+        (click)="removeSelectedFile()" 
+        [disabled]="uploading"
+      >
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="progress-container" *ngIf="uploading">
+      <div class="progress-bar" [style.width.%]="uploadProgress"></div>
+      <span class="progress-text">{{ uploadProgress }}%</span>
+    </div>
+  </div>
+</div>

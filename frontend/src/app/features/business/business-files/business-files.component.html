@@ -1,0 +1,55 @@
+<div class="business-files-container">
+  <div class="section-header">
+    <h2>Gestión de archivos empresariales</h2>
+    <p>Sube, visualiza y gestiona los archivos relacionados con tu empresa</p>
+  </div>
+  
+  <!-- Mensajes de estado -->
+  <div class="alert alert-success" *ngIf="successMessage">
+    <i class="fas fa-check-circle"></i> {{ successMessage }}
+  </div>
+  <div class="alert alert-danger" *ngIf="errorMessage">
+    <i class="fas fa-exclamation-circle"></i> {{ errorMessage }}
+  </div>
+  
+  <!-- Componente de carga de archivos -->
+  <div class="upload-section">
+    <h3>Subir nuevo archivo</h3>
+    <app-file-upload 
+      [directory]="'business'"
+      [acceptedFileTypes]="'.pdf,.doc,.docx,.jpg,.jpeg,.png'"
+      [maxFileSize]="5 * 1024 * 1024" 
+      (fileUploaded)="onFileUploaded($event)"
+      (uploadError)="onUploadError($event)">
+    </app-file-upload>
+  </div>
+  
+  <!-- Lista de archivos -->
+  <div class="files-list" *ngIf="uploadedFiles.length > 0">
+    <h3>Archivos subidos</h3>
+    
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="spinner"></div>
+      <span>Procesando...</span>
+    </div>
+    
+    <div class="files-grid">
+      <div class="file-item" *ngFor="let file of uploadedFiles; let i = index">
+        <app-file-viewer
+          [fileUrl]="file.url"
+          [fileName]="file.filename"
+          [fileSize]="file.size"
+          [fileContentType]="file.contentType"
+          (deleteFile)="deleteFile(i)">
+        </app-file-viewer>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Mensaje cuando no hay archivos -->
+  <div class="no-files" *ngIf="!loading && uploadedFiles.length === 0">
+    <i class="far fa-folder-open"></i>
+    <p>No hay archivos subidos aún</p>
+    <p class="hint">Usa el formulario de arriba para subir archivos</p>
+  </div>
+</div>
