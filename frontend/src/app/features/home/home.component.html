@@ -33,12 +33,16 @@
                         </button>
                         <ul ngbDropdownMenu aria-labelledby="accesoDropdown" class="shadow-lg border-0 rounded-3">
                             <li>
-                                <a class="dropdown-item d-flex align-items-center fw-bold text-primary" [routerLink]="['/acceso', 'admin']" (click)="d.close()">
+                                <a class="dropdown-item d-flex align-items-center fw-bold text-primary" 
+                                   (click)="openLoginModal('admin'); d.close()" 
+                                   style="cursor: pointer;">
                                     <i class="fas fa-user-shield me-2 text-warning"></i> Administrador
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item d-flex align-items-center fw-bold text-success" [routerLink]="['/acceso', 'usuario']" (click)="d.close()">
+                                <a class="dropdown-item d-flex align-items-center fw-bold text-success" 
+                                   (click)="openLoginModal('usuario'); d.close()"
+                                   style="cursor: pointer;">
                                     <i class="fas fa-user me-2 text-success"></i> Usuario
                                 </a>
                             </li>

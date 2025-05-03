@@ -1,5 +1,7 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { TestimoniosService, Testimonio } from '../../shared/services/testimonios.service';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { LoginModalComponent } from '../../shared/components/login-modal/login-modal.component';
 
 @Component({
   selector: 'app-home',
@@ -15,7 +17,10 @@ export class HomeComponent implements OnInit {
   
   navbarScrolled = false;
 
-  constructor(private testimoniosService: TestimoniosService) {
+  constructor(
+    private testimoniosService: TestimoniosService,
+    private modalService: NgbModal
+  ) {
     console.log('Componente Home inicializado');
   }
   
@@ -54,5 +59,27 @@ export class HomeComponent implements OnInit {
   @HostListener('window:scroll', [])
   onWindowScroll() {
     this.navbarScrolled = window.scrollY > 20;
+  }
+
+  // Método para abrir el modal de login
+  openLoginModal(userType: 'admin' | 'usuario'): void {
+    const modalRef = this.modalService.open(LoginModalComponent, { 
+      centered: true,
+      backdrop: 'static',
+      windowClass: 'login-modal'
+    });
+    modalRef.componentInstance.userType = userType;
+    
+    modalRef.result.then(
+      (result) => {
+        if (result === 'success') {
+          console.log('Login exitoso como', userType);
+          // La navegación se maneja dentro del componente modal
+        }
+      },
+      (reason) => {
+        console.log('Modal cerrado', reason);
+      }
+    );
   }
 }

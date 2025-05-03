@@ -1,0 +1,25 @@
+.avatar-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-warning-soft {
+  background-color: rgba(255, 193, 7, 0.15);
+}
+
+.bg-success-soft {
+  background-color: rgba(40, 167, 69, 0.15);
+}
+
+.modal-header, .modal-footer {
+  border-radius: 0;
+  border: none;
+}
+
+.form-floating > label {
+  font-size: 0.95rem;
+}
