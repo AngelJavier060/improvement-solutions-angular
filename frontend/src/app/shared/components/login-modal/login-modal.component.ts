@@ -2,6 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { Router } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
+import { catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-login-modal',
@@ -17,7 +20,8 @@ export class LoginModalComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     public activeModal: NgbActiveModal,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -51,22 +55,23 @@ export class LoginModalComponent implements OnInit {
     this.loading = true;
     this.error = '';
 
-    // Simulación básica de autenticación con las credenciales solicitadas
-    setTimeout(() => {
-      const { username, password } = this.loginForm.value;
+    const credentials = this.loginForm.value;
+    
+    // Validación local para las credenciales fijas
+    if (credentials.username === 'javier' && credentials.password === '12345') {
+      const userPath = this.userType === 'admin' ? '/dashboard/admin' : '/dashboard/usuario';
       
-      // Modificado para usar las mismas credenciales tanto para admin como para usuario
-      if (this.userType === 'admin' && username === 'Javier' && password === '12345') {
-        this.activeModal.close('success');
-        this.router.navigate(['/dashboard/admin']);
-      } else if (this.userType === 'usuario' && username === 'Javier' && password === '12345') {
-        this.activeModal.close('success');
-        this.router.navigate(['/dashboard/usuario']);
-      } else {
-        this.error = 'Credenciales incorrectas. Por favor, inténtelo nuevamente.';
-        this.loading = false;
-      }
-    }, 1000);
+      this.authService.loginWithFixedCredentials(credentials)
+        .subscribe(() => {
+          this.loading = false;
+          this.activeModal.close('success');
+          this.router.navigate([userPath]);
+        });
+    } else {
+      // Si las credenciales no coinciden
+      this.loading = false;
+      this.error = 'Credenciales incorrectas. Por favor, inténtelo nuevamente.';
+    }
   }
 
   dismiss(): void {

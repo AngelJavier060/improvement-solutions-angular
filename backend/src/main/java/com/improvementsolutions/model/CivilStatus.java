@@ -1,5 +1,6 @@
 package com.improvementsolutions.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -33,5 +34,6 @@ public class CivilStatus {
 
     // Relación uno a muchos con BusinessEmployee
     @OneToMany(mappedBy = "civilStatus")
+    @JsonIgnore // Evita la serialización infinita
     private Set<BusinessEmployee> businessEmployees = new HashSet<>();
 }

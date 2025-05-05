@@ -21,109 +21,156 @@
     </div>
   </header>
 
-  <div class="dashboard-welcome bg-light py-5 text-center">
-    <div class="container">
-      <div class="row justify-content-center">
-        <div class="col-md-8">
-          <div class="card border-0 shadow-lg">
-            <div class="card-body p-5">
-              <div class="welcome-icon mb-3">
-                <i class="fas fa-user-shield fa-4x text-primary"></i>
-              </div>
-              <h2 class="fw-bold mb-3">¡Bienvenido al Panel de Administrador!</h2>
-              <p class="lead mb-4">
-                Desde aquí podrá gestionar todos los aspectos del sistema QHSE de su organización.
-              </p>
-              <p class="text-muted">
-                Utilice el menú de navegación para acceder a las diferentes funcionalidades del sistema.
-              </p>
-            </div>
-          </div>
-        </div>
+  <div class="dashboard-content">
+    <!-- Sidebar Menu -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h4>Menú de Administración</h4>
       </div>
-    </div>
-  </div>
+      <nav class="sidebar-nav">
+        <ul>
+          <li>
+            <a routerLink="/dashboard/admin" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+              <i class="fas fa-home"></i> Inicio
+            </a>
+          </li>
+          <li>
+            <a routerLink="/dashboard/admin/usuarios" routerLinkActive="active">
+              <i class="fas fa-users"></i> Usuarios
+            </a>
+          </li>
+          <li>
+            <a routerLink="/dashboard/admin/empresas" routerLinkActive="active">
+              <i class="fas fa-building"></i> Empresas
+            </a>
+          </li>
+          <li>
+            <a routerLink="/dashboard/admin/configuracion" routerLinkActive="active">
+              <i class="fas fa-cog"></i> Configuración
+            </a>
+          </li>
+          <li>
+            <a routerLink="/dashboard/admin/reportes" routerLinkActive="active">
+              <i class="fas fa-chart-bar"></i> Reportes
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
 
-  <div class="dashboard-stats py-5">
-    <div class="container">
-      <h3 class="mb-4">Estadísticas del Sistema</h3>
-      <div class="row g-4">
-        <div class="col-md-3">
-          <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="text-muted mb-1">Usuarios</h6>
-                  <h3 class="fw-bold mb-0">254</h3>
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Router outlet para mostrar componentes hijos -->
+      <router-outlet></router-outlet>
+
+      <!-- Contenido de bienvenida (se muestra solo en la ruta raíz) -->
+      <div class="welcome-content" *ngIf="isRootRoute">
+        <div class="dashboard-welcome bg-light py-5 text-center">
+          <div class="container">
+            <div class="row justify-content-center">
+              <div class="col-md-8">
+                <div class="card border-0 shadow-lg">
+                  <div class="card-body p-5">
+                    <div class="welcome-icon mb-3">
+                      <i class="fas fa-user-shield fa-4x text-primary"></i>
+                    </div>
+                    <h2 class="fw-bold mb-3">¡Bienvenido al Panel de Administrador!</h2>
+                    <p class="lead mb-4">
+                      Desde aquí podrá gestionar todos los aspectos del sistema QHSE de su organización.
+                    </p>
+                    <p class="text-muted">
+                      Utilice el menú de navegación para acceder a las diferentes funcionalidades del sistema.
+                    </p>
+                  </div>
                 </div>
-                <div class="stat-icon bg-primary-soft">
-                  <i class="fas fa-users text-primary"></i>
-                </div>
-              </div>
-              <div class="progress mt-3" style="height: 5px;">
-                <div class="progress-bar bg-primary" role="progressbar" style="width: 75%"></div>
               </div>
             </div>
           </div>
         </div>
-        
-        <div class="col-md-3">
-          <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="text-muted mb-1">Documentos</h6>
-                  <h3 class="fw-bold mb-0">1,254</h3>
-                </div>
-                <div class="stat-icon bg-success-soft">
-                  <i class="fas fa-file-alt text-success"></i>
-                </div>
-              </div>
-              <div class="progress mt-3" style="height: 5px;">
-                <div class="progress-bar bg-success" role="progressbar" style="width: 65%"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="col-md-3">
-          <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="text-muted mb-1">Reportes</h6>
-                  <h3 class="fw-bold mb-0">452</h3>
-                </div>
-                <div class="stat-icon bg-info-soft">
-                  <i class="fas fa-chart-bar text-info"></i>
+
+        <div class="dashboard-stats py-5">
+          <div class="container">
+            <h3 class="mb-4">Estadísticas del Sistema</h3>
+            <div class="row g-4">
+              <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="text-muted mb-1">Usuarios</h6>
+                        <h3 class="fw-bold mb-0">254</h3>
+                      </div>
+                      <div class="stat-icon bg-primary-soft">
+                        <i class="fas fa-users text-primary"></i>
+                      </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 5px;">
+                      <div class="progress-bar bg-primary" role="progressbar" style="width: 75%"></div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="progress mt-3" style="height: 5px;">
-                <div class="progress-bar bg-info" role="progressbar" style="width: 45%"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="col-md-3">
-          <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="text-muted mb-1">Cumplimiento</h6>
-                  <h3 class="fw-bold mb-0">89%</h3>
+              
+              <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="text-muted mb-1">Documentos</h6>
+                        <h3 class="fw-bold mb-0">1,254</h3>
+                      </div>
+                      <div class="stat-icon bg-success-soft">
+                        <i class="fas fa-file-alt text-success"></i>
+                      </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 5px;">
+                      <div class="progress-bar bg-success" role="progressbar" style="width: 65%"></div>
+                    </div>
+                  </div>
                 </div>
-                <div class="stat-icon bg-warning-soft">
-                  <i class="fas fa-tasks text-warning"></i>
+              </div>
+              
+              <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="text-muted mb-1">Reportes</h6>
+                        <h3 class="fw-bold mb-0">452</h3>
+                      </div>
+                      <div class="stat-icon bg-info-soft">
+                        <i class="fas fa-chart-bar text-info"></i>
+                      </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 5px;">
+                      <div class="progress-bar bg-info" role="progressbar" style="width: 45%"></div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="progress mt-3" style="height: 5px;">
-                <div class="progress-bar bg-warning" role="progressbar" style="width: 89%"></div>
+              
+              <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="text-muted mb-1">Cumplimiento</h6>
+                        <h3 class="fw-bold mb-0">89%</h3>
+                      </div>
+                      <div class="stat-icon bg-warning-soft">
+                        <i class="fas fa-tasks text-warning"></i>
+                      </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 5px;">
+                      <div class="progress-bar bg-warning" role="progressbar" style="width: 89%"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   </div>
 </div>

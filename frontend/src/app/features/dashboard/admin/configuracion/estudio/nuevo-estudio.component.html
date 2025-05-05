@@ -1,0 +1,75 @@
+<div class="estudio-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Nuevo Estudio</h2>
+      <p>Complete el formulario para crear un nuevo estudio académico</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <!-- Mensaje de éxito y opciones después de guardar -->
+    <div *ngIf="successMessage && formSubmitted" class="success-container">
+      <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+      
+      <div class="action-buttons">
+        <button type="button" class="btn-secondary" (click)="crearNuevo()">
+          <i class="fas fa-plus"></i> Crear nuevo estudio
+        </button>
+        <button type="button" class="btn-primary" (click)="volverALista()">
+          <i class="fas fa-list"></i> Volver a la lista
+        </button>
+      </div>
+    </div>
+
+    <!-- Formulario - solo visible cuando no se ha enviado exitosamente -->
+    <form *ngIf="!formSubmitted" [formGroup]="estudioForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="name">Nombre <span class="required">*</span></label>
+        <input 
+          type="text" 
+          id="name" 
+          formControlName="name" 
+          placeholder="Ingrese el nombre del estudio"
+          [class.invalid]="estudioForm.get('name')?.invalid && estudioForm.get('name')?.touched"
+        >
+        <div *ngIf="estudioForm.get('name')?.invalid && estudioForm.get('name')?.touched" class="error-message">
+          <span *ngIf="estudioForm.get('name')?.errors?.['required']">El nombre es obligatorio.</span>
+          <span *ngIf="estudioForm.get('name')?.errors?.['maxlength']">El nombre no puede exceder de 50 caracteres.</span>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea 
+          id="description" 
+          formControlName="description" 
+          placeholder="Ingrese una descripción (opcional)"
+          [class.invalid]="estudioForm.get('description')?.invalid && estudioForm.get('description')?.touched"
+          rows="3"
+        ></textarea>
+        <div *ngIf="estudioForm.get('description')?.invalid && estudioForm.get('description')?.touched" class="error-message">
+          <span *ngIf="estudioForm.get('description')?.errors?.['maxlength']">La descripción no puede exceder de 255 caracteres.</span>
+        </div>
+      </div>
+
+      <div *ngIf="error" class="alert alert-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ error }}</span>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="cancelar()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="submitting || estudioForm.invalid">
+          <i class="fas fa-save"></i> 
+          <span *ngIf="!submitting">Guardar</span>
+          <span *ngIf="submitting">Guardando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,73 @@
+<div class="genero-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Editar Género</h2>
+      <p>Modifique los datos del género</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <!-- Estado de carga -->
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando datos del género...</span>
+    </div>
+
+    <!-- Estado de error al cargar -->
+    <div *ngIf="error && loading" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="cargarGenero()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <!-- Formulario -->
+    <form *ngIf="!loading" [formGroup]="generoForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="name">Nombre <span class="required">*</span></label>
+        <input 
+          type="text" 
+          id="name" 
+          formControlName="name" 
+          placeholder="Ingrese el nombre del género"
+          [class.invalid]="generoForm.get('name')?.invalid && generoForm.get('name')?.touched"
+        >
+        <div *ngIf="generoForm.get('name')?.invalid && generoForm.get('name')?.touched" class="error-message">
+          <span *ngIf="generoForm.get('name')?.errors?.['required']">El nombre es obligatorio.</span>
+          <span *ngIf="generoForm.get('name')?.errors?.['maxlength']">El nombre no puede exceder de 50 caracteres.</span>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea 
+          id="description" 
+          formControlName="description" 
+          placeholder="Ingrese una descripción (opcional)"
+          [class.invalid]="generoForm.get('description')?.invalid && generoForm.get('description')?.touched"
+          rows="3"
+        ></textarea>
+        <div *ngIf="generoForm.get('description')?.invalid && generoForm.get('description')?.touched" class="error-message">
+          <span *ngIf="generoForm.get('description')?.errors?.['maxlength']">La descripción no puede exceder de 255 caracteres.</span>
+        </div>
+      </div>
+
+      <div *ngIf="error && !loading" class="alert alert-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ error }}</span>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="cancelar()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="submitting || generoForm.invalid">
+          <i class="fas fa-save"></i> 
+          <span *ngIf="!submitting">Actualizar</span>
+          <span *ngIf="submitting">Actualizando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

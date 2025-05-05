@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { RouterModule } from '@angular/router';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { NgbDropdownModule, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 
@@ -15,6 +15,8 @@ import { FileViewerComponent } from './components/file-viewer/file-viewer.compon
 import { SafePipe } from './pipes/safe.pipe';
 import { FileService } from './services/file.service';
 import { BusinessFilesComponent } from './features/business/business-files/business-files.component';
+import { AuthInterceptor } from './core/interceptors/auth.interceptor';
+import { AuthGuard } from './core/guards/auth.guard';
 
 @NgModule({
   declarations: [
@@ -33,16 +35,38 @@ import { BusinessFilesComponent } from './features/business/business-files/busin
     HttpClientModule,
     RouterModule.forRoot([
       { path: '', component: HomeComponent },
-      { path: 'dashboard/admin', component: DashboardAdminComponent },
-      { path: 'dashboard/usuario', component: DashboardUsuarioComponent },
-      { path: 'business/files', component: BusinessFilesComponent },
+      { 
+        path: 'dashboard/admin', 
+        component: DashboardAdminComponent,
+        canActivate: [AuthGuard],
+        data: { role: 'ROLE_ADMIN' },
+        children: [
+          {
+            path: 'configuracion',
+            loadChildren: () => import('./features/dashboard/admin/configuracion/configuracion.module').then(m => m.ConfiguracionModule)
+          }
+        ]
+      },
+      { 
+        path: 'dashboard/usuario', 
+        component: DashboardUsuarioComponent,
+        canActivate: [AuthGuard] 
+      },
+      { 
+        path: 'business/files', 
+        component: BusinessFilesComponent,
+        canActivate: [AuthGuard] 
+      },
       { path: '**', redirectTo: '' }
     ]),
     NgbDropdownModule,
     NgbModalModule,
     SharedModule
   ],
-  providers: [FileService],
+  providers: [
+    FileService,
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

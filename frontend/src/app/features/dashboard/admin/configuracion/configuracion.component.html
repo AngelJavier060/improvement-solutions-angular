@@ -1,0 +1,23 @@
+<div class="configuracion-container">
+  <div class="header">
+    <h1>Configuración del Sistema</h1>
+    <p>Gestione los parámetros básicos del sistema que se utilizarán en otras secciones</p>
+  </div>
+
+  <div class="categorias-grid">
+    <div class="categoria-card" *ngFor="let categoria of categorias" [routerLink]="[categoria.ruta]">
+      <div class="icon-container">
+        <i [class]="categoria.icono"></i>
+      </div>
+      <div class="content">
+        <h3>{{ categoria.nombre }}</h3>
+        <p>{{ categoria.descripcion }}</p>
+      </div>
+      <div class="arrow">
+        <i class="fas fa-chevron-right"></i>
+      </div>
+    </div>
+  </div>
+
+  <router-outlet></router-outlet>
+</div>

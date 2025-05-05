@@ -12,8 +12,10 @@ import com.improvementsolutions.repository.UserRepository;
 import com.improvementsolutions.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,32 +36,105 @@ public class AuthService {
     private final JwtTokenProvider tokenProvider;
 
     public JwtAuthResponse login(LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(), 
-                        loginRequest.getPassword()
-                )
-        );
+        // Permitir login con credenciales fijas para desarrollo
+        if ("javier".equals(loginRequest.getUsername()) && "12345".equals(loginRequest.getPassword())) {
+            // Crear un usuario temporal con rol de administrador
+            User mockUser = createMockUser();
+            
+            // Crear una autenticación
+            List<SimpleGrantedAuthority> authorities = Arrays.asList(
+                new SimpleGrantedAuthority("ROLE_ADMIN")
+            );
+            
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                    mockUser.getUsername(), null, authorities);
+            
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            
+            // Generar token JWT
+            String jwt = tokenProvider.generateToken(authentication);
+            String refreshToken = tokenProvider.generateToken(authentication);
+            
+            return JwtAuthResponse.builder()
+                    .token(jwt)
+                    .refreshToken(refreshToken)
+                    .tokenType("Bearer")
+                    .expiresIn(86400) // 24 horas
+                    .userDetail(mapMockUserToDTO(mockUser))
+                    .build();
+        }
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        // Si no son las credenciales fijas, intentar la autenticación normal
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(), 
+                            loginRequest.getPassword()
+                    )
+            );
 
-        // Obtener usuario para incluir información adicional en la respuesta
-        User user = userRepository.findByEmail(loginRequest.getUsername())
-                .orElseGet(() -> userRepository.findByUsername(loginRequest.getUsername())
-                        .orElseThrow(() -> new RuntimeException("Usuario no encontrado")));
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Generar token JWT
-        String jwt = tokenProvider.generateToken(authentication);
-        String refreshToken = tokenProvider.generateToken(authentication); // En una implementación real, generaría un refresh token diferente
+            // Obtener usuario para incluir información adicional en la respuesta
+            User user = userRepository.findByEmail(loginRequest.getUsername())
+                    .orElseGet(() -> userRepository.findByUsername(loginRequest.getUsername())
+                            .orElseThrow(() -> new RuntimeException("Usuario no encontrado")));
 
-        // Preparar respuesta
-        return JwtAuthResponse.builder()
-                .token(jwt)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .expiresIn(86400) // 24 horas
-                .userDetail(mapUserToDTO(user))
-                .build();
+            // Generar token JWT
+            String jwt = tokenProvider.generateToken(authentication);
+            String refreshToken = tokenProvider.generateToken(authentication); // En una implementación real, generaría un refresh token diferente
+
+            // Preparar respuesta
+            return JwtAuthResponse.builder()
+                    .token(jwt)
+                    .refreshToken(refreshToken)
+                    .tokenType("Bearer")
+                    .expiresIn(86400) // 24 horas
+                    .userDetail(mapUserToDTO(user))
+                    .build();
+        } catch (BadCredentialsException e) {
+            throw new RuntimeException("Credenciales inválidas");
+        }
+    }
+
+    // Método auxiliar para crear un usuario mock para desarrollo
+    private User createMockUser() {
+        User mockUser = new User();
+        mockUser.setId(1L);
+        mockUser.setName("Javier Admin");
+        mockUser.setUsername("javier");
+        mockUser.setEmail("javier@example.com");
+        // No necesitamos setear contraseña porque ya la validamos antes
+        
+        Role adminRole = new Role();
+        adminRole.setId(1L);
+        adminRole.setName("ROLE_ADMIN");
+        
+        Set<Role> roles = new HashSet<>();
+        roles.add(adminRole);
+        mockUser.setRoles(roles);
+        
+        return mockUser;
+    }
+
+    // Método auxiliar para mapear un usuario mock a un DTO
+    private com.improvementsolutions.dto.UserDTO mapMockUserToDTO(User user) {
+        List<String> roles = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toList());
+
+        List<String> permissions = new ArrayList<>();
+
+        com.improvementsolutions.dto.UserDTO userDTO = new com.improvementsolutions.dto.UserDTO();
+        userDTO.setId(user.getId());
+        userDTO.setName(user.getName());
+        userDTO.setUsername(user.getUsername());
+        userDTO.setEmail(user.getEmail());
+        userDTO.setPhone(user.getPhone());
+        userDTO.setRoles(roles);
+        userDTO.setPermissions(permissions);
+        
+        return userDTO;
     }
 
     @Transactional
@@ -153,6 +228,32 @@ public class AuthService {
         }
 
         String username = tokenProvider.getUsernameFromJWT(refreshToken);
+        
+        // Para el usuario "javier" con credenciales fijas
+        if ("javier".equals(username)) {
+            User mockUser = createMockUser();
+            
+            List<SimpleGrantedAuthority> authorities = Arrays.asList(
+                new SimpleGrantedAuthority("ROLE_ADMIN")
+            );
+            
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                    mockUser.getUsername(), null, authorities);
+            
+            // Generar nuevo token JWT
+            String newToken = tokenProvider.generateToken(authentication);
+            String newRefreshToken = tokenProvider.generateToken(authentication);
+
+            return JwtAuthResponse.builder()
+                    .token(newToken)
+                    .refreshToken(newRefreshToken)
+                    .tokenType("Bearer")
+                    .expiresIn(86400) // 24 horas
+                    .userDetail(mapMockUserToDTO(mockUser))
+                    .build();
+        }
+        
+        // Caso normal
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
@@ -180,6 +281,19 @@ public class AuthService {
     public Map<String, Object> getUserInfo() {
         // Obtener el usuario autenticado actualmente
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        
+        // Si es nuestro usuario de desarrollo
+        if ("javier".equals(email)) {
+            User mockUser = createMockUser();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("user", mockUser);
+            response.put("roles", mockUser.getRoles());
+            
+            return response;
+        }
+        
+        // Caso normal
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 

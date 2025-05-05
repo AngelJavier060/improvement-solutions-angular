@@ -34,4 +34,17 @@ public class Gender {
     // Relación uno a muchos con BusinessEmployee
     @OneToMany(mappedBy = "gender")
     private Set<BusinessEmployee> businessEmployees = new HashSet<>();
+    
+    // Método para configurar las fechas antes de persistir
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // Método para actualizar la fecha de modificación antes de actualizar
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

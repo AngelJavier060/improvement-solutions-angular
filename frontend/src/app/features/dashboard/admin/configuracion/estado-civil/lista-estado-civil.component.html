@@ -1,0 +1,59 @@
+<div class="estado-civil-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Estados Civiles</h2>
+      <p>Administración de estados civiles</p>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" (click)="nuevoEstadoCivil()">
+        <i class="fas fa-plus"></i> Nuevo Estado Civil
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading">
+      <p>Cargando estados civiles...</p>
+    </div>
+
+    <div *ngIf="error" class="alert alert-error">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+    </div>
+
+    <div *ngIf="!loading && !error">
+      <table class="data-table" *ngIf="estadosCiviles.length > 0; else noData">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let estadoCivil of estadosCiviles">
+            <td>{{ estadoCivil.id }}</td>
+            <td>{{ estadoCivil.name }}</td>
+            <td>{{ estadoCivil.description || 'Sin descripción' }}</td>
+            <td class="actions">
+              <button class="btn-icon btn-edit" (click)="editarEstadoCivil(estadoCivil.id!)">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-icon btn-delete" (click)="eliminarEstadoCivil(estadoCivil.id!)">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noData>
+        <div class="no-data">
+          <p>No hay estados civiles registrados actualmente.</p>
+          <button class="btn-secondary" (click)="nuevoEstadoCivil()">Crear nuevo estado civil</button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

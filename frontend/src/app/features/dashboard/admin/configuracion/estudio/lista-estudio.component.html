@@ -1,0 +1,59 @@
+<div class="estudio-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Estudios</h2>
+      <p>Administración de estudios académicos</p>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" (click)="nuevoEstudio()">
+        <i class="fas fa-plus"></i> Nuevo Estudio
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading">
+      <p>Cargando estudios...</p>
+    </div>
+
+    <div *ngIf="error" class="alert alert-error">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+    </div>
+
+    <div *ngIf="!loading && !error">
+      <table class="data-table" *ngIf="estudios.length > 0; else noData">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let estudio of estudios">
+            <td>{{ estudio.id }}</td>
+            <td>{{ estudio.name }}</td>
+            <td>{{ estudio.description || 'Sin descripción' }}</td>
+            <td class="actions">
+              <button class="btn-icon btn-edit" (click)="editarEstudio(estudio.id!)">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-icon btn-delete" (click)="eliminarEstudio(estudio.id!)">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noData>
+        <div class="no-data">
+          <p>No hay estudios registrados actualmente.</p>
+          <button class="btn-secondary" (click)="nuevoEstudio()">Crear nuevo estudio</button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>
