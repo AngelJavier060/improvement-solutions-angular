@@ -57,21 +57,29 @@ export class LoginModalComponent implements OnInit {
 
     const credentials = this.loginForm.value;
     
-    // Validación local para las credenciales fijas
-    if (credentials.username === 'javier' && credentials.password === '12345') {
-      const userPath = this.userType === 'admin' ? '/dashboard/admin' : '/dashboard/usuario';
-      
-      this.authService.loginWithFixedCredentials(credentials)
-        .subscribe(() => {
+    // Usar el servicio de autenticación para validar las credenciales
+    this.authService.loginWithFixedCredentials(credentials)
+      .subscribe({
+        next: (response) => {
           this.loading = false;
+          
+          // Determinar la ruta según el rol del usuario
+          const roles = response.userDetail.roles || [];
+          let userPath = '/dashboard/usuario';
+          
+          // Si el usuario tiene rol de administrador, redirigir al dashboard de admin
+          if (roles.includes('ROLE_ADMIN')) {
+            userPath = '/dashboard/admin';
+          }
+          
           this.activeModal.close('success');
           this.router.navigate([userPath]);
-        });
-    } else {
-      // Si las credenciales no coinciden
-      this.loading = false;
-      this.error = 'Credenciales incorrectas. Por favor, inténtelo nuevamente.';
-    }
+        },
+        error: (err) => {
+          this.loading = false;
+          this.error = err.message || 'Credenciales incorrectas. Por favor, inténtelo nuevamente.';
+        }
+      });
   }
 
   dismiss(): void {

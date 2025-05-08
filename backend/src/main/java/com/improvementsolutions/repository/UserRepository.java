@@ -6,14 +6,29 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+/**
+ * Repositorio para la entidad User
+ */
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     
-    Optional<User> findByEmail(String email);
-    
+    /**
+     * Buscar un usuario por su nombre de usuario
+     */
     Optional<User> findByUsername(String username);
     
-    Boolean existsByEmail(String email);
+    /**
+     * Buscar un usuario por su correo electrónico
+     */
+    Optional<User> findByEmail(String email);
     
-    Boolean existsByUsername(String username);
+    /**
+     * Verificar si existe un usuario con el nombre de usuario especificado
+     */
+    boolean existsByUsername(String username);
+    
+    /**
+     * Verificar si existe un usuario con el correo electrónico especificado
+     */
+    boolean existsByEmail(String email);
 }

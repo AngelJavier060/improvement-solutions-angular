@@ -3,9 +3,13 @@ package com.improvementsolutions.service;
 import com.improvementsolutions.model.Business;
 import com.improvementsolutions.model.BusinessEmployee;
 import com.improvementsolutions.model.Employee;
+import com.improvementsolutions.model.Gender;
+import com.improvementsolutions.model.CivilStatus;
 import com.improvementsolutions.repository.BusinessEmployeeRepository;
 import com.improvementsolutions.repository.BusinessRepository;
 import com.improvementsolutions.repository.EmployeeRepository;
+import com.improvementsolutions.repository.GenderRepository;
+import com.improvementsolutions.repository.CivilStatusRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +25,8 @@ public class BusinessEmployeeService {
     private final BusinessEmployeeRepository businessEmployeeRepository;
     private final BusinessRepository businessRepository;
     private final EmployeeRepository employeeRepository;
+    private final GenderRepository genderRepository;
+    private final CivilStatusRepository civilStatusRepository;
 
     public List<BusinessEmployee> findAll() {
         return businessEmployeeRepository.findAll();
@@ -62,7 +68,7 @@ public class BusinessEmployeeService {
             // Crear nuevo empleado
             employee = new Employee();
             employee.setCedula(businessEmployee.getCedula());
-            employee.setName(businessEmployee.getName());
+            employee.setName(businessEmployee.getFullName());
             employee.setStatus("ACTIVO");
             employee.setCreatedAt(LocalDateTime.now());
             employee.setUpdatedAt(LocalDateTime.now());
@@ -88,9 +94,8 @@ public class BusinessEmployeeService {
         BusinessEmployee businessEmployee = businessEmployeeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Empleado de empresa no encontrado"));
         
-        businessEmployee.setName(businessEmployeeDetails.getName());
         businessEmployee.setPhone(businessEmployeeDetails.getPhone());
-        businessEmployee.setBirthdate(businessEmployeeDetails.getBirthdate());
+        businessEmployee.setDateBirth(businessEmployeeDetails.getDateBirth());
         businessEmployee.setAddress(businessEmployeeDetails.getAddress());
         businessEmployee.setEmail(businessEmployeeDetails.getEmail());
         businessEmployee.setContactKinship(businessEmployeeDetails.getContactKinship());
@@ -102,7 +107,10 @@ public class BusinessEmployeeService {
         }
         
         if (businessEmployeeDetails.getGender() != null) {
-            businessEmployee.setGender(businessEmployeeDetails.getGender());
+            String genderName = businessEmployeeDetails.getGender().toString();
+            Gender gender = genderRepository.findByName(genderName)
+                .orElseThrow(() -> new RuntimeException("Género no encontrado: " + genderName));
+            businessEmployee.setGender(gender);
         }
         
         if (businessEmployeeDetails.getEtnia() != null) {
@@ -110,7 +118,10 @@ public class BusinessEmployeeService {
         }
         
         if (businessEmployeeDetails.getCivilStatus() != null) {
-            businessEmployee.setCivilStatus(businessEmployeeDetails.getCivilStatus());
+            String civilStatusName = businessEmployeeDetails.getCivilStatus().toString();
+            CivilStatus civilStatus = civilStatusRepository.findByName(civilStatusName)
+                .orElseThrow(() -> new RuntimeException("Estado civil no encontrado: " + civilStatusName));
+            businessEmployee.setCivilStatus(civilStatus);
         }
         
         if (businessEmployeeDetails.getResidentAddress() != null) {

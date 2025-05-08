@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -48,10 +49,12 @@ public class Business {
 
     // Relación muchos a muchos con User
     @ManyToMany(mappedBy = "businesses")
+    @ToString.Exclude
     private Set<User> users = new HashSet<>();
 
     // Relación uno a muchos con BusinessEmployee
     @OneToMany(mappedBy = "business", cascade = CascadeType.ALL)
+    @ToString.Exclude
     private Set<BusinessEmployee> employees = new HashSet<>();
 
     // Relación muchos a muchos con TypeDocument
@@ -61,6 +64,7 @@ public class Business {
             joinColumns = @JoinColumn(name = "business_id"),
             inverseJoinColumns = @JoinColumn(name = "type_document_id")
     )
+    @ToString.Exclude
     private Set<TypeDocument> typeDocuments = new HashSet<>();
 
     // Relación muchos a muchos con Department
@@ -70,6 +74,7 @@ public class Business {
             joinColumns = @JoinColumn(name = "business_id"),
             inverseJoinColumns = @JoinColumn(name = "department_id")
     )
+    @ToString.Exclude
     private Set<Department> departments = new HashSet<>();
 
     // Relación muchos a muchos con Position
@@ -79,16 +84,18 @@ public class Business {
             joinColumns = @JoinColumn(name = "business_id"),
             inverseJoinColumns = @JoinColumn(name = "position_id")
     )
+    @ToString.Exclude
     private Set<Position> positions = new HashSet<>();
 
-    // Relación muchos a muchos con Iess
+    // Relación muchos a muchos con Iess - Cambiamos el nombre de la colección de 'ieses' a 'iessItems'
     @ManyToMany
     @JoinTable(
             name = "business_iess",
             joinColumns = @JoinColumn(name = "business_id"),
             inverseJoinColumns = @JoinColumn(name = "iess_id")
     )
-    private Set<Iess> ieses = new HashSet<>();
+    @ToString.Exclude
+    private Set<Iess> iessItems = new HashSet<>();
 
     // Relación muchos a muchos con TypeContract
     @ManyToMany
@@ -97,9 +104,52 @@ public class Business {
             joinColumns = @JoinColumn(name = "business_id"),
             inverseJoinColumns = @JoinColumn(name = "type_contract_id")
     )
+    @ToString.Exclude
     private Set<TypeContract> typeContracts = new HashSet<>();
 
     // Relación uno a muchos con BusinessObligationMatrix
     @OneToMany(mappedBy = "business", cascade = CascadeType.ALL)
+    @ToString.Exclude
     private Set<BusinessObligationMatrix> obligationMatrices = new HashSet<>();
+    
+    // Métodos de utilidad para gestionar relaciones bidireccionales
+    public void addUser(User user) {
+        this.users.add(user);
+        if (!user.getBusinesses().contains(this)) {
+            user.getBusinesses().add(this);
+        }
+    }
+    
+    public void removeUser(User user) {
+        this.users.remove(user);
+        if (user.getBusinesses().contains(this)) {
+            user.getBusinesses().remove(this);
+        }
+    }
+    
+    public void addEmployee(BusinessEmployee employee) {
+        this.employees.add(employee);
+        if (employee.getBusiness() != this) {
+            employee.setBusiness(this);
+        }
+    }
+    
+    public void removeEmployee(BusinessEmployee employee) {
+        this.employees.remove(employee);
+        if (employee.getBusiness() == this) {
+            employee.setBusiness(null);
+        }
+    }
+    
+    // Métodos para manejar las fechas automáticamente
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

@@ -1,340 +1,160 @@
 package com.improvementsolutions.service;
 
-import com.improvementsolutions.dto.auth.JwtAuthResponse;
-import com.improvementsolutions.dto.auth.LoginRequest;
-import com.improvementsolutions.dto.auth.RegisterRequest;
-import com.improvementsolutions.model.Business;
+import com.improvementsolutions.dto.auth.LoginRequestDto;
+import com.improvementsolutions.dto.auth.LoginResponseDto;
+import com.improvementsolutions.dto.auth.RegisterRequestDto;
+import com.improvementsolutions.dto.auth.LoginResponseDto.UserInfoDto;
 import com.improvementsolutions.model.Role;
 import com.improvementsolutions.model.User;
-import com.improvementsolutions.repository.BusinessRepository;
 import com.improvementsolutions.repository.RoleRepository;
 import com.improvementsolutions.repository.UserRepository;
 import com.improvementsolutions.security.JwtTokenProvider;
-import lombok.RequiredArgsConstructor;
+import com.improvementsolutions.security.UserDetailsImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class AuthService {
 
-    private final AuthenticationManager authenticationManager;
-    private final UserRepository userRepository;
-    private final BusinessRepository businessRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider tokenProvider;
-
-    public JwtAuthResponse login(LoginRequest loginRequest) {
-        // Permitir login con credenciales fijas para desarrollo
-        if ("javier".equals(loginRequest.getUsername()) && "12345".equals(loginRequest.getPassword())) {
-            // Crear un usuario temporal con rol de administrador
-            User mockUser = createMockUser();
-            
-            // Crear una autenticación
-            List<SimpleGrantedAuthority> authorities = Arrays.asList(
-                new SimpleGrantedAuthority("ROLE_ADMIN")
-            );
-            
-            Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    mockUser.getUsername(), null, authorities);
-            
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            
-            // Generar token JWT
-            String jwt = tokenProvider.generateToken(authentication);
-            String refreshToken = tokenProvider.generateToken(authentication);
-            
-            return JwtAuthResponse.builder()
-                    .token(jwt)
-                    .refreshToken(refreshToken)
-                    .tokenType("Bearer")
-                    .expiresIn(86400) // 24 horas
-                    .userDetail(mapMockUserToDTO(mockUser))
-                    .build();
-        }
-
-        // Si no son las credenciales fijas, intentar la autenticación normal
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getUsername(), 
-                            loginRequest.getPassword()
-                    )
-            );
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            // Obtener usuario para incluir información adicional en la respuesta
-            User user = userRepository.findByEmail(loginRequest.getUsername())
-                    .orElseGet(() -> userRepository.findByUsername(loginRequest.getUsername())
-                            .orElseThrow(() -> new RuntimeException("Usuario no encontrado")));
-
-            // Generar token JWT
-            String jwt = tokenProvider.generateToken(authentication);
-            String refreshToken = tokenProvider.generateToken(authentication); // En una implementación real, generaría un refresh token diferente
-
-            // Preparar respuesta
-            return JwtAuthResponse.builder()
-                    .token(jwt)
-                    .refreshToken(refreshToken)
-                    .tokenType("Bearer")
-                    .expiresIn(86400) // 24 horas
-                    .userDetail(mapUserToDTO(user))
-                    .build();
-        } catch (BadCredentialsException e) {
-            throw new RuntimeException("Credenciales inválidas");
-        }
-    }
-
-    // Método auxiliar para crear un usuario mock para desarrollo
-    private User createMockUser() {
-        User mockUser = new User();
-        mockUser.setId(1L);
-        mockUser.setName("Javier Admin");
-        mockUser.setUsername("javier");
-        mockUser.setEmail("javier@example.com");
-        // No necesitamos setear contraseña porque ya la validamos antes
-        
-        Role adminRole = new Role();
-        adminRole.setId(1L);
-        adminRole.setName("ROLE_ADMIN");
-        
-        Set<Role> roles = new HashSet<>();
-        roles.add(adminRole);
-        mockUser.setRoles(roles);
-        
-        return mockUser;
-    }
-
-    // Método auxiliar para mapear un usuario mock a un DTO
-    private com.improvementsolutions.dto.UserDTO mapMockUserToDTO(User user) {
-        List<String> roles = user.getRoles().stream()
-                .map(Role::getName)
-                .collect(Collectors.toList());
-
-        List<String> permissions = new ArrayList<>();
-
-        com.improvementsolutions.dto.UserDTO userDTO = new com.improvementsolutions.dto.UserDTO();
-        userDTO.setId(user.getId());
-        userDTO.setName(user.getName());
-        userDTO.setUsername(user.getUsername());
-        userDTO.setEmail(user.getEmail());
-        userDTO.setPhone(user.getPhone());
-        userDTO.setRoles(roles);
-        userDTO.setPermissions(permissions);
-        
-        return userDTO;
-    }
-
-    @Transactional
-    public JwtAuthResponse register(RegisterRequest registerRequest) {
-        // Verificar si el usuario ya existe
-        if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            throw new RuntimeException("El nombre de usuario ya está en uso");
-        }
-
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            throw new RuntimeException("El correo electrónico ya está registrado");
-        }
-
-        // Crear nuevo usuario
-        User user = new User();
-        user.setName(registerRequest.getName());
-        user.setUsername(registerRequest.getUsername());
-        user.setEmail(registerRequest.getEmail());
-        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
-        user.setPhone(registerRequest.getPhone());
-
-        // Asignar rol de ADMIN por defecto
-        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new RuntimeException("Rol ADMIN no encontrado"));
-        user.setRoles(Collections.singleton(adminRole));
-
-        userRepository.save(user);
-
-        // Autenticar al usuario para generar el token
+    @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
+    private RoleRepository roleRepository;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
+    @Autowired
+    private AuthenticationManager authenticationManager;
+    
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+    
+    /**
+     * Autentica un usuario y genera un token JWT
+     */
+    public LoginResponseDto authenticateUser(LoginRequestDto loginRequest) {
+        // Autenticar contra Spring Security
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        registerRequest.getUsername(),
-                        registerRequest.getPassword()
+                        loginRequest.getUsername(),
+                        loginRequest.getPassword()
                 )
         );
-
+        
+        // Establecer la autenticación en el contexto de seguridad
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        // Generar token JWT
-        String jwt = tokenProvider.generateToken(authentication);
-        String refreshToken = tokenProvider.generateToken(authentication);
-
-        // Preparar respuesta
-        return JwtAuthResponse.builder()
-                .token(jwt)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .expiresIn(86400) // 24 horas
-                .userDetail(mapUserToDTO(user))
-                .build();
-    }
-
-    @Transactional
-    public User registerByBusiness(RegisterRequest registerRequest, String businessRuc) {
-        // Verificar si el usuario ya existe
-        if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            throw new RuntimeException("El nombre de usuario ya está en uso");
-        }
-
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            throw new RuntimeException("El correo electrónico ya está registrado");
-        }
-
-        // Encontrar el negocio por RUC
-        Business business = businessRepository.findByRuc(businessRuc)
-                .orElseThrow(() -> new RuntimeException("Negocio no encontrado con RUC: " + businessRuc));
-
-        // Crear nuevo usuario
-        User user = new User();
-        user.setName(registerRequest.getName());
-        user.setUsername(registerRequest.getUsername());
-        user.setEmail(registerRequest.getEmail());
-        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
-        user.setPhone(registerRequest.getPhone());
-        // Añadir el negocio al conjunto de negocios
-        user.getBusinesses().add(business);
-
-        // Asignar rol de USER por defecto
-        Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("Rol USER no encontrado"));
-        user.setRoles(Collections.singleton(userRole));
-
-        return userRepository.save(user);
-    }
-
-    public JwtAuthResponse refreshToken(String refreshToken) {
-        // En una implementación real, validaría el refresh token de manera diferente
-        // y verificaría si expiró o fue revocado
-        if (!tokenProvider.validateToken(refreshToken)) {
-            throw new RuntimeException("Refresh token inválido o expirado");
-        }
-
-        String username = tokenProvider.getUsernameFromJWT(refreshToken);
         
-        // Para el usuario "javier" con credenciales fijas
-        if ("javier".equals(username)) {
-            User mockUser = createMockUser();
-            
-            List<SimpleGrantedAuthority> authorities = Arrays.asList(
-                new SimpleGrantedAuthority("ROLE_ADMIN")
-            );
-            
-            Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    mockUser.getUsername(), null, authorities);
-            
-            // Generar nuevo token JWT
-            String newToken = tokenProvider.generateToken(authentication);
-            String newRefreshToken = tokenProvider.generateToken(authentication);
-
-            return JwtAuthResponse.builder()
-                    .token(newToken)
-                    .refreshToken(newRefreshToken)
-                    .tokenType("Bearer")
-                    .expiresIn(86400) // 24 horas
-                    .userDetail(mapMockUserToDTO(mockUser))
-                    .build();
-        }
+        // Generar el token JWT
+        String jwt = jwtTokenProvider.generateToken(authentication);
         
-        // Caso normal
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        // Obtener los detalles del usuario autenticado
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         
-        // Crear una nueva autenticación
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                username, null, 
-                user.getRoles().stream()
-                    .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority(role.getName()))
-                    .collect(Collectors.toList())
-        );
-
-        // Generar nuevo token JWT
-        String newToken = tokenProvider.generateToken(authentication);
-        String newRefreshToken = tokenProvider.generateToken(authentication);
-
-        return JwtAuthResponse.builder()
-                .token(newToken)
-                .refreshToken(newRefreshToken)
-                .tokenType("Bearer")
-                .expiresIn(86400) // 24 horas
-                .userDetail(mapUserToDTO(user))
-                .build();
-    }
-
-    public Map<String, Object> getUserInfo() {
-        // Obtener el usuario autenticado actualmente
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        // Actualizar la fecha de último login
+        updateLastLogin(userDetails.getUsername());
         
-        // Si es nuestro usuario de desarrollo
-        if ("javier".equals(email)) {
-            User mockUser = createMockUser();
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("user", mockUser);
-            response.put("roles", mockUser.getRoles());
-            
-            return response;
-        }
+        // Crear y devolver la respuesta
+        LoginResponseDto response = new LoginResponseDto();
+        response.setToken(jwt);
+        response.setExpiresIn(86400L); // 24 horas en segundos
         
-        // Caso normal
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("user", user);
-        response.put("roles", user.getRoles());
+        // Configurar los detalles del usuario
+        UserInfoDto userInfo = new UserInfoDto();
+        userInfo.setId(userDetails.getId());
+        userInfo.setUsername(userDetails.getUsername());
+        userInfo.setEmail(userDetails.getEmail());
+        userInfo.setName(userDetails.getName());
+        
+        // Obtener los roles del usuario
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+        userInfo.setRoles(roles);
+        
+        response.setUserDetail(userInfo);
         
         return response;
     }
-
-    // Método auxiliar para mapear un usuario a un DTO
-    private com.improvementsolutions.dto.UserDTO mapUserToDTO(User user) {
-        List<String> roles = user.getRoles().stream()
-                .map(Role::getName)
-                .collect(Collectors.toList());
-
-        // En una implementación real, también mapearías los permisos
-        List<String> permissions = new ArrayList<>();
-
-        com.improvementsolutions.dto.UserDTO userDTO = new com.improvementsolutions.dto.UserDTO();
-        userDTO.setId(user.getId());
-        userDTO.setName(user.getName());
-        userDTO.setUsername(user.getUsername());
-        userDTO.setEmail(user.getEmail());
-        userDTO.setPhone(user.getPhone());
-        userDTO.setRoles(roles);
-        userDTO.setPermissions(permissions);
-        
-        // Si el usuario tiene un negocio asociado, mapearlo
-        if (user.getFirstBusiness() != null) {
-            com.improvementsolutions.dto.BusinessDTO businessDTO = new com.improvementsolutions.dto.BusinessDTO();
-            Business business = user.getFirstBusiness();
-            businessDTO.setId(business.getId());
-            businessDTO.setRuc(business.getRuc());
-            businessDTO.setName(business.getName());
-            businessDTO.setAddress(business.getAddress());
-            businessDTO.setEmail(business.getEmail());
-            businessDTO.setLogo(business.getLogo());
-            userDTO.setBusiness(businessDTO);
+    
+    /**
+     * Registra un nuevo usuario en el sistema
+     */
+    @Transactional
+    public void registerUser(RegisterRequestDto registerRequest) {
+        // Verificar si el usuario ya existe
+        if (userRepository.existsByUsername(registerRequest.getUsername())) {
+            throw new RuntimeException("Error: El nombre de usuario ya está en uso");
         }
         
-        return userDTO;
+        // Verificar si el email ya existe
+        if (userRepository.existsByEmail(registerRequest.getEmail())) {
+            throw new RuntimeException("Error: El email ya está en uso");
+        }
+        
+        // Crear el nuevo usuario
+        User user = new User();
+        user.setUsername(registerRequest.getUsername());
+        user.setEmail(registerRequest.getEmail());
+        user.setName(registerRequest.getName());
+        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        user.setActive(true);
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        
+        // Asignar roles
+        Set<String> strRoles = registerRequest.getRoles();
+        Set<Role> roles = new HashSet<>();
+        
+        if (strRoles == null || strRoles.isEmpty()) {
+            // Si no se especifican roles, asignar el rol de usuario por defecto
+            Role userRole = roleRepository.findByName("ROLE_USER")
+                    .orElseThrow(() -> new RuntimeException("Error: Rol no encontrado"));
+            roles.add(userRole);
+        } else {
+            // Asignar los roles especificados
+            strRoles.forEach(roleName -> {
+                switch (roleName.toUpperCase()) {
+                    case "ADMIN":
+                        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                                .orElseThrow(() -> new RuntimeException("Error: Rol de administrador no encontrado"));
+                        roles.add(adminRole);
+                        break;
+                    default:
+                        Role userRole = roleRepository.findByName("ROLE_USER")
+                                .orElseThrow(() -> new RuntimeException("Error: Rol de usuario no encontrado"));
+                        roles.add(userRole);
+                        break;
+                }
+            });
+        }
+        
+        user.setRoles(roles);
+        userRepository.save(user);
+    }
+    
+    /**
+     * Actualiza la fecha de último acceso de un usuario
+     */
+    @Transactional
+    public void updateLastLogin(String username) {
+        userRepository.findByUsername(username).ifPresent(user -> {
+            user.setLastLogin(LocalDateTime.now());
+            userRepository.save(user);
+        });
     }
 }

@@ -19,11 +19,21 @@ public class ImprovementSolutionsApplication {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
+                // Configuración general CORS
                 registry.addMapping("/**")
                         .allowedOrigins("http://localhost:4200")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
-                        .allowCredentials(true);
+                        .allowCredentials(true)
+                        .maxAge(3600); // Aumentamos el tiempo de cache para las preflight requests
+                
+                // Configuración específica para endpoint de estado civil
+                registry.addMapping("/api/v1/estado-civil/**")
+                        .allowedOrigins("http://localhost:4200")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(false) // No requiere credenciales
+                        .maxAge(3600);
             }
         };
     }

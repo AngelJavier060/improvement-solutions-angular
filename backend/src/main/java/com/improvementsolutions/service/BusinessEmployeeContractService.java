@@ -50,18 +50,11 @@ public class BusinessEmployeeContractService {
                 .orElseThrow(() -> new RuntimeException("Empleado de empresa no encontrado"));
         
         contract.setBusinessEmployee(businessEmployee);
-        contract.setStatus("ACTIVO");
+        contract.setIsCurrent(true);
         contract.setCreatedAt(LocalDateTime.now());
         contract.setUpdatedAt(LocalDateTime.now());
         
         BusinessEmployeeContract savedContract = businessEmployeeContractRepository.save(contract);
-        
-        // Si es el primer contrato o si se indica explícitamente, establecerlo como contrato actual
-        if (businessEmployee.getCurrentContract() == null) {
-            businessEmployee.setCurrentContract(savedContract);
-            businessEmployeeRepository.save(businessEmployee);
-        }
-        
         return savedContract;
     }
 
@@ -70,16 +63,13 @@ public class BusinessEmployeeContractService {
         BusinessEmployeeContract contract = businessEmployeeContractRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Contrato no encontrado"));
         
-        contract.setTypeContract(contractDetails.getTypeContract());
+        contract.setTypeContractId(contractDetails.getTypeContractId());
         contract.setStartDate(contractDetails.getStartDate());
         contract.setEndDate(contractDetails.getEndDate());
         contract.setSalary(contractDetails.getSalary());
-        contract.setDescription(contractDetails.getDescription());
-        
-        if (contractDetails.getStatus() != null) {
-            contract.setStatus(contractDetails.getStatus());
-        }
-        
+        contract.setWorkingHours(contractDetails.getWorkingHours());
+        contract.setContractFile(contractDetails.getContractFile());
+        contract.setIsCurrent(contractDetails.isCurrent());
         contract.setUpdatedAt(LocalDateTime.now());
         
         return businessEmployeeContractRepository.save(contract);
@@ -89,53 +79,27 @@ public class BusinessEmployeeContractService {
     public void delete(Long id) {
         BusinessEmployeeContract contract = businessEmployeeContractRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Contrato no encontrado"));
-        
-        // Si este contrato es el contrato actual del empleado, remover la referencia
-        BusinessEmployee businessEmployee = contract.getBusinessEmployee();
-        if (businessEmployee.getCurrentContract() != null && 
-                businessEmployee.getCurrentContract().getId().equals(contract.getId())) {
-            businessEmployee.setCurrentContract(null);
-            businessEmployeeRepository.save(businessEmployee);
-        }
-        
         businessEmployeeContractRepository.delete(contract);
     }
 
     @Transactional
-    public void updateStatus(Long id, String status) {
+    public void updateStatus(Long id, boolean isCurrent) {
         BusinessEmployeeContract contract = businessEmployeeContractRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Contrato no encontrado"));
-        
-        contract.setStatus(status);
+        contract.setIsCurrent(isCurrent);
         contract.setUpdatedAt(LocalDateTime.now());
-        
-        // Si el contrato se marca como inactivo y es el contrato actual, actualizar referencia
-        if ("INACTIVO".equals(status)) {
-            BusinessEmployee businessEmployee = contract.getBusinessEmployee();
-            if (businessEmployee.getCurrentContract() != null && 
-                    businessEmployee.getCurrentContract().getId().equals(contract.getId())) {
-                businessEmployee.setCurrentContract(null);
-                businessEmployeeRepository.save(businessEmployee);
-            }
-        }
-        
         businessEmployeeContractRepository.save(contract);
     }
 
     @Transactional
     public void setAsCurrentContract(Long contractId, Long businessEmployeeId) {
-        BusinessEmployee businessEmployee = businessEmployeeRepository.findById(businessEmployeeId)
-                .orElseThrow(() -> new RuntimeException("Empleado de empresa no encontrado"));
-        
         BusinessEmployeeContract contract = businessEmployeeContractRepository.findById(contractId)
                 .orElseThrow(() -> new RuntimeException("Contrato no encontrado"));
-        
-        // Verificar que el contrato pertenece al empleado
-        if (!contract.getBusinessEmployee().getId().equals(businessEmployeeId)) {
-            throw new RuntimeException("El contrato no pertenece a este empleado");
+        List<BusinessEmployeeContract> contracts = businessEmployeeContractRepository.findByBusinessEmployeeId(businessEmployeeId);
+        for (BusinessEmployeeContract c : contracts) {
+            c.setIsCurrent(c.getId().equals(contractId));
+            c.setUpdatedAt(LocalDateTime.now());
+            businessEmployeeContractRepository.save(c);
         }
-        
-        businessEmployee.setCurrentContract(contract);
-        businessEmployeeRepository.save(businessEmployee);
     }
 }

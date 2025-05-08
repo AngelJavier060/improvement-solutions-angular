@@ -3,11 +3,13 @@ import {
   HttpRequest,
   HttpHandler,
   HttpEvent,
-  HttpInterceptor
+  HttpInterceptor,
+  HttpErrorResponse
 } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
-import { environment } from '../../../environments/environment';
+import { Router } from '@angular/router';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -19,10 +21,16 @@ export class AuthInterceptor implements HttpInterceptor {
     '/api/v1/generos',
     '/generos',
     'localhost:8080/api/v1/generos',
-    'api/v1/generos'
+    'api/v1/generos',
+    'api/v1/estudios',
+    'http://localhost:8080/api/v1/estudios',
+    'api/v1/estado-civil',
+    'http://localhost:8080/api/v1/estado-civil',
+    'api/v1/public/estado-civil',
+    'http://localhost:8080/api/v1/public/estado-civil'
   ];
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private router: Router) {}
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     // Verificar si la URL de la solicitud está en la lista de rutas públicas
@@ -43,6 +51,16 @@ export class AuthInterceptor implements HttpInterceptor {
       console.log('No se añadió token (ruta pública o no hay token)');
     }
     
-    return next.handle(request);
+    return next.handle(request).pipe(
+      catchError((error: HttpErrorResponse) => {
+        // Si recibimos un 401 Unauthorized, redirigir al login
+        if (error.status === 401) {
+          console.log('Error 401: Sesión expirada o no autorizada');
+          this.authService.logout();
+          this.router.navigate(['/auth/login']);
+        }
+        return throwError(() => error);
+      })
+    );
   }
 }

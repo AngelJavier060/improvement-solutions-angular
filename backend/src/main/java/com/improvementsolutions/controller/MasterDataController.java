@@ -115,14 +115,14 @@ public class MasterDataController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Ethnia
+    // Etnia
     @GetMapping("/ethnias")
-    public ResponseEntity<List<Ethnia>> getAllEthnias() {
+    public ResponseEntity<List<Etnia>> getAllEthnias() {
         return ResponseEntity.ok(ethniaRepository.findAll());
     }
 
     @GetMapping("/ethnias/{id}")
-    public ResponseEntity<Ethnia> getEthniaById(@PathVariable Long id) {
+    public ResponseEntity<Etnia> getEthniaById(@PathVariable Long id) {
         return ethniaRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -130,20 +130,20 @@ public class MasterDataController {
 
     @PostMapping("/ethnias")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Ethnia> createEthnia(@RequestBody Ethnia ethnia) {
-        ethnia.setCreatedAt(LocalDateTime.now());
-        ethnia.setUpdatedAt(LocalDateTime.now());
-        return new ResponseEntity<>(ethniaRepository.save(ethnia), HttpStatus.CREATED);
+    public ResponseEntity<Etnia> createEthnia(@RequestBody Etnia etnia) {
+        etnia.setCreatedAt(LocalDateTime.now());
+        etnia.setUpdatedAt(LocalDateTime.now());
+        return new ResponseEntity<>(ethniaRepository.save(etnia), HttpStatus.CREATED);
     }
 
     @PutMapping("/ethnias/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Ethnia> updateEthnia(@PathVariable Long id, @RequestBody Ethnia ethniaDetails) {
+    public ResponseEntity<Etnia> updateEthnia(@PathVariable Long id, @RequestBody Etnia etniaDetails) {
         return ethniaRepository.findById(id)
-                .map(ethnia -> {
-                    ethnia.setName(ethniaDetails.getName());
-                    ethnia.setUpdatedAt(LocalDateTime.now());
-                    return ResponseEntity.ok(ethniaRepository.save(ethnia));
+                .map(etnia -> {
+                    etnia.setName(etniaDetails.getName());
+                    etnia.setUpdatedAt(LocalDateTime.now());
+                    return ResponseEntity.ok(ethniaRepository.save(etnia));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -152,8 +152,8 @@ public class MasterDataController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteEthnia(@PathVariable Long id) {
         return ethniaRepository.findById(id)
-                .map(ethnia -> {
-                    ethniaRepository.delete(ethnia);
+                .map(etnia -> {
+                    ethniaRepository.delete(etnia);
                     return ResponseEntity.ok().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());

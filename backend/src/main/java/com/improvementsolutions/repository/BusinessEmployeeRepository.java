@@ -22,7 +22,8 @@ public interface BusinessEmployeeRepository extends JpaRepository<BusinessEmploy
     Boolean existsByBusinessIdAndCedula(Long businessId, String cedula);
     
     @Query("SELECT be FROM BusinessEmployee be WHERE be.business.id = :businessId AND " +
-           "(LOWER(be.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "(LOWER(be.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(be.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(be.cedula) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
     List<BusinessEmployee> searchByBusinessIdAndNameOrCedula(Long businessId, String searchTerm);
 }

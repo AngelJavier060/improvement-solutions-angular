@@ -29,7 +29,8 @@ export interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = `${environment.apiUrl}/auth/login`;
+  // Actualizada la URL para apuntar al servidor local de Spring Boot
+  private apiUrl = 'http://localhost:8080/api/v1/auth';
   private tokenKey = 'auth_token';
   private refreshTokenKey = 'refresh_token';
   private userKey = 'current_user';
@@ -37,16 +38,27 @@ export class AuthService {
   constructor(private http: HttpClient, private router: Router) { }
 
   login(credentials: LoginCredentials): Observable<AuthResponse> {
-    console.log('Intentando iniciar sesión con el backend real en:', this.apiUrl);
-    return this.http.post<AuthResponse>(this.apiUrl, credentials).pipe(
+    console.log('Intentando iniciar sesión con el backend en:', `${this.apiUrl}/login`);
+    
+    // Determina si es correo o nombre de usuario
+    const isEmail = credentials.username.includes('@');
+    
+    // Prepara el cuerpo de la solicitud según el tipo de identificación
+    const requestBody = isEmail 
+      ? { email: credentials.username, password: credentials.password } 
+      : { username: credentials.username, password: credentials.password };
+    
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, requestBody).pipe(
       tap(response => {
         console.log('Respuesta de autenticación:', response);
         this.setSession(response);
       }),
       catchError(error => {
         console.error('Error de autenticación:', error);
-        // Si falla la autenticación con el backend, usar credenciales simuladas como fallback
-        if (credentials.username === 'javier' && credentials.password === '12345') {
+        
+        // Fallback para credenciales específicas (eliminar en producción)
+        if ((credentials.username === 'javier' || credentials.username === 'javierangelmsn@outlook.es') 
+            && credentials.password === '12345') {
           console.log('Usando autenticación simulada como fallback');
           const mockResponse: AuthResponse = {
             token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkphdmllciBBZG1pbiIsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
@@ -55,9 +67,9 @@ export class AuthService {
             expiresIn: 86400,
             userDetail: {
               id: 1,
-              name: 'Javier Admin',
+              name: 'Javier',
               username: 'javier',
-              email: 'javier@example.com',
+              email: 'javierangelmsn@outlook.es',
               roles: ['ROLE_ADMIN'],
               permissions: []
             }
@@ -72,30 +84,41 @@ export class AuthService {
   }
 
   loginWithFixedCredentials(credentials: LoginCredentials): Observable<AuthResponse> {
-    console.log('Usando credenciales fijas para iniciar sesión');
-    if (credentials.username === 'javier' && credentials.password === '12345') {
-      const mockResponse: AuthResponse = {
-        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkphdmllciBBZG1pbiIsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
-        refreshToken: 'mock-refresh-token',
-        tokenType: 'Bearer',
-        expiresIn: 86400,
-        userDetail: {
-          id: 1,
-          name: 'Javier Admin',
-          username: 'javier',
-          email: 'javier@example.com',
-          roles: ['ROLE_ADMIN'],
-          permissions: []
-        }
-      };
-      
-      this.setSession(mockResponse);
-      return of(mockResponse);
-    }
+    console.log('Intentando iniciar sesión con el backend en:', `${this.apiUrl}/login`);
     
-    return throwError(() => new Error('Credenciales incorrectas. Por favor, inténtelo nuevamente.'));
+    // Primero intenta con el backend real
+    return this.login(credentials).pipe(
+      catchError(error => {
+        console.log('Error al iniciar sesión con el backend, usando credenciales fijas:', error);
+        
+        // Fallback para credenciales específicas
+        if ((credentials.username === 'javier' || credentials.username === 'javierangelmsn@outlook.es') 
+            && credentials.password === '12345') {
+          const mockResponse: AuthResponse = {
+            token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkphdmllciBBZG1pbiIsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+            refreshToken: 'mock-refresh-token',
+            tokenType: 'Bearer',
+            expiresIn: 86400,
+            userDetail: {
+              id: 1,
+              name: 'Javier',
+              username: 'javier',
+              email: 'javierangelmsn@outlook.es',
+              roles: ['ROLE_ADMIN'],
+              permissions: []
+            }
+          };
+          
+          this.setSession(mockResponse);
+          return of(mockResponse);
+        }
+        
+        return throwError(() => new Error('Credenciales incorrectas. Por favor, inténtelo nuevamente.'));
+      })
+    );
   }
 
+  // Resto del código sin cambios
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.refreshTokenKey);

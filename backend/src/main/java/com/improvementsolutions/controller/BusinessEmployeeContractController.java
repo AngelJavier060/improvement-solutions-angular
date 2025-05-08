@@ -88,7 +88,8 @@ public class BusinessEmployeeContractController {
     public ResponseEntity<Void> updateContractStatus(
             @PathVariable Long id,
             @RequestParam String status) {
-        contractService.updateStatus(id, status);
+        boolean isCurrent = "ACTIVO".equalsIgnoreCase(status) || "true".equalsIgnoreCase(status);
+        contractService.updateStatus(id, isCurrent);
         return ResponseEntity.ok().build();
     }
 
