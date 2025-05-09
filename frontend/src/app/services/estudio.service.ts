@@ -7,12 +7,11 @@ import { Estudio } from '../models/estudio.model';
 @Injectable({
   providedIn: 'root'
 })
-export class EstudioService {
-  // URL corregida para usar el context-path configurado en el backend
-  private apiUrl = 'http://localhost:8080/api/v1/estudios';
+export class EstudioService {  // URL estandarizada usando environment.apiUrl
+  private apiUrl = `${environment.apiUrl}/api/v1/estudios`;
 
   constructor(private http: HttpClient) {
-    console.log('URL del servicio de estudio (corregida):', this.apiUrl);
+    console.log('URL del servicio de estudio (estandarizada):', this.apiUrl);
   }
 
   getEstudios(): Observable<Estudio[]> {

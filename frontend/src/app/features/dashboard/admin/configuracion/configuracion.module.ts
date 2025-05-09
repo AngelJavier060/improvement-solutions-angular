@@ -22,7 +22,6 @@ const routes: Routes = [
         path: 'estado-civil',
         loadChildren: () => import('./estado-civil/estado-civil.module').then(m => m.EstadoCivilModule)
       }
-      // Los demás módulos se implementarán posteriormente
     ]
   }
 ];

@@ -1,6 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { catchError } from 'rxjs/operators';
@@ -21,7 +21,8 @@ export class LoginModalComponent implements OnInit {
     private fb: FormBuilder,
     public activeModal: NgbActiveModal,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private modalService: NgbModal
   ) {}
 
   ngOnInit(): void {
@@ -80,6 +81,20 @@ export class LoginModalComponent implements OnInit {
           this.error = err.message || 'Credenciales incorrectas. Por favor, inténtelo nuevamente.';
         }
       });
+  }
+
+  openForgotPasswordModal(): void {
+    // Cerrar el modal actual
+    this.activeModal.dismiss('forgot-password');
+    
+    // Importar dinámicamente el componente para evitar dependencias circulares
+    import('../forgot-password-modal/forgot-password-modal.component').then(({ ForgotPasswordModalComponent }) => {
+      this.modalService.open(ForgotPasswordModalComponent, {
+        centered: true,
+        backdrop: 'static',
+        keyboard: false
+      });
+    });
   }
 
   dismiss(): void {

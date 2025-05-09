@@ -1,23 +1,31 @@
 <div class="configuracion-container">
-  <div class="header">
-    <h1>Configuración del Sistema</h1>
-    <p>Gestione los parámetros básicos del sistema que se utilizarán en otras secciones</p>
-  </div>
+  <!-- Mostrar solo si no hay una ruta secundaria activa -->
+  <div *ngIf="!isChildRouteActive">
+    <div class="header">
+      <h1>Configuración del Sistema</h1>
+      <p>Gestione los parámetros básicos del sistema que se utilizarán en otras secciones</p>
+    </div>
 
-  <div class="categorias-grid">
-    <div class="categoria-card" *ngFor="let categoria of categorias" [routerLink]="[categoria.ruta]">
-      <div class="icon-container">
-        <i [class]="categoria.icono"></i>
-      </div>
-      <div class="content">
-        <h3>{{ categoria.nombre }}</h3>
-        <p>{{ categoria.descripcion }}</p>
-      </div>
-      <div class="arrow">
-        <i class="fas fa-chevron-right"></i>
-      </div>
+    <div class="categorias-grid">
+      <a *ngFor="let categoria of categorias" 
+        [routerLink]="categoria.ruta"
+        class="categoria-card"
+        [class.disabled]="categoria.proximamente">
+        <div class="icon-container">
+          <i [class]="categoria.icono"></i>
+        </div>
+        <div class="content">
+          <h3>{{ categoria.nombre }}</h3>
+          <p>{{ categoria.descripcion }}</p>
+          <small *ngIf="categoria.proximamente" class="text-muted">(Próximamente)</small>
+        </div>
+        <div class="arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </a>
     </div>
   </div>
-
+  
+  <!-- Router outlet para los componentes hijos -->
   <router-outlet></router-outlet>
 </div>

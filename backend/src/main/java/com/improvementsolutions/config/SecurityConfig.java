@@ -59,23 +59,30 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
             .sessionManagement(session -> 
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(authorize -> authorize
-                // Rutas públicas
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))            .authorizeHttpRequests(authorize -> authorize
+                // Rutas públicas de autenticación
+                // IMPORTANTE: No incluir /api/v1 porque ya está en el context-path
+                .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 
-                // Endpoints específicos que queremos que sean públicos
-                .requestMatchers("/api/v1/generos/**").permitAll()
-                .requestMatchers("/api/v1/estudios/**").permitAll()
-                .requestMatchers("/api/v1/estado-civil/**").permitAll()
+                // Todos los endpoints en el namespace public son públicos
+                // Estos endpoints son REALMENTE públicos y no requieren autenticación
+                .requestMatchers("/public/**").permitAll()
+                .requestMatchers("/public/generos/**").permitAll()
+                .requestMatchers("/public/test/**").permitAll()
+                .requestMatchers("/public/validacion/**").permitAll()
+                
+                // Estos endpoints también son públicos pero estarán protegidos en el futuro
+                .requestMatchers("/generos/**").permitAll()
+                .requestMatchers("/estudios/**").permitAll()
+                .requestMatchers("/estado-civil/**").permitAll()
                 
                 // Por defecto, requiere autenticación para todo lo demás
                 .anyRequest().authenticated()
-            );
-        
-        // Añadir filtro JWT antes del filtro de autenticación de usuario y contraseña
+            );          // Añadir filtro JWT antes del filtro de autenticación de usuario y contraseña
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        
+        // Eliminamos la configuración errónea de securityMatcher que estaba bloqueando los endpoints públicos
         
         return http.build();
     }

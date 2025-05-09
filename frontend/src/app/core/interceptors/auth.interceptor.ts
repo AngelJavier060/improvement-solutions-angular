@@ -12,29 +12,20 @@ import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 
 @Injectable()
-export class AuthInterceptor implements HttpInterceptor {
-  // Lista de rutas públicas que no necesitan token
+export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas públicas que no necesitan token
   private publicRoutes = [
     '/auth/login',
     '/auth/register',
     '/auth/forgot-password',
-    '/api/v1/generos',
-    '/generos',
-    'localhost:8080/api/v1/generos',
-    'api/v1/generos',
-    'api/v1/estudios',
-    'http://localhost:8080/api/v1/estudios',
-    'api/v1/estado-civil',
-    'http://localhost:8080/api/v1/estado-civil',
-    'api/v1/public/estado-civil',
-    'http://localhost:8080/api/v1/public/estado-civil'
+    '/api/v1/public',
+    '/api/v1/auth'
   ];
 
   constructor(private authService: AuthService, private router: Router) {}
-
-  intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    // Verificar si la URL de la solicitud está en la lista de rutas públicas
-    const isPublicRoute = this.publicRoutes.some(url => request.url.includes(url));
+  intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {    // Verificar si la URL de la solicitud está en la lista de rutas públicas o contiene /public/
+    const isPublicRoute = this.publicRoutes.some(url => request.url.includes(url)) || 
+                         request.url.includes('/public/') || 
+                         request.url.includes('/api/v1/public/');
     
     console.log(`Solicitud a: ${request.url}, ¿Es ruta pública?: ${isPublicRoute}`);
     
@@ -48,16 +39,26 @@ export class AuthInterceptor implements HttpInterceptor {
       });
       console.log('Token añadido a la solicitud');
     } else {
-      console.log('No se añadió token (ruta pública o no hay token)');
+      console.log('No se añadió token a ruta pública: ' + request.url);
+      // Para rutas públicas, asegurar que no se envíe ningún header de autorización
+      // Esto es importante para evitar enviar tokens parciales o inválidos
+      request = request.clone({
+        headers: request.headers.delete('Authorization')
+      });
     }
     
     return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
-        // Si recibimos un 401 Unauthorized, redirigir al login
-        if (error.status === 401) {
-          console.log('Error 401: Sesión expirada o no autorizada');
+        console.log('Error en interceptor:', error.status, 'URL:', request.url);
+        
+        // Solo manejar errores 401 si no es una ruta pública
+        if (error.status === 401 && !isPublicRoute) {
+          console.log('Error 401 en ruta protegida');
+          // No redirigir automáticamente, dejar que el guard maneje la redirección
           this.authService.logout();
-          this.router.navigate(['/auth/login']);
+        } else if (error.status === 401 && isPublicRoute) {
+          console.log('Error 401 en ruta pública - ignorando autenticación');
+          // Ignorar errores de autenticación en rutas públicas
         }
         return throwError(() => error);
       })

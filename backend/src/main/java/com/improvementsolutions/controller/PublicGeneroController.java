@@ -1,68 +1,53 @@
 package com.improvementsolutions.controller;
 
+import com.improvementsolutions.dto.GenderDTO;
+import com.improvementsolutions.service.GenderService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * Controlador público para géneros sin autenticación
+ * Se eliminó la anotación @CrossOrigin ya que usamos la configuración CORS centralizada
+ * IMPORTANTE: No incluir /api/v1 porque ya está configurado en server.servlet.context-path
+ */
 @RestController
-@RequestMapping("/api/v1/public/generos")
-@CrossOrigin(origins = "*", allowedHeaders = "*")
+@RequestMapping("/public/generos")
 public class PublicGeneroController {
 
-    @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> getAllGeneros() {
-        // Crear datos de ejemplo estáticos
-        Map<String, Object> masculino = new HashMap<>();
-        masculino.put("id", 1L);
-        masculino.put("name", "Masculino");
-        masculino.put("description", "Género masculino");
-        masculino.put("createdAt", LocalDateTime.now());
-        masculino.put("updatedAt", LocalDateTime.now());
-        
-        Map<String, Object> femenino = new HashMap<>();
-        femenino.put("id", 2L);
-        femenino.put("name", "Femenino");
-        femenino.put("description", "Género femenino");
-        femenino.put("createdAt", LocalDateTime.now());
-        femenino.put("updatedAt", LocalDateTime.now());
-        
-        Map<String, Object> otro = new HashMap<>();
-        otro.put("id", 3L);
-        otro.put("name", "Otro");
-        otro.put("description", "Otro género");
-        otro.put("createdAt", LocalDateTime.now());
-        otro.put("updatedAt", LocalDateTime.now());
-        
-        return ResponseEntity.ok(Arrays.asList(masculino, femenino, otro));
+    private final GenderService genderService;
+
+    @Autowired
+    public PublicGeneroController(GenderService genderService) {
+        this.genderService = genderService;
     }
-    
+
+    @GetMapping
+    public ResponseEntity<List<GenderDTO>> getAllGeneros() {
+        return ResponseEntity.ok(genderService.getAllGenders());
+    }
+
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getGeneroById(@PathVariable Long id) {
-        // Crear datos de ejemplo estáticos basados en el ID
-        Map<String, Object> genero = new HashMap<>();
-        genero.put("id", id);
-        
-        if (id == 1L) {
-            genero.put("name", "Masculino");
-            genero.put("description", "Género masculino");
-        } else if (id == 2L) {
-            genero.put("name", "Femenino");
-            genero.put("description", "Género femenino");
-        } else if (id == 3L) {
-            genero.put("name", "Otro");
-            genero.put("description", "Otro género");
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-        
-        genero.put("createdAt", LocalDateTime.now());
-        genero.put("updatedAt", LocalDateTime.now());
-        
-        return ResponseEntity.ok(genero);
+    public ResponseEntity<GenderDTO> getGeneroById(@PathVariable Long id) {
+        return ResponseEntity.ok(genderService.getGenderById(id));
+    }
+
+    @PostMapping
+    public ResponseEntity<GenderDTO> createGenero(@RequestBody GenderDTO genderDTO) {
+        return new ResponseEntity<>(genderService.createGender(genderDTO), HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<GenderDTO> updateGenero(@PathVariable Long id, @RequestBody GenderDTO genderDTO) {
+        return ResponseEntity.ok(genderService.updateGender(id, genderDTO));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteGenero(@PathVariable Long id) {
+        genderService.deleteGender(id);
+        return ResponseEntity.noContent().build();
     }
 }

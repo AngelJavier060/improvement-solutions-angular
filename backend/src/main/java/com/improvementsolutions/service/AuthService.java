@@ -2,15 +2,20 @@ package com.improvementsolutions.service;
 
 import com.improvementsolutions.dto.auth.LoginRequestDto;
 import com.improvementsolutions.dto.auth.LoginResponseDto;
+import com.improvementsolutions.dto.auth.PasswordChangeDto;
 import com.improvementsolutions.dto.auth.RegisterRequestDto;
+import com.improvementsolutions.dto.auth.PasswordResetDto;
 import com.improvementsolutions.dto.auth.LoginResponseDto.UserInfoDto;
+import com.improvementsolutions.model.PasswordResetToken;
 import com.improvementsolutions.model.Role;
 import com.improvementsolutions.model.User;
+import com.improvementsolutions.repository.PasswordResetTokenRepository;
 import com.improvementsolutions.repository.RoleRepository;
 import com.improvementsolutions.repository.UserRepository;
 import com.improvementsolutions.security.JwtTokenProvider;
 import com.improvementsolutions.security.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -24,6 +29,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +42,9 @@ public class AuthService {
     private RoleRepository roleRepository;
     
     @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+    
+    @Autowired
     private PasswordEncoder passwordEncoder;
     
     @Autowired
@@ -43,6 +52,15 @@ public class AuthService {
     
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+    
+    @Autowired
+    private EmailService emailService;
+    
+    @Value("${app.frontend-url:http://localhost:4200}")
+    private String frontendUrl;
+    
+    // Tiempo de expiración del token de restablecimiento (en horas)
+    private static final int EXPIRATION_TIME = 24;
     
     /**
      * Autentica un usuario y genera un token JWT
@@ -156,5 +174,134 @@ public class AuthService {
             user.setLastLogin(LocalDateTime.now());
             userRepository.save(user);
         });
+    }
+    
+    /**
+     * Permite a un usuario cambiar su contraseña
+     * @param username Nombre de usuario
+     * @param passwordChangeDto Datos para el cambio de contraseña
+     * @return true si el cambio fue exitoso, false en caso contrario
+     */
+    @Transactional
+    public boolean changePassword(String username, PasswordChangeDto passwordChangeDto) {
+        // Verificar que las contraseñas nuevas coincidan
+        if (!passwordChangeDto.getNewPassword().equals(passwordChangeDto.getConfirmPassword())) {
+            throw new RuntimeException("Las contraseñas nuevas no coinciden");
+        }
+        
+        // Obtener el usuario
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        // Verificar la contraseña actual
+        if (!passwordEncoder.matches(passwordChangeDto.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+        
+        // Verificar que la nueva contraseña sea diferente de la actual
+        if (passwordEncoder.matches(passwordChangeDto.getNewPassword(), user.getPassword())) {
+            throw new RuntimeException("La nueva contraseña debe ser diferente a la actual");
+        }
+        
+        // Actualizar la contraseña
+        user.setPassword(passwordEncoder.encode(passwordChangeDto.getNewPassword()));
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+        
+        return true;
+    }
+    
+    /**
+     * Crea un token para restablecer la contraseña y lo envía por correo
+     * @param email Correo electrónico del usuario
+     * @return Token generado (solo para desarrollo)
+     */
+    @Transactional
+    public String createPasswordResetToken(String email) {
+        // Buscar el usuario por email
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("No existe un usuario con ese correo electrónico"));
+        
+        // Eliminar tokens anteriores para este usuario
+        passwordResetTokenRepository.deleteByUser(user);
+        
+        // Generar un token único UUID
+        String token = UUID.randomUUID().toString();
+        
+        // Crear y guardar el token en la base de datos
+        PasswordResetToken passwordResetToken = new PasswordResetToken();
+        passwordResetToken.setUser(user);
+        passwordResetToken.setToken(token);
+        passwordResetToken.setCreatedAt(LocalDateTime.now());
+        passwordResetToken.setExpiryDate(LocalDateTime.now().plusHours(EXPIRATION_TIME));
+        passwordResetTokenRepository.save(passwordResetToken);
+        
+        // Enviar correo electrónico con el enlace para restablecer la contraseña
+        try {
+            emailService.sendPasswordResetEmail(email, token, frontendUrl);
+        } catch (Exception e) {
+            // Registrar el error pero continuar, para no bloquear el proceso
+            System.err.println("Error al enviar correo electrónico: " + e.getMessage());
+        }
+        
+        // Solo para desarrollo, retornar el token
+        return token;
+    }
+    
+    /**
+     * Valida un token de restablecimiento y cambia la contraseña si es válido
+     * @param passwordResetDto Datos para el restablecimiento
+     * @return true si se cambió la contraseña, false en caso contrario
+     */
+    @Transactional
+    public boolean resetPassword(PasswordResetDto passwordResetDto) {
+        // Verificar que las contraseñas nuevas coincidan
+        if (!passwordResetDto.getNewPassword().equals(passwordResetDto.getConfirmPassword())) {
+            throw new RuntimeException("Las contraseñas nuevas no coinciden");
+        }
+        
+        // Buscar el token en la base de datos
+        PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByToken(passwordResetDto.getToken())
+                .orElseThrow(() -> new RuntimeException("Token no válido"));
+        
+        // Verificar que el token no haya expirado
+        if (passwordResetToken.isExpired()) {
+            throw new RuntimeException("El token ha expirado");
+        }
+        
+        // Verificar que el token no haya sido utilizado
+        if (passwordResetToken.isUsed()) {
+            throw new RuntimeException("El token ya ha sido utilizado");
+        }
+        
+        // Obtener el usuario
+        User user = passwordResetToken.getUser();
+        
+        // Verificar que la nueva contraseña sea diferente de la actual
+        if (passwordEncoder.matches(passwordResetDto.getNewPassword(), user.getPassword())) {
+            throw new RuntimeException("La nueva contraseña debe ser diferente a la actual");
+        }
+        
+        // Actualizar la contraseña
+        user.setPassword(passwordEncoder.encode(passwordResetDto.getNewPassword()));
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+        
+        // Marcar el token como utilizado
+        passwordResetToken.setUsed(true);
+        passwordResetTokenRepository.save(passwordResetToken);
+        
+        return true;
+    }
+    
+    /**
+     * Valida si un token de restablecimiento es válido
+     * @param token Token a validar
+     * @return true si es válido, false en caso contrario
+     */
+    public boolean validatePasswordResetToken(String token) {
+        return passwordResetTokenRepository.findByToken(token)
+                .map(resetToken -> !resetToken.isExpired() && !resetToken.isUsed())
+                .orElse(false);
     }
 }

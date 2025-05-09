@@ -1,99 +1,83 @@
 package com.improvementsolutions.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Clase que maneja la generación y validación de tokens JWT
  */
 @Component
-public class JwtTokenProvider {
+public class JwtTokenProvider {    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 
     @Value("${jwt.secret}")
     private String jwtSecret;
 
     @Value("${jwt.expiration}")
-    private long jwtExpirationMs;
+    private int jwtExpirationInMs;
+    
+    // Método para generar la clave de firma basada en el secreto JWT
+    private Key getSigningKey() {
+        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
 
     /**
      * Genera un token JWT a partir de la autenticación de un usuario
      */
     public String generateToken(Authentication authentication) {
         UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
-        
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("sub", userPrincipal.getUsername());
-        claims.put("name", userPrincipal.getName());
-        
-        // Obtener los roles del usuario como una cadena separada por comas
-        String roles = userPrincipal.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
-        claims.put("roles", roles);
-        
+
         Date now = new Date();
-        Date expiration = new Date(now.getTime() + jwtExpirationMs);
-        
-        return Jwts.builder()
-                .setClaims(claims)
-                .setIssuedAt(now)
-                .setExpiration(expiration)
+        Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);        return Jwts.builder()
+                .setSubject(userPrincipal.getUsername())
+                .setIssuedAt(new Date())
+                .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
 
     /**
      * Extrae el nombre de usuario de un token JWT
-     */
-    public String getUsernameFromToken(String token) {
-        Claims claims = getClaims(token);
+     */    public String getUsernameFromJWT(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
         return claims.getSubject();
     }
 
     /**
      * Valida un token JWT y devuelve true si es válido
-     */
-    public boolean validateToken(String token) {
+     */    public boolean validateToken(String authToken) {
         try {
             Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
-                .parseClaimsJws(token);
+                .parseClaimsJws(authToken);
             return true;
-        } catch (Exception e) {
-            return false;
+        } catch (SignatureException ex) {
+            logger.error("Firma JWT inválida");
+        } catch (MalformedJwtException ex) {
+            logger.error("Token JWT malformado");
+        } catch (ExpiredJwtException ex) {
+            logger.error("Token JWT expirado");
+        } catch (UnsupportedJwtException ex) {
+            logger.error("Token JWT no soportado");
+        } catch (IllegalArgumentException ex) {
+            logger.error("JWT claims string está vacío");
         }
-    }
-    
-    /**
-     * Obtiene la clave de firma utilizada para firmar los tokens JWT
-     */
-    private Key getSigningKey() {
-        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
-        return Keys.hmacShaKeyFor(keyBytes);
-    }
-    
-    /**
-     * Obtiene las claims de un token JWT
-     */
-    private Claims getClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        return false;
     }
 }

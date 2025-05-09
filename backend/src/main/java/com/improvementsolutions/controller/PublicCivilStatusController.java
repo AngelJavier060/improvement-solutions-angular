@@ -9,9 +9,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controlador público para estados civiles sin autenticación
+ * Se eliminó la anotación @CrossOrigin ya que usamos la configuración CORS centralizada
+ * IMPORTANTE: No incluir /api/v1 porque ya está configurado en server.servlet.context-path
+ */
 @RestController
-@RequestMapping("/api/v1/public/estado-civil")
-@CrossOrigin(origins = "http://localhost:4200")
+@RequestMapping("/public/estado-civil")
 public class PublicCivilStatusController {
 
     private final CivilStatusService civilStatusService;

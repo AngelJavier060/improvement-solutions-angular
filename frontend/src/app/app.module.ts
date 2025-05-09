@@ -17,9 +17,9 @@ import { FileService } from './services/file.service';
 import { BusinessFilesComponent } from './features/business/business-files/business-files.component';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { AuthGuard } from './core/guards/auth.guard';
+import { TestPublicComponent } from './components/test-public/test-public.component';
 
-@NgModule({
-  declarations: [
+@NgModule({  declarations: [
     AppComponent,
     HomeComponent,
     DashboardAdminComponent,
@@ -27,7 +27,8 @@ import { AuthGuard } from './core/guards/auth.guard';
     FileUploadComponent,
     FileViewerComponent,
     SafePipe,
-    BusinessFilesComponent
+    BusinessFilesComponent,
+    TestPublicComponent
   ],
   imports: [
     BrowserModule,
@@ -56,6 +57,13 @@ import { AuthGuard } from './core/guards/auth.guard';
         path: 'business/files', 
         component: BusinessFilesComponent,
         canActivate: [AuthGuard] 
+      },      {
+        path: 'auth',
+        loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
+      },
+      { 
+        path: 'test-public',
+        component: TestPublicComponent
       },
       { path: '**', redirectTo: '' }
     ]),

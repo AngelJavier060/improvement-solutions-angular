@@ -6,11 +6,13 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
 import { LoginModalComponent } from './components/login-modal/login-modal.component';
 import { TestimonioCardComponent } from './components/testimonio-card/testimonio-card.component';
+import { ForgotPasswordModalComponent } from './components/forgot-password-modal/forgot-password-modal.component';
 
 @NgModule({
   declarations: [
     LoginModalComponent,
-    TestimonioCardComponent
+    TestimonioCardComponent,
+    ForgotPasswordModalComponent
   ],
   imports: [
     CommonModule,
@@ -20,7 +22,8 @@ import { TestimonioCardComponent } from './components/testimonio-card/testimonio
   ],
   exports: [
     LoginModalComponent,
-    TestimonioCardComponent
+    TestimonioCardComponent,
+    ForgotPasswordModalComponent
   ]
 })
 export class SharedModule { }

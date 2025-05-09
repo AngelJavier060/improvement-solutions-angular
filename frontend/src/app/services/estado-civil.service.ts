@@ -7,12 +7,11 @@ import { EstadoCivil } from '../models/estado-civil.model';
 @Injectable({
   providedIn: 'root'
 })
-export class EstadoCivilService {
-  // URL actualizada para usar la ruta pública (sin autenticación)
-  private apiUrl = 'http://localhost:8080/api/v1/public/estado-civil';
+export class EstadoCivilService {  // URL estandarizada usando environment.apiUrl
+  private apiUrl = `${environment.apiUrl}/api/v1/public/estado-civil`;
 
   constructor(private http: HttpClient) { 
-    console.log('URL del servicio de estado civil actualizado:', this.apiUrl);
+    console.log('URL del servicio de estado civil (estandarizada):', this.apiUrl);
   }
 
   getEstadosCiviles(): Observable<EstadoCivil[]> {

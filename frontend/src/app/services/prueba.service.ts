@@ -6,9 +6,8 @@ import { environment } from '../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
-export class PruebaService {
-  // Actualizado para incluir el prefijo /v1
-  private apiUrl = `${environment.apiUrl}/api/v1/prueba`;
+export class PruebaService {  // URL estandarizada usando environment.apiUrl
+  private apiUrl = `${environment.apiUrl}/prueba`;
 
   constructor(private http: HttpClient) { }
 

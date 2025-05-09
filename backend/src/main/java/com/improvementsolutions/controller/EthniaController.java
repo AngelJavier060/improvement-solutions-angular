@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/v1/ethnias")
+@RequestMapping("/ethnias") // IMPORTANTE: No incluir /api/v1 porque ya está configurado en server.servlet.context-path
 public class EthniaController {
 
     private final EthniaRepository ethniaRepository;

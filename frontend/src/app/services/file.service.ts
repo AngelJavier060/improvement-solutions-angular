@@ -15,7 +15,7 @@ export interface FileResponse {
   providedIn: 'root'
 })
 export class FileService {
-  private baseUrl = `${environment.apiUrl}/api/files`;
+  private baseUrl = `${environment.apiUrl}/api/v1/files`;
 
   constructor(private http: HttpClient) { }
 

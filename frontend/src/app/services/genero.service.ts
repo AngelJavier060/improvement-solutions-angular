@@ -8,15 +8,14 @@ import { AuthService } from '../core/services/auth.service';
 @Injectable({
   providedIn: 'root'
 })
-export class GeneroService {
-  // URL corregida usando el context-path /api/v1 configurado en el backend
-  private apiUrl = 'http://localhost:8080/api/v1/generos';
+export class GeneroService {  // URL estandarizada usando environment.apiUrl
+  private apiUrl = `${environment.apiUrl}/api/v1/public/generos`;
 
   constructor(
     private http: HttpClient,
     private authService: AuthService
   ) { 
-    console.log('URL del servicio de género (corregida):', this.apiUrl);
+    console.log('URL del servicio de género (estandarizada):', this.apiUrl);
   }
 
   // Método para obtener los headers con el token JWT
@@ -27,12 +26,15 @@ export class GeneroService {
         'Content-Type': 'application/json',
         'Authorization': token ? `Bearer ${token}` : ''
       })
-    };
-  }
-
+    };  }
   getGeneros(): Observable<Genero[]> {
     console.log('Obteniendo géneros desde:', this.apiUrl);
-    return this.http.get<Genero[]>(this.apiUrl, this.getHttpOptions());
+    // Hacemos la solicitud con configuración explícita sin autorización
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json'
+      // Sin token de autorización
+    });
+    return this.http.get<Genero[]>(this.apiUrl, { headers });
   }
 
   getGenero(id: number): Observable<Genero> {

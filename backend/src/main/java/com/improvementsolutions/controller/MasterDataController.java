@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/master-data")
+@RequestMapping("/master-data") // IMPORTANTE: No incluir /api/v1 porque ya está configurado en server.servlet.context-path
 @RequiredArgsConstructor
 public class MasterDataController {
 

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Endpoint Público</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test de Endpoint Público de Géneros</h1>
+    
+    <div class="container">
+        <h2>Configuración</h2>
+        <p>URL del endpoint: <input type="text" id="url" value="http://localhost:8080/api/v1/public/generos" style="width: 350px;"></p>
+        <button onclick="testEndpoint()">Probar Endpoint</button>
+    </div>
+    
+    <div class="container">
+        <h2>Resultado</h2>
+        <div id="loading" style="display: none;">Cargando...</div>
+        <div id="result"></div>
+    </div>
+    
+    <div class="container">
+        <h2>Detalles de la solicitud</h2>
+        <div id="details"></div>
+    </div>
+
+    <script>
+        function testEndpoint() {
+            const url = document.getElementById('url').value;
+            const resultDiv = document.getElementById('result');
+            const detailsDiv = document.getElementById('details');
+            const loadingDiv = document.getElementById('loading');
+            
+            // Mostrar mensaje de carga
+            loadingDiv.style.display = 'block';
+            resultDiv.innerHTML = '';
+            detailsDiv.innerHTML = '';
+
+            // Registrar detalles de la solicitud
+            detailsDiv.innerHTML += `<p><strong>URL:</strong> ${url}</p>`;
+            detailsDiv.innerHTML += `<p><strong>Método:</strong> GET</p>`;
+            detailsDiv.innerHTML += `<p><strong>Hora:</strong> ${new Date().toLocaleString()}</p>`;
+            
+            // Realizar la solicitud sin credenciales
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Sin token de autorización
+                },
+                // No incluir credenciales
+                credentials: 'omit'
+            })
+            .then(response => {
+                // Registrar detalles de la respuesta
+                detailsDiv.innerHTML += `<p><strong>Código de estado:</strong> ${response.status} ${response.statusText}</p>`;
+                
+                // Registrar headers de la respuesta
+                let headersText = '<p><strong>Headers de respuesta:</strong></p><ul>';
+                response.headers.forEach((value, name) => {
+                    headersText += `<li>${name}: ${value}</li>`;
+                });
+                headersText += '</ul>';
+                detailsDiv.innerHTML += headersText;
+                
+                return response.json().then(data => ({status: response.status, body: data}));
+            })
+            .then(({ status, body }) => {
+                loadingDiv.style.display = 'none';
+                
+                if (status === 200) {
+                    resultDiv.innerHTML = `<p>✅ La solicitud fue exitosa (${status})!</p>`;
+                    resultDiv.innerHTML += `<pre>${JSON.stringify(body, null, 2)}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Error ${status}</p>`;
+                    resultDiv.innerHTML += `<pre>${JSON.stringify(body, null, 2)}</pre>`;
+                }
+            })
+            .catch(error => {
+                loadingDiv.style.display = 'none';
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>

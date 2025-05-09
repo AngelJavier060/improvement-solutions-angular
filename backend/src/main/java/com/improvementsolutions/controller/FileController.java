@@ -20,9 +20,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Controlador para la gestión de archivos
+ * Se eliminó la anotación @CrossOrigin ya que usamos la configuración CORS centralizada
+ * IMPORTANTE: No incluir /api/v1 porque ya está configurado en server.servlet.context-path
+ */
 @RestController
-@RequestMapping("/api/files")
-@CrossOrigin
+@RequestMapping("/files")
 @RequiredArgsConstructor
 public class FileController {
 

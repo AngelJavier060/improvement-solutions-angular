@@ -25,12 +25,33 @@ export interface AuthResponse {
   }
 }
 
+export interface PasswordChangeRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface PasswordResetRequest {
+  email: string;
+}
+
+export interface PasswordReset {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface PasswordResetResponse {
+  mensaje: string;
+  token: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  // Actualizada la URL para apuntar al servidor local de Spring Boot
-  private apiUrl = 'http://localhost:8080/api/v1/auth';
+  // URL estandarizada usando environment.apiUrl
+  private apiUrl = `${environment.apiUrl}/auth`;
   private tokenKey = 'auth_token';
   private refreshTokenKey = 'refresh_token';
   private userKey = 'current_user';
@@ -118,6 +139,79 @@ export class AuthService {
     );
   }
 
+  changePassword(passwordData: PasswordChangeRequest): Observable<any> {
+    return this.http.post(`${this.apiUrl}/change-password`, passwordData).pipe(
+      catchError(error => {
+        console.error('Error al cambiar la contraseña:', error);
+        let errorMsg = 'Error al cambiar la contraseña';
+        
+        // Si hay un mensaje de error desde el servidor, usarlo
+        if (error.error && typeof error.error === 'string') {
+          errorMsg = error.error;
+        } else if (error.error?.message) {
+          errorMsg = error.error.message;
+        }
+        
+        return throwError(() => new Error(errorMsg));
+      })
+    );
+  }
+
+  /**
+   * Solicita un token para restablecer la contraseña
+   * @param email Correo electrónico del usuario
+   */
+  requestPasswordReset(email: string): Observable<any> {
+    return this.http.post<PasswordResetResponse>(`${this.apiUrl}/forgot-password`, { email }).pipe(
+      catchError(error => {
+        console.error('Error al solicitar restablecimiento de contraseña:', error);
+        let errorMsg = 'Error al solicitar restablecimiento de contraseña';
+        
+        if (error.error && typeof error.error === 'string') {
+          errorMsg = error.error;
+        } else if (error.error?.message) {
+          errorMsg = error.error.message;
+        }
+        
+        return throwError(() => new Error(errorMsg));
+      })
+    );
+  }
+
+  /**
+   * Valida si un token de restablecimiento es válido
+   * @param token Token a validar
+   */
+  validateResetToken(token: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/reset-password/validate?token=${token}`).pipe(
+      catchError(error => {
+        console.error('Error al validar token:', error);
+        return throwError(() => new Error('Token no válido o expirado'));
+      })
+    );
+  }
+
+  /**
+   * Restablece la contraseña usando un token
+   * @param passwordReset Datos para el restablecimiento
+   */
+  resetPassword(passwordReset: PasswordReset): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reset-password`, passwordReset).pipe(
+      catchError(error => {
+        console.error('Error al restablecer la contraseña:', error);
+        let errorMsg = 'Error al restablecer la contraseña';
+        
+        if (error.error && typeof error.error === 'string') {
+          errorMsg = error.error;
+        } else if (error.error?.message) {
+          errorMsg = error.error.message;
+        }
+        
+        return throwError(() => new Error(errorMsg));
+      })
+    );
+  }
+
   // Resto del código sin cambios
   logout(): void {
     localStorage.removeItem(this.tokenKey);
@@ -128,21 +222,48 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     const token = localStorage.getItem(this.tokenKey);
-    return !!token;
+    if (!token) {
+      console.log('No hay token almacenado');
+      return false;
+    }
+    
+    // Verificar si el token está expirado
+    try {
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const expirationTime = tokenData.exp * 1000; // Convertir a milisegundos
+      if (Date.now() >= expirationTime) {
+        console.log('Token expirado');
+        this.logout();
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error al validar token:', error);
+      this.logout();
+      return false;
+    }
   }
 
   getUserRoles(): string[] {
-    const userData = localStorage.getItem(this.userKey);
-    if (userData) {
+    try {
+      const userData = localStorage.getItem(this.userKey);
+      if (!userData) {
+        console.log('No hay datos de usuario almacenados');
+        return [];
+      }
       const user = JSON.parse(userData);
       return user.roles || [];
+    } catch (error) {
+      console.error('Error al obtener roles:', error);
+      return [];
     }
-    return [];
   }
 
   hasRole(role: string): boolean {
     const roles = this.getUserRoles();
-    return roles.includes(role);
+    const hasRole = roles.includes(role);
+    console.log(`Verificando rol ${role}: ${hasRole}`);
+    return hasRole;
   }
 
   getCurrentUser(): any {

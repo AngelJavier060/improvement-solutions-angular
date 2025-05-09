@@ -1,35 +1,44 @@
 package com.improvementsolutions.config;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+// import org.springframework.context.annotation.Configuration; - Ya no se necesita
 
-@Configuration
+/**
+ * Configuración CORS (desactivada).
+ * 
+ * NOTA: La configuración CORS está centralizada en ImprovementSolutionsApplication.java
+ * para evitar configuraciones duplicadas y conflictos. Esta clase se mantiene para referencia histórica
+ * pero no está activa en la aplicación.
+ */
+// @Configuration - Comentado para evitar que Spring Boot procese esta clase
 public class CorsConfig {
+    // La configuración CORS ha sido movida a ImprovementSolutionsApplication.corsConfigurer()
     
+    /*
+    // Configuración anterior (desactivada)
     @Bean
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        
+        // Configuración general
         CorsConfiguration config = new CorsConfiguration();
-        
-        // Permitir todas las cabeceras
         config.addAllowedHeader("*");
-        
-        // Permitir credenciales
         config.setAllowCredentials(true);
-        
-        // Permitir todos los métodos (GET, POST, PUT, DELETE, etc.)
         config.addAllowedMethod("*");
-        
-        // Permitir solicitudes desde localhost:4200
         config.addAllowedOrigin("http://localhost:4200");
         
         // Aplicar esta configuración a todas las rutas
         source.registerCorsConfiguration("/**", config);
+        
+        // Configuración especial para rutas públicas
+        CorsConfiguration publicConfig = new CorsConfiguration();
+        publicConfig.addAllowedHeader("*");
+        publicConfig.setAllowCredentials(false); // No requiere credenciales para rutas públicas
+        publicConfig.addAllowedMethod("*");
+        publicConfig.addAllowedOrigin("*"); // Permitir desde cualquier origen
+        publicConfig.addExposedHeader("Authorization");
+        publicConfig.addExposedHeader("Content-Disposition");
+        
+        source.registerCorsConfiguration("/api/v1/public/**", publicConfig);
         
         return new CorsFilter(source);
     }
@@ -48,4 +57,5 @@ public class CorsConfig {
             }
         };
     }
+    */
 }

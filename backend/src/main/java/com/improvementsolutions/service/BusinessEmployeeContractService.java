@@ -54,8 +54,7 @@ public class BusinessEmployeeContractService {
         contract.setCreatedAt(LocalDateTime.now());
         contract.setUpdatedAt(LocalDateTime.now());
         
-        BusinessEmployeeContract savedContract = businessEmployeeContractRepository.save(contract);
-        return savedContract;
+        return businessEmployeeContractRepository.save(contract);
     }
 
     @Transactional
@@ -89,11 +88,10 @@ public class BusinessEmployeeContractService {
         contract.setIsCurrent(isCurrent);
         contract.setUpdatedAt(LocalDateTime.now());
         businessEmployeeContractRepository.save(contract);
-    }
-
-    @Transactional
+    }    @Transactional
     public void setAsCurrentContract(Long contractId, Long businessEmployeeId) {
-        BusinessEmployeeContract contract = businessEmployeeContractRepository.findById(contractId)
+        // Verificamos que el contrato exista antes de seguir
+        businessEmployeeContractRepository.findById(contractId)
                 .orElseThrow(() -> new RuntimeException("Contrato no encontrado"));
         List<BusinessEmployeeContract> contracts = businessEmployeeContractRepository.findByBusinessEmployeeId(businessEmployeeId);
         for (BusinessEmployeeContract c : contracts) {
