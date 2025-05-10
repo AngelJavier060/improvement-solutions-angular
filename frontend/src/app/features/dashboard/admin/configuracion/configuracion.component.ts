@@ -57,13 +57,12 @@ export class ConfiguracionComponent implements OnInit {
       ruta: 'tipo-residencia',
       icono: 'fas fa-home',
       proximamente: false
-    },
-    { 
+    },    { 
       nombre: 'Etnias', 
       descripcion: 'Gestionar los grupos étnicos', 
       ruta: 'etnias',
       icono: 'fas fa-users',
-      proximamente: true
+      proximamente: false
     },
     { 
       nombre: 'Tipo de Documento', 

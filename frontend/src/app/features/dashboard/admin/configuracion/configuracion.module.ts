@@ -25,6 +25,10 @@ const routes: Routes = [
       {
         path: 'tipo-residencia',
         loadChildren: () => import('./tipo-residencia/tipo-residencia.module').then(m => m.TipoResidenciaModule)
+      },
+      {
+        path: 'etnias',
+        loadChildren: () => import('./etnias/etnias.module').then(m => m.EtniasModule)
       }
     ]
   }
