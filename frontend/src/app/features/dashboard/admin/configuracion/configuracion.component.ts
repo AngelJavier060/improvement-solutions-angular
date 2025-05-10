@@ -51,13 +51,12 @@ export class ConfiguracionComponent implements OnInit {
       ruta: 'estado-civil',
       icono: 'fas fa-ring',
       proximamente: false
-    },
-    { 
+    },    { 
       nombre: 'Tipo de Residencia', 
       descripcion: 'Gestionar los tipos de residencia', 
       ruta: 'tipo-residencia',
       icono: 'fas fa-home',
-      proximamente: true
+      proximamente: false
     },
     { 
       nombre: 'Etnias', 

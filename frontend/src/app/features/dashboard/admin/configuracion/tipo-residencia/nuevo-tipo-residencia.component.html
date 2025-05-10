@@ -1,11 +1,11 @@
-<div class="estudio-container">
+<div class="tipo-residencia-container">
   <div class="header">
     <div class="title-section">
-      <h2>Nuevo Estudio</h2>
-      <p>Complete el formulario para crear un nuevo estudio académico</p>
+      <h2>Nuevo Tipo de Residencia</h2>
+      <p>Complete el formulario para crear un nuevo tipo de residencia</p>
     </div>
     <div class="actions">
-      <button class="btn-secondary" routerLink="/dashboard/admin/configuracion/estudio">
+      <button class="btn-secondary" routerLink="/dashboard/admin/configuracion/tipo-residencia">
         <i class="fas fa-arrow-left"></i> Volver a Lista
       </button>
     </div>
@@ -21,7 +21,7 @@
       
       <div class="action-buttons">
         <button type="button" class="btn-secondary" (click)="crearNuevo()">
-          <i class="fas fa-plus"></i> Crear nuevo estudio
+          <i class="fas fa-plus"></i> Crear nuevo tipo de residencia
         </button>
         <button type="button" class="btn-primary" (click)="volverALista()">
           <i class="fas fa-list"></i> Volver a la lista
@@ -30,19 +30,19 @@
     </div>
 
     <!-- Formulario - solo visible cuando no se ha enviado exitosamente -->
-    <form *ngIf="!formSubmitted" [formGroup]="estudioForm" (ngSubmit)="onSubmit()">
+    <form *ngIf="!formSubmitted" [formGroup]="tipoResidenciaForm" (ngSubmit)="onSubmit()">
       <div class="form-group">
         <label for="name">Nombre <span class="required">*</span></label>
         <input 
           type="text" 
           id="name" 
           formControlName="name" 
-          placeholder="Ingrese el nombre del estudio"
-          [class.invalid]="estudioForm.get('name')?.invalid && estudioForm.get('name')?.touched"
+          placeholder="Ingrese el nombre del tipo de residencia"
+          [class.invalid]="tipoResidenciaForm.get('name')?.invalid && tipoResidenciaForm.get('name')?.touched"
         >
-        <div *ngIf="estudioForm.get('name')?.invalid && estudioForm.get('name')?.touched" class="error-message">
-          <span *ngIf="estudioForm.get('name')?.errors?.['required']">El nombre es obligatorio.</span>
-          <span *ngIf="estudioForm.get('name')?.errors?.['maxlength']">El nombre no puede exceder de 50 caracteres.</span>
+        <div *ngIf="tipoResidenciaForm.get('name')?.invalid && tipoResidenciaForm.get('name')?.touched" class="error-message">
+          <span *ngIf="tipoResidenciaForm.get('name')?.errors?.['required']">El nombre es obligatorio.</span>
+          <span *ngIf="tipoResidenciaForm.get('name')?.errors?.['maxlength']">El nombre no puede exceder de 50 caracteres.</span>
         </div>
       </div>
       
@@ -52,11 +52,11 @@
           id="description" 
           formControlName="description" 
           placeholder="Ingrese una descripción (opcional)"
-          [class.invalid]="estudioForm.get('description')?.invalid && estudioForm.get('description')?.touched"
+          [class.invalid]="tipoResidenciaForm.get('description')?.invalid && tipoResidenciaForm.get('description')?.touched"
           rows="3"
         ></textarea>
-        <div *ngIf="estudioForm.get('description')?.invalid && estudioForm.get('description')?.touched" class="error-message">
-          <span *ngIf="estudioForm.get('description')?.errors?.['maxlength']">La descripción no puede exceder de 255 caracteres.</span>
+        <div *ngIf="tipoResidenciaForm.get('description')?.invalid && tipoResidenciaForm.get('description')?.touched" class="error-message">
+          <span *ngIf="tipoResidenciaForm.get('description')?.errors?.['maxlength']">La descripción no puede exceder de 255 caracteres.</span>
         </div>
       </div>
 
@@ -69,7 +69,7 @@
         <button type="button" class="btn-secondary" (click)="cancelar()">
           <i class="fas fa-times"></i> Cancelar
         </button>
-        <button type="submit" class="btn-primary" [disabled]="submitting || estudioForm.invalid">
+        <button type="submit" class="btn-primary" [disabled]="submitting || tipoResidenciaForm.invalid">
           <i class="fas fa-save"></i> 
           <span *ngIf="!submitting">Guardar</span>
           <span *ngIf="submitting">Guardando...</span>

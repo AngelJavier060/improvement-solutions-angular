@@ -1,0 +1,75 @@
+<div class="tipo-residencia-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Editar Tipo de Residencia</h2>
+      <p>Modifique los campos y guarde los cambios</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" routerLink="/dashboard/admin/configuracion/tipo-residencia">
+        <i class="fas fa-arrow-left"></i> Volver a Lista
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando información...</span>
+    </div>
+
+    <div *ngIf="error && !loading" class="alert alert-error">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="cargarTipoResidencia()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <form *ngIf="!loading && !error" [formGroup]="tipoResidenciaForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="name">Nombre <span class="required">*</span></label>
+        <input 
+          type="text" 
+          id="name" 
+          formControlName="name" 
+          placeholder="Ingrese el nombre del tipo de residencia"
+          [class.invalid]="tipoResidenciaForm.get('name')?.invalid && tipoResidenciaForm.get('name')?.touched"
+        >
+        <div *ngIf="tipoResidenciaForm.get('name')?.invalid && tipoResidenciaForm.get('name')?.touched" class="error-message">
+          <span *ngIf="tipoResidenciaForm.get('name')?.errors?.['required']">El nombre es obligatorio.</span>
+          <span *ngIf="tipoResidenciaForm.get('name')?.errors?.['maxlength']">El nombre no puede exceder de 50 caracteres.</span>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea 
+          id="description" 
+          formControlName="description" 
+          placeholder="Ingrese una descripción (opcional)"
+          [class.invalid]="tipoResidenciaForm.get('description')?.invalid && tipoResidenciaForm.get('description')?.touched"
+          rows="3"
+        ></textarea>
+        <div *ngIf="tipoResidenciaForm.get('description')?.invalid && tipoResidenciaForm.get('description')?.touched" class="error-message">
+          <span *ngIf="tipoResidenciaForm.get('description')?.errors?.['maxlength']">La descripción no puede exceder de 255 caracteres.</span>
+        </div>
+      </div>
+
+      <div *ngIf="error" class="alert alert-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ error }}</span>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="cancelar()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="submitting || tipoResidenciaForm.invalid">
+          <i class="fas fa-save"></i> 
+          <span *ngIf="!submitting">Actualizar</span>
+          <span *ngIf="submitting">Actualizando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

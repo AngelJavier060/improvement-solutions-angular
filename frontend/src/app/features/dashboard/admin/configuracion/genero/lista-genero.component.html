@@ -1,15 +1,17 @@
 <div class="genero-container">
   <div class="header">
     <div class="title-section">
-      <button class="btn-secondary mr-2" routerLink="/dashboard/admin/configuracion">
-        <i class="fas fa-arrow-left"></i> Volver
-      </button>
       <h2>Gestión de Géneros</h2>
       <p>Administre los tipos de género disponibles en el sistema</p>
     </div>
-    <button class="btn-primary" routerLink="nuevo">
-      <i class="fas fa-plus"></i> Nuevo Género
-    </button>
+    <div class="actions">
+      <button class="btn-secondary mr-2" routerLink="/dashboard/admin/configuracion">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
+      <button class="btn-primary" routerLink="nuevo">
+        <i class="fas fa-plus"></i> Nuevo Género
+      </button>
+    </div>
   </div>
 
   <div class="card">
@@ -42,14 +44,15 @@
         <tr *ngFor="let genero of generos">
           <td>{{ genero.id }}</td>
           <td>{{ genero.name }}</td>
-          <td>{{ genero.description || '-' }}</td>
-          <td class="actions">
-            <button class="btn-icon btn-edit" [routerLink]="['editar', genero.id]" title="Editar género">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn-icon btn-delete" (click)="eliminarGenero(genero.id!)" title="Eliminar género">
-              <i class="fas fa-trash-alt"></i>
-            </button>
+          <td>{{ genero.description || '-' }}</td>          <td class="actions">
+            <div class="btn-group">
+              <button class="btn btn-outline-primary btn-sm" [routerLink]="['editar', genero.id]" title="Editar género">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-outline-danger btn-sm" (click)="eliminarGenero(genero.id!)" title="Eliminar género">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
           </td>
         </tr>
         <tr *ngIf="generos.length === 0">

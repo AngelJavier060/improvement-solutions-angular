@@ -21,6 +21,10 @@ const routes: Routes = [
       {
         path: 'estado-civil',
         loadChildren: () => import('./estado-civil/estado-civil.module').then(m => m.EstadoCivilModule)
+      },
+      {
+        path: 'tipo-residencia',
+        loadChildren: () => import('./tipo-residencia/tipo-residencia.module').then(m => m.TipoResidenciaModule)
       }
     ]
   }

@@ -1,0 +1,69 @@
+<div class="tipo-residencia-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Tipos de Residencia</h2>
+      <p>Administración de tipos de residencia</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary mr-2" routerLink="/dashboard/admin/configuracion">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
+      <button class="btn-primary" routerLink="nuevo">
+        <i class="fas fa-plus"></i> Nuevo Tipo de Residencia
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando tipos de residencia...</span>
+    </div>
+
+    <div *ngIf="error" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="cargarTiposResidencia()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <div *ngIf="!loading && !error">
+      <table class="data-table" *ngIf="tiposResidencia.length > 0; else noData">
+        <thead>
+          <tr>
+            <th class="th-id">ID</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th class="th-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let tipoResidencia of tiposResidencia">
+            <td>{{ tipoResidencia.id }}</td>
+            <td>{{ tipoResidencia.name }}</td>
+            <td>{{ tipoResidencia.description || '-' }}</td>
+            <td class="actions">
+              <div class="btn-group">
+                <button class="btn btn-outline-primary btn-sm" [routerLink]="['editar', tipoResidencia.id]" title="Editar tipo de residencia">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-outline-danger btn-sm" (click)="eliminarTipoResidencia(tipoResidencia.id!)" title="Eliminar tipo de residencia">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noData>
+        <div class="empty-state">
+          <i class="fas fa-home"></i>
+          <p>No hay tipos de residencia disponibles</p>
+          <button class="btn-primary" routerLink="nuevo">Crear tipo de residencia</button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

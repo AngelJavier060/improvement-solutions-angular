@@ -5,6 +5,9 @@
       <p>Administración de estados civiles</p>
     </div>
     <div class="actions">
+      <button class="btn-secondary mr-2" routerLink="/dashboard/admin/configuracion">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
       <button class="btn-primary" (click)="nuevoEstadoCivil()">
         <i class="fas fa-plus"></i> Nuevo Estado Civil
       </button>
@@ -35,14 +38,15 @@
           <tr *ngFor="let estadoCivil of estadosCiviles">
             <td>{{ estadoCivil.id }}</td>
             <td>{{ estadoCivil.name }}</td>
-            <td>{{ estadoCivil.description || 'Sin descripción' }}</td>
-            <td class="actions">
-              <button class="btn-icon btn-edit" (click)="editarEstadoCivil(estadoCivil.id!)">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button class="btn-icon btn-delete" (click)="eliminarEstadoCivil(estadoCivil.id!)">
-                <i class="fas fa-trash"></i>
-              </button>
+            <td>{{ estadoCivil.description || 'Sin descripción' }}</td>            <td class="actions">
+              <div class="btn-group">
+                <button class="btn btn-outline-primary btn-sm" (click)="editarEstadoCivil(estadoCivil.id!)">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-outline-danger btn-sm" (click)="eliminarEstadoCivil(estadoCivil.id!)">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
