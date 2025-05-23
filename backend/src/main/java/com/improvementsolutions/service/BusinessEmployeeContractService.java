@@ -42,15 +42,15 @@ public class BusinessEmployeeContractService {
 
     public List<BusinessEmployeeContract> findContractsExpiringSoon(Long businessId, LocalDate startDate, LocalDate endDate) {
         return businessEmployeeContractRepository.findContractsExpiringSoon(businessId, startDate, endDate);
-    }
-
-    @Transactional
+    }    @Transactional
     public BusinessEmployeeContract create(BusinessEmployeeContract contract) {
         BusinessEmployee businessEmployee = businessEmployeeRepository.findById(contract.getBusinessEmployee().getId())
                 .orElseThrow(() -> new RuntimeException("Empleado de empresa no encontrado"));
         
         contract.setBusinessEmployee(businessEmployee);
         contract.setIsCurrent(true);
+        contract.setStatus("ACTIVO");
+        contract.setActive(true);
         contract.setCreatedAt(LocalDateTime.now());
         contract.setUpdatedAt(LocalDateTime.now());
         
@@ -79,13 +79,12 @@ public class BusinessEmployeeContractService {
         BusinessEmployeeContract contract = businessEmployeeContractRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Contrato no encontrado"));
         businessEmployeeContractRepository.delete(contract);
-    }
-
-    @Transactional
+    }    @Transactional
     public void updateStatus(Long id, boolean isCurrent) {
         BusinessEmployeeContract contract = businessEmployeeContractRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Contrato no encontrado"));
         contract.setIsCurrent(isCurrent);
+        contract.setStatus(isCurrent ? "ACTIVO" : "INACTIVO");
         contract.setUpdatedAt(LocalDateTime.now());
         businessEmployeeContractRepository.save(contract);
     }    @Transactional

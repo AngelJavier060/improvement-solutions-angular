@@ -1,84 +1,109 @@
 package com.improvementsolutions.model;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * Entidad que representa una matriz de obligaciones para una empresa
- */
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
+import org.hibernate.annotations.Filter;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 @Entity
-@Table(name = "business_obligation_matrices")
+@Table(name = "business_obligation_matrix")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
+@EqualsAndHashCode(exclude = {"business"})
+@ToString(exclude = {"business"})
+@SQLDelete(sql = "UPDATE business_obligation_matrix SET active = false WHERE id = ?")
+@FilterDef(name = "deletedBusinessObligationMatrixFilter", parameters = @ParamDef(name = "isDeleted", type = boolean.class))
+@Filter(name = "deletedBusinessObligationMatrixFilter", condition = "active = :isDeleted")
 public class BusinessObligationMatrix {
-    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @ManyToOne
-    @JoinColumn(name = "business_id", nullable = false)
+    @JoinColumn(name = "business_id")
     private Business business;
-    
+
     @ManyToOne
     @JoinColumn(name = "obligation_matrix_id")
     private ObligationMatrix obligationMatrix;
-    
-    @Column(nullable = false)
+
     private String name;
-    
+    private String obligationType;
     private String description;
-    
-    private String status;
-    
-    @Column(name = "due_date")
     private LocalDate dueDate;
+    private String status;
+    private String priority;
+    private String responsiblePerson;
+    private boolean completed;
+    private LocalDateTime completionDate;
+    private boolean active = true;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
+
     // Métodos para manejar las fechas automáticamente
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-    
-    public String getObligationMatrixInfo() {
+
+    public String getDisplayName() {
         return this.name + " - " + this.description;
     }
-    
-    public void setObligationMatrixInfo(String obligationMatrixInfo) {
-        // Si viene en formato "nombre - descripción", separamos
-        if (obligationMatrixInfo != null && obligationMatrixInfo.contains(" - ")) {
-            String[] parts = obligationMatrixInfo.split(" - ", 2);
-            this.name = parts[0];
-            this.description = parts.length > 1 ? parts[1] : "";
+
+    public String getObligationMatrix() {
+        return this.name + " - " + this.description;
+    }
+
+    private static final String DEFAULT_DESCRIPTION = "";
+
+    public void setMatrixInfo(String obligationMatrixInfo) {
+        String[] parts = obligationMatrixInfo.split("-", 2);
+        if (parts.length > 1) {
+            this.name = parts[0].trim();
+            this.description = parts[1].trim();
         } else {
-            // Si no, lo establecemos como nombre
-            this.name = obligationMatrixInfo;
+            this.name = obligationMatrixInfo.trim();
+            this.description = DEFAULT_DESCRIPTION;
         }
     }
-    
-    public LocalDate getDueDate() {
-        return this.dueDate;
-    }
-    
-    public void setDueDate(LocalDate dueDate) {
-        this.dueDate = dueDate;
+
+    public void setObligationMatrix(String obligationMatrix) {
+        if (obligationMatrix != null) {
+            String[] parts = obligationMatrix.split(" - ", 2);
+            if (parts.length > 1) {
+                this.name = parts[0].trim();
+                this.description = parts[1].trim();
+            } else {
+                this.name = obligationMatrix.trim();
+                this.description = "";
+            }
+        }
     }
 }

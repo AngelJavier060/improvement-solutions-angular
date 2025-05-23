@@ -1,20 +1,21 @@
 package com.improvementsolutions.security;
 
+import com.improvementsolutions.model.Role;
 import com.improvementsolutions.model.User;
 import com.improvementsolutions.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
+@Primary
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
@@ -23,43 +24,39 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
-        // Usuario específico para desarrollo sin base de datos
-        if ("javier".equals(usernameOrEmail)) {
-            // Crear autoridades para el usuario javier (ADMIN)
-            List<SimpleGrantedAuthority> authorities = Arrays.asList(
-                new SimpleGrantedAuthority("ROLE_ADMIN")
-            );
-            
-            // Devolver un usuario de Spring Security con las credenciales hardcoded
-            // La contraseña está codificada directamente aquí, corresponde a "12345"
-            return new org.springframework.security.core.userdetails.User(
-                "javier",
-                // Contraseña precodificada para "12345"
-                "$2a$10$iyH.Xiv1ASsMqL.yNen/0.1l98vhPF2U/BMJS/HMJQwkcHJtQSQD6",
-                authorities
-            );
-        }
+        // Intentar obtener usuario de la base de datos primero
+        User user = null;
         
-        // Lógica original para otros usuarios (desde la base de datos)
         try {
-            // Permitir inicio de sesión con nombre de usuario o correo electrónico
-            User user = userRepository.findByEmail(usernameOrEmail)
-                    .orElseGet(() -> userRepository.findByUsername(usernameOrEmail)
-                            .orElseThrow(() -> new UsernameNotFoundException(
-                                    "Usuario no encontrado con nombre de usuario o email: " + usernameOrEmail)));
-    
-            List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
-                    .map(role -> new SimpleGrantedAuthority(role.getName()))
-                    .collect(Collectors.toList());
-    
-            return new org.springframework.security.core.userdetails.User(
-                    user.getEmail(),
-                    user.getPassword(),
-                    authorities
-            );
+            user = userRepository.findByUsername(usernameOrEmail)
+                .orElseGet(() -> userRepository.findByEmail(usernameOrEmail)
+                    .orElse(null));
         } catch (Exception e) {
-            // Si hay cualquier error con la base de datos, lanzar UsernameNotFoundException
-            throw new UsernameNotFoundException("Error al cargar usuario: " + e.getMessage());
+            throw new UsernameNotFoundException("Error al buscar usuario: " + e.getMessage());
         }
+
+        // Si no se encuentra en la base de datos y es "javier", crear usuario hardcodeado
+        if (user == null && "javier".equals(usernameOrEmail)) {
+            user = new User();
+            user.setId(1L);
+            user.setUsername("javier");
+            user.setEmail("javierangelmsn@outlook.es");
+            user.setName("Javier");
+            user.setPassword("$2a$10$iyH.Xiv1ASsMqL.yNen/0.1l98vhPF2U/BMJS/HMJQwkcHJtQSQD6");
+            user.setActive(true);
+            
+            Set<Role> roles = new HashSet<>();
+            Role adminRole = new Role();
+            adminRole.setId(1L);
+            adminRole.setName("ROLE_ADMIN");
+            roles.add(adminRole);
+            user.setRoles(roles);
+        }
+
+        if (user == null) {
+            throw new UsernameNotFoundException("Usuario no encontrado: " + usernameOrEmail);
+        }
+
+        return UserDetailsImpl.build(user);
     }
 }

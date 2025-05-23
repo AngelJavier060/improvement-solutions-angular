@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug Tipo Documento</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #1976d2;
+    }
+    .link-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .link {
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      text-decoration: none;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+    .link:hover {
+      background-color: #e0e0e0;
+    }
+    .section {
+      margin-bottom: 30px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Diagnóstico de Tipos de Documento</h1>
+  
+  <div class="section">
+    <h2>Enlaces principales</h2>
+    <div class="link-container">
+      <a href="http://localhost:4200/dashboard/admin" class="link">Dashboard Admin</a>
+      <a href="http://localhost:4200/dashboard/admin/configuracion" class="link">Configuración</a>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>Enlaces directos a Tipo Documento</h2>
+    <div class="link-container">
+      <a href="http://localhost:4200/dashboard/admin/configuracion/tipo-documento" class="link">Tipo Documento (Lista)</a>
+      <a href="http://localhost:4200/dashboard/admin/configuracion/tipo-documento/debug" class="link">Tipo Documento (Debug)</a>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>Pruebas de variaciones de ruta</h2>
+    <div class="link-container">
+      <a href="http://localhost:4200/dashboard/admin/configuracion/tipo-documento/" class="link">Con slash final (tipo-documento/)</a>
+      <a href="http://localhost:4200/dashboard/admin/configuracion/tipo-documentos" class="link">Plural (tipo-documentos)</a>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>Comparación con otros módulos</h2>
+    <div class="link-container">
+      <a href="http://localhost:4200/dashboard/admin/configuracion/etnias" class="link">Etnias (Funcionando)</a>
+      <a href="http://localhost:4200/dashboard/admin/configuracion/genero" class="link">Género (Funcionando)</a>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>Instrucciones</h2>
+    <ol>
+      <li>Abre la consola del navegador (F12) antes de hacer clic en los enlaces para ver mensajes y errores.</li>
+      <li>Prueba los enlaces en orden, comenzando por el Dashboard y observa el comportamiento.</li>
+      <li>Si la ruta de Debug funciona pero la principal no, el problema puede estar en el componente ListaTipoDocumentoComponent.</li>
+      <li>Compara el comportamiento con los módulos que sí funcionan (Etnias, Género).</li>
+    </ol>
+  </div>
+</body>
+</html>

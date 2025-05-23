@@ -16,6 +16,7 @@ import { SafePipe } from './pipes/safe.pipe';
 import { FileService } from './services/file.service';
 import { BusinessFilesComponent } from './features/business/business-files/business-files.component';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
+import { ApiUrlInterceptor } from './core/interceptors/api-url.interceptor';
 import { AuthGuard } from './core/guards/auth.guard';
 import { TestPublicComponent } from './components/test-public/test-public.component';
 
@@ -35,8 +36,7 @@ import { TestPublicComponent } from './components/test-public/test-public.compon
     CommonModule,
     HttpClientModule,
     RouterModule.forRoot([
-      { path: '', component: HomeComponent },
-      { 
+      { path: '', component: HomeComponent },      { 
         path: 'dashboard/admin', 
         component: DashboardAdminComponent,
         canActivate: [AuthGuard],
@@ -45,6 +45,10 @@ import { TestPublicComponent } from './components/test-public/test-public.compon
           {
             path: 'configuracion',
             loadChildren: () => import('./features/dashboard/admin/configuracion/configuracion.module').then(m => m.ConfiguracionModule)
+          },
+          {
+            path: 'empresas',
+            loadChildren: () => import('./features/dashboard/admin/empresas/empresas.module').then(m => m.EmpresasModule)
           }
         ]
       },
@@ -70,9 +74,10 @@ import { TestPublicComponent } from './components/test-public/test-public.compon
     NgbDropdownModule,
     NgbModalModule,
     SharedModule
-  ],
-  providers: [
+  ],  providers: [
     FileService,
+    // El orden es importante: primero corregir URLs, luego manejo de autenticación
+    { provide: HTTP_INTERCEPTORS, useClass: ApiUrlInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
   ],
   bootstrap: [AppComponent]

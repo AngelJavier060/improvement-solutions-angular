@@ -1,16 +1,17 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
 import { Etnia } from '../models/etnia.model';
+import { ApiUrlService } from '../core/services/api-url.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EtniaService {
-  private apiUrl = `${environment.apiUrl}/api/v1/public/etnias`;
+  private apiUrl: string;
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private apiUrlService: ApiUrlService) {
+    this.apiUrl = this.apiUrlService.getUrl('/public/etnias');
     console.log('URL del servicio de etnias (estandarizada):', this.apiUrl);
   }
 

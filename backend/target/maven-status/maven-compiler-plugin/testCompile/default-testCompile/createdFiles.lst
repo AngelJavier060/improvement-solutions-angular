@@ -1,0 +1,3 @@
+com\improvementsolutions\storage\FileSystemStorageServiceTest.class
+com\improvementsolutions\controller\FileControllerIntegrationTest.class
+com\improvementsolutions\storage\FileUrlHelperTest.class

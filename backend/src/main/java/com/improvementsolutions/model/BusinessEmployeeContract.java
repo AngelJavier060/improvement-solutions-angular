@@ -1,94 +1,77 @@
 package com.improvementsolutions.model;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
-/**
- * Entidad que representa un contrato de empleado en una empresa
- */
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
+import org.hibernate.annotations.Filter;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 @Entity
 @Table(name = "business_employee_contracts")
-@SQLDelete(sql = "UPDATE business_employee_contracts SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
-@Where(clause = "deleted_at IS NULL")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
+@EqualsAndHashCode(exclude = {"businessEmployee"})
+@ToString(exclude = {"businessEmployee"})
+@SQLDelete(sql = "UPDATE business_employee_contracts SET active = false WHERE id = ?")
+@FilterDef(name = "deletedBusinessEmployeeContractFilter", parameters = @ParamDef(name = "isDeleted", type = boolean.class))
+@Filter(name = "deletedBusinessEmployeeContractFilter", condition = "active = :isDeleted")
 public class BusinessEmployeeContract {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "business_employee_id", nullable = false)
-    @ToString.Exclude
+    @ManyToOne
+    @JoinColumn(name = "id_business_employee")
     private BusinessEmployee businessEmployee;
 
-    @Column(name = "type_contract_id")
+    private String type;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+    private Double salary;
+    private String description;
+    private boolean active;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private Long typeContractId;
-
-    @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
-
-    @Column(name = "end_date")
-    private LocalDate endDate;
-
-    private BigDecimal salary;
-
-    @Column(name = "working_hours")
     private String workingHours;
-
-    @Column(name = "contract_file")
     private String contractFile;
-
+    private boolean isCurrent;
     private String status;
 
-    @Column(name = "is_current")
-    private boolean isCurrent;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
-
-    // Relación uno a muchos con archivos del contrato
-    @OneToMany(mappedBy = "businessEmployeeContract", cascade = CascadeType.ALL)
-    @ToString.Exclude  // Evitar ciclos infinitos en toString()
-    private Set<BusinessEmployeeContractFile> files = new HashSet<>();
-
-    // Métodos para manejar las fechas automáticamente
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+    public Long getTypeContractId() {
+        return typeContractId;
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+    public void setTypeContractId(Long typeContractId) {
+        this.typeContractId = typeContractId;
     }
 
-    // Método para manejar la relación bidireccional con BusinessEmployee
-    public void setBusinessEmployee(BusinessEmployee employee) {
-        this.businessEmployee = employee;
-        if (employee != null && !employee.getContracts().contains(this)) {
-            employee.getContracts().add(this);
-        }
+    public String getWorkingHours() {
+        return workingHours;
+    }
+
+    public void setWorkingHours(String workingHours) {
+        this.workingHours = workingHours;
+    }
+
+    public String getContractFile() {
+        return contractFile;
+    }
+
+    public void setContractFile(String contractFile) {
+        this.contractFile = contractFile;
     }
 
     public boolean isCurrent() {

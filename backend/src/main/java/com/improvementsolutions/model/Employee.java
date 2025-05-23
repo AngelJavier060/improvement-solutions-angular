@@ -35,6 +35,6 @@ public class Employee {
     private LocalDateTime updatedAt;
 
     // Relación uno a muchos con BusinessEmployee
-    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BusinessEmployee> businessEmployees = new HashSet<>();
 }

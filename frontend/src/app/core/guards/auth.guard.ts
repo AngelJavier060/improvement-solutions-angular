@@ -17,8 +17,11 @@ export class AuthGuard implements CanActivate {
     
     // Verificar si el usuario está autenticado
     if (!this.authService.isLoggedIn()) {
-      console.log('Usuario no autenticado');
-      this.router.navigate(['/auth/login'], { queryParams: { returnUrl: state.url }});
+      console.log('Usuario no autenticado - Redirigiendo a login');
+      this.router.navigate(['/auth/login'], { 
+        queryParams: { returnUrl: state.url },
+        replaceUrl: true 
+      });
       return false;
     }
     
@@ -32,9 +35,9 @@ export class AuthGuard implements CanActivate {
         console.log('Usuario no tiene el rol requerido');
         // Redirigir según el rol del usuario
         if (this.authService.hasRole('ROLE_ADMIN')) {
-          this.router.navigate(['/dashboard/admin']);
+          this.router.navigate(['/dashboard/admin'], { replaceUrl: true });
         } else {
-          this.router.navigate(['/dashboard/usuario']);
+          this.router.navigate(['/dashboard/usuario'], { replaceUrl: true });
         }
         return false;
       }

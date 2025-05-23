@@ -1,16 +1,17 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
 import { EstadoCivil } from '../models/estado-civil.model';
+import { ApiUrlService } from '../core/services/api-url.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class EstadoCivilService {  // URL estandarizada usando environment.apiUrl
-  private apiUrl = `${environment.apiUrl}/api/v1/public/estado-civil`;
+export class EstadoCivilService {  // URL estandarizada usando ApiUrlService
+  private apiUrl: string;
 
-  constructor(private http: HttpClient) { 
+  constructor(private http: HttpClient, private apiUrlService: ApiUrlService) { 
+    this.apiUrl = this.apiUrlService.getUrl('/public/estado-civil');
     console.log('URL del servicio de estado civil (estandarizada):', this.apiUrl);
   }
 

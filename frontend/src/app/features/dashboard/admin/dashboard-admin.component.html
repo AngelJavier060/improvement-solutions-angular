@@ -64,7 +64,7 @@
       <router-outlet></router-outlet>
 
       <!-- Contenido de bienvenida (se muestra solo en la ruta raíz) -->
-      <div class="welcome-content" *ngIf="isRootRoute">
+      <div class="welcome-content" *ngIf="isRootRoute && !router.url.includes('/empresas')">
         <div class="dashboard-welcome bg-light py-5 text-center">
           <div class="container">
             <div class="row justify-content-center">

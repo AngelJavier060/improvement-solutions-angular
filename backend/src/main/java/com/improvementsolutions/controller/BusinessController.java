@@ -1,6 +1,6 @@
 package com.improvementsolutions.controller;
 
-import com.improvementsolutions.model.Business;
+import com.improvementsolutions.model.*;
 import com.improvementsolutions.service.BusinessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -8,7 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/businesses") // IMPORTANTE: No incluir /api/v1 porque ya está configurado en server.servlet.context-path
@@ -16,6 +20,69 @@ import java.util.List;
 public class BusinessController {
 
     private final BusinessService businessService;
+    
+    // Endpoints para el administrador
+    @GetMapping("/admin/dashboard")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> getDashboardData() {
+        Map<String, Object> dashboard = new HashMap<>();
+        dashboard.put("totalBusinesses", businessService.countActiveBusinesses());
+        dashboard.put("recentBusinesses", businessService.findByRegistrationDateRange(
+            LocalDateTime.now().minusDays(30), LocalDateTime.now()));
+        dashboard.put("activeBusinesses", businessService.findAllActiveBusinesses());
+        return ResponseEntity.ok(dashboard);
+    }
+    
+    @GetMapping("/admin/search")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<Business>> searchBusinesses(@RequestParam String term) {
+        return ResponseEntity.ok(businessService.searchBusinesses(term));
+    }
+    
+    @PutMapping("/admin/{businessId}/toggle-status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> toggleBusinessStatus(@PathVariable Long businessId) {
+        businessService.toggleBusinessStatus(businessId);
+        return ResponseEntity.ok().build();
+    }
+    
+    @PutMapping("/admin/{businessId}/configurations")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Business> updateBusinessConfigurations(
+            @PathVariable Long businessId,
+            @RequestBody Map<String, Object> configurations) {
+        
+        Business business = businessService.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        try {
+            @SuppressWarnings("unchecked")
+            Set<Department> departments = configurations.get("departments") != null ? 
+                (Set<Department>) configurations.get("departments") : 
+                business.getDepartments();
+            
+            @SuppressWarnings("unchecked")
+            Set<Iess> iessItems = configurations.get("iessItems") != null ? 
+                (Set<Iess>) configurations.get("iessItems") : 
+                business.getIessItems();
+            
+            @SuppressWarnings("unchecked")
+            Set<Position> positions = configurations.get("positions") != null ? 
+                (Set<Position>) configurations.get("positions") : 
+                business.getPositions();
+            
+            Business updatedBusiness = businessService.updateBusinessConfigurations(
+                businessId, 
+                departments, 
+                iessItems, 
+                positions
+            );
+            
+            return ResponseEntity.ok(updatedBusiness);
+        } catch (ClassCastException e) {
+            throw new RuntimeException("Error al procesar las configuraciones: " + e.getMessage());
+        }
+    }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")

@@ -1,22 +1,27 @@
 package com.improvementsolutions.service;
 
-import com.improvementsolutions.dto.auth.LoginRequestDto;
-import com.improvementsolutions.dto.auth.LoginResponseDto;
-import com.improvementsolutions.dto.auth.PasswordChangeDto;
-import com.improvementsolutions.dto.auth.RegisterRequestDto;
-import com.improvementsolutions.dto.auth.PasswordResetDto;
+import com.improvementsolutions.dto.auth.*;
 import com.improvementsolutions.dto.auth.LoginResponseDto.UserInfoDto;
+import com.improvementsolutions.exception.UserInactiveException;
+import com.improvementsolutions.exception.UserNotFoundException;
 import com.improvementsolutions.model.PasswordResetToken;
 import com.improvementsolutions.model.Role;
 import com.improvementsolutions.model.User;
+import com.improvementsolutions.model.UserSession;
 import com.improvementsolutions.repository.PasswordResetTokenRepository;
 import com.improvementsolutions.repository.RoleRepository;
 import com.improvementsolutions.repository.UserRepository;
+import com.improvementsolutions.repository.UserSessionRepository;
 import com.improvementsolutions.security.JwtTokenProvider;
 import com.improvementsolutions.security.UserDetailsImpl;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -24,17 +29,18 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
-
+    
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+    private static final int EXPIRATION_TIME = 24;
+    
     @Autowired
     private UserRepository userRepository;
     
@@ -43,6 +49,9 @@ public class AuthService {
     
     @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
+    
+    @Autowired
+    private UserSessionRepository userSessionRepository;
     
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -59,249 +68,385 @@ public class AuthService {
     @Value("${app.frontend-url:http://localhost:4200}")
     private String frontendUrl;
     
-    // Tiempo de expiración del token de restablecimiento (en horas)
-    private static final int EXPIRATION_TIME = 24;
+    @Value("${app.session.max-per-user:5}")
+    private int maxSessionsPerUser;
     
-    /**
-     * Autentica un usuario y genera un token JWT
-     */
-    public LoginResponseDto authenticateUser(LoginRequestDto loginRequest) {
-        // Autenticar contra Spring Security
+    @Value("${app.session.expiration-hours:24}")
+    private int sessionExpirationHours;
+
+    private User findUserByEmailOrUsername(String email, String username) {
+        User user = null;
+        
+        // Primero intentar con email si se proporciona
+        if (StringUtils.hasText(email)) {
+            user = userRepository.findByEmail(email).orElse(null);
+            if (user != null) {
+                logger.debug("Usuario encontrado por email: {}", email);
+                return user;
+            } else {
+                logger.debug("No se encontró usuario con email: {}", email);
+            }
+        }
+        
+        // Si no se encontró por email o no se proporcionó, intentar con username
+        if (StringUtils.hasText(username)) {
+            user = userRepository.findByUsername(username).orElse(null);
+            if (user != null) {
+                logger.debug("Usuario encontrado por username: {}", username);
+                return user;
+            } else {
+                logger.debug("No se encontró usuario con username: {}", username);
+            }
+        }
+
+        // Si llegamos aquí, no se encontró el usuario
+        String mensaje = String.format("Usuario no encontrado. Email: %s, Username: %s", 
+            email != null ? email : "no proporcionado",
+            username != null ? username : "no proporcionado");
+        logger.error(mensaje);
+        throw new UserNotFoundException(mensaje);
+    }    @Transactional
+    public LoginResponseDto authenticateUser(LoginRequestDto loginRequest, String deviceInfo, String ipAddress) {
+        try {
+            logger.debug("Iniciando autenticación para request: {}", loginRequest);
+            
+            // Validar que se proporcione al menos un identificador
+            String username = loginRequest.getUsername();
+            String email = loginRequest.getEmail();
+            String password = loginRequest.getPassword();
+
+            if (!StringUtils.hasText(password)) {
+                logger.error("Intento de login sin contraseña");
+                throw new BadCredentialsException("La contraseña no puede estar vacía");
+            }
+
+            if (!StringUtils.hasText(username) && !StringUtils.hasText(email)) {
+                logger.error("Intento de login sin identificador (ni username ni email)");
+                throw new BadCredentialsException("Debe proporcionar un nombre de usuario o email");
+            }
+
+            // Buscar usuario por email o username
+            User user = findUserByEmailOrUsername(email, username);
+            logger.debug("Usuario encontrado: {}", user.getUsername());
+
+            // Verificar estado del usuario
+            validateUserStatus(user);
+
+            // Intentar autenticar
+            Authentication authentication = authenticate(user.getUsername(), password);
+            
+            // Generar token JWT
+            String jwt = jwtTokenProvider.generateToken(authentication);
+            
+            // Crear sesión de usuario
+            createUserSession(user, jwt, deviceInfo, ipAddress);
+            
+            logger.debug("Autenticación exitosa para usuario: {}", user.getUsername());
+            
+            // Construir y devolver respuesta
+            return buildLoginResponse(authentication, jwt);
+
+        } catch (BadCredentialsException e) {
+            logger.error("Error de credenciales: {}", e.getMessage());
+            throw e;
+        } catch (UserNotFoundException | UserInactiveException e) {
+            logger.error("Error de usuario: {}", e.getMessage());
+            throw e;        } catch (Exception e) {
+            logger.error("Error inesperado en autenticación: {}", e.getMessage(), e);
+            if (e.getMessage() != null && e.getMessage().contains("update/delete")) {
+                logger.error("Error al actualizar la base de datos durante la autenticación", e);
+                throw new RuntimeException("Error al procesar el inicio de sesión. Por favor, inténtelo de nuevo.");
+            }
+            throw new RuntimeException("Error en autenticación: " + e.getMessage());
+        }
+    }
+
+    private void validateUserStatus(User user) {
+        if (user.getActive() != null && !user.getActive()) {
+            throw new UserInactiveException("Usuario inactivo. Por favor, contacte al administrador.");
+        }
+    }
+
+    private Authentication authenticate(String username, String password) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
-                        loginRequest.getPassword()
-                )
+            new UsernamePasswordAuthenticationToken(username, password)
         );
-        
-        // Establecer la autenticación en el contexto de seguridad
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        
-        // Generar el token JWT
-        String jwt = jwtTokenProvider.generateToken(authentication);
-        
-        // Obtener los detalles del usuario autenticado
+        return authentication;
+    }    private LoginResponseDto buildLoginResponse(Authentication authentication, String jwt) {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         
-        // Actualizar la fecha de último login
+        // Actualizar último acceso
         updateLastLogin(userDetails.getUsername());
         
-        // Crear y devolver la respuesta
+        // Construir respuesta
         LoginResponseDto response = new LoginResponseDto();
         response.setToken(jwt);
-        response.setExpiresIn(86400L); // 24 horas en segundos
+        response.setTokenType("Bearer");
+        response.setExpiresIn(86400L);
         
-        // Configurar los detalles del usuario
         UserInfoDto userInfo = new UserInfoDto();
         userInfo.setId(userDetails.getId());
         userInfo.setUsername(userDetails.getUsername());
         userInfo.setEmail(userDetails.getEmail());
         userInfo.setName(userDetails.getName());
         
-        // Obtener los roles del usuario
         List<String> roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
-        userInfo.setRoles(roles);
+            .map(GrantedAuthority::getAuthority)
+            .collect(Collectors.toList());
         
+        userInfo.setRoles(roles);
         response.setUserDetail(userInfo);
         
         return response;
+    }    @Transactional
+    public void updateLastLogin(String username) {
+        try {
+            User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado"));
+            user.setUpdatedAt(LocalDateTime.now());
+            userRepository.save(user);
+            logger.debug("Actualizado último acceso para usuario: {}", username);
+        } catch (Exception e) {
+            logger.error("Error al actualizar último acceso para usuario {}: {}", username, e.getMessage());
+            throw new RuntimeException("Error al actualizar el último acceso");
+        }
     }
     
-    /**
-     * Registra un nuevo usuario en el sistema
-     */
-    @Transactional
-    public void registerUser(RegisterRequestDto registerRequest) {
-        // Verificar si el usuario ya existe
+    public LoginResponseDto handleRegistration(RegisterRequestDto registerRequest) {
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            throw new RuntimeException("Error: El nombre de usuario ya está en uso");
+            throw new RuntimeException("El nombre de usuario ya está en uso");
         }
-        
-        // Verificar si el email ya existe
+
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            throw new RuntimeException("Error: El email ya está en uso");
+            throw new RuntimeException("El email ya está registrado");
         }
-        
-        // Crear el nuevo usuario
+
         User user = new User();
         user.setUsername(registerRequest.getUsername());
         user.setEmail(registerRequest.getEmail());
         user.setName(registerRequest.getName());
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
         user.setActive(true);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
-        
-        // Asignar roles
-        Set<String> strRoles = registerRequest.getRoles();
+
         Set<Role> roles = new HashSet<>();
-        
-        if (strRoles == null || strRoles.isEmpty()) {
-            // Si no se especifican roles, asignar el rol de usuario por defecto
-            Role userRole = roleRepository.findByName("ROLE_USER")
-                    .orElseThrow(() -> new RuntimeException("Error: Rol no encontrado"));
-            roles.add(userRole);
-        } else {
-            // Asignar los roles especificados
-            strRoles.forEach(roleName -> {
-                switch (roleName.toUpperCase()) {
-                    case "ADMIN":
-                        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                                .orElseThrow(() -> new RuntimeException("Error: Rol de administrador no encontrado"));
-                        roles.add(adminRole);
-                        break;
-                    default:
-                        Role userRole = roleRepository.findByName("ROLE_USER")
-                                .orElseThrow(() -> new RuntimeException("Error: Rol de usuario no encontrado"));
-                        roles.add(userRole);
-                        break;
-                }
+        if (registerRequest.getRoles() != null && !registerRequest.getRoles().isEmpty()) {
+            registerRequest.getRoles().forEach(roleName -> {
+                Role role = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new RuntimeException("Error: Rol no encontrado."));
+                roles.add(role);
             });
+        } else {
+            Role defaultRole = roleRepository.findByName("ROLE_USER")
+                .orElseThrow(() -> new RuntimeException("Error: Rol por defecto no encontrado."));
+            roles.add(defaultRole);
+        }
+        user.setRoles(roles);
+
+        userRepository.save(user);
+        
+        Authentication authentication = authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(registerRequest.getUsername(), registerRequest.getPassword())
+        );
+        
+        String jwt = jwtTokenProvider.generateToken(authentication);
+        
+        return handleLogin(authentication, jwt);
+    }
+
+    public LoginResponseDto handleLogin(Authentication authentication, String jwt) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        List<String> roles = userDetails.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .collect(Collectors.toList());
+        
+        LoginResponseDto response = new LoginResponseDto();
+        response.setToken(jwt);
+        response.setTokenType("Bearer");
+        response.setExpiresIn(86400L);
+        
+        UserInfoDto userInfo = new UserInfoDto();
+        userInfo.setId(userDetails.getId());
+        userInfo.setUsername(userDetails.getUsername());
+        userInfo.setEmail(userDetails.getEmail());
+        userInfo.setName(userDetails.getName());
+        userInfo.setRoles(roles);
+        
+        response.setUserDetail(userInfo);
+        return response;
+    }
+
+    public LoginResponseDto handleTokenRefresh(String refreshToken) {
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new RuntimeException("Refresh token inválido o expirado");
+        }
+
+        String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+        UserDetailsImpl userDetails = UserDetailsImpl.build(user);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+            userDetails, null, userDetails.getAuthorities()
+        );
+            
+        String jwt = jwtTokenProvider.generateToken(authentication);
+        
+        return handleLogin(authentication, jwt);
+    }
+
+    public boolean handlePasswordResetRequest(String email) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        String token = UUID.randomUUID().toString();
+        createPasswordResetTokenForUser(user, token);
+        emailService.sendPasswordResetEmail(user.getEmail(), token, frontendUrl);
+        
+        return true;
+    }
+
+    public boolean handlePasswordReset(PasswordResetDto resetDto) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(resetDto.getToken())
+            .orElseThrow(() -> new RuntimeException("Token inválido"));
+
+        if (resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token expirado");
+        }
+
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(resetDto.getNewPassword()));
+        userRepository.save(user);
+        passwordResetTokenRepository.delete(resetToken);
+        
+        return true;
+    }
+
+    public boolean handlePasswordChange(String username, PasswordChangeDto changeDto) {
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (!passwordEncoder.matches(changeDto.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("Contraseña actual incorrecta");
+        }
+
+        user.setPassword(passwordEncoder.encode(changeDto.getNewPassword()));
+        userRepository.save(user);
+        
+        return true;
+    }
+
+    private void createPasswordResetTokenForUser(User user, String token) {
+        PasswordResetToken myToken = new PasswordResetToken();
+        myToken.setUser(user);
+        myToken.setToken(token);
+        myToken.setExpiryDate(LocalDateTime.now().plusHours(EXPIRATION_TIME));
+        passwordResetTokenRepository.save(myToken);
+    }
+
+    @Transactional
+    public UserSession createUserSession(User user, String token, String deviceInfo, String ipAddress) {
+        // Limpiar sesiones expiradas
+        userSessionRepository.deactivateExpiredSessions(LocalDateTime.now());
+        
+        // Obtener sesiones activas del usuario
+        List<UserSession> activeSessions = userSessionRepository.findActiveSessionsByUserId(user.getId());
+        
+        // Si excede el límite, desactivar la sesión más antigua
+        if (activeSessions.size() >= maxSessionsPerUser) {
+            activeSessions.stream()
+                .min(Comparator.comparing(UserSession::getLastActivity))
+                .ifPresent(oldestSession -> {
+                    oldestSession.setActive(false);
+                    userSessionRepository.save(oldestSession);
+                });
         }
         
-        user.setRoles(roles);
-        userRepository.save(user);
+        // Crear nueva sesión
+        UserSession session = new UserSession();
+        session.setUser(user);
+        session.setToken(token);
+        session.setDeviceInfo(deviceInfo);
+        session.setIpAddress(ipAddress);
+        session.setLastActivity(LocalDateTime.now());
+        session.setExpiresAt(LocalDateTime.now().plusHours(sessionExpirationHours));
+        
+        return userSessionRepository.save(session);
     }
     
-    /**
-     * Actualiza la fecha de último acceso de un usuario
-     */
     @Transactional
-    public void updateLastLogin(String username) {
-        userRepository.findByUsername(username).ifPresent(user -> {
-            user.setLastLogin(LocalDateTime.now());
-            userRepository.save(user);
+    public void updateSessionActivity(String token) {
+        userSessionRepository.updateLastActivity(token, LocalDateTime.now());
+    }
+    
+    @Transactional
+    public void deactivateSession(String token) {
+        userSessionRepository.findByToken(token).ifPresent(session -> {
+            session.setActive(false);
+            userSessionRepository.save(session);
         });
     }
     
-    /**
-     * Permite a un usuario cambiar su contraseña
-     * @param username Nombre de usuario
-     * @param passwordChangeDto Datos para el cambio de contraseña
-     * @return true si el cambio fue exitoso, false en caso contrario
-     */
     @Transactional
-    public boolean changePassword(String username, PasswordChangeDto passwordChangeDto) {
-        // Verificar que las contraseñas nuevas coincidan
-        if (!passwordChangeDto.getNewPassword().equals(passwordChangeDto.getConfirmPassword())) {
-            throw new RuntimeException("Las contraseñas nuevas no coinciden");
-        }
-        
-        // Obtener el usuario
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        
-        // Verificar la contraseña actual
-        if (!passwordEncoder.matches(passwordChangeDto.getCurrentPassword(), user.getPassword())) {
-            throw new RuntimeException("La contraseña actual es incorrecta");
-        }
-        
-        // Verificar que la nueva contraseña sea diferente de la actual
-        if (passwordEncoder.matches(passwordChangeDto.getNewPassword(), user.getPassword())) {
-            throw new RuntimeException("La nueva contraseña debe ser diferente a la actual");
-        }
-        
-        // Actualizar la contraseña
-        user.setPassword(passwordEncoder.encode(passwordChangeDto.getNewPassword()));
-        user.setUpdatedAt(LocalDateTime.now());
-        userRepository.save(user);
-        
-        return true;
+    public void deactivateAllUserSessions(Long userId) {
+        List<UserSession> sessions = userSessionRepository.findByUserId(userId);
+        sessions.forEach(session -> {
+            session.setActive(false);
+            userSessionRepository.save(session);
+        });
     }
     
-    /**
-     * Crea un token para restablecer la contraseña y lo envía por correo
-     * @param email Correo electrónico del usuario
-     * @return Token generado (solo para desarrollo)
-     */
     @Transactional
-    public String createPasswordResetToken(String email) {
-        // Buscar el usuario por email
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("No existe un usuario con ese correo electrónico"));
-        
-        // Eliminar tokens anteriores para este usuario
-        passwordResetTokenRepository.deleteByUser(user);
-        
-        // Generar un token único UUID
-        String token = UUID.randomUUID().toString();
-        
-        // Crear y guardar el token en la base de datos
-        PasswordResetToken passwordResetToken = new PasswordResetToken();
-        passwordResetToken.setUser(user);
-        passwordResetToken.setToken(token);
-        passwordResetToken.setCreatedAt(LocalDateTime.now());
-        passwordResetToken.setExpiryDate(LocalDateTime.now().plusHours(EXPIRATION_TIME));
-        passwordResetTokenRepository.save(passwordResetToken);
-        
-        // Enviar correo electrónico con el enlace para restablecer la contraseña
-        try {
-            emailService.sendPasswordResetEmail(email, token, frontendUrl);
-        } catch (Exception e) {
-            // Registrar el error pero continuar, para no bloquear el proceso
-            System.err.println("Error al enviar correo electrónico: " + e.getMessage());
+    public void validateSession(String token) {
+        UserSession session = userSessionRepository.findByToken(token)
+            .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
+            
+        if (!session.isActive()) {
+            throw new RuntimeException("Sesión inactiva");
         }
         
-        // Solo para desarrollo, retornar el token
-        return token;
+        if (LocalDateTime.now().isAfter(session.getExpiresAt())) {
+            session.setActive(false);
+            userSessionRepository.save(session);
+            throw new RuntimeException("Sesión expirada");
+        }
+        
+        updateSessionActivity(token);
+    }
+
+    @Transactional
+    public List<UserSession> getActiveSessions(Long userId) {
+        return userSessionRepository.findActiveSessionsByUserId(userId);
     }
     
-    /**
-     * Valida un token de restablecimiento y cambia la contraseña si es válido
-     * @param passwordResetDto Datos para el restablecimiento
-     * @return true si se cambió la contraseña, false en caso contrario
-     */
     @Transactional
-    public boolean resetPassword(PasswordResetDto passwordResetDto) {
-        // Verificar que las contraseñas nuevas coincidan
-        if (!passwordResetDto.getNewPassword().equals(passwordResetDto.getConfirmPassword())) {
-            throw new RuntimeException("Las contraseñas nuevas no coinciden");
+    public void revokeSession(Long userId, Long sessionId) {
+        UserSession session = userSessionRepository.findById(sessionId)
+            .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
+            
+        if (!session.getUser().getId().equals(userId)) {
+            throw new RuntimeException("No autorizado para revocar esta sesión");
         }
         
-        // Buscar el token en la base de datos
-        PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByToken(passwordResetDto.getToken())
-                .orElseThrow(() -> new RuntimeException("Token no válido"));
-        
-        // Verificar que el token no haya expirado
-        if (passwordResetToken.isExpired()) {
-            throw new RuntimeException("El token ha expirado");
-        }
-        
-        // Verificar que el token no haya sido utilizado
-        if (passwordResetToken.isUsed()) {
-            throw new RuntimeException("El token ya ha sido utilizado");
-        }
-        
-        // Obtener el usuario
-        User user = passwordResetToken.getUser();
-        
-        // Verificar que la nueva contraseña sea diferente de la actual
-        if (passwordEncoder.matches(passwordResetDto.getNewPassword(), user.getPassword())) {
-            throw new RuntimeException("La nueva contraseña debe ser diferente a la actual");
-        }
-        
-        // Actualizar la contraseña
-        user.setPassword(passwordEncoder.encode(passwordResetDto.getNewPassword()));
-        user.setUpdatedAt(LocalDateTime.now());
-        userRepository.save(user);
-        
-        // Marcar el token como utilizado
-        passwordResetToken.setUsed(true);
-        passwordResetTokenRepository.save(passwordResetToken);
-        
-        return true;
+        session.setActive(false);
+        userSessionRepository.save(session);
     }
     
-    /**
-     * Valida si un token de restablecimiento es válido
-     * @param token Token a validar
-     * @return true si es válido, false en caso contrario
-     */
-    public boolean validatePasswordResetToken(String token) {
-        return passwordResetTokenRepository.findByToken(token)
-                .map(resetToken -> !resetToken.isExpired() && !resetToken.isUsed())
-                .orElse(false);
+    @Transactional
+    public void revokeOtherSessions(Long userId, String currentToken) {
+        UserSession currentSession = userSessionRepository.findByToken(currentToken)
+            .orElseThrow(() -> new RuntimeException("Sesión actual no encontrada"));
+            
+        if (!currentSession.getUser().getId().equals(userId)) {
+            throw new RuntimeException("No autorizado para revocar sesiones");
+        }
+        
+        userSessionRepository.deactivateOtherSessions(userId, currentSession.getId());
+    }
+
+    @Scheduled(fixedRate = 3600000) // Ejecutar cada hora
+    @Transactional
+    public void cleanupExpiredSessions() {
+        userSessionRepository.deactivateExpiredSessions(LocalDateTime.now());
     }
 }

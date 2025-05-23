@@ -1,0 +1,145 @@
+<div class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header pb-0">
+          <div class="d-flex justify-content-between">
+            <h4 class="mb-0">Editar Empresa</h4>
+          </div>
+          <p class="text-sm mb-0">
+            Modifique los datos de la empresa
+          </p>
+        </div>
+        <div class="card-body">
+          <div *ngIf="loading && !error" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+          </div>
+          <div *ngIf="error" class="alert alert-danger">
+            {{ error }}
+          </div>
+          <form *ngIf="!loading" [formGroup]="empresaForm" (ngSubmit)="onSubmit()">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="form-control-label">RUC</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    formControlName="ruc"
+                    [ngClass]="{ 'is-invalid': submitted && f['ruc'].errors }"
+                  >
+                  <div *ngIf="submitted && f['ruc'].errors" class="invalid-feedback">       
+                    <div *ngIf="f['ruc'].errors?.['required']">El RUC es requerido</div>
+                    <div *ngIf="f['ruc'].errors?.['pattern']">El RUC debe tener 13 dígitos numéricos</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="form-control-label">Nombre de la Empresa</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    formControlName="name"
+                    [ngClass]="{ 'is-invalid': submitted && f['name'].errors }"
+                  >
+                  <div *ngIf="submitted && f['name'].errors" class="invalid-feedback">      
+                    <div *ngIf="f['name'].errors?.['required']">El nombre es requerido</div>     
+                    <div *ngIf="f['name'].errors?.['maxlength']">El nombre no puede exceder 100 caracteres</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="form-control-label">Nombre Corto</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    formControlName="nameShort"
+                    [ngClass]="{ 'is-invalid': submitted && f['nameShort'].errors }"
+                  >
+                  <div *ngIf="submitted && f['nameShort'].errors" class="invalid-feedback"> 
+                    <div *ngIf="f['nameShort'].errors?.['maxlength']">El nombre corto no puede exceder 50 caracteres</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="form-control-label">Representante Legal</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    formControlName="representativeLegal"
+                    [ngClass]="{ 'is-invalid': submitted && f['representativeLegal'].errors }"
+                  >
+                  <div *ngIf="submitted && f['representativeLegal'].errors" class="invalid-feedback">
+                    <div *ngIf="f['representativeLegal'].errors?.['maxlength']">El representante legal no puede exceder 100 caracteres</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="form-control-label">Email</label>
+                  <input 
+                    type="email" 
+                    class="form-control" 
+                    formControlName="email"
+                    [ngClass]="{ 'is-invalid': submitted && f['email'].errors }"
+                  >
+                  <div *ngIf="submitted && f['email'].errors" class="invalid-feedback">     
+                    <div *ngIf="f['email'].errors?.['email']">Email inválido</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="form-control-label">Teléfono</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    formControlName="phone"
+                    [ngClass]="{ 'is-invalid': submitted && f['phone'].errors }"
+                  >
+                  <div *ngIf="submitted && f['phone'].errors" class="invalid-feedback">    
+                    <div *ngIf="f['phone'].errors?.['maxlength']">El teléfono no puede exceder 20 caracteres</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-12">
+                <div class="form-group">
+                  <label class="form-control-label">Dirección</label>
+                  <textarea 
+                    class="form-control" 
+                    formControlName="address"
+                    [ngClass]="{ 'is-invalid': submitted && f['address'].errors }"
+                    rows="3"
+                  ></textarea>
+                  <div *ngIf="submitted && f['address'].errors" class="invalid-feedback">  
+                    <div *ngIf="f['address'].errors?.['maxlength']">La dirección no puede exceder 200 caracteres</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-3">
+              <div class="col-md-12 text-end">
+                <button type="button" class="btn btn-light me-2" (click)="cancelar()">Cancelar</button>
+                <button type="submit" class="btn btn-primary" [disabled]="loading">
+                  <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+                  Actualizar
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

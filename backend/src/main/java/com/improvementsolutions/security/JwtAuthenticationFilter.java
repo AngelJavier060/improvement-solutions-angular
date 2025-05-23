@@ -8,10 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import com.improvementsolutions.service.AuthService;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -19,63 +22,73 @@ import java.io.IOException;
  * Filtro que intercepta las solicitudes HTTP y valida el token JWT
  */
 @Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends org.springframework.web.filter.OncePerRequestFilter {
     
-    @Autowired
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);    @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
     
     @Autowired
-    private UserDetailsServiceImpl userDetailsService;    @Override
+    private AuthService authService;
+
+    @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getServletPath();
-        // Omitir completamente el filtro para rutas públicas
-        return path.contains("/api/v1/public");
-    }
-    
-    @Override
+        logger.debug("Verificando filtro para ruta: {}", path);
+
+        // Permitir rutas públicas
+        return path.startsWith("/api/auth/") || 
+               path.startsWith("/api/public/") || 
+               path.equals("/error") ||
+               request.getMethod().equals("OPTIONS");
+    }    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        // Esta verificación es redundante ya que shouldNotFilter ya lo controla
-        // pero la dejamos para mayor seguridad
-        String requestPath = request.getServletPath();
-        if (requestPath.contains("/api/v1/public")) {
-            logger.info("Ruta pública detectada: " + requestPath + " - Omitiendo autenticación");
-            filterChain.doFilter(request, response);
-            return;
-        }
-        
         try {
             String jwt = parseJwt(request);
-              if (jwt != null && jwtTokenProvider.validateToken(jwt)) {
-                String username = jwtTokenProvider.getUsernameFromJWT(jwt);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities());
+            logger.debug("Token JWT encontrado: {}", jwt != null ? "Sí" : "No");
+
+            if (jwt != null && jwtTokenProvider.validateToken(jwt)) {
+                try {
+                    // Validar la sesión activa
+                    authService.validateSession(jwt);
                     
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                
-                // Log para debugging
-                logger.info("Usuario autenticado: " + username);
+                    String username = jwtTokenProvider.getUsernameFromToken(jwt);
+                    logger.debug("Usuario del token: {}", username);
+
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    UsernamePasswordAuthenticationToken authentication = 
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    logger.debug("Usuario autenticado correctamente: {}", username);
+                } catch (RuntimeException e) {
+                    logger.error("Error validando sesión: {}", e.getMessage());
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().write("{\"error\": \"Sesión inválida o expirada\"}");
+                    return;
+                }
             }
         } catch (Exception e) {
-            logger.error("No se pudo configurar la autenticación del usuario: " + e.getMessage());
+            logger.error("Error procesando autenticación JWT: {}", e.getMessage());
+            SecurityContextHolder.clearContext();
         }
-        
+
+        // Asegurar que siempre se continúe con la cadena de filtros
         filterChain.doFilter(request, response);
     }
-    
-    /**
-     * Extrae el token JWT del encabezado de autorización
-     */
+
     private String parseJwt(HttpServletRequest request) {
         String headerAuth = request.getHeader("Authorization");
-        
+        logger.debug("Header de autorización: {}", headerAuth);
+
         if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
             return headerAuth.substring(7);
         }
-        
+
         return null;
     }
 }

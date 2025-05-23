@@ -1,15 +1,18 @@
 package com.improvementsolutions.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class RefreshTokenRequest {
     
-    @NotBlank(message = "El refresh token es obligatorio")
+    @NotBlank(message = "El refresh token no puede estar vacío")
     private String refreshToken;
+    
+    // Getters and Setters
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+    
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
 }

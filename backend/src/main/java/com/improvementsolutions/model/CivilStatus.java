@@ -1,39 +1,25 @@
 package com.improvementsolutions.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import lombok.Data;
 
 @Entity
 @Table(name = "civil_statuses")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class CivilStatus {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
+    
     private String name;
-
     private String description;
-
-    @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    // Relación uno a muchos con BusinessEmployee
-    @OneToMany(mappedBy = "civilStatus")
-    @JsonIgnore // Evita la serialización infinita
-    private Set<BusinessEmployee> businessEmployees = new HashSet<>();
 }

@@ -39,6 +39,17 @@ public class Position {
     @ToString.Exclude // Evitamos referencias circulares
     private Set<Business> businesses = new HashSet<>();
     
+    // Métodos helper para mantener la relación bidireccional
+    public void addBusiness(Business business) {
+        this.businesses.add(business);
+        business.getPositions().add(this);
+    }
+
+    public void removeBusiness(Business business) {
+        this.businesses.remove(business);
+        business.getPositions().remove(this);
+    }
+    
     // Métodos para manejar las fechas automáticamente
     @PrePersist
     protected void onCreate() {

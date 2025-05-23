@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Router, NavigationEnd } from '@angular/router';
+import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
 @Component({
@@ -10,17 +10,21 @@ import { filter } from 'rxjs/operators';
 export class ConfiguracionComponent implements OnInit {
   isChildRouteActive = false;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private route: ActivatedRoute) {
+    console.log('ConfiguracionComponent constructor - Current route:', this.router.url);
+  }
 
   ngOnInit() {
     // Verificamos la ruta inicial
     this.checkActiveChildRoute(this.router.url);
+    console.log('ConfiguracionComponent - Initial route check:', this.router.url, 'Child route active:', this.isChildRouteActive);
     
     // Nos suscribimos a los cambios de ruta
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: any) => {
       this.checkActiveChildRoute(event.url);
+      console.log('ConfiguracionComponent - Route changed:', event.url, 'Child route active:', this.isChildRouteActive);
     });
   }
   
@@ -28,7 +32,7 @@ export class ConfiguracionComponent implements OnInit {
     // Verificamos si estamos en una subruta de configuración
     const basePath = '/dashboard/admin/configuracion';
     this.isChildRouteActive = url !== basePath && url.startsWith(basePath);
-    console.log('ConfiguracionComponent - Ruta secundaria activa:', this.isChildRouteActive);
+    console.log('ConfiguracionComponent - Ruta secundaria activa:', this.isChildRouteActive, 'URL:', url);
   }
 
   // Las categorías de configuración que se mostrarán
@@ -63,13 +67,12 @@ export class ConfiguracionComponent implements OnInit {
       ruta: 'etnias',
       icono: 'fas fa-users',
       proximamente: false
-    },
-    { 
+    },    { 
       nombre: 'Tipo de Documento', 
       descripcion: 'Gestionar los tipos de documentos de identificación', 
       ruta: 'tipo-documento',
       icono: 'fas fa-id-card',
-      proximamente: true
+      proximamente: false
     },
     { 
       nombre: 'Departamentos', 
@@ -100,9 +103,12 @@ export class ConfiguracionComponent implements OnInit {
       proximamente: true
     }
   ];
-
   navegarA(ruta: string): void {
     console.log('Navegando a:', ruta);
-    this.router.navigate(['/dashboard/admin/configuracion', ruta]);
+    console.log('Ruta completa:', '/dashboard/admin/configuracion/' + ruta);
+    // Método corregido para asegurar una navegación adecuada
+    this.router.navigate([ruta], { relativeTo: this.route })
+      .then(success => console.log(`Navegación a ${ruta} ${success ? 'exitosa' : 'fallida'}`))
+      .catch(error => console.error(`Error al navegar a ${ruta}:`, error));
   }
 }

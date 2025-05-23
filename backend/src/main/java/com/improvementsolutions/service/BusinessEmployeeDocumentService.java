@@ -2,8 +2,10 @@ package com.improvementsolutions.service;
 
 import com.improvementsolutions.model.BusinessEmployee;
 import com.improvementsolutions.model.BusinessEmployeeDocument;
+import com.improvementsolutions.model.TypeDocument;
 import com.improvementsolutions.repository.BusinessEmployeeDocumentRepository;
 import com.improvementsolutions.repository.BusinessEmployeeRepository;
+import com.improvementsolutions.repository.TypeDocumentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ public class BusinessEmployeeDocumentService {
 
     private final BusinessEmployeeDocumentRepository documentRepository;
     private final BusinessEmployeeRepository businessEmployeeRepository;
+    private final TypeDocumentRepository typeDocumentRepository;
 
     public List<BusinessEmployeeDocument> findAll() {
         return documentRepository.findAll();
@@ -44,8 +47,12 @@ public class BusinessEmployeeDocumentService {
     public BusinessEmployeeDocument create(BusinessEmployeeDocument document) {
         BusinessEmployee businessEmployee = businessEmployeeRepository.findById(document.getBusinessEmployee().getId())
                 .orElseThrow(() -> new RuntimeException("Empleado de empresa no encontrado"));
+        
+        TypeDocument typeDocument = typeDocumentRepository.findById(document.getTypeDocument().getId())
+                .orElseThrow(() -> new RuntimeException("Tipo de documento no encontrado"));
 
         document.setBusinessEmployee(businessEmployee);
+        document.setTypeDocument(typeDocument);
         document.setStatus("ACTIVO");
         document.setCreatedAt(LocalDateTime.now());
         document.setUpdatedAt(LocalDateTime.now());
@@ -58,7 +65,12 @@ public class BusinessEmployeeDocumentService {
         BusinessEmployeeDocument document = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Documento no encontrado"));
 
-        document.setTypeDocument(documentDetails.getTypeDocument());
+        if (documentDetails.getTypeDocument() != null && documentDetails.getTypeDocument().getId() != null) {
+            TypeDocument typeDocument = typeDocumentRepository.findById(documentDetails.getTypeDocument().getId())
+                    .orElseThrow(() -> new RuntimeException("Tipo de documento no encontrado"));
+            document.setTypeDocument(typeDocument);
+        }
+
         document.setName(documentDetails.getName());
         document.setDescription(documentDetails.getDescription());
 

@@ -37,16 +37,16 @@ class FileControllerIntegrationTest {
     @MockBean
     private FileUrlHelper fileUrlHelper;
     
-    private MockMultipartFile testFile;
-
-    @BeforeEach
+    private MockMultipartFile testFile;    @BeforeEach
     void setUp() {
         testFile = new MockMultipartFile(
             "file", 
             "test-file.txt",
             MediaType.TEXT_PLAIN_VALUE,
             "Test file content".getBytes()
-        );
+        );        // Configure default behavior for fileUrlHelper mocks
+        given(fileUrlHelper.getTemporaryUrl(anyString())).willReturn("http://example.com/temp-url");
+        given(fileUrlHelper.getTemporaryUrl(anyString(), anyInt())).willReturn("http://example.com/temp-url");
     }
 
     @Test
@@ -130,12 +130,29 @@ class FileControllerIntegrationTest {
         String tempUrl = "http://example.com/temp-url";
         
         given(fileUrlHelper.getTemporaryUrl(eq(filePath), anyInt())).willReturn(tempUrl);
-        
-        // Act & Assert
-        mockMvc.perform(get("/api/files/temp/{path}", filePath)
+          // Act & Assert
+        mockMvc.perform(get("/api/files/temp/{*path}", filePath)
                 .param("minutes", "60"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.url").value(tempUrl));
+    }
+
+    @Test
+    void shouldRetrieveFileWithTemporaryToken() throws Exception {
+        // Arrange
+        String token = "valid-jwt-token";
+        String filePath = "testdir/test-file.txt";
+        Resource mockResource = new ClassPathResource("test-file.txt");
+        
+        given(fileUrlHelper.getFilePathFromToken(token)).willReturn(filePath);
+        given(storageService.loadAsResource(filePath)).willReturn(mockResource);
+        
+        // Act & Assert
+        mockMvc.perform(get("/api/files/temp")
+                .param("token", token))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, 
+                        containsString("attachment; filename=\"test-file.txt\"")));
     }
     
     @Test

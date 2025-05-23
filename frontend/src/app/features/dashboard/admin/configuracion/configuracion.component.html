@@ -4,11 +4,10 @@
     <div class="header">
       <h1>Configuración del Sistema</h1>
       <p>Gestione los parámetros básicos del sistema que se utilizarán en otras secciones</p>
-    </div>
-
-    <div class="categorias-grid">
+    </div>    <div class="categorias-grid">
       <a *ngFor="let categoria of categorias" 
-        [routerLink]="categoria.ruta"
+        [routerLink]="[categoria.ruta]"
+        (click)="$event.preventDefault(); !categoria.proximamente && navegarA(categoria.ruta)"
         class="categoria-card"
         [class.disabled]="categoria.proximamente">
         <div class="icon-container">

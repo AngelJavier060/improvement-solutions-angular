@@ -54,4 +54,19 @@ public class TypeDocument {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+    
+    // Métodos helper para mantener la relación bidireccional
+    public void addBusiness(Business business) {
+        this.businesses.add(business);
+        if (!business.getTypeDocuments().contains(this)) {
+            business.getTypeDocuments().add(this);
+        }
+    }
+
+    public void removeBusiness(Business business) {
+        this.businesses.remove(business);
+        if (business.getTypeDocuments().contains(this)) {
+            business.getTypeDocuments().remove(this);
+        }
+    }
 }

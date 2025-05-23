@@ -1,0 +1,96 @@
+<div class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header pb-0">
+          <div class="d-flex justify-content-between">
+            <h4 class="mb-0">Detalles de la Empresa</h4>
+            <div>
+              <button (click)="editar()" class="btn btn-primary btn-sm mb-0 me-2">
+                <i class="fas fa-edit"></i> Editar
+              </button>
+              <button (click)="volver()" class="btn btn-light btn-sm mb-0">
+                <i class="fas fa-arrow-left"></i> Volver
+              </button>
+            </div>
+          </div>
+          <p class="text-sm mb-0">
+            Información detallada de la empresa
+          </p>
+        </div>
+        <div class="card-body">
+          <div *ngIf="loading" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+          </div>
+          <div *ngIf="error" class="alert alert-danger">
+            {{ error }}
+          </div>
+          <div *ngIf="!loading && !error && empresa">
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="text-uppercase text-body text-xs font-weight-bolder">Información básica</h6>
+                <div class="row">
+                  <div class="col-6 py-2">
+                    <p class="text-xs text-secondary mb-0">RUC:</p>
+                    <h6 class="text-sm mb-0">{{ empresa.ruc }}</h6>
+                  </div>
+                  <div class="col-6 py-2">
+                    <p class="text-xs text-secondary mb-0">Nombre:</p>
+                    <h6 class="text-sm mb-0">{{ empresa.name }}</h6>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-6 py-2">
+                    <p class="text-xs text-secondary mb-0">Nombre Corto:</p>
+                    <h6 class="text-sm mb-0">{{ empresa.nameShort || 'No especificado' }}</h6>
+                  </div>
+                  <div class="col-6 py-2">
+                    <p class="text-xs text-secondary mb-0">Representante Legal:</p>
+                    <h6 class="text-sm mb-0">{{ empresa.representativeLegal || 'No especificado' }}</h6>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h6 class="text-uppercase text-body text-xs font-weight-bolder">Contacto</h6>
+                <div class="row">
+                  <div class="col-6 py-2">
+                    <p class="text-xs text-secondary mb-0">Email:</p>
+                    <h6 class="text-sm mb-0">{{ empresa.email || 'No especificado' }}</h6>
+                  </div>
+                  <div class="col-6 py-2">
+                    <p class="text-xs text-secondary mb-0">Teléfono:</p>
+                    <h6 class="text-sm mb-0">{{ empresa.phone || 'No especificado' }}</h6>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-12 py-2">
+                    <p class="text-xs text-secondary mb-0">Dirección:</p>
+                    <h6 class="text-sm mb-0">{{ empresa.address || 'No especificado' }}</h6>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="row mt-4">
+              <div class="col-md-12">
+                <h6 class="text-uppercase text-body text-xs font-weight-bolder">Información adicional</h6>
+                <div class="row">
+                  <div class="col-6 py-2">
+                    <p class="text-xs text-secondary mb-0">Fecha de creación:</p>
+                    <h6 class="text-sm mb-0">{{ empresa.createdAt | date:'dd/MM/yyyy HH:mm' }}</h6>
+                  </div>
+                  <div class="col-6 py-2">
+                    <p class="text-xs text-secondary mb-0">Última actualización:</p>
+                    <h6 class="text-sm mb-0">{{ empresa.updatedAt | date:'dd/MM/yyyy HH:mm' }}</h6>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

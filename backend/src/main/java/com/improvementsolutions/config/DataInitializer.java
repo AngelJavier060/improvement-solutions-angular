@@ -43,25 +43,32 @@ public class DataInitializer implements CommandLineRunner {
         
         log.info("Inicialización completada");
     }
-    
-    @Transactional
+      @Transactional
     private void initializeRoles() {
-        // Crear rol USER si no existe
+        // Crear o actualizar rol USER
+        Role userRole;
         if (!roleRepository.existsByName("ROLE_USER")) {
-            Role userRole = new Role();
+            userRole = new Role();
             userRole.setName("ROLE_USER");
             userRole.setDescription("Usuario estándar");
             roleRepository.save(userRole);
             log.info("Rol ROLE_USER creado");
         }
         
-        // Crear rol ADMIN si no existe
+        // Crear o actualizar rol ADMIN
+        Role adminRole;
         if (!roleRepository.existsByName("ROLE_ADMIN")) {
-            Role adminRole = new Role();
+            adminRole = new Role();
             adminRole.setName("ROLE_ADMIN");
             adminRole.setDescription("Usuario administrador");
             roleRepository.save(adminRole);
             log.info("Rol ROLE_ADMIN creado");
+        } else {
+            adminRole = roleRepository.findByName("ROLE_ADMIN")
+                .orElseThrow(() -> new RuntimeException("Error: No se pudo encontrar el rol ROLE_ADMIN"));
+            adminRole.setDescription("Usuario administrador");
+            roleRepository.save(adminRole);
+            log.info("Rol ROLE_ADMIN actualizado");
         }
     }
     
@@ -90,12 +97,16 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Usuario administrador creado con username: admin y password: admin123");
         }
     }
-    
-    @Transactional
+      @Transactional
     private void initializeJavierUser() {
         // Verificar si ya existe el usuario Javier
-        if (!userRepository.existsByUsername("javier") && !userRepository.existsByEmail("javierangelmsn@outlook.es")) {
-            User javierUser = new User();
+        User javierUser = userRepository.findByUsername("javier")
+                .orElseGet(() -> userRepository.findByEmail("javierangelmsn@outlook.es")
+                        .orElse(null));
+
+        if (javierUser == null) {
+            // Crear nuevo usuario
+            javierUser = new User();
             javierUser.setUsername("javier");
             javierUser.setPassword(passwordEncoder.encode("12345")); // Contraseña solicitada
             javierUser.setEmail("javierangelmsn@outlook.es");
@@ -103,17 +114,23 @@ public class DataInitializer implements CommandLineRunner {
             javierUser.setActive(true);
             javierUser.setCreatedAt(LocalDateTime.now());
             javierUser.setUpdatedAt(LocalDateTime.now());
-            
-            // Asignar rol de administrador
-            Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                    .orElseThrow(() -> new RuntimeException("Error: Rol de administrador no encontrado"));
-            
-            Set<Role> roles = new HashSet<>();
-            roles.add(adminRole);
-            javierUser.setRoles(roles);
-            
-            userRepository.save(javierUser);
-            log.info("Usuario Javier creado con username: javier, email: javierangelmsn@outlook.es y password: 12345");
+        } else {
+            // Actualizar usuario existente
+            javierUser.setPassword(passwordEncoder.encode("12345")); // Asegurar que la contraseña es correcta
+            javierUser.setActive(true);
+            javierUser.setUpdatedAt(LocalDateTime.now());
         }
+
+        // Asegurar que tiene el rol de administrador
+        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                .orElseThrow(() -> new RuntimeException("Error: Rol de administrador no encontrado"));
+        
+        Set<Role> roles = new HashSet<>();
+        roles.add(adminRole);
+        javierUser.setRoles(roles);
+        
+        userRepository.save(javierUser);
+        log.info("Usuario Javier {} con username: javier, email: javierangelmsn@outlook.es y password: 12345",
+                javierUser == null ? "creado" : "actualizado");
     }
 }

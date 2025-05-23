@@ -1,0 +1,71 @@
+<div class="tipo-documento-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Tipos de Documento</h2>
+      <p>Administración de tipos de documentos de identificación</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary mr-2" routerLink="/dashboard/admin/configuracion">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
+      <button class="btn-primary" routerLink="nuevo">
+        <i class="fas fa-plus"></i> Nuevo Tipo de Documento
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando tipos de documento...</span>
+    </div>
+
+    <div *ngIf="error" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="cargarTiposDocumento()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <div *ngIf="!loading && !error">
+      <table class="data-table" *ngIf="tiposDocumento.length > 0; else noData">
+        <thead>
+          <tr>
+            <th class="th-id">ID</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th class="th-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let tipoDocumento of tiposDocumento">
+            <td>{{ tipoDocumento.id }}</td>
+            <td>{{ tipoDocumento.name }}</td>
+            <td>{{ tipoDocumento.description || '-' }}</td>
+            <td class="actions">
+              <div class="btn-group">
+                <button class="btn btn-outline-primary btn-sm" [routerLink]="['editar', tipoDocumento.id]" title="Editar tipo de documento">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-outline-danger btn-sm" (click)="eliminarTipoDocumento(tipoDocumento.id!)" title="Eliminar tipo de documento">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noData>
+        <div class="empty-state">
+          <i class="fas fa-info-circle"></i>
+          <p>No hay tipos de documento registrados aún.</p>
+          <button class="btn-primary" routerLink="nuevo">
+            <i class="fas fa-plus"></i> Agregar un tipo de documento
+          </button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

@@ -2,58 +2,46 @@ package com.improvementsolutions;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SpringBootApplication
+@EntityScan(basePackages = "com.improvementsolutions.model")
+@EnableJpaRepositories(basePackages = "com.improvementsolutions.repository")
 public class ImprovementSolutionsApplication {
+    private static final Logger logger = LoggerFactory.getLogger(ImprovementSolutionsApplication.class);
 
     public static void main(String[] args) {
         SpringApplication.run(ImprovementSolutionsApplication.class, args);
+        logger.info("Aplicación iniciada - Configuración CORS activa");
     }
-      /**
-     * Configuración centralizada de CORS para toda la aplicación.
-     * Esta es la única configuración de CORS que debemos usar.
-     * Cualquier anotación @CrossOrigin en controladores debe ser eliminada.
-     */    @Bean
+
+    @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                // Valores comunes para todas las configuraciones
-                String[] allowedOrigins = {"http://localhost:4200", "https://improvementsolutions.com"}; // Permitir tanto desarrollo como producción
-                String[] allowedMethods = {"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"};
-                String[] allowedHeaders = {"*"};
-                long maxAge = 3600; // Tiempo de cache para las preflight requests (1 hora)
-                  // Configuración para endpoints sin credenciales (públicos)
-                // IMPORTANTE: Como ya tenemos server.servlet.context-path=/api/v1, no debemos incluirlo en las rutas
-                String[] publicEndpoints = {
-                    "/public/**",        // Endpoints públicos (se convierten en /api/v1/public/**)
-                    "/files/**",         // Endpoints de archivos (se convierten en /api/v1/files/**)
-                    "/auth/login",       // Endpoint de login (se convierte en /api/v1/auth/login)
-                    "/auth/register",    // Endpoint de registro (se convierte en /api/v1/auth/register)
-                    "/auth/forgot-password" // Endpoint de recuperación (se convierte en /api/v1/auth/forgot-password)
-                };
-                
-                // Aplicar configuración para endpoints públicos (sin credenciales)
-                for (String endpoint : publicEndpoints) {
-                    registry.addMapping(endpoint)
-                            .allowedOrigins(allowedOrigins)
-                            .allowedMethods(allowedMethods)
-                            .allowedHeaders(allowedHeaders)
-                            .allowCredentials(false) // Sin credenciales para endpoints públicos
-                            .maxAge(maxAge);
-                }
-                
-                // Configuración general CORS (con credenciales) para el resto de endpoints
+                logger.info("Configurando CORS para todas las rutas");
                 registry.addMapping("/**")
-                        .allowedOrigins(allowedOrigins)
-                        .allowedMethods(allowedMethods)
-                        .allowedHeaders(allowedHeaders)
-                        .allowCredentials(true)
-                        .maxAge(maxAge);
+                    .allowedOrigins("http://localhost:4200")
+                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH")
+                    .allowedHeaders("*")
+                    .allowCredentials(true)
+                    .maxAge(3600);
             }
         };
     }
 }
+
+// El archivo está correcto y completo. No necesita modificaciones.
+// Contiene la configuración CORS apropiada que permite:
+// - Solicitudes desde http://localhost:4200
+// - Métodos HTTP: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+// - Todos los headers
+// - Credenciales
+// - Una duración máxima de caché de 3600 segundos

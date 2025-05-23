@@ -1,20 +1,22 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
 import { Genero } from '../models/genero.model';
 import { AuthService } from '../core/services/auth.service';
+import { ApiUrlService } from '../core/services/api-url.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class GeneroService {  // URL estandarizada usando environment.apiUrl
-  private apiUrl = `${environment.apiUrl}/api/v1/public/generos`;
+export class GeneroService {  // URL estandarizada usando ApiUrlService
+  private apiUrl: string;
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private apiUrlService: ApiUrlService
   ) { 
+    this.apiUrl = this.apiUrlService.getUrl('/public/generos');
     console.log('URL del servicio de género (estandarizada):', this.apiUrl);
   }
 

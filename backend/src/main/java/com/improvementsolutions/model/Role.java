@@ -3,8 +3,10 @@ package com.improvementsolutions.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -14,11 +16,13 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "roles")
-@Data
+@Data // Genera getters, setters, toString, equals, hashCode
+@EqualsAndHashCode(exclude = {"users", "permissions"})
+@ToString(exclude = {"users", "permissions"})
 @NoArgsConstructor
 @AllArgsConstructor
 public class Role {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,20 +32,19 @@ public class Role {
     
     private String description;
     
-    @ManyToMany(mappedBy = "roles")
-    @ToString.Exclude // Evitamos referencias circulares
+    @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
     private Set<User> users = new HashSet<>();
     
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "role_permissions",
+        name = "role_permission",
         joinColumns = @JoinColumn(name = "role_id"),
         inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
-    @ToString.Exclude
+    @BatchSize(size = 20)
     private Set<Permission> permissions = new HashSet<>();
     
-    // Métodos de utilidad para gestionar relaciones bidireccionales
+    // Métodos helper para mantener la bidireccionalidad
     public void addUser(User user) {
         this.users.add(user);
         if (!user.getRoles().contains(this)) {

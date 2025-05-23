@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solución de Emergencia - Improvement Solutions</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #0066cc;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #0066cc;
+            margin-top: 30px;
+        }
+        .card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type="text"], 
+        input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #004c99;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .code {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        #loginResult, #corsResult, #errorDetails {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Solución de Emergencia - Improvement Solutions</h1>
+    
+    <div class="alert alert-warning">
+        <strong>Importante:</strong> Esta página es una solución temporal para resolver problemas de autenticación. 
+        Use este método solo cuando la autenticación normal no funcione.
+    </div>
+    
+    <div class="card">
+        <h2>1. Autenticación Directa</h2>
+        <p>Este método evita los interceptores problemáticos al conectarse directamente al backend:</p>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Usuario:</label>
+                <input type="text" id="username" value="javier">
+            </div>
+            <div class="form-group">
+                <label for="password">Contraseña:</label>
+                <input type="password" id="password" value="12345">
+            </div>
+            <button type="submit">Iniciar Sesión</button>
+        </form>
+        
+        <div id="loginResult" class="alert"></div>
+    </div>
+    
+    <div class="card">
+        <h2>2. Verificación de CORS</h2>
+        <p>Comprueba si existe un problema de configuración CORS en el backend:</p>
+        <button id="checkCors">Verificar CORS</button>
+        <div id="corsResult" class="code"></div>
+    </div>
+    
+    <div class="card">
+        <h2>3. Instrucciones de solución manual</h2>
+        <ol>
+            <li>Si la autenticación directa desde esta página funciona, pero no desde la aplicación Angular, el problema está en los interceptores.</li>
+            <li>Limpiar el almacenamiento local puede resolver problemas con tokens caducados:
+                <button id="clearStorage">Limpiar almacenamiento local</button>
+            </li>
+            <li>Si continúan los problemas, intenta navegar a la página de diagnóstico completa:
+                <a href="/assets/acceso-emergencia.html">Acceso de Emergencia</a>
+            </li>
+        </ol>
+    </div>
+    
+    <div id="errorDetails" class="card">
+        <h2>Detalles de Error</h2>
+        <div class="code" id="errorContent"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const apiUrl = 'http://localhost:8080/api/v1';
+            
+            // Formulario de login
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const resultDiv = document.getElementById('loginResult');
+                
+                // Mostrar que se está procesando
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'alert';
+                resultDiv.textContent = 'Procesando solicitud...';
+                
+                // Intentar autenticar directamente primero con el endpoint principal
+                fetch(`${apiUrl}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => handleLoginSuccess(data, resultDiv))
+                .catch(error => {
+                    console.error('Error con endpoint principal, probando endpoint alternativo:', error);
+                    // Si falla, intentar con el endpoint de diagnóstico
+                    fetch(`${apiUrl}/public/diagnostic/auth-bypass`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => handleLoginSuccess(data, resultDiv))
+                    .catch(error => handleLoginError(error, resultDiv));
+                });
+            });
+            
+            // Botón para verificar CORS
+            document.getElementById('checkCors').addEventListener('click', function() {
+                const corsDiv = document.getElementById('corsResult');
+                corsDiv.style.display = 'block';
+                corsDiv.textContent = 'Verificando configuración CORS...';
+                
+                fetch(`${apiUrl}/public/diagnostic/cors`, {
+                    method: 'GET',
+                    headers: {
+                        'Origin': window.location.origin
+                    }
+                })
+                .then(response => {
+                    let headerInfo = Array.from(response.headers.entries())
+                        .filter(entry => entry[0].toLowerCase().startsWith('access-control'))
+                        .map(entry => `${entry[0]}: ${entry[1]}`)
+                        .join('\n');
+                        
+                    corsDiv.innerHTML = '<strong>Headers CORS:</strong>\n' + 
+                                       (headerInfo || 'No se encontraron headers CORS') + '\n\n';
+                                       
+                    return response.json();
+                })
+                .then(data => {
+                    corsDiv.innerHTML += '<strong>Respuesta:</strong>\n' + 
+                                        JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    corsDiv.innerHTML += `\n\n<strong>Error:</strong> ${error.message}`;
+                    showErrorDetails(error);
+                });
+            });
+            
+            // Botón para limpiar almacenamiento
+            document.getElementById('clearStorage').addEventListener('click', function() {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('current_user');
+                localStorage.removeItem('refresh_token');
+                
+                alert('Almacenamiento local limpiado exitosamente');
+            });
+            
+            // Función para manejar login exitoso
+            function handleLoginSuccess(data, resultDiv) {
+                resultDiv.className = 'alert alert-success';
+                resultDiv.innerHTML = '<strong>Autenticación exitosa!</strong><br>';
+                
+                if (data.token) {
+                    // Guardar token en localStorage
+                    localStorage.setItem('auth_token', data.token);
+                    resultDiv.innerHTML += `Token: ${data.token.substring(0, 20)}...<br>`;
+                    
+                    // Guardar información de usuario
+                    if (data.userDetail) {
+                        localStorage.setItem('current_user', JSON.stringify(data.userDetail));
+                        resultDiv.innerHTML += `Usuario: ${data.userDetail.name || data.userDetail.username}<br>`;
+                        
+                        if (data.userDetail.roles) {
+                            resultDiv.innerHTML += `Roles: ${data.userDetail.roles.join(', ')}<br>`;
+                        }
+                    }
+                    
+                    resultDiv.innerHTML += '<br><button id="gotoDashboard">Ir al Dashboard</button>';
+                    
+                    document.getElementById('gotoDashboard').addEventListener('click', function() {
+                        window.location.href = '/dashboard';
+                    });
+                }
+            }
+            
+            // Función para manejar errores de login
+            function handleLoginError(error, resultDiv) {
+                resultDiv.className = 'alert alert-danger';
+                resultDiv.innerHTML = `<strong>Error de autenticación:</strong> ${error.message}<br>`;
+                resultDiv.innerHTML += 'Posibles causas:<br><ul>' +
+                                      '<li>Credenciales incorrectas</li>' +
+                                      '<li>Servidor no disponible</li>' +
+                                      '<li>Problema de configuración CORS</li></ul>';
+                
+                showErrorDetails(error);
+            }
+            
+            // Función para mostrar detalles de error
+            function showErrorDetails(error) {
+                const errorDiv = document.getElementById('errorDetails');
+                const errorContent = document.getElementById('errorContent');
+                
+                errorDiv.style.display = 'block';
+                
+                let details = `Error: ${error.message}\n`;
+                details += `Timestamp: ${new Date().toISOString()}\n`;
+                details += `Usuario: ${document.getElementById('username').value}\n`;
+                details += `URL: ${window.location.href}\n`;
+                details += `Navegador: ${navigator.userAgent}\n`;
+                
+                if (error.stack) {
+                    details += `\nStack trace:\n${error.stack}`;
+                }
+                
+                errorContent.textContent = details;
+            }
+        });
+    </script>
+</body>
+</html>

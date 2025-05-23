@@ -80,4 +80,22 @@ public class FileUrlService {
             return null;
         }
     }
+
+    /**
+     * Obtiene la URL directa para un archivo
+     * @param filename Nombre del archivo
+     * @return URL del archivo
+     */
+    public String getUrl(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return null;
+        }
+        
+        String baseUrlToUse = baseUrl;
+        if (baseUrlToUse.isBlank()) {
+            baseUrlToUse = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        }
+        
+        return baseUrlToUse + "/api/files/" + filename;
+    }
 }

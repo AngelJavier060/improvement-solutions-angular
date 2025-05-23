@@ -1,16 +1,17 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
 import { Estudio } from '../models/estudio.model';
+import { ApiUrlService } from '../core/services/api-url.service';
 
 @Injectable({
   providedIn: 'root'
 })
-export class EstudioService {  // URL estandarizada usando environment.apiUrl
-  private apiUrl = `${environment.apiUrl}/api/v1/estudios`;
+export class EstudioService {  // URL estandarizada usando ApiUrlService
+  private apiUrl: string;
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private apiUrlService: ApiUrlService) {
+    this.apiUrl = this.apiUrlService.getUrl('/estudios');
     console.log('URL del servicio de estudio (estandarizada):', this.apiUrl);
   }
 

@@ -1,45 +1,45 @@
 package com.improvementsolutions.model;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
-
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
+import org.hibernate.annotations.Filter;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 @Entity
 @Table(name = "business_employee_document_files")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@SQLDelete(sql = "UPDATE business_employee_document_files SET deleted_at = NOW() WHERE id = ?")
-@Where(clause = "deleted_at IS NULL")
+@EqualsAndHashCode(exclude = {"businessEmployeeDocument"})
+@ToString(exclude = {"businessEmployeeDocument"})
+@SQLDelete(sql = "UPDATE business_employee_document_files SET active = false WHERE id = ?")
+@FilterDef(name = "deletedBusinessEmployeeDocumentFileFilter", parameters = @ParamDef(name = "isDeleted", type = boolean.class))
+@Filter(name = "deletedBusinessEmployeeDocumentFileFilter", condition = "active = :isDeleted")
 public class BusinessEmployeeDocumentFile {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "business_employee_document_id", nullable = false)
-    private BusinessEmployeeDocument businessEmployeeDocument;
-
-    @Column(nullable = false)
-    private String name;
-
-    @Column(nullable = false)
-    private String file;
-
-    private String description;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
     
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    @ManyToOne
+    @JoinColumn(name = "id_business_employee_document")
+    private BusinessEmployeeDocument businessEmployeeDocument;
+    
+    private String name;
+    private String file;
+    private String description;
+    private boolean active;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

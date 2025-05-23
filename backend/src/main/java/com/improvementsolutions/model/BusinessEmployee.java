@@ -1,209 +1,133 @@
 package com.improvementsolutions.model;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
-
-/**
- * Entidad que representa un empleado de una empresa
- */
 @Entity
 @Table(name = "business_employees")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
+@EqualsAndHashCode(exclude = {"business", "gender", "civilStatus", "etnia", "degree", "contracts"})
+@ToString(exclude = {"business", "gender", "civilStatus", "etnia", "degree", "contracts"})
 public class BusinessEmployee {
-    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "business_id", nullable = false)
-    @ToString.Exclude
-    private Business business;
-    
-    @Column(name = "first_name")
-    private String firstName;
-    
-    @Column(name = "last_name")
-    private String lastName;
-    
-    @Column(unique = true)
     private String cedula;
-    
+    private String name;
     private String phone;
-    
-    private String email;
-    
+    private LocalDateTime dateBirth;
     private String address;
-    
-    @Column(name = "date_birth")
-    private LocalDate dateBirth;
-    
-    @Column(name = "date_entry")
-    private LocalDate dateEntry;
-    
-    @Column(name = "created_at")
+    private String email;
+    private String position;
+    private String residentAddress;
+    private boolean active;
     private LocalDateTime createdAt;
-    
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "business_id")
+    private Business business;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gender_id")
     private Gender gender;
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "civil_status_id")
     private CivilStatus civilStatus;
     
-    @ManyToOne
-    @JoinColumn(name = "ethnia_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "etnia_id")
     private Etnia etnia;
     
-    private String status;
-    
-    @Column(name = "image_path")
-    private String imagePath;
-    
-    @ManyToOne
-    @JoinColumn(name = "resident_address_id")
-    private ResidentAddress residentAddress;
-    
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "degree_id")
     private Degree degree;
     
-    private String iess;
+    @OneToMany(mappedBy = "businessEmployee", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BusinessEmployeeContract> contracts = new ArrayList<>();
     
-    @Column(name = "contact_kinship")
-    private String contactKinship;
-    
-    @Column(name = "contact_name")
     private String contactName;
-    
-    @Column(name = "contact_phone")
     private String contactPhone;
-    
-    private String position;
+    private String contactKinship;
+    private String iess;
+    private String status;
+    private String image;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id")
-    @ToString.Exclude
     private Employee employee;
-    
-    @OneToMany(mappedBy = "businessEmployee", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    private Set<BusinessEmployeeContract> contracts = new HashSet<>();
-    
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-    
+
     public String getFullName() {
-        return firstName + " " + lastName;
+        return name;
     }
-    
-    public void setFullName(String fullName) {
-        String[] parts = fullName.split(" ", 2);
-        this.firstName = parts[0];
-        this.lastName = parts.length > 1 ? parts[1] : "";
-    }
-    
-    public void addContract(BusinessEmployeeContract contract) {
-        contracts.add(contract);
-        contract.setBusinessEmployee(this);
-    }
-    
-    public void removeContract(BusinessEmployeeContract contract) {
-        contracts.remove(contract);
-        contract.setBusinessEmployee(null);
-    }
-    
+
     public void setEmployee(Employee employee) {
         this.employee = employee;
     }
-    
-    public Employee getEmployee() {
-        return this.employee;
-    }
-    
+
     public void setStatus(String status) {
         this.status = status;
     }
-    
-    public String getStatus() {
-        return status;
-    }
-    
-    public String getIess() {
-        return iess;
-    }
-    
-    public void setIess(String iess) {
-        this.iess = iess;
-    }
-    
-    public String getImage() {
-        return imagePath;
-    }
-    
-    public void setImage(String imagePath) {
-        this.imagePath = imagePath;
-    }
-    
-    public String getGender() {
-        return gender.getName();
-    }
-    
-    public void setGender(Gender gender) {
-        this.gender = gender;
-    }
-    
+
     public String getContactKinship() {
         return contactKinship;
     }
-    
+
     public void setContactKinship(String contactKinship) {
         this.contactKinship = contactKinship;
     }
-    
+
     public String getContactName() {
         return contactName;
     }
-    
+
     public void setContactName(String contactName) {
         this.contactName = contactName;
     }
-    
+
     public String getContactPhone() {
         return contactPhone;
     }
-    
+
     public void setContactPhone(String contactPhone) {
         this.contactPhone = contactPhone;
     }
-    
-    public String getCivilStatus() {
-        return civilStatus.getName();
+
+    public String getIess() {
+        return iess;
     }
-    
-    public void setCivilStatus(CivilStatus civilStatus) {
-        this.civilStatus = civilStatus;
+
+    public void setIess(String iess) {
+        this.iess = iess;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
     }
 }

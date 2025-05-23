@@ -1,0 +1,3 @@
+@echo off
+echo Iniciando el servidor con el perfil "nosecurity"...
+call mvn spring-boot:run -Dspring.profiles.active=nosecurity

@@ -1,0 +1,78 @@
+<div class="empresas-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Empresas</h2>
+      <p>Administración de empresas registradas</p>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" routerLink="nuevo">
+        <i class="fas fa-plus"></i> Nueva Empresa
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <!-- Estado de carga -->
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando empresas...</span>
+    </div>
+
+    <!-- Estado de error -->
+    <div *ngIf="error" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="cargarEmpresas()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <!-- Tabla de datos -->
+    <div *ngIf="!loading && !error">
+      <table class="data-table" *ngIf="empresas.length > 0; else noData">
+        <thead>
+          <tr>
+            <th class="th-id">ID</th>
+            <th>RUC</th>
+            <th>Nombre</th>
+            <th>Nombre Corto</th>
+            <th>Rep. Legal</th>
+            <th>Email</th>
+            <th class="th-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let empresa of empresas">
+            <td>{{ empresa.id }}</td>
+            <td>{{ empresa.ruc }}</td>
+            <td>{{ empresa.name }}</td>
+            <td>{{ empresa.nameShort || '-' }}</td>
+            <td>{{ empresa.representativeLegal || '-' }}</td>
+            <td>{{ empresa.email || '-' }}</td>
+            <td class="actions">
+              <div class="btn-group">
+                <button class="btn btn-outline-info btn-sm" [routerLink]="['detalle', empresa.id]" title="Ver detalles">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-outline-primary btn-sm" [routerLink]="['editar', empresa.id]" title="Editar empresa">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-outline-danger btn-sm" (click)="eliminarEmpresa(empresa.id!)" title="Eliminar empresa">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noData>
+        <div class="empty-state">
+          <i class="fas fa-building"></i>
+          <p>No hay empresas disponibles</p>
+          <button class="btn-primary" routerLink="nuevo">Registrar empresa</button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

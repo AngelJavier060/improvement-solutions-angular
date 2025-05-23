@@ -12,7 +12,7 @@ export class DashboardAdminComponent implements OnInit {
   isRootRoute = true;
   username: string = 'Javier'; // Valor por defecto
 
-  constructor(private router: Router, private authService: AuthService) { }
+  constructor(public router: Router, private authService: AuthService) { }
 
   ngOnInit(): void {
     // Detectar cambios en la ruta para determinar si estamos en la ruta raíz

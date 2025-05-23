@@ -6,17 +6,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class EmailService {
+    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    @Autowired
+    @Autowired(required = false)
     private JavaMailSender mailSender;
 
-    @Value("${mail.from}")
+    @Value("${spring.mail.username:}")
     private String from;
 
-    @Value("${mail.name}")
+    @Value("${spring.mail.name:Improvement Solutions}")
     private String fromName;
 
     /**
@@ -26,6 +29,11 @@ public class EmailService {
      * @param baseUrl URL base de la aplicación frontend
      */
     public void sendPasswordResetEmail(String to, String token, String baseUrl) {
+        if (mailSender == null) {
+            logger.warn("JavaMailSender no configurado. Omitiendo envío de correo.");
+            return;
+        }
+
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -41,7 +49,9 @@ public class EmailService {
             helper.setText(htmlContent, true);
             
             mailSender.send(message);
+            logger.info("Correo de restablecimiento enviado a: {}", to);
         } catch (Exception e) {
+            logger.error("Error al enviar el correo electrónico", e);
             // En un entorno de producción, aquí deberías registrar el error
             throw new RuntimeException("Error al enviar el correo electrónico: " + e.getMessage());
         }

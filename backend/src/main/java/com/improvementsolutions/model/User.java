@@ -3,8 +3,10 @@ package com.improvementsolutions.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -15,7 +17,9 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "users")
-@Data
+@Data // Genera getters, setters, toString, equals, hashCode
+@EqualsAndHashCode(exclude = {"roles", "businesses"})
+@ToString(exclude = {"roles", "businesses"})
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
@@ -34,10 +38,7 @@ public class User {
     private String email;
     
     private String name;
-    
-    // Añadir campo phone
     private String phone;
-    
     private Boolean active = true;
     
     @Column(name = "last_login")
@@ -49,44 +50,51 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "user_roles",
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    @ToString.Exclude // Evitamos referencias circulares
+    @BatchSize(size = 20)
     private Set<Role> roles = new HashSet<>();
     
-    // Relación con Business con anotación para evitar problemas circulares
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "user_businesses",
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "business_id")
     )
-    @ToString.Exclude // Evitamos referencias circulares
+    @BatchSize(size = 20)
     private Set<Business> businesses = new HashSet<>();
     
-    // Métodos de utilidad
+    // Métodos helper
     public void addRole(Role role) {
         this.roles.add(role);
-        role.getUsers().add(this);
-    }
-    
-    public void addBusiness(Business business) {
-        this.businesses.add(business);
-        business.getUsers().add(this);
+        if (!role.getUsers().contains(this)) {
+            role.getUsers().add(this);
+        }
     }
     
     public void removeRole(Role role) {
         this.roles.remove(role);
-        role.getUsers().remove(this);
+        if (role.getUsers().contains(this)) {
+            role.getUsers().remove(this);
+        }
+    }
+
+    public void addBusiness(Business business) {
+        this.businesses.add(business);
+        if (!business.getUsers().contains(this)) {
+            business.getUsers().add(this);
+        }
     }
     
     public void removeBusiness(Business business) {
         this.businesses.remove(business);
-        business.getUsers().remove(this);
+        if (business.getUsers().contains(this)) {
+            business.getUsers().remove(this);
+        }
     }
     
     public boolean hasRole(String roleName) {
@@ -94,7 +102,7 @@ public class User {
                 .anyMatch(role -> role.getName().equals(roleName));
     }
     
-    // Métodos para manejar las fechas automáticamente
+    // Lifecycle callbacks
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -104,5 +112,25 @@ public class User {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+    
+    public boolean isActive() {
+        return this.active != null && this.active;
+    }
+    
+    public boolean isEnabled() {
+        return active;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.active = enabled;
+    }
+
+    public boolean isLocked() {
+        return !active;
+    }
+
+    public void setLocked(boolean locked) {
+        this.active = !locked;
     }
 }

@@ -1,0 +1,91 @@
+<div class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header pb-0">
+          <div class="d-flex justify-content-between">
+            <h4 class="mb-0">Empresas</h4>
+            <a [routerLink]="['nuevo']" class="btn btn-primary btn-sm mb-0">
+              <i class="fas fa-plus"></i> Agregar Empresa
+            </a>
+          </div>
+          <p class="text-sm mb-0">
+            Listado de empresas que contratan servicios
+          </p>
+        </div>
+        <div class="card-body px-0 pt-0 pb-2">
+          <div class="table-responsive p-0">
+            <div *ngIf="loading" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+              </div>
+            </div>
+            <div *ngIf="error" class="alert alert-danger mx-3">
+              {{ error }}
+            </div>
+            <table *ngIf="!loading && !error" class="table align-items-center mb-0">
+              <thead>
+                <tr>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                    RUC
+                  </th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
+                    Nombre
+                  </th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
+                    Representante Legal
+                  </th>
+                  <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
+                    Email
+                  </th>
+                  <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                    Teléfono
+                  </th>
+                  <th class="text-secondary opacity-7"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let empresa of empresas">
+                  <td>
+                    <div class="d-flex px-2 py-1">
+                      <div class="d-flex flex-column justify-content-center">
+                        <h6 class="mb-0 text-sm">{{ empresa.ruc }}</h6>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <p class="text-xs font-weight-bold mb-0">{{ empresa.name }}</p>
+                    <p class="text-xs text-secondary mb-0">{{ empresa.nameShort }}</p>
+                  </td>
+                  <td>
+                    <p class="text-xs font-weight-bold mb-0">{{ empresa.representativeLegal || 'No especificado' }}</p>
+                  </td>
+                  <td>
+                    <p class="text-xs font-weight-bold mb-0">{{ empresa.email || 'No especificado' }}</p>
+                  </td>
+                  <td class="align-middle text-center">
+                    <span class="text-secondary text-xs font-weight-bold">{{ empresa.phone || 'No especificado' }}</span>
+                  </td>
+                  <td class="align-middle">
+                    <a [routerLink]="['detalle', empresa.id]" class="btn btn-link text-secondary mb-0">
+                      <i class="fa fa-eye text-xs"></i>
+                    </a>
+                    <a [routerLink]="['editar', empresa.id]" class="btn btn-link text-secondary mb-0">
+                      <i class="fa fa-edit text-xs"></i>
+                    </a>
+                    <button (click)="eliminarEmpresa(empresa.id!)" class="btn btn-link text-danger mb-0">
+                      <i class="fa fa-trash text-xs"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div *ngIf="!loading && !error && empresas.length === 0" class="text-center py-4">
+              <p class="mb-0">No hay empresas registradas</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

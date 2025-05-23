@@ -25,10 +25,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /**
      * Verificar si existe un usuario con el nombre de usuario especificado
      */
-    boolean existsByUsername(String username);
+    Boolean existsByUsername(String username);
     
     /**
      * Verificar si existe un usuario con el correo electrónico especificado
      */
-    boolean existsByEmail(String email);
+    Boolean existsByEmail(String email);
 }
