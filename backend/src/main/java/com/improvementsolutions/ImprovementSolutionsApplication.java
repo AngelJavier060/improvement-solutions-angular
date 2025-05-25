@@ -19,23 +19,7 @@ public class ImprovementSolutionsApplication {
     public static void main(String[] args) {
         SpringApplication.run(ImprovementSolutionsApplication.class, args);
         logger.info("Aplicación iniciada - Configuración CORS activa");
-    }
-
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                logger.info("Configurando CORS para todas las rutas");
-                registry.addMapping("/**")
-                    .allowedOrigins("http://localhost:4200")
-                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH")
-                    .allowedHeaders("*")
-                    .allowCredentials(true)
-                    .maxAge(3600);
-            }
-        };
-    }
+    }    // La configuración CORS se ha movido a SecurityConfig para evitar duplicación
 }
 
 // El archivo está correcto y completo. No necesita modificaciones.

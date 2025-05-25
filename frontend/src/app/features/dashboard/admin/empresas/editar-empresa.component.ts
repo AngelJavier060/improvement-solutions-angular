@@ -28,7 +28,7 @@ export class EditarEmpresaComponent implements OnInit {
       ruc: ['', [Validators.required, Validators.pattern(/^[0-9]{13}$/)]],
       name: ['', [Validators.required, Validators.maxLength(100)]],
       nameShort: ['', [Validators.maxLength(50)]],
-      representativeLegal: ['', [Validators.maxLength(100)]],
+      legalRepresentative: ['', [Validators.required, Validators.maxLength(100)]],
       email: ['', [Validators.email]],
       address: ['', [Validators.maxLength(200)]],
       phone: ['', [Validators.maxLength(20)]]
@@ -47,7 +47,7 @@ export class EditarEmpresaComponent implements OnInit {
           ruc: empresa.ruc,
           name: empresa.name,
           nameShort: empresa.nameShort,
-          representativeLegal: empresa.representativeLegal,
+          legalRepresentative: empresa.legalRepresentative,
           email: empresa.email,
           address: empresa.address,
           phone: empresa.phone

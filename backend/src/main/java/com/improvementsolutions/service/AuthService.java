@@ -117,7 +117,7 @@ public class AuthService {
 
             if (!StringUtils.hasText(password)) {
                 logger.error("Intento de login sin contraseña");
-                throw new BadCredentialsException("La contraseña no puede estar vacía");
+                throw new BadCredentialsException("La contraseña es requerida");
             }
 
             if (!StringUtils.hasText(username) && !StringUtils.hasText(email)) {
@@ -132,32 +132,37 @@ public class AuthService {
             // Verificar estado del usuario
             validateUserStatus(user);
 
-            // Intentar autenticar
-            Authentication authentication = authenticate(user.getUsername(), password);
-            
-            // Generar token JWT
-            String jwt = jwtTokenProvider.generateToken(authentication);
-            
-            // Crear sesión de usuario
-            createUserSession(user, jwt, deviceInfo, ipAddress);
-            
-            logger.debug("Autenticación exitosa para usuario: {}", user.getUsername());
-            
-            // Construir y devolver respuesta
-            return buildLoginResponse(authentication, jwt);
+            try {
+                // Intentar autenticar
+                Authentication authentication = authenticate(user.getUsername(), password);
+                
+                // Generar token JWT
+                String jwt = jwtTokenProvider.generateToken(authentication);
+                
+                // Crear sesión de usuario
+                createUserSession(user, jwt, deviceInfo, ipAddress);
+                
+                logger.debug("Autenticación exitosa para usuario: {}", user.getUsername());
+                
+                // Construir y devolver respuesta
+                return buildLoginResponse(authentication, jwt);
+            } catch (BadCredentialsException e) {
+                logger.error("Contraseña incorrecta para usuario: {}", user.getUsername());
+                throw new BadCredentialsException("Contraseña incorrecta");
+            }
 
+        } catch (UserNotFoundException e) {
+            logger.error("Usuario no encontrado: {}", e.getMessage());
+            throw e;
+        } catch (UserInactiveException e) {
+            logger.error("Usuario inactivo: {}", e.getMessage());
+            throw e;
         } catch (BadCredentialsException e) {
             logger.error("Error de credenciales: {}", e.getMessage());
             throw e;
-        } catch (UserNotFoundException | UserInactiveException e) {
-            logger.error("Error de usuario: {}", e.getMessage());
-            throw e;        } catch (Exception e) {
+        } catch (Exception e) {
             logger.error("Error inesperado en autenticación: {}", e.getMessage(), e);
-            if (e.getMessage() != null && e.getMessage().contains("update/delete")) {
-                logger.error("Error al actualizar la base de datos durante la autenticación", e);
-                throw new RuntimeException("Error al procesar el inicio de sesión. Por favor, inténtelo de nuevo.");
-            }
-            throw new RuntimeException("Error en autenticación: " + e.getMessage());
+            throw new RuntimeException("Error en la autenticación: " + e.getMessage());
         }
     }
 

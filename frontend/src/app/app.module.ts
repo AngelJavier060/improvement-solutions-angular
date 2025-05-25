@@ -19,6 +19,7 @@ import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { ApiUrlInterceptor } from './core/interceptors/api-url.interceptor';
 import { AuthGuard } from './core/guards/auth.guard';
 import { TestPublicComponent } from './components/test-public/test-public.component';
+import { DiagnosticComponent } from './components/diagnostic/diagnostic.component';
 
 @NgModule({  declarations: [
     AppComponent,
@@ -29,7 +30,8 @@ import { TestPublicComponent } from './components/test-public/test-public.compon
     FileViewerComponent,
     SafePipe,
     BusinessFilesComponent,
-    TestPublicComponent
+    TestPublicComponent,
+    DiagnosticComponent
   ],
   imports: [
     BrowserModule,
@@ -68,6 +70,10 @@ import { TestPublicComponent } from './components/test-public/test-public.compon
       { 
         path: 'test-public',
         component: TestPublicComponent
+      },
+      { 
+        path: 'diagnostic',
+        component: DiagnosticComponent
       },
       { path: '**', redirectTo: '' }
     ]),

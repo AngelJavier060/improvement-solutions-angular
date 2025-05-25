@@ -4,12 +4,14 @@ import { ListaEmpresasComponent } from './lista-empresas.component';
 import { NuevaEmpresaComponent } from './nueva-empresa.component';
 import { EditarEmpresaComponent } from './editar-empresa.component';
 import { DetalleEmpresaComponent } from './detalle-empresa.component';
+import { DashboardEmpresasComponent } from './dashboard-empresas.component';
 
 const routes: Routes = [
   { path: '', component: ListaEmpresasComponent },
-  { path: 'nuevo', component: NuevaEmpresaComponent },
+  { path: 'nueva', component: NuevaEmpresaComponent },
   { path: 'editar/:id', component: EditarEmpresaComponent },
-  { path: 'detalle/:id', component: DetalleEmpresaComponent }
+  { path: 'detalle/:id', component: DetalleEmpresaComponent },
+  { path: 'dashboard', component: DashboardEmpresasComponent }
 ];
 
 @NgModule({

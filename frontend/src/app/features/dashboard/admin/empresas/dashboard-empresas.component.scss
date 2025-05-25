@@ -1,0 +1,217 @@
+.dashboard-container {
+  padding: 20px 0;
+  
+  .statistics-row {
+    margin-bottom: 1.5rem;
+    
+    .stat-card {
+      height: 100%;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+      transition: all 0.2s ease-in-out;
+      
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.2);
+      }
+      
+      &.card-primary {
+        .card-icon {
+          background-color: rgba(78, 115, 223, 0.1);
+          color: #4e73df;
+        }
+      }
+      
+      &.card-success {
+        .card-icon {
+          background-color: rgba(28, 200, 138, 0.1);
+          color: #1cc88a;
+        }
+      }
+      
+      &.card-warning {
+        .card-icon {
+          background-color: rgba(246, 194, 62, 0.1);
+          color: #f6c23e;
+        }
+      }
+      
+      &.card-danger {
+        .card-icon {
+          background-color: rgba(231, 74, 59, 0.1);
+          color: #e74a3b;
+        }
+      }
+      
+      .card-body {
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+      }
+      
+      .card-icon {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 1.7rem;
+        margin-right: 1rem;
+      }
+      
+      .card-content {
+        flex: 1;
+      }
+      
+      .card-title {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #5a5c69;
+        margin-bottom: 0.25rem;
+      }
+      
+      .card-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #5a5c69;
+        margin-bottom: 0;
+      }
+    }
+  }
+  
+  .chart-container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    margin-bottom: 1.5rem;
+    
+    h4 {
+      color: #5a5c69;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+  }
+  
+  .recent-empresas {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    
+    h4 {
+      color: #5a5c69;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+    
+    .loading-state {
+      text-align: center;
+      padding: 2rem 0;
+      
+      i {
+        font-size: 2rem;
+        color: #4e73df;
+        margin-bottom: 1rem;
+      }
+    }
+    
+    .error-state {
+      text-align: center;
+      padding: 2rem;
+      color: #e74a3b;
+      
+      i {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+      }
+      
+      .btn-retry {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+        background: #4e73df;
+        color: white;
+        border: none;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        margin-top: 1rem;
+        
+        &:hover {
+          background: darken(#4e73df, 10%);
+        }
+      }
+    }
+    
+    .empresa-item {
+      display: flex;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid #eaecf4;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+        .empresa-logo {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin-right: 1rem;
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-color: #f8f9fc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #eaecf4;
+        overflow: hidden;
+        
+        i {
+          color: #dddfeb;
+          font-size: 1.5rem;
+        }
+      }
+      
+      .empresa-info {
+        flex: 1;
+        
+        .empresa-name {
+          font-weight: 600;
+          color: #5a5c69;
+          margin-bottom: 0.25rem;
+        }
+        
+        .empresa-details {
+          font-size: 0.875rem;
+          color: #858796;
+        }
+      }
+      
+      .empresa-status {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        
+        &.status-active {
+          background-color: rgba(28, 200, 138, 0.1);
+          color: #1cc88a;
+        }
+        
+        &.status-inactive {
+          background-color: rgba(231, 74, 59, 0.1);
+          color: #e74a3b;
+        }
+        
+        &.status-pending {
+          background-color: rgba(246, 194, 62, 0.1);
+          color: #f6c23e;
+        }
+      }
+    }
+  }
+}

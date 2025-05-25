@@ -104,7 +104,6 @@ export class TestPublicComponent implements OnInit {  environment = environment;
     console.log('Componente de prueba inicializado');
     console.log('URL de prueba:', this.testUrl);
   }
-
   testDirectRequest(): void {
     this.lastAttempt = new Date();
     this.directResult = null;
@@ -114,20 +113,41 @@ export class TestPublicComponent implements OnInit {  environment = environment;
     
     // Hacer una solicitud HTTP directa sin usar el servicio de género
     const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Access-Control-Expose-Headers': '*'
       // Sin token de autorización
     });
     
-    this.http.get(this.testUrl, { headers }).subscribe({
+    this.http.get(this.testUrl, { 
+      headers,
+      observe: 'response'  // Esto nos permite ver los headers completos de la respuesta
+    }).subscribe({
       next: (response) => {
         console.log('Respuesta exitosa:', response);
-        this.directResult = response;
+        console.log('Headers de respuesta:', response.headers);
+        this.directResult = {
+          data: response.body,
+          headers: {
+            'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+            'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+            'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers')
+          }
+        };
       },
       error: (error) => {
         console.error('Error en la solicitud:', error);
         this.directError = `Error ${error.status}: ${error.statusText || 'Desconocido'}
         
-Detalles: ${JSON.stringify(error.error, null, 2)}`;
+Detalles del error:
+Status: ${error.status}
+Status Text: ${error.statusText}
+Error: ${JSON.stringify(error.error, null, 2)}
+
+Headers de respuesta:
+${error.headers ? Object.entries(error.headers).map(([key, value]) => `${key}: ${value}`).join('\n') : 'No hay headers disponibles'}
+
+Información CORS:
+${error.status === 0 ? 'Error de CORS detectado - El servidor no permite la solicitud desde este origen' : 'No es un error de CORS'}`;
       }
     });
   }

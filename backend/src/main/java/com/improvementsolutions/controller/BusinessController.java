@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/businesses") // IMPORTANTE: No incluir /api/v1 porque ya está configurado en server.servlet.context-path
+@RequestMapping("/api/businesses")
 @RequiredArgsConstructor
 public class BusinessController {
 

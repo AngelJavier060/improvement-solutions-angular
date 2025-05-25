@@ -1,1 +1,451 @@
 /* Estilos para el componente lista-empresas */
+.empresas-container {
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+
+  // Estilos del encabezado
+  .header {
+    transition: all 0.3s ease;
+    
+    h2 {
+      color: #2c3e50;
+    }
+  }
+
+  .search-header {
+    margin-bottom: 1rem;
+
+    .input-group {
+      .input-group-text {
+        border-color: #e9ecef;
+        color: #6c757d;
+      }
+
+      .form-control, .form-select {
+        border-color: #e9ecef;
+        height: 50px;
+        transition: all 0.3s ease;
+        
+        &:focus {
+          box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+          border-color: #e9ecef;
+        }
+      }
+    }
+
+    .view-toggle {
+      .btn {
+        border-color: #e9ecef;
+        color: #6c757d;
+        
+        &.active {
+          background-color: #e9ecef;
+          color: #495057;
+        }
+      }
+    }
+  }
+
+  .empresa-card {
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    .empresa-logo {
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      padding: 1rem;
+
+      img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        transition: all 0.3s ease;
+      }
+
+      i {
+        font-size: 2.5rem;
+        color: #dee2e6;
+      }
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #212529;
+    }
+
+    .card-text {
+      font-size: 0.875rem;
+      color: #6c757d;
+
+      span {
+        margin-bottom: 0.25rem;
+      }
+    }
+
+    .status-badge {
+      margin-top: 1rem;
+
+      .badge {
+        font-weight: 500;
+        font-size: 0.85rem;
+        padding: 0.4em 0.8em;
+        
+        i {
+          font-size: 0.5rem;
+        }
+      }
+
+      .bg-success-light {
+        background-color: rgba(40, 167, 69, 0.1);
+      }
+    }
+
+    .card-footer {
+      padding: 0.75rem;
+      background-color: transparent;
+
+      .btn-link {
+        color: #6c757d;
+        transition: color 0.2s;
+
+        &:hover {
+          color: #212529;
+        }
+
+        &.text-info:hover {
+          color: #0dcaf0 !important;
+        }
+
+        &.text-primary:hover {
+          color: #0d6efd !important;
+        }
+
+        &.text-danger:hover {
+          color: #dc3545 !important;
+        }
+      }
+    }
+  }
+  
+  // Vista en lista - mini logo
+  .empresa-mini-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fc;
+    border: 1px solid #e3e6f0;
+    overflow: hidden;
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    i {
+      font-size: 1.25rem;
+      color: #b7b9cc;
+    }
+  }
+  
+  // Estados comunes
+  .loading-state {
+    text-align: center;
+    padding: 3rem 0;
+    
+    i {
+      display: block;
+      font-size: 3rem;
+      color: #4e73df;
+      margin-bottom: 1rem;
+      opacity: 0.6;
+    }
+    
+    span {
+      font-size: 1.1rem;
+      color: #6c757d;
+    }
+  }
+
+  .error-state {
+    text-align: center;
+    padding: 3rem 0;
+    
+    i {
+      display: block;
+      font-size: 3rem;
+      color: #e74a3b;
+      margin-bottom: 1rem;
+      opacity: 0.6;
+    }
+    
+    span {
+      font-size: 1.1rem;
+      color: #e74a3b;
+      display: block;
+      margin-bottom: 1rem;
+    }
+
+    .btn-retry {
+      background-color: #e74a3b;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.25rem;
+      color: white;
+      font-weight: 500;
+      
+      i {
+        display: inline;
+        font-size: 1rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0;
+      }
+      
+      &:hover {
+        background-color: darken(#e74a3b, 10%);
+      }
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 0;
+
+    i {
+      font-size: 4rem;
+      color: #dddfeb;
+      margin-bottom: 1.5rem;
+    }
+
+    p {
+      font-size: 1.2rem;
+      color: #6c757d;
+      margin-bottom: 1.5rem;
+    }
+  }
+  
+  // Estilos de tabla
+  .table-container {
+    th {
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    
+    td {
+      vertical-align: middle;
+      
+      .logo-container {
+        width: 60px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+  }
+
+  .table {
+    margin-bottom: 0;
+    
+    thead th {
+      border-top: none;
+      background-color: #f8f9fc;
+      font-weight: 600;
+      color: #5a5c69;
+      border-bottom-width: 1px;
+    }
+    
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      
+      &.badge-active {
+        background-color: rgba(28, 200, 138, 0.1);
+        color: #1cc88a;
+      }
+      
+      &.badge-inactive {
+        background-color: rgba(231, 74, 59, 0.1);
+        color: #e74a3b;
+      }
+      
+      &.badge-pending {
+        background-color: rgba(246, 194, 62, 0.1);
+        color: #f6c23e;
+      }
+    }
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 8px;
+    
+    .card-body {
+      padding: 1.25rem;
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      i {
+        font-size: 1.5rem;
+      }
+    }
+
+    h6 {
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+
+    h3 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .bg-primary-soft {
+      background-color: rgba(13, 110, 253, 0.1);
+    }
+
+    .bg-success-soft {
+      background-color: rgba(25, 135, 84, 0.1);
+    }
+
+    .bg-warning-soft {
+      background-color: rgba(255, 193, 7, 0.1);
+    }
+
+    .bg-danger-soft {
+      background-color: rgba(220, 53, 69, 0.1);
+    }
+  }
+
+  .stat-cards {
+    .stat-card {
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      background: white;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+
+      &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .icon-container {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        i {
+          font-size: 1.5rem;
+          color: white;
+        }
+      }
+
+      .stat-content {
+        flex-grow: 1;
+
+        .stat-number {
+          font-size: 1.75rem;
+          font-weight: bold;
+          margin: 0;
+          line-height: 1.2;
+        }
+
+        .stat-label {
+          color: #6c757d;
+          font-size: 0.875rem;
+        }
+      }
+
+      &.total .icon-container {
+        background-color: #4e73df;
+      }
+
+      &.active .icon-container {
+        background-color: #1cc88a;
+      }
+
+      &.pending .icon-container {
+        background-color: #f6c23e;
+      }
+
+      &.inactive .icon-container {
+        background-color: #e74a3b;
+      }
+    }
+  }
+
+  // Animaciones
+  .hover-shadow {
+    transition: box-shadow 0.3s ease;
+    
+    &:hover {
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+  }
+
+  // Estilos responsive
+  @media (max-width: 768px) {
+    .header {
+      text-align: center;
+      
+      .btn-group {
+        margin-top: 1rem;
+        width: 100%;
+      }
+    }
+    
+    .card {
+      .card-footer {
+        .btn {
+          padding: 0.5rem;
+          
+          i {
+            margin: 0;
+          }
+          
+          span {
+            display: none;
+          }
+        }
+      }
+    }
+  }
+}

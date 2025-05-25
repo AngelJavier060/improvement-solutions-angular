@@ -1,10 +1,10 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Router } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
-import { catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { AuthService, AuthResponse } from '../../../core/services/auth.service';
+import { ForgotPasswordModalComponent } from '../forgot-password-modal/forgot-password-modal.component';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-login-modal',
@@ -12,8 +12,8 @@ import { of } from 'rxjs';
   styleUrls: ['./login-modal.component.scss']
 })
 export class LoginModalComponent implements OnInit {
-  @Input() userType: 'admin' | 'usuario' = 'usuario'; // Valor por defecto
-  loginForm!: FormGroup; // Usar ! para indicar que será inicializada en ngOnInit
+  @Input() userType: 'admin' | 'user' = 'user';
+  loginForm: FormGroup;
   loading = false;
   error = '';
 
@@ -23,29 +23,28 @@ export class LoginModalComponent implements OnInit {
     private router: Router,
     private authService: AuthService,
     private modalService: NgbModal
-  ) {}
-
-  ngOnInit(): void {
+  ) {
     this.loginForm = this.fb.group({
       username: ['', [Validators.required]],
-      password: ['', [Validators.required, Validators.minLength(5)]] // Cambiado minLength a 5 para permitir 12345
+      password: ['', [Validators.required, Validators.minLength(5)]]
     });
   }
 
-  // Getters para simplificar el acceso a los campos del formulario
+  ngOnInit(): void {}
+
   get usernameControl() { return this.loginForm.get('username'); }
   get passwordControl() { return this.loginForm.get('password'); }
 
-  get userTypeTitle(): string {
-    return this.userType === 'admin' ? 'Administrador' : 'Usuario';
+  get userTypeIcon(): string {
+    return this.userType === 'admin' ? 'fas fa-user-shield' : 'fas fa-user';
   }
 
   get userTypeClass(): string {
-    return this.userType === 'admin' ? 'text-warning' : 'text-success';
+    return this.userType === 'admin' ? 'text-primary' : 'text-success';
   }
 
-  get userTypeIcon(): string {
-    return this.userType === 'admin' ? 'fas fa-user-shield' : 'fas fa-user';
+  get userTypeTitle(): string {
+    return this.userType === 'admin' ? 'Administrador' : 'Usuario';
   }
 
   onSubmit(): void {
@@ -58,17 +57,14 @@ export class LoginModalComponent implements OnInit {
 
     const credentials = this.loginForm.value;
     
-    // Usar el servicio de autenticación para validar las credenciales
     this.authService.loginWithFixedCredentials(credentials)
       .subscribe({
-        next: (response) => {
+        next: (response: AuthResponse) => {
           this.loading = false;
           
-          // Determinar la ruta según el rol del usuario
           const roles = response.userDetail.roles || [];
           let userPath = '/dashboard/usuario';
           
-          // Si el usuario tiene rol de administrador, redirigir al dashboard de admin
           if (roles.includes('ROLE_ADMIN')) {
             userPath = '/dashboard/admin';
           }
@@ -76,25 +72,21 @@ export class LoginModalComponent implements OnInit {
           this.activeModal.close('success');
           this.router.navigate([userPath]);
         },
-        error: (err) => {
+        error: (err: HttpErrorResponse) => {
           this.loading = false;
-          this.error = err.message || 'Credenciales incorrectas. Por favor, inténtelo nuevamente.';
+          if (err.status === 401) {
+            this.error = 'Usuario o contraseña incorrectos';
+          } else {
+            this.error = 'Error al iniciar sesión';
+          }
+          console.error('Error en login:', err);
         }
       });
   }
 
   openForgotPasswordModal(): void {
-    // Cerrar el modal actual
-    this.activeModal.dismiss('forgot-password');
-    
-    // Importar dinámicamente el componente para evitar dependencias circulares
-    import('../forgot-password-modal/forgot-password-modal.component').then(({ ForgotPasswordModalComponent }) => {
-      this.modalService.open(ForgotPasswordModalComponent, {
-        centered: true,
-        backdrop: 'static',
-        keyboard: false
-      });
-    });
+    this.activeModal.dismiss();
+    this.modalService.open(ForgotPasswordModalComponent);
   }
 
   dismiss(): void {

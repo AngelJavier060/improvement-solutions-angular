@@ -84,26 +84,42 @@ public class AuthController {
             LoginResponseDto response = authService.authenticateUser(loginRequest, deviceInfo, ipAddress);
             logger.info("Login exitoso para usuario: {}", response.getUserDetail().getUsername());
             return ResponseEntity.ok(response);
-        } catch (BadCredentialsException e) {
-            logger.error("Credenciales inválidas: {}", e.getMessage());
-            return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(new ErrorResponse("Credenciales inválidas", "UNAUTHORIZED", 401));
+            
         } catch (UserNotFoundException e) {
             logger.error("Usuario no encontrado: {}", e.getMessage());
             return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(new ErrorResponse(e.getMessage(), "NOT_FOUND", 404));
+                .body(new ErrorResponse(
+                    "Usuario no encontrado. Verifica que el nombre de usuario o email sea correcto",
+                    "NOT_FOUND",
+                    404));
+                    
+        } catch (BadCredentialsException e) {
+            logger.error("Credenciales inválidas: {}", e.getMessage());
+            return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(
+                    "Usuario o contraseña incorrectos",
+                    "UNAUTHORIZED",
+                    401));
+                    
         } catch (UserInactiveException e) {
             logger.error("Usuario inactivo: {}", e.getMessage());
             return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(new ErrorResponse(e.getMessage(), "FORBIDDEN", 403));
+                .body(new ErrorResponse(
+                    "Usuario inactivo. Por favor, contacta al administrador",
+                    "FORBIDDEN",
+                    403));
+                    
         } catch (Exception e) {
             logger.error("Error en login: {}", e.getMessage(), e);
             return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse("Error en login: " + e.getMessage(), "BAD_REQUEST", 400));
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(
+                    "Error al procesar el inicio de sesión",
+                    "INTERNAL_SERVER_ERROR",
+                    500));
         }
     }
     

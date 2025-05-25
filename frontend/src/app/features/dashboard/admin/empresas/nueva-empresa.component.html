@@ -1,140 +1,202 @@
-<div class="container-fluid py-4">
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header pb-0">
-          <div class="d-flex justify-content-between">
-            <h4 class="mb-0">Crear Nueva Empresa</h4>
+<div class="modal-dialog modal-dialog-centered" cdkDrag cdkDragRootElement=".cdk-overlay-pane">
+  <div class="modal-content">
+    <!-- Encabezado del modal -->
+    <div class="modal-header bg-light" cdkDragHandle>
+      <h4 class="modal-title">
+        <i class="fas fa-building text-primary me-2"></i>
+        Nueva Empresa
+      </h4>
+      <button type="button" class="btn-close" (click)="cancelar()"></button>
+    </div>
+
+    <!-- Cuerpo del modal -->
+    <div class="modal-body p-4">
+      <form [formGroup]="empresaForm" (ngSubmit)="onSubmit()" class="empresa-form">
+        <!-- Sección de logo -->
+        <div class="logo-section text-center mb-4">
+          <div class="logo-preview rounded-3 mb-3 mx-auto" 
+               [style.background-image]="logoPreviewUrl ? 'url(' + logoPreviewUrl + ')' : 'none'">
+            <div *ngIf="!logoPreviewUrl" class="placeholder-logo">
+              <i class="fas fa-building fa-2x text-muted"></i>
+            </div>
+            <img *ngIf="logoPreviewUrl" [src]="logoPreviewUrl" alt="Logo preview" class="img-fluid">
           </div>
-          <p class="text-sm mb-0">
-            Ingrese los datos de la nueva empresa
-          </p>
+          <div class="logo-upload">
+            <label class="btn btn-outline-primary btn-sm">
+              <i class="fas fa-upload me-2"></i>Subir Logo
+              <input type="file" (change)="onFileSelected($event)" accept="image/*" class="d-none">
+            </label>
+            <small class="d-block text-muted mt-1">Formatos: JPG, PNG. Máx: 2MB</small>
+            <div *ngIf="logoError" class="text-danger mt-1">
+              <small>{{ logoError }}</small>
+            </div>
+          </div>
         </div>
-        <div class="card-body">
-          <form [formGroup]="empresaForm" (ngSubmit)="onSubmit()">
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label class="form-control-label">RUC</label>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    formControlName="ruc"
-                    [ngClass]="{ 'is-invalid': submitted && f['ruc'].errors }"
-                  >
-                  <div *ngIf="submitted && f['ruc'].errors" class="invalid-feedback">       
-                    <div *ngIf="f['ruc'].errors?.['required']">El RUC es requerido</div>
-                    <div *ngIf="f['ruc'].errors?.['pattern']">El RUC debe tener 13 dígitos numéricos</div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label class="form-control-label">Nombre de la Empresa</label>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    formControlName="name"
-                    [ngClass]="{ 'is-invalid': submitted && f['name'].errors }"
-                  >
-                  <div *ngIf="submitted && f['name'].errors" class="invalid-feedback">      
-                    <div *ngIf="f['name'].errors?.['required']">El nombre es requerido</div>     
-                    <div *ngIf="f['name'].errors?.['maxlength']">El nombre no puede exceder 100 caracteres</div>
-                  </div>
-                </div>
+
+        <!-- Información básica -->
+        <h6 class="section-title mb-3">Información básica</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="ruc" formControlName="ruc" placeholder="RUC"
+                     [class.is-invalid]="f['ruc'].invalid && (f['ruc'].dirty || f['ruc'].touched)">
+              <label for="ruc">RUC <span class="text-danger">*</span></label>
+              <div class="invalid-feedback" *ngIf="f['ruc'].errors">
+                <span *ngIf="f['ruc'].errors['required']">El RUC es requerido</span>
+                <span *ngIf="f['ruc'].errors['pattern']">El RUC debe tener 13 dígitos</span>
               </div>
             </div>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label class="form-control-label">Nombre Corto</label>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    formControlName="nameShort"
-                    [ngClass]="{ 'is-invalid': submitted && f['nameShort'].errors }"
-                  >
-                  <div *ngIf="submitted && f['nameShort'].errors" class="invalid-feedback"> 
-                    <div *ngIf="f['nameShort'].errors?.['maxlength']">El nombre corto no puede exceder 50 caracteres</div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label class="form-control-label">Representante Legal</label>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    formControlName="representativeLegal"
-                    [ngClass]="{ 'is-invalid': submitted && f['representativeLegal'].errors }"
-                  >
-                  <div *ngIf="submitted && f['representativeLegal'].errors" class="invalid-feedback">
-                    <div *ngIf="f['representativeLegal'].errors?.['maxlength']">El representante legal no puede exceder 100 caracteres</div>
-                  </div>
-                </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="taxId" formControlName="taxId" placeholder="Tax ID">
+              <label for="taxId">Tax ID</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="name" formControlName="name" placeholder="Nombre"
+                     [class.is-invalid]="f['name'].invalid && (f['name'].dirty || f['name'].touched)">
+              <label for="name">Nombre de la empresa <span class="text-danger">*</span></label>
+              <div class="invalid-feedback" *ngIf="f['name'].errors">
+                <span *ngIf="f['name'].errors['required']">El nombre es requerido</span>
+                <span *ngIf="f['name'].errors['maxlength']">El nombre no debe exceder 100 caracteres</span>
               </div>
             </div>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label class="form-control-label">Email</label>
-                  <input 
-                    type="email" 
-                    class="form-control" 
-                    formControlName="email"
-                    [ngClass]="{ 'is-invalid': submitted && f['email'].errors }"
-                  >
-                  <div *ngIf="submitted && f['email'].errors" class="invalid-feedback">     
-                    <div *ngIf="f['email'].errors?.['email']">Email inválido</div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label class="form-control-label">Teléfono</label>
-                  <input 
-                    type="text" 
-                    class="form-control" 
-                    formControlName="phone"
-                    [ngClass]="{ 'is-invalid': submitted && f['phone'].errors }"
-                  >
-                  <div *ngIf="submitted && f['phone'].errors" class="invalid-feedback">    
-                    <div *ngIf="f['phone'].errors?.['maxlength']">El teléfono no puede exceder 20 caracteres</div>
-                  </div>
-                </div>
+          </div>
+          <div class="col-12">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="nameShort" formControlName="nameShort" placeholder="Nombre corto">
+              <label for="nameShort">Nombre corto</label>
+              <div class="invalid-feedback" *ngIf="f['nameShort'].errors?.['maxlength']">
+                El nombre corto no debe exceder 50 caracteres
               </div>
             </div>
-            <div class="row">
-              <div class="col-md-12">
-                <div class="form-group">
-                  <label class="form-control-label">Dirección</label>
-                  <textarea 
-                    class="form-control" 
-                    formControlName="address"
-                    [ngClass]="{ 'is-invalid': submitted && f['address'].errors }"
-                    rows="3"
-                  ></textarea>
-                  <div *ngIf="submitted && f['address'].errors" class="invalid-feedback">  
-                    <div *ngIf="f['address'].errors?.['maxlength']">La dirección no puede exceder 200 caracteres</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div *ngIf="error" class="alert alert-danger">
-              {{ error }}
-            </div>
-            <div class="row mt-3">
-              <div class="col-md-12 text-end">
-                <button type="button" class="btn btn-light me-2" (click)="cancelar()">Cancelar</button>
-                <button type="submit" class="btn btn-primary" [disabled]="loading">
-                  <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
-                  Guardar
-                </button>
-              </div>
-            </div>
-          </form>
+          </div>
         </div>
-      </div>
+
+        <!-- Información de contacto -->
+        <h6 class="section-title mt-4 mb-3">Información de contacto</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="legalRepresentative" formControlName="legalRepresentative" 
+                     placeholder="Representante Legal"
+                     [class.is-invalid]="f['legalRepresentative'].invalid && (f['legalRepresentative'].dirty || f['legalRepresentative'].touched)">
+              <label for="legalRepresentative">Representante Legal <span class="text-danger">*</span></label>
+              <div class="invalid-feedback" *ngIf="f['legalRepresentative'].errors">
+                <span *ngIf="f['legalRepresentative'].errors['required']">El representante legal es requerido</span>
+                <span *ngIf="f['legalRepresentative'].errors['maxlength']">No debe exceder 100 caracteres</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="email" class="form-control" id="email" formControlName="email" placeholder="Email"
+                     [class.is-invalid]="f['email'].invalid && (f['email'].dirty || f['email'].touched)">
+              <label for="email">Email <span class="text-danger">*</span></label>
+              <div class="invalid-feedback" *ngIf="f['email'].errors">
+                <span *ngIf="f['email'].errors['required']">El email es requerido</span>
+                <span *ngIf="f['email'].errors['email']">Ingrese un email válido</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="phone" formControlName="phone" placeholder="Teléfono"
+                     [class.is-invalid]="f['phone'].invalid && (f['phone'].dirty || f['phone'].touched)">
+              <label for="phone">Teléfono <span class="text-danger">*</span></label>
+              <div class="invalid-feedback" *ngIf="f['phone'].errors">
+                <span *ngIf="f['phone'].errors['required']">El teléfono es requerido</span>
+                <span *ngIf="f['phone'].errors['maxlength']">No debe exceder 20 caracteres</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="url" class="form-control" id="website" formControlName="website" placeholder="Sitio web"
+                     [class.is-invalid]="f['website'].invalid && (f['website'].dirty || f['website'].touched)">
+              <label for="website">Sitio web</label>
+              <div class="invalid-feedback" *ngIf="f['website'].errors?.['pattern']">
+                Ingrese una URL válida
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dirección -->
+        <h6 class="section-title mt-4 mb-3">Dirección</h6>
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="address" formControlName="address" placeholder="Dirección"
+                     [class.is-invalid]="f['address'].invalid && (f['address'].dirty || f['address'].touched)">
+              <label for="address">Dirección <span class="text-danger">*</span></label>
+              <div class="invalid-feedback" *ngIf="f['address'].errors">
+                <span *ngIf="f['address'].errors['required']">La dirección es requerida</span>
+                <span *ngIf="f['address'].errors['maxlength']">No debe exceder 200 caracteres</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="city" formControlName="city" placeholder="Ciudad">
+              <label for="city">Ciudad</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="province" formControlName="province" placeholder="Provincia">
+              <label for="province">Provincia</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información adicional -->
+        <h6 class="section-title mt-4 mb-3">Información adicional</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="text" class="form-control" id="sector" formControlName="sector" placeholder="Sector">
+              <label for="sector">Sector</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input type="number" class="form-control" id="employeesCount" formControlName="employeesCount" 
+                     placeholder="Número de empleados">
+              <label for="employeesCount">Número de empleados</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="form-floating">
+              <textarea class="form-control" id="description" formControlName="description" 
+                        placeholder="Descripción" style="height: 100px"></textarea>
+              <label for="description">Descripción</label>
+              <div class="invalid-feedback" *ngIf="f['description'].errors?.['maxlength']">
+                La descripción no debe exceder 500 caracteres
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensaje de error general -->
+        <div *ngIf="error" class="alert alert-danger mt-3">
+          {{ error }}
+        </div>
+      </form>
+    </div>
+
+    <!-- Pie del modal -->
+    <div class="modal-footer bg-light">
+      <button type="button" class="btn btn-outline-secondary" (click)="cancelar()">
+        <i class="fas fa-times me-2"></i>Cancelar
+      </button>
+      <button type="button" class="btn btn-primary" (click)="onSubmit()" [disabled]="empresaForm.invalid || loading">
+        <i class="fas fa-save me-2"></i>
+        <span *ngIf="!loading">Guardar</span>
+        <span *ngIf="loading">Guardando...</span>
+      </button>
     </div>
   </div>
 </div>

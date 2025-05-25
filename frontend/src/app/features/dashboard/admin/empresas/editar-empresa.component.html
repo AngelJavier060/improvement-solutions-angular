@@ -72,12 +72,12 @@
                   <label class="form-control-label">Representante Legal</label>
                   <input 
                     type="text" 
-                    class="form-control" 
-                    formControlName="representativeLegal"
-                    [ngClass]="{ 'is-invalid': submitted && f['representativeLegal'].errors }"
+                    class="form-control"                    formControlName="legalRepresentative"
+                    [ngClass]="{ 'is-invalid': submitted && f['legalRepresentative'].errors }"
                   >
-                  <div *ngIf="submitted && f['representativeLegal'].errors" class="invalid-feedback">
-                    <div *ngIf="f['representativeLegal'].errors?.['maxlength']">El representante legal no puede exceder 100 caracteres</div>
+                  <div *ngIf="submitted && f['legalRepresentative'].errors" class="invalid-feedback">
+                    <div *ngIf="f['legalRepresentative'].errors?.['required']">El representante legal es requerido</div>
+                    <div *ngIf="f['legalRepresentative'].errors?.['maxlength']">El representante legal no puede exceder 100 caracteres</div>
                   </div>
                 </div>
               </div>

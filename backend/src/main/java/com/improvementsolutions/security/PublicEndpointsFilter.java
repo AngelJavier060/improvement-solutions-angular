@@ -23,12 +23,12 @@ import java.io.IOException;
 public class PublicEndpointsFilter extends OncePerRequestFilter {
     
     private static final Logger logger = LoggerFactory.getLogger(PublicEndpointsFilter.class);
-    
-    @Override
+      @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        // Solo aplicamos este filtro para rutas públicas
         String path = request.getServletPath();
-        return !path.contains("/api/v1/public/");
+        // Aplicar este filtro solo para rutas que no requieren autenticación
+        return !(path.startsWith("/api/auth/") || path.startsWith("/api/v1/auth/") || 
+                path.startsWith("/api/public/") || path.startsWith("/api/v1/public/"));
     }
     
     @Override

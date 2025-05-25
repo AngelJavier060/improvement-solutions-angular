@@ -10,12 +10,14 @@ import { ApiUrlService } from '../core/services/api-url.service';
 export class BusinessService {
   private apiUrl: string;
   constructor(private http: HttpClient, private apiUrlService: ApiUrlService) {
-    this.apiUrl = this.apiUrlService.getUrl('/businesses');
+    // Asegurarse de que la ruta no tenga barras al principio
+    this.apiUrl = this.apiUrlService.getUrl('businesses');
   }
 
   getAll(): Observable<Business[]> {
     return this.http.get<Business[]>(this.apiUrl);
   }
+
   getById(id: number): Observable<Business> {
     return this.http.get<Business>(`${this.apiUrl}/${id}`);
   }
@@ -35,6 +37,7 @@ export class BusinessService {
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
+
   // Métodos para manejar la asociación de usuarios a empresas
   addUserToBusiness(businessId: number, userId: number): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/${businessId}/users/${userId}`, {});

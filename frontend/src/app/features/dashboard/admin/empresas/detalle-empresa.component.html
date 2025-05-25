@@ -48,7 +48,7 @@
                   </div>
                   <div class="col-6 py-2">
                     <p class="text-xs text-secondary mb-0">Representante Legal:</p>
-                    <h6 class="text-sm mb-0">{{ empresa.representativeLegal || 'No especificado' }}</h6>
+                    <h6 class="text-sm mb-0">{{ empresa.legalRepresentative || 'No especificado' }}</h6>
                   </div>
                 </div>
               </div>
@@ -72,7 +72,22 @@
                 </div>
               </div>
             </div>
+              <!-- Logo de la empresa -->
+            <div class="row mt-4">
+              <div class="col-md-12">
+                <h6 class="text-uppercase text-body text-xs font-weight-bolder">Logo de la empresa</h6>
+                <div class="row">
+                  <div class="col-12 py-2">
+                    <div *ngIf="empresa.logo" class="empresa-logo-container">
+                      <img [src]="getLogoUrl(empresa.logo)" alt="Logo de {{ empresa.name }}" class="empresa-logo-img">
+                    </div>
+                    <p *ngIf="!empresa.logo" class="text-sm mb-0">No se ha cargado un logotipo</p>
+                  </div>
+                </div>
+              </div>
+            </div>
             
+            <!-- Información adicional -->
             <div class="row mt-4">
               <div class="col-md-12">
                 <h6 class="text-uppercase text-body text-xs font-weight-bolder">Información adicional</h6>

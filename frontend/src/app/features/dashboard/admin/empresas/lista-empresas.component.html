@@ -1,78 +1,245 @@
-<div class="empresas-container">
-  <div class="header">
-    <div class="title-section">
-      <h2>Empresas</h2>
-      <p>Administración de empresas registradas</p>
-    </div>
-    <div class="actions">
-      <button class="btn-primary" routerLink="nuevo">
-        <i class="fas fa-plus"></i> Nueva Empresa
-      </button>
-    </div>
-  </div>
-
-  <div class="card">
-    <!-- Estado de carga -->
-    <div *ngIf="loading" class="loading-state">
-      <i class="fas fa-spinner fa-spin"></i>
-      <span>Cargando empresas...</span>
-    </div>
-
-    <!-- Estado de error -->
-    <div *ngIf="error" class="error-state">
-      <i class="fas fa-exclamation-circle"></i>
-      <span>{{ error }}</span>
-      <button (click)="cargarEmpresas()" class="btn-retry">
-        <i class="fas fa-sync"></i> Reintentar
-      </button>
+<div class="empresas-container bg-light py-4">
+  <!-- Encabezado mejorado -->
+  <div class="container-fluid">
+    <div class="header bg-white rounded-3 shadow-sm p-4 mb-4">
+      <div class="row align-items-center">
+        <div class="col-lg-8">
+          <h2 class="display-6 fw-bold mb-1">Gestión de Empresas</h2>
+          <p class="text-muted lead mb-0">Administración centralizada de todas las empresas</p>
+        </div>
+        <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+          <button class="btn btn-primary btn-lg shadow-sm animate__animated animate__fadeIn me-2" (click)="openNuevaEmpresaModal()">
+            <i class="fas fa-plus-circle me-2"></i>Nueva Empresa
+          </button>
+          <button class="btn btn-outline-secondary btn-lg" routerLink="/dashboard/admin/empresas/dashboard">
+            <i class="fas fa-chart-line me-2"></i>Dashboard
+          </button>
+        </div>
+      </div>
     </div>
 
-    <!-- Tabla de datos -->
-    <div *ngIf="!loading && !error">
-      <table class="data-table" *ngIf="empresas.length > 0; else noData">
-        <thead>
-          <tr>
-            <th class="th-id">ID</th>
-            <th>RUC</th>
-            <th>Nombre</th>
-            <th>Nombre Corto</th>
-            <th>Rep. Legal</th>
-            <th>Email</th>
-            <th class="th-actions">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let empresa of empresas">
-            <td>{{ empresa.id }}</td>
-            <td>{{ empresa.ruc }}</td>
-            <td>{{ empresa.name }}</td>
-            <td>{{ empresa.nameShort || '-' }}</td>
-            <td>{{ empresa.representativeLegal || '-' }}</td>
-            <td>{{ empresa.email || '-' }}</td>
-            <td class="actions">
-              <div class="btn-group">
-                <button class="btn btn-outline-info btn-sm" [routerLink]="['detalle', empresa.id]" title="Ver detalles">
-                  <i class="fas fa-eye"></i>
+    <!-- Filtros mejorados -->
+    <div class="filters-container bg-white rounded-3 shadow-sm p-4 mb-4">
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="search-box position-relative">
+            <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+            <input type="text" class="form-control form-control-lg ps-5" placeholder="Buscar empresa..." [formControl]="searchControl">
+          </div>
+        </div>
+        <div class="col-lg-3">
+          <div class="select-box position-relative">
+            <i class="fas fa-filter position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+            <select class="form-select form-select-lg ps-5" [formControl]="statusFilter">
+              <option value="all">Todos los estados</option>
+              <option value="active">Activas</option>
+              <option value="inactive">Inactivas</option>
+              <option value="pending">Pendientes</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-lg-3">
+          <div class="select-box position-relative">
+            <i class="fas fa-industry position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+            <select class="form-select form-select-lg ps-5" [formControl]="sectorFilter">
+              <option value="all">Todos los sectores</option>
+              <option value="no-sector">Sin sector</option>
+              <option *ngFor="let sector of sectores" [value]="sector">{{ sector }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-lg-2">
+          <div class="btn-group w-100">
+            <button class="btn btn-lg" [class.btn-primary]="viewMode === 'grid'" [class.btn-outline-secondary]="viewMode !== 'grid'" (click)="viewMode = 'grid'">
+              <i class="fas fa-th-large"></i>
+            </button>
+            <button class="btn btn-lg" [class.btn-primary]="viewMode === 'list'" [class.btn-outline-secondary]="viewMode !== 'list'" (click)="viewMode = 'list'">
+              <i class="fas fa-list"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado de carga mejorado -->
+    <div *ngIf="loading" class="text-center py-5">
+      <div class="spinner-grow text-primary" role="status"></div>
+      <p class="lead mt-3 text-muted">Cargando empresas...</p>
+    </div>
+
+    <!-- Estado de error mejorado -->
+    <div *ngIf="error" class="alert alert-danger shadow-sm animate__animated animate__fadeIn">
+      <div class="d-flex align-items-center">
+        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+        <div class="flex-grow-1">
+          <h5 class="alert-heading">Error al cargar las empresas</h5>
+          <p class="mb-0">{{ error }}</p>
+        </div>
+        <button (click)="cargarEmpresas()" class="btn btn-outline-danger">
+          <i class="fas fa-sync-alt me-2"></i>Reintentar
+        </button>
+      </div>
+    </div>
+  
+    <!-- Contenedor principal de resultados -->
+    <div *ngIf="!loading && !error" class="results-container">
+      <!-- Contador de resultados mejorado -->
+      <div class="d-flex align-items-center justify-content-between bg-white rounded-3 shadow-sm p-3 mb-4">
+        <span class="text-muted">
+          <i class="fas fa-building me-2"></i>
+          Mostrando <strong>{{ empresasFiltradas.length }}</strong> de <strong>{{ empresas.length }}</strong> empresas
+        </span>
+      </div>
+
+      <!-- Vista en grid mejorada -->
+      <div class="row g-4" *ngIf="viewMode === 'grid' && empresasFiltradas.length > 0">
+        <div class="col-xl-3 col-lg-4 col-md-6" *ngFor="let empresa of empresasFiltradas">
+          <div class="card h-100 border-0 shadow-sm hover-shadow animate__animated animate__fadeIn">
+            <div class="card-header bg-white text-center p-4 border-0">
+              <div class="logo-container mb-3">
+                <img *ngIf="empresa.logo" [src]="getLogoUrl(empresa.logo)" [alt]="empresa.name" 
+                     class="img-fluid" style="max-width: 120px; max-height: 80px;">
+                <div *ngIf="!empresa.logo" class="placeholder-logo">
+                  <i class="fas fa-building fa-3x text-secondary"></i>
+                </div>
+              </div>
+              <h5 class="card-title fw-bold mb-1">{{ empresa.name }}</h5>
+              <div class="text-muted small">{{ empresa.ruc }}</div>
+            </div>
+            <div class="card-body">
+              <div class="info-grid">
+                <div class="info-item">
+                  <i class="fas fa-envelope text-primary"></i>
+                  <span>{{ empresa.email }}</span>
+                </div>
+                <div class="info-item">
+                  <i class="fas fa-phone text-primary"></i>
+                  <span>{{ empresa.phone }}</span>
+                </div>
+                <div class="info-item" *ngIf="empresa.sector">
+                  <i class="fas fa-industry text-primary"></i>
+                  <span>{{ empresa.sector }}</span>
+                </div>
+              </div>
+              <div class="status-badge text-center my-3">
+                <span class="badge rounded-pill px-4 py-2"
+                  [ngClass]="{
+                    'bg-success': empresa.status === 'active' || !empresa.status,
+                    'bg-danger': empresa.status === 'inactive',
+                    'bg-warning text-dark': empresa.status === 'pending'
+                  }">
+                  <i class="fas me-1"
+                    [ngClass]="{
+                      'fa-check-circle': empresa.status === 'active' || !empresa.status,
+                      'fa-times-circle': empresa.status === 'inactive',
+                      'fa-clock': empresa.status === 'pending'
+                    }"></i>
+                  {{ empresa.status === 'active' || !empresa.status ? 'Activa' : empresa.status === 'inactive' ? 'Inactiva' : 'Pendiente' }}
+                </span>
+              </div>
+            </div>
+            <div class="card-footer bg-white border-0 p-3">
+              <div class="d-flex justify-content-between gap-2">
+                <button class="btn btn-light flex-grow-1" [routerLink]="['detalle', empresa.id]">
+                  <i class="fas fa-eye me-2"></i>Ver
                 </button>
-                <button class="btn btn-outline-primary btn-sm" [routerLink]="['editar', empresa.id]" title="Editar empresa">
-                  <i class="fas fa-edit"></i>
+                <button class="btn btn-light flex-grow-1" [routerLink]="['editar', empresa.id]">
+                  <i class="fas fa-edit me-2"></i>Editar
                 </button>
-                <button class="btn btn-outline-danger btn-sm" (click)="eliminarEmpresa(empresa.id!)" title="Eliminar empresa">
-                  <i class="fas fa-trash-alt"></i>
+                <button class="btn btn-light flex-grow-1" (click)="eliminarEmpresa(empresa.id!)">
+                  <i class="fas fa-trash-alt me-2"></i>Eliminar
                 </button>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <ng-template #noData>
-        <div class="empty-state">
-          <i class="fas fa-building"></i>
-          <p>No hay empresas disponibles</p>
-          <button class="btn-primary" routerLink="nuevo">Registrar empresa</button>
+            </div>
+          </div>
         </div>
-      </ng-template>
+      </div>
+
+      <!-- Vista en lista mejorada -->
+      <div *ngIf="viewMode === 'list' && empresasFiltradas.length > 0" class="table-container bg-white rounded-3 shadow-sm">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr class="table-light">
+                <th class="border-0">Logo</th>
+                <th class="border-0">RUC</th>
+                <th class="border-0">Nombre</th>
+                <th class="border-0">Rep. Legal</th>
+                <th class="border-0">Email</th>
+                <th class="border-0">Sector</th>
+                <th class="border-0">Estado</th>
+                <th class="border-0 text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let empresa of empresasFiltradas" class="align-middle animate__animated animate__fadeIn">
+                <td>
+                  <div class="logo-container">
+                    <img *ngIf="empresa.logo" [src]="getLogoUrl(empresa.logo)" [alt]="empresa.name" 
+                         class="img-fluid rounded" style="max-width: 60px; max-height: 40px;">
+                    <i *ngIf="!empresa.logo" class="fas fa-building text-secondary"></i>
+                  </div>
+                </td>
+                <td><span class="fw-medium">{{ empresa.ruc }}</span></td>
+                <td>
+                  <div class="fw-bold">{{ empresa.name }}</div>
+                  <small *ngIf="empresa.nameShort" class="text-muted">{{ empresa.nameShort }}</small>
+                </td>
+                <td>{{ empresa.legalRepresentative }}</td>
+                <td>
+                  <span class="text-truncate d-inline-block" style="max-width: 200px;">
+                    {{ empresa.email }}
+                  </span>
+                </td>
+                <td>
+                  <span class="sector-badge">
+                    {{ empresa.sector || 'No especificado' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge rounded-pill px-3 py-2"
+                    [ngClass]="{
+                      'bg-success': empresa.status === 'active' || !empresa.status,
+                      'bg-danger': empresa.status === 'inactive',
+                      'bg-warning text-dark': empresa.status === 'pending'
+                    }">
+                    {{ empresa.status === 'active' || !empresa.status ? 'Activa' : empresa.status === 'inactive' ? 'Inactiva' : 'Pendiente' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-light btn-sm" [routerLink]="['detalle', empresa.id]" title="Ver detalles">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-light btn-sm" [routerLink]="['editar', empresa.id]" title="Editar empresa">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-light btn-sm" (click)="eliminarEmpresa(empresa.id!)" title="Eliminar empresa">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Estado vacío mejorado -->
+      <div *ngIf="!loading && empresasFiltradas.length === 0" 
+           class="empty-state text-center bg-white rounded-3 shadow-sm p-5 animate__animated animate__fadeIn">
+        <i class="fas fa-building fa-4x text-muted mb-4"></i>
+        <h4 class="text-muted mb-3">No se encontraron empresas</h4>
+        <p class="text-muted mb-4" *ngIf="empresas.length > 0">
+          No hay empresas que coincidan con los criterios de búsqueda actuales
+        </p>
+        <p class="text-muted mb-4" *ngIf="empresas.length === 0">
+          Aún no se han registrado empresas en el sistema
+        </p>
+        <button class="btn btn-primary btn-lg" routerLink="nueva">
+          <i class="fas fa-plus-circle me-2"></i>Registrar primera empresa
+        </button>
+      </div>
     </div>
   </div>
 </div>

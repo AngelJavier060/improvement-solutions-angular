@@ -3,11 +3,14 @@ D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\mai
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\CorsDebugFilter.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\CorsFilter.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\DataInitializer.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\DisableSecurityConfig.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\JpaConfig.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\MailConfig.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\MinimalSecurityConfig.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\PublicResourceConfig.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\RequestLoggingFilter.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\SecurityConfig.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\WebSecurityConfig.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\AuthController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\AuthSimpleController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessController.java
@@ -15,11 +18,13 @@ D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\mai
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessEmployeeController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessEmployeeDocumentController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessObligationMatrixController.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DebugController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DegreeController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DiagnosticController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DiagnosticoController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\EthniaController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\FileController.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\FileUploadExceptionAdvice.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\MasterDataController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicCivilStatusController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicDiagnosticoController.java
@@ -30,6 +35,7 @@ D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\mai
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\SolucionProblemaController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\TestController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\TestPublicController.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\diagnostic\FileSystemDiagnostic.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\JwtAuthResponse.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\LoginRequestDto.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\LoginResponseDto.java
@@ -67,6 +73,7 @@ D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\mai
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\EmployeeContractDto.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\EmployeeDto.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\ErrorResponse.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\FileResponse.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\FileResponseDto.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\GenderDTO.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\IessDto.java
@@ -91,6 +98,7 @@ D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\mai
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Department.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Employee.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Etnia.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\FileResponse.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Gender.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Iess.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\ObligationMatrix.java
@@ -129,6 +137,7 @@ D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\mai
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\TypeDocumentRepository.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\UserRepository.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\UserSessionRepository.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\CorsFilter.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\CustomUserDetailsService.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\DisableSecurityConfig.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\JwtAuthenticationEntryPoint.java

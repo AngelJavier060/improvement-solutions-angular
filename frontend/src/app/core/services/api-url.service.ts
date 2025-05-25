@@ -14,20 +14,24 @@ export class ApiUrlService {
    * Construye una URL de API correcta, evitando la duplicación de /api/v1
    * @param endpoint El endpoint sin el prefijo /api/v1
    * @returns URL completa para la API
-   */
-  getUrl(endpoint: string): string {
+   */  getUrl(endpoint: string): string {
     // Asegurar que el endpoint comienza con /
     if (!endpoint.startsWith('/')) {
       endpoint = '/' + endpoint;
+    }    // Eliminar barras duplicadas y ajustar el prefijo /api
+    endpoint = endpoint.replace(/^\/+/, ''); // Eliminar barras al inicio
+    
+    // Si no empieza con 'api/', añadirlo
+    if (!endpoint.startsWith('api/')) {
+      endpoint = 'api/' + endpoint;
     }
 
-    // Eliminar cualquier /api/v1 duplicado
-    if (endpoint.startsWith('/api/v1')) {
-      console.warn(`Endpoint "${endpoint}" ya contiene /api/v1, esto podría causar problemas. Se recomienda usar solo "${endpoint.substring(7)}"`);
-      // Mantenemos el endpoint tal como está, con /api/v1 incluido
-    } else {
-      // Si no incluye el prefijo, agregarlo
-      endpoint = '/api/v1' + endpoint;
+    // Asegurarse de que la ruta esté bien formada
+    endpoint = endpoint.replace(/\/+/g, '/'); // Reemplazar múltiples barras con una sola
+    
+    // Asegurarse de que empiece con /
+    if (!endpoint.startsWith('/')) {
+      endpoint = '/' + endpoint;
     }
 
     // Asegurarse de que no haya doble // entre baseUrl y endpoint

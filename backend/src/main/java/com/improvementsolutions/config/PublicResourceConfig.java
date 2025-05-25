@@ -1,0 +1,99 @@
+package com.improvementsolutions.config;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+
+@Configuration
+@EnableWebSecurity
+public class PublicResourceConfig implements WebMvcConfigurer {
+    private static final Logger logger = LoggerFactory.getLogger(PublicResourceConfig.class);
+    
+    @Value("${app.storage.location:uploads}")
+    private String uploadDirectory;
+
+    /**
+     * Configuramos acceso a los directorios físicos de archivos
+     */
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // Configurar mapeo para archivos en directorio de uploads
+        Path uploadDir = Paths.get(uploadDirectory).toAbsolutePath().normalize();
+        String uploadPath = uploadDir.toString().replace("\\", "/");
+        
+        logger.info("⭐ Configurando acceso directo a recursos físicos de archivos");
+        logger.info("Directorio de uploads: {}", uploadPath);
+        
+        // Configurar acceso al directorio de logos
+        registry.addResourceHandler("/api/files/logos/**")
+                .addResourceLocations("file:" + uploadPath + "/logos/")
+                .setCachePeriod(3600);
+        
+        logger.info("Handler para directorio de logos configurado: file:{}/logos/", uploadPath);
+        
+        // Configurar acceso al directorio de uploads general
+        registry.addResourceHandler("/api/files/**")
+                .addResourceLocations("file:" + uploadPath + "/")
+                .setCachePeriod(3600);
+                
+        logger.info("Handler para directorio de archivos general configurado: file:{}/", uploadPath);
+    }
+
+    /**
+     * Configuración de seguridad específica para recursos públicos como los logos,
+     * que deben ser accesibles sin autenticación.
+     * Esta configuración tiene una prioridad más alta (Order=75) que la configuración general
+     * para asegurar que se aplique primero a las rutas especificadas.
+     */
+    @Bean
+    @Order(75) // Mayor prioridad que la configuración general
+    public SecurityFilterChain publicResourcesFilterChain(HttpSecurity http) throws Exception {
+        logger.info("⭐ Configurando acceso público para recursos de archivos");
+        
+        return http
+            .securityMatcher("/api/files/**") // Esta configuración aplica a todas las rutas de archivos
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(authorize -> {
+                authorize
+                    .requestMatchers(HttpMethod.GET, "/api/files/logos/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/debug/**").permitAll()
+                    .anyRequest().authenticated();
+                
+                logger.info("✅ Configuración de seguridad para archivos aplicada correctamente");
+            })
+            .build();
+    }
+    
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "Origin"));
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/files/**", configuration);
+        source.registerCorsConfiguration("/api/debug/**", configuration);
+        
+        return source;
+    }
+}
