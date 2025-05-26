@@ -137,7 +137,6 @@ D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\mai
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\TypeDocumentRepository.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\UserRepository.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\UserSessionRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\CorsFilter.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\CustomUserDetailsService.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\DisableSecurityConfig.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\JwtAuthenticationEntryPoint.java

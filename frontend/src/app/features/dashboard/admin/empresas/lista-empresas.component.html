@@ -235,8 +235,7 @@
         </p>
         <p class="text-muted mb-4" *ngIf="empresas.length === 0">
           Aún no se han registrado empresas en el sistema
-        </p>
-        <button class="btn btn-primary btn-lg" routerLink="nueva">
+        </p>        <button class="btn btn-primary btn-lg" (click)="openNuevaEmpresaModal()">
           <i class="fas fa-plus-circle me-2"></i>Registrar primera empresa
         </button>
       </div>

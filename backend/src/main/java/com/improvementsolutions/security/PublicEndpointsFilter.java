@@ -37,12 +37,7 @@ public class PublicEndpointsFilter extends OncePerRequestFilter {
         
         String requestPath = request.getServletPath();
         logger.info("PublicEndpointsFilter: Procesando ruta pública: {}", requestPath);
-        
-        // Agregar cabeceras CORS explícitas para endpoints públicos
-        response.setHeader("Access-Control-Allow-Origin", "*");
-        response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        response.setHeader("Access-Control-Allow-Headers", "*");
-        response.setHeader("Access-Control-Max-Age", "3600");
+          // Los encabezados CORS son manejados por la configuración central de Spring Security
         
         // Manejar las solicitudes OPTIONS (preflight)
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {

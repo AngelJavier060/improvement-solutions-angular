@@ -2,8 +2,11 @@ package com.improvementsolutions.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -12,9 +15,12 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "business_employee_contract_files")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = {"businessEmployeeContract"})
+@ToString(exclude = {"businessEmployeeContract"})
 public class BusinessEmployeeContractFile {
     
     @Id
@@ -25,16 +31,18 @@ public class BusinessEmployeeContractFile {
     @JoinColumn(name = "business_employee_contract_id", nullable = false)
     private BusinessEmployeeContract businessEmployeeContract;
     
-    @Column(nullable = false)
+    @Column(name = "file_name", nullable = false)
     private String fileName;
     
-    @Column(nullable = false)
+    @Column(name = "file_path", nullable = false)
     private String filePath;
     
     private String description;
     
+    @Column(name = "file_type")
     private String fileType;
     
+    @Column(name = "file_size")
     private Long fileSize;
     
     @Column(name = "created_at")
@@ -54,21 +62,20 @@ public class BusinessEmployeeContractFile {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-    
-    // Métodos faltantes según BusinessEmployeeContractFileService
-    public void setName(String name) {
-        this.fileName = name;
+
+    public String getFile() {
+        return this.filePath;
     }
-    
+
     public void setFile(String filePath) {
         this.filePath = filePath;
     }
-    
-    public void setDescription(String description) {
-        this.description = description;
+
+    public void setName(String fileName) {
+        this.fileName = fileName;
     }
     
-    public String getFile() {
-        return this.filePath;
+    public String getName() {
+        return this.fileName;
     }
 }

@@ -61,8 +61,5 @@ public class Position {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-    
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+      // Lombok (@Data) ya genera todos los getters y setters necesarios
 }

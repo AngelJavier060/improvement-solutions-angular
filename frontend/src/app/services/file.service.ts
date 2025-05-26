@@ -1,14 +1,21 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface FileResponse {
   url: string;
-  temporaryUrl: string;
+  temporaryUrl: string | null;
   filename: string;
-  contentType: string;
-  size: number;
+  contentType: string | null;
+  size: number | null;
+  message: string | null;
+}
+
+export interface TemporaryUrlResponse {
+  url: string;
+  expiresAt?: string;
 }
 
 @Injectable({
@@ -19,6 +26,11 @@ export class FileService {
 
   constructor(private http: HttpClient) { }
 
+  private getAuthHeaders(): { [key: string]: string } {
+    const token = localStorage.getItem('auth_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  }
+
   /**
    * Sube un archivo al almacenamiento general
    */
@@ -26,88 +38,72 @@ export class FileService {
     const formData = new FormData();
     formData.append('file', file);
     
-    return this.http.post<FileResponse>(`${this.baseUrl}/upload`, formData);
-  }
-  /**
-   * Sube un archivo a una carpeta específica
-   */
-  uploadFileToDirectory(directory: string, file: File): Observable<FileResponse> {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    // Asegurarse de que no se incluyan cabeceras Content-Type para que el navegador establezca
-    // automáticamente el boundary correcto para multipart/form-data
-    return this.http.post<FileResponse>(`${this.baseUrl}/upload/${directory}`, formData);
-  }
-  /**
-   * Obtiene la URL de descarga de un archivo
-   */
-  getFileUrl(filename: string): string {
-    const token = localStorage.getItem('auth_token');
-    return `${this.baseUrl}/${filename}${token ? '?token=' + token : ''}`;
-  }
-  /**
-   * Obtiene la URL de descarga de un archivo en una carpeta específica
-   * @param directory Directorio donde se encuentra el archivo
-   * @param filename Nombre del archivo
-   * @param preventCache Añadir timestamp para evitar caché (por defecto true)
-   * @returns URL completa para acceder al archivo
-   */
-  getFileUrlFromDirectory(directory: string, filename: string, preventCache: boolean = true): string {
-    // Limpieza del nombre de archivo (eliminamos parámetros de consulta si existen)
-    const cleanFilename = filename?.split('?')[0]?.split('#')[0] || '';
-    
-    // Si ya es una ruta completa que incluye el directorio, extraer solo el nombre del archivo
-    const actualFilename = cleanFilename.includes('/') ? cleanFilename.split('/').pop() || cleanFilename : cleanFilename;
-    
-    if (!actualFilename) {
-      console.warn('Nombre de archivo vacío al construir URL');
-      return '';
-    }
-    
-    // Obtener token para autenticación
-    const token = localStorage.getItem('auth_token');
-    
-    // Construir URL base
-    let url = `${this.baseUrl}/${directory}/${actualFilename}`;
-    
-    // Añadir token si existe
-    if (token) {
-      url += `?token=${token}`;
-    }
-    
-    // Añadir parámetro para prevenir caché, si se solicita
-    if (preventCache) {
-      url += `${token ? '&' : '?'}v=${new Date().getTime()}`;
-    }
-    
-    console.log(`URL generada para archivo ${actualFilename} en ${directory}: ${url}`);
-    return url;
+    const headers = this.getAuthHeaders();
+    return this.http.post<FileResponse>(`${this.baseUrl}/upload`, formData, { headers }).pipe(
+      map(response => ({
+        url: response.url,
+        temporaryUrl: response.temporaryUrl || null,
+        filename: response.filename,
+        contentType: response.contentType || null,
+        size: response.size || null,
+        message: response.message || null
+      }))
+    );
   }
 
   /**
-   * Genera una URL temporal para acceder a un archivo
+   * Sube un archivo a una carpeta específica
+   */  uploadFileToDirectory(directory: string, file: File): Observable<FileResponse> {
+    console.log(`[FileService] Iniciando carga de archivo a directorio: ${directory}`);
+    console.log(`[FileService] Tipo de archivo: ${file.type}, Tamaño: ${file.size} bytes`);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<FileResponse>(`${this.baseUrl}/upload/${directory}`, formData).pipe(
+      map(response => {
+        console.log('[FileService] Respuesta del servidor:', response);
+        return {
+          url: response.url,
+          temporaryUrl: response.temporaryUrl || null,
+          filename: response.filename,
+          contentType: response.contentType || null,
+          size: response.size || null,
+          message: response.message || null
+        };
+      }),
+      catchError(error => {
+        console.error('[FileService] Error al subir archivo:', error);
+        if (error.status === 403) {
+          return throwError(() => new Error('No tiene permisos para subir archivos. Por favor, inicie sesión nuevamente.'));
+        } else if (error.status === 413) {
+          return throwError(() => new Error('El archivo es demasiado grande. El tamaño máximo permitido es 2MB.'));
+        } else if (error.status === 415) {
+          return throwError(() => new Error('Tipo de archivo no permitido. Solo se permiten imágenes JPG y PNG.'));
+        }
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Obtiene una URL temporal para acceder a un archivo
    */
-  getTemporaryUrl(path: string, minutes = 5): Observable<{ url: string }> {
-    return this.http.get<{ url: string }>(`${this.baseUrl}/temp/${path}`, {
-      params: { minutes: minutes.toString() }
-    });
+  getTemporaryUrl(fileUrl: string, expirationMinutes: number): Observable<{ url: string }> {
+    const headers = this.getAuthHeaders();
+    return this.http.post<{ url: string }>(`${this.baseUrl}/temp-url`, {
+      fileUrl,
+      expirationMinutes
+    }, { headers });
   }
 
   /**
    * Descarga un archivo
    */
-  downloadFile(filename: string): Observable<Blob> {
-    return this.http.get(`${this.baseUrl}/${filename}`, {
-      responseType: 'blob'
-    });
-  }
-
-  /**
-   * Descarga un archivo de una carpeta específica
-   */
-  downloadFileFromDirectory(directory: string, filename: string): Observable<Blob> {
-    return this.http.get(`${this.baseUrl}/${directory}/${filename}`, {
+  downloadFile(fileUrl: string): Observable<Blob> {
+    const headers = this.getAuthHeaders();
+    return this.http.get(fileUrl, {
+      headers,
       responseType: 'blob'
     });
   }
@@ -115,14 +111,29 @@ export class FileService {
   /**
    * Elimina un archivo
    */
-  deleteFile(filename: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${filename}`);
+  deleteFile(fileUrl: string): Observable<void> {
+    const headers = this.getAuthHeaders();
+    return this.http.delete<void>(`${this.baseUrl}/${fileUrl}`, { headers });
   }
 
   /**
-   * Elimina un archivo de una carpeta específica
+   * Obtiene la URL de descarga de un archivo
    */
-  deleteFileFromDirectory(directory: string, filename: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${directory}/${filename}`);
+  getFileUrl(filename: string): string {
+    return `${this.baseUrl}/${filename}`;
+  }
+
+  /**
+   * Obtiene la URL de descarga de un archivo en una carpeta específica
+   */
+  getFileDirectoryUrl(directory: string, filename: string, preventCache: boolean = true): string {
+    const url = `${this.baseUrl}/${directory}/${filename}`;
+    return preventCache ? `${url}?v=${new Date().getTime()}` : url;
+  }
+  /**
+   * Obtiene la URL de un archivo desde un directorio específico
+   */
+  getFileUrlFromDirectory(directory: string, filename: string, preventCache: boolean = true): string {
+    return this.getFileDirectoryUrl(directory, filename, preventCache);
   }
 }

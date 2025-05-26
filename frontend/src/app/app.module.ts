@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule } from '@angular/router';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
@@ -32,9 +33,9 @@ import { DiagnosticComponent } from './components/diagnostic/diagnostic.componen
     BusinessFilesComponent,
     TestPublicComponent,
     DiagnosticComponent
-  ],
-  imports: [
+  ],  imports: [
     BrowserModule,
+    BrowserAnimationsModule,
     CommonModule,
     HttpClientModule,
     RouterModule.forRoot([

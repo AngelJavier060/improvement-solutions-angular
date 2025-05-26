@@ -1,13 +1,10 @@
 package com.improvementsolutions.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.BatchSize;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -16,20 +13,21 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "roles")
-@Data // Genera getters, setters, toString, equals, hashCode
-@EqualsAndHashCode(exclude = {"users", "permissions"})
-@ToString(exclude = {"users", "permissions"})
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = {"users", "permissions"})
+@ToString(exclude = {"users", "permissions"})
 public class Role {
-    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
-    
+
+    @Column
     private String description;
     
     @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
@@ -41,35 +39,83 @@ public class Role {
         joinColumns = @JoinColumn(name = "role_id"),
         inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
-    @BatchSize(size = 20)
     private Set<Permission> permissions = new HashSet<>();
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
     
-    // Métodos helper para mantener la bidireccionalidad
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    // Getters y setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public Set<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Set<User> users) {
+        this.users = users;
+    }
+
+    // Métodos de utilidad
     public void addUser(User user) {
-        this.users.add(user);
-        if (!user.getRoles().contains(this)) {
-            user.getRoles().add(this);
-        }
+        users.add(user);
+        user.getRoles().add(this);
     }
-    
+
     public void removeUser(User user) {
-        this.users.remove(user);
-        if (user.getRoles().contains(this)) {
-            user.getRoles().remove(this);
-        }
+        users.remove(user);
+        user.getRoles().remove(this);
     }
-    
-    public void addPermission(Permission permission) {
-        this.permissions.add(permission);
-        if (!permission.getRoles().contains(this)) {
-            permission.getRoles().add(this);
-        }
+
+    // Métodos del ciclo de vida JPA
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
-    
-    public void removePermission(Permission permission) {
-        this.permissions.remove(permission);
-        if (permission.getRoles().contains(this)) {
-            permission.getRoles().remove(this);
-        }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

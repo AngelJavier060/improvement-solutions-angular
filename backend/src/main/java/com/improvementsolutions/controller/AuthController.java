@@ -55,7 +55,7 @@ public class AuthController {
                     info.put("id", user.getId());
                     info.put("username", user.getUsername());
                     info.put("email", user.getEmail());
-                    info.put("active", user.isActive());
+                    info.put("active", user.getActive());
                     info.put("roles", user.getRoles().stream()
                         .map(Role::getName)
                         .collect(Collectors.toList()));

@@ -7,48 +7,48 @@ import java.util.List;
 import java.util.Set;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 
 @Entity
 @Table(name = "businesses")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"users", "employees", "departments", "positions", "iessItems", "typeContracts", "typeDocuments"})
-@ToString(exclude = {"users", "employees", "departments", "positions", "iessItems", "typeContracts", "typeDocuments"})
+@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems"})
+@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems"})
 public class Business {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    
     @Column(nullable = false)
     private String name;
     
-    @Column(length = 50)
+    @Column(name = "name_short")
     private String nameShort;
     
     @Column(nullable = false, unique = true)
     private String ruc;
     
     @Column(nullable = false)
-    private String address;
+    private String email;
     
     @Column(nullable = false)
     private String phone;
     
+    @Column(name = "secondary_phone")
     private String secondaryPhone;
     
-    @Column(nullable = false)
-    private String email;
-    
+    private String address;
     private String website;
     private String description;
-    private String tradeName;
+    
+    @Column(name = "commercial_activity")
     private String commercialActivity;
+    
+    @Column(name = "trade_name")
+    private String tradeName;
     
     @Column(name = "legal_representative", nullable = false)
     private String legalRepresentative;
@@ -73,22 +73,6 @@ public class Business {
     @OneToMany(mappedBy = "business", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BusinessEmployee> employees = new ArrayList<>();
     
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "business_department",
-        joinColumns = @JoinColumn(name = "business_id"),
-        inverseJoinColumns = @JoinColumn(name = "department_id")
-    )
-    private Set<Department> departments = new HashSet<>();
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "business_iess",
-        joinColumns = @JoinColumn(name = "business_id"),
-        inverseJoinColumns = @JoinColumn(name = "iess_id")
-    )
-    private Set<Iess> iessItems = new HashSet<>();
-
     @ManyToMany(mappedBy = "businesses", fetch = FetchType.LAZY)
     private Set<User> users = new HashSet<>();
 
@@ -116,7 +100,39 @@ public class Business {
     )
     private Set<TypeDocument> typeDocuments = new HashSet<>();
 
-    // Helper methods
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_department",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "department_id")
+    )
+    private Set<Department> departments = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_iess",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "iess_id")
+    )
+    private Set<Iess> iessItems = new HashSet<>();
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+        if (this.registrationDate == null) {
+            this.registrationDate = LocalDateTime.now();
+        }
+        if (this.nameShort == null || this.nameShort.trim().isEmpty()) {
+            this.nameShort = this.name.substring(0, Math.min(this.name.length(), 50));
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public void addEmployee(BusinessEmployee employee) {
         employees.add(employee);
         employee.setBusiness(this);
@@ -127,59 +143,53 @@ public class Business {
         employee.setBusiness(null);
     }
 
-    public void addUser(User user) {
-        users.add(user);
-        if (!user.getBusinesses().contains(this)) {
-            user.getBusinesses().add(this);
-        }
+    public void addDepartment(Department department) {
+        departments.add(department);
+        department.getBusinesses().add(this);
     }
 
-    public void removeUser(User user) {
-        users.remove(user);
-        if (user.getBusinesses().contains(this)) {
-            user.getBusinesses().remove(this);
-        }
+    public void removeDepartment(Department department) {
+        departments.remove(department);
+        department.getBusinesses().remove(this);
     }
-    
+
     public void addTypeContract(TypeContract typeContract) {
         typeContracts.add(typeContract);
-        if (!typeContract.getBusinesses().contains(this)) {
-            typeContract.getBusinesses().add(this);
-        }
+        typeContract.getBusinesses().add(this);
     }
 
     public void removeTypeContract(TypeContract typeContract) {
         typeContracts.remove(typeContract);
-        if (typeContract.getBusinesses().contains(this)) {
-            typeContract.getBusinesses().remove(this);
-        }
+        typeContract.getBusinesses().remove(this);
     }
 
     public void addTypeDocument(TypeDocument typeDocument) {
         typeDocuments.add(typeDocument);
-        if (!typeDocument.getBusinesses().contains(this)) {
-            typeDocument.getBusinesses().add(this);
-        }
+        typeDocument.getBusinesses().add(this);
     }
 
     public void removeTypeDocument(TypeDocument typeDocument) {
         typeDocuments.remove(typeDocument);
-        if (typeDocument.getBusinesses().contains(this)) {
-            typeDocument.getBusinesses().remove(this);
-        }
+        typeDocument.getBusinesses().remove(this);
     }
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-        if (this.registrationDate == null) {
-            this.registrationDate = LocalDateTime.now();
-        }
+    public void addIessItem(Iess iessItem) {
+        iessItems.add(iessItem);
+        iessItem.getBusinesses().add(this);
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+    public void removeIessItem(Iess iessItem) {
+        iessItems.remove(iessItem);
+        iessItem.getBusinesses().remove(this);
+    }
+
+    public void addPosition(Position position) {
+        positions.add(position);
+        position.getBusinesses().add(this);
+    }
+
+    public void removePosition(Position position) {
+        positions.remove(position);
+        position.getBusinesses().remove(this);
     }
 }

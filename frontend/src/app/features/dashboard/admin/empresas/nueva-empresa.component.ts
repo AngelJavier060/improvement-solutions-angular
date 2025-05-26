@@ -134,16 +134,7 @@ export class NuevaEmpresaComponent implements OnInit {
         // Deshabilitar el indicador de carga
         this.loading = false;
         
-        // Almacenar ID de empresa para verificar éxito de la operación
-        if (response.id) {
-          localStorage.setItem('last_created_business_id', response.id.toString());
-        }
-          // Usar navegación Angular con ruta relativa
-        this.router.navigateByUrl('/dashboard/admin/empresas/lista').then(() => {
-          console.log('Navegación exitosa a la lista de empresas');
-        }).catch(err => {
-          console.error('Error en navegación:', err);
-        });
+        // Cerrar el diálogo y notificar al componente padre que debe refrescar la lista
         this.dialogRef.close('refresh');
       },
       error: (err) => {

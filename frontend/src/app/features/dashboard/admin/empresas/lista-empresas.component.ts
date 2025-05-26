@@ -35,6 +35,9 @@ export class ListaEmpresasComponent implements OnInit {
   // Estadísticas de empresas
   totalEmpresas = 0;
 
+  // Cache de URLs de logos para evitar regeneración constante
+  private logoUrlCache: Map<string, string> = new Map();
+
   constructor(
     private businessService: BusinessService,
     private fileService: FileService,
@@ -173,43 +176,57 @@ export class ListaEmpresasComponent implements OnInit {
     if (!logoPath) {
       return '';
     }
-    
-    // Método simplificado para construir URLs de logos
-    // Siempre usamos el directorio de logos
+
+    // Verificar si ya tenemos la URL en caché
+    if (this.logoUrlCache.has(logoPath)) {
+      return this.logoUrlCache.get(logoPath)!;
+    }
+
+    // Generar la nueva URL con timestamp
     const baseUrl = `${environment.apiUrl}/api/files/logos/`;
-    
+    let url: string;
+
     // Si es una URL completa, extraemos solo el nombre del archivo
     if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
       try {
-        // Extraer solo el nombre del archivo de la URL
-        const url = new URL(logoPath);
-        const pathname = url.pathname;
+        const urlObj = new URL(logoPath);
+        const pathname = urlObj.pathname;
         const filename = pathname.split('/').pop() || '';
-        
-        // Generar una URL directa sin token
-        return `${baseUrl}${filename}?v=${Date.now()}`;
+        url = `${baseUrl}${filename}?v=${Date.now()}`;
       } catch (e) {
         console.error('Error al procesar URL de logo:', e);
-        return logoPath;
+        url = logoPath;
       }
     }
-    
     // Si ya contiene logos/ en la ruta, extraemos solo el nombre
-    if (logoPath.includes('logos/')) {
+    else if (logoPath.includes('logos/')) {
       const filename = logoPath.split('/').pop() || '';
-      return `${baseUrl}${filename}?v=${Date.now()}`;
+      url = `${baseUrl}${filename}?v=${Date.now()}`;
     }
-    
     // Si es solo un nombre de archivo, lo usamos directamente
-    return `${baseUrl}${logoPath}?v=${Date.now()}`;
+    else {
+      url = `${baseUrl}${logoPath}?v=${Date.now()}`;
+    }
+
+    // Guardar en caché
+    this.logoUrlCache.set(logoPath, url);
+    return url;
+  }
+
+  // Método para limpiar el caché cuando sea necesario
+  clearLogoUrlCache(): void {
+    this.logoUrlCache.clear();
   }
 
   openNuevaEmpresaModal(): void {
     const dialogRef = this.dialog.open(NuevaEmpresaComponent, {
       width: '600px',
-      maxWidth: '95vw',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
       panelClass: 'custom-modal',
-      disableClose: true
+      autoFocus: true,
+      disableClose: true,
+      position: { top: '50px' }
     });
     dialogRef.afterClosed().subscribe(result => {
       if (result === 'refresh') {

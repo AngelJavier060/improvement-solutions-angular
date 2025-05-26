@@ -46,12 +46,12 @@ public class FileSystemStorageService implements StorageService {
     public FileSystemStorageService(@Value("${app.storage.location:uploads}") String uploadDir) {
         this.rootLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
         logger.info("Storage service initialized with root location: {}", this.rootLocation);
-    }
-
-    @PostConstruct
+    }    @PostConstruct
     @Override
     public void init() {
         try {
+            logger.info("⭐ Inicializando sistema de almacenamiento...");
+            
             // Crear directorios necesarios en una sola operación
             Path logosDir = rootLocation.resolve(LOGOS_DIRECTORY);
             Files.createDirectories(rootLocation);
@@ -60,11 +60,16 @@ public class FileSystemStorageService implements StorageService {
             // Asegurar permisos adecuados
             try {
                 // Intentar establecer permisos POSIX si es posible
-                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwxrwxr--");
+                Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwxrwxr-x");
                 Files.setPosixFilePermissions(rootLocation, permissions);
                 Files.setPosixFilePermissions(logosDir, permissions);
+                logger.info("✅ Permisos POSIX establecidos correctamente");
             } catch (UnsupportedOperationException e) {
-                // Si no es posible usar permisos POSIX (Windows), verificar solo escritura
+                // En Windows, intentar establecer los permisos básicos
+                rootLocation.toFile().setWritable(true, false);
+                logosDir.toFile().setWritable(true, false);
+                
+                // Verificar permisos
                 if (!Files.isWritable(rootLocation) || !Files.isWritable(logosDir)) {
                     throw new StorageException("Permisos insuficientes en los directorios de almacenamiento");
                 }

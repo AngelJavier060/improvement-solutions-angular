@@ -10,11 +10,9 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
 public class CorsDebugFilter implements Filter {
     
     private static final Logger logger = LoggerFactory.getLogger(CorsDebugFilter.class);

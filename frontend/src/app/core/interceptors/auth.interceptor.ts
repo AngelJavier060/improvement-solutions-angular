@@ -14,7 +14,7 @@ import { Router } from '@angular/router';
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
   // Lista de rutas públicas que no necesitan token
-  private publicRoutes = [
+  private readonly publicRoutes: string[] = [
     '/api/auth/login',
     '/api/auth/register',
     '/api/auth/forgot-password',
@@ -23,35 +23,46 @@ export class AuthInterceptor implements HttpInterceptor {
     '/api/v1/public/test',
     '/api/v1/public/validacion',
     '/api/v1/public/generos',
-    '/api/v1/public/estado-civil'
+    '/api/v1/public/estado-civil',
+    '/api/files/upload',
+    '/api/files/logos',
+    '/api/files/upload/logos'
   ];
 
   constructor(private authService: AuthService, private router: Router) {}
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     const token = this.authService.getToken();
-    const isPublicRoute = this.publicRoutes.some(url => request.url.includes(url));
-    
-    console.log(`[AuthInterceptor] URL: ${request.url}, Es ruta pública: ${isPublicRoute}`);    // Evitamos añadir headers de Content-Type para solicitudes multipart
+    const isPublicRoute = this.publicRoutes.some((url: string) => request.url.includes(url));
     const isFileUpload = request.url.includes('/upload') && request.method === 'POST';
     
-    if (!isPublicRoute && token) {
-      console.log('[AuthInterceptor] Añadiendo token a la solicitud');
-      
-      const headers: any = {
-        Authorization: `Bearer ${token}`
-      };
-      
-      // No añadimos Content-Type para subidas de archivos
-      if (!isFileUpload) {
-        headers['Content-Type'] = 'application/json';
-        headers['Accept'] = 'application/json';
+    console.log(`[AuthInterceptor] URL: ${request.url}, Es ruta pública: ${isPublicRoute}, Es subida de archivo: ${isFileUpload}`);
+    
+    // Si es una ruta pública no añadimos el token
+    if (!isPublicRoute) {
+      if (token) {
+        console.log('[AuthInterceptor] Añadiendo token a la solicitud');
+        
+        // Preparar los headers según el tipo de petición
+        let headers: { [key: string]: string } = {
+          'Authorization': `Bearer ${token}`
+        };
+        
+        // Para peticiones que no son de archivos, añadimos los headers de contenido
+        if (!isFileUpload) {
+          headers['Content-Type'] = 'application/json';
+          headers['Accept'] = 'application/json';
+        }
+        
+        // Clonar la petición con los headers correspondientes
+        request = request.clone({
+          setHeaders: headers
+        });
       }
-      
-      request = request.clone({ setHeaders: headers });
     } else {
-      console.log('[AuthInterceptor] Ruta pública o no hay token disponible');
+      console.log('[AuthInterceptor] Ruta pública, no se requiere token');
       
+      // Para peticiones que no son de archivos en rutas públicas
       if (!isFileUpload) {
         request = request.clone({
           setHeaders: {
@@ -62,9 +73,15 @@ export class AuthInterceptor implements HttpInterceptor {
       }
     }
 
-    return next.handle(request).pipe(
-      catchError((error: HttpErrorResponse) => {
+    return next.handle(request).pipe(      catchError((error: HttpErrorResponse) => {
         console.error('[AuthInterceptor] Error:', error.status, 'URL:', request.url);
+        
+        if (error.status === 403) {
+          console.error('[AuthInterceptor] Error de permisos:', error.error?.message || 'Acceso denegado');
+          if (isFileUpload) {
+            console.error('[AuthInterceptor] Error al subir archivo: Permisos insuficientes');
+          }
+        }
         
         if (error.status === 401) {
           if (!isPublicRoute) {

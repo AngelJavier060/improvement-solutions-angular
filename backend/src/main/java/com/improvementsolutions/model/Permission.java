@@ -1,20 +1,21 @@
 package com.improvementsolutions.model;
 
 import jakarta.persistence.*;
-import java.util.HashSet;
-import java.util.Set;
 import lombok.*;
 
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "permissions")
-@Data
-@ToString(exclude = "roles")
-@EqualsAndHashCode(exclude = "roles")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = "roles")
+@ToString(exclude = "roles")
 public class Permission {
-    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,21 +23,23 @@ public class Permission {
     @Column(nullable = false, unique = true)
     private String name;
     
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
     @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
     private Set<Role> roles = new HashSet<>();
 
-    // Helper methods
-    public void addRole(Role role) {
-        this.roles.add(role);
-        if (!role.getPermissions().contains(this)) {
-            role.getPermissions().add(this);
-        }
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public void removeRole(Role role) {
-        this.roles.remove(role);
-        if (role.getPermissions().contains(this)) {
-            role.getPermissions().remove(this);
-        }
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

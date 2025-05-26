@@ -2,27 +2,20 @@ package com.improvementsolutions.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 @Configuration
-@EnableWebSecurity
 public class PublicResourceConfig implements WebMvcConfigurer {
     private static final Logger logger = LoggerFactory.getLogger(PublicResourceConfig.class);
     
@@ -61,39 +54,20 @@ public class PublicResourceConfig implements WebMvcConfigurer {
      * que deben ser accesibles sin autenticación.
      * Esta configuración tiene una prioridad más alta (Order=75) que la configuración general
      * para asegurar que se aplique primero a las rutas especificadas.
-     */
-    @Bean
+     */      @Bean
     @Order(75) // Mayor prioridad que la configuración general
     public SecurityFilterChain publicResourcesFilterChain(HttpSecurity http) throws Exception {
         logger.info("⭐ Configurando acceso público para recursos de archivos");
         
         return http
             .securityMatcher("/api/files/**") // Esta configuración aplica a todas las rutas de archivos
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(authorize -> {
-                authorize
-                    .requestMatchers(HttpMethod.GET, "/api/files/logos/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/debug/**").permitAll()
-                    .anyRequest().authenticated();
-                
-                logger.info("✅ Configuración de seguridad para archivos aplicada correctamente");
-            })
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers(HttpMethod.GET, "/api/files/logos/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/files/upload/logos/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/debug/**").permitAll()
+                .anyRequest().authenticated()
+            )
             .build();
-    }
-    
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "Origin"));
-        configuration.setAllowCredentials(true);
-        
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/files/**", configuration);
-        source.registerCorsConfiguration("/api/debug/**", configuration);
-        
-        return source;
     }
 }

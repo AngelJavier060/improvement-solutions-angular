@@ -58,6 +58,9 @@ public class FileController {
             validateFile(file);
             validateDirectory(directory);
             
+            logger.info("⭐ Recibiendo archivo para directorio {}: {}, tipo: {}, tamaño: {}", 
+                directory, file.getOriginalFilename(), file.getContentType(), file.getSize());
+            
             // Generar nombre único para el archivo
             String originalFilename = file.getOriginalFilename();
             String fileExtension = getFileExtension(originalFilename);
@@ -67,25 +70,37 @@ public class FileController {
             String storedPath = storageService.store(directory, file, uniqueFilename);
             FileResponse response = createFileResponse(file, storedPath);
             
-            logger.info("Archivo subido exitosamente al directorio {}: {}", directory, uniqueFilename);
-            return ResponseEntity.ok(response);
+            logger.info("✅ Archivo subido exitosamente al directorio {}: {}", directory, uniqueFilename);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "POST")
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, "*")
+                    .body(response);
             
         } catch (StorageException e) {
-            logger.error("Error al validar archivo para directorio {}: {}", directory, e.getMessage());
-            return ResponseEntity
+            logger.error("Error al validar archivo para directorio {}: {}", directory, e.getMessage());            return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
-                    .body(new FileResponse(e.getMessage()));
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "POST")
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, "*")
+                    .body(new FileResponse("Error de validación: " + e.getMessage()));
                     
         } catch (IOException e) {
-            logger.error("Error de E/S al subir archivo al directorio {}: {}", directory, e.getMessage(), e);
+            logger.error("❌ Error de E/S al subir archivo al directorio {}: {}", directory, e.getMessage(), e);
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "POST")
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, "*")
                     .body(new FileResponse("Error al procesar el archivo: " + e.getMessage()));
                     
         } catch (Exception e) {
-            logger.error("Error interno al subir archivo al directorio {}: {}", directory, e.getMessage(), e);
+            logger.error("❌ Error interno al subir archivo al directorio {}: {}", directory, e.getMessage(), e);
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "POST")
+                    .header(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, "*")
                     .body(new FileResponse("Error interno del servidor al procesar el archivo: " + e.getMessage()));
         }
     }
@@ -145,19 +160,39 @@ public class FileController {
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new StorageException("No se puede subir un archivo vacío");
+            throw new StorageException("No se puede procesar un archivo vacío");
         }
-        if (file.getOriginalFilename() == null || file.getOriginalFilename().isEmpty()) {
+        
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.trim().isEmpty()) {
             throw new StorageException("Nombre de archivo no válido");
+        }
+
+        // Validar tamaño máximo (configurable)
+        long maxFileSize = 5 * 1024 * 1024; // 5MB por defecto
+        if (file.getSize() > maxFileSize) {
+            throw new StorageException(
+                String.format("El archivo excede el tamaño máximo permitido de %d MB", maxFileSize / (1024 * 1024))
+            );
         }
     }
 
     private void validateDirectory(String directory) {
-        if (directory == null || directory.isEmpty()) {
-            throw new StorageException("Directorio no válido");
+        if (directory == null || directory.trim().isEmpty()) {
+            throw new StorageException("Directorio no especificado");
         }
+        
+        // Validar que sea un directorio permitido
+        if ("logos".equals(directory)) {
+            // Validaciones específicas para logos
+            return;
+        }
+        
+        // Para otros directorios, validar el formato
         if (!directory.matches("^[a-zA-Z0-9_-]+$")) {
-            throw new StorageException("Nombre de directorio no válido. Solo se permiten letras, números, guiones y guiones bajos");
+            throw new StorageException(
+                "Nombre de directorio no válido. Solo se permiten letras, números, guiones y guiones bajos"
+            );
         }
     }
 }

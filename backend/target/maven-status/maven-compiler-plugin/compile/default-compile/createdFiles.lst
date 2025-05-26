@@ -51,7 +51,6 @@ com\improvementsolutions\dto\GenderDTO.class
 com\improvementsolutions\dto\catalog\DepartmentDto$DepartmentDtoBuilder.class
 com\improvementsolutions\repository\DepartmentRepository.class
 com\improvementsolutions\model\Business.class
-com\improvementsolutions\security\CorsFilter.class
 com\improvementsolutions\dto\auth\RefreshTokenRequestDto.class
 com\improvementsolutions\repository\BusinessObligationMatrixFileRepository.class
 com\improvementsolutions\dto\catalog\PositionDto$PositionDtoBuilderImpl.class

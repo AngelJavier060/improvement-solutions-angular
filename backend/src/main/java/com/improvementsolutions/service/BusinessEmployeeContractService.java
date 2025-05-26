@@ -68,7 +68,7 @@ public class BusinessEmployeeContractService {
         contract.setSalary(contractDetails.getSalary());
         contract.setWorkingHours(contractDetails.getWorkingHours());
         contract.setContractFile(contractDetails.getContractFile());
-        contract.setIsCurrent(contractDetails.isCurrent());
+        contract.setIsCurrent(contractDetails.getIsCurrent());
         contract.setUpdatedAt(LocalDateTime.now());
         
         return businessEmployeeContractRepository.save(contract);
