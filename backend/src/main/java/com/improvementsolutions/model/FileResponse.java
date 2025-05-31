@@ -7,22 +7,23 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class FileResponse {
-    private String url;
+public class FileResponse {    private String url;
     private String temporaryUrl;
     private String filename;
     private String contentType;
     private Long size;
+    private String message;
     private String error;
     private boolean success;
 
     // Constructor para respuesta exitosa
-    public FileResponse(String url, String temporaryUrl, String filename, String contentType, Long size) {
+    public FileResponse(String url, String temporaryUrl, String filename, String contentType, Long size, String message) {
         this.url = url;
         this.temporaryUrl = temporaryUrl;
         this.filename = filename;
         this.contentType = contentType;
         this.size = size;
+        this.message = message;
         this.success = true;
     }
 

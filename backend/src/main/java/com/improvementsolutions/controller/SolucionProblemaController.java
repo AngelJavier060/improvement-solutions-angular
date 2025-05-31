@@ -12,7 +12,7 @@ import java.util.Map;
  * después de las correcciones realizadas.
  */
 @RestController
-@RequestMapping("/public/validacion")
+@RequestMapping("/api/public/validacion")
 public class SolucionProblemaController {
     
     @GetMapping

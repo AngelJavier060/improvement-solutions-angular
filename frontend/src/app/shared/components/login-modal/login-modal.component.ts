@@ -45,9 +45,7 @@ export class LoginModalComponent implements OnInit {
 
   get userTypeTitle(): string {
     return this.userType === 'admin' ? 'Administrador' : 'Usuario';
-  }
-
-  onSubmit(): void {
+  }  onSubmit(): void {
     if (this.loginForm.invalid) {
       return;
     }
@@ -57,9 +55,12 @@ export class LoginModalComponent implements OnInit {
 
     const credentials = this.loginForm.value;
     
-    this.authService.loginWithFixedCredentials(credentials)
+    console.log('Intentando login con credenciales:', { username: credentials.username });
+    
+    this.authService.login(credentials)
       .subscribe({
         next: (response: AuthResponse) => {
+          console.log('Login exitoso, respuesta:', response);
           this.loading = false;
           
           const roles = response.userDetail.roles || [];
@@ -72,14 +73,25 @@ export class LoginModalComponent implements OnInit {
           this.activeModal.close('success');
           this.router.navigate([userPath]);
         },
-        error: (err: HttpErrorResponse) => {
+        error: (error: any) => {
+          console.error('Error en login:', error);
           this.loading = false;
-          if (err.status === 401) {
-            this.error = 'Usuario o contraseña incorrectos';
+          
+          if (typeof error === 'string') {
+            this.error = error;
+          } else if (error instanceof HttpErrorResponse) {
+            if (error.status === 0) {
+              this.error = 'No se pudo conectar con el servidor';
+            } else if (error.status === 401) {
+              this.error = 'Usuario o contraseña incorrectos';
+            } else if (error.status === 403) {
+              this.error = 'Usuario inactivo o sin permisos';
+            } else {
+              this.error = error.error?.message || 'Error desconocido';
+            }
           } else {
             this.error = 'Error al iniciar sesión';
           }
-          console.error('Error en login:', err);
         }
       });
   }

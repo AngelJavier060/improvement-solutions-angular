@@ -1,28 +1,32 @@
-import { NgModule } from '@angular/core';
+import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { RouterModule } from '@angular/router';
-import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
 import { NgbDropdownModule, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { AppComponent } from './app.component';
 import { HomeComponent } from './features/home/home.component';
-import { SharedModule } from './shared/shared.module';
 import { DashboardAdminComponent } from './features/dashboard/admin/dashboard-admin.component';
 import { DashboardUsuarioComponent } from './features/dashboard/usuario/dashboard-usuario.component';
 import { FileUploadComponent } from './components/file-upload/file-upload.component';
 import { FileViewerComponent } from './components/file-viewer/file-viewer.component';
 import { SafePipe } from './pipes/safe.pipe';
+import { BusinessFilesComponent } from './components/business-files/business-files.component';
 import { FileService } from './services/file.service';
-import { BusinessFilesComponent } from './features/business/business-files/business-files.component';
-import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { ApiUrlInterceptor } from './core/interceptors/api-url.interceptor';
+import { AuthInterceptor } from './core/interceptors/auth.interceptor';
+import { CorsInterceptor } from './core/interceptors/cors.interceptor';
+import { TestUploadComponent } from './shared/components/test-upload/test-upload.component';
 import { AuthGuard } from './core/guards/auth.guard';
 import { TestPublicComponent } from './components/test-public/test-public.component';
 import { DiagnosticComponent } from './components/diagnostic/diagnostic.component';
+import { SharedModule } from './shared/shared.module';
 
-@NgModule({  declarations: [
+@NgModule({
+  declarations: [
     AppComponent,
     HomeComponent,
     DashboardAdminComponent,
@@ -33,13 +37,23 @@ import { DiagnosticComponent } from './components/diagnostic/diagnostic.componen
     BusinessFilesComponent,
     TestPublicComponent,
     DiagnosticComponent
-  ],  imports: [
+  ],
+  schemas: [
+    CUSTOM_ELEMENTS_SCHEMA
+  ],
+  imports: [
     BrowserModule,
     BrowserAnimationsModule,
     CommonModule,
     HttpClientModule,
-    RouterModule.forRoot([
-      { path: '', component: HomeComponent },      { 
+    FormsModule,
+    ReactiveFormsModule,
+    NgbDropdownModule,
+    NgbModalModule,
+    SharedModule,    RouterModule.forRoot([
+      { path: '', component: HomeComponent },
+      { path: 'test-upload', component: TestUploadComponent },
+      {
         path: 'dashboard/admin', 
         component: DashboardAdminComponent,
         canActivate: [AuthGuard],
@@ -64,7 +78,8 @@ import { DiagnosticComponent } from './components/diagnostic/diagnostic.componen
         path: 'business/files', 
         component: BusinessFilesComponent,
         canActivate: [AuthGuard] 
-      },      {
+      },
+      {
         path: 'auth',
         loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
       },
@@ -81,9 +96,11 @@ import { DiagnosticComponent } from './components/diagnostic/diagnostic.componen
     NgbDropdownModule,
     NgbModalModule,
     SharedModule
-  ],  providers: [
+  ],
+  providers: [
     FileService,
-    // El orden es importante: primero corregir URLs, luego manejo de autenticación
+    // El orden es importante: CORS primero, luego URLs, finalmente autenticación
+    { provide: HTTP_INTERCEPTORS, useClass: CorsInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ApiUrlInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
   ],

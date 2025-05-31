@@ -9,10 +9,10 @@ import { TipoResidencia } from '../models/tipo-residencia.model';
 })
 export class TipoResidenciaService {
   // URL estandarizada usando environment.apiUrl y el context-path
-  private apiUrl = `${environment.apiUrl}/public/residencias`;
+  private apiUrl = `${environment.apiUrl}/api/public/residencias`;
 
   constructor(private http: HttpClient) { 
-    console.log('URL del servicio de tipo residencia (estandarizada):', this.apiUrl);
+    console.log('URL del servicio de tipo residencia (corregida con /api/):', this.apiUrl);
   }
 
   getTiposResidencia(): Observable<TipoResidencia[]> {

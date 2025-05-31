@@ -4,6 +4,7 @@ import com.improvementsolutions.model.Role;
 import com.improvementsolutions.model.User;
 import com.improvementsolutions.repository.RoleRepository;
 import com.improvementsolutions.repository.UserRepository;
+import com.improvementsolutions.repository.UserSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,9 +19,10 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-
+    
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final UserSessionRepository userSessionRepository;
     private final PasswordEncoder passwordEncoder;
 
     public List<User> findAll() {
@@ -113,6 +115,14 @@ public class UserService {
         if (!userRepository.existsById(id)) {
             throw new RuntimeException("Usuario no encontrado");
         }
+        
+        // Desactivar todas las sesiones del usuario primero
+        userSessionRepository.findByUserId(id).forEach(session -> {
+            session.setActive(false);
+            userSessionRepository.save(session);
+        });
+        
+        // Ahora podemos eliminar el usuario de forma segura
         userRepository.deleteById(id);
     }
     

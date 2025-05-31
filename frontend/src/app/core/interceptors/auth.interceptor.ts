@@ -12,12 +12,13 @@ import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 
 @Injectable()
-export class AuthInterceptor implements HttpInterceptor {
-  // Lista de rutas públicas que no necesitan token
+export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas públicas que no necesitan token
   private readonly publicRoutes: string[] = [
     '/api/auth/login',
     '/api/auth/register',
     '/api/auth/forgot-password',
+    '/api/auth/validate-reset-token',
+    '/api/auth/reset-password',
     '/api/v1/public',
     '/api/v1/master-data',
     '/api/v1/public/test',

@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/estudios") // Ruta corregida sin /api para evitar duplicidad con el context-path
-@CrossOrigin(origins = "http://localhost:4200") // Añadir anotación para permitir peticiones desde el frontend
+@RequestMapping("/api/estudios") // Actualizado con prefijo /api/ para mantener consistencia
+// Se elimina CrossOrigin para usar la configuración centralizada en WebConfig
 public class DegreeController {
 
     private final DegreeService degreeService;

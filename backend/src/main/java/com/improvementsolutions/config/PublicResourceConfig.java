@@ -9,6 +9,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -54,17 +55,19 @@ public class PublicResourceConfig implements WebMvcConfigurer {
      * que deben ser accesibles sin autenticación.
      * Esta configuración tiene una prioridad más alta (Order=75) que la configuración general
      * para asegurar que se aplique primero a las rutas especificadas.
-     */      @Bean
+     */    @Bean
     @Order(75) // Mayor prioridad que la configuración general
-    public SecurityFilterChain publicResourcesFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain publicResourcesFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         logger.info("⭐ Configurando acceso público para recursos de archivos");
         
         return http
             .securityMatcher("/api/files/**") // Esta configuración aplica a todas las rutas de archivos
             .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource)) // Usa la configuración CORS centralizada
             .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Permitir todas las solicitudes OPTIONS
                 .requestMatchers(HttpMethod.GET, "/api/files/logos/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/files/upload/logos/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/files/upload/logos").permitAll() // Corregido: sin /** al final
                 .requestMatchers(HttpMethod.GET, "/api/debug/**").permitAll()
                 .anyRequest().authenticated()
             )

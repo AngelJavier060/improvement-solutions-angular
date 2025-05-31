@@ -10,13 +10,12 @@ import { ApiUrlService } from '../core/services/api-url.service';
 })
 export class GeneroService {  // URL estandarizada usando ApiUrlService
   private apiUrl: string;
-
   constructor(
     private http: HttpClient,
     private authService: AuthService,
     private apiUrlService: ApiUrlService
   ) { 
-    this.apiUrl = this.apiUrlService.getUrl('/public/generos');
+    this.apiUrl = this.apiUrlService.getUrl('/api/public/generos');
     console.log('URL del servicio de género (estandarizada):', this.apiUrl);
   }
 

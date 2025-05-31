@@ -14,10 +14,9 @@ import java.util.Optional;
 /**
  * Controlador público para etnias sin autenticación
  * Se eliminó la anotación @CrossOrigin ya que usamos la configuración CORS centralizada
- * IMPORTANTE: No incluir /api/v1 porque ya está configurado en server.servlet.context-path
  */
 @RestController
-@RequestMapping("/public/etnias")
+@RequestMapping("/api/public/etnias")
 public class PublicEtniaController {
 
     private final EthniaRepository ethniaRepository;

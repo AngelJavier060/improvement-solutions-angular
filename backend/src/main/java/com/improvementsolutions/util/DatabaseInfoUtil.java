@@ -2,6 +2,7 @@ package com.improvementsolutions.util;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -16,17 +17,74 @@ import java.util.Map;
 public class DatabaseInfoUtil implements CommandLineRunner {
 
     private final JdbcTemplate jdbcTemplate;
+    private final Environment environment;
 
     @Autowired
-    public DatabaseInfoUtil(JdbcTemplate jdbcTemplate) {
+    public DatabaseInfoUtil(JdbcTemplate jdbcTemplate, Environment environment) {
         this.jdbcTemplate = jdbcTemplate;
+        this.environment = environment;
     }
 
     @Override
     public void run(String... args) {
-        System.out.println("\n==== INFORMACIÓN DE LA BASE DE DATOS ====");
+        // Solo ejecutar en el perfil de desarrollo
+        if (!isTestProfile()) {
+            System.out.println("\n==== INFORMACIÓN DE LA BASE DE DATOS ====");
+            
+            // Consulta específica para H2
+            if (isH2Database()) {
+                showH2Tables();
+            } else {
+                // Consulta para MySQL
+                showMySQLTables();
+            }
+        }
+    }
+
+    private boolean isTestProfile() {
+        String[] activeProfiles = environment.getActiveProfiles();
+        for (String profile : activeProfiles) {
+            if (profile.equals("test")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isH2Database() {
+        String url = environment.getProperty("spring.datasource.url", "");
+        return url.contains("h2");
+    }
+
+    private void showH2Tables() {
+        List<Map<String, Object>> tables = jdbcTemplate.queryForList(
+            "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'PUBLIC'");
         
-        // Mostrar todas las tablas
+        System.out.println("\n=== TABLAS DISPONIBLES ===");
+        tables.forEach(table -> {
+            String tableName = table.get("TABLE_NAME").toString();
+            System.out.println("- " + tableName);
+            
+            // Para cada tabla, mostrar sus columnas usando la sintaxis de H2
+            List<Map<String, Object>> columns = jdbcTemplate.queryForList(
+                "SELECT COLUMN_NAME, TYPE_NAME, IS_NULLABLE, COLUMN_DEFAULT, " +
+                "CASE WHEN SEQUENCE_NAME IS NOT NULL THEN 'PRI' ELSE '' END AS KEY " +
+                "FROM INFORMATION_SCHEMA.COLUMNS " +
+                "WHERE TABLE_NAME = ?", tableName);
+            
+            System.out.println("  Columnas:");
+            columns.forEach(column -> {
+                String columnName = column.get("COLUMN_NAME").toString();
+                String columnType = column.get("TYPE_NAME").toString();
+                String columnKey = column.get("KEY").toString();
+                System.out.println("    - " + columnName + " (" + columnType + ")" +
+                        (columnKey.equals("PRI") ? " [PK]" : ""));
+            });
+            System.out.println();
+        });
+    }
+
+    private void showMySQLTables() {
         List<Map<String, Object>> tables = jdbcTemplate.queryForList("SHOW TABLES");
         
         System.out.println("\n=== TABLAS DISPONIBLES ===");
@@ -34,7 +92,6 @@ public class DatabaseInfoUtil implements CommandLineRunner {
             String tableName = table.values().iterator().next().toString();
             System.out.println("- " + tableName);
             
-            // Para cada tabla, mostrar sus columnas
             List<Map<String, Object>> columns = jdbcTemplate.queryForList(
                     "DESCRIBE " + tableName);
             
@@ -48,22 +105,5 @@ public class DatabaseInfoUtil implements CommandLineRunner {
             });
             System.out.println();
         });
-
-        // Verificar si existen tablas específicas de autenticación
-        checkAuthTables("users");
-        checkAuthTables("roles");
-        checkAuthTables("permissions");
-        checkAuthTables("user_roles");
-    }
-
-    private void checkAuthTables(String tableName) {
-        try {
-            List<Map<String, Object>> result = jdbcTemplate.queryForList(
-                    "SELECT COUNT(*) as count FROM " + tableName);
-            Long count = (Long) result.get(0).get("count");
-            System.out.println("Tabla " + tableName + " existe y contiene " + count + " registros.");
-        } catch (Exception e) {
-            System.out.println("Tabla " + tableName + " no existe o no está accesible.");
-        }
     }
 }

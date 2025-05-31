@@ -53,23 +53,23 @@ export class AuthService {
 
   loginWithFixedCredentials(credentials: LoginCredentials): Observable<AuthResponse> {
     return this.login(credentials);
-  }
-
-  login(credentials: LoginCredentials): Observable<AuthResponse> {
+  }  login(credentials: LoginCredentials): Observable<AuthResponse> {
     const url = `${this.apiUrl}/login`;
     console.log('Intentando iniciar sesión en:', url);
     
-    // Definir el objeto de solicitud con tipado adecuado
-    const loginRequest: {username?: string; email?: string; password: string} = {
-      password: credentials.password
-    };
+    // Determinar si el username es realmente un email
+    const isEmail = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(credentials.username);
     
-    // Determinar si parece ser un correo electrónico o un nombre de usuario
-    if (credentials.username.includes('@')) {
-      loginRequest.email = credentials.username;
-    } else {
-      loginRequest.username = credentials.username;
-    }
+    // Preparar la solicitud según si es email o username
+    const loginRequest = isEmail 
+      ? {
+          email: credentials.username,
+          password: credentials.password
+        }
+      : {
+          username: credentials.username,
+          password: credentials.password
+        };
     
     console.log('Enviando login request:', JSON.stringify(loginRequest));
     

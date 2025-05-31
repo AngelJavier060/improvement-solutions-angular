@@ -10,10 +10,9 @@ import { ApiUrlService } from '../core/services/api-url.service';
 })
 export class TipoDocumentoService {
   private apiUrl: string;
-
   constructor(private http: HttpClient, private apiUrlService: ApiUrlService) {
-    this.apiUrl = this.apiUrlService.getUrl('/master-data/type-documents');
-    console.log('URL del servicio de tipos de documento (usando estructura existente):', this.apiUrl);
+    this.apiUrl = this.apiUrlService.getUrl('/api/master-data/type-documents');
+    console.log('URL del servicio de tipos de documento (actualizado con /api/):', this.apiUrl);
   }
 
   getTiposDocumento(): Observable<TipoDocumento[]> {

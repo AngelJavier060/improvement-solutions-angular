@@ -9,10 +9,9 @@ import { ApiUrlService } from '../core/services/api-url.service';
 })
 export class EstudioService {  // URL estandarizada usando ApiUrlService
   private apiUrl: string;
-
   constructor(private http: HttpClient, private apiUrlService: ApiUrlService) {
-    this.apiUrl = this.apiUrlService.getUrl('/estudios');
-    console.log('URL del servicio de estudio (estandarizada):', this.apiUrl);
+    this.apiUrl = this.apiUrlService.getUrl('/api/estudios');
+    console.log('URL del servicio de estudio (actualizado con /api/):', this.apiUrl);
   }
 
   getEstudios(): Observable<Estudio[]> {

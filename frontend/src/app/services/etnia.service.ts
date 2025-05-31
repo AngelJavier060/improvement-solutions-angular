@@ -9,10 +9,9 @@ import { ApiUrlService } from '../core/services/api-url.service';
 })
 export class EtniaService {
   private apiUrl: string;
-
   constructor(private http: HttpClient, private apiUrlService: ApiUrlService) {
-    this.apiUrl = this.apiUrlService.getUrl('/public/etnias');
-    console.log('URL del servicio de etnias (estandarizada):', this.apiUrl);
+    this.apiUrl = this.apiUrlService.getUrl('/api/public/etnias');
+    console.log('URL del servicio de etnias (actualizado con /api/):', this.apiUrl);
   }
 
   getEtnias(): Observable<Etnia[]> {

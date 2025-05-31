@@ -58,10 +58,14 @@ public class FileSystemDiagnostic {
                 
                 Files.list(logosPath).forEach(file -> {
                     try {
+                        String permissions = "N/A en Windows";
+                        if (!System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+                            permissions = Files.getPosixFilePermissions(file).toString();
+                        }
                         logger.info(" - {} ({}KB, permisos: {})", 
                             file.getFileName(),
                             Files.size(file) / 1024,
-                            Files.getPosixFilePermissions(file));
+                            permissions);
                     } catch (Exception e) {
                         logger.info(" - {} (Error al obtener detalles: {})", 
                             file.getFileName(), e.getMessage());
@@ -84,7 +88,11 @@ public class FileSystemDiagnostic {
             
             if (Files.exists(specificLogoPath)) {
                 logger.info("Tamaño del archivo: {}KB", Files.size(specificLogoPath) / 1024);
-                logger.info("Permisos del archivo: {}", Files.getPosixFilePermissions(specificLogoPath));
+                String specificPermissions = "N/A en Windows";
+                if (!System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+                    specificPermissions = Files.getPosixFilePermissions(specificLogoPath).toString();
+                }
+                logger.info("Permisos del archivo: {}", specificPermissions);
             }
             
             logger.info("⭐ DIAGNÓSTICO DEL SISTEMA DE ARCHIVOS COMPLETADO ⭐");

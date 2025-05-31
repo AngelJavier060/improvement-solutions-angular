@@ -18,8 +18,7 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.Filter;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -27,6 +26,11 @@ import lombok.ToString;
 
 @Entity
 @Table(name = "business_employee_contracts")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(exclude = "businessEmployee")
+@ToString(exclude = "businessEmployee")
 @SQLDelete(sql = "UPDATE business_employee_contracts SET active = false WHERE id = ?")
 @FilterDef(name = "deletedBusinessEmployeeContractFilter", parameters = @ParamDef(name = "isDeleted", type = boolean.class))
 @Filter(name = "deletedBusinessEmployeeContractFilter", condition = "active = :isDeleted")

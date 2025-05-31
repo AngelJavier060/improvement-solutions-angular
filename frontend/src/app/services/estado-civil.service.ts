@@ -9,10 +9,9 @@ import { ApiUrlService } from '../core/services/api-url.service';
 })
 export class EstadoCivilService {  // URL estandarizada usando ApiUrlService
   private apiUrl: string;
-
   constructor(private http: HttpClient, private apiUrlService: ApiUrlService) { 
-    this.apiUrl = this.apiUrlService.getUrl('/public/estado-civil');
-    console.log('URL del servicio de estado civil (estandarizada):', this.apiUrl);
+    this.apiUrl = this.apiUrlService.getUrl('/api/public/estado-civil');
+    console.log('URL del servicio de estado civil (actualizado con /api/):', this.apiUrl);
   }
 
   getEstadosCiviles(): Observable<EstadoCivil[]> {

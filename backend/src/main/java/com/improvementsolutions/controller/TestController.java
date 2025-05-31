@@ -9,7 +9,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/public/test")
-@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
+// Se elimina CrossOrigin para usar la configuración centralizada en WebConfig
 public class TestController {
 
     @Autowired

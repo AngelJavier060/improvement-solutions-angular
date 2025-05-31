@@ -23,7 +23,6 @@ export interface TemporaryUrlResponse {
 })
 export class FileService {
   private baseUrl = `${environment.apiUrl}/api/files`;
-
   constructor(private http: HttpClient) { }
 
   private getAuthHeaders(): { [key: string]: string } {
@@ -49,6 +48,14 @@ export class FileService {
         message: response.message || null
       }))
     );
+  }
+
+  /**
+   * Lista todos los archivos disponibles
+   */
+  getFiles(): Observable<FileResponse[]> {
+    const headers = this.getAuthHeaders();
+    return this.http.get<FileResponse[]>(`${this.baseUrl}/list`, { headers });
   }
 
   /**

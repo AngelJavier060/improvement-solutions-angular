@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prueba de Carga de Logos - CORS</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 5px;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    pre {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      overflow: auto;
+      font-size: 14px;
+    }
+    .response {
+      margin-top: 20px;
+      border-top: 1px solid #eee;
+      padding-top: 20px;
+    }
+    .success {
+      color: #28a745;
+    }
+    .error {
+      color: #dc3545;
+    }
+    .progress-container {
+      width: 100%;
+      height: 20px;
+      background-color: #f1f1f1;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+    .progress-bar {
+      height: 100%;
+      border-radius: 5px;
+      width: 0%;
+      background-color: #4CAF50;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Prueba de Carga de Logos - Solución CORS</h1>
+    
+    <!-- Sección para probar la solicitud OPTIONS -->
+    <div>
+      <h2>Prueba de CORS (Preflight OPTIONS)</h2>
+      <button id="testCorsBtn">Probar solicitud OPTIONS</button>
+      <div id="corsResult" class="response"></div>
+    </div>
+    
+    <!-- Formulario para cargar archivos -->
+    <div>
+      <h2>Cargar Archivo de Logo</h2>
+      <div class="form-group">
+        <label for="fileInput">Seleccionar archivo:</label>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
+      
+      <div class="progress-container">
+        <div id="progressBar" class="progress-bar"></div>
+      </div>
+      
+      <button id="uploadBtn">Cargar Logo</button>
+      
+      <div id="uploadResult" class="response"></div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // URL del endpoint para carga de logos
+      const API_URL = 'http://localhost:8080/api/files/upload/logos';
+      
+      // Referencias a elementos DOM
+      const testCorsBtn = document.getElementById('testCorsBtn');
+      const corsResult = document.getElementById('corsResult');
+      const fileInput = document.getElementById('fileInput');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const uploadResult = document.getElementById('uploadResult');
+      const progressBar = document.getElementById('progressBar');
+      
+      // Función para mostrar cabeceras de respuesta
+      function formatHeaders(headers) {
+        let result = '';
+        for (const pair of headers.entries()) {
+          result += `${pair[0]}: ${pair[1]}\n`;
+        }
+        return result;
+      }
+      
+      // Prueba de solicitud OPTIONS (preflight CORS)
+      testCorsBtn.addEventListener('click', async function() {
+        corsResult.innerHTML = '<p>Enviando solicitud OPTIONS...</p>';
+        
+        try {
+          const response = await fetch(API_URL, {
+            method: 'OPTIONS',
+            headers: {
+              'Origin': window.location.origin,
+              'Access-Control-Request-Method': 'POST',
+              'Access-Control-Request-Headers': 'Authorization, Content-Type'
+            }
+          });
+          
+          let output = '<h3>Resultado:</h3>';
+          
+          if (response.ok) {
+            output += '<p class="success">✅ CORS configurado correctamente. La solicitud OPTIONS fue aceptada.</p>';
+          } else {
+            output += `<p class="error">❌ Error: ${response.status} ${response.statusText}</p>`;
+          }
+          
+          output += '<h3>Cabeceras de Respuesta:</h3>';
+          output += `<pre>${formatHeaders(response.headers)}</pre>`;
+          
+          corsResult.innerHTML = output;
+        } catch (error) {
+          corsResult.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+        }
+      });
+      
+      // Carga de archivo
+      uploadBtn.addEventListener('click', function() {
+        if (!fileInput.files || fileInput.files.length === 0) {
+          uploadResult.innerHTML = '<p class="error">Por favor selecciona un archivo primero.</p>';
+          return;
+        }
+        
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        uploadResult.innerHTML = '<p>Subiendo archivo...</p>';
+        
+        // Usar XMLHttpRequest para mostrar progreso de la carga
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.onprogress = function(event) {
+          if (event.lengthComputable) {
+            const percentComplete = (event.loaded / event.total) * 100;
+            progressBar.style.width = percentComplete + '%';
+          }
+        };
+        
+        xhr.onload = function() {
+          let output = '<h3>Resultado:</h3>';
+          
+          if (xhr.status >= 200 && xhr.status < 300) {
+            output += '<p class="success">✅ Archivo subido correctamente</p>';
+          } else {
+            output += `<p class="error">❌ Error: ${xhr.status} ${xhr.statusText}</p>`;
+          }
+          
+          output += '<h3>Cabeceras de Respuesta:</h3>';
+          output += `<pre>${xhr.getAllResponseHeaders()}</pre>`;
+          
+          output += '<h3>Respuesta:</h3>';
+          try {
+            const response = JSON.parse(xhr.responseText);
+            output += `<pre>${JSON.stringify(response, null, 2)}</pre>`;
+          } catch (e) {
+            output += `<pre>${xhr.responseText}</pre>`;
+          }
+          
+          uploadResult.innerHTML = output;
+        };
+        
+        xhr.onerror = function() {
+          uploadResult.innerHTML = '<p class="error">❌ Error de red al intentar cargar el archivo</p>';
+        };
+        
+        xhr.open('POST', API_URL, true);
+        
+        // Si tienes un token de autenticación, descomentar y ajustar esta línea:
+        // xhr.setRequestHeader('Authorization', 'Bearer tu-token-aqui');
+        
+        xhr.withCredentials = true; // Importante para CORS con credenciales
+        xhr.send(formData);
+      });
+    });
+  </script>
+</body>
+</html>

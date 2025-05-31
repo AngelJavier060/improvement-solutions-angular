@@ -381,42 +381,27 @@ public class AuthService {
     
     @Transactional
     public void updateSessionActivity(String token) {
-        userSessionRepository.updateLastActivity(token, LocalDateTime.now());
+        UserSession session = userSessionRepository.findByToken(token)
+            .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
+        session.setLastActivity(LocalDateTime.now());
+        userSessionRepository.save(session);
     }
     
     @Transactional
     public void deactivateSession(String token) {
-        userSessionRepository.findByToken(token).ifPresent(session -> {
-            session.setActive(false);
-            userSessionRepository.save(session);
-        });
+        UserSession session = userSessionRepository.findByToken(token)
+            .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
+        session.setActive(false);
+        userSessionRepository.save(session);
     }
     
     @Transactional
     public void deactivateAllUserSessions(Long userId) {
-        List<UserSession> sessions = userSessionRepository.findByUserId(userId);
-        sessions.forEach(session -> {
+        List<UserSession> sessions = userSessionRepository.findActiveSessionsByUserId(userId);
+        for (UserSession session : sessions) {
             session.setActive(false);
             userSessionRepository.save(session);
-        });
-    }
-    
-    @Transactional
-    public void validateSession(String token) {
-        UserSession session = userSessionRepository.findByToken(token)
-            .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
-            
-        if (!session.isActive()) {
-            throw new RuntimeException("Sesión inactiva");
         }
-        
-        if (LocalDateTime.now().isAfter(session.getExpiresAt())) {
-            session.setActive(false);
-            userSessionRepository.save(session);
-            throw new RuntimeException("Sesión expirada");
-        }
-        
-        updateSessionActivity(token);
     }
 
     @Transactional
@@ -426,27 +411,22 @@ public class AuthService {
     
     @Transactional
     public void revokeSession(Long userId, Long sessionId) {
-        UserSession session = userSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new RuntimeException("Sesión no encontrada"));
-            
-        if (!session.getUser().getId().equals(userId)) {
-            throw new RuntimeException("No autorizado para revocar esta sesión");
+        Optional<UserSession> session = userSessionRepository.findById(sessionId);
+        if (session.isPresent() && session.get().getUser().getId().equals(userId)) {
+            session.get().setActive(false);
+            userSessionRepository.save(session.get());
         }
-        
-        session.setActive(false);
-        userSessionRepository.save(session);
     }
     
     @Transactional
     public void revokeOtherSessions(Long userId, String currentToken) {
-        UserSession currentSession = userSessionRepository.findByToken(currentToken)
-            .orElseThrow(() -> new RuntimeException("Sesión actual no encontrada"));
-            
-        if (!currentSession.getUser().getId().equals(userId)) {
-            throw new RuntimeException("No autorizado para revocar sesiones");
+        List<UserSession> sessions = userSessionRepository.findActiveSessionsByUserId(userId);
+        for (UserSession session : sessions) {
+            if (!session.getToken().equals(currentToken)) {
+                session.setActive(false);
+                userSessionRepository.save(session);
+            }
         }
-        
-        userSessionRepository.deactivateOtherSessions(userId, currentSession.getId());
     }
 
     @Scheduled(fixedRate = 3600000) // Ejecutar cada hora

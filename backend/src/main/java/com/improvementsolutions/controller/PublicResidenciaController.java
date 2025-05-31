@@ -13,10 +13,9 @@ import java.util.Optional;
 /**
  * Controlador público para tipos de residencia sin autenticación
  * Se eliminó la anotación @CrossOrigin ya que usamos la configuración CORS centralizada
- * IMPORTANTE: No incluir /api/v1 porque ya está configurado en server.servlet.context-path
  */
 @RestController
-@RequestMapping("/public/residencias")
+@RequestMapping("/api/public/residencias")
 public class PublicResidenciaController {
 
     private final ResidentAddressService residentAddressService;

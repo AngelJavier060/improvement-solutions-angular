@@ -9,24 +9,17 @@ export class ApiUrlService {
 
   constructor() {
     console.log('ApiUrlService inicializado con URL base:', this.baseUrl);
-  }
-  /**
-   * Construye una URL de API correcta, evitando la duplicación de /api/v1
-   * @param endpoint El endpoint sin el prefijo /api/v1
+  }  /**
+   * Construye una URL de API correcta
+   * @param endpoint El endpoint (puede incluir o no /api/)
    * @returns URL completa para la API
    */  getUrl(endpoint: string): string {
     // Asegurar que el endpoint comienza con /
     if (!endpoint.startsWith('/')) {
       endpoint = '/' + endpoint;
-    }    // Eliminar barras duplicadas y ajustar el prefijo /api
-    endpoint = endpoint.replace(/^\/+/, ''); // Eliminar barras al inicio
-    
-    // Si no empieza con 'api/', añadirlo
-    if (!endpoint.startsWith('api/')) {
-      endpoint = 'api/' + endpoint;
     }
-
-    // Asegurarse de que la ruta esté bien formada
+    
+    // Eliminar barras duplicadas
     endpoint = endpoint.replace(/\/+/g, '/'); // Reemplazar múltiples barras con una sola
     
     // Asegurarse de que empiece con /

@@ -7,12 +7,13 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { LoginModalComponent } from './components/login-modal/login-modal.component';
 import { TestimonioCardComponent } from './components/testimonio-card/testimonio-card.component';
 import { ForgotPasswordModalComponent } from './components/forgot-password-modal/forgot-password-modal.component';
+import { TestUploadComponent } from './components/test-upload/test-upload.component';
 
-@NgModule({
-  declarations: [
+@NgModule({  declarations: [
     LoginModalComponent,
     TestimonioCardComponent,
-    ForgotPasswordModalComponent
+    ForgotPasswordModalComponent,
+    TestUploadComponent
   ],
   imports: [
     CommonModule,
@@ -21,9 +22,12 @@ import { ForgotPasswordModalComponent } from './components/forgot-password-modal
     NgbModule
   ],
   exports: [
-    LoginModalComponent,
+    CommonModule,
+    RouterModule,
+    NgbModule,    LoginModalComponent,
     TestimonioCardComponent,
-    ForgotPasswordModalComponent
+    ForgotPasswordModalComponent,
+    TestUploadComponent
   ]
 })
 export class SharedModule { }

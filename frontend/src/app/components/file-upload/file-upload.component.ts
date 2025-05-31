@@ -9,9 +9,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 })
 export class FileUploadComponent {
   @Input() directory: string | null = null;
-  @Input() acceptedFileTypes: string = '*';
-  @Input() maxFileSize: number = 10 * 1024 * 1024; // 10MB por defecto
+  @Input() accept: string = '*';
+  @Input() maxSize: number = 10 * 1024 * 1024; // 10MB por defecto
   
+  @Output() fileSelected = new EventEmitter<File>();
   @Output() fileUploaded = new EventEmitter<FileResponse>();
   @Output() uploadError = new EventEmitter<string>();
   
@@ -20,32 +21,33 @@ export class FileUploadComponent {
   uploadProgress: number = 0;
   
   constructor(private fileService: FileService) {}
-  
-  onFileSelected(event: any): void {
-    const file = event.target.files[0];
+    onFileSelected(event: Event): void {
+    const element = event.target as HTMLInputElement;
+    const file = element.files?.[0];
     
     if (!file) {
       return;
     }
     
     // Validar tamaño del archivo
-    if (file.size > this.maxFileSize) {
-      this.uploadError.emit(`El archivo es demasiado grande. El tamaño máximo es ${this.maxFileSize / 1024 / 1024}MB`);
+    if (file.size > this.maxSize) {
+      this.uploadError.emit(`El archivo es demasiado grande. El tamaño máximo es ${this.maxSize / 1024 / 1024}MB`);
       return;
     }
     
     // Validar tipo de archivo si es necesario
-    if (this.acceptedFileTypes !== '*') {
+    if (this.accept !== '*') {
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
-      const acceptedTypes = this.acceptedFileTypes.split(',').map(type => type.trim().toLowerCase());
+      const acceptedTypes = this.accept.split(',').map(type => type.trim().toLowerCase());
       
       if (!acceptedTypes.includes('.' + fileExtension)) {
-        this.uploadError.emit(`Tipo de archivo no permitido. Tipos aceptados: ${this.acceptedFileTypes}`);
+        this.uploadError.emit(`Tipo de archivo no permitido. Tipos aceptados: ${this.accept}`);
         return;
       }
     }
     
     this.selectedFile = file;
+    this.fileSelected.emit(file);
   }
   
   uploadFile(): void {

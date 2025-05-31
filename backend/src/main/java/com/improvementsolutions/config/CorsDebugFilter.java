@@ -1,5 +1,9 @@
 package com.improvementsolutions.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -7,23 +11,19 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 
+// @Component  // Desactivado temporalmente para evitar conflictos entre filtros
 public class CorsDebugFilter implements Filter {
-    
     private static final Logger logger = LoggerFactory.getLogger(CorsDebugFilter.class);
-    
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
         
-        // Log CORS-related headers
+        // Log CORS-related request headers
         logger.info("Processing CORS for request: {}", req.getRequestURI());
         logger.info("Origin: {}", req.getHeader("Origin"));
         logger.info("Access-Control-Request-Method: {}", req.getHeader("Access-Control-Request-Method"));

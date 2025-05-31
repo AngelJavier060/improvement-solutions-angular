@@ -11,8 +11,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "businesses")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems"})

@@ -8,7 +8,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/diagnostico")
-@CrossOrigin(origins = "*", allowCredentials = "false")
+// Se eliminó CrossOrigin para usar la configuración centralizada en WebConfig
 public class DiagnosticoController {
 
     @GetMapping("/status")

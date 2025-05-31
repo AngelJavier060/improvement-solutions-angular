@@ -1,3 +1,7 @@
 com\improvementsolutions\storage\FileSystemStorageServiceTest.class
-com\improvementsolutions\controller\FileControllerIntegrationTest.class
+com\improvementsolutions\storage\TestResource.class
+com\improvementsolutions\storage\TestStorageService.class
+com\improvementsolutions\config\TestDataInitializer.class
 com\improvementsolutions\storage\FileUrlHelperTest.class
+com\improvementsolutions\controller\FileControllerIntegrationTest.class
+com\improvementsolutions\config\TestStorageConfig.class

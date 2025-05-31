@@ -12,10 +12,9 @@ import java.util.List;
 /**
  * Controlador público para géneros sin autenticación
  * Se eliminó la anotación @CrossOrigin ya que usamos la configuración CORS centralizada
- * IMPORTANTE: No incluir /api/v1 porque ya está configurado en server.servlet.context-path
  */
 @RestController
-@RequestMapping("/public/generos")
+@RequestMapping("/api/public/generos")
 public class PublicGeneroController {
 
     private final GenderService genderService;

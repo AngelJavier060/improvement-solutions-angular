@@ -19,6 +19,7 @@ com\improvementsolutions\service\BusinessEmployeeContractFileService.class
 com\improvementsolutions\dto\CivilStatusDto$CivilStatusDtoBuilderImpl.class
 com\improvementsolutions\service\BusinessObligationMatrixFileService.class
 com\improvementsolutions\storage\StorageFileNotFoundException.class
+com\improvementsolutions\config\EncoderConfig.class
 com\improvementsolutions\dto\IessDto$IessDtoBuilderImpl.class
 com\improvementsolutions\model\FileResponse.class
 com\improvementsolutions\repository\PasswordResetTokenRepository.class
@@ -32,6 +33,7 @@ com\improvementsolutions\dto\ErrorResponse.class
 com\improvementsolutions\diagnostic\FileSystemDiagnostic.class
 com\improvementsolutions\dto\DTOBusiness.class
 com\improvementsolutions\dto\EmployeeContractDto$EmployeeContractDtoBuilder.class
+com\improvementsolutions\config\AuthenticationConfig.class
 com\improvementsolutions\controller\DebugController.class
 com\improvementsolutions\service\TypeDocumentService.class
 com\improvementsolutions\model\Position.class
@@ -67,7 +69,6 @@ com\improvementsolutions\config\RequestLoggingFilter.class
 com\improvementsolutions\dto\DTOBusiness$DTOBusinessBuilderImpl.class
 com\improvementsolutions\dto\catalog\PositionDto$PositionDtoBuilder.class
 com\improvementsolutions\dto\CivilStatusDto$CivilStatusDtoBuilder.class
-com\improvementsolutions\config\MinimalSecurityConfig.class
 com\improvementsolutions\controller\DegreeController.class
 com\improvementsolutions\dto\SuccessResponse.class
 com\improvementsolutions\controller\PublicCivilStatusController.class
@@ -103,11 +104,11 @@ com\improvementsolutions\model\BusinessEmployeeRecord.class
 com\improvementsolutions\dto\catalog\TypeContractDto.class
 com\improvementsolutions\dto\BusinessEmployeeContractFileDto.class
 com\improvementsolutions\dto\auth\RefreshTokenRequest.class
-com\improvementsolutions\config\BufferedRequestWrapper.class
 com\improvementsolutions\security\UserDetailsImpl.class
 com\improvementsolutions\dto\EmployeeDto$EmployeeDtoBuilderImpl.class
 com\improvementsolutions\dto\BusinessEmployeeContractFileDto$BusinessEmployeeContractFileDtoBuilder.class
 com\improvementsolutions\dto\catalog\ResidentAddressDto.class
+com\improvementsolutions\config\CorsDiagnosticFilter$CorsHeaderResponseWrapper.class
 com\improvementsolutions\repository\BusinessEmployeeContractFileRepository.class
 com\improvementsolutions\service\PositionService.class
 com\improvementsolutions\dto\catalog\ObligationMatrixDto.class
@@ -118,7 +119,6 @@ com\improvementsolutions\model\BusinessObligationMatrixFile.class
 com\improvementsolutions\dto\BusinessEmployeeDocumentDto.class
 com\improvementsolutions\config\JpaConfig.class
 com\improvementsolutions\dto\BusinessObligationDto$BusinessObligationDtoBuilderImpl.class
-com\improvementsolutions\security\DisableSecurityConfig.class
 com\improvementsolutions\model\Permission.class
 com\improvementsolutions\dto\DTOBusiness$DTOBusinessBuilder.class
 com\improvementsolutions\controller\BusinessObligationMatrixController.class
@@ -133,7 +133,6 @@ com\improvementsolutions\storage\FileUrlHelper.class
 com\improvementsolutions\dto\catalog\ResidentAddressDto$ResidentAddressDtoBuilder.class
 com\improvementsolutions\model\BusinessEmployeeDocumentFile.class
 com\improvementsolutions\util\DatabaseInfoUtil.class
-com\improvementsolutions\config\BufferedRequestWrapper$BufferedServletInputStream.class
 com\improvementsolutions\controller\EthniaController.class
 com\improvementsolutions\dto\auth\JwtAuthResponse$JwtAuthResponseBuilder.class
 com\improvementsolutions\dto\catalog\EthniaDto$EthniaDtoBuilder.class
@@ -145,6 +144,7 @@ com\improvementsolutions\dto\catalog\CivilStatusDto$CivilStatusDtoBuilderImpl.cl
 com\improvementsolutions\dto\BaseDto$BaseDtoBuilder.class
 com\improvementsolutions\dto\IessDto.class
 com\improvementsolutions\dto\BusinessDTO.class
+com\improvementsolutions\config\CorsHeaderTrackingFilter$CorsHeaderTrackingResponseWrapper.class
 com\improvementsolutions\dto\BusinessObligationMatrixFileDto.class
 com\improvementsolutions\dto\BusinessObligationMatrixDto.class
 com\improvementsolutions\dto\DegreeDto.class
@@ -159,6 +159,7 @@ com\improvementsolutions\dto\FileResponseDto.class
 com\improvementsolutions\dto\auth\PasswordResetRequestDto.class
 com\improvementsolutions\dto\BusinessEmployeeContractFileDto$BusinessEmployeeContractFileDtoBuilderImpl.class
 com\improvementsolutions\model\Iess.class
+com\improvementsolutions\config\FormDataCorsFilter.class
 com\improvementsolutions\dto\auth\LoginResponseDto.class
 com\improvementsolutions\dto\DegreeDto$DegreeDtoBuilder.class
 com\improvementsolutions\dto\catalog\ObligationMatrixDto$ObligationMatrixDtoBuilder.class
@@ -168,6 +169,7 @@ com\improvementsolutions\repository\TypeDocumentRepository.class
 com\improvementsolutions\service\BusinessObligationMatrixService.class
 com\improvementsolutions\service\EtniaService.class
 com\improvementsolutions\repository\EthniaRepository.class
+com\improvementsolutions\config\CorsResponseFilter.class
 com\improvementsolutions\dto\BusinessObligationDto$BusinessObligationDtoBuilder.class
 com\improvementsolutions\dto\catalog\EthniaDto$EthniaDtoBuilderImpl.class
 com\improvementsolutions\model\BusinessEmployee.class
@@ -175,6 +177,7 @@ com\improvementsolutions\dto\EmployeeContractDto$EmployeeContractDtoBuilderImpl.
 com\improvementsolutions\repository\EtniaRepository.class
 com\improvementsolutions\service\BusinessEmployeeDocumentFileService.class
 com\improvementsolutions\repository\RoleRepository.class
+com\improvementsolutions\config\CorsDiagnosticFilter.class
 com\improvementsolutions\dto\catalog\TypeDocumentDto$TypeDocumentDtoBuilder.class
 com\improvementsolutions\service\FileStorageService.class
 com\improvementsolutions\controller\PublicGeneroController.class
@@ -192,12 +195,14 @@ com\improvementsolutions\model\UserSession.class
 com\improvementsolutions\dto\BusinessEmployeeContractDto$BusinessEmployeeContractDtoBuilder.class
 com\improvementsolutions\model\BusinessEmployeeDocument.class
 com\improvementsolutions\dto\catalog\TypeContractDto$TypeContractDtoBuilderImpl.class
+com\improvementsolutions\config\CorsHeaderTrackingFilter.class
 com\improvementsolutions\repository\UserRepository.class
 com\improvementsolutions\storage\FileUrlServiceImpl.class
 com\improvementsolutions\dto\DepartmentDto.class
 com\improvementsolutions\storage\StorageService.class
 com\improvementsolutions\storage\StorageException.class
 com\improvementsolutions\dto\BusinessObligationMatrixDto$BusinessObligationMatrixDtoBuilderImpl.class
+com\improvementsolutions\security\TokenValidationService.class
 com\improvementsolutions\model\BusinessObligationMatrix.class
 com\improvementsolutions\repository\BusinessRepository.class
 com\improvementsolutions\model\TypeDocument.class

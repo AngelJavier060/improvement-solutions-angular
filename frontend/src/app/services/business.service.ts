@@ -10,8 +10,8 @@ import { ApiUrlService } from '../core/services/api-url.service';
 export class BusinessService {
   private apiUrl: string;
   constructor(private http: HttpClient, private apiUrlService: ApiUrlService) {
-    // Asegurarse de que la ruta no tenga barras al principio
-    this.apiUrl = this.apiUrlService.getUrl('businesses');
+    // Asegurarse de que la ruta incluya el prefijo /api/
+    this.apiUrl = this.apiUrlService.getUrl('api/businesses');
   }
 
   getAll(): Observable<Business[]> {

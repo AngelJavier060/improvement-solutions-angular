@@ -10,7 +10,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import com.improvementsolutions.service.AuthService;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.slf4j.Logger;
@@ -23,15 +22,15 @@ import java.io.IOException;
  */
 @Component
 public class JwtAuthenticationFilter extends org.springframework.web.filter.OncePerRequestFilter {
-    
-    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);    @Autowired
+      private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);    
+    @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
     
     @Autowired
-    private AuthService authService;
+    private TokenValidationService tokenValidationService;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
@@ -50,10 +49,9 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
             String jwt = parseJwt(request);
             logger.debug("Token JWT encontrado: {}", jwt != null ? "Sí" : "No");
 
-            if (jwt != null && jwtTokenProvider.validateToken(jwt)) {
-                try {
+            if (jwt != null && jwtTokenProvider.validateToken(jwt)) {                try {
                     // Validar la sesión activa
-                    authService.validateSession(jwt);
+                    tokenValidationService.validateSession(jwt);
                     
                     String username = jwtTokenProvider.getUsernameFromToken(jwt);
                     logger.debug("Usuario del token: {}", username);
