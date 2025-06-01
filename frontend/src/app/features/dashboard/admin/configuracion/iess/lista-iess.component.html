@@ -5,10 +5,10 @@
       <p>Gestionar las categorías del Instituto Ecuatoriano de Seguridad Social</p>
     </div>
     <div class="actions">
-      <button class="btn-secondary" (click)="volverAConfiguracion()">
+      <button class="btn btn-back" (click)="volverAConfiguracion()">
         <i class="fas fa-arrow-left"></i> Volver a Configuración
       </button>
-      <button class="btn-primary" (click)="nuevoIess()">
+      <button class="btn btn-new" (click)="nuevoIess()">
         <i class="fas fa-plus"></i> Nuevo IESS
       </button>
     </div>
@@ -45,10 +45,10 @@
             <td>{{ item.code || item.name }}</td>
             <td>{{ item.description }}</td>
             <td class="actions">
-              <button class="btn-icon" (click)="item.id && editarIess(item.id)" title="Editar" [disabled]="!item.id">
+              <button class="btn btn-icon" (click)="item.id && editarIess(item.id)" title="Editar" [disabled]="!item.id">
                 <i class="fas fa-edit"></i>
               </button>
-              <button class="btn-icon" (click)="item.id && eliminarIess(item.id)" title="Eliminar" [disabled]="!item.id">
+              <button class="btn btn-icon btn-delete" (click)="item.id && eliminarIess(item.id)" title="Eliminar" [disabled]="!item.id">
                 <i class="fas fa-trash"></i>
               </button>
             </td>
@@ -60,7 +60,7 @@
       <div *ngIf="iessItems.length === 0" class="empty-state">
         <i class="fas fa-hospital"></i>
         <p>No hay ítems IESS registrados</p>
-        <button class="btn-primary" (click)="nuevoIess()">
+        <button class="btn btn-new" (click)="nuevoIess()">
           <i class="fas fa-plus"></i> Agregar IESS
         </button>
       </div>

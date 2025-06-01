@@ -5,10 +5,10 @@
       <p>Gestionar los tipos de contratos laborales disponibles</p>
     </div>
     <div class="actions">
-      <button class="btn-secondary" (click)="volverAConfiguracion()">
+      <button class="btn btn-back" (click)="volverAConfiguracion()">
         <i class="fas fa-arrow-left"></i> Volver a Configuración
       </button>
-      <button class="btn-primary" (click)="nuevoTipoContrato()">
+      <button class="btn btn-new" (click)="nuevoTipoContrato()">
         <i class="fas fa-plus"></i> Nuevo Tipo de Contrato
       </button>
     </div>
@@ -47,10 +47,10 @@
             <td>{{ item.name }}</td>
             <td>{{ item.description }}</td>
             <td class="actions">
-              <button class="btn-icon" (click)="editarTipoContrato(item.id)" title="Editar" [disabled]="!item.id">
+              <button class="btn btn-icon" (click)="editarTipoContrato(item.id)" title="Editar" [disabled]="!item.id">
                 <i class="fas fa-edit"></i>
               </button>
-              <button class="btn-icon" (click)="eliminarTipoContrato(item.id)" title="Eliminar" [disabled]="!item.id">
+              <button class="btn btn-icon btn-delete" (click)="eliminarTipoContrato(item.id)" title="Eliminar" [disabled]="!item.id">
                 <i class="fas fa-trash"></i>
               </button>
             </td>
@@ -62,7 +62,7 @@
       <div *ngIf="typeContracts.length === 0" class="empty-state">
         <i class="fas fa-file-signature"></i>
         <p>No hay tipos de contrato registrados</p>
-        <button class="btn-primary" (click)="nuevoTipoContrato()">
+        <button class="btn btn-new" (click)="nuevoTipoContrato()">
           <i class="fas fa-plus"></i> Agregar Tipo de Contrato
         </button>
       </div>

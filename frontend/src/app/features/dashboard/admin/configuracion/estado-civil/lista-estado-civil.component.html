@@ -40,10 +40,10 @@
             <td>{{ estadoCivil.name }}</td>
             <td>{{ estadoCivil.description || 'Sin descripción' }}</td>            <td class="actions">
               <div class="btn-group">
-                <button class="btn btn-outline-primary btn-sm" (click)="editarEstadoCivil(estadoCivil.id!)">
+                <button class="btn btn-icon" (click)="editarEstadoCivil(estadoCivil.id!)">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-outline-danger btn-sm" (click)="eliminarEstadoCivil(estadoCivil.id!)">
+                <button class="btn btn-icon btn-delete" (click)="eliminarEstadoCivil(estadoCivil.id!)">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>

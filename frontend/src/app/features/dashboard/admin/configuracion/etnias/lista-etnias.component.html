@@ -44,11 +44,11 @@
             <td>{{ etnia.description || '-' }}</td>
             <td class="actions">
               <div class="btn-group">
-                <button class="btn btn-outline-primary btn-sm" [routerLink]="['editar', etnia.id]" title="Editar etnia">
+                <button class="btn btn-icon" [routerLink]="['editar', etnia.id]" title="Editar etnia">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-outline-danger btn-sm" (click)="eliminarEtnia(etnia.id!)" title="Eliminar etnia">
-                  <i class="fas fa-trash-alt"></i>
+                <button class="btn btn-icon btn-delete" (click)="eliminarEtnia(etnia.id!)" title="Eliminar etnia">
+                  <i class="fas fa-trash"></i>
                 </button>
               </div>
             </td>

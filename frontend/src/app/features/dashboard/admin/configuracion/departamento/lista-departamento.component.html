@@ -5,10 +5,10 @@
       <p>Administración de departamentos de la empresa</p>
     </div>
     <div class="actions">
-      <button class="btn-secondary mr-2" routerLink="/dashboard/admin/configuracion">
+      <button class="btn btn-back mr-2" routerLink="/dashboard/admin/configuracion">
         <i class="fas fa-arrow-left"></i> Volver a Configuración
       </button>
-      <button class="btn-primary" routerLink="nuevo">
+      <button class="btn btn-new" routerLink="nuevo">
         <i class="fas fa-plus"></i> Nuevo Departamento
       </button>
     </div>
@@ -51,10 +51,10 @@
             </td>
             <td class="actions">
               <div class="btn-group">
-                <button class="btn btn-outline-primary btn-sm" [routerLink]="['editar', departamento.id]" title="Editar departamento">
+                <button class="btn btn-icon" [routerLink]="['editar', departamento.id]" title="Editar departamento">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-outline-danger btn-sm" (click)="eliminarDepartamento(departamento.id)" title="Eliminar departamento">
+                <button class="btn btn-icon btn-delete" (click)="eliminarDepartamento(departamento.id)" title="Eliminar departamento">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>
@@ -67,7 +67,7 @@
         <div class="empty-state">
           <i class="fas fa-building"></i>
           <p>No hay departamentos registrados aún.</p>
-          <button class="btn-primary" routerLink="nuevo">
+          <button class="btn btn-new" routerLink="nuevo">
             <i class="fas fa-plus"></i> Agregar un departamento
           </button>
         </div>

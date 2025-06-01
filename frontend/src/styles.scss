@@ -35,27 +35,67 @@ body {
   }
 }
 
-/* Botones */
+/* === BOTONES PERSONALIZADOS PARA CONFIGURACIÓN (AJUSTE FINAL) === */
 .btn {
-  padding: 0.5rem 1.5rem;
-  transition: all 0.3s ease;
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-weight: 600 !important;
+  border: none !important;
+  cursor: pointer;
+  transition: background 0.2s;
+  gap: 8px;
+  font-size: 1rem;
 }
 
-.btn-primary {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  
-  &:hover, &:focus {
-    background-color: darken(#0d6efd, 10%);
-    border-color: darken(#0d6efd, 10%);
-    transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(13, 110, 253, 0.15);
-  }
+.btn-back {
+  background: #6c7a89 !important;
+  color: #fff !important;
 }
 
-.btn-lg {
-  padding: 0.8rem 2rem;
+.btn-back:hover {
+  background: #55606a !important;
+}
+
+.btn-new {
+  background: #338bff !important;
+  color: #fff !important;
+  font-weight: bold !important;
+}
+
+.btn-new:hover {
+  background: #2266cc !important;
+}
+
+/* === BOTONES DE ACCIÓN EN TABLAS (EDITAR Y ELIMINAR) === */
+.btn-icon {
+  background: #fff !important;
+  border: 2px solid #338bff !important;
+  color: #338bff !important;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-right: 6px;
+  transition: background 0.2s, border 0.2s, color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.btn-icon:hover {
+  background: #e6f0ff !important;
+  color: #2266cc !important;
+}
+
+.btn-delete {
+  border: 2px solid #ff4d4f !important;
+  color: #ff4d4f !important;
+}
+
+.btn-delete:hover {
+  background: #ffeaea !important;
+  color: #d32f2f !important;
 }
 
 /* Hero section */

@@ -5,10 +5,10 @@
       <p>Gestionar los cargos de la empresa</p>
     </div>
     <div class="actions">
-      <button class="btn-secondary" (click)="volverAConfiguracion()">
+      <button class="btn btn-back" (click)="volverAConfiguracion()">
         <i class="fas fa-arrow-left"></i> Volver a Configuración
       </button>
-      <button class="btn-primary" (click)="nuevoCargo()">
+      <button class="btn btn-new" (click)="nuevoCargo()">
         <i class="fas fa-plus"></i> Nuevo Cargo
       </button>
     </div>
@@ -54,10 +54,10 @@
               </span>
             </td>
             <td class="actions">
-              <button class="btn-icon" (click)="editarCargo(cargo.id)" title="Editar">
+              <button class="btn btn-icon" (click)="editarCargo(cargo.id)" title="Editar">
                 <i class="fas fa-edit"></i>
               </button>
-              <button class="btn-icon" (click)="eliminarCargo(cargo.id)" title="Eliminar">
+              <button class="btn btn-icon btn-delete" (click)="eliminarCargo(cargo.id)" title="Eliminar">
                 <i class="fas fa-trash"></i>
               </button>
             </td>
@@ -69,7 +69,7 @@
       <div *ngIf="cargos.length === 0" class="empty-state">
         <i class="fas fa-briefcase"></i>
         <p>No hay cargos registrados</p>
-        <button class="btn-primary" (click)="nuevoCargo()">
+        <button class="btn btn-new" (click)="nuevoCargo()">
           <i class="fas fa-plus"></i> Agregar Cargo
         </button>
       </div>

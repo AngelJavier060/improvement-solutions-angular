@@ -40,10 +40,10 @@
             <td>{{ estudio.name }}</td>
             <td>{{ estudio.description || 'Sin descripción' }}</td>            <td class="actions">
               <div class="btn-group">
-                <button class="btn btn-outline-primary btn-sm" (click)="editarEstudio(estudio.id!)">
+                <button class="btn btn-icon" (click)="editarEstudio(estudio.id!)">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-outline-danger btn-sm" (click)="eliminarEstudio(estudio.id!)">
+                <button class="btn btn-icon btn-delete" (click)="eliminarEstudio(estudio.id!)">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>
