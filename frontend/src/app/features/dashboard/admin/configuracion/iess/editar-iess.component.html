@@ -1,0 +1,68 @@
+<div class="iess-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Editar IESS</h2>
+      <p>Modifique los datos del ítem IESS seleccionado</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" routerLink="/dashboard/admin/configuracion/iess">
+        <i class="fas fa-arrow-left"></i> Volver a Lista
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading-spinner">
+      <i class="fas fa-spinner fa-spin"></i> Cargando datos...
+    </div>
+
+    <form *ngIf="!loading" [formGroup]="iessForm" (ngSubmit)="onSubmit()">
+      <!-- Mensaje de éxito -->
+      <div *ngIf="successMessage" class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+
+      <!-- Mensaje de error -->
+      <div *ngIf="errorMessage" class="alert alert-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ errorMessage }}</span>
+      </div>      <div class="form-group">
+        <label for="code">Código Sectorial <span class="required">*</span></label>
+        <input 
+          type="text" 
+          id="code" 
+          formControlName="code"
+          [class.is-invalid]="iessForm.get('code')?.invalid && iessForm.get('code')?.touched"
+          placeholder="Ingrese el código sectorial IESS"
+        >
+        <div *ngIf="iessForm.get('code')?.invalid && iessForm.get('code')?.touched" class="error-message">
+          <span *ngIf="iessForm.get('code')?.errors?.['required']">El código sectorial es obligatorio</span>
+          <span *ngIf="iessForm.get('code')?.errors?.['maxlength']">El código sectorial no debe exceder los 50 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea 
+          id="description" 
+          formControlName="description"
+          rows="3"
+          [class.is-invalid]="iessForm.get('description')?.invalid && iessForm.get('description')?.touched"
+          placeholder="Ingrese una descripción del ítem IESS"
+        ></textarea>
+        <div *ngIf="iessForm.get('description')?.invalid && iessForm.get('description')?.touched" class="error-message">
+          <span *ngIf="iessForm.get('description')?.errors?.['maxlength']">La descripción no debe exceder los 255 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="cancelar()">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="submitting">
+          <i *ngIf="submitting" class="fas fa-spinner fa-spin"></i>
+          Actualizar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

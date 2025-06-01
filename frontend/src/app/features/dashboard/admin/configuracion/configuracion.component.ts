@@ -79,28 +79,25 @@ export class ConfiguracionComponent implements OnInit {
       descripcion: 'Gestionar los departamentos de la empresa', 
       ruta: 'departamentos',
       icono: 'fas fa-building',
-      proximamente: true
-    },
-    { 
+      proximamente: false
+    },    { 
       nombre: 'Cargos', 
       descripcion: 'Gestionar los cargos disponibles en la empresa', 
       ruta: 'cargos',
       icono: 'fas fa-briefcase',
-      proximamente: true
-    },
-    { 
-      nombre: 'IESS', 
+      proximamente: false
+    },    { 
+      nombre: 'Código Sectorial IESS', 
       descripcion: 'Gestionar las categorías del Instituto Ecuatoriano de Seguridad Social', 
       ruta: 'iess',
       icono: 'fas fa-hospital',
-      proximamente: true
-    },
-    { 
+      proximamente: false
+    },    { 
       nombre: 'Tipo de Contrato', 
       descripcion: 'Gestionar los tipos de contratos laborales', 
       ruta: 'tipo-contrato',
       icono: 'fas fa-file-signature',
-      proximamente: true
+      proximamente: false
     }
   ];
   navegarA(ruta: string): void {
@@ -111,4 +108,38 @@ export class ConfiguracionComponent implements OnInit {
       .then(success => console.log(`Navegación a ${ruta} ${success ? 'exitosa' : 'fallida'}`))
       .catch(error => console.error(`Error al navegar a ${ruta}:`, error));
   }
+
+  opciones = [
+    {
+      nombre: 'Tipo de Documento',
+      descripcion: 'Gestionar los tipos de documentos de identidad',
+      ruta: '/dashboard/admin/configuracion/tipo-documento',
+      icono: 'fa-id-card'
+    },
+    {
+      nombre: 'Departamentos',
+      descripcion: 'Gestionar los departamentos de la empresa',
+      ruta: '/dashboard/admin/configuracion/departamentos',
+      icono: 'fa-building'
+    },    {
+      nombre: 'Cargos',
+      descripcion: 'Gestionar los cargos de la empresa',
+      ruta: '/dashboard/admin/configuracion/cargos',
+      icono: 'fa-briefcase',
+      proximamente: false
+    },    {
+      nombre: 'IESS',
+      descripcion: 'Configuración de aportaciones IESS',
+      ruta: '/dashboard/admin/configuracion/iess',
+      icono: 'fa-percentage',
+      proximamente: false
+    },
+    {
+      nombre: 'Tipo de Contrato',
+      descripcion: 'Gestionar los tipos de contrato',
+      ruta: '#',
+      icono: 'fa-file-contract',
+      proximamente: true
+    }
+  ];
 }

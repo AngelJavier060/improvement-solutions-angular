@@ -28,6 +28,9 @@ public class Department {
     private String name;
     
     private String description;
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private Boolean active = true; // Añadir campo active
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;

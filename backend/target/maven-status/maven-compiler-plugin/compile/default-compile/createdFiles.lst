@@ -35,6 +35,7 @@ com\improvementsolutions\dto\DTOBusiness.class
 com\improvementsolutions\dto\EmployeeContractDto$EmployeeContractDtoBuilder.class
 com\improvementsolutions\config\AuthenticationConfig.class
 com\improvementsolutions\controller\DebugController.class
+com\improvementsolutions\controller\IessController.class
 com\improvementsolutions\service\TypeDocumentService.class
 com\improvementsolutions\model\Position.class
 com\improvementsolutions\service\AuthService.class
@@ -104,6 +105,7 @@ com\improvementsolutions\model\BusinessEmployeeRecord.class
 com\improvementsolutions\dto\catalog\TypeContractDto.class
 com\improvementsolutions\dto\BusinessEmployeeContractFileDto.class
 com\improvementsolutions\dto\auth\RefreshTokenRequest.class
+com\improvementsolutions\controller\TypeContractController.class
 com\improvementsolutions\security\UserDetailsImpl.class
 com\improvementsolutions\dto\EmployeeDto$EmployeeDtoBuilderImpl.class
 com\improvementsolutions\dto\BusinessEmployeeContractFileDto$BusinessEmployeeContractFileDtoBuilder.class
@@ -140,6 +142,7 @@ com\improvementsolutions\repository\ObligationMatrixRepository.class
 com\improvementsolutions\dto\BusinessEmployeeDocumentFileDto$BusinessEmployeeDocumentFileDtoBuilderImpl.class
 com\improvementsolutions\repository\IessRepository.class
 com\improvementsolutions\repository\PermissionRepository.class
+com\improvementsolutions\controller\DepartmentController.class
 com\improvementsolutions\dto\catalog\CivilStatusDto$CivilStatusDtoBuilderImpl.class
 com\improvementsolutions\dto\BaseDto$BaseDtoBuilder.class
 com\improvementsolutions\dto\IessDto.class
@@ -170,6 +173,7 @@ com\improvementsolutions\service\BusinessObligationMatrixService.class
 com\improvementsolutions\service\EtniaService.class
 com\improvementsolutions\repository\EthniaRepository.class
 com\improvementsolutions\config\CorsResponseFilter.class
+com\improvementsolutions\service\DepartmentService.class
 com\improvementsolutions\dto\BusinessObligationDto$BusinessObligationDtoBuilder.class
 com\improvementsolutions\dto\catalog\EthniaDto$EthniaDtoBuilderImpl.class
 com\improvementsolutions\model\BusinessEmployee.class

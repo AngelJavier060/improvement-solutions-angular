@@ -28,6 +28,12 @@ public class Position {
     private String name;
     
     private String description;
+      @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private Boolean active = true; // Añadir campo active
+    
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "department_id")
+    private Department department;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;

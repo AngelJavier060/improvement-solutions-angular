@@ -1,0 +1,93 @@
+﻿package com.improvementsolutions.controller;
+
+import com.improvementsolutions.model.*;
+import com.improvementsolutions.repository.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/master-data") // Prefijo /api/ para consistencia
+@RequiredArgsConstructor
+public class MasterDataController {
+
+    private final GenderRepository genderRepository;
+    private final EducationLevelRepository educationLevelRepository;
+    private final CivilStatusRepository civilStatusRepository;
+    private final ResidenceTypeRepository residenceTypeRepository;
+    private final EthnicGroupRepository ethnicGroupRepository;
+    private final DocumentTypeRepository documentTypeRepository;
+    private final DepartmentRepository departmentRepository;
+    private final PositionRepository positionRepository;
+    private final IessRepository iessRepository;
+
+    // IESS
+    @GetMapping("/iess")
+    public ResponseEntity<List<Iess>> getAllIess() {
+        return ResponseEntity.ok(iessRepository.findAll());
+    }
+
+    @GetMapping("/iess/{id}")
+    public ResponseEntity<Iess> getIessById(@PathVariable Long id) {
+        return iessRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/iess")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Iess> createIess(@RequestBody Iess iess) {
+        if (iessRepository.findByName(iess.getName()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        
+        iess.setCreatedAt(LocalDateTime.now());
+        iess.setUpdatedAt(LocalDateTime.now());
+        
+        Iess savedIess = iessRepository.save(iess);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedIess);
+    }
+    
+    @PutMapping("/iess/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Iess> updateIess(@PathVariable Long id, @RequestBody Iess iessDetails) {
+        Optional<Iess> iessOptional = iessRepository.findById(id);
+        
+        if (iessOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        Iess iess = iessOptional.get();
+        
+        // Verificar si el nuevo nombre ya existe y no es el mismo registro
+        if (!iess.getName().equals(iessDetails.getName()) &&
+                iessRepository.findByName(iessDetails.getName()).isPresent()) {
+            // Aquí está el problema - indicamos explícitamente que devolvemos un ResponseEntity<Iess>
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        }
+        
+        iess.setName(iessDetails.getName());
+        iess.setDescription(iessDetails.getDescription());
+        iess.setUpdatedAt(LocalDateTime.now());
+        
+        Iess updatedIess = iessRepository.save(iess);
+        return ResponseEntity.ok(updatedIess);
+    }
+    
+    @DeleteMapping("/iess/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteIess(@PathVariable Long id) {
+        return iessRepository.findById(id)
+                .map(iess -> {
+                    iessRepository.delete(iess);
+                    return ResponseEntity.ok().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+}

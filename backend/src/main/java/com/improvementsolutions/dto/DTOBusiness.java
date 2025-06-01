@@ -37,11 +37,10 @@ public class DTOBusiness extends BaseDto {
     
     // Relaciones
     private List<UserDTO> users;
-    private List<BusinessEmployeeDto> employees;
-    private List<TypeDocumentDto> typeDocuments;
+    private List<BusinessEmployeeDto> employees;    private List<TypeDocumentDto> typeDocuments;
     private List<DepartmentDto> departments;
     private List<PositionDto> positions;
-    private List<IessDto> iesses;
+    private List<IessDto> iessItems;
     private List<TypeContractDto> typeContracts;
     private List<BusinessObligationMatrixDto> obligationMatrices;
 }

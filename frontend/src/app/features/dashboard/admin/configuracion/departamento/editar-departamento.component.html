@@ -1,0 +1,78 @@
+<div class="departamento-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Editar Departamento</h2>
+      <p>Modifique los campos y guarde los cambios</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" routerLink="/dashboard/admin/configuracion/departamentos">
+        <i class="fas fa-arrow-left"></i> Volver a Lista
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando información...</span>
+    </div>
+
+    <div *ngIf="error && !loading" class="alert alert-error">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="cargarDepartamento()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <form *ngIf="!loading && !error" [formGroup]="departamentoForm" (ngSubmit)="onSubmit()">
+      <!-- Mensaje de éxito -->
+      <div *ngIf="successMessage" class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+
+      <div class="form-group">
+        <label for="name">Nombre <span class="required">*</span></label>
+        <input 
+          type="text" 
+          id="name" 
+          formControlName="name"
+          [class.is-invalid]="departamentoForm.get('name')?.invalid && (departamentoForm.get('name')?.touched || formSubmitted)"
+        >
+        <div *ngIf="departamentoForm.get('name')?.invalid && (departamentoForm.get('name')?.touched || formSubmitted)" class="error-message">
+          <span *ngIf="departamentoForm.get('name')?.errors?.['required']">El nombre es obligatorio</span>
+          <span *ngIf="departamentoForm.get('name')?.errors?.['maxlength']">El nombre no debe exceder los 50 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea 
+          id="description" 
+          formControlName="description"
+          rows="3"
+          [class.is-invalid]="departamentoForm.get('description')?.invalid && (departamentoForm.get('description')?.touched || formSubmitted)"
+        ></textarea>
+        <div *ngIf="departamentoForm.get('description')?.invalid && (departamentoForm.get('description')?.touched || formSubmitted)" class="error-message">
+          <span *ngIf="departamentoForm.get('description')?.errors?.['maxlength']">La descripción no debe exceder los 255 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="active">
+          <span>Activo</span>
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="volverALista()">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="submitting">
+          <i *ngIf="submitting" class="fas fa-spinner fa-spin"></i>
+          Guardar cambios
+        </button>
+      </div>
+    </form>
+  </div>
+</div> 

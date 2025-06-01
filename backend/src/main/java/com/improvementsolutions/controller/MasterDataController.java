@@ -1,7 +1,21 @@
 package com.improvementsolutions.controller;
 
-import com.improvementsolutions.model.*;
-import com.improvementsolutions.repository.*;
+import com.improvementsolutions.model.CivilStatus;
+import com.improvementsolutions.model.Degree;
+import com.improvementsolutions.model.Department;
+import com.improvementsolutions.model.Etnia;
+import com.improvementsolutions.model.Gender;
+import com.improvementsolutions.model.Position;
+import com.improvementsolutions.model.ResidentAddress;
+import com.improvementsolutions.model.TypeDocument;
+import com.improvementsolutions.repository.CivilStatusRepository;
+import com.improvementsolutions.repository.DegreeRepository;
+import com.improvementsolutions.repository.DepartmentRepository;
+import com.improvementsolutions.repository.EtniaRepository;
+import com.improvementsolutions.repository.GenderRepository;
+import com.improvementsolutions.repository.PositionRepository;
+import com.improvementsolutions.repository.ResidentAddressRepository;
+import com.improvementsolutions.repository.TypeDocumentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,154 +24,19 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/master-data") // Añadido prefijo /api/ para mantener consistencia con otros controladores
+@RequestMapping("/api/master-data") // Prefijo /api/ para consistencia
 @RequiredArgsConstructor
-public class MasterDataController {
-
-    private final CivilStatusRepository civilStatusRepository;
-    private final DegreeRepository degreeRepository;
-    private final EthniaRepository ethniaRepository;
-    private final GenderRepository genderRepository;
-    private final PositionRepository positionRepository;
-    private final ResidentAddressRepository residentAddressRepository;
-    private final TypeContractRepository typeContractRepository;
-    private final TypeDocumentRepository typeDocumentRepository;
+public class MasterDataController {    private final GenderRepository genderRepository;
+    private final DegreeRepository educationLevelRepository; // Cambiado de EducationLevelRepository
+    private final CivilStatusRepository maritalStatusRepository; // Cambiado de MaritalStatusRepository
+    private final ResidentAddressRepository residenceTypeRepository; // Cambiado de ResidenceTypeRepository
+    private final EtniaRepository ethnicGroupRepository; // Cambiado de EthnicGroupRepository
+    private final TypeDocumentRepository documentTypeRepository; // Cambiado de DocumentTypeRepository
     private final DepartmentRepository departmentRepository;
-    private final ObligationMatrixRepository obligationMatrixRepository;
-
-    // Civil Status
-    @GetMapping("/civil-status")
-    public ResponseEntity<List<CivilStatus>> getAllCivilStatus() {
-        return ResponseEntity.ok(civilStatusRepository.findAll());
-    }
-
-    @GetMapping("/civil-status/{id}")
-    public ResponseEntity<CivilStatus> getCivilStatusById(@PathVariable Long id) {
-        return civilStatusRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/civil-status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CivilStatus> createCivilStatus(@RequestBody CivilStatus civilStatus) {
-        civilStatus.setCreatedAt(LocalDateTime.now());
-        civilStatus.setUpdatedAt(LocalDateTime.now());
-        return new ResponseEntity<>(civilStatusRepository.save(civilStatus), HttpStatus.CREATED);
-    }
-
-    @PutMapping("/civil-status/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CivilStatus> updateCivilStatus(@PathVariable Long id, @RequestBody CivilStatus civilStatusDetails) {
-        return civilStatusRepository.findById(id)
-                .map(civilStatus -> {
-                    civilStatus.setName(civilStatusDetails.getName());
-                    civilStatus.setUpdatedAt(LocalDateTime.now());
-                    return ResponseEntity.ok(civilStatusRepository.save(civilStatus));
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/civil-status/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteCivilStatus(@PathVariable Long id) {
-        return civilStatusRepository.findById(id)
-                .map(civilStatus -> {
-                    civilStatusRepository.delete(civilStatus);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Degree
-    @GetMapping("/degrees")
-    public ResponseEntity<List<Degree>> getAllDegrees() {
-        return ResponseEntity.ok(degreeRepository.findAll());
-    }
-
-    @GetMapping("/degrees/{id}")
-    public ResponseEntity<Degree> getDegreeById(@PathVariable Long id) {
-        return degreeRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/degrees")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Degree> createDegree(@RequestBody Degree degree) {
-        degree.setCreatedAt(LocalDateTime.now());
-        degree.setUpdatedAt(LocalDateTime.now());
-        return new ResponseEntity<>(degreeRepository.save(degree), HttpStatus.CREATED);
-    }
-
-    @PutMapping("/degrees/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Degree> updateDegree(@PathVariable Long id, @RequestBody Degree degreeDetails) {
-        return degreeRepository.findById(id)
-                .map(degree -> {
-                    degree.setName(degreeDetails.getName());
-                    degree.setUpdatedAt(LocalDateTime.now());
-                    return ResponseEntity.ok(degreeRepository.save(degree));
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/degrees/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteDegree(@PathVariable Long id) {
-        return degreeRepository.findById(id)
-                .map(degree -> {
-                    degreeRepository.delete(degree);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Etnia
-    @GetMapping("/ethnias")
-    public ResponseEntity<List<Etnia>> getAllEthnias() {
-        return ResponseEntity.ok(ethniaRepository.findAll());
-    }
-
-    @GetMapping("/ethnias/{id}")
-    public ResponseEntity<Etnia> getEthniaById(@PathVariable Long id) {
-        return ethniaRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/ethnias")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Etnia> createEthnia(@RequestBody Etnia etnia) {
-        etnia.setCreatedAt(LocalDateTime.now());
-        etnia.setUpdatedAt(LocalDateTime.now());
-        return new ResponseEntity<>(ethniaRepository.save(etnia), HttpStatus.CREATED);
-    }
-
-    @PutMapping("/ethnias/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Etnia> updateEthnia(@PathVariable Long id, @RequestBody Etnia etniaDetails) {
-        return ethniaRepository.findById(id)
-                .map(etnia -> {
-                    etnia.setName(etniaDetails.getName());
-                    etnia.setUpdatedAt(LocalDateTime.now());
-                    return ResponseEntity.ok(ethniaRepository.save(etnia));
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/ethnias/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteEthnia(@PathVariable Long id) {
-        return ethniaRepository.findById(id)
-                .map(etnia -> {
-                    ethniaRepository.delete(etnia);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
+    private final PositionRepository positionRepository;
 
     // Gender
     @GetMapping("/genders")
@@ -175,208 +54,92 @@ public class MasterDataController {
     @PostMapping("/genders")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Gender> createGender(@RequestBody Gender gender) {
+        if (genderRepository.findByName(gender.getName()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
         gender.setCreatedAt(LocalDateTime.now());
-        gender.setUpdatedAt(LocalDateTime.now());
-        return new ResponseEntity<>(genderRepository.save(gender), HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(genderRepository.save(gender));
     }
 
     @PutMapping("/genders/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Gender> updateGender(@PathVariable Long id, @RequestBody Gender genderDetails) {
-        return genderRepository.findById(id)
-                .map(gender -> {
-                    gender.setName(genderDetails.getName());
-                    gender.setUpdatedAt(LocalDateTime.now());
-                    return ResponseEntity.ok(genderRepository.save(gender));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Gender> updateGender(@PathVariable Long id, @RequestBody Gender gender) {
+        Optional<Gender> existingGenderOpt = genderRepository.findById(id);
+        if (existingGenderOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Gender existingGender = existingGenderOpt.get();
+        Optional<Gender> genderWithSameName = genderRepository.findByName(gender.getName());
+        if (genderWithSameName.isPresent() && !genderWithSameName.get().getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        existingGender.setName(gender.getName());
+        existingGender.setUpdatedAt(LocalDateTime.now());
+        return ResponseEntity.ok(genderRepository.save(existingGender));
     }
 
     @DeleteMapping("/genders/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteGender(@PathVariable Long id) {
-        return genderRepository.findById(id)
-                .map(gender -> {
-                    genderRepository.delete(gender);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
+        if (!genderRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        genderRepository.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 
-    // Position
-    @GetMapping("/positions")
-    public ResponseEntity<List<Position>> getAllPositions() {
-        return ResponseEntity.ok(positionRepository.findAll());
+    // Education Level (ahora Degree)
+    @GetMapping("/education-levels")
+    public ResponseEntity<List<Degree>> getAllEducationLevels() {
+        return ResponseEntity.ok(educationLevelRepository.findAll());
     }
 
-    @GetMapping("/positions/{id}")
-    public ResponseEntity<Position> getPositionById(@PathVariable Long id) {
-        return positionRepository.findById(id)
+    @GetMapping("/education-levels/{id}")
+    public ResponseEntity<Degree> getEducationLevelById(@PathVariable Long id) {
+        return educationLevelRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/positions")
+    @PostMapping("/education-levels")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Position> createPosition(@RequestBody Position position) {
-        position.setCreatedAt(LocalDateTime.now());
-        position.setUpdatedAt(LocalDateTime.now());
-        return new ResponseEntity<>(positionRepository.save(position), HttpStatus.CREATED);
+    public ResponseEntity<Degree> createEducationLevel(@RequestBody Degree educationLevel) {
+        if (educationLevelRepository.findByName(educationLevel.getName()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        educationLevel.setCreatedAt(LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.CREATED).body(educationLevelRepository.save(educationLevel));
     }
 
-    @PutMapping("/positions/{id}")
+    @PutMapping("/education-levels/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Position> updatePosition(@PathVariable Long id, @RequestBody Position positionDetails) {
-        return positionRepository.findById(id)
-                .map(position -> {
-                    position.setName(positionDetails.getName());
-                    position.setUpdatedAt(LocalDateTime.now());
-                    return ResponseEntity.ok(positionRepository.save(position));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Degree> updateEducationLevel(@PathVariable Long id, @RequestBody Degree educationLevel) {
+        Optional<Degree> existingEducationLevelOpt = educationLevelRepository.findById(id);
+        if (existingEducationLevelOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Degree existingEducationLevel = existingEducationLevelOpt.get();
+        Optional<Degree> educationLevelWithSameName = educationLevelRepository.findByName(educationLevel.getName());
+        if (educationLevelWithSameName.isPresent() && !educationLevelWithSameName.get().getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        existingEducationLevel.setName(educationLevel.getName());
+        existingEducationLevel.setUpdatedAt(LocalDateTime.now());
+        return ResponseEntity.ok(educationLevelRepository.save(existingEducationLevel));
     }
 
-    @DeleteMapping("/positions/{id}")
+    @DeleteMapping("/education-levels/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deletePosition(@PathVariable Long id) {
-        return positionRepository.findById(id)
-                .map(position -> {
-                    positionRepository.delete(position);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Resident Address
-    @GetMapping("/resident-addresses")
-    public ResponseEntity<List<ResidentAddress>> getAllResidentAddresses() {
-        return ResponseEntity.ok(residentAddressRepository.findAll());
-    }
-
-    @GetMapping("/resident-addresses/{id}")
-    public ResponseEntity<ResidentAddress> getResidentAddressById(@PathVariable Long id) {
-        return residentAddressRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/resident-addresses")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ResidentAddress> createResidentAddress(@RequestBody ResidentAddress residentAddress) {
-        residentAddress.setCreatedAt(LocalDateTime.now());
-        residentAddress.setUpdatedAt(LocalDateTime.now());
-        return new ResponseEntity<>(residentAddressRepository.save(residentAddress), HttpStatus.CREATED);
-    }
-
-    @PutMapping("/resident-addresses/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ResidentAddress> updateResidentAddress(@PathVariable Long id, @RequestBody ResidentAddress residentAddressDetails) {
-        return residentAddressRepository.findById(id)
-                .map(residentAddress -> {
-                    residentAddress.setName(residentAddressDetails.getName());
-                    residentAddress.setUpdatedAt(LocalDateTime.now());
-                    return ResponseEntity.ok(residentAddressRepository.save(residentAddress));
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/resident-addresses/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteResidentAddress(@PathVariable Long id) {
-        return residentAddressRepository.findById(id)
-                .map(residentAddress -> {
-                    residentAddressRepository.delete(residentAddress);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Type Contract
-    @GetMapping("/type-contracts")
-    public ResponseEntity<List<TypeContract>> getAllTypeContracts() {
-        return ResponseEntity.ok(typeContractRepository.findAll());
-    }
-
-    @GetMapping("/type-contracts/{id}")
-    public ResponseEntity<TypeContract> getTypeContractById(@PathVariable Long id) {
-        return typeContractRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/type-contracts")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<TypeContract> createTypeContract(@RequestBody TypeContract typeContract) {
-        typeContract.setCreatedAt(LocalDateTime.now());
-        typeContract.setUpdatedAt(LocalDateTime.now());
-        return new ResponseEntity<>(typeContractRepository.save(typeContract), HttpStatus.CREATED);
-    }
-
-    @PutMapping("/type-contracts/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<TypeContract> updateTypeContract(@PathVariable Long id, @RequestBody TypeContract typeContractDetails) {
-        return typeContractRepository.findById(id)
-                .map(typeContract -> {
-                    typeContract.setName(typeContractDetails.getName());
-                    typeContract.setUpdatedAt(LocalDateTime.now());
-                    return ResponseEntity.ok(typeContractRepository.save(typeContract));
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/type-contracts/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteTypeContract(@PathVariable Long id) {
-        return typeContractRepository.findById(id)
-                .map(typeContract -> {
-                    typeContractRepository.delete(typeContract);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Type Document
-    @GetMapping("/type-documents")
-    public ResponseEntity<List<TypeDocument>> getAllTypeDocuments() {
-        return ResponseEntity.ok(typeDocumentRepository.findAll());
-    }
-
-    @GetMapping("/type-documents/{id}")
-    public ResponseEntity<TypeDocument> getTypeDocumentById(@PathVariable Long id) {
-        return typeDocumentRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/type-documents")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<TypeDocument> createTypeDocument(@RequestBody TypeDocument typeDocument) {
-        typeDocument.setCreatedAt(LocalDateTime.now());
-        typeDocument.setUpdatedAt(LocalDateTime.now());
-        return new ResponseEntity<>(typeDocumentRepository.save(typeDocument), HttpStatus.CREATED);
-    }
-
-    @PutMapping("/type-documents/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<TypeDocument> updateTypeDocument(@PathVariable Long id, @RequestBody TypeDocument typeDocumentDetails) {
-        return typeDocumentRepository.findById(id)
-                .map(typeDocument -> {
-                    typeDocument.setName(typeDocumentDetails.getName());
-                    typeDocument.setUpdatedAt(LocalDateTime.now());
-                    return ResponseEntity.ok(typeDocumentRepository.save(typeDocument));
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/type-documents/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteTypeDocument(@PathVariable Long id) {
-        return typeDocumentRepository.findById(id)
-                .map(typeDocument -> {
-                    typeDocumentRepository.delete(typeDocument);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Void> deleteEducationLevel(@PathVariable Long id) {
+        if (!educationLevelRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        educationLevelRepository.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 
     // Department
@@ -395,75 +158,300 @@ public class MasterDataController {
     @PostMapping("/departments")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Department> createDepartment(@RequestBody Department department) {
+        if (departmentRepository.findByName(department.getName()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
         department.setCreatedAt(LocalDateTime.now());
-        department.setUpdatedAt(LocalDateTime.now());
-        return new ResponseEntity<>(departmentRepository.save(department), HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(departmentRepository.save(department));
     }
 
     @PutMapping("/departments/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Department> updateDepartment(@PathVariable Long id, @RequestBody Department departmentDetails) {
-        return departmentRepository.findById(id)
-                .map(department -> {
-                    department.setName(departmentDetails.getName());
-                    department.setUpdatedAt(LocalDateTime.now());
-                    return ResponseEntity.ok(departmentRepository.save(department));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Department> updateDepartment(@PathVariable Long id, @RequestBody Department department) {
+        Optional<Department> existingDepartmentOpt = departmentRepository.findById(id);
+        if (existingDepartmentOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Department existingDepartment = existingDepartmentOpt.get();
+        Optional<Department> departmentWithSameName = departmentRepository.findByName(department.getName());
+        if (departmentWithSameName.isPresent() && !departmentWithSameName.get().getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        existingDepartment.setName(department.getName());
+        existingDepartment.setUpdatedAt(LocalDateTime.now());
+        return ResponseEntity.ok(departmentRepository.save(existingDepartment));
     }
 
     @DeleteMapping("/departments/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteDepartment(@PathVariable Long id) {
-        return departmentRepository.findById(id)
-                .map(department -> {
-                    departmentRepository.delete(department);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
+        if (!departmentRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        departmentRepository.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 
-    // Obligation Matrix
-    @GetMapping("/obligation-matrices")
-    public ResponseEntity<List<ObligationMatrix>> getAllObligationMatrices() {
-        return ResponseEntity.ok(obligationMatrixRepository.findAll());
+    // Position
+    @GetMapping("/positions")
+    public ResponseEntity<List<Position>> getAllPositions() {
+        return ResponseEntity.ok(positionRepository.findAll());
     }
 
-    @GetMapping("/obligation-matrices/{id}")
-    public ResponseEntity<ObligationMatrix> getObligationMatrixById(@PathVariable Long id) {
-        return obligationMatrixRepository.findById(id)
+    @GetMapping("/positions/{id}")
+    public ResponseEntity<Position> getPositionById(@PathVariable Long id) {
+        return positionRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/obligation-matrices")
+    @PostMapping("/positions")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ObligationMatrix> createObligationMatrix(@RequestBody ObligationMatrix obligationMatrix) {
-        obligationMatrix.setCreatedAt(LocalDateTime.now());
-        obligationMatrix.setUpdatedAt(LocalDateTime.now());
-        return new ResponseEntity<>(obligationMatrixRepository.save(obligationMatrix), HttpStatus.CREATED);
+    public ResponseEntity<Position> createPosition(@RequestBody Position position) {
+        if (positionRepository.findByName(position.getName()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        position.setCreatedAt(LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.CREATED).body(positionRepository.save(position));
     }
 
-    @PutMapping("/obligation-matrices/{id}")
+    @PutMapping("/positions/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ObligationMatrix> updateObligationMatrix(@PathVariable Long id, @RequestBody ObligationMatrix obligationMatrixDetails) {
-        return obligationMatrixRepository.findById(id)
-                .map(obligationMatrix -> {
-                    obligationMatrix.setName(obligationMatrixDetails.getName());
-                    obligationMatrix.setUpdatedAt(LocalDateTime.now());
-                    return ResponseEntity.ok(obligationMatrixRepository.save(obligationMatrix));
-                })
+    public ResponseEntity<Position> updatePosition(@PathVariable Long id, @RequestBody Position position) {
+        Optional<Position> existingPositionOpt = positionRepository.findById(id);
+        if (existingPositionOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Position existingPosition = existingPositionOpt.get();
+        Optional<Position> positionWithSameName = positionRepository.findByName(position.getName());
+        if (positionWithSameName.isPresent() && !positionWithSameName.get().getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        existingPosition.setName(position.getName());
+        existingPosition.setActive(position.getActive());
+        existingPosition.setUpdatedAt(LocalDateTime.now());
+        return ResponseEntity.ok(positionRepository.save(existingPosition));
+    }
+
+    @DeleteMapping("/positions/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deletePosition(@PathVariable Long id) {
+        if (!positionRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        positionRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }    // Los endpoints IESS se han movido a IessController
+
+    // Marital Status (ahora CivilStatus)
+    @GetMapping("/marital-status")
+    public ResponseEntity<List<CivilStatus>> getAllMaritalStatus() {
+        return ResponseEntity.ok(maritalStatusRepository.findAll());
+    }
+
+    @GetMapping("/marital-status/{id}")
+    public ResponseEntity<CivilStatus> getMaritalStatusById(@PathVariable Long id) {
+        return maritalStatusRepository.findById(id)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping("/obligation-matrices/{id}")
+    @PostMapping("/marital-status")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteObligationMatrix(@PathVariable Long id) {
-        return obligationMatrixRepository.findById(id)
-                .map(obligationMatrix -> {
-                    obligationMatrixRepository.delete(obligationMatrix);
-                    return ResponseEntity.ok().<Void>build();
-                })
+    public ResponseEntity<CivilStatus> createMaritalStatus(@RequestBody CivilStatus maritalStatus) {
+        if (maritalStatusRepository.findByName(maritalStatus.getName()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        maritalStatus.setCreatedAt(LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.CREATED).body(maritalStatusRepository.save(maritalStatus));
+    }
+
+    @PutMapping("/marital-status/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CivilStatus> updateMaritalStatus(@PathVariable Long id, @RequestBody CivilStatus maritalStatus) {
+        Optional<CivilStatus> existingMaritalStatusOpt = maritalStatusRepository.findById(id);
+        if (existingMaritalStatusOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        CivilStatus existingMaritalStatus = existingMaritalStatusOpt.get();
+        Optional<CivilStatus> maritalStatusWithSameName = maritalStatusRepository.findByName(maritalStatus.getName());
+        if (maritalStatusWithSameName.isPresent() && !maritalStatusWithSameName.get().getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        existingMaritalStatus.setName(maritalStatus.getName());
+        existingMaritalStatus.setUpdatedAt(LocalDateTime.now());
+        return ResponseEntity.ok(maritalStatusRepository.save(existingMaritalStatus));
+    }
+
+    @DeleteMapping("/marital-status/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteMaritalStatus(@PathVariable Long id) {
+        if (!maritalStatusRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        maritalStatusRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    // Residence Type (ahora ResidentAddress)
+    @GetMapping("/residence-types")
+    public ResponseEntity<List<ResidentAddress>> getAllResidenceTypes() {
+        return ResponseEntity.ok(residenceTypeRepository.findAll());
+    }
+
+    @GetMapping("/residence-types/{id}")
+    public ResponseEntity<ResidentAddress> getResidenceTypeById(@PathVariable Long id) {
+        return residenceTypeRepository.findById(id)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/residence-types")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ResidentAddress> createResidenceType(@RequestBody ResidentAddress residenceType) {
+        if (residenceTypeRepository.findByName(residenceType.getName()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        residenceType.setCreatedAt(LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.CREATED).body(residenceTypeRepository.save(residenceType));
+    }
+
+    @PutMapping("/residence-types/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ResidentAddress> updateResidenceType(@PathVariable Long id, @RequestBody ResidentAddress residenceType) {
+        Optional<ResidentAddress> existingResidenceTypeOpt = residenceTypeRepository.findById(id);
+        if (existingResidenceTypeOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        ResidentAddress existingResidenceType = existingResidenceTypeOpt.get();
+        Optional<ResidentAddress> residenceTypeWithSameName = residenceTypeRepository.findByName(residenceType.getName());
+        if (residenceTypeWithSameName.isPresent() && !residenceTypeWithSameName.get().getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        existingResidenceType.setName(residenceType.getName());
+        existingResidenceType.setUpdatedAt(LocalDateTime.now());
+        return ResponseEntity.ok(residenceTypeRepository.save(existingResidenceType));
+    }
+
+    @DeleteMapping("/residence-types/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteResidenceType(@PathVariable Long id) {
+        if (!residenceTypeRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        residenceTypeRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    // Ethnic Group (ahora Etnia)
+    @GetMapping("/ethnic-groups")
+    public ResponseEntity<List<Etnia>> getAllEthnicGroups() {
+        return ResponseEntity.ok(ethnicGroupRepository.findAll());
+    }
+
+    @GetMapping("/ethnic-groups/{id}")
+    public ResponseEntity<Etnia> getEthnicGroupById(@PathVariable Long id) {
+        return ethnicGroupRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/ethnic-groups")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Etnia> createEthnicGroup(@RequestBody Etnia ethnicGroup) {
+        if (ethnicGroupRepository.findByName(ethnicGroup.getName()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        ethnicGroup.setCreatedAt(LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ethnicGroupRepository.save(ethnicGroup));
+    }
+
+    @PutMapping("/ethnic-groups/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Etnia> updateEthnicGroup(@PathVariable Long id, @RequestBody Etnia ethnicGroup) {
+        Optional<Etnia> existingEthnicGroupOpt = ethnicGroupRepository.findById(id);
+        if (existingEthnicGroupOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Etnia existingEthnicGroup = existingEthnicGroupOpt.get();
+        Optional<Etnia> ethnicGroupWithSameName = ethnicGroupRepository.findByName(ethnicGroup.getName());
+        if (ethnicGroupWithSameName.isPresent() && !ethnicGroupWithSameName.get().getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        existingEthnicGroup.setName(ethnicGroup.getName());
+        existingEthnicGroup.setUpdatedAt(LocalDateTime.now());
+        return ResponseEntity.ok(ethnicGroupRepository.save(existingEthnicGroup));
+    }
+
+    @DeleteMapping("/ethnic-groups/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteEthnicGroup(@PathVariable Long id) {
+        if (!ethnicGroupRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        ethnicGroupRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    // Document Type (ahora TypeDocument)
+    @GetMapping("/document-types")
+    public ResponseEntity<List<TypeDocument>> getAllDocumentTypes() {
+        return ResponseEntity.ok(documentTypeRepository.findAll());
+    }
+
+    @GetMapping("/document-types/{id}")
+    public ResponseEntity<TypeDocument> getDocumentTypeById(@PathVariable Long id) {
+        return documentTypeRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/document-types")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TypeDocument> createDocumentType(@RequestBody TypeDocument documentType) {
+        if (documentTypeRepository.findByName(documentType.getName()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        documentType.setCreatedAt(LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.CREATED).body(documentTypeRepository.save(documentType));
+    }
+
+    @PutMapping("/document-types/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TypeDocument> updateDocumentType(@PathVariable Long id, @RequestBody TypeDocument documentType) {
+        Optional<TypeDocument> existingDocumentTypeOpt = documentTypeRepository.findById(id);
+        if (existingDocumentTypeOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        TypeDocument existingDocumentType = existingDocumentTypeOpt.get();
+        Optional<TypeDocument> documentTypeWithSameName = documentTypeRepository.findByName(documentType.getName());
+        if (documentTypeWithSameName.isPresent() && !documentTypeWithSameName.get().getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        existingDocumentType.setName(documentType.getName());
+        existingDocumentType.setUpdatedAt(LocalDateTime.now());
+        return ResponseEntity.ok(documentTypeRepository.save(existingDocumentType));
+    }
+
+    @DeleteMapping("/document-types/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteDocumentType(@PathVariable Long id) {
+        if (!documentTypeRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        documentTypeRepository.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 }

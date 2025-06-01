@@ -1,4 +1,3 @@
-
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { ConfiguracionComponent } from './configuracion.component';
@@ -31,6 +30,21 @@ const routes: Routes = [
       {
         path: 'tipo-documento',
         loadChildren: () => import('./tipo-documento/tipo-documento.module').then(m => m.TipoDocumentoModule)
+      },
+      {
+        path: 'departamentos',
+        loadChildren: () => import('./departamento/departamento.module').then(m => m.DepartamentoModule)
+      },      {
+        path: 'cargos',
+        loadChildren: () => import('./cargo/cargo.module').then(m => m.CargoModule)
+      },
+      {
+        path: 'iess',
+        loadChildren: () => import('./iess/iess.module').then(m => m.IessModule)
+      },
+      {
+        path: 'tipo-contrato',
+        loadChildren: () => import('./tipo-contrato/tipo-contrato.module').then(m => m.TipoContratoModule)
       }
     ]
   }

@@ -1,0 +1,87 @@
+<div class="cargo-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Nuevo Cargo</h2>
+      <p>Complete el formulario para crear un nuevo cargo</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" routerLink="/dashboard/admin/configuracion/cargos">
+        <i class="fas fa-arrow-left"></i> Volver a Lista
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <form [formGroup]="cargoForm" (ngSubmit)="onSubmit()">
+      <!-- Mensaje de éxito -->
+      <div *ngIf="successMessage" class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+
+      <!-- Mensaje de error -->
+      <div *ngIf="error" class="alert alert-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ error }}</span>      </div>
+      
+      <div class="form-group">
+        <label for="departmentId">Departamento <span class="required">*</span></label>
+        <select 
+          id="departmentId" 
+          formControlName="departmentId"
+          [class.is-invalid]="cargoForm.get('departmentId')?.invalid && (cargoForm.get('departmentId')?.touched || formSubmitted)"
+        >
+          <option value="" disabled>Seleccione un departamento</option>
+          <option *ngFor="let depto of departamentos" [value]="depto.id">{{ depto.name }}</option>
+        </select>
+        <div *ngIf="cargoForm.get('departmentId')?.invalid && (cargoForm.get('departmentId')?.touched || formSubmitted)" class="error-message">
+          <span *ngIf="cargoForm.get('departmentId')?.errors?.['required']">El departamento es obligatorio</span>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="name">Nombre <span class="required">*</span></label>
+        <input 
+          type="text" 
+          id="name" 
+          formControlName="name"
+          [class.is-invalid]="cargoForm.get('name')?.invalid && (cargoForm.get('name')?.touched || formSubmitted)"
+          placeholder="Ingrese el nombre del cargo"
+        >
+        <div *ngIf="cargoForm.get('name')?.invalid && (cargoForm.get('name')?.touched || formSubmitted)" class="error-message">
+          <span *ngIf="cargoForm.get('name')?.errors?.['required']">El nombre es obligatorio</span>
+          <span *ngIf="cargoForm.get('name')?.errors?.['maxlength']">El nombre no debe exceder los 50 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea 
+          id="description" 
+          formControlName="description"
+          rows="3"
+          [class.is-invalid]="cargoForm.get('description')?.invalid && (cargoForm.get('description')?.touched || formSubmitted)"
+          placeholder="Ingrese una descripción del cargo"
+        ></textarea>
+        <div *ngIf="cargoForm.get('description')?.invalid && (cargoForm.get('description')?.touched || formSubmitted)" class="error-message">
+          <span *ngIf="cargoForm.get('description')?.errors?.['maxlength']">La descripción no debe exceder los 255 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="active">
+          <span>Activo</span>
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="cancelar()">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="submitting">
+          <i *ngIf="submitting" class="fas fa-spinner fa-spin"></i>
+          Guardar
+        </button>
+      </div>
+    </form>
+  </div>
+</div> 

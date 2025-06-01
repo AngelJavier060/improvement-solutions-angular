@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface IessRepository extends JpaRepository<Iess, Long> {
     
-    Optional<Iess> findByName(String name);
+    Optional<Iess> findByCode(String code);
     
     @Query("SELECT i FROM Iess i JOIN i.businesses b WHERE b.id = :businessId")
     List<Iess> findByBusinessId(Long businessId);

@@ -22,40 +22,34 @@ public class IessService {
 
     public Optional<Iess> findById(Long id) {
         return iessRepository.findById(id);
-    }
-
-    public Optional<Iess> findByName(String name) {
-        return iessRepository.findByName(name);
+    }    public Optional<Iess> findByCode(String code) {
+        return iessRepository.findByCode(code);
     }
 
     public List<Iess> findByBusinessId(Long businessId) {
         return iessRepository.findByBusinessId(businessId);
-    }
-
-    @Transactional
+    }    @Transactional
     public Iess create(Iess iess) {
-        if (iessRepository.findByName(iess.getName()).isPresent()) {
-            throw new RuntimeException("Ya existe un tipo de IESS con este nombre");
+        if (iessRepository.findByCode(iess.getCode()).isPresent()) {
+            throw new RuntimeException("Ya existe un tipo de IESS con este código sectorial");
         }
         
         iess.setCreatedAt(LocalDateTime.now());
         iess.setUpdatedAt(LocalDateTime.now());
         
         return iessRepository.save(iess);
-    }
-
-    @Transactional
+    }    @Transactional
     public Iess update(Long id, Iess iessDetails) {
         Iess iess = iessRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tipo de IESS no encontrado"));
         
-        // Verificar si ya existe otro tipo de IESS con el mismo nombre
-        Optional<Iess> existingIess = iessRepository.findByName(iessDetails.getName());
+        // Verificar si ya existe otro tipo de IESS con el mismo código
+        Optional<Iess> existingIess = iessRepository.findByCode(iessDetails.getCode());
         if (existingIess.isPresent() && !existingIess.get().getId().equals(id)) {
-            throw new RuntimeException("Ya existe un tipo de IESS con este nombre");
+            throw new RuntimeException("Ya existe un tipo de IESS con este código sectorial");
         }
         
-        iess.setName(iessDetails.getName());
+        iess.setCode(iessDetails.getCode());
         iess.setDescription(iessDetails.getDescription());
         iess.setUpdatedAt(LocalDateTime.now());
         

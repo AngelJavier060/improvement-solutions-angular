@@ -1,0 +1,78 @@
+<div class="cargo-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Cargos</h2>
+      <p>Gestionar los cargos de la empresa</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" (click)="volverAConfiguracion()">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
+      <button class="btn-primary" (click)="nuevoCargo()">
+        <i class="fas fa-plus"></i> Nuevo Cargo
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <!-- Estado de carga -->
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando cargos...</span>
+    </div>
+
+    <!-- Estado de error -->
+    <div *ngIf="error && !loading" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="cargarCargos()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <!-- Tabla de cargos -->
+    <div *ngIf="!loading && !error" class="data-table">
+      <table *ngIf="cargos.length > 0">        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Departamento</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let cargo of cargos">
+            <td>{{ cargo.id }}</td>
+            <td>{{ cargo.name }}</td>
+            <td>{{ cargo.description }}</td>
+            <td>{{ cargo.department?.name || 'No asignado' }}</td>
+            <td>
+              <span class="badge" [class.active]="cargo.active" [class.inactive]="!cargo.active">
+                {{ cargo.active ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="actions">
+              <button class="btn-icon" (click)="editarCargo(cargo.id)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-icon" (click)="eliminarCargo(cargo.id)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Estado vacío -->
+      <div *ngIf="cargos.length === 0" class="empty-state">
+        <i class="fas fa-briefcase"></i>
+        <p>No hay cargos registrados</p>
+        <button class="btn-primary" (click)="nuevoCargo()">
+          <i class="fas fa-plus"></i> Agregar Cargo
+        </button>
+      </div>
+    </div>
+  </div>
+</div> 

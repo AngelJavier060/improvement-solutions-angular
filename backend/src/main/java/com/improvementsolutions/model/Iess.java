@@ -23,9 +23,8 @@ public class Iess {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    @Column(nullable = false, unique = true)
-    private String name;
+      @Column(nullable = false, unique = true, name = "name")
+    private String code; // Renombrado de name a code, pero mantenemos columna "name" en base de datos
     
     @Column
     private String description;

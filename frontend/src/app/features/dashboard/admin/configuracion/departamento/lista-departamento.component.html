@@ -1,0 +1,77 @@
+<div class="departamento-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Departamentos</h2>
+      <p>Administración de departamentos de la empresa</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary mr-2" routerLink="/dashboard/admin/configuracion">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
+      <button class="btn-primary" routerLink="nuevo">
+        <i class="fas fa-plus"></i> Nuevo Departamento
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando departamentos...</span>
+    </div>
+
+    <div *ngIf="error" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="cargarDepartamentos()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <div *ngIf="!loading && !error">
+      <table class="data-table" *ngIf="departamentos.length > 0; else noData">
+        <thead>
+          <tr>
+            <th class="th-id">ID</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th class="th-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let departamento of departamentos">
+            <td>{{ departamento.id }}</td>
+            <td>{{ departamento.name }}</td>
+            <td>{{ departamento.description || '-' }}</td>
+            <td>
+              <span class="badge" [class.active]="departamento.active" [class.inactive]="!departamento.active">
+                {{ departamento.active ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="actions">
+              <div class="btn-group">
+                <button class="btn btn-outline-primary btn-sm" [routerLink]="['editar', departamento.id]" title="Editar departamento">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-outline-danger btn-sm" (click)="eliminarDepartamento(departamento.id)" title="Eliminar departamento">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noData>
+        <div class="empty-state">
+          <i class="fas fa-building"></i>
+          <p>No hay departamentos registrados aún.</p>
+          <button class="btn-primary" routerLink="nuevo">
+            <i class="fas fa-plus"></i> Agregar un departamento
+          </button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div> 
