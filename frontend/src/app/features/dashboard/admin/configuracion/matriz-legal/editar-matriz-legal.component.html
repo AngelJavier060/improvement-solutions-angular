@@ -1,0 +1,106 @@
+<div class="matriz-legal-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Editar Matriz Legal</h2>
+      <p>Modifique los datos de la matriz legal</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" (click)="volverALista()">
+        <i class="fas fa-arrow-left"></i> Volver a Lista
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <!-- Estado de carga -->
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando datos de la matriz legal...</span>
+    </div>
+
+    <!-- Estado de error al cargar -->
+    <div *ngIf="error && !loading" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+    </div>
+
+    <!-- Formulario -->
+    <form [formGroup]="matrizLegalForm" (ngSubmit)="onSubmit()" *ngIf="!loading && !error">
+      <!-- Mensaje de éxito -->
+      <div *ngIf="successMessage" class="success-message">
+        <i class="fas fa-check-circle"></i>
+        {{ successMessage }}
+      </div>
+
+      <!-- Cumplimiento Legal -->
+      <div class="form-group" [class.is-invalid]="matrizLegalForm.get('legalCompliance')?.invalid && matrizLegalForm.get('legalCompliance')?.touched">
+        <label for="legalCompliance">Cumplimiento Legal *</label>
+        <input
+          type="text"
+          id="legalCompliance"
+          formControlName="legalCompliance"
+          [class.is-invalid]="matrizLegalForm.get('legalCompliance')?.invalid && matrizLegalForm.get('legalCompliance')?.touched"
+        >
+        <div class="invalid-feedback" *ngIf="matrizLegalForm.get('legalCompliance')?.errors?.['required'] && matrizLegalForm.get('legalCompliance')?.touched">
+          El cumplimiento legal es requerido
+        </div>
+      </div>
+
+      <!-- Regulación Legal -->
+      <div class="form-group" [class.is-invalid]="matrizLegalForm.get('legalRegulation')?.invalid && matrizLegalForm.get('legalRegulation')?.touched">
+        <label for="legalRegulation">Regulación Legal *</label>
+        <input
+          type="text"
+          id="legalRegulation"
+          formControlName="legalRegulation"
+          [class.is-invalid]="matrizLegalForm.get('legalRegulation')?.invalid && matrizLegalForm.get('legalRegulation')?.touched"
+        >
+        <div class="invalid-feedback" *ngIf="matrizLegalForm.get('legalRegulation')?.errors?.['required'] && matrizLegalForm.get('legalRegulation')?.touched">
+          La regulación legal es requerida
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div class="form-group" [class.is-invalid]="matrizLegalForm.get('description')?.invalid && matrizLegalForm.get('description')?.touched">
+        <label for="description">Descripción *</label>
+        <textarea
+          id="description"
+          rows="3"
+          formControlName="description"
+          [class.is-invalid]="matrizLegalForm.get('description')?.invalid && matrizLegalForm.get('description')?.touched"
+        ></textarea>
+        <div class="invalid-feedback" *ngIf="matrizLegalForm.get('description')?.errors?.['required'] && matrizLegalForm.get('description')?.touched">
+          La descripción es requerida
+        </div>
+      </div>
+
+      <!-- Departamento -->
+      <div class="form-group" [class.is-invalid]="matrizLegalForm.get('departmentId')?.invalid && matrizLegalForm.get('departmentId')?.touched">
+        <label for="departmentId">Departamento *</label>
+        <select
+          id="departmentId"
+          formControlName="departmentId"
+          [class.is-invalid]="matrizLegalForm.get('departmentId')?.invalid && matrizLegalForm.get('departmentId')?.touched"
+        >
+          <option value="">Seleccione un departamento</option>
+          <option *ngFor="let department of departments" [value]="department.id">
+            {{ department.name }}
+          </option>
+        </select>
+        <div class="invalid-feedback" *ngIf="matrizLegalForm.get('departmentId')?.errors?.['required'] && matrizLegalForm.get('departmentId')?.touched">
+          El departamento es requerido
+        </div>
+      </div>
+
+      <!-- Acciones del formulario -->
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="cancelar()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button type="submit" class="btn-success" [disabled]="matrizLegalForm.invalid || submitting">
+          <i class="fas fa-save"></i> Guardar Cambios
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -473,14 +473,10 @@ public class MasterDataController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-    
+
     @PostMapping("/obligation-matrices")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ObligationMatrix> createObligationMatrix(@RequestBody ObligationMatrix obligationMatrix) {
-        // Validar que el departamento no sea nulo
-        if (obligationMatrix.getDepartmentId() == null) {
-            return ResponseEntity.badRequest().build();
-        }
         obligationMatrix.setCreatedAt(LocalDateTime.now());
         return ResponseEntity.status(HttpStatus.CREATED).body(obligationMatrixRepository.save(obligationMatrix));
     }

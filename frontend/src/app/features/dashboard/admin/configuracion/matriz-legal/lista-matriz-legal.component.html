@@ -1,0 +1,76 @@
+<!-- Lista de Matriz Legal -->
+<div class="matriz-legal-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Matriz Legal</h2>
+      <p>Gestionar las matrices legales de obligación</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" (click)="volverAConfiguracion()">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
+      <button class="btn-primary" (click)="nuevaMatriz()">
+        <i class="fas fa-plus"></i> Nueva Matriz Legal
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <!-- Estado de carga -->
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando matrices legales...</span>
+    </div>
+
+    <!-- Estado de error -->
+    <div *ngIf="error && !loading" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="cargarMatrices()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <!-- Tabla de Matrices -->
+    <div *ngIf="!loading && !error" class="data-table">
+      <table *ngIf="matrices.length > 0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Cumplimiento Legal</th>
+            <th>Regulación Legal</th>
+            <th>Descripción</th>
+            <th>Departamento</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let matrix of matrices">
+            <td>{{ matrix.id }}</td>
+            <td>{{ matrix.legalCompliance }}</td>
+            <td>{{ matrix.legalRegulation }}</td>
+            <td>{{ matrix.description }}</td>
+            <td>{{ getDepartmentName(matrix.departmentId) }}</td>
+            <td class="actions">
+              <button class="btn-icon" (click)="editarMatriz(matrix.id!)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-icon" (click)="eliminarMatriz(matrix.id!)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Estado vacío -->
+      <div *ngIf="matrices.length === 0" class="empty-state">
+        <i class="fas fa-clipboard-list"></i>
+        <p>No hay matrices legales registradas</p>
+        <button class="btn-primary" (click)="nuevaMatriz()">
+          <i class="fas fa-plus"></i> Agregar Matriz Legal
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

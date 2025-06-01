@@ -13,7 +13,8 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class ObligationMatrixDto extends BaseDto {
-    private String name;
     private String description;
-    private String frequency;
+    private String legalCompliance;
+    private String legalRegulation;
+    private Long departmentId;
 }

@@ -98,7 +98,14 @@ export class ConfiguracionComponent implements OnInit {
       ruta: 'tipo-contrato',
       icono: 'fas fa-file-signature',
       proximamente: false
-    }
+    },
+    {
+      nombre: 'Matriz Legal',
+      descripcion: 'Gestionar las matrices legales de obligación',
+      ruta: 'matriz-legal',
+      icono: 'fas fa-balance-scale',
+      proximamente: false
+    },
   ];
   navegarA(ruta: string): void {
     console.log('Navegando a:', ruta);

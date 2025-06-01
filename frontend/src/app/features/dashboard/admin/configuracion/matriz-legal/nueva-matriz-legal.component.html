@@ -1,0 +1,91 @@
+<div class="matriz-legal-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Nueva Matriz Legal</h2>
+      <p>Crear una nueva matriz legal de obligación</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" (click)="volverALista()">
+        <i class="fas fa-arrow-left"></i> Volver
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <!-- Mensajes de estado -->
+    <div *ngIf="error" class="alert alert-error">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+    </div>
+
+    <div *ngIf="successMessage" class="alert alert-success">
+      <i class="fas fa-check-circle"></i>
+      <span>{{ successMessage }}</span>
+    </div>
+
+    <!-- Formulario -->
+    <form [formGroup]="matrizLegalForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="legalCompliance">Cumplimiento Legal <span class="required">*</span></label>
+        <input
+          type="text"
+          id="legalCompliance"
+          formControlName="legalCompliance"
+          [class.is-invalid]="matrizLegalForm.get('legalCompliance')?.invalid && (matrizLegalForm.get('legalCompliance')?.touched)"
+        >
+        <div class="error-message" *ngIf="matrizLegalForm.get('legalCompliance')?.invalid && (matrizLegalForm.get('legalCompliance')?.touched)">
+          <span *ngIf="matrizLegalForm.get('legalCompliance')?.errors?.['required']">El cumplimiento legal es requerido</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="legalRegulation">Regulación Legal <span class="required">*</span></label>
+        <input
+          type="text"
+          id="legalRegulation"
+          formControlName="legalRegulation"
+          [class.is-invalid]="matrizLegalForm.get('legalRegulation')?.invalid && (matrizLegalForm.get('legalRegulation')?.touched)"
+        >
+        <div class="error-message" *ngIf="matrizLegalForm.get('legalRegulation')?.invalid && (matrizLegalForm.get('legalRegulation')?.touched)">
+          <span *ngIf="matrizLegalForm.get('legalRegulation')?.errors?.['required']">La regulación legal es requerida</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Descripción <span class="required">*</span></label>
+        <textarea
+          id="description"
+          formControlName="description"
+          rows="4"
+          [class.is-invalid]="matrizLegalForm.get('description')?.invalid && (matrizLegalForm.get('description')?.touched)"
+        ></textarea>
+        <div class="error-message" *ngIf="matrizLegalForm.get('description')?.invalid && (matrizLegalForm.get('description')?.touched)">
+          <span *ngIf="matrizLegalForm.get('description')?.errors?.['required']">La descripción es requerida</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="departmentId">Departamento <span class="required">*</span></label>
+        <select
+          id="departmentId"
+          formControlName="departmentId"
+          [class.is-invalid]="matrizLegalForm.get('departmentId')?.invalid && (matrizLegalForm.get('departmentId')?.touched)"
+        >
+          <option value="">Seleccione un departamento</option>
+          <option *ngFor="let dept of departments" [value]="dept.id">{{ dept.name }}</option>
+        </select>
+        <div class="error-message" *ngIf="matrizLegalForm.get('departmentId')?.invalid && (matrizLegalForm.get('departmentId')?.touched)">
+          <span *ngIf="matrizLegalForm.get('departmentId')?.errors?.['required']">El departamento es requerido</span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="volverALista()">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="matrizLegalForm.invalid || submitting">
+          <i *ngIf="submitting" class="fas fa-spinner fa-spin"></i>
+          <span>{{ submitting ? 'Guardando...' : 'Guardar' }}</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
