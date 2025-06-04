@@ -1,0 +1,145 @@
+<div class="container-fluid pt-3">
+  <div class="row mb-4">
+    <div class="col">
+      <h2 class="mb-0">
+        <i class="fas fa-user me-2"></i>Detalle de Usuario
+      </h2>
+      <p class="text-muted">Información completa del usuario</p>
+    </div>
+    <div class="col-auto">
+      <button type="button" class="btn btn-outline-secondary" (click)="goBack()">
+        <i class="fas fa-arrow-left me-1"></i> Volver
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading spinner -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p class="mt-2">Cargando datos del usuario...</p>
+  </div>
+
+  <!-- Error message -->
+  <div *ngIf="!isLoading && errorMessage" class="alert alert-danger">
+    {{ errorMessage }}
+  </div>
+
+  <!-- User details card -->
+  <div class="card" *ngIf="!isLoading && user">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <h4 class="mb-0">{{ user.name || user.username }}</h4>
+      <div>
+        <button class="btn btn-primary me-2" (click)="editUser()">
+          <i class="fas fa-edit me-1"></i> Editar
+        </button>
+        <button class="btn btn-danger" (click)="confirmDelete(deleteModal)">
+          <i class="fas fa-trash me-1"></i> Eliminar
+        </button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <!-- Columna izquierda -->
+        <div class="col-md-4 text-center mb-4 mb-md-0">          <div class="profile-image-container mb-3">            <img 
+              [src]="getProfilePictureUrl(user)" 
+              alt="Foto de perfil" 
+              class="img-fluid rounded-circle profile-image"
+              onerror="this.src='assets/img/default-avatar.png'"
+            >
+          </div>
+          <h5>{{ user.name || 'Sin nombre' }}</h5>
+          <p class="text-muted">{{ user.username }}</p>
+          
+          <div class="mt-3">
+            <span class="badge" [ngClass]="user.active ? 'bg-success' : 'bg-danger'">
+              {{ user.active ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+          
+          <div class="mt-3">
+            <button class="btn btn-sm" [ngClass]="user.active ? 'btn-outline-danger' : 'btn-outline-success'" (click)="toggleUserActive()">
+              {{ user.active ? 'Desactivar usuario' : 'Activar usuario' }}
+            </button>
+          </div>
+        </div>
+        
+        <!-- Columna derecha -->
+        <div class="col-md-8">
+          <div class="user-details">
+            <h5 class="border-bottom pb-2">Información del Usuario</h5>
+            
+            <div class="row mb-3">
+              <div class="col-md-4 fw-bold">ID:</div>
+              <div class="col-md-8">{{ user.id }}</div>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-md-4 fw-bold">Nombre de usuario:</div>
+              <div class="col-md-8">{{ user.username }}</div>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-md-4 fw-bold">Correo electrónico:</div>
+              <div class="col-md-8">
+                <a [href]="'mailto:' + user.email">{{ user.email }}</a>
+              </div>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-md-4 fw-bold">Nombre completo:</div>
+              <div class="col-md-8">{{ user.name || 'No especificado' }}</div>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-md-4 fw-bold">Teléfono:</div>
+              <div class="col-md-8">{{ user.phone || 'No especificado' }}</div>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-md-4 fw-bold">Fecha de creación:</div>
+              <div class="col-md-8">{{ user.createdAt | date:'dd/MM/yyyy HH:mm' }}</div>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-md-4 fw-bold">Última actualización:</div>
+              <div class="col-md-8">{{ user.updatedAt | date:'dd/MM/yyyy HH:mm' }}</div>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-md-4 fw-bold">Último acceso:</div>
+              <div class="col-md-8">{{ user.lastLogin | date:'dd/MM/yyyy HH:mm' || 'Nunca' }}</div>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-4 fw-bold">Roles:</div>
+              <div class="col-md-8">
+                <span *ngFor="let role of user.roles" class="badge bg-info me-1 mb-1">
+                  {{ getRoleName(role) }}
+                </span>
+                <span *ngIf="!user.roles || user.roles.length === 0">Sin roles asignados</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación de eliminación -->
+<ng-template #deleteModal let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-delete-title">Confirmar eliminación</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <p>¿Está seguro de que desea eliminar este usuario? Esta acción no se puede deshacer.</p>
+    <p class="text-danger"><strong>Advertencia:</strong> Se eliminarán todas las sesiones y datos asociados a este usuario.</p>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Cancelar</button>
+    <button type="button" class="btn btn-danger" (click)="modal.close('confirm')">Eliminar</button>
+  </div>
+</ng-template>

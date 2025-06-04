@@ -67,6 +67,7 @@ public class PublicResourceConfig implements WebMvcConfigurer {
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Permitir todas las solicitudes OPTIONS
                 .requestMatchers(HttpMethod.GET, "/api/files/logos/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/files/profiles/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/files/upload/logos").permitAll() // Corregido: sin /** al final
                 .requestMatchers(HttpMethod.GET, "/api/debug/**").permitAll()
                 .anyRequest().authenticated()

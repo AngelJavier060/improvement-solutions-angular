@@ -52,8 +52,7 @@ import { SharedModule } from './shared/shared.module';
     NgbModalModule,
     SharedModule,    RouterModule.forRoot([
       { path: '', component: HomeComponent },
-      { path: 'test-upload', component: TestUploadComponent },
-      {
+      { path: 'test-upload', component: TestUploadComponent },      {
         path: 'dashboard/admin', 
         component: DashboardAdminComponent,
         canActivate: [AuthGuard],
@@ -66,6 +65,10 @@ import { SharedModule } from './shared/shared.module';
           {
             path: 'empresas',
             loadChildren: () => import('./features/dashboard/admin/empresas/empresas.module').then(m => m.EmpresasModule)
+          },
+          {
+            path: 'usuarios',
+            loadChildren: () => import('./features/dashboard/admin/usuarios/usuarios.module').then(m => m.UsuariosModule)
           }
         ]
       },

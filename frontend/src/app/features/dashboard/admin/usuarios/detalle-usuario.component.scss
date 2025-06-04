@@ -1,0 +1,26 @@
+.profile-image {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border: 3px solid #f8f9fa;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.profile-image-container {
+  display: inline-block;
+  position: relative;
+}
+
+.user-details {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 5px;
+}
+
+/* Responsive adaptations */
+@media (max-width: 768px) {
+  .profile-image {
+    width: 120px;
+    height: 120px;
+  }
+}

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -19,11 +20,11 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    
-    private final UserRepository userRepository;
+      private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserSessionRepository userSessionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.improvementsolutions.storage.StorageService fileStorageService;
 
     public List<User> findAll() {
         return userRepository.findAll();
@@ -137,8 +138,7 @@ public class UserService {
         user.getRoles().add(role);
         userRepository.save(user);
     }
-    
-    @Transactional
+      @Transactional
     public void removeRoleFromUser(Long userId, Long roleId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -148,5 +148,116 @@ public class UserService {
         
         user.getRoles().remove(role);
         userRepository.save(user);
+    }
+    
+    @Transactional
+    public User updateAdmin(Long id, com.improvementsolutions.dto.user.UserUpdateDto userDetails) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        if (userDetails.getEmail() != null && !user.getEmail().equals(userDetails.getEmail()) && 
+                userRepository.existsByEmail(userDetails.getEmail())) {
+            throw new RuntimeException("Email ya está en uso");
+        }
+        
+        if (userDetails.getUsername() != null && 
+                !user.getUsername().equals(userDetails.getUsername()) && 
+                userRepository.existsByUsername(userDetails.getUsername())) {
+            throw new RuntimeException("Nombre de usuario ya está en uso");
+        }
+        
+        if (userDetails.getName() != null) {
+            user.setName(userDetails.getName());
+        }
+        
+        if (userDetails.getEmail() != null) {
+            user.setEmail(userDetails.getEmail());
+        }
+        
+        if (userDetails.getUsername() != null) {
+            user.setUsername(userDetails.getUsername());
+        }
+        
+        if (userDetails.getPhone() != null) {
+            user.setPhone(userDetails.getPhone());
+        }
+        
+        if (userDetails.getActive() != null) {
+            user.setActive(userDetails.getActive());
+        }
+        
+        // Solo actualiza la contraseña si se proporciona una nueva
+        if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(userDetails.getPassword()));
+        }
+        
+        // Actualiza roles si se proporcionan IDs de roles
+        if (userDetails.getRoleIds() != null && !userDetails.getRoleIds().isEmpty()) {
+            Set<Role> roles = userDetails.getRoleIds().stream()
+                    .map(roleId -> roleRepository.findById(roleId)
+                            .orElseThrow(() -> new RuntimeException("Rol no encontrado con ID: " + roleId)))
+                    .collect(java.util.stream.Collectors.toSet());
+            user.setRoles(roles);
+        }
+        
+        user.setUpdatedAt(LocalDateTime.now());
+        
+        return userRepository.save(user);
+    }
+      @Transactional
+    public String updateProfilePicture(Long userId, org.springframework.web.multipart.MultipartFile file) {
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+              // Eliminar foto anterior si existe
+            if (user.getProfilePicture() != null && !user.getProfilePicture().isEmpty()) {
+                try {
+                    fileStorageService.delete(user.getProfilePicture());
+                } catch (Exception e) {
+                    // Log error but continue
+                    System.err.println("Error eliminando foto de perfil anterior: " + e.getMessage());
+                }
+            }
+            
+            // Generar un nombre de archivo basado en el nombre de usuario
+            String originalFilename = file.getOriginalFilename();
+            String fileExtension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            
+            // Crear un nombre de archivo basado en el nombre de usuario y un timestamp para evitar colisiones
+            String safeUsername = user.getUsername().replaceAll("[^a-zA-Z0-9]", "_");
+            String uniqueFileName = safeUsername + "_" + System.currentTimeMillis() + fileExtension;
+            
+            // Guardar nueva foto con el nombre personalizado
+            String profilePicturePath = fileStorageService.store("profiles", file, uniqueFileName);
+            
+            // Actualizar referencia en el usuario
+            user.setProfilePicture(profilePicturePath);
+            user.setUpdatedAt(java.time.LocalDateTime.now()); // Actualizar timestamp para invalidar caché
+            userRepository.save(user);
+            
+            return profilePicturePath;
+        } catch (Exception e) {
+            throw new RuntimeException("Error al actualizar foto de perfil: " + e.getMessage(), e);
+        }
+    }
+    
+    @Transactional
+    public User toggleUserActive(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        // Alternar estado activo
+        user.setActive(!user.getActive());
+        return userRepository.save(user);
+    }
+    
+    public void updateLastLogin(Long userId) {
+        userRepository.findById(userId).ifPresent(user -> {
+            user.setLastLogin(LocalDateTime.now());
+            userRepository.save(user);
+        });
     }
 }

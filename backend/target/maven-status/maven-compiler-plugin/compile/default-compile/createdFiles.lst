@@ -27,6 +27,7 @@ com\improvementsolutions\dto\catalog\TypeDocumentDto.class
 com\improvementsolutions\exception\ResourceNotFoundException.class
 com\improvementsolutions\controller\BusinessController.class
 com\improvementsolutions\dto\catalog\PositionDto.class
+com\improvementsolutions\dto\user\UserUpdateDto.class
 com\improvementsolutions\controller\PublicEtniaController.class
 com\improvementsolutions\controller\DiagnosticoController.class
 com\improvementsolutions\dto\ErrorResponse.class
@@ -121,6 +122,7 @@ com\improvementsolutions\model\BusinessObligationMatrixFile.class
 com\improvementsolutions\dto\BusinessEmployeeDocumentDto.class
 com\improvementsolutions\config\JpaConfig.class
 com\improvementsolutions\dto\BusinessObligationDto$BusinessObligationDtoBuilderImpl.class
+com\improvementsolutions\controller\ProfilePictureController.class
 com\improvementsolutions\model\Permission.class
 com\improvementsolutions\dto\DTOBusiness$DTOBusinessBuilder.class
 com\improvementsolutions\controller\BusinessObligationMatrixController.class
@@ -135,6 +137,7 @@ com\improvementsolutions\storage\FileUrlHelper.class
 com\improvementsolutions\dto\catalog\ResidentAddressDto$ResidentAddressDtoBuilder.class
 com\improvementsolutions\model\BusinessEmployeeDocumentFile.class
 com\improvementsolutions\util\DatabaseInfoUtil.class
+com\improvementsolutions\controller\UserAdminController.class
 com\improvementsolutions\controller\EthniaController.class
 com\improvementsolutions\dto\auth\JwtAuthResponse$JwtAuthResponseBuilder.class
 com\improvementsolutions\dto\catalog\EthniaDto$EthniaDtoBuilder.class
@@ -213,6 +216,7 @@ com\improvementsolutions\model\TypeDocument.class
 com\improvementsolutions\service\FileUrlService.class
 com\improvementsolutions\controller\SolucionProblemaController.class
 com\improvementsolutions\dto\catalog\TypeContractDto$TypeContractDtoBuilder.class
+com\improvementsolutions\dto\user\UserDto.class
 com\improvementsolutions\service\ResidentAddressService.class
 com\improvementsolutions\model\CivilStatus.class
 com\improvementsolutions\repository\BusinessEmployeeDocumentRepository.class

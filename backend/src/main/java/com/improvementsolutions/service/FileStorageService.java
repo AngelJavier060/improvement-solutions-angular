@@ -49,6 +49,36 @@ public class FileStorageService {
         return subdirectory + "/" + newFilename;
     }
 
+    public String storeFile(MultipartFile file, String subdirectory, String customFilename) throws IOException {
+        // Validar el archivo
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("No se puede guardar un archivo vacío");
+        }
+        
+        // Validar el nombre personalizado
+        if (customFilename == null || customFilename.trim().isEmpty()) {
+            // Si no se proporciona un nombre personalizado, usar el método estándar
+            return storeFile(file, subdirectory);
+        }
+        
+        // Normalizar el nombre personalizado
+        String cleanFilename = StringUtils.cleanPath(customFilename);
+        
+        if (cleanFilename.contains("..")) {
+            throw new RuntimeException("El nombre del archivo contiene una ruta no válida " + cleanFilename);
+        }
+        
+        // Crear el directorio si no existe
+        Path targetDirectory = Paths.get(uploadDir).resolve(subdirectory).normalize();
+        Files.createDirectories(targetDirectory);
+        
+        // Copiar el archivo al directorio de destino con el nombre personalizado
+        Path targetLocation = targetDirectory.resolve(cleanFilename);
+        Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+        
+        return subdirectory + "/" + cleanFilename;
+    }
+
     public Resource loadFileAsResource(String filePath) {
         try {
             Path fileStoragePath = Paths.get(uploadDir).normalize();

@@ -31,11 +31,15 @@ public class User {
     private String password;
 
     @Column(nullable = false)
-    private String email;
-
-    private String name;
+    private String email;    private String name;
     private String phone;
     private Boolean active = true;
+    
+    @Column(name = "profile_picture")
+    private String profilePicture;
+    
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
     
     public Boolean getActive() {
         return active;

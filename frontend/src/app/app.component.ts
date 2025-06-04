@@ -4,9 +4,11 @@ import { AuthService } from './core/services/auth.service';
 import { FileService } from './services/file.service';
 import { diagnoseRouting, diagnoseImageLoading } from './diagnostic-tools';
 
-@Component({
-  selector: 'app-root',
-  template: `<router-outlet></router-outlet>`,
+@Component({  selector: 'app-root',
+  template: `
+    <app-notification></app-notification>
+    <router-outlet></router-outlet>
+  `,
   styles: []
 })
 export class AppComponent implements OnInit {

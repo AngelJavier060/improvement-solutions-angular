@@ -53,6 +53,7 @@ public class SecurityConfig {    private final JwtAuthenticationEntryPoint unaut
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/files/logos/**").permitAll()
                 .requestMatchers("/api/files/upload/logos").permitAll()
+                .requestMatchers("/api/files/profiles/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )

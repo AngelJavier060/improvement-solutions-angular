@@ -125,7 +125,40 @@ public class FileController {
             return ResponseEntity.notFound().build();
         }
     }
+      @GetMapping("/{filename:.+}")
+    public ResponseEntity<Resource> serveFilePublic(@PathVariable String filename) {
+        try {
+            logger.info("Solicitando archivo: {}", filename);
+            Resource file = storageService.loadAsResource(filename);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"")
+                    .header(HttpHeaders.CACHE_CONTROL, "max-age=31536000") // Caché por un año
+                    .header(HttpHeaders.PRAGMA, "cache")
+                    .body(file);
+        } catch (StorageException e) {
+            logger.error("Archivo no encontrado: {}", filename, e);
+            return ResponseEntity.notFound().build();
+        }
+    }
     
+    @GetMapping("/{directory}/{filename:.+}")
+    public ResponseEntity<Resource> serveFileFromDirectoryPublic(
+        @PathVariable String directory, 
+        @PathVariable String filename) {
+        try {
+            logger.info("Solicitando archivo desde directorio {}: {}", directory, filename);
+            Resource file = storageService.loadAsResource(directory, filename);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"")
+                    .header(HttpHeaders.CACHE_CONTROL, "max-age=31536000") // Caché por un año
+                    .header(HttpHeaders.PRAGMA, "cache")
+                    .body(file);
+        } catch (StorageException e) {
+            logger.error("Archivo no encontrado en directorio {}: {}", directory, filename, e);
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/download/{directory}/{filename:.+}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<Resource> serveFileFromDirectory(
@@ -175,6 +208,23 @@ public class FileController {
         } catch (IOException e) {
             logger.error("Error interno al eliminar archivo {}/{}: {}", directory, filename, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/profiles/{filename:.+}")
+    public ResponseEntity<Resource> serveProfilePublic(@PathVariable String filename) {
+        try {
+            logger.info("Solicitando imagen de perfil: {}", filename);
+            // Aplicar la ruta correcta
+            Resource file = storageService.loadAsResource("profiles", filename);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"")
+                    .header(HttpHeaders.CACHE_CONTROL, "max-age=31536000") // Caché por un año
+                    .header(HttpHeaders.PRAGMA, "cache")
+                    .body(file);
+        } catch (StorageException e) {
+            logger.error("Imagen de perfil no encontrada: {}", filename, e);
+            return ResponseEntity.notFound().build();
         }
     }
 

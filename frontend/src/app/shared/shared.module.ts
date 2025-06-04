@@ -8,26 +8,29 @@ import { LoginModalComponent } from './components/login-modal/login-modal.compon
 import { TestimonioCardComponent } from './components/testimonio-card/testimonio-card.component';
 import { ForgotPasswordModalComponent } from './components/forgot-password-modal/forgot-password-modal.component';
 import { TestUploadComponent } from './components/test-upload/test-upload.component';
+import { NotificationComponent } from './components/notification/notification.component';
 
 @NgModule({  declarations: [
     LoginModalComponent,
     TestimonioCardComponent,
     ForgotPasswordModalComponent,
-    TestUploadComponent
+    TestUploadComponent,
+    NotificationComponent
   ],
   imports: [
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
     NgbModule
-  ],
-  exports: [
+  ],  exports: [
     CommonModule,
     RouterModule,
-    NgbModule,    LoginModalComponent,
+    NgbModule,    
+    LoginModalComponent,
     TestimonioCardComponent,
     ForgotPasswordModalComponent,
-    TestUploadComponent
+    TestUploadComponent,
+    NotificationComponent
   ]
 })
 export class SharedModule { }

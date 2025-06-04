@@ -32,6 +32,7 @@ D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\mai
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\FileUploadExceptionAdvice.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\IessController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\MasterDataController.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\ProfilePictureController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicCivilStatusController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicDiagnosticoController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicEtniaController.java
@@ -42,6 +43,7 @@ D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\mai
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\TestController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\TestPublicController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\TypeContractController.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\UserAdminController.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\diagnostic\FileSystemDiagnostic.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\JwtAuthResponse.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\LoginRequestDto.java
@@ -85,6 +87,8 @@ D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\mai
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\GenderDTO.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\IessDto.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\SuccessResponse.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\user\UserDto.java
+D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\user\UserUpdateDto.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\UserDTO.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\exception\ResourceNotFoundException.java
 D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\exception\UserInactiveException.java

@@ -1,0 +1,161 @@
+<div class="container-fluid pt-3">
+  <div class="row mb-4">
+    <div class="col">
+      <h2 class="mb-0">
+        <i class="fas fa-users me-2"></i>Gestión de Usuarios
+      </h2>
+      <p class="text-muted">Administra los usuarios del sistema</p>
+    </div>
+    <div class="col-auto">
+      <button type="button" class="btn btn-primary" routerLink="/dashboard/admin/usuarios/nuevo">
+        <i class="fas fa-user-plus me-1"></i> Nuevo Usuario
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <!-- Barra de búsqueda -->
+      <div class="row mb-4">
+        <div class="col-md-6">          <div class="input-group">
+            <span class="input-group-text">
+              <i class="fas fa-search"></i>
+            </span>
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="Buscar usuarios..." 
+              [(ngModel)]="searchText"
+              (input)="onSearchInputChange()"
+            >
+            <button 
+              class="btn btn-outline-secondary" 
+              type="button"
+              *ngIf="searchText"
+              (click)="clearSearch()"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-6 text-end">
+          <button class="btn btn-outline-primary" (click)="loadUsers()">
+            <i class="fas fa-sync-alt me-1"></i> Actualizar
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de usuarios -->
+      <div class="table-responsive">
+        <table class="table table-hover table-striped">
+          <thead>
+            <tr>
+              <th scope="col">Foto</th>
+              <th scope="col">Usuario</th>
+              <th scope="col">Nombre</th>
+              <th scope="col">Email</th>
+              <th scope="col">Rol</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="isLoading">
+              <td colspan="7" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Cargando...</span>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="!isLoading && filteredUsers.length === 0">
+              <td colspan="7" class="text-center py-4">
+                No se encontraron usuarios
+              </td>
+            </tr>
+            <tr *ngFor="let user of pagedUsers" (click)="viewUserDetails(user.id)" style="cursor: pointer;">              <td>                  <div class="avatar-container" (click)="$event.stopPropagation()">
+                  <div class="user-avatar-wrapper">                    <img 
+                      [src]="getProfilePictureUrl(user)" 
+                      alt="Profile" 
+                      class="rounded-circle user-avatar profile-picture" 
+                      width="40" 
+                      height="40"
+                      onerror="this.src='assets/img/default-avatar.png'; this.classList.add('loaded', 'error-img');"
+                      loading="lazy"
+                      onload="this.classList.add('loaded')"
+                      [attr.data-userid]="user.id"
+                      [attr.data-timestamp]="user.updatedAt"
+                      decoding="async"
+                      crossorigin="anonymous"
+                    >
+                  </div>
+                </div>
+              </td>
+              <td>{{ user.username }}</td>
+              <td>{{ user.name || '-' }}</td>
+              <td>{{ user.email }}</td>
+              <td>
+                <span *ngFor="let role of user.roles" class="badge bg-info me-1">
+                  {{ role.replace('ROLE_', '') }}
+                </span>
+              </td>
+              <td>
+                <div class="form-check form-switch" (click)="$event.stopPropagation()">
+                  <input 
+                    class="form-check-input" 
+                    type="checkbox" 
+                    [checked]="user.active" 
+                    (change)="toggleUserActive(user.id, $event)"
+                  >
+                  <span class="badge" [ngClass]="user.active ? 'bg-success' : 'bg-danger'">
+                    {{ user.active ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </div>
+              </td>
+              <td>
+                <div class="btn-group" role="group" (click)="$event.stopPropagation()">
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="editUser(user.id)">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="confirmDelete(deleteModal, user)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="filteredUsers.length > 0">
+        <div>
+          Mostrando {{(page-1) * pageSize + 1}} a {{(page * pageSize > filteredUsers.length) ? filteredUsers.length : page * pageSize}} de {{filteredUsers.length}} usuarios
+        </div>        <ngb-pagination
+          [(page)]="page"
+          [pageSize]="pageSize"
+          [collectionSize]="filteredUsers.length"
+          [maxSize]="5"
+          [boundaryLinks]="true"
+          [rotate]="true"
+          (pageChange)="updatePagedUsers()"
+          aria-label="Navegación de páginas"
+        ></ngb-pagination>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación de eliminación -->
+<ng-template #deleteModal let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-delete-title">Confirmar eliminación</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <p>¿Está seguro de que desea eliminar este usuario? Esta acción no se puede deshacer.</p>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Cancelar</button>
+    <button type="button" class="btn btn-danger" (click)="modal.close('confirm')">Eliminar</button>
+  </div>
+</ng-template>
