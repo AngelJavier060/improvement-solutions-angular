@@ -6,6 +6,7 @@ import { User } from '../../../../models/user.model';
 import { NotificationService } from '../../../../services/notification.service';
 import { environment } from '../../../../../environments/environment';
 import { ImageCacheService } from '../../../../services/image-cache.service';
+import { CarnetDigitalComponent } from './carnet-digital/carnet-digital.component';
 
 @Component({
   selector: 'app-lista-usuarios',
@@ -99,9 +100,17 @@ export class ListaUsuariosComponent implements OnInit {
   editUser(id: number): void {
     this.router.navigate(['/dashboard/admin/usuarios/editar', id]);
   }
-
   viewUserDetails(id: number): void {
     this.router.navigate(['/dashboard/admin/usuarios', id]);
+  }
+
+  showCarnet(user: User): void {
+    const modalRef = this.modalService.open(CarnetDigitalComponent, { 
+      size: 'lg',
+      centered: true,
+      backdrop: 'static'
+    });
+    modalRef.componentInstance.user = user;
   }
 
   confirmDelete(content: any, user: User): void {

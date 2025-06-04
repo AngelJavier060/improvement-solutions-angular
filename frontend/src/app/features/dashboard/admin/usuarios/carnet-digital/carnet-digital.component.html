@@ -1,0 +1,58 @@
+<div class="modal-header">
+  <h4 class="modal-title"><i class="fas fa-id-card me-2"></i>Carnet Digital</h4>
+  <button type="button" class="btn-close" aria-label="Close" (click)="close()"></button>
+</div>
+<div class="modal-body">
+  <div class="carnet-container">
+    <div class="carnet-card">
+      <!-- Parte superior del carnet (azul oscuro) -->
+      <div class="carnet-header">
+        <div class="wave-pattern"></div>
+      </div>
+      
+      <!-- Foto y datos principales -->
+      <div class="carnet-body">
+        <div class="profile-image-container">
+          <img [src]="profilePictureUrl" alt="Foto de perfil" class="profile-image" onerror="this.src='assets/img/default-avatar.png'">
+        </div>
+        
+        <div class="company-name">Herramientas Virtuales</div>
+        
+        <div class="user-name">{{user.name || user.username}}</div>
+        
+        <div class="user-info">
+          <div class="info-row">
+            <span class="info-label">ID:</span>
+            <span class="info-value">{{user.id}}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Email:</span>
+            <span class="info-value">{{user.email}}</span>
+          </div>
+        </div>
+        
+        <div class="qr-container">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{qrCodeValue}}" alt="QR Code" class="qr-code">
+        </div>
+        
+        <div class="carnet-date">{{currentDate}}</div>
+      </div>
+      
+      <!-- Pie del carnet (azul) -->
+      <div class="carnet-footer">
+        {{userArea}}
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-primary" (click)="downloadCarnet()">
+    <i class="fas fa-download me-1"></i> Descargar PDF
+  </button>
+  <button type="button" class="btn btn-secondary" (click)="printCarnet()">
+    <i class="fas fa-print me-1"></i> Imprimir
+  </button>
+  <button type="button" class="btn btn-outline-secondary" (click)="close()">
+    <i class="fas fa-times me-1"></i> Cerrar
+  </button>
+</div>

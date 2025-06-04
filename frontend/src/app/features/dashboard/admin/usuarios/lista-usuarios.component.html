@@ -110,11 +110,13 @@
                     {{ user.active ? 'Activo' : 'Inactivo' }}
                   </span>
                 </div>
-              </td>
-              <td>
+              </td>              <td>
                 <div class="btn-group" role="group" (click)="$event.stopPropagation()">
                   <button type="button" class="btn btn-sm btn-outline-primary" (click)="editUser(user.id)">
                     <i class="fas fa-edit"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-info" (click)="showCarnet(user)">
+                    <i class="fas fa-id-card"></i>
                   </button>
                   <button type="button" class="btn btn-sm btn-outline-danger" (click)="confirmDelete(deleteModal, user)">
                     <i class="fas fa-trash"></i>

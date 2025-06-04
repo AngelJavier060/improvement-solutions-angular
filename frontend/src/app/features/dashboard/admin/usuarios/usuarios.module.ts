@@ -1,5 +1,5 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgbModalModule, NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap';
@@ -7,6 +7,7 @@ import { NgbModalModule, NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap'
 import { ListaUsuariosComponent } from './lista-usuarios.component';
 import { EditarUsuarioComponent } from './editar-usuario.component';
 import { DetalleUsuarioComponent } from './detalle-usuario.component';
+import { CarnetDigitalComponent } from './carnet-digital/carnet-digital.component';
 import { SharedModule } from '../../../../shared/shared.module';
 
 const routes: Routes = [
@@ -16,12 +17,11 @@ const routes: Routes = [
   { path: ':id', component: DetalleUsuarioComponent }
 ];
 
-@NgModule({
-  declarations: [
+@NgModule({  declarations: [
     ListaUsuariosComponent,
     EditarUsuarioComponent,
-    DetalleUsuarioComponent
-  ],
+    DetalleUsuarioComponent,
+    CarnetDigitalComponent  ],
   imports: [
     CommonModule,
     FormsModule,
@@ -30,6 +30,7 @@ const routes: Routes = [
     NgbPaginationModule,
     SharedModule,
     RouterModule.forChild(routes)
-  ]
+  ],
+  providers: [DatePipe]
 })
 export class UsuariosModule { }
