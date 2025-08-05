@@ -24,8 +24,19 @@ jobs:
           echo "🚀 Desplegando improvement-solutions-angular INDEPENDIENTEMENTE"
           echo "📍 pollos-chanchos-Angular NO será afectado"
           
-          cd /opt/improvement-solutions-angular
-          git pull origin main
+          # Crear directorio si no existe
+          if [ ! -d "/opt/improvement-solutions-angular" ]; then
+            echo "📁 Creando directorio /opt/improvement-solutions-angular..."
+            sudo mkdir -p /opt/improvement-solutions-angular
+            sudo chown $(whoami):$(whoami) /opt/improvement-solutions-angular
+            cd /opt/improvement-solutions-angular
+            echo "📦 Clonando repositorio..."
+            git clone https://github.com/AngelJavier060/improvement-solutions-angular.git .
+          else
+            echo "📁 Directorio existe, actualizando..."
+            cd /opt/improvement-solutions-angular
+            git pull origin main
+          fi
           
           echo "🔨 Construyendo backend..."
           cd backend
@@ -37,9 +48,19 @@ jobs:
           fi
           cd ..
           
-          echo "🐳 Reconstruyendo contenedores de improvement-solutions..."
-          docker-compose down
-          docker-compose up --build -d
+          echo "🐳 Verificando Docker y Docker Compose..."
+          docker --version
+          docker-compose --version || docker compose version
+          
+          echo "🐳 Deteniendo contenedores anteriores si existen..."
+          docker-compose down 2>/dev/null || docker compose down 2>/dev/null || true
+          
+          echo "🐳 Construyendo e iniciando contenedores..."
+          if command -v docker-compose &> /dev/null; then
+            docker-compose up --build -d
+          else
+            docker compose up --build -d
+          fi
           
           echo "🧹 Limpiando recursos no utilizados..."
           docker system prune -f
@@ -49,3 +70,10 @@ jobs:
           
           echo "📊 Estado de contenedores:"
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          
+          echo "🔍 Verificando contenedores de improvement-solutions:"
+          docker ps | grep improvement || echo "⚠️  No se encontraron contenedores de improvement-solutions"
+          
+          echo "🌐 Servicios disponibles:"
+          echo "Frontend: http://$(hostname -I | awk '{print $1}'):8080"
+          echo "Backend: http://$(hostname -I | awk '{print $1}'):8089"
