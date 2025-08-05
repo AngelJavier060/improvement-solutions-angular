@@ -8,18 +8,18 @@ RUN mvn clean package -DskipTests
 # Etapa de producción
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-COPY --from=build /app/target/improvement-solutions-api-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 8089
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+# Crear usuario no root
+RUN addgroup -g 1001 appgroup && adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 
 # Copiar el JAR construido
-COPY --from=builder --chown=appuser:appgroup /app/target/*.jar app.jar
+COPY --from=build --chown=appuser:appgroup /app/target/*.jar app.jar
 
 # Cambiar al usuario no root
 USER appuser
 
 # Exponer puerto
-EXPOSE 8080
+EXPOSE 8089
 
 # Variables de entorno por defecto
 ENV SPRING_PROFILES_ACTIVE=prod
