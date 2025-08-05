@@ -1,5 +1,6 @@
 package com.improvementsolutions.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Properties;
 
 @Configuration
+@ConditionalOnProperty(prefix = "spring.mail", name = "host")
 public class MailConfig {
     private static final Logger logger = LoggerFactory.getLogger(MailConfig.class);
 
@@ -28,11 +30,8 @@ public class MailConfig {
 
     @Bean
     public JavaMailSender javaMailSender() {
-        if (host == null || username == null || password == null || port == 0) {
-            logger.warn("Configuración de correo incompleta. El servicio de correo estará deshabilitado.");
-            return null;
-        }
-
+        logger.info("Configurando JavaMailSender con host: {}", host);
+        
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         mailSender.setHost(host);
         mailSender.setPort(port);
@@ -43,7 +42,7 @@ public class MailConfig {
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.debug", "true");
+        props.put("mail.debug", "false");
 
         return mailSender;
     }
