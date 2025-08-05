@@ -1,4 +1,4 @@
-name: Deploy Improvement Solutions (Independent)
+name: Build and Deploy Improvement Solutions to Production
 
 on:
   push:
@@ -6,14 +6,14 @@ on:
       - main
 
 jobs:
-  deploy-improvement-solutions:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Deploy Improvement Solutions Independently
+    - name: Deploy and Restart Docker Compose
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_HOST }}
@@ -21,59 +21,11 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
         script: |
-          echo "🚀 Desplegando improvement-solutions-angular INDEPENDIENTEMENTE"
-          echo "📍 pollos-chanchos-Angular NO será afectado"
-          
-          # Crear directorio si no existe
-          if [ ! -d "/opt/improvement-solutions-angular" ]; then
-            echo "📁 Creando directorio /opt/improvement-solutions-angular..."
-            sudo mkdir -p /opt/improvement-solutions-angular
-            sudo chown $(whoami):$(whoami) /opt/improvement-solutions-angular
-            cd /opt/improvement-solutions-angular
-            echo "📦 Clonando repositorio..."
-            git clone https://github.com/AngelJavier060/improvement-solutions-angular.git .
-          else
-            echo "📁 Directorio existe, actualizando..."
-            cd /opt/improvement-solutions-angular
-            git pull origin main
-          fi
-          
-          echo "🔨 Construyendo backend..."
+          cd /opt/improvement-solutions-angular
+          git pull origin main
           cd backend
-          if [ -f "mvnw" ]; then
-            chmod +x mvnw
-            ./mvnw clean package -DskipTests
-          else
-            mvn clean package -DskipTests
-          fi
+          ./mvnw clean package -DskipTests
           cd ..
-          
-          echo "🐳 Verificando Docker y Docker Compose..."
-          docker --version
-          docker-compose --version || docker compose version
-          
-          echo "🐳 Deteniendo contenedores anteriores si existen..."
-          docker-compose down 2>/dev/null || docker compose down 2>/dev/null || true
-          
-          echo "🐳 Construyendo e iniciando contenedores..."
-          if command -v docker-compose &> /dev/null; then
-            docker-compose up --build -d
-          else
-            docker compose up --build -d
-          fi
-          
-          echo "🧹 Limpiando recursos no utilizados..."
+          docker-compose down
+          docker-compose up --build -d
           docker system prune -f
-          
-          echo "✅ improvement-solutions-angular actualizado!"
-          echo "🔒 pollos-chanchos-Angular permanece intacto"
-          
-          echo "📊 Estado de contenedores:"
-          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-          
-          echo "🔍 Verificando contenedores de improvement-solutions:"
-          docker ps | grep improvement || echo "⚠️  No se encontraron contenedores de improvement-solutions"
-          
-          echo "🌐 Servicios disponibles:"
-          echo "Frontend: http://$(hostname -I | awk '{print $1}'):8080"
-          echo "Backend: http://$(hostname -I | awk '{print $1}'):8089"
