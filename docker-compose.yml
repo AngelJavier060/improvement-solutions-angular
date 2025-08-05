@@ -12,7 +12,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - app-network
+      - improvement_network
     restart: unless-stopped
 
   backend:
@@ -30,7 +30,7 @@ services:
     depends_on:
       - mysql
     networks:
-      - app-network
+      - improvement_network
     restart: unless-stopped
 
   frontend:
@@ -40,12 +40,12 @@ services:
     depends_on:
       - backend
     networks:
-      - app-network
+      - improvement_network
     restart: unless-stopped
 
 volumes:
   mysql_data:
 
 networks:
-  app-network:
+  improvement_network:
     driver: bridge
