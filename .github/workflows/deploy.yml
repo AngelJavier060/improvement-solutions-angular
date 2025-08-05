@@ -1,0 +1,51 @@
+name: Deploy Improvement Solutions (Independent)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-improvement-solutions:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Deploy Improvement Solutions Independently
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        script: |
+          echo "🚀 Desplegando improvement-solutions-angular INDEPENDIENTEMENTE"
+          echo "📍 pollos-chanchos-Angular NO será afectado"
+          
+          cd /opt/improvement-solutions-angular
+          git pull origin main
+          
+          echo "🔨 Construyendo backend..."
+          cd backend
+          if [ -f "mvnw" ]; then
+            chmod +x mvnw
+            ./mvnw clean package -DskipTests
+          else
+            mvn clean package -DskipTests
+          fi
+          cd ..
+          
+          echo "🐳 Reconstruyendo contenedores de improvement-solutions..."
+          docker-compose down
+          docker-compose up --build -d
+          
+          echo "🧹 Limpiando recursos no utilizados..."
+          docker system prune -f
+          
+          echo "✅ improvement-solutions-angular actualizado!"
+          echo "🔒 pollos-chanchos-Angular permanece intacto"
+          
+          echo "📊 Estado de contenedores:"
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"

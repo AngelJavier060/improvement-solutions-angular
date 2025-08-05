@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Base de datos MySQL para improvement-solutions
+  mysql:
+    image: mysql:8.0
+    container_name: improvement-solutions-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: improvement_root_2025
+      MYSQL_DATABASE: db_improvement_solutions
+      MYSQL_USER: improvement_user
+      MYSQL_PASSWORD: improvement_pass_2025
+    ports:
+      - "3307:3306"  # Puerto diferente para evitar conflictos
+    volumes:
+      - improvement_mysql_data:/var/lib/mysql
+    networks:
+      - improvement-network
+    restart: unless-stopped
+
+  # Backend Spring Boot para improvement-solutions
+  backend:
+    build: ./backend
+    container_name: improvement-solutions-backend
+    environment:
+      - SPRING_PROFILES_ACTIVE=production
+      - SERVER_PORT=8089
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=db_improvement_solutions
+      - DB_USER=improvement_user
+      - DB_PASSWORD=improvement_pass_2025
+    ports:
+      - "8089:8089"  # Puerto diferente para evitar conflictos
+    depends_on:
+      - mysql
+    networks:
+      - improvement-network
+    restart: unless-stopped
+
+  # Frontend Angular con Nginx para improvement-solutions
+  frontend:
+    build: ./frontend
+    container_name: improvement-solutions-frontend
+    ports:
+      - "8080:80"    # Puerto HTTP diferente
+      - "8443:443"   # Puerto HTTPS diferente
+    depends_on:
+      - backend
+    networks:
+      - improvement-network
+    restart: unless-stopped
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+
+volumes:
+  improvement_mysql_data:
+
+networks:
+  improvement-network:
+    driver: bridge

@@ -1,0 +1,45 @@
+# Ignorar archivos de desarrollo y logs
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignorar archivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignorar archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Ignorar archivos de configuración sensible
+.env
+.env.local
+.env.production
+
+# Ignorar archivos de backup
+*.bak
+*.tmp
+
+# Ignorar logs
+logs/
+*.log
+
+# Ignorar archivos de build temporales
+dist/
+build/
+target/
+
+# Ignorar archivos de subida (uploads)
+uploads/
+upload/
+
+# Ignorar certificados SSL
+*.pem
+*.key
+*.crt
+
+# Ignorar archivos de Docker
+.dockerignore

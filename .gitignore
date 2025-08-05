@@ -1,3 +1,40 @@
 # Angular cache
 .angular/cache/
 .angular/
+
+# Dependencies
+*/node_modules/
+**/node_modules/
+frontend/node_modules/
+backend/target/
+backend/logs/
+
+# Environment files
+.env
+.env.local
+.env.production.local
+
+# Build outputs
+frontend/dist/
+backend/target/
+
+# Logs
+*.log
+backend/*.log
+
+# OS generated files
+Thumbs.db
+.DS_Store
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+
+# Package manager files - keep only important ones
+frontend/package-lock.json
