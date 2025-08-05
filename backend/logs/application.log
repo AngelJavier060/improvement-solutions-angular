@@ -22644,3 +22644,895 @@ org.springframework.security.access.AccessDeniedException: Access Denied
 2025-06-03T22:20:21.679-05:00  INFO 3824 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
 2025-06-03T22:20:21.681-05:00  INFO 3824 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
 2025-06-03T22:20:21.685-05:00  INFO 3824 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2025-08-04T19:18:20.148-05:00  INFO 2684 --- [main] c.i.ImprovementSolutionsApplication      : Starting ImprovementSolutionsApplication using Java 21.0.6 with PID 2684 (D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\target\classes started by Admin in D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend)
+2025-08-04T19:18:20.149-05:00 DEBUG 2684 --- [main] c.i.ImprovementSolutionsApplication      : Running with Spring Boot v3.2.1, Spring v6.1.2
+2025-08-04T19:18:20.149-05:00  INFO 2684 --- [main] c.i.ImprovementSolutionsApplication      : No active profile set, falling back to 1 default profile: "default"
+2025-08-04T19:18:20.490-05:00  INFO 2684 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-08-04T19:18:20.546-05:00  INFO 2684 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 52 ms. Found 26 JPA repository interfaces.
+2025-08-04T19:18:20.549-05:00  INFO 2684 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-08-04T19:18:20.560-05:00  INFO 2684 --- [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 11 ms. Found 26 JPA repository interfaces.
+2025-08-04T19:18:20.991-05:00  INFO 2684 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2025-08-04T19:18:20.999-05:00  INFO 2684 --- [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-08-04T19:18:21.000-05:00  INFO 2684 --- [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.17]
+2025-08-04T19:18:21.032-05:00  INFO 2684 --- [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-08-04T19:18:21.034-05:00  INFO 2684 --- [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 860 ms
+2025-08-04T19:18:21.249-05:00  INFO 2684 --- [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-08-04T19:18:21.262-05:00  INFO 2684 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-08-04T19:18:21.355-05:00  INFO 2684 --- [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@48632f69
+2025-08-04T19:18:21.356-05:00  INFO 2684 --- [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-08-04T19:18:22.232-05:00  INFO 2684 --- [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-08-04T19:18:22.450-05:00  INFO 2684 --- [main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-08-04T19:18:22.695-05:00 DEBUG 2684 --- [main] c.i.security.JwtAuthenticationFilter     : Filter 'jwtAuthenticationFilter' configured for use
+2025-08-04T19:18:22.696-05:00 DEBUG 2684 --- [main] o.springframework.web.filter.CorsFilter  : Filter 'corsFilter' configured for use
+2025-08-04T19:18:22.696-05:00 DEBUG 2684 --- [main] c.i.security.PublicEndpointsFilter       : Filter 'publicEndpointsFilter' configured for use
+2025-08-04T19:18:22.790-05:00  WARN 2684 --- [main] c.i.config.MailConfig                    : Configuración de correo incompleta. El servicio de correo estará deshabilitado.
+2025-08-04T19:18:23.141-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : ⭐ INICIANDO DIAGNÓSTICO DEL SISTEMA DE ARCHIVOS ⭐
+2025-08-04T19:18:23.141-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : Directorio de almacenamiento configurado: D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\uploads
+2025-08-04T19:18:23.141-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : ¿El directorio de almacenamiento existe? true
+2025-08-04T19:18:23.142-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : ¿El directorio de almacenamiento es accesible para lectura? true
+2025-08-04T19:18:23.143-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : ¿El directorio de almacenamiento es accesible para escritura? true
+2025-08-04T19:18:23.143-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : Subdirectorio de logos: D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\uploads\logos
+2025-08-04T19:18:23.143-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : ¿El directorio de logos existe? true
+2025-08-04T19:18:23.143-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : ¿El directorio de logos es accesible para lectura? true
+2025-08-04T19:18:23.144-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : ¿El directorio de logos es accesible para escritura? true
+2025-08-04T19:18:23.144-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : Archivos en el directorio de logos:
+2025-08-04T19:18:23.145-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - 080919a1-4e5f-4673-adbd-91c6ca76d9c2.png (79KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.145-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - 19cf3838-8e19-4514-bf89-502fa18018a4.png (0KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.145-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - 330d4809-d4f7-4b85-8321-752a44f4b0a2.png (132KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.145-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - 3deea2c3-8978-4006-9531-aee2d7c1b5d0.png (359KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.145-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - 4072004b-1469-491e-a9b2-0a60af4a3aba.png (79KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.145-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - 57ebe476-19de-4dfd-afd4-2cc576a7ae0b.png (89KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.145-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - 6b08e6d2-87f5-47e9-9b76-453526180adf.png (715KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.145-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - 8366c555-762c-4f46-8376-b63f18f7112f.png (681KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.145-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - 8c44c14e-c524-401e-b6e8-94e65ccd8c3a.png (79KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.145-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - 92bdc120-43de-4e99-b051-da92a8bbeaa1.png (82KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.145-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - adfeb67e-95d7-415b-b438-c4812db108c2.png (89KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.146-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - bdfba817-d00c-4c6a-9818-9a9ee2a6d033.png (79KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.146-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - c26db0e0-4770-4757-bd31-524f4e6d28bf.png (79KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.146-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - d281863a-cfe1-4afe-975c-ba28895f79f4.png (29KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.146-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - e5456f16-cefd-4f94-bb89-8c78ffd309fe.png (1516KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.146-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      :  - e5c3383e-1309-430d-862b-566bdbf55285.png (79KB, permisos: N/A en Windows)
+2025-08-04T19:18:23.147-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : Verificando archivo específico: D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\uploads\logos\080919a1-4e5f-4673-adbd-91c6ca76d9c2.png
+2025-08-04T19:18:23.147-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : ¿El archivo existe? true
+2025-08-04T19:18:23.147-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : Tamaño del archivo: 79KB
+2025-08-04T19:18:23.147-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : Permisos del archivo: N/A en Windows
+2025-08-04T19:18:23.147-05:00  INFO 2684 --- [main] c.i.diagnostic.FileSystemDiagnostic      : ⭐ DIAGNÓSTICO DEL SISTEMA DE ARCHIVOS COMPLETADO ⭐
+2025-08-04T19:18:23.149-05:00  INFO 2684 --- [main] c.i.storage.FileSystemStorageService     : Storage service initialized with root location: D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\uploads
+2025-08-04T19:18:23.149-05:00  INFO 2684 --- [main] c.i.storage.FileSystemStorageService     : ⭐ Inicializando sistema de almacenamiento...
+2025-08-04T19:18:23.150-05:00  INFO 2684 --- [main] c.i.storage.FileSystemStorageService     : Sistema de almacenamiento inicializado correctamente en: D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\uploads
+2025-08-04T19:18:23.493-05:00  INFO 2684 --- [main] c.i.config.PublicResourceConfig          : ⭐ Configurando acceso público para recursos de archivos
+2025-08-04T19:18:23.565-05:00 DEBUG 2684 --- [main] s.w.s.m.m.a.RequestMappingHandlerMapping : 180 mappings in 'requestMappingHandlerMapping'
+2025-08-04T19:18:23.617-05:00  INFO 2684 --- [main] c.i.config.PublicResourceConfig          : ⭐ Configurando acceso directo a recursos físicos de archivos
+2025-08-04T19:18:23.617-05:00  INFO 2684 --- [main] c.i.config.PublicResourceConfig          : Directorio de uploads: D:/PROGRAMAS 2025 CONTRUCCION/improvement-solutions-angular/backend/uploads
+2025-08-04T19:18:23.617-05:00  INFO 2684 --- [main] c.i.config.PublicResourceConfig          : Handler para directorio de logos configurado: file:D:/PROGRAMAS 2025 CONTRUCCION/improvement-solutions-angular/backend/uploads/logos/
+2025-08-04T19:18:23.617-05:00  INFO 2684 --- [main] c.i.config.PublicResourceConfig          : Handler para directorio de archivos general configurado: file:D:/PROGRAMAS 2025 CONTRUCCION/improvement-solutions-angular/backend/uploads/
+2025-08-04T19:18:23.617-05:00 DEBUG 2684 --- [main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**, /api/files/logos/**, /api/files/**] in 'resourceHandlerMapping'
+2025-08-04T19:18:23.651-05:00  INFO 2684 --- [main] o.s.s.web.DefaultSecurityFilterChain     : Will secure Or [Mvc [pattern='/api/files/**']] with [org.springframework.security.web.session.DisableEncodeUrlFilter@183c0a68, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@2b497998, org.springframework.security.web.context.SecurityContextHolderFilter@48e6053c, org.springframework.security.web.header.HeaderWriterFilter@281c1f99, org.springframework.web.filter.CorsFilter@79adc343, org.springframework.security.web.authentication.logout.LogoutFilter@7c4eecfc, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@433ec38c, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@2c18cde7, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@78f4be94, org.springframework.security.web.access.ExceptionTranslationFilter@6180afa9, org.springframework.security.web.access.intercept.AuthorizationFilter@32b03ec1]
+2025-08-04T19:18:23.670-05:00  INFO 2684 --- [main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@708c9f9e, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@6cf5cb11, org.springframework.security.web.context.SecurityContextHolderFilter@b950f8c, org.springframework.security.web.header.HeaderWriterFilter@192da968, org.springframework.web.filter.CorsFilter@4b6e9c75, org.springframework.security.web.authentication.logout.LogoutFilter@795cb721, com.improvementsolutions.security.JwtAuthenticationFilter@7c1f435a, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@51e9f462, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@3129bf02, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@7b5de23c, org.springframework.security.web.session.SessionManagementFilter@316b57e0, org.springframework.security.web.access.ExceptionTranslationFilter@6f42c61f, org.springframework.security.web.access.intercept.AuthorizationFilter@1b2574d0]
+2025-08-04T19:18:23.729-05:00 DEBUG 2684 --- [main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2025-08-04T19:18:23.750-05:00 DEBUG 2684 --- [main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 1 @ExceptionHandler, 1 ResponseBodyAdvice
+2025-08-04T19:18:23.809-05:00  INFO 2684 --- [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path ''
+2025-08-04T19:18:23.813-05:00  INFO 2684 --- [main] c.i.ImprovementSolutionsApplication      : Started ImprovementSolutionsApplication in 3.902 seconds (process running for 4.099)
+2025-08-04T19:18:23.870-05:00  INFO 2684 --- [main] c.i.config.DataInitializer               : Inicializando datos de la aplicación...
+2025-08-04T19:18:23.929-05:00  INFO 2684 --- [main] c.i.config.DataInitializer               : Rol ROLE_ADMIN actualizado
+2025-08-04T19:18:23.999-05:00  INFO 2684 --- [main] c.i.config.DataInitializer               : Usuario Javier actualizado con username: javier, email: javierangelmsn@outlook.es y password: 12345
+2025-08-04T19:18:24.000-05:00  INFO 2684 --- [main] c.i.config.DataInitializer               : Inicialización completada
+2025-08-04T19:18:24.019-05:00  INFO 2684 --- [main] c.i.ImprovementSolutionsApplication      : Aplicación iniciada - Configuración CORS activa
+2025-08-04T19:19:03.581-05:00  INFO 2684 --- [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-08-04T19:19:03.581-05:00  INFO 2684 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-08-04T19:19:03.581-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected StandardServletMultipartResolver
+2025-08-04T19:19:03.582-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected AcceptHeaderLocaleResolver
+2025-08-04T19:19:03.582-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected FixedThemeResolver
+2025-08-04T19:19:03.583-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator@22d45306
+2025-08-04T19:19:03.584-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.support.SessionFlashMapManager@50e86638
+2025-08-04T19:19:03.584-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : enableLoggingRequestDetails='false': request parameters and headers will be masked to prevent unsafe logging of potentially sensitive data
+2025-08-04T19:19:03.584-05:00  INFO 2684 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 3 ms
+2025-08-04T19:19:03.586-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando OPTIONS solicitud para: /api/auth/login
+2025-08-04T19:19:03.587-05:00 DEBUG 2684 --- [http-nio-8080-exec-3] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando POST solicitud para: /api/auth/login
+2025-08-04T19:19:03.588-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.security.PublicEndpointsFilter       : PublicEndpointsFilter: Procesando ruta pública: /api/auth/login
+2025-08-04T19:19:03.588-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.security.PublicEndpointsFilter       : Solicitud a endpoint público: POST /api/auth/login
+2025-08-04T19:19:03.588-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.security.PublicEndpointsFilter       : Origin: http://localhost:4200
+2025-08-04T19:19:03.588-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.security.PublicEndpointsFilter       : User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:03.601-05:00 TRACE 2684 --- [http-nio-8080-exec-3] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:03.602-05:00 DEBUG 2684 --- [http-nio-8080-exec-3] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/auth/login
+2025-08-04T19:19:03.604-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:03.604-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Método: POST
+2025-08-04T19:19:03.604-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : URI: /api/auth/login
+2025-08-04T19:19:03.604-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Query String: null
+2025-08-04T19:19:03.604-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Content Type: application/json
+2025-08-04T19:19:03.604-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Content Length: 39
+2025-08-04T19:19:03.604-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:03.605-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:03.605-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:03.605-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : content-length: 39
+2025-08-04T19:19:03.605-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:03.605-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:03.605-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : accept: application/json
+2025-08-04T19:19:03.606-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:03.606-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : content-type: application/json
+2025-08-04T19:19:03.606-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:03.606-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : origin: http://localhost:4200
+2025-08-04T19:19:03.606-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:03.606-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : sec-fetch-mode: cors
+2025-08-04T19:19:03.606-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : sec-fetch-dest: empty
+2025-08-04T19:19:03.606-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:03.606-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:03.606-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:03.607-05:00 DEBUG 2684 --- [http-nio-8080-exec-3] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/auth/login
+2025-08-04T19:19:03.607-05:00 TRACE 2684 --- [http-nio-8080-exec-3] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:03.608-05:00 DEBUG 2684 --- [http-nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : POST "/api/auth/login", parameters={}
+2025-08-04T19:19:03.609-05:00 DEBUG 2684 --- [http-nio-8080-exec-3] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.AuthController#login(LoginRequestDto, String, HttpServletRequest)
+2025-08-04T19:19:03.648-05:00 DEBUG 2684 --- [http-nio-8080-exec-3] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [com.improvementsolutions.dto.auth.LoginRequestDto@f7b1d]
+2025-08-04T19:19:03.673-05:00 DEBUG 2684 --- [http-nio-8080-exec-3] c.i.service.AuthService                  : Iniciando autenticación para request: com.improvementsolutions.dto.auth.LoginRequestDto@f7b1d
+2025-08-04T19:19:03.675-05:00 DEBUG 2684 --- [http-nio-8080-exec-3] c.i.service.AuthService                  : Usuario encontrado por username: admin
+2025-08-04T19:19:03.675-05:00 DEBUG 2684 --- [http-nio-8080-exec-3] c.i.service.AuthService                  : Usuario encontrado: admin
+2025-08-04T19:19:03.797-05:00 ERROR 2684 --- [http-nio-8080-exec-3] c.i.service.AuthService                  : Contraseña incorrecta para usuario: admin
+2025-08-04T19:19:03.797-05:00 ERROR 2684 --- [http-nio-8080-exec-3] c.i.service.AuthService                  : Error de credenciales: Contraseña incorrecta
+2025-08-04T19:19:03.798-05:00 ERROR 2684 --- [http-nio-8080-exec-3] c.i.controller.AuthController            : Credenciales inválidas: Contraseña incorrecta
+2025-08-04T19:19:03.809-05:00 DEBUG 2684 --- [http-nio-8080-exec-3] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [application/json] and supported [application/json, application/*+json]
+2025-08-04T19:19:03.811-05:00 DEBUG 2684 --- [http-nio-8080-exec-3] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [ErrorResponse(message=Usuario o contraseña incorrectos, error=UNAUTHORIZED, status=401)]
+2025-08-04T19:19:03.817-05:00 DEBUG 2684 --- [http-nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : Completed 401 UNAUTHORIZED
+2025-08-04T19:19:03.817-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:03.818-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Status: 401
+2025-08-04T19:19:03.818-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Content Type: application/json
+2025-08-04T19:19:03.818-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:03.818-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:03.818-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:03.818-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:03.818-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:03.819-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:03.819-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:03.819-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:03.819-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:03.819-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:03.819-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:03.819-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:03.819-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+2025-08-04T19:19:03.819-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Pragma: no-cache
+2025-08-04T19:19:03.819-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Expires: 0
+2025-08-04T19:19:03.820-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:03.820-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Content-Type: application/json
+2025-08-04T19:19:03.820-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Transfer-Encoding: chunked
+2025-08-04T19:19:03.820-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:03 GMT
+2025-08-04T19:19:03.820-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:03.820-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:03.820-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : Response: POST /api/auth/login completed in 210ms
+2025-08-04T19:19:03.820-05:00  INFO 2684 --- [http-nio-8080-exec-3] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:16.610-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando POST solicitud para: /api/auth/login
+2025-08-04T19:19:16.610-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.security.PublicEndpointsFilter       : PublicEndpointsFilter: Procesando ruta pública: /api/auth/login
+2025-08-04T19:19:16.610-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.security.PublicEndpointsFilter       : Solicitud a endpoint público: POST /api/auth/login
+2025-08-04T19:19:16.611-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.security.PublicEndpointsFilter       : Origin: http://localhost:4200
+2025-08-04T19:19:16.611-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.security.PublicEndpointsFilter       : User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:16.611-05:00 TRACE 2684 --- [http-nio-8080-exec-2] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:16.611-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/auth/login
+2025-08-04T19:19:16.612-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:16.612-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Método: POST
+2025-08-04T19:19:16.612-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : URI: /api/auth/login
+2025-08-04T19:19:16.612-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Query String: null
+2025-08-04T19:19:16.612-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Content Type: application/json
+2025-08-04T19:19:16.612-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Content Length: 40
+2025-08-04T19:19:16.612-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:16.612-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:16.612-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:16.612-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : content-length: 40
+2025-08-04T19:19:16.612-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:16.613-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:16.613-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : accept: application/json
+2025-08-04T19:19:16.613-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:16.613-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : content-type: application/json
+2025-08-04T19:19:16.613-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:16.613-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : origin: http://localhost:4200
+2025-08-04T19:19:16.613-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:16.613-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : sec-fetch-mode: cors
+2025-08-04T19:19:16.613-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : sec-fetch-dest: empty
+2025-08-04T19:19:16.613-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:16.613-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:16.613-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:16.613-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/auth/login
+2025-08-04T19:19:16.614-05:00 TRACE 2684 --- [http-nio-8080-exec-2] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:16.614-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : POST "/api/auth/login", parameters={}
+2025-08-04T19:19:16.614-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.AuthController#login(LoginRequestDto, String, HttpServletRequest)
+2025-08-04T19:19:16.614-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [com.improvementsolutions.dto.auth.LoginRequestDto@212b1424]
+2025-08-04T19:19:16.615-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] c.i.service.AuthService                  : Iniciando autenticación para request: com.improvementsolutions.dto.auth.LoginRequestDto@212b1424
+2025-08-04T19:19:16.617-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] c.i.service.AuthService                  : Usuario encontrado por username: Javier
+2025-08-04T19:19:16.617-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] c.i.service.AuthService                  : Usuario encontrado: javier
+2025-08-04T19:19:16.679-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] c.i.security.JwtTokenProvider            : Generando token para usuario: javier
+2025-08-04T19:19:16.716-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] c.i.service.AuthService                  : Autenticación exitosa para usuario: javier
+2025-08-04T19:19:16.719-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] c.i.service.AuthService                  : Actualizado último acceso para usuario: javier
+2025-08-04T19:19:16.724-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.controller.AuthController            : Login exitoso para usuario: javier
+2025-08-04T19:19:16.725-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [application/json] and supported [application/json, application/*+json]
+2025-08-04T19:19:16.726-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [LoginResponseDto(token=eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqYXZpZXIiLCJpYXQiOjE3NTQzNTMxNTYsImV4cCI6MTc1 (truncated)...]
+2025-08-04T19:19:16.729-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-08-04T19:19:16.729-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:16.729-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Status: 200
+2025-08-04T19:19:16.729-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Content Type: application/json
+2025-08-04T19:19:16.729-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:16.729-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:16.729-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:16.729-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:16.729-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:16.729-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:16.729-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:16.729-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Pragma: no-cache
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Expires: 0
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Content-Type: application/json
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Transfer-Encoding: chunked
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:16 GMT
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : Response: POST /api/auth/login completed in 116ms
+2025-08-04T19:19:16.730-05:00  INFO 2684 --- [http-nio-8080-exec-2] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:20.955-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando OPTIONS solicitud para: /api/admin/users
+2025-08-04T19:19:20.957-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando GET solicitud para: /api/admin/users
+2025-08-04T19:19:20.957-05:00 TRACE 2684 --- [http-nio-8080-exec-5] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:20.957-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/admin/users
+2025-08-04T19:19:20.958-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] c.i.security.JwtAuthenticationFilter     : Header de autorización: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqYXZpZXIiLCJpYXQiOjE3NTQzNTMxNTYsImV4cCI6MTc1NDQzOTU1Nn0.Vk1WfdOVYhUALI4mvO46iA6nd3TmeGKPvijs3DJgJBuy3u0aj0hfi_Kux2b91IGC2tQy6qlKVqKK9ALxFrWUTQ
+2025-08-04T19:19:20.958-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] c.i.security.JwtAuthenticationFilter     : Token JWT encontrado: Sí
+2025-08-04T19:19:20.997-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] c.i.security.JwtAuthenticationFilter     : Usuario del token: javier
+2025-08-04T19:19:21.001-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] c.i.security.JwtAuthenticationFilter     : Usuario autenticado correctamente: javier
+2025-08-04T19:19:21.001-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:21.001-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Método: GET
+2025-08-04T19:19:21.001-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : URI: /api/admin/users
+2025-08-04T19:19:21.001-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Query String: null
+2025-08-04T19:19:21.001-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Content Type: application/json
+2025-08-04T19:19:21.001-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Content Length: -1
+2025-08-04T19:19:21.002-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:21.002-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:21.002-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:21.002-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:21.002-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqYXZpZXIiLCJpYXQiOjE3NTQzNTMxNTYsImV4cCI6MTc1NDQzOTU1Nn0.Vk1WfdOVYhUALI4mvO46iA6nd3TmeGKPvijs3DJgJBuy3u0aj0hfi_Kux2b91IGC2tQy6qlKVqKK9ALxFrWUTQ
+2025-08-04T19:19:21.002-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:21.002-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : accept: application/json
+2025-08-04T19:19:21.002-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:21.002-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : content-type: application/json
+2025-08-04T19:19:21.002-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:21.003-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : origin: http://localhost:4200
+2025-08-04T19:19:21.003-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:21.003-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : sec-fetch-mode: cors
+2025-08-04T19:19:21.003-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : sec-fetch-dest: empty
+2025-08-04T19:19:21.003-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:21.003-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:21.003-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:21.003-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/admin/users
+2025-08-04T19:19:21.003-05:00 TRACE 2684 --- [http-nio-8080-exec-5] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:21.004-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : GET "/api/admin/users", parameters={}
+2025-08-04T19:19:21.004-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.UserAdminController#getAllUsers()
+2025-08-04T19:19:21.010-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.controller.UserAdminController       : Obteniendo lista de usuarios
+2025-08-04T19:19:21.021-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [application/json] and supported [application/json, application/*+json]
+2025-08-04T19:19:21.022-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [[UserDto(id=1, username=admin, email=admin@improvementsolutions.com, name=Administrador, phone=null, (truncated)...]
+2025-08-04T19:19:21.025-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-08-04T19:19:21.025-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:21.025-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Status: 200
+2025-08-04T19:19:21.025-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Content Type: application/json
+2025-08-04T19:19:21.025-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:21.025-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:21.025-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:21.025-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:21.025-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:21.025-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Pragma: no-cache
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Expires: 0
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Content-Type: application/json
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Transfer-Encoding: chunked
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:20 GMT
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Response: GET /api/admin/users completed in 22ms
+2025-08-04T19:19:21.026-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:21.039-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando GET solicitud para: /api/files/profiles/Alexandra_1749005299916.png
+2025-08-04T19:19:21.039-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando GET solicitud para: /api/files/profiles/javier_1749005801042.png
+2025-08-04T19:19:21.039-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando GET solicitud para: /api/files/profiles/Oswaldo_1749005772364.png
+2025-08-04T19:19:21.042-05:00 TRACE 2684 --- [http-nio-8080-exec-6] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:21.042-05:00 TRACE 2684 --- [http-nio-8080-exec-8] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:21.042-05:00 TRACE 2684 --- [http-nio-8080-exec-10] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:21.043-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:21.043-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:21.043-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Método: GET
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Método: GET
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Método: GET
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : URI: /api/files/profiles/javier_1749005801042.png
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : URI: /api/files/profiles/Oswaldo_1749005772364.png
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : URI: /api/files/profiles/Alexandra_1749005299916.png
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Query String: v=1754353156720
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Query String: v=1749005772519
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Query String: v=1749005300063
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Content Type: null
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Content Type: null
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Content Type: null
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Content Length: -1
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Content Length: -1
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Content Length: -1
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:21.044-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : origin: http://localhost:4200
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : origin: http://localhost:4200
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : origin: http://localhost:4200
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:21.045-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : sec-fetch-mode: cors
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : sec-fetch-mode: cors
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : sec-fetch-dest: image
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : sec-fetch-dest: image
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : sec-fetch-mode: cors
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : sec-fetch-dest: image
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:21.046-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/files/profiles/Alexandra_1749005299916.png
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:21.046-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:21.047-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/files/profiles/javier_1749005801042.png
+2025-08-04T19:19:21.047-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] c.i.security.JwtAuthenticationFilter     : Header de autorización: null
+2025-08-04T19:19:21.047-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:21.047-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] c.i.security.JwtAuthenticationFilter     : Token JWT encontrado: No
+2025-08-04T19:19:21.047-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] c.i.security.JwtAuthenticationFilter     : Header de autorización: null
+2025-08-04T19:19:21.047-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/files/profiles/Oswaldo_1749005772364.png
+2025-08-04T19:19:21.047-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] c.i.security.JwtAuthenticationFilter     : Token JWT encontrado: No
+2025-08-04T19:19:21.047-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] c.i.security.JwtAuthenticationFilter     : Header de autorización: null
+2025-08-04T19:19:21.047-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] c.i.security.JwtAuthenticationFilter     : Token JWT encontrado: No
+2025-08-04T19:19:21.047-05:00 TRACE 2684 --- [http-nio-8080-exec-6] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:21.047-05:00 TRACE 2684 --- [http-nio-8080-exec-10] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:21.047-05:00 TRACE 2684 --- [http-nio-8080-exec-8] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:21.048-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : GET "/api/files/profiles/Alexandra_1749005299916.png?v=1749005300063", parameters={masked}
+2025-08-04T19:19:21.048-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] o.s.web.servlet.DispatcherServlet        : GET "/api/files/profiles/javier_1749005801042.png?v=1754353156720", parameters={masked}
+2025-08-04T19:19:21.048-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : GET "/api/files/profiles/Oswaldo_1749005772364.png?v=1749005772519", parameters={masked}
+2025-08-04T19:19:21.049-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.FileController#serveProfilePublic(String)
+2025-08-04T19:19:21.049-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.FileController#serveProfilePublic(String)
+2025-08-04T19:19:21.049-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.FileController#serveProfilePublic(String)
+2025-08-04T19:19:21.049-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.controller.FileController            : Solicitando imagen de perfil: javier_1749005801042.png
+2025-08-04T19:19:21.049-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.controller.FileController            : Solicitando imagen de perfil: Alexandra_1749005299916.png
+2025-08-04T19:19:21.049-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.controller.FileController            : Solicitando imagen de perfil: Oswaldo_1749005772364.png
+2025-08-04T19:19:21.057-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'image/avif', given [image/avif, image/webp, image/apng, image/svg+xml, image/*, */*;q=0.8] and supported [*/*, application/json, application/*+json]
+2025-08-04T19:19:21.057-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'image/avif', given [image/avif, image/webp, image/apng, image/svg+xml, image/*, */*;q=0.8] and supported [*/*, application/json, application/*+json]
+2025-08-04T19:19:21.057-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'image/avif', given [image/avif, image/webp, image/apng, image/svg+xml, image/*, */*;q=0.8] and supported [*/*, application/json, application/*+json]
+2025-08-04T19:19:21.058-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [URL [file:///D:/PROGRAMAS%202025%20CONTRUCCION/improvement-solutions-angular/backend/uploads/profile (truncated)...]
+2025-08-04T19:19:21.058-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [URL [file:///D:/PROGRAMAS%202025%20CONTRUCCION/improvement-solutions-angular/backend/uploads/profile (truncated)...]
+2025-08-04T19:19:21.058-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [URL [file:///D:/PROGRAMAS%202025%20CONTRUCCION/improvement-solutions-angular/backend/uploads/profile (truncated)...]
+2025-08-04T19:19:21.059-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-08-04T19:19:21.059-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-08-04T19:19:21.059-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-08-04T19:19:21.059-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:21.059-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:21.059-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:21.059-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Status: 200
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Content Type: image/avif
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Status: 200
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Status: 200
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Content Type: image/avif
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Content Type: image/avif
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:21.060-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Content-Disposition: inline; filename="javier_1749005801042.png"
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Content-Disposition: inline; filename="Oswaldo_1749005772364.png"
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Content-Disposition: inline; filename="Alexandra_1749005299916.png"
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Cache-Control: max-age=31536000
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Cache-Control: max-age=31536000
+2025-08-04T19:19:21.061-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Cache-Control: max-age=31536000
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Pragma: cache
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Pragma: cache
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Pragma: cache
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Accept-Ranges: bytes
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Accept-Ranges: bytes
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Accept-Ranges: bytes
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Content-Type: image/avif
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Content-Type: image/avif
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Content-Type: image/avif
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Content-Length: 112302
+2025-08-04T19:19:21.062-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Content-Length: 48440
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Content-Length: 122919
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:20 GMT
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:20 GMT
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:20 GMT
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Response: GET /api/files/profiles/javier_1749005801042.png completed in 12ms
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Response: GET /api/files/profiles/Alexandra_1749005299916.png completed in 13ms
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Response: GET /api/files/profiles/Oswaldo_1749005772364.png completed in 12ms
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:21.063-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:22.107-05:00 DEBUG 2684 --- [http-nio-8080-exec-2] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando OPTIONS solicitud para: /api/businesses
+2025-08-04T19:19:22.109-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando GET solicitud para: /api/businesses
+2025-08-04T19:19:22.109-05:00 TRACE 2684 --- [http-nio-8080-exec-4] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:22.109-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/businesses
+2025-08-04T19:19:22.110-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] c.i.security.JwtAuthenticationFilter     : Header de autorización: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqYXZpZXIiLCJpYXQiOjE3NTQzNTMxNTYsImV4cCI6MTc1NDQzOTU1Nn0.Vk1WfdOVYhUALI4mvO46iA6nd3TmeGKPvijs3DJgJBuy3u0aj0hfi_Kux2b91IGC2tQy6qlKVqKK9ALxFrWUTQ
+2025-08-04T19:19:22.110-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] c.i.security.JwtAuthenticationFilter     : Token JWT encontrado: Sí
+2025-08-04T19:19:22.120-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] c.i.security.JwtAuthenticationFilter     : Usuario del token: javier
+2025-08-04T19:19:22.125-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] c.i.security.JwtAuthenticationFilter     : Usuario autenticado correctamente: javier
+2025-08-04T19:19:22.126-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:22.126-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Método: GET
+2025-08-04T19:19:22.126-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : URI: /api/businesses
+2025-08-04T19:19:22.126-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Query String: null
+2025-08-04T19:19:22.126-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Content Type: application/json
+2025-08-04T19:19:22.126-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Content Length: -1
+2025-08-04T19:19:22.126-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:22.126-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:22.126-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:22.126-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:22.126-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqYXZpZXIiLCJpYXQiOjE3NTQzNTMxNTYsImV4cCI6MTc1NDQzOTU1Nn0.Vk1WfdOVYhUALI4mvO46iA6nd3TmeGKPvijs3DJgJBuy3u0aj0hfi_Kux2b91IGC2tQy6qlKVqKK9ALxFrWUTQ
+2025-08-04T19:19:22.126-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:22.127-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : accept: application/json
+2025-08-04T19:19:22.127-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:22.127-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : content-type: application/json
+2025-08-04T19:19:22.127-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:22.127-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : origin: http://localhost:4200
+2025-08-04T19:19:22.127-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:22.127-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : sec-fetch-mode: cors
+2025-08-04T19:19:22.127-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : sec-fetch-dest: empty
+2025-08-04T19:19:22.127-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:22.127-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:22.127-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:22.127-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/businesses
+2025-08-04T19:19:22.128-05:00 TRACE 2684 --- [http-nio-8080-exec-4] o.s.web.cors.DefaultCorsProcessor        : Skip: response already contains "Access-Control-Allow-Origin"
+2025-08-04T19:19:22.128-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : GET "/api/businesses", parameters={}
+2025-08-04T19:19:22.128-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.BusinessController#getAllBusinesses()
+2025-08-04T19:19:22.134-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [application/json] and supported [application/json, application/*+json]
+2025-08-04T19:19:22.138-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [[Business(id=1, name=Contriservices, nameShort=MEDA, ruc=0603625452125, email=angeljaviermsn@gmail.c (truncated)...]
+2025-08-04T19:19:22.177-05:00 DEBUG 2684 --- [http-nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-08-04T19:19:22.177-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:22.177-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Status: 200
+2025-08-04T19:19:22.177-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Content Type: application/json
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:22.178-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+2025-08-04T19:19:22.179-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Pragma: no-cache
+2025-08-04T19:19:22.179-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Expires: 0
+2025-08-04T19:19:22.179-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:22.179-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Content-Type: application/json
+2025-08-04T19:19:22.179-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Transfer-Encoding: chunked
+2025-08-04T19:19:22.179-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:22 GMT
+2025-08-04T19:19:22.179-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:22.179-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:22.179-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : Response: GET /api/businesses completed in 50ms
+2025-08-04T19:19:22.179-05:00  INFO 2684 --- [http-nio-8080-exec-4] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:22.187-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando GET solicitud para: /api/files/logos/8366c555-762c-4f46-8376-b63f18f7112f.png
+2025-08-04T19:19:22.188-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando GET solicitud para: /api/files/logos/6b08e6d2-87f5-47e9-9b76-453526180adf.png
+2025-08-04T19:19:22.188-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando GET solicitud para: /api/files/logos/080919a1-4e5f-4673-adbd-91c6ca76d9c2.png
+2025-08-04T19:19:22.188-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando GET solicitud para: /api/files/logos/e5456f16-cefd-4f94-bb89-8c78ffd309fe.png
+2025-08-04T19:19:22.188-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando GET solicitud para: /api/files/logos/330d4809-d4f7-4b85-8321-752a44f4b0a2.png
+2025-08-04T19:19:22.188-05:00 DEBUG 2684 --- [http-nio-8080-exec-7] c.i.config.FormDataCorsFilter            : CORS Filter: Procesando GET solicitud para: /api/files/logos/57ebe476-19de-4dfd-afd4-2cc576a7ae0b.png
+2025-08-04T19:19:22.188-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:22.188-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Método: GET
+2025-08-04T19:19:22.188-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : URI: /api/files/logos/8366c555-762c-4f46-8376-b63f18f7112f.png
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Query String: v=1754353162182
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Content Type: null
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Método: GET
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Content Length: -1
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Método: GET
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : === INICIO DE PETICIÓN ===
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Método: GET
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Método: GET
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : URI: /api/files/logos/330d4809-d4f7-4b85-8321-752a44f4b0a2.png
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : URI: /api/files/logos/e5456f16-cefd-4f94-bb89-8c78ffd309fe.png
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : URI: /api/files/logos/080919a1-4e5f-4673-adbd-91c6ca76d9c2.png
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Método: GET
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : URI: /api/files/logos/6b08e6d2-87f5-47e9-9b76-453526180adf.png
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Query String: v=1754353162183
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Query String: v=1754353162183
+2025-08-04T19:19:22.189-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : URI: /api/files/logos/57ebe476-19de-4dfd-afd4-2cc576a7ae0b.png
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Query String: v=1754353162182
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Query String: v=1754353162182
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Content Type: null
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Content Type: null
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Query String: v=1754353162183
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Content Type: null
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Content Type: null
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Content Length: -1
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Content Length: -1
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Content Type: null
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Content Length: -1
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Content Length: -1
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Content Length: -1
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:22.190-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : === HEADERS DE LA PETICIÓN ===
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : host: localhost:8080
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : connection: keep-alive
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : sec-ch-ua-platform: "Windows"
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:22.191-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : sec-fetch-mode: no-cors
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : sec-fetch-dest: image
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : sec-ch-ua-mobile: ?0
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8
+2025-08-04T19:19:22.192-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : sec-fetch-mode: no-cors
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : sec-fetch-mode: no-cors
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : sec-fetch-dest: image
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : sec-fetch-dest: image
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : sec-fetch-mode: no-cors
+2025-08-04T19:19:22.193-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/files/logos/8366c555-762c-4f46-8376-b63f18f7112f.png
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : sec-fetch-mode: no-cors
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : sec-fetch-site: same-site
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : sec-fetch-dest: image
+2025-08-04T19:19:22.193-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] c.i.security.JwtAuthenticationFilter     : Header de autorización: null
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : sec-fetch-dest: image
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : sec-fetch-mode: no-cors
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:22.193-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] c.i.security.JwtAuthenticationFilter     : Token JWT encontrado: No
+2025-08-04T19:19:22.194-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:22.194-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:22.194-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:22.193-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : sec-fetch-dest: image
+2025-08-04T19:19:22.194-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:22.194-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:22.194-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/files/logos/330d4809-d4f7-4b85-8321-752a44f4b0a2.png
+2025-08-04T19:19:22.194-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:22.194-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : GET "/api/files/logos/8366c555-762c-4f46-8376-b63f18f7112f.png?v=1754353162182", parameters={masked}
+2025-08-04T19:19:22.194-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : referer: http://localhost:4200/
+2025-08-04T19:19:22.194-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/files/logos/080919a1-4e5f-4673-adbd-91c6ca76d9c2.png
+2025-08-04T19:19:22.194-05:00 DEBUG 2684 --- [http-nio-8080-exec-7] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/files/logos/57ebe476-19de-4dfd-afd4-2cc576a7ae0b.png
+2025-08-04T19:19:22.194-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] c.i.security.JwtAuthenticationFilter     : Header de autorización: null
+2025-08-04T19:19:22.194-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/files/logos/6b08e6d2-87f5-47e9-9b76-453526180adf.png
+2025-08-04T19:19:22.194-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : accept-encoding: gzip, deflate, br, zstd
+2025-08-04T19:19:22.194-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] c.i.security.JwtAuthenticationFilter     : Header de autorización: null
+2025-08-04T19:19:22.194-05:00 DEBUG 2684 --- [http-nio-8080-exec-7] c.i.security.JwtAuthenticationFilter     : Header de autorización: null
+2025-08-04T19:19:22.195-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.FileController#serveFileFromDirectoryPublic(String, String)
+2025-08-04T19:19:22.194-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] c.i.security.JwtAuthenticationFilter     : Token JWT encontrado: No
+2025-08-04T19:19:22.194-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] c.i.security.JwtAuthenticationFilter     : Header de autorización: null
+2025-08-04T19:19:22.194-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : accept-language: es-419,es;q=0.9
+2025-08-04T19:19:22.195-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] c.i.security.JwtAuthenticationFilter     : Token JWT encontrado: No
+2025-08-04T19:19:22.195-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : GET "/api/files/logos/330d4809-d4f7-4b85-8321-752a44f4b0a2.png?v=1754353162183", parameters={masked}
+2025-08-04T19:19:22.195-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] c.i.security.JwtAuthenticationFilter     : Token JWT encontrado: No
+2025-08-04T19:19:22.195-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] o.s.web.servlet.DispatcherServlet        : GET "/api/files/logos/6b08e6d2-87f5-47e9-9b76-453526180adf.png?v=1754353162182", parameters={masked}
+2025-08-04T19:19:22.195-05:00 DEBUG 2684 --- [http-nio-8080-exec-7] c.i.security.JwtAuthenticationFilter     : Token JWT encontrado: No
+2025-08-04T19:19:22.195-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : GET "/api/files/logos/080919a1-4e5f-4673-adbd-91c6ca76d9c2.png?v=1754353162182", parameters={masked}
+2025-08-04T19:19:22.195-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] c.i.security.JwtAuthenticationFilter     : Verificando filtro para ruta: /api/files/logos/e5456f16-cefd-4f94-bb89-8c78ffd309fe.png
+2025-08-04T19:19:22.195-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.controller.FileController            : Solicitando archivo desde directorio logos: 8366c555-762c-4f46-8376-b63f18f7112f.png
+2025-08-04T19:19:22.195-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.FileController#serveFileFromDirectoryPublic(String, String)
+2025-08-04T19:19:22.195-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] c.i.security.JwtAuthenticationFilter     : Header de autorización: null
+2025-08-04T19:19:22.195-05:00 DEBUG 2684 --- [http-nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : GET "/api/files/logos/57ebe476-19de-4dfd-afd4-2cc576a7ae0b.png?v=1754353162183", parameters={masked}
+2025-08-04T19:19:22.195-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.FileController#serveFileFromDirectoryPublic(String, String)
+2025-08-04T19:19:22.196-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.FileController#serveFileFromDirectoryPublic(String, String)
+2025-08-04T19:19:22.196-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] c.i.security.JwtAuthenticationFilter     : Token JWT encontrado: No
+2025-08-04T19:19:22.196-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.controller.FileController            : Solicitando archivo desde directorio logos: 330d4809-d4f7-4b85-8321-752a44f4b0a2.png
+2025-08-04T19:19:22.196-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.controller.FileController            : Solicitando archivo desde directorio logos: 6b08e6d2-87f5-47e9-9b76-453526180adf.png
+2025-08-04T19:19:22.196-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : GET "/api/files/logos/e5456f16-cefd-4f94-bb89-8c78ffd309fe.png?v=1754353162183", parameters={masked}
+2025-08-04T19:19:22.196-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.controller.FileController            : Solicitando archivo desde directorio logos: 080919a1-4e5f-4673-adbd-91c6ca76d9c2.png
+2025-08-04T19:19:22.196-05:00 DEBUG 2684 --- [http-nio-8080-exec-7] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.FileController#serveFileFromDirectoryPublic(String, String)
+2025-08-04T19:19:22.196-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.improvementsolutions.controller.FileController#serveFileFromDirectoryPublic(String, String)
+2025-08-04T19:19:22.196-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'image/avif', given [image/avif, image/webp, image/apng, image/svg+xml, image/*, */*;q=0.8] and supported [*/*, application/json, application/*+json]
+2025-08-04T19:19:22.196-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'image/avif', given [image/avif, image/webp, image/apng, image/svg+xml, image/*, */*;q=0.8] and supported [*/*, application/json, application/*+json]
+2025-08-04T19:19:22.196-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.controller.FileController            : Solicitando archivo desde directorio logos: 57ebe476-19de-4dfd-afd4-2cc576a7ae0b.png
+2025-08-04T19:19:22.196-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.controller.FileController            : Solicitando archivo desde directorio logos: e5456f16-cefd-4f94-bb89-8c78ffd309fe.png
+2025-08-04T19:19:22.196-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [URL [file:///D:/PROGRAMAS%202025%20CONTRUCCION/improvement-solutions-angular/backend/uploads/logos/3 (truncated)...]
+2025-08-04T19:19:22.196-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'image/avif', given [image/avif, image/webp, image/apng, image/svg+xml, image/*, */*;q=0.8] and supported [*/*, application/json, application/*+json]
+2025-08-04T19:19:22.196-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'image/avif', given [image/avif, image/webp, image/apng, image/svg+xml, image/*, */*;q=0.8] and supported [*/*, application/json, application/*+json]
+2025-08-04T19:19:22.197-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [URL [file:///D:/PROGRAMAS%202025%20CONTRUCCION/improvement-solutions-angular/backend/uploads/logos/6 (truncated)...]
+2025-08-04T19:19:22.197-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [URL [file:///D:/PROGRAMAS%202025%20CONTRUCCION/improvement-solutions-angular/backend/uploads/logos/0 (truncated)...]
+2025-08-04T19:19:22.197-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [URL [file:///D:/PROGRAMAS%202025%20CONTRUCCION/improvement-solutions-angular/backend/uploads/logos/8 (truncated)...]
+2025-08-04T19:19:22.197-05:00 DEBUG 2684 --- [http-nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'image/avif', given [image/avif, image/webp, image/apng, image/svg+xml, image/*, */*;q=0.8] and supported [*/*, application/json, application/*+json]
+2025-08-04T19:19:22.197-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'image/avif', given [image/avif, image/webp, image/apng, image/svg+xml, image/*, */*;q=0.8] and supported [*/*, application/json, application/*+json]
+2025-08-04T19:19:22.197-05:00 DEBUG 2684 --- [http-nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [URL [file:///D:/PROGRAMAS%202025%20CONTRUCCION/improvement-solutions-angular/backend/uploads/logos/5 (truncated)...]
+2025-08-04T19:19:22.197-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [URL [file:///D:/PROGRAMAS%202025%20CONTRUCCION/improvement-solutions-angular/backend/uploads/logos/e (truncated)...]
+2025-08-04T19:19:22.198-05:00 DEBUG 2684 --- [http-nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-08-04T19:19:22.198-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:22.198-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Status: 200
+2025-08-04T19:19:22.198-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Content Type: image/avif
+2025-08-04T19:19:22.198-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:22.198-05:00 DEBUG 2684 --- [http-nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:22.199-05:00 DEBUG 2684 --- [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Status: 200
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Content Type: image/avif
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Status: 200
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Content Type: image/avif
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:22.199-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Content-Disposition: inline; filename="080919a1-4e5f-4673-adbd-91c6ca76d9c2.png"
+2025-08-04T19:19:22.200-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Cache-Control: max-age=31536000
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Pragma: cache
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Accept-Ranges: bytes
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Content-Disposition: inline; filename="57ebe476-19de-4dfd-afd4-2cc576a7ae0b.png"
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Cache-Control: max-age=31536000
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:22.201-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Content-Disposition: inline; filename="330d4809-d4f7-4b85-8321-752a44f4b0a2.png"
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Pragma: cache
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Content-Type: image/avif
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Cache-Control: max-age=31536000
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Accept-Ranges: bytes
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Content-Length: 81827
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Pragma: cache
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:22 GMT
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Accept-Ranges: bytes
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:22.202-05:00 DEBUG 2684 --- [http-nio-8080-exec-10] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Content-Type: image/avif
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : Response: GET /api/files/logos/080919a1-4e5f-4673-adbd-91c6ca76d9c2.png completed in 4ms
+2025-08-04T19:19:22.202-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Content-Type: image/avif
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Status: 200
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Content-Length: 91896
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-6] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Content-Length: 136123
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Content Type: image/avif
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:22 GMT
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:22 GMT
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : Response: GET /api/files/logos/57ebe476-19de-4dfd-afd4-2cc576a7ae0b.png completed in 5ms
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-7] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : Response: GET /api/files/logos/330d4809-d4f7-4b85-8321-752a44f4b0a2.png completed in 5ms
+2025-08-04T19:19:22.203-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-1] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Content-Disposition: inline; filename="6b08e6d2-87f5-47e9-9b76-453526180adf.png"
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Cache-Control: max-age=31536000
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Pragma: cache
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Accept-Ranges: bytes
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Content-Type: image/avif
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Content-Length: 733073
+2025-08-04T19:19:22.204-05:00 DEBUG 2684 --- [http-nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:22 GMT
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:22.204-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Status: 200
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Content Type: image/avif
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : Response: GET /api/files/logos/6b08e6d2-87f5-47e9-9b76-453526180adf.png completed in 9ms
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-10] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Content-Disposition: inline; filename="8366c555-762c-4f46-8376-b63f18f7112f.png"
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Cache-Control: max-age=31536000
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Pragma: cache
+2025-08-04T19:19:22.205-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Accept-Ranges: bytes
+2025-08-04T19:19:22.206-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:22.206-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:22.206-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:22.206-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Content-Type: image/avif
+2025-08-04T19:19:22.206-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Content-Length: 697927
+2025-08-04T19:19:22.206-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:22 GMT
+2025-08-04T19:19:22.206-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:22.206-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:22.206-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : Response: GET /api/files/logos/8366c555-762c-4f46-8376-b63f18f7112f.png completed in 11ms
+2025-08-04T19:19:22.206-05:00  INFO 2684 --- [http-nio-8080-exec-5] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:22.207-05:00 DEBUG 2684 --- [http-nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2025-08-04T19:19:22.207-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : === RESPUESTA ===
+2025-08-04T19:19:22.207-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Status: 200
+2025-08-04T19:19:22.207-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Content Type: image/avif
+2025-08-04T19:19:22.207-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : === HEADERS DE LA RESPUESTA ===
+2025-08-04T19:19:22.207-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Origin: http://localhost:4200
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Request-Method, Access-Control-Request-Headers
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Access-Control-Allow-Credentials: true
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Access-Control-Max-Age: 3600
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Access-Control-Expose-Headers: Content-Disposition, Content-Length
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Vary: Origin
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Content-Disposition: inline; filename="e5456f16-cefd-4f94-bb89-8c78ffd309fe.png"
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Cache-Control: max-age=31536000
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Pragma: cache
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Accept-Ranges: bytes
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : X-Content-Type-Options: nosniff
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : X-XSS-Protection: 0
+2025-08-04T19:19:22.209-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : X-Frame-Options: DENY
+2025-08-04T19:19:22.210-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Content-Type: image/avif
+2025-08-04T19:19:22.210-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Content-Length: 1553374
+2025-08-04T19:19:22.210-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Date: Tue, 05 Aug 2025 00:19:22 GMT
+2025-08-04T19:19:22.210-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Keep-Alive: timeout=60
+2025-08-04T19:19:22.210-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Connection: keep-alive
+2025-08-04T19:19:22.210-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : Response: GET /api/files/logos/e5456f16-cefd-4f94-bb89-8c78ffd309fe.png completed in 12ms
+2025-08-04T19:19:22.210-05:00  INFO 2684 --- [http-nio-8080-exec-8] c.i.config.RequestLoggingFilter          : === FIN DE PETICIÓN ===
+
+2025-08-04T19:19:35.544-05:00  INFO 2684 --- [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-08-04T19:19:35.544-05:00  INFO 2684 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2025-08-04T19:19:35.554-05:00  INFO 2684 --- [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.

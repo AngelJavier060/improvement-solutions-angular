@@ -1,191 +1,191 @@
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\AuthenticationConfig.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\CorsConfig.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\CorsDebugFilter.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\CorsDiagnosticFilter.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\CorsHeaderTrackingFilter.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\CorsResponseFilter.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\DataInitializer.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\DisableSecurityConfig.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\EncoderConfig.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\FormDataCorsFilter.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\JpaConfig.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\MailConfig.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\MinimalSecurityConfig.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\PublicResourceConfig.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\RequestLoggingFilter.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\SecurityConfig.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\SimplifiedCorsConfig.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\AuthController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\AuthSimpleController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessEmployeeContractController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessEmployeeController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessEmployeeDocumentController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessObligationMatrixController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DebugController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DegreeController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DepartmentController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DiagnosticController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DiagnosticoController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\EthniaController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\FileController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\FileUploadExceptionAdvice.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\IessController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\MasterDataController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\ProfilePictureController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicCivilStatusController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicDiagnosticoController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicEtniaController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicGeneroController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicResidenciaController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicTestController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\SolucionProblemaController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\TestController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\TestPublicController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\TypeContractController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\UserAdminController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\diagnostic\FileSystemDiagnostic.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\JwtAuthResponse.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\LoginRequestDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\LoginResponseDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\PasswordChangeDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\PasswordResetDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\PasswordResetRequestDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\RefreshTokenRequest.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\RefreshTokenRequestDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\RegisterRequest.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\RegisterRequestDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BaseDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessDTO.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessEmployeeContractDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessEmployeeContractFileDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessEmployeeDocumentDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessEmployeeDocumentFileDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessEmployeeDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessObligationDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessObligationMatrixDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessObligationMatrixFileDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\CivilStatusDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\DegreeDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\DepartmentDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\EthniaDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\GenderDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\ObligationMatrixDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\PositionDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\ResidentAddressDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\TypeContractDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\TypeDocumentDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\CivilStatusDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\DegreeDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\DepartmentDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\DTOBusiness.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\EmployeeContractDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\EmployeeDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\ErrorResponse.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\FileResponse.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\FileResponseDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\GenderDTO.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\IessDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\SuccessResponse.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\user\UserDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\user\UserUpdateDto.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\UserDTO.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\exception\ResourceNotFoundException.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\exception\UserInactiveException.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\exception\UserNotFoundException.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\ImprovementSolutionsApplication.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Business.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessEmployee.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessEmployeeContract.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessEmployeeContractFile.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessEmployeeDocument.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessEmployeeDocumentFile.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessEmployeeRecord.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessObligationMatrix.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessObligationMatrixFile.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\CivilStatus.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Degree.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Department.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Employee.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Etnia.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\FileResponse.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Gender.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Iess.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\ObligationMatrix.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\PasswordResetToken.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Permission.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Position.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\ResidentAddress.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Role.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\TypeContract.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\TypeDocument.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\User.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\UserSession.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessEmployeeContractFileRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessEmployeeContractRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessEmployeeDocumentFileRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessEmployeeDocumentRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessEmployeeRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessObligationMatrixFileRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessObligationMatrixRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\CivilStatusRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\DegreeRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\DepartmentRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\EmployeeRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\EthniaRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\EtniaRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\GenderRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\IessRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\ObligationMatrixRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\PasswordResetTokenRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\PermissionRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\PositionRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\ResidentAddressRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\RoleRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\TypeContractRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\TypeDocumentRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\UserRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\UserSessionRepository.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\CustomUserDetailsService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\JwtAuthenticationEntryPoint.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\JwtAuthenticationFilter.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\JwtTokenProvider.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\JwtUtils.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\PublicEndpointsFilter.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\TokenValidationService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\UserDetailsImpl.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\AuthService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessEmployeeContractFileService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessEmployeeContractService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessEmployeeDocumentFileService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessEmployeeDocumentService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessEmployeeService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessObligationMatrixFileService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessObligationMatrixService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\CivilStatusService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\DegreeService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\DepartmentService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\EmailService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\EtniaService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\FileStorageService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\FileUrlService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\FileValidationService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\GenderService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\IessService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\PositionService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\ResidentAddressService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\TypeContractService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\TypeDocumentService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\UserService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\FileSystemStorageService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\FileUrlHelper.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\FileUrlService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\FileUrlServiceImpl.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\S3StorageService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\StorageException.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\StorageFileNotFoundException.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\StorageService.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\tools\DiagnosticController.java
-D:\PROGRAMAS CREADOS PROBADOS 2025\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\util\DatabaseInfoUtil.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\AuthenticationConfig.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\CorsConfig.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\CorsDebugFilter.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\CorsDiagnosticFilter.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\CorsHeaderTrackingFilter.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\CorsResponseFilter.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\DataInitializer.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\DisableSecurityConfig.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\EncoderConfig.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\FormDataCorsFilter.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\JpaConfig.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\MailConfig.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\MinimalSecurityConfig.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\PublicResourceConfig.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\RequestLoggingFilter.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\SecurityConfig.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\config\SimplifiedCorsConfig.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\AuthController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\AuthSimpleController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessEmployeeContractController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessEmployeeController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessEmployeeDocumentController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\BusinessObligationMatrixController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DebugController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DegreeController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DepartmentController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DiagnosticController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\DiagnosticoController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\EthniaController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\FileController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\FileUploadExceptionAdvice.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\IessController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\MasterDataController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\ProfilePictureController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicCivilStatusController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicDiagnosticoController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicEtniaController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicGeneroController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicResidenciaController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\PublicTestController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\SolucionProblemaController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\TestController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\TestPublicController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\TypeContractController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\controller\UserAdminController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\diagnostic\FileSystemDiagnostic.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\JwtAuthResponse.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\LoginRequestDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\LoginResponseDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\PasswordChangeDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\PasswordResetDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\PasswordResetRequestDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\RefreshTokenRequest.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\RefreshTokenRequestDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\RegisterRequest.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\auth\RegisterRequestDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BaseDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessDTO.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessEmployeeContractDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessEmployeeContractFileDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessEmployeeDocumentDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessEmployeeDocumentFileDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessEmployeeDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessObligationDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessObligationMatrixDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\BusinessObligationMatrixFileDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\CivilStatusDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\DegreeDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\DepartmentDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\EthniaDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\GenderDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\ObligationMatrixDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\PositionDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\ResidentAddressDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\TypeContractDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\catalog\TypeDocumentDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\CivilStatusDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\DegreeDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\DepartmentDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\DTOBusiness.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\EmployeeContractDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\EmployeeDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\ErrorResponse.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\FileResponse.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\FileResponseDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\GenderDTO.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\IessDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\SuccessResponse.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\user\UserDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\user\UserUpdateDto.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\dto\UserDTO.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\exception\ResourceNotFoundException.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\exception\UserInactiveException.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\exception\UserNotFoundException.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\ImprovementSolutionsApplication.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Business.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessEmployee.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessEmployeeContract.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessEmployeeContractFile.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessEmployeeDocument.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessEmployeeDocumentFile.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessEmployeeRecord.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessObligationMatrix.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\BusinessObligationMatrixFile.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\CivilStatus.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Degree.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Department.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Employee.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Etnia.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\FileResponse.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Gender.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Iess.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\ObligationMatrix.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\PasswordResetToken.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Permission.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Position.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\ResidentAddress.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\Role.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\TypeContract.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\TypeDocument.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\User.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\model\UserSession.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessEmployeeContractFileRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessEmployeeContractRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessEmployeeDocumentFileRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessEmployeeDocumentRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessEmployeeRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessObligationMatrixFileRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessObligationMatrixRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\BusinessRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\CivilStatusRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\DegreeRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\DepartmentRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\EmployeeRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\EthniaRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\EtniaRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\GenderRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\IessRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\ObligationMatrixRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\PasswordResetTokenRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\PermissionRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\PositionRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\ResidentAddressRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\RoleRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\TypeContractRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\TypeDocumentRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\UserRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\repository\UserSessionRepository.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\CustomUserDetailsService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\JwtAuthenticationEntryPoint.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\JwtAuthenticationFilter.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\JwtTokenProvider.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\JwtUtils.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\PublicEndpointsFilter.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\TokenValidationService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\security\UserDetailsImpl.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\AuthService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessEmployeeContractFileService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessEmployeeContractService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessEmployeeDocumentFileService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessEmployeeDocumentService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessEmployeeService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessObligationMatrixFileService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessObligationMatrixService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\BusinessService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\CivilStatusService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\DegreeService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\DepartmentService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\EmailService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\EtniaService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\FileStorageService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\FileUrlService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\FileValidationService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\GenderService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\IessService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\PositionService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\ResidentAddressService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\TypeContractService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\TypeDocumentService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\service\UserService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\FileSystemStorageService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\FileUrlHelper.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\FileUrlService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\FileUrlServiceImpl.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\S3StorageService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\StorageException.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\StorageFileNotFoundException.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\storage\StorageService.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\tools\DiagnosticController.java
+D:\PROGRAMAS 2025 CONTRUCCION\improvement-solutions-angular\backend\src\main\java\com\improvementsolutions\util\DatabaseInfoUtil.java
