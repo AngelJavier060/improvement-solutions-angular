@@ -36,12 +36,15 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "8080:80"
+      - "80:80"
+      - "443:443"
     depends_on:
       - backend
     networks:
       - improvement_network
     restart: unless-stopped
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
 
 volumes:
   mysql_data:
