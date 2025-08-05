@@ -1,1 +1,0 @@
-Este es un archivo de prueba para probar la funcionalidad de carga y descarga de archivos en el sistema.
