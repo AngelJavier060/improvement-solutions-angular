@@ -55,6 +55,7 @@ public class SecurityConfig {    private final JwtAuthenticationEntryPoint unaut
                 .requestMatchers("/api/files/upload/logos").permitAll()
                 .requestMatchers("/api/files/profiles/**").permitAll()
                 .requestMatchers("/error").permitAll()
+                .requestMatchers("/health").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
