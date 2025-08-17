@@ -14,16 +14,12 @@ import { DashboardUsuarioComponent } from './features/dashboard/usuario/dashboar
 import { FileUploadComponent } from './components/file-upload/file-upload.component';
 import { FileViewerComponent } from './components/file-viewer/file-viewer.component';
 import { SafePipe } from './pipes/safe.pipe';
+import { SharedModule } from './shared/shared.module';
 import { BusinessFilesComponent } from './components/business-files/business-files.component';
-import { FileService } from './services/file.service';
 import { ApiUrlInterceptor } from './core/interceptors/api-url.interceptor';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
-import { CorsInterceptor } from './core/interceptors/cors.interceptor';
-import { TestUploadComponent } from './shared/components/test-upload/test-upload.component';
 import { AuthGuard } from './core/guards/auth.guard';
-import { TestPublicComponent } from './components/test-public/test-public.component';
-import { DiagnosticComponent } from './components/diagnostic/diagnostic.component';
-import { SharedModule } from './shared/shared.module';
+import { FileService } from './services/file.service';
 
 @NgModule({
   declarations: [
@@ -34,9 +30,7 @@ import { SharedModule } from './shared/shared.module';
     FileUploadComponent,
     FileViewerComponent,
     SafePipe,
-    BusinessFilesComponent,
-    TestPublicComponent,
-    DiagnosticComponent
+    BusinessFilesComponent
   ],
   schemas: [
     CUSTOM_ELEMENTS_SCHEMA
@@ -52,7 +46,7 @@ import { SharedModule } from './shared/shared.module';
     NgbModalModule,
     SharedModule,    RouterModule.forRoot([
       { path: '', component: HomeComponent },
-      { path: 'test-upload', component: TestUploadComponent },      {
+      {
         path: 'dashboard/admin', 
         component: DashboardAdminComponent,
         canActivate: [AuthGuard],
@@ -86,14 +80,6 @@ import { SharedModule } from './shared/shared.module';
         path: 'auth',
         loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
       },
-      { 
-        path: 'test-public',
-        component: TestPublicComponent
-      },
-      { 
-        path: 'diagnostic',
-        component: DiagnosticComponent
-      },
       { path: '**', redirectTo: '' }
     ]),
     NgbDropdownModule,
@@ -102,8 +88,6 @@ import { SharedModule } from './shared/shared.module';
   ],
   providers: [
     FileService,
-    // El orden es importante: CORS primero, luego URLs, finalmente autenticación
-    { provide: HTTP_INTERCEPTORS, useClass: CorsInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: ApiUrlInterceptor, multi: true },
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
   ],

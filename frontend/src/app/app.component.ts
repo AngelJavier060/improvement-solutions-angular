@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { FileService } from './services/file.service';
-import { diagnoseRouting, diagnoseImageLoading } from './diagnostic-tools';
 
 @Component({  selector: 'app-root',
   template: `
@@ -26,12 +25,6 @@ export class AppComponent implements OnInit {
     (window as any).authService = this.authService;
     (window as any).fileService = this.fileService;
     
-    // Herramientas de diagnóstico mejoradas
-    (window as any).diagnoseRouting = () => diagnoseRouting(this.router);
-    (window as any).diagnoseImageLoading = () => diagnoseImageLoading(this.fileService);
-    
-    console.log('AppComponent inicializado - Utilidades de diagnóstico disponibles en consola');
-    console.log('Utiliza window.diagnoseRouting() para analizar problemas de enrutamiento');
-    console.log('Utiliza window.diagnoseImageLoading() para diagnosticar problemas con logos');
+    console.log('AppComponent inicializado');
   }
 }

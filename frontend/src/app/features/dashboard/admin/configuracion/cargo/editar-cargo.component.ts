@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CargoService } from '../../../../../services/cargo.service';
-import { DepartamentoService } from '../../../../../services/departamento.service';
+import { DepartmentService } from '../../../../../services/department.service';
 import { Department } from '../../../../../models/department.model';
 import { Position } from '../../../../../models/position.model';
 
@@ -20,7 +20,7 @@ export class EditarCargoComponent implements OnInit {
   departamentos: Department[] = [];  constructor(
     private fb: FormBuilder,
     private cargoService: CargoService,
-    private departamentoService: DepartamentoService,
+    private departmentService: DepartmentService,
     private route: ActivatedRoute,
     private router: Router
   ) {    this.cargoForm = this.fb.group({
@@ -39,12 +39,12 @@ export class EditarCargoComponent implements OnInit {
   }
   
   cargarDepartamentos(): void {
-    this.departamentoService.getDepartamentos().subscribe({
-      next: (data) => {
+    this.departmentService.getAllDepartments().subscribe({
+      next: (data: Department[]) => {
         console.log('Departamentos cargados:', data);
         this.departamentos = data;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error al cargar departamentos:', error);
         this.errorMessage = 'Error al cargar los departamentos. Por favor, inténtelo de nuevo.';
       }
@@ -56,7 +56,7 @@ export class EditarCargoComponent implements OnInit {
     this.successMessage = '';
 
     this.cargoService.getCargo(this.cargoId).subscribe({
-      next: (cargo) => {
+      next: (cargo: Position) => {
         console.log('Cargo cargado:', cargo);        this.cargoForm.patchValue({
           name: cargo.name,
           description: cargo.description,
@@ -65,7 +65,7 @@ export class EditarCargoComponent implements OnInit {
         });
         this.loading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error al cargar el cargo:', error);
         this.errorMessage = 'Error al cargar el cargo. Por favor, intente nuevamente.';
         this.loading = false;
@@ -92,7 +92,7 @@ export class EditarCargoComponent implements OnInit {
           this.router.navigate(['/dashboard/admin/configuracion/cargos']);
         }, 1500);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error al actualizar el cargo:', error);
         this.errorMessage = 'Error al actualizar el cargo. Por favor, intente nuevamente.';
         this.submitting = false;

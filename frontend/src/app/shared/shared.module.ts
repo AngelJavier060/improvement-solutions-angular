@@ -7,14 +7,13 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { LoginModalComponent } from './components/login-modal/login-modal.component';
 import { TestimonioCardComponent } from './components/testimonio-card/testimonio-card.component';
 import { ForgotPasswordModalComponent } from './components/forgot-password-modal/forgot-password-modal.component';
-import { TestUploadComponent } from './components/test-upload/test-upload.component';
 import { NotificationComponent } from './components/notification/notification.component';
 
-@NgModule({  declarations: [
+@NgModule({
+  declarations: [
     LoginModalComponent,
     TestimonioCardComponent,
     ForgotPasswordModalComponent,
-    TestUploadComponent,
     NotificationComponent
   ],
   imports: [
@@ -22,14 +21,14 @@ import { NotificationComponent } from './components/notification/notification.co
     ReactiveFormsModule,
     RouterModule,
     NgbModule
-  ],  exports: [
+  ],
+  exports: [
     CommonModule,
     RouterModule,
     NgbModule,    
     LoginModalComponent,
     TestimonioCardComponent,
     ForgotPasswordModalComponent,
-    TestUploadComponent,
     NotificationComponent
   ]
 })

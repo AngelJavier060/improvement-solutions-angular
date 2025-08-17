@@ -28,9 +28,6 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
-    
-    @Autowired
-    private TokenValidationService tokenValidationService;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
@@ -49,26 +46,17 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
             String jwt = parseJwt(request);
             logger.debug("Token JWT encontrado: {}", jwt != null ? "Sí" : "No");
 
-            if (jwt != null && jwtTokenProvider.validateToken(jwt)) {                try {
-                    // Validar la sesión activa
-                    tokenValidationService.validateSession(jwt);
-                    
-                    String username = jwtTokenProvider.getUsernameFromToken(jwt);
-                    logger.debug("Usuario del token: {}", username);
+            if (jwt != null && jwtTokenProvider.validateToken(jwt)) {
+                String username = jwtTokenProvider.getUsernameFromToken(jwt);
+                logger.debug("Usuario del token: {}", username);
 
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                    UsernamePasswordAuthenticationToken authentication = 
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                UsernamePasswordAuthenticationToken authentication = 
+                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    logger.debug("Usuario autenticado correctamente: {}", username);
-                } catch (RuntimeException e) {
-                    logger.error("Error validando sesión: {}", e.getMessage());
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("{\"error\": \"Sesión inválida o expirada\"}");
-                    return;
-                }
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                logger.debug("Usuario autenticado correctamente: {}", username);
             }
         } catch (Exception e) {
             logger.error("Error procesando autenticación JWT: {}", e.getMessage());

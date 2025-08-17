@@ -72,7 +72,7 @@
                 No se encontraron usuarios
               </td>
             </tr>
-            <tr *ngFor="let user of pagedUsers" (click)="viewUserDetails(user.id)" style="cursor: pointer;">              <td>                  <div class="avatar-container" (click)="$event.stopPropagation()">
+            <tr *ngFor="let user of pagedUsers" style="cursor: pointer;">              <td>                  <div class="avatar-container" (click)="$event.stopPropagation()">
                   <div class="user-avatar-wrapper">                    <img 
                       [src]="getProfilePictureUrl(user)" 
                       alt="Profile" 

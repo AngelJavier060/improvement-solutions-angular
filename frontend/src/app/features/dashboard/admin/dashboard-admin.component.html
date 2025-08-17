@@ -35,7 +35,7 @@
             </a>
           </li>
           <li>
-            <a routerLink="/dashboard/admin/usuarios" routerLinkActive="active">
+            <a href="javascript:void(0)" (click)="navigateToUsers($event)" [class.active]="router.url.includes('/usuarios')">
               <i class="fas fa-users"></i> Usuarios
             </a>
           </li>

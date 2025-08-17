@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { DepartamentoService } from '../../../../../services/departamento.service';
+import { DepartmentService } from '../../../../../services/department.service';
 import { Department } from '../../../../../models/department.model';
 
 @Component({
@@ -12,7 +12,7 @@ export class ListaDepartamentoComponent implements OnInit {
   loading = false;
   error: string | null = null;
 
-  constructor(private departamentoService: DepartamentoService) { }
+  constructor(private departmentService: DepartmentService) { }
 
   ngOnInit(): void {
     console.log('ListaDepartamentoComponent - ngOnInit() - Iniciando componente');
@@ -24,7 +24,7 @@ export class ListaDepartamentoComponent implements OnInit {
     this.error = null;
     console.log('ListaDepartamentoComponent - cargarDepartamentos() - Solicitando datos...');
     
-    this.departamentoService.getDepartamentos().subscribe({
+    this.departmentService.getAllDepartments().subscribe({
       next: (data) => {
         console.log('ListaDepartamentoComponent - Datos recibidos:', data);
         this.departamentos = data;
@@ -44,7 +44,7 @@ export class ListaDepartamentoComponent implements OnInit {
 
   eliminarDepartamento(id: number): void {
     if (confirm('¿Está seguro que desea eliminar este departamento?')) {
-      this.departamentoService.deleteDepartamento(id).subscribe({
+      this.departmentService.deleteDepartment(id).subscribe({
         next: () => {
           this.cargarDepartamentos();
         },

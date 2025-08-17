@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ObligationMatrixService } from 'src/app/services/obligation-matrix.service';
-import { DepartamentoService } from 'src/app/services/departamento.service';
+import { DepartmentService } from 'src/app/services/department.service';
 import { ObligationMatrix } from 'src/app/models/obligation-matrix.model';
 import { Department } from 'src/app/models/department.model';
 
@@ -20,7 +20,7 @@ export class MatrizLegalFormComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private obligationMatrixService: ObligationMatrixService,
-    private departamentoService: DepartamentoService
+    private departmentService: DepartmentService
   ) {
     this.form = this.fb.group({
       description: ['', Validators.required],
@@ -35,11 +35,11 @@ export class MatrizLegalFormComponent implements OnInit {
   }
 
   loadDepartamentos(): void {
-    this.departamentoService.getDepartamentos().subscribe({
-      next: (data) => {
+    this.departmentService.getAllDepartments().subscribe({
+      next: (data: Department[]) => {
         this.departamentos = data;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error al cargar departamentos:', error);
         this.error = 'No se pudieron cargar los departamentos.';
       }
@@ -59,12 +59,12 @@ export class MatrizLegalFormComponent implements OnInit {
     };
     
     this.obligationMatrixService.createObligationMatrix(payload).subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.success = true;
         this.form.reset();
         this.loading = false;
       },
-      error: (err) => {
+      error: (err: any) => {
         this.error = 'No se pudo guardar la matriz de obligación. Por favor, intente nuevamente.';
         this.loading = false;
       }

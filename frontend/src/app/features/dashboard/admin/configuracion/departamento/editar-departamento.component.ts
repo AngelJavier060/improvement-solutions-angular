@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DepartamentoService } from '../../../../../services/departamento.service';
+import { DepartmentService } from '../../../../../services/department.service';
 
 @Component({
   selector: 'app-editar-departamento',
@@ -19,9 +19,9 @@ export class EditarDepartamentoComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private departamentoService: DepartamentoService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private departmentService: DepartmentService
   ) {
     this.departamentoForm = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(50)]],
@@ -49,7 +49,7 @@ export class EditarDepartamentoComponent implements OnInit {
     this.loading = true;
     console.log(`EditarDepartamentoComponent - cargarDepartamento() - Cargando departamento ID: ${this.departamentoId}`);
     
-    this.departamentoService.getDepartamento(this.departamentoId).subscribe({
+    this.departmentService.getDepartmentById(this.departamentoId).subscribe({
       next: (departamento) => {
         console.log('EditarDepartamentoComponent - Datos recibidos:', departamento);
         this.departamentoForm.patchValue(departamento);
@@ -81,7 +81,7 @@ export class EditarDepartamentoComponent implements OnInit {
 
     console.log('EditarDepartamentoComponent - onSubmit() - Enviando datos:', this.departamentoForm.value);
 
-    this.departamentoService.updateDepartamento(this.departamentoId, this.departamentoForm.value).subscribe({
+    this.departmentService.updateDepartment(this.departamentoId, this.departamentoForm.value).subscribe({
       next: (response) => {
         console.log('EditarDepartamentoComponent - Departamento actualizado exitosamente:', response);
         this.successMessage = 'Departamento actualizado exitosamente';

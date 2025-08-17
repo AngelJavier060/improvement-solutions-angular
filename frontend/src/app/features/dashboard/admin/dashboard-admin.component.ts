@@ -35,4 +35,17 @@ export class DashboardAdminComponent implements OnInit {
   logout(): void {
     this.authService.logout();
   }
+
+  navigateToUsers(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    console.log('Navegando a usuarios...');
+    this.router.navigate(['/dashboard/admin/usuarios']).then(success => {
+      if (success) {
+        console.log('Navegación exitosa a usuarios');
+      } else {
+        console.error('Error en la navegación a usuarios');
+      }
+    });
+  }
 }

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CargoService } from '../../../../../services/cargo.service';
-import { DepartamentoService } from '../../../../../services/departamento.service';
+import { DepartmentService } from '../../../../../services/department.service';
 import { Department } from '../../../../../models/department.model';
 import { Position } from '../../../../../models/position.model';
 
@@ -19,7 +19,7 @@ export class NuevoCargoComponent implements OnInit {
   departamentos: Department[] = [];  constructor(
     private fb: FormBuilder,
     private cargoService: CargoService,
-    private departamentoService: DepartamentoService,
+    private departmentService: DepartmentService,
     private router: Router
   ) {
     this.currentUrl = this.router.url;
@@ -36,7 +36,7 @@ export class NuevoCargoComponent implements OnInit {
   }
   
   cargarDepartamentos(): void {
-    this.departamentoService.getDepartamentos().subscribe({
+    this.departmentService.getAllDepartments().subscribe({
       next: (data) => {
         console.log('Departamentos cargados:', data);
         this.departamentos = data;

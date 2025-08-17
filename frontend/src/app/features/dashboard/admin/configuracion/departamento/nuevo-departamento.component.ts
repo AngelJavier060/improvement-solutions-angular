@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { DepartamentoService } from '../../../../../services/departamento.service';
+import { DepartmentService } from '../../../../../services/department.service';
 
 @Component({
   selector: 'app-nuevo-departamento',
@@ -18,7 +18,7 @@ export class NuevoDepartamentoComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private departamentoService: DepartamentoService,
+    private departmentService: DepartmentService,
     private router: Router
   ) {
     this.currentUrl = this.router.url;
@@ -47,8 +47,8 @@ export class NuevoDepartamentoComponent implements OnInit {
 
     console.log('NuevoDepartamentoComponent - onSubmit() - Enviando datos:', this.departamentoForm.value);
 
-    this.departamentoService.createDepartamento(this.departamentoForm.value).subscribe({
-      next: (response) => {
+    this.departmentService.createDepartment(this.departamentoForm.value).subscribe({
+      next: (response: any) => {
         console.log('NuevoDepartamentoComponent - Departamento creado exitosamente:', response);
         this.successMessage = 'Departamento creado exitosamente';
         this.submitting = false;
@@ -60,7 +60,7 @@ export class NuevoDepartamentoComponent implements OnInit {
           this.router.navigate(['/dashboard/admin/configuracion/departamentos']);
         }, 2000);
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error al crear departamento:', err);
         if (err.status === 403) {
           this.error = 'No tiene permisos para crear departamentos. Esta acción requiere privilegios de administrador.';
