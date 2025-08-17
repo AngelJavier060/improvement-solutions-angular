@@ -3,10 +3,10 @@ services:
   mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: db_improvement_solutions
-      MYSQL_USER: improvement_user
-      MYSQL_PASSWORD: improvement_password
+  MYSQL_ROOT_PASSWORD: root
+  MYSQL_DATABASE: db_improvement_solutions
+  MYSQL_USER: admin
+  MYSQL_PASSWORD: Alexandra1
     ports:
       - "3307:3306"
     volumes:
