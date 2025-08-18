@@ -3,7 +3,7 @@
  */
 
 // URL del servicio backend
-const API_URL = 'http://localhost:8080/api/files/upload/logos';
+const API_URL = 'http://localhost:8081/api/files/upload/logos';
 
 // Token JWT para autorización (reemplaza esto con un token válido)
 const AUTH_TOKEN = 'Bearer tu_token_jwt_aquí';

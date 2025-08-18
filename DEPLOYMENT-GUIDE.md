@@ -56,16 +56,16 @@ docker-compose logs backend
 docker-compose logs mysql
 
 # Verificar puertos
-netstat -tlnp | grep -E "8080|8089|3307"
+netstat -tlnp | grep -E "8001|8089|3307"
 ```
 
-### 5. 🌐 Acceder a los servicios
+### 5. Acceder a los servicios
 
-- **Frontend**: http://tu-servidor:8080
+- **Frontend**: http://tu-servidor:8001
 - **Backend**: http://tu-servidor:8089  
 - **MySQL**: tu-servidor:3307
 
-### 6. 🐛 Solución de problemas comunes
+### 6. Solución de problemas comunes
 
 #### Error de permisos:
 ```bash
@@ -85,22 +85,21 @@ chmod +x mvnw
 ./mvnw clean package -DskipTests
 ```
 
-### 7. 🔄 Configuración de puertos independientes
+### 7. Configuración de puertos independientes
 
 Este proyecto usa puertos independientes para no interferir con pollos-chanchos-Angular:
 
-- **Frontend**: 8080 (vs 80 de pollos-chanchos)
+- **Frontend**: 8001 (vs 80 de pollos-chanchos)
 - **Backend**: 8089 (vs 8088 de pollos-chanchos)  
 - **MySQL**: 3307 (vs 3306 de pollos-chanchos)
 
-## ✅ Verificación final
+## Verificación final
 
 Cuando todo esté funcionando, deberías ver:
 
 ```bash
 $ docker ps
 CONTAINER ID   IMAGE                                    PORTS                                         NAMES
-xxx            improvement-solutions-angular-frontend   0.0.0.0:8080->80/tcp, 0.0.0.0:8443->443/tcp  improvement-solutions-angular-frontend-1
+xxx            improvement-solutions-angular-frontend   0.0.0.0:8001->80/tcp, 0.0.0.0:8443->443/tcp  improvement-solutions-angular-frontend-1
 xxx            improvement-solutions-angular-backend    0.0.0.0:8089->8089/tcp                        improvement-solutions-angular-backend-1
 xxx            mysql:8.0                               0.0.0.0:3307->3306/tcp                        improvement-solutions-angular-mysql-1
-```

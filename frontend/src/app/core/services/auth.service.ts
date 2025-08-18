@@ -47,7 +47,7 @@ export class AuthService {
     private http: HttpClient,
     private router: Router
   ) {
-    this.apiUrl = '/api/auth';
+    this.apiUrl = `${environment.apiUrl}/api/auth`;
     console.log('AuthService inicializado con URL de API:', this.apiUrl);
   }
 

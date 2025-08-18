@@ -137,7 +137,7 @@
         };
         
         XMLHttpRequest.prototype.send = function() {
-            if (config.captureAllRequests || this._requestUrl.includes('localhost:8080')) {
+            if (config.captureAllRequests || this._requestUrl.includes('localhost:8081')) {
                 logRequest(this._requestMethod, this._requestUrl);
                 
                 this.addEventListener('load', function() {
@@ -160,7 +160,7 @@
             const method = init && init.method ? init.method : 'GET';
             const url = typeof input === 'string' ? input : input.url;
             
-            if (config.captureAllRequests || url.includes('localhost:8080')) {
+            if (config.captureAllRequests || url.includes('localhost:8081')) {
                 logRequest(method, url);
                 
                 return originalFetch.apply(this, arguments)

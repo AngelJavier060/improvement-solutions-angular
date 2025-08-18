@@ -1,18 +1,18 @@
 { 
   "/api": { 
-    "target": "http://localhost:8089", 
+    "target": "http://localhost:8081", 
     "secure": false, 
     "logLevel": "debug", 
     "changeOrigin": true 
   }, 
   "/animal": { 
-    "target": "http://localhost:8089", 
+    "target": "http://localhost:8081", 
     "secure": false, 
     "logLevel": "debug", 
     "changeOrigin": true 
   }, 
   "/alimento": { 
-    "target": "http://localhost:8089", 
+    "target": "http://localhost:8081", 
     "secure": false, 
     "logLevel": "debug", 
     "changeOrigin": true 

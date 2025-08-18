@@ -25,7 +25,7 @@ public class CorsConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         // Permitir el origen del frontend de manera explícita
-        configuration.addAllowedOrigin("http://localhost:4200");
+        configuration.addAllowedOriginPattern("http://localhost:4200");
         
         // Permitir todos los métodos HTTP necesarios
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"));

@@ -165,7 +165,7 @@ document.body.innerHTML = `
 
 <script>
 // Variables globales
-const apiUrl = 'http://localhost:8080';
+const apiUrl = 'http://localhost:8081';
 const contextPath = '/api/v1';
 let savedToken = localStorage.getItem('auth_token');
 

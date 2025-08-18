@@ -144,7 +144,7 @@ document.body.innerHTML = `
 
 <div class="warning">
     <strong>Importante:</strong> Esta herramienta valida la configuración de CORS y autenticación entre el frontend 
-    Angular (puerto 4200) y el backend Spring Boot (puerto 8080).
+    Angular (puerto 4200) y el backend Spring Boot (puerto 8081).
 </div>
 
 <h2>1. Validación de Endpoints Públicos</h2>
@@ -228,7 +228,7 @@ document.body.innerHTML = `
 <script>
 // Variables globales
 let savedToken = localStorage.getItem('auth_token');
-let baseUrl = 'http://localhost:8080';
+let baseUrl = 'http://localhost:8081';
 
 // Función para probar endpoints públicos
 function testPublicEndpoint(endpoint, resultId) {
