@@ -12,6 +12,9 @@ WORKDIR /app
 # Crear usuario no root
 RUN addgroup -g 1001 appgroup && adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 
+# Instalar utilidades necesarias para healthcheck
+RUN apk add --no-cache curl
+
 # Copiar el JAR construido
 COPY --from=build --chown=appuser:appgroup /app/target/*.jar app.jar
 
@@ -30,4 +33,4 @@ ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:8089/health || exit 1
+  CMD curl -fsS http://localhost:8089/health || exit 1
