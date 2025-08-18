@@ -33,6 +33,7 @@ public class User {
     @Column(nullable = false)
     private String email;    private String name;
     private String phone;
+    @Column(name = "is_active")
     private Boolean active = true;
     
     @Column(name = "profile_picture")
@@ -57,7 +58,7 @@ public class User {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "user_role",
+        name = "user_roles",
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )

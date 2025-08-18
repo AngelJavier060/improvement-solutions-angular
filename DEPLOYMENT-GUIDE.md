@@ -103,3 +103,74 @@ CONTAINER ID   IMAGE                                    PORTS                   
 xxx            improvement-solutions-angular-frontend   0.0.0.0:8001->80/tcp, 0.0.0.0:8443->443/tcp  improvement-solutions-angular-frontend-1
 xxx            improvement-solutions-angular-backend    0.0.0.0:8089->8089/tcp                        improvement-solutions-angular-backend-1
 xxx            mysql:8.0                               0.0.0.0:3307->3306/tcp                        improvement-solutions-angular-mysql-1
+
+## 🔐 Troubleshooting Login (Producción)
+
+Usa esta sección si el login devuelve 403/500 en producción.
+
+- **Verificar tablas/columnas requeridas**
+
+```sql
+SHOW TABLES;
+SHOW COLUMNS FROM users; -- debe existir columna is_active
+SHOW CREATE TABLE users;
+SHOW CREATE TABLE roles;
+SHOW CREATE TABLE user_roles; -- join table de roles
+SHOW CREATE TABLE user_sessions; -- donde se guardan sesiones
+```
+
+- **Crear tabla user_sessions si falta**
+
+```sql
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  device_info VARCHAR(255) NOT NULL,
+  ip_address VARCHAR(100),
+  last_activity TIMESTAMP NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP NOT NULL,
+  CONSTRAINT fk_user_sessions_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+- **Asegurar usuario administrador `javier` activo con roles**
+
+```sql
+-- Roles
+INSERT IGNORE INTO roles (name) VALUES ('ROLE_USER');
+INSERT IGNORE INTO roles (name) VALUES ('ROLE_ADMIN');
+
+-- Usuario 'javier' (password BCrypt de 12345)
+INSERT INTO users (username, email, password, name, phone, is_active, created_at, updated_at)
+SELECT 'javier', 'javierangelmsn@outlook.es', '$2a$10$iyH.Xiv1ASsMqL.yNen/0.1l98vhPF2U/BMJS/HMJQwkcHJtQSQD6', 'Javier', NULL, TRUE, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE username='javier' OR email='javierangelmsn@outlook.es');
+
+UPDATE users SET is_active = TRUE WHERE username='javier' OR email='javierangelmsn@outlook.es';
+
+-- Asignar roles a 'javier'
+SET @u = (SELECT id FROM users WHERE username='javier');
+SET @r_admin = (SELECT id FROM roles WHERE name='ROLE_ADMIN');
+SET @r_user  = (SELECT id FROM roles WHERE name='ROLE_USER');
+INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (@u, @r_admin), (@u, @r_user);
+```
+
+- **Probar endpoints**
+
+```bash
+# Listar usuarios (diagnóstico rápido)
+curl -k https://improvement-solution.com/api/auth/users
+
+# Login
+curl -k -X POST https://improvement-solution.com/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"javier","password":"12345"}'
+```
+
+- **Revisar logs si persiste 500**
+
+```bash
+docker-compose logs --tail=200 backend
+# o dentro del contenedor, revisar /app/logs/application.log
