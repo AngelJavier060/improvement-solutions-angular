@@ -3,12 +3,15 @@ package com.improvementsolutions.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Configuración CORS simplificada y centralizada.
@@ -19,14 +22,24 @@ public class CorsConfig {
 
     /**
      * Configura la fuente de configuración CORS para la aplicación.
-     */    @Bean
+     */
+    @Bean
     @Primary
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${cors.allowed.origins:}") String allowedOriginsProp) {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // Permitir el origen del frontend de manera explícita
-        configuration.addAllowedOriginPattern("http://localhost:4200");
-        
+
+        // Construye la lista de orígenes permitidos a partir de propiedades + localhost
+        List<String> allowedOrigins = Arrays.stream(allowedOriginsProp.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+        // Siempre permitir el localhost de desarrollo
+        if (!allowedOrigins.contains("http://localhost:4200")) {
+            allowedOrigins.add("http://localhost:4200");
+        }
+        configuration.setAllowedOriginPatterns(allowedOrigins);
+
         // Permitir todos los métodos HTTP necesarios
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"));
         
