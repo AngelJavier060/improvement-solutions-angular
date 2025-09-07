@@ -11,11 +11,7 @@ import { AppComponent } from './app.component';
 import { HomeComponent } from './features/home/home.component';
 import { DashboardAdminComponent } from './features/dashboard/admin/dashboard-admin.component';
 import { DashboardUsuarioComponent } from './features/dashboard/usuario/dashboard-usuario.component';
-import { FileUploadComponent } from './components/file-upload/file-upload.component';
-import { FileViewerComponent } from './components/file-viewer/file-viewer.component';
-import { SafePipe } from './pipes/safe.pipe';
 import { SharedModule } from './shared/shared.module';
-import { BusinessFilesComponent } from './components/business-files/business-files.component';
 import { ApiUrlInterceptor } from './core/interceptors/api-url.interceptor';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { AuthGuard } from './core/guards/auth.guard';
@@ -26,11 +22,7 @@ import { FileService } from './services/file.service';
     AppComponent,
     HomeComponent,
     DashboardAdminComponent,
-    DashboardUsuarioComponent,
-    FileUploadComponent,
-    FileViewerComponent,
-    SafePipe,
-    BusinessFilesComponent
+    DashboardUsuarioComponent
   ],
   schemas: [
     CUSTOM_ELEMENTS_SCHEMA
@@ -44,7 +36,8 @@ import { FileService } from './services/file.service';
     ReactiveFormsModule,
     NgbDropdownModule,
     NgbModalModule,
-    SharedModule,    RouterModule.forRoot([
+    SharedModule,
+    RouterModule.forRoot([
       { path: '', component: HomeComponent },
       {
         path: 'dashboard/admin', 
@@ -71,20 +64,17 @@ import { FileService } from './services/file.service';
         component: DashboardUsuarioComponent,
         canActivate: [AuthGuard] 
       },
-      { 
-        path: 'business/files', 
-        component: BusinessFilesComponent,
-        canActivate: [AuthGuard] 
+      {
+        path: 'business',
+        loadChildren: () => import('./features/business/business.module').then(m => m.BusinessModule),
+        canActivate: [AuthGuard]
       },
       {
         path: 'auth',
         loadChildren: () => import('./features/auth/auth.module').then(m => m.AuthModule)
       },
       { path: '**', redirectTo: '' }
-    ]),
-    NgbDropdownModule,
-    NgbModalModule,
-    SharedModule
+    ])
   ],
   providers: [
     FileService,

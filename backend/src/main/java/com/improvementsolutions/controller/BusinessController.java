@@ -1,6 +1,7 @@
 package com.improvementsolutions.controller;
 
 import com.improvementsolutions.model.*;
+import com.improvementsolutions.dto.UserResponseDto;
 import com.improvementsolutions.service.BusinessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -99,6 +100,17 @@ public class BusinessController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/{id}/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Business> getBusinessAdminDetails(@PathVariable Long id) {
+        Business business = businessService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        // El objeto Business ya incluye todas las relaciones gracias a las anotaciones JPA
+        // usuarios, empleados, obligaciones, etc.
+        return ResponseEntity.ok(business);
+    }
+
     @GetMapping("/byUser/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<Business>> getBusinessesByUserId(@PathVariable Long userId) {
@@ -136,6 +148,31 @@ public class BusinessController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/ruc/{ruc}/users/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> addUserToBusinessByRuc(
+            @PathVariable String ruc,
+            @PathVariable Long userId) {
+        Business business = businessService.findByRuc(ruc)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada con RUC: " + ruc));
+        businessService.addUserToBusiness(business.getId(), userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{businessId}/users")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<UserResponseDto>> getUsersByBusiness(@PathVariable Long businessId) {
+        Business business = businessService.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        return ResponseEntity.ok(UserResponseDto.fromUsers(business.getUsers()));
+    }
+
+    @GetMapping("/available-users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<User>> getAvailableUsers() {
+        return ResponseEntity.ok(businessService.getAllUsers());
+    }
+
     @DeleteMapping("/{businessId}/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> removeUserFromBusiness(
@@ -157,5 +194,105 @@ public class BusinessController {
         return businessService.findByRuc(ruc)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // === ENDPOINTS PARA DEPARTAMENTOS ===
+    @PostMapping("/{businessId}/departments/{departmentId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> addDepartmentToBusiness(
+            @PathVariable Long businessId, 
+            @PathVariable Long departmentId) {
+        
+        businessService.addDepartmentToBusiness(businessId, departmentId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Departamento agregado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{businessId}/departments/{departmentId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> removeDepartmentFromBusiness(
+            @PathVariable Long businessId, 
+            @PathVariable Long departmentId) {
+        
+        businessService.removeDepartmentFromBusiness(businessId, departmentId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Departamento eliminado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    // === ENDPOINTS PARA CARGOS ===
+    @PostMapping("/{businessId}/positions/{positionId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> addPositionToBusiness(
+            @PathVariable Long businessId, 
+            @PathVariable Long positionId) {
+        
+        businessService.addPositionToBusiness(businessId, positionId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Cargo agregado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{businessId}/positions/{positionId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> removePositionFromBusiness(
+            @PathVariable Long businessId, 
+            @PathVariable Long positionId) {
+        
+        businessService.removePositionFromBusiness(businessId, positionId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Cargo eliminado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    // === ENDPOINTS PARA TIPOS DE DOCUMENTO ===
+    @PostMapping("/{businessId}/type-documents/{typeDocumentId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> addTypeDocumentToBusiness(
+            @PathVariable Long businessId, 
+            @PathVariable Long typeDocumentId) {
+        
+        businessService.addTypeDocumentToBusiness(businessId, typeDocumentId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Tipo de documento agregado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{businessId}/type-documents/{typeDocumentId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> removeTypeDocumentFromBusiness(
+            @PathVariable Long businessId, 
+            @PathVariable Long typeDocumentId) {
+        
+        businessService.removeTypeDocumentFromBusiness(businessId, typeDocumentId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Tipo de documento eliminado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    // === ENDPOINTS PARA TIPOS DE CONTRATO ===
+    @PostMapping("/{businessId}/type-contracts/{typeContractId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> addTypeContractToBusiness(
+            @PathVariable Long businessId, 
+            @PathVariable Long typeContractId) {
+        
+        businessService.addTypeContractToBusiness(businessId, typeContractId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Tipo de contrato agregado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{businessId}/type-contracts/{typeContractId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> removeTypeContractFromBusiness(
+            @PathVariable Long businessId, 
+            @PathVariable Long typeContractId) {
+        
+        businessService.removeTypeContractFromBusiness(businessId, typeContractId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Tipo de contrato eliminado exitosamente");
+        return ResponseEntity.ok(response);
     }
 }

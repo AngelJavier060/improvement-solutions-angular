@@ -33,7 +33,7 @@ export class ApiUrlInterceptor implements HttpInterceptor {
     
     // Construir la URL completa
     const apiUrl = `${this.baseUrl}${url}`;
-    console.log(`[ApiUrlInterceptor] URL transformada: ${apiUrl}`);
+    console.log(`[ApiUrlInterceptor] URL transformada: ${url}`);
     
     const apiRequest = request.clone({
       url: apiUrl
@@ -41,7 +41,10 @@ export class ApiUrlInterceptor implements HttpInterceptor {
 
     return next.handle(apiRequest).pipe(
       catchError((error: HttpErrorResponse) => {
-        console.log(`[ApiUrlInterceptor] Error ${error.status}: ${error.error}`);
+        // Solo loggear errores reales (no status 200)
+        if (error.status !== 200) {
+          console.log(`[ApiUrlInterceptor] Error ${error.status}: ${error.message || 'Unknown error'}`);
+        }
         return throwError(() => error);
       })
     );

@@ -3,6 +3,7 @@ package com.improvementsolutions.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -31,6 +32,7 @@ public class Role {
     private String description;
     
     @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<User> users = new HashSet<>();
     
     @ManyToMany(fetch = FetchType.LAZY)
@@ -39,6 +41,7 @@ public class Role {
         joinColumns = @JoinColumn(name = "role_id"),
         inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
+    @JsonIgnore
     private Set<Permission> permissions = new HashSet<>();
 
     @Column(name = "created_at")

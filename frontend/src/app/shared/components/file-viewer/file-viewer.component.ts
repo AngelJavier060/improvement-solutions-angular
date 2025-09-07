@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
-import { FileService, FileResponse } from '../../services/file.service';
+import { FileService, FileResponse } from '../../../services/file.service';
 
 @Component({
   selector: 'app-file-viewer',

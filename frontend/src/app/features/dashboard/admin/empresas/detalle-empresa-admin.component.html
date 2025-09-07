@@ -1,0 +1,1076 @@
+<!-- Layout profesional y moderno -->
+<div class="container-fluid p-4" *ngIf="!loading && empresa">
+
+  <!-- Estilos para el comportamiento de expansión -->
+  <style>
+    .card .expanded-content {
+      max-height: 300px;
+      overflow-y: auto;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    .card.expanded {
+      min-height: auto;
+    }
+    
+    .card:not(.expanded) .expanded-content {
+      display: none;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Asegurar que los títulos sean visibles */
+    .card-header h6 {
+      display: block !important;
+      visibility: visible !important;
+      color: white !important;
+      font-weight: bold !important;
+      font-size: 18px !important;
+      line-height: 1.2 !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+    
+    .card-header h6.text-dark {
+      color: #212529 !important;
+    }
+    
+    .card {
+      transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+    }
+  </style>
+  
+  <!-- Header de la empresa con diseño profesional -->
+  <div class="card shadow-lg border-0 mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="card-body text-white">
+      <div class="row align-items-center">
+        <div class="col-auto">
+          <div class="position-relative">
+            <img 
+              [src]="getLogoUrl()" 
+              [alt]="'Logo ' + empresa.name"
+              class="rounded-circle border border-white border-3 shadow"
+              style="width: 100px; height: 100px; object-fit: cover;">
+            <span class="position-absolute bottom-0 end-0 badge bg-success rounded-pill">
+              <i class="fas fa-check"></i>
+            </span>
+          </div>
+        </div>
+        <div class="col flex-grow-1 px-4">
+          <div class="mb-2">
+            <h2 class="mb-1 fw-bold display-6">{{ empresa.name }}</h2>
+            <div class="d-flex align-items-center mb-2">
+              <i class="fas fa-id-card me-2"></i>
+              <span class="h5 mb-0 opacity-75">RUC: {{ empresa.ruc }}</span>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge bg-light text-dark px-3 py-2">
+                <i class="fas fa-building me-1"></i>Empresa Activa
+              </span>
+              <span class="badge bg-success px-3 py-2">
+                <i class="fas fa-shield-alt me-1"></i>Verificada
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-outline-light btn-lg" title="Editar empresa">
+            <i class="fas fa-edit me-2"></i>Editar
+          </button>
+        </div>
+      </div>
+      
+      <!-- Panel de información expandida -->
+      <div class="row mt-4 pt-4 border-top border-light border-opacity-25">
+        <div class="col-lg-3 col-md-6 mb-3">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 40px; height: 40px;">
+                <i class="fas fa-user-tie text-white"></i>
+              </div>
+            </div>
+            <div>
+              <small class="text-white-50 d-block">REPRESENTANTE LEGAL</small>
+              <strong>{{ empresa.representative_legal || 'No especificado' }}</strong>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 40px; height: 40px;">
+                <i class="fas fa-envelope text-white"></i>
+              </div>
+            </div>
+            <div>
+              <small class="text-white-50 d-block">EMAIL</small>
+              <strong>{{ empresa.email || 'No especificado' }}</strong>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 40px; height: 40px;">
+                <i class="fas fa-map-marker-alt text-white"></i>
+              </div>
+            </div>
+            <div>
+              <small class="text-white-50 d-block">DIRECCIÓN</small>
+              <strong>{{ empresa.address || 'No especificado' }}</strong>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 40px; height: 40px;">
+                <i class="fas fa-phone text-white"></i>
+              </div>
+            </div>
+            <div>
+              <small class="text-white-50 d-block">TELÉFONO</small>
+              <strong>{{ empresa.phone || 'No especificado' }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Grid responsivo para las secciones de configuración -->
+  <div class="row g-2 mb-4">
+    <!-- 1. Sección Departamentos -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.departments?.length > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #ff9a9e 0%, #fecfef 100%); min-height: 70px;">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-building text-white" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Departamentos</h6>
+              <small class="text-white-50" style="font-size: 12px;">{{ empresa.departments?.length || 0 }} departamentos</small>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-warning btn-sm w-100" (click)="openAsignDepartmentModal()">
+              <i class="fas fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+          
+          <div *ngIf="empresa.departments?.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let dept of empresa.departments">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-building text-warning me-2" style="font-size: 10px;"></i>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ dept.name }}</span>
+                </div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-outline-danger btn-sm p-1" 
+                          title="Eliminar" 
+                          (click)="removeDepartment(dept.id)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="empresa.departments?.length === 0" class="text-center py-2">
+            <i class="fas fa-building fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin departamentos</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Sección Gestión de documentos -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.type_documents?.length > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); min-height: 70px;">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-file-alt text-white" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Documentos</h6>
+              <small class="text-white-50" style="font-size: 12px;">{{ empresa.type_documents?.length || 0 }} tipos</small>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-primary btn-sm w-100" (click)="openAsignDocumentModal()">
+              <i class="fas fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+          
+          <div *ngIf="empresa.type_documents?.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let doc of empresa.type_documents">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-file-text text-primary me-2" style="font-size: 10px;"></i>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ doc.name }}</span>
+                </div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-outline-danger btn-sm p-1" 
+                          title="Eliminar" 
+                          (click)="removeDocument(doc.id)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="empresa.type_documents?.length === 0" class="text-center py-2">
+            <i class="fas fa-file-alt fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin documentos</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Sección Cargos -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.positions?.length > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #a8edea 0%, #fed6e3 100%); min-height: 70px;">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-briefcase text-dark" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px;">Cargos</h6>
+              <small class="text-dark opacity-75" style="font-size: 12px;">{{ empresa.positions?.length || 0 }} posiciones</small>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-info btn-sm w-100" (click)="openAsignCargoModal()">
+              <i class="fas fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+          
+          <div *ngIf="empresa.positions?.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let cargo of empresa.positions">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-user-tie text-info me-2" style="font-size: 10px;"></i>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ cargo.name }}</span>
+                </div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-outline-danger btn-sm p-1" 
+                          title="Eliminar" 
+                          (click)="removeCargo(cargo.id)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="empresa.positions?.length === 0" class="text-center py-2">
+            <i class="fas fa-briefcase fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin cargos</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Sección Gestionar seguros IESS -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.ieses?.length > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); min-height: 70px;">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-shield-alt text-white" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">IESS</h6>
+              <small class="text-white-50" style="font-size: 12px;">{{ empresa.ieses?.length || 0 }} seguros</small>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-info btn-sm w-100" (click)="openAsignIessModal()">
+              <i class="fas fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+          
+          <div *ngIf="empresa.ieses?.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let ies of empresa.ieses">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-shield-check text-info me-2" style="font-size: 10px;"></i>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ ies.description || ies.code || ies.name }}</span>
+                </div>
+                <button class="btn btn-outline-danger btn-sm p-1" (click)="removeIess(ies.id)" title="Eliminar" style="font-size: 8px;">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="empresa.ieses?.length === 0" class="text-center py-2">
+            <i class="fas fa-shield-alt fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin seguros IESS</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Sección Gestionar contratos -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.type_contracts?.length > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #fa2fe3 0%, #fee140 100%); min-height: 70px;">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-file-contract text-white" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Contratos</h6>
+              <small class="text-white-50" style="font-size: 12px;">{{ empresa.type_contracts?.length || 0 }} contratos</small>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-success btn-sm w-100" (click)="openAsignContractModal()">
+              <i class="fas fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+          
+          <div *ngIf="empresa.type_contracts?.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let contract of empresa.type_contracts">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-handshake text-success me-2" style="font-size: 10px;"></i>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ contract.name }}</span>
+                </div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-outline-danger btn-sm p-1" 
+                          title="Eliminar" 
+                          (click)="removeContract(contract.id)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="empresa.type_contracts?.length === 0" class="text-center py-2">
+            <i class="fas fa-file-contract fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin contratos</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Sección Gestionar usuarios del sistema Empresa -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': users.length > 0}">
+        <div class="card-header bg-gradient p-2" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);">
+          <div class="d-flex align-items-center">
+            <div class="me-2">
+              <div class="bg-white bg-opacity-20 rounded-circle p-1" style="width: 28px; height: 28px;">
+                <i class="fas fa-users-cog text-white" style="font-size: 12px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Usuarios</h6>
+              <small class="text-white-50" style="font-size: 12px;">{{ users.length || 0 }} usuarios</small>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-primary btn-sm w-100" (click)="openCreateUserModal()">
+              <i class="fas fa-user-plus me-1"></i>Crear Usuario
+            </button>
+          </div>
+          
+          <div *ngIf="users.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let user of users">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-user text-primary me-2" style="font-size: 10px;"></i>
+                  <div>
+                    <div class="small fw-semibold text-dark" style="font-size: 11px;">{{ user.name }}</div>
+                    <div class="text-muted" style="font-size: 9px;">{{ user.email }}</div>
+                    <div class="text-muted" style="font-size: 8px;">
+                      <span *ngFor="let role of user.roles; let last = last">
+                        {{ role }}<span *ngIf="!last">, </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1" 
+                          title="Editar" 
+                          (click)="editUser(user)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm p-1" 
+                          title="Eliminar" 
+                          (click)="deleteUser(user)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="users.length === 0" class="text-center py-2">
+            <i class="fas fa-users-cog fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin usuarios</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección Personal (al final como solicitaste) -->
+  <div class="row g-4 mb-4">
+    <div class="col-12">
+      <div class="card shadow border-0 h-100">
+        <div class="card-header bg-gradient" style="background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <div class="me-3">
+                <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 40px; height: 40px;">
+                  <i class="fas fa-users text-white"></i>
+                </div>
+              </div>
+              <div>
+                <h5 class="text-white mb-0 fw-bold">Personal</h5>
+                <small class="text-white-50">{{ empresa.employees?.length || 0 }} empleados</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-4">
+          <!-- Botón de agregar visible y destacado para empleados -->
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="text-muted mb-0">
+              <i class="fas fa-users me-2"></i>Gestionar personal de la empresa
+            </h6>
+            <button class="btn btn-success btn-sm" (click)="openCreateEmployeeModal()">
+              <i class="fas fa-plus me-1"></i>Agregar Empleado
+            </button>
+          </div>
+          
+          <div *ngIf="empresa.employees?.length === 0" class="text-center py-5">
+            <div class="mb-4">
+              <i class="fas fa-users fa-4x text-muted opacity-50"></i>
+            </div>
+            <h5 class="text-muted mb-3">No hay personal registrado</h5>
+            <p class="text-muted mb-4">Aún no hay empleados asignados a esta empresa</p>
+            <button class="btn btn-success btn-lg" (click)="openCreateEmployeeModal()">
+              <i class="fas fa-plus me-2"></i>Agregar primer empleado
+            </button>
+          </div>
+
+          <div *ngIf="empresa.employees?.length > 0" class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="border-0 px-4 py-3">
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-user me-2 text-muted"></i>
+                      Empleado
+                    </div>
+                  </th>
+                  <th class="border-0 py-3">
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-briefcase me-2 text-muted"></i>
+                      Cargo
+                    </div>
+                  </th>
+                  <th class="border-0 py-3">
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-building me-2 text-muted"></i>
+                      Departamento
+                    </div>
+                  </th>
+                  <th class="border-0 py-3">
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-circle me-2 text-muted"></i>
+                      Estado
+                    </div>
+                  </th>
+                  <th class="border-0 text-center py-3">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let employee of empresa.employees" class="border-bottom">
+                  <td class="px-4 py-3">
+                    <div class="d-flex align-items-center">
+                      <div class="position-relative me-3">
+                        <div class="bg-success rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" 
+                             style="width: 45px; height: 45px;">
+                          {{ (employee.name || 'E')?.charAt(0)?.toUpperCase() }}
+                        </div>
+                        <span class="position-absolute bottom-0 end-0 badge bg-primary rounded-pill p-1">
+                          <i class="fas fa-briefcase" style="font-size: 8px;"></i>
+                        </span>
+                      </div>
+                      <div>
+                        <h6 class="mb-0 fw-semibold">{{ employee.name || 'Sin nombre' }}</h6>
+                        <small class="text-muted">{{ employee.email || 'Sin email' }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3">
+                    <span class="badge bg-primary px-3 py-2">
+                      {{ employee.position?.name || 'Sin asignar' }}
+                    </span>
+                  </td>
+                  <td class="py-3">
+                    <span class="badge bg-light text-dark px-3 py-2">
+                      {{ employee.department?.name || 'Sin asignar' }}
+                    </span>
+                  </td>
+                  <td class="py-3">
+                    <span class="badge bg-success px-3 py-2">
+                      <i class="fas fa-check-circle me-1"></i>Activo
+                    </span>
+                  </td>
+                  <td class="text-center py-3">
+                    <div class="btn-group" role="group">
+                      <button class="btn btn-sm btn-outline-primary" title="Editar empleado">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-info" title="Ver perfil">
+                        <i class="fas fa-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+<!-- Estados de carga y error mejorados -->
+<div *ngIf="loading" class="d-flex justify-content-center align-items-center vh-100">
+  <div class="text-center">
+    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <h5 class="text-muted">Cargando detalles de la empresa</h5>
+    <p class="text-muted">Por favor espera un momento...</p>
+  </div>
+</div>
+
+<div *ngIf="error" class="alert alert-danger alert-dismissible fade show shadow" role="alert">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+    <div>
+      <h6 class="alert-heading mb-1">Error al cargar datos</h6>
+      <p class="mb-0">{{ error }}</p>
+    </div>
+  </div>
+  <button type="button" class="btn-close" (click)="error = null"></button>
+</div>
+
+<!-- Modales con diseño profesional -->
+<!-- Modal para crear/editar usuario -->
+<div *ngIf="showUserModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white border-0">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-user-plus me-2"></i>
+          <h5 class="modal-title mb-0">
+            {{ userToEdit ? 'Editar Usuario' : 'Crear Usuario' }}
+          </h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" (click)="showUserModal = false"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="text-center py-4">
+          <i class="fas fa-tools fa-3x text-muted mb-3"></i>
+          <h6 class="text-muted">Funcionalidad en desarrollo</h6>
+          <p class="text-muted small">El formulario de usuario estará disponible próximamente</p>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="showUserModal = false">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="showUserModal = false" disabled>
+          <i class="fas fa-save me-1"></i>Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para asignar departamento -->
+<div *ngIf="showAsignDepartmentModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-warning text-dark border-0">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-building me-2"></i>
+          <h5 class="modal-title mb-0">Asignar Departamento</h5>
+        </div>
+        <button type="button" class="btn-close" (click)="closeAsignDepartmentModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-4">
+          <label for="selectDepartamento" class="form-label fw-semibold">
+            <i class="fas fa-list me-2"></i>Seleccionar Departamentos
+          </label>
+          <select class="form-select form-select-lg" id="selectDepartamento" [(ngModel)]="selectedDepartamentos" multiple size="6">
+            <option *ngFor="let dept of departamentos" [value]="dept.id">
+              <i class="fas fa-building"></i> {{ dept.name }}
+            </option>
+          </select>
+          <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples departamentos
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeAsignDepartmentModal()">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-warning" (click)="asignDepartment()" [disabled]="!selectedDepartamentos.length">
+          <i class="fas fa-plus me-1"></i>Asignar Departamentos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para asignar cargo -->
+<div *ngIf="showAsignCargoModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-info text-white border-0">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-briefcase me-2"></i>
+          <h5 class="modal-title mb-0">Asignar Cargo</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" (click)="showAsignCargoModal = false"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-4">
+          <label for="selectCargo" class="form-label fw-semibold">
+            <i class="fas fa-list me-2"></i>Seleccionar Cargos
+          </label>
+          <select class="form-select form-select-lg" id="selectCargo" [(ngModel)]="selectedCargos" multiple size="6">
+            <option *ngFor="let cargo of cargos" [value]="cargo.id">{{ cargo.name }}</option>
+          </select>
+          <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples cargos
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="showAsignCargoModal = false">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-info" (click)="asignCargo()" [disabled]="!selectedCargos.length">
+          <i class="fas fa-plus me-1"></i>Asignar Cargos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para asignar tipo de documento -->
+<div *ngIf="showAsignDocumentModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white border-0">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-file-alt me-2"></i>
+          <h5 class="modal-title mb-0">Asignar Tipo de Documento</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" (click)="showAsignDocumentModal = false"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-4">
+          <label for="selectTipoDocumento" class="form-label fw-semibold">
+            <i class="fas fa-list me-2"></i>Seleccionar Tipos de Documentos
+          </label>
+          <select class="form-select form-select-lg" id="selectTipoDocumento" [(ngModel)]="selectedTiposDocumentos" multiple size="6">
+            <option *ngFor="let tipo of tiposDocumentos" [value]="tipo.id">{{ tipo.name }}</option>
+          </select>
+          <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples tipos de documentos
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="showAsignDocumentModal = false">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="asignDocument()" [disabled]="!selectedTiposDocumentos.length">
+          <i class="fas fa-plus me-1"></i>Asignar Documentos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para asignar tipo de contrato -->
+<div *ngIf="showAsignContractModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-secondary text-white border-0">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-file-signature me-2"></i>
+          <h5 class="modal-title mb-0">Asignar Tipo de Contrato</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" (click)="showAsignContractModal = false"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-4">
+          <label for="selectTipoContrato" class="form-label fw-semibold">
+            <i class="fas fa-list me-2"></i>Seleccionar Tipos de Contratos
+          </label>
+          <select class="form-select form-select-lg" id="selectTipoContrato" [(ngModel)]="selectedTiposContratos" multiple size="6">
+            <option *ngFor="let tipo of tiposContratos" [value]="tipo.id">{{ tipo.name }}</option>
+          </select>
+          <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples tipos de contratos
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="showAsignContractModal = false">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="asignContract()" [disabled]="!selectedTiposContratos.length">
+          <i class="fas fa-plus me-1"></i>Asignar Contratos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para asignar obligación -->
+<div *ngIf="showAsignObligationModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-warning text-dark border-0">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-clipboard-list me-2"></i>
+          <h5 class="modal-title mb-0">Asignar Obligación</h5>
+        </div>
+        <button type="button" class="btn-close" (click)="showAsignObligationModal = false"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-4">
+          <label for="selectObligacion" class="form-label fw-semibold">
+            <i class="fas fa-list me-2"></i>Seleccionar Obligaciones
+          </label>
+          <select class="form-select form-select-lg" id="selectObligacion" [(ngModel)]="selectedObligacionesMatriz" multiple size="6">
+            <option *ngFor="let obligacion of obligacionesMatriz" [value]="obligacion.id">
+              {{ obligacion.name || obligacion.description }} 
+              <span *ngIf="obligacion.legalRegulation"> - {{ obligacion.legalRegulation }}</span>
+            </option>
+          </select>
+          <div *ngIf="obligacionesMatriz.length === 0" class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            No hay matrices de obligaciones disponibles. Verifique la configuración del sistema.
+          </div>
+          <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples obligaciones
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="showAsignObligationModal = false">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-warning" (click)="asignObligation()" [disabled]="!selectedObligacionesMatriz.length">
+          <i class="fas fa-plus me-1"></i>Asignar Obligaciones
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Asignar IESS -->
+<div *ngIf="showAsignIessModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-shield-alt me-2"></i>Seleccionar Seguros IESS
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="showAsignIessModal = false"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info">
+          <small>
+            <i class="fas fa-info-circle me-2"></i>
+            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples seguros IESS
+          </small>
+        </div>
+        <select class="form-select form-select-lg" id="selectIess" [(ngModel)]="selectedIess" multiple size="6">
+          <option *ngFor="let iess of iessList" [value]="iess.id">{{ iess.description }} - {{ iess.code }}</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="showAsignIessModal = false">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-info" (click)="asignIess()" [disabled]="!selectedIess.length">
+          <i class="fas fa-plus me-1"></i>Asignar IESS
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear Usuario -->
+<div *ngIf="showCreateUserModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-user-plus me-2"></i>{{ isEditingUser ? 'Editar Usuario' : 'Crear Usuario para Empresa' }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeUserModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form #userForm="ngForm">
+          <div class="row">
+            <!-- Nombre -->
+            <div class="col-md-6 mb-3">
+              <label for="nombres" class="form-label fw-semibold">
+                <i class="fas fa-user me-2 text-primary"></i>Nombres *
+              </label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="nombres"
+                name="nombres"
+                [(ngModel)]="newUser.nombres"
+                required
+                placeholder="Ingrese los nombres">
+            </div>
+            
+            <!-- Apellidos -->
+            <div class="col-md-6 mb-3">
+              <label for="apellidos" class="form-label fw-semibold">
+                <i class="fas fa-user me-2 text-primary"></i>Apellidos *
+              </label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="apellidos"
+                name="apellidos"
+                [(ngModel)]="newUser.apellidos"
+                required
+                placeholder="Ingrese los apellidos">
+            </div>
+          </div>
+          
+          <div class="row">
+            <!-- Cédula -->
+            <div class="col-md-6 mb-3">
+              <label for="cedula" class="form-label fw-semibold">
+                <i class="fas fa-id-card me-2 text-primary"></i>Cédula *
+              </label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="cedula"
+                name="cedula"
+                [(ngModel)]="newUser.cedula"
+                required
+                placeholder="Ingrese la cédula"
+                maxlength="10">
+            </div>
+            
+            <!-- Teléfono -->
+            <div class="col-md-6 mb-3">
+              <label for="telefono" class="form-label fw-semibold">
+                <i class="fas fa-phone me-2 text-primary"></i>Número de Teléfono *
+              </label>
+              <input 
+                type="tel" 
+                class="form-control" 
+                id="telefono"
+                name="telefono"
+                [(ngModel)]="newUser.telefono"
+                required
+                placeholder="Ingrese el teléfono">
+            </div>
+          </div>
+          
+          <!-- Correo Electrónico -->
+          <div class="mb-3">
+            <label for="email" class="form-label fw-semibold">
+              <i class="fas fa-envelope me-2 text-primary"></i>Correo Electrónico *
+            </label>
+            <input 
+              type="email" 
+              class="form-control" 
+              id="email"
+              name="email"
+              [(ngModel)]="newUser.email"
+              required
+              placeholder="usuario@ejemplo.com">
+          </div>
+          
+          <div class="row">
+            <!-- Usuario -->
+            <div class="col-md-6 mb-3">
+              <label for="username" class="form-label fw-semibold">
+                <i class="fas fa-user-circle me-2 text-primary"></i>Usuario *
+              </label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="username"
+                name="username"
+                [(ngModel)]="newUser.username"
+                required
+                placeholder="Nombre de usuario">
+            </div>
+            
+            <!-- Contraseña -->
+            <div class="col-md-6 mb-3">
+              <label for="password" class="form-label fw-semibold">
+                <i class="fas fa-lock me-2 text-primary"></i>Contraseña *
+              </label>
+              <div class="input-group">
+                <input 
+                  [type]="showPassword ? 'text' : 'password'" 
+                  class="form-control" 
+                  id="password"
+                  name="password"
+                  [(ngModel)]="newUser.password"
+                  required
+                  placeholder="Contraseña segura">
+                <button 
+                  type="button" 
+                  class="btn btn-outline-secondary" 
+                  (click)="showPassword = !showPassword">
+                  <i class="fas" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Selección de Roles -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">
+              <i class="fas fa-user-shield me-2 text-primary"></i>Roles (Opcional)
+            </label>
+            <div class="row">
+              <div class="col-12">
+                <div class="border rounded p-3 bg-light">
+                  <div class="form-text mb-2">
+                    <small><i class="fas fa-info-circle me-1"></i>Si no selecciona ningún rol, se asignará el rol por defecto "ROLE_USER"</small>
+                  </div>
+                  <div class="row" *ngIf="roles.length > 0">
+                    <div class="col-md-6" *ngFor="let role of roles">
+                      <div class="form-check">
+                        <input 
+                          class="form-check-input" 
+                          type="checkbox" 
+                          [id]="'role-' + role.id"
+                          [value]="role.id"
+                          [checked]="newUser.selectedRoles.includes(role.id)"
+                          (change)="onRoleChange(role.id, $event)">
+                        <label class="form-check-label" [for]="'role-' + role.id">
+                          <strong>{{ role.name }}</strong>
+                          <div class="text-muted small" *ngIf="role.description">
+                            {{ role.description }}
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div *ngIf="roles.length === 0" class="text-muted">
+                    <i class="fas fa-spinner fa-spin me-2"></i>Cargando roles...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="alert alert-info">
+            <small>
+              <i class="fas fa-info-circle me-2"></i>
+              Este usuario tendrá acceso a la empresa <strong>{{ empresa.name }}</strong>
+            </small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <!-- Botón temporal para depurar -->
+        <button type="button" class="btn btn-info btn-sm" (click)="debugFormValidation(userForm)">
+          <i class="fas fa-bug me-1"></i>Debug Form
+        </button>
+        
+        <button type="button" class="btn btn-outline-secondary" (click)="closeUserModal()">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          (click)="createUser()" 
+          [disabled]="!isFormValid()">
+          <i class="fas fa-save me-1"></i>{{ isEditingUser ? 'Actualizar Usuario' : 'Crear Usuario' }}
+        </button>
+        
+        <!-- Información de estado del formulario -->
+        <small class="text-muted d-block mt-2">
+          Form Valid: {{ userForm.form.valid }} | 
+          Required fields: nombres, apellidos, email, username, password
+        </small>
+      </div>
+    </div>
+  </div>
+</div>

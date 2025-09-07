@@ -200,4 +200,114 @@ public class BusinessService {
         
         return businessRepository.save(business);
     }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    // === MÉTODOS PARA DEPARTAMENTOS ===
+    @Transactional
+    public Business addDepartmentToBusiness(Long businessId, Long departmentId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        // Buscar el departamento por ID (asumiendo que tienes un DepartmentRepository)
+        // Por ahora, crearemos una lógica básica
+        Department department = new Department();
+        department.setId(departmentId);
+        
+        business.getDepartments().add(department);
+        business.setUpdatedAt(LocalDateTime.now());
+        
+        return businessRepository.save(business);
+    }
+
+    @Transactional
+    public void removeDepartmentFromBusiness(Long businessId, Long departmentId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        business.getDepartments().removeIf(dept -> dept.getId().equals(departmentId));
+        business.setUpdatedAt(LocalDateTime.now());
+        
+        businessRepository.save(business);
+    }
+
+    // === MÉTODOS PARA CARGOS ===
+    @Transactional
+    public Business addPositionToBusiness(Long businessId, Long positionId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        Position position = new Position();
+        position.setId(positionId);
+        
+        business.getPositions().add(position);
+        business.setUpdatedAt(LocalDateTime.now());
+        
+        return businessRepository.save(business);
+    }
+
+    @Transactional
+    public void removePositionFromBusiness(Long businessId, Long positionId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        business.getPositions().removeIf(pos -> pos.getId().equals(positionId));
+        business.setUpdatedAt(LocalDateTime.now());
+        
+        businessRepository.save(business);
+    }
+
+    // === MÉTODOS PARA TIPOS DE DOCUMENTO ===
+    @Transactional
+    public Business addTypeDocumentToBusiness(Long businessId, Long typeDocumentId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        TypeDocument typeDocument = new TypeDocument();
+        typeDocument.setId(typeDocumentId);
+        
+        business.getTypeDocuments().add(typeDocument);
+        business.setUpdatedAt(LocalDateTime.now());
+        
+        return businessRepository.save(business);
+    }
+
+    @Transactional
+    public void removeTypeDocumentFromBusiness(Long businessId, Long typeDocumentId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        business.getTypeDocuments().removeIf(typeDoc -> typeDoc.getId().equals(typeDocumentId));
+        business.setUpdatedAt(LocalDateTime.now());
+        
+        businessRepository.save(business);
+    }
+
+    // === MÉTODOS PARA TIPOS DE CONTRATO ===
+    @Transactional
+    public Business addTypeContractToBusiness(Long businessId, Long typeContractId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        TypeContract typeContract = new TypeContract();
+        typeContract.setId(typeContractId);
+        
+        business.getTypeContracts().add(typeContract);
+        business.setUpdatedAt(LocalDateTime.now());
+        
+        return businessRepository.save(business);
+    }
+
+    @Transactional
+    public void removeTypeContractFromBusiness(Long businessId, Long typeContractId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        business.getTypeContracts().removeIf(typeCont -> typeCont.getId().equals(typeContractId));
+        business.setUpdatedAt(LocalDateTime.now());
+        
+        businessRepository.save(business);
+    }
 }

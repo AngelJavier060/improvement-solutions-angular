@@ -22,6 +22,10 @@ export class BusinessService {
     return this.http.get<Business>(`${this.apiUrl}/${id}`);
   }
 
+  getBusinessAdminDetails(id: number): Observable<Business> {
+    return this.http.get<Business>(`${this.apiUrl}/${id}/admin`);
+  }
+
   getByUserId(userId: number): Observable<Business[]> {
     return this.http.get<Business[]>(`${this.apiUrl}/byUser/${userId}`);
   }
@@ -45,6 +49,42 @@ export class BusinessService {
 
   removeUserFromBusiness(businessId: number, userId: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${businessId}/users/${userId}`);
+  }
+
+  // === MÉTODOS PARA DEPARTAMENTOS ===
+  addDepartmentToBusiness(businessId: number, departmentId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/departments/${departmentId}`, {});
+  }
+
+  removeDepartmentFromBusiness(businessId: number, departmentId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${businessId}/departments/${departmentId}`);
+  }
+
+  // === MÉTODOS PARA CARGOS ===
+  addPositionToBusiness(businessId: number, positionId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/positions/${positionId}`, {});
+  }
+
+  removePositionFromBusiness(businessId: number, positionId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${businessId}/positions/${positionId}`);
+  }
+
+  // === MÉTODOS PARA TIPOS DE DOCUMENTO ===
+  addTypeDocumentToBusiness(businessId: number, typeDocumentId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/type-documents/${typeDocumentId}`, {});
+  }
+
+  removeTypeDocumentFromBusiness(businessId: number, typeDocumentId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${businessId}/type-documents/${typeDocumentId}`);
+  }
+
+  // === MÉTODOS PARA TIPOS DE CONTRATO ===
+  addTypeContractToBusiness(businessId: number, typeContractId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/type-contracts/${typeContractId}`, {});
+  }
+
+  removeTypeContractFromBusiness(businessId: number, typeContractId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${businessId}/type-contracts/${typeContractId}`);
   }
 
   // Métodos públicos

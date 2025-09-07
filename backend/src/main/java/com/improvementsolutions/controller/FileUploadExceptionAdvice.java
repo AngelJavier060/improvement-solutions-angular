@@ -56,6 +56,17 @@ public class FileUploadExceptionAdvice {
                 ));
     }
     
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<?> handleAccessDeniedException(org.springframework.security.access.AccessDeniedException exc) {
+        logger.error("❌ Acceso denegado: {}", exc.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(
+                    "Acceso denegado",
+                    "No tienes permisos para acceder a este recurso",
+                    "ACCESS_DENIED"
+                ));
+    }
+    
     @Data
     @AllArgsConstructor
     private static class ErrorResponse {

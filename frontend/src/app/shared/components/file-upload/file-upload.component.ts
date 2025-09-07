@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FileService, FileResponse } from '../../services/file.service';
+import { FileService, FileResponse } from '../../../services/file.service';
 import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
@@ -10,7 +10,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 export class FileUploadComponent {
   @Input() directory: string | null = null;
   @Input() accept: string = '*';
+  @Input() acceptedFileTypes: string = '*';
   @Input() maxSize: number = 10 * 1024 * 1024; // 10MB por defecto
+  @Input() maxFileSize: number = 10 * 1024 * 1024; // 10MB por defecto
   
   @Output() fileSelected = new EventEmitter<File>();
   @Output() fileUploaded = new EventEmitter<FileResponse>();
@@ -30,18 +32,20 @@ export class FileUploadComponent {
     }
     
     // Validar tamaño del archivo
-    if (file.size > this.maxSize) {
-      this.uploadError.emit(`El archivo es demasiado grande. El tamaño máximo es ${this.maxSize / 1024 / 1024}MB`);
+    const maxSizeToUse = this.maxFileSize || this.maxSize;
+    if (file.size > maxSizeToUse) {
+      this.uploadError.emit(`El archivo es demasiado grande. El tamaño máximo es ${maxSizeToUse / 1024 / 1024}MB`);
       return;
     }
     
     // Validar tipo de archivo si es necesario
-    if (this.accept !== '*') {
+    const acceptTypesToUse = this.acceptedFileTypes || this.accept;
+    if (acceptTypesToUse !== '*') {
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
-      const acceptedTypes = this.accept.split(',').map(type => type.trim().toLowerCase());
+      const acceptedTypes = acceptTypesToUse.split(',').map(type => type.trim().toLowerCase());
       
       if (!acceptedTypes.includes('.' + fileExtension)) {
-        this.uploadError.emit(`Tipo de archivo no permitido. Tipos aceptados: ${this.accept}`);
+        this.uploadError.emit(`Tipo de archivo no permitido. Tipos aceptados: ${acceptTypesToUse}`);
         return;
       }
     }

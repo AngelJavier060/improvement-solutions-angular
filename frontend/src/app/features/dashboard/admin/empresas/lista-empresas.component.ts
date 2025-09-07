@@ -88,6 +88,7 @@ export class ListaEmpresasComponent implements OnInit {
     
     this.businessService.getAll().subscribe({
       next: (data) => {
+        console.log('Empresas cargadas exitosamente:', data.length);
         this.empresas = data;
         this.empresasFiltradas = [...data];
         this.totalEmpresas = data.length;

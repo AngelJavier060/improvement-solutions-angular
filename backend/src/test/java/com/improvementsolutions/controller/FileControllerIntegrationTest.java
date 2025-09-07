@@ -6,6 +6,7 @@ import com.improvementsolutions.dto.auth.LoginRequestDto;
 import com.improvementsolutions.dto.auth.LoginResponseDto;
 import com.improvementsolutions.service.AuthService;
 import com.improvementsolutions.storage.StorageService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,9 +22,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.io.IOException;
 
 import static org.hamcrest.Matchers.containsString;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -56,6 +58,12 @@ class FileControllerIntegrationTest {
         
         LoginResponseDto response = authService.authenticateUser(loginRequest, "Test Device", "127.0.0.1");
         authToken = "Bearer " + response.getToken();
+    }
+    
+    @AfterEach
+    void tearDown() {
+        // Limpiar el contexto de seguridad después de cada test
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -106,8 +114,11 @@ class FileControllerIntegrationTest {
 
     @Test
     void shouldFailWithoutAuthentication() throws Exception {
+        // Asegurar que el SecurityContext esté completamente limpio
+        SecurityContextHolder.clearContext();
+        
         mockMvc.perform(get("/api/files/download/{filename}", "test.txt"))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isForbidden()); // 403 Forbidden es correcto para endpoints protegidos sin autenticación
     }    @Test
     void shouldReturnNotFoundForNonExistentFile() throws Exception {
 

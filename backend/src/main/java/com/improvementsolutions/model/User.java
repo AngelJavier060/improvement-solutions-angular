@@ -3,6 +3,7 @@ package com.improvementsolutions.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.BatchSize;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -70,6 +71,7 @@ public class User {
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "business_id")
     )
+    @JsonIgnore
     private Set<Business> businesses = new HashSet<>();
 
     public void addRole(Role role) {

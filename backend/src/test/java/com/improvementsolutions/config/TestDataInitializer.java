@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,8 +39,8 @@ public class TestDataInitializer {
         lastUsedId = counter.incrementAndGet();
             
         // Inicializar roles para esta prueba
-        Role adminRole = createRole("ROLE_ADMIN_" + lastUsedId, "Rol de administrador para pruebas");
-        Role userRole = createRole("ROLE_USER_" + lastUsedId, "Rol de usuario para pruebas");
+        Role adminRole = createRole("ROLE_ADMIN", "Rol de administrador para pruebas");
+        Role userRole = createRole("ROLE_USER", "Rol de usuario para pruebas");
         Role testRole = createRole("ROLE_TEST_" + lastUsedId, "Rol específico para pruebas");
             
         // Crear usuario administrador de prueba con nombre único
@@ -68,6 +69,12 @@ public class TestDataInitializer {
     }
     
     private Role createRole(String name, String description) {
+        // Verificar si el rol ya existe
+        Optional<Role> existingRoleOpt = roleRepository.findByName(name);
+        if (existingRoleOpt.isPresent()) {
+            return existingRoleOpt.get();
+        }
+        
         Role role = new Role();
         role.setName(name);
         role.setDescription(description);

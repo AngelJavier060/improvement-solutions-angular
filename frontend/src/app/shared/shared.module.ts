@@ -8,13 +8,21 @@ import { LoginModalComponent } from './components/login-modal/login-modal.compon
 import { TestimonioCardComponent } from './components/testimonio-card/testimonio-card.component';
 import { ForgotPasswordModalComponent } from './components/forgot-password-modal/forgot-password-modal.component';
 import { NotificationComponent } from './components/notification/notification.component';
+import { BusinessFilesComponent } from './components/business-files/business-files.component';
+import { FileUploadComponent } from './components/file-upload/file-upload.component';
+import { FileViewerComponent } from './components/file-viewer/file-viewer.component';
+import { SafePipe } from '../pipes/safe.pipe';
 
 @NgModule({
   declarations: [
     LoginModalComponent,
     TestimonioCardComponent,
     ForgotPasswordModalComponent,
-    NotificationComponent
+    NotificationComponent,
+    BusinessFilesComponent,
+    FileUploadComponent,
+    FileViewerComponent,
+    SafePipe
   ],
   imports: [
     CommonModule,
@@ -29,7 +37,11 @@ import { NotificationComponent } from './components/notification/notification.co
     LoginModalComponent,
     TestimonioCardComponent,
     ForgotPasswordModalComponent,
-    NotificationComponent
+    NotificationComponent,
+    BusinessFilesComponent,
+    FileUploadComponent,
+    FileViewerComponent,
+    SafePipe
   ]
 })
 export class SharedModule { }

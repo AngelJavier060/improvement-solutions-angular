@@ -57,6 +57,11 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 logger.debug("Usuario autenticado correctamente: {}", username);
+            } else if (jwt != null) {
+                // Token presente pero inválido
+                logger.debug("Token JWT inválido");
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token JWT inválido");
+                return;
             }
         } catch (Exception e) {
             logger.error("Error procesando autenticación JWT: {}", e.getMessage());

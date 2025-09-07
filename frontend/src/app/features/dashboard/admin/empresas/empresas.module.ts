@@ -9,7 +9,9 @@ import { ListaEmpresasComponent } from './lista-empresas.component';
 import { NuevaEmpresaComponent } from './nueva-empresa.component';
 import { EditarEmpresaComponent } from './editar-empresa.component';
 import { DetalleEmpresaComponent } from './detalle-empresa.component';
+import { DetalleEmpresaAdminComponent } from './detalle-empresa-admin.component';
 import { DashboardEmpresasComponent } from './dashboard-empresas.component';
+import { UserModalComponent } from './user-modal/user-modal.component';
 import { EmpresasRoutingModule } from './empresas-routing.module';
 import { SharedModule } from '../../../../shared/shared.module';
 
@@ -19,7 +21,9 @@ import { SharedModule } from '../../../../shared/shared.module';
     NuevaEmpresaComponent,
     EditarEmpresaComponent,
     DetalleEmpresaComponent,
-    DashboardEmpresasComponent
+    DetalleEmpresaAdminComponent,
+    DashboardEmpresasComponent,
+    UserModalComponent
   ],
   imports: [
     CommonModule,

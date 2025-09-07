@@ -9,7 +9,7 @@
       type="file" 
       id="file-input" 
       class="hidden-input"
-      [accept]="accept" 
+      [accept]="acceptedFileTypes || accept" 
       (change)="onFileSelected($event)" 
       [disabled]="uploading"
     >
@@ -18,7 +18,7 @@
   <div class="file-details" *ngIf="selectedFile">
     <div class="file-info">
       <span class="file-name">{{ selectedFile.name }}</span>
-      <span class="file-size">{{ (selectedFile.size / 1024).toFixed(2) }} KB</span>
+      <span class="file-size">{{ selectedFile ? (selectedFile.size / 1024).toFixed(2) : 0 }} KB</span>
     </div>
     <div class="file-actions">
       <button 

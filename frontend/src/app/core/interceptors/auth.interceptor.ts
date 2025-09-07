@@ -76,8 +76,12 @@ export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas pú
       }
     }
 
-    return next.handle(request).pipe(      catchError((error: HttpErrorResponse) => {
-        console.error('[AuthInterceptor] Error:', error.status, 'URL:', request.url);
+    return next.handle(request).pipe(
+      catchError((error: HttpErrorResponse) => {
+        // Solo loggear errores reales (no status 200)
+        if (error.status !== 200) {
+          console.error('[AuthInterceptor] Error:', error.status, 'URL:', request.url);
+        }
         
         if (error.status === 403) {
           console.error('[AuthInterceptor] Error de permisos:', error.error?.message || 'Acceso denegado');

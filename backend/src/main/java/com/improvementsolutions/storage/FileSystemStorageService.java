@@ -181,7 +181,7 @@ public class FileSystemStorageService implements StorageService {
             if (resource.exists() || resource.isReadable()) {
                 return resource;
             } else {
-                throw new StorageException("No se pudo leer el archivo: " + filename);
+                throw new StorageFileNotFoundException("No se pudo encontrar el archivo: " + filename);
             }
         } catch (MalformedURLException e) {
             throw new StorageException("No se pudo leer el archivo: " + filename, e);
@@ -197,7 +197,7 @@ public class FileSystemStorageService implements StorageService {
             if (resource.exists() || resource.isReadable()) {
                 return resource;
             } else {
-                throw new StorageException("No se pudo leer el archivo: " + directory + "/" + filename);
+                throw new StorageFileNotFoundException("No se pudo encontrar el archivo: " + directory + "/" + filename);
             }
         } catch (MalformedURLException e) {
             throw new StorageException("No se pudo leer el archivo: " + directory + "/" + filename, e);

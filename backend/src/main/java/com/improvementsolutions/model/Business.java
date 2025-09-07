@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -67,9 +68,11 @@ public class Business {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
+    @JsonIgnore
     private User createdBy;
 
     @OneToMany(mappedBy = "business", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<BusinessEmployee> employees = new ArrayList<>();
     
     @ManyToMany(mappedBy = "businesses", fetch = FetchType.LAZY)
@@ -81,6 +84,7 @@ public class Business {
         joinColumns = @JoinColumn(name = "business_id"),
         inverseJoinColumns = @JoinColumn(name = "position_id")
     )
+    @JsonIgnore
     private Set<Position> positions = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -89,6 +93,7 @@ public class Business {
         joinColumns = @JoinColumn(name = "business_id"),
         inverseJoinColumns = @JoinColumn(name = "type_contract_id")
     )
+    @JsonIgnore
     private Set<TypeContract> typeContracts = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -97,6 +102,7 @@ public class Business {
         joinColumns = @JoinColumn(name = "business_id"),
         inverseJoinColumns = @JoinColumn(name = "type_document_id")
     )
+    @JsonIgnore
     private Set<TypeDocument> typeDocuments = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -105,6 +111,7 @@ public class Business {
         joinColumns = @JoinColumn(name = "business_id"),
         inverseJoinColumns = @JoinColumn(name = "department_id")
     )
+    @JsonIgnore
     private Set<Department> departments = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -113,6 +120,7 @@ public class Business {
         joinColumns = @JoinColumn(name = "business_id"),
         inverseJoinColumns = @JoinColumn(name = "iess_id")
     )
+    @JsonIgnore
     private Set<Iess> iessItems = new HashSet<>();
 
     @PrePersist
