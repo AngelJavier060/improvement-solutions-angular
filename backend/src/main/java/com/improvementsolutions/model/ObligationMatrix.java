@@ -35,4 +35,14 @@ public class ObligationMatrix {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    // Getter virtual para name que usa legalCompliance
+    public String getName() {
+        return this.legalCompliance;
+    }
+    
+    // Setter virtual para name que actualiza legalCompliance
+    public void setName(String name) {
+        this.legalCompliance = name;
+    }
 }

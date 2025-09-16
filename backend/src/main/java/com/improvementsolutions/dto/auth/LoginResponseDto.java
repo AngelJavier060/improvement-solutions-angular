@@ -31,6 +31,7 @@ public class LoginResponseDto {
         private String username;
         private String email;
         private List<String> roles;
+        private List<BusinessInfoDto> businesses;
         
         public UserInfoDto() {
         }
@@ -40,6 +41,26 @@ public class LoginResponseDto {
             this.username = username;
             this.email = email;
             this.roles = roles;
+        }
+    }
+    
+    @Data
+    public static class BusinessInfoDto {
+        private Long id;
+        private String name;
+        private String ruc;
+        private String email;
+        private String phone;
+        
+        public BusinessInfoDto() {
+        }
+        
+        public BusinessInfoDto(Long id, String name, String ruc, String email, String phone) {
+            this.id = id;
+            this.name = name;
+            this.ruc = ruc;
+            this.email = email;
+            this.phone = phone;
         }
     }
 }

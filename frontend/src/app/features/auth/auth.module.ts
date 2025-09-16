@@ -12,6 +12,7 @@ const routes: Routes = [
     path: 'reset-password', 
     component: ResetPasswordComponent 
   }
+  // Los componentes standalone ahora se cargan desde app.module.ts
   // Temporalmente comentamos estas rutas
   // {
   //   path: 'auth-bypass',
@@ -26,6 +27,7 @@ const routes: Routes = [
 @NgModule({
   declarations: [
     ResetPasswordComponent
+    // Los componentes standalone ya no van aquí
     // Temporalmente comentamos este componente
     // AuthBypassComponent
   ],

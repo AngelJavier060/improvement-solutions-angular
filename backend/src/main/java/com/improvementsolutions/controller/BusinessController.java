@@ -3,6 +3,10 @@ package com.improvementsolutions.controller;
 import com.improvementsolutions.model.*;
 import com.improvementsolutions.dto.UserResponseDto;
 import com.improvementsolutions.service.BusinessService;
+import com.improvementsolutions.repository.IessRepository;
+import com.improvementsolutions.repository.BusinessRepository;
+import com.improvementsolutions.repository.ContractorCompanyRepository;
+import com.improvementsolutions.repository.ContractorBlockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,10 +14,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/businesses")
@@ -21,6 +28,10 @@ import java.util.Set;
 public class BusinessController {
 
     private final BusinessService businessService;
+    private final IessRepository iessRepository;
+    private final BusinessRepository businessRepository;
+    private final ContractorCompanyRepository contractorCompanyRepository;
+    private final ContractorBlockRepository contractorBlockRepository;
     
     // Endpoints para el administrador
     @GetMapping("/admin/dashboard")
@@ -72,16 +83,44 @@ public class BusinessController {
                 (Set<Position>) configurations.get("positions") : 
                 business.getPositions();
             
+            // Manejar empresa contratista
+            ContractorCompany contractorCompany = null;
+            if (configurations.get("contractorCompany") != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> contractorData = (Map<String, Object>) configurations.get("contractorCompany");
+                if (contractorData.get("id") != null) {
+                    Long contractorId = Long.valueOf(contractorData.get("id").toString());
+                    contractorCompany = contractorCompanyRepository.findById(contractorId).orElse(null);
+                }
+            }
+            
+            // Manejar bloques de empresa contratista
+            List<ContractorBlock> contractorBlocks = new ArrayList<>();
+            if (configurations.get("contractorBlocks") != null) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> blocksData = (List<Map<String, Object>>) configurations.get("contractorBlocks");
+                for (Map<String, Object> blockData : blocksData) {
+                    if (blockData.get("id") != null) {
+                        Long blockId = Long.valueOf(blockData.get("id").toString());
+                        contractorBlockRepository.findById(blockId).ifPresent(contractorBlocks::add);
+                    }
+                }
+            }
+            
             Business updatedBusiness = businessService.updateBusinessConfigurations(
                 businessId, 
                 departments, 
                 iessItems, 
-                positions
+                positions,
+                contractorCompany,
+                contractorBlocks
             );
             
             return ResponseEntity.ok(updatedBusiness);
         } catch (ClassCastException e) {
             throw new RuntimeException("Error al procesar las configuraciones: " + e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException("Error al actualizar configuraciones: " + e.getMessage());
         }
     }
 
@@ -95,20 +134,207 @@ public class BusinessController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<Business> getBusinessById(@PathVariable Long id) {
-        return businessService.findById(id)
+        return businessService.findByIdWithAllRelations(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/{id}/admin")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Business> getBusinessAdminDetails(@PathVariable Long id) {
-        Business business = businessService.findById(id)
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> getBusinessAdminDetails(@PathVariable Long id) {
+        Business business = businessService.findByIdWithAllRelations(id)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
         
-        // El objeto Business ya incluye todas las relaciones gracias a las anotaciones JPA
-        // usuarios, empleados, obligaciones, etc.
-        return ResponseEntity.ok(business);
+        // Crear respuesta personalizada con todos los datos incluidos
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", business.getId());
+        response.put("name", business.getName());
+        response.put("nameShort", business.getNameShort());
+        response.put("ruc", business.getRuc());
+        response.put("email", business.getEmail());
+        response.put("phone", business.getPhone());
+        response.put("secondaryPhone", business.getSecondaryPhone());
+        response.put("address", business.getAddress());
+        response.put("website", business.getWebsite());
+        response.put("description", business.getDescription());
+        response.put("commercialActivity", business.getCommercialActivity());
+        response.put("tradeName", business.getTradeName());
+        response.put("legalRepresentative", business.getLegalRepresentative());
+        response.put("logo", business.getLogo());
+        response.put("active", business.isActive());
+        response.put("registrationDate", business.getRegistrationDate());
+        response.put("createdAt", business.getCreatedAt());
+        response.put("updatedAt", business.getUpdatedAt());
+        
+        // Incluir todas las relaciones específicas de esta empresa
+        response.put("departments", business.getDepartments());
+        response.put("positions", business.getPositions());
+        response.put("type_documents", business.getTypeDocuments());
+        response.put("type_contracts", business.getTypeContracts());
+        response.put("ieses", business.getIessItems());
+        response.put("obligation_matrices", business.getBusinessObligationMatrices());
+        response.put("users", business.getUsers());
+        response.put("contractor_companies", business.getContractorCompanies());
+        response.put("contractor_blocks", business.getContractorBlocks());
+        
+        // Mantener compatibilidad hacia atrás
+        if (!business.getContractorCompanies().isEmpty()) {
+            response.put("contractor_company", business.getContractorCompanies().get(0));
+        } else {
+            response.put("contractor_company", null);
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}/admin/configurations")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ADMIN')")
+    public ResponseEntity<Business> updateBusinessAdminConfigurations(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> configurations) {
+        
+        try {
+            Business business = businessService.findByIdWithAllRelations(id)
+                    .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+            
+            System.out.println("=== DEBUG CONFIGURACIONES ===");
+            System.out.println("ID de empresa: " + id);
+            System.out.println("Configuraciones recibidas: " + configurations);
+            
+            // Actualizar IESS si están presentes
+            if (configurations.containsKey("iessItems")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> iessItemsData = (List<Map<String, Object>>) configurations.get("iessItems");
+                
+                System.out.println("Datos IESS recibidos: " + iessItemsData);
+                
+                // Limpiar las relaciones IESS actuales
+                business.getIessItems().clear();
+                
+                // Agregar los nuevos IESS
+                for (Map<String, Object> iessData : iessItemsData) {
+                    Long iessId = Long.valueOf(iessData.get("id").toString());
+                    System.out.println("Buscando IESS con ID: " + iessId);
+                    
+                    Optional<Iess> iessOptional = iessRepository.findById(iessId);
+                    if (iessOptional.isPresent()) {
+                        Iess iess = iessOptional.get();
+                        business.getIessItems().add(iess);
+                        System.out.println("IESS agregado: " + iess.getDescription());
+                    } else {
+                        System.err.println("IESS no encontrado con ID: " + iessId);
+                    }
+                }
+                
+                System.out.println("Total IESS asignados: " + business.getIessItems().size());
+            }
+
+            // Actualizar empresas contratistas si está presente
+            if (configurations.containsKey("contractorCompanies")) {
+                Object contractorCompaniesData = configurations.get("contractorCompanies");
+                
+                // Limpiar empresas contratistas actuales
+                business.setContractorCompanies(new ArrayList<>());
+                
+                if (contractorCompaniesData != null) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> companiesDataList = (List<Map<String, Object>>) contractorCompaniesData;
+                    
+                    System.out.println("Datos empresas contratistas recibidos: " + companiesDataList);
+                    
+                    // Agregar las nuevas empresas contratistas
+                    for (Map<String, Object> companyData : companiesDataList) {
+                        Long contractorCompanyId = Long.valueOf(companyData.get("id").toString());
+                        
+                        System.out.println("Buscando empresa contratista con ID: " + contractorCompanyId);
+                        
+                        Optional<ContractorCompany> contractorCompanyOptional = contractorCompanyRepository.findById(contractorCompanyId);
+                        if (contractorCompanyOptional.isPresent()) {
+                            ContractorCompany contractorCompany = contractorCompanyOptional.get();
+                            business.getContractorCompanies().add(contractorCompany);
+                            System.out.println("Empresa contratista asignada: " + contractorCompany.getName());
+                        } else {
+                            System.err.println("Empresa contratista no encontrada con ID: " + contractorCompanyId);
+                        }
+                    }
+                }
+                
+                System.out.println("Total empresas contratistas asignadas: " + business.getContractorCompanies().size());
+            }
+            
+            // Mantener compatibilidad hacia atrás con contractorCompany (singular)
+            if (configurations.containsKey("contractorCompany")) {
+                Object contractorCompanyData = configurations.get("contractorCompany");
+                
+                if (contractorCompanyData == null) {
+                    // Remover todas las empresas contratistas
+                    business.setContractorCompanies(new ArrayList<>());
+                    business.setContractorBlocks(new ArrayList<>());
+                    System.out.println("Todas las empresas contratistas removidas");
+                } else {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> companyData = (Map<String, Object>) contractorCompanyData;
+                    Long contractorCompanyId = Long.valueOf(companyData.get("id").toString());
+                    
+                    System.out.println("Buscando empresa contratista con ID: " + contractorCompanyId);
+                    
+                    Optional<ContractorCompany> contractorCompanyOptional = contractorCompanyRepository.findById(contractorCompanyId);
+                    if (contractorCompanyOptional.isPresent()) {
+                        ContractorCompany contractorCompany = contractorCompanyOptional.get();
+                        // Para compatibilidad, reemplazar todas las empresas contratistas con esta una
+                        business.setContractorCompanies(new ArrayList<>());
+                        business.getContractorCompanies().add(contractorCompany);
+                        System.out.println("Empresa contratista asignada (modo singular): " + contractorCompany.getName());
+                    } else {
+                        System.err.println("Empresa contratista no encontrada con ID: " + contractorCompanyId);
+                    }
+                }
+            }
+
+            // Actualizar bloques contratistas si están presentes
+            if (configurations.containsKey("contractorBlocks")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> contractorBlocksData = (List<Map<String, Object>>) configurations.get("contractorBlocks");
+                
+                System.out.println("Datos bloques contratistas recibidos: " + contractorBlocksData);
+                
+                // Limpiar los bloques actuales
+                business.setContractorBlocks(new ArrayList<>());
+                
+                // Agregar los nuevos bloques
+                for (Map<String, Object> blockData : contractorBlocksData) {
+                    Long blockId = Long.valueOf(blockData.get("id").toString());
+                    System.out.println("Buscando bloque contratista con ID: " + blockId);
+                    
+                    Optional<ContractorBlock> blockOptional = contractorBlockRepository.findById(blockId);
+                    if (blockOptional.isPresent()) {
+                        ContractorBlock block = blockOptional.get();
+                        business.getContractorBlocks().add(block);
+                        System.out.println("Bloque contratista agregado: " + block.getName());
+                    } else {
+                        System.err.println("Bloque contratista no encontrado con ID: " + blockId);
+                    }
+                }
+                
+                System.out.println("Total bloques contratistas asignados: " + business.getContractorBlocks().size());
+            }
+            
+            // Actualizar el timestamp
+            business.setUpdatedAt(LocalDateTime.now());
+            
+            // USAR businessRepository.save() en lugar de businessService.update()
+            // porque save() maneja las relaciones ManyToMany correctamente
+            Business updatedBusiness = businessRepository.save(business);
+            
+            System.out.println("Empresa actualizada exitosamente con " + updatedBusiness.getIessItems().size() + " IESS");
+            
+            return ResponseEntity.ok(updatedBusiness);
+            
+        } catch (Exception e) {
+            System.err.println("Error en updateBusinessAdminConfigurations: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error al procesar las configuraciones: " + e.getMessage());
+        }
     }
 
     @GetMapping("/byUser/{userId}")
@@ -293,6 +519,31 @@ public class BusinessController {
         businessService.removeTypeContractFromBusiness(businessId, typeContractId);
         Map<String, String> response = new HashMap<>();
         response.put("message", "Tipo de contrato eliminado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    // === ENDPOINTS PARA MATRICES DE OBLIGACIONES ===
+    @PostMapping("/{businessId}/obligation-matrices/{obligationMatrixId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> addObligationMatrixToBusiness(
+            @PathVariable Long businessId, 
+            @PathVariable Long obligationMatrixId) {
+        
+        businessService.addObligationMatrixToBusiness(businessId, obligationMatrixId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Matriz de obligación agregada exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{businessId}/obligation-matrices/{obligationMatrixId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> removeObligationMatrixFromBusiness(
+            @PathVariable Long businessId, 
+            @PathVariable Long obligationMatrixId) {
+        
+        businessService.removeObligationMatrixFromBusiness(businessId, obligationMatrixId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Matriz de obligación eliminada exitosamente");
         return ResponseEntity.ok(response);
     }
 }

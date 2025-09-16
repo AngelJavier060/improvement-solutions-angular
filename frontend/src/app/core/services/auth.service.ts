@@ -22,6 +22,13 @@ export interface AuthResponse {
     email: string;
     roles: string[];
     permissions: string[];
+    businesses?: {
+      id: number;
+      name: string;
+      ruc: string;
+      email: string;
+      phone: string;
+    }[];
   }
 }
 
@@ -53,9 +60,21 @@ export class AuthService {
 
   loginWithFixedCredentials(credentials: LoginCredentials): Observable<AuthResponse> {
     return this.login(credentials);
-  }  login(credentials: LoginCredentials): Observable<AuthResponse> {
+  }
+
+  login(username: string, password: string): Observable<AuthResponse>;
+  login(credentials: LoginCredentials): Observable<AuthResponse>;
+  login(usernameOrCredentials: string | LoginCredentials, password?: string): Observable<AuthResponse> {
     const url = `${this.apiUrl}/login`;
     console.log('Intentando iniciar sesión en:', url);
+    
+    // Manejar sobrecarga de métodos
+    let credentials: LoginCredentials;
+    if (typeof usernameOrCredentials === 'string') {
+      credentials = { username: usernameOrCredentials, password: password! };
+    } else {
+      credentials = usernameOrCredentials;
+    }
     
     // Determinar si el username es realmente un email
     const isEmail = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(credentials.username);
@@ -107,7 +126,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
-    this.router.navigate(['/auth/login']);
+    this.router.navigate(['/']);
   }
 
   getToken(): string | null {
@@ -116,6 +135,10 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     return !!this.getToken();
+  }
+
+  isAuthenticated(): boolean {
+    return this.isLoggedIn();
   }
 
   validateResetToken(token: string): Observable<boolean> {

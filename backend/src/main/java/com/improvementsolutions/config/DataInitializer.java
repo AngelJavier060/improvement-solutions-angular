@@ -1,7 +1,9 @@
 package com.improvementsolutions.config;
 
+import com.improvementsolutions.model.Business;
 import com.improvementsolutions.model.Role;
 import com.improvementsolutions.model.User;
+import com.improvementsolutions.repository.BusinessRepository;
 import com.improvementsolutions.repository.RoleRepository;
 import com.improvementsolutions.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -25,6 +28,7 @@ public class DataInitializer implements CommandLineRunner {
     
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final BusinessRepository businessRepository;
     private final PasswordEncoder passwordEncoder;
     
     @Override
@@ -35,11 +39,11 @@ public class DataInitializer implements CommandLineRunner {
         // Inicializar roles si no existen
         initializeRoles();
         
-        // Inicializar usuario administrador si no existe
+        // Inicializar usuario administrador global si no existe
         initializeAdminUser();
         
-        // Inicializar usuario Javier si no existe
-        initializeJavierUser();
+        // Asegurar que los usuarios existentes tengan las asociaciones correctas con empresas
+        ensureUserBusinessAssociations();
         
         log.info("Inicialización completada");
     }
@@ -97,40 +101,44 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Usuario administrador creado con username: admin y password: admin123");
         }
     }
-      @Transactional
-    private void initializeJavierUser() {
-        // Verificar si ya existe el usuario Javier
-        User javierUser = userRepository.findByUsername("javier")
-                .orElseGet(() -> userRepository.findByEmail("javierangelmsn@outlook.es")
-                        .orElse(null));
-
-        if (javierUser == null) {
-            // Crear nuevo usuario
-            javierUser = new User();
-            javierUser.setUsername("javier");
-            javierUser.setPassword(passwordEncoder.encode("12345")); // Contraseña solicitada
-            javierUser.setEmail("javierangelmsn@outlook.es");
-            javierUser.setName("Javier");
-            javierUser.setActive(true);
-            javierUser.setCreatedAt(LocalDateTime.now());
-            javierUser.setUpdatedAt(LocalDateTime.now());
-        } else {
-            // Actualizar usuario existente
-            javierUser.setPassword(passwordEncoder.encode("12345")); // Asegurar que la contraseña es correcta
-            javierUser.setActive(true);
-            javierUser.setUpdatedAt(LocalDateTime.now());
+    @Transactional
+    private void ensureUserBusinessAssociations() {
+        // Obtener todos los usuarios existentes
+        List<User> allUsers = userRepository.findAll();
+        List<Business> allBusinesses = businessRepository.findAll();
+        
+        log.info("=== REVISIÓN DE USUARIOS Y EMPRESAS EXISTENTES ===");
+        log.info("Usuarios encontrados: {}", allUsers.size());
+        log.info("Empresas encontradas: {}", allBusinesses.size());
+        
+        for (User user : allUsers) {
+            log.info("Usuario: {} ({}), Empresas asociadas: {}", 
+                user.getUsername(), user.getName(), user.getBusinesses().size());
         }
-
-        // Asegurar que tiene el rol de administrador
-        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new RuntimeException("Error: Rol de administrador no encontrado"));
         
-        Set<Role> roles = new HashSet<>();
-        roles.add(adminRole);
-        javierUser.setRoles(roles);
+        for (Business business : allBusinesses) {
+            log.info("Empresa: {} ({}), Usuarios asociados: {}", 
+                business.getName(), business.getRuc(), business.getUsers().size());
+        }
         
-        userRepository.save(javierUser);
-        log.info("Usuario Javier {} con username: javier, email: javierangelmsn@outlook.es y password: 12345",
-                javierUser == null ? "creado" : "actualizado");
+        // Aquí puedes agregar lógica específica para asociar usuarios con empresas
+        // según tus reglas de negocio
+        if (!allBusinesses.isEmpty() && !allUsers.isEmpty()) {
+            // Por ejemplo, asociar todos los usuarios administradores con todas las empresas
+            Role adminRole = roleRepository.findByName("ROLE_ADMIN").orElse(null);
+            if (adminRole != null) {
+                for (User user : allUsers) {
+                    if (user.getRoles().contains(adminRole) && user.getBusinesses().isEmpty()) {
+                        // Asociar el usuario admin con al menos una empresa si no tiene ninguna
+                        Business firstBusiness = allBusinesses.get(0);
+                        user.addBusiness(firstBusiness);
+                        userRepository.save(user);
+                        log.info("Usuario {} asociado con empresa {}", user.getUsername(), firstBusiness.getName());
+                    }
+                }
+            }
+        }
+        
+        log.info("=== FIN REVISIÓN ===");
     }
 }

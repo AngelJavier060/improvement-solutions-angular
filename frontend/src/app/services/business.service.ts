@@ -87,6 +87,29 @@ export class BusinessService {
     return this.http.delete<any>(`${this.apiUrl}/${businessId}/type-contracts/${typeContractId}`);
   }
 
+  // === MÉTODOS PARA MATRICES DE OBLIGACIONES ===
+  addObligationMatrixToBusiness(businessId: number, obligationMatrixId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/obligation-matrices/${obligationMatrixId}`, {});
+  }
+
+  removeObligationMatrixFromBusiness(businessId: number, obligationMatrixId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${businessId}/obligation-matrices/${obligationMatrixId}`);
+  }
+
+  // === MÉTODO PARA ACTUALIZAR CONFIGURACIONES GENERALES ===
+  updateBusinessConfigurations(businessId: number, configurations: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${businessId}/admin/configurations`, configurations);
+  }
+
+  // === MÉTODOS PARA IESS ===
+  addIessToBusiness(businessId: number, iessId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/iess/${iessId}`, {});
+  }
+
+  removeIessFromBusiness(businessId: number, iessId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${businessId}/iess/${iessId}`);
+  }
+
   // Métodos públicos
   searchByName(name: string): Observable<Business[]> {
     return this.http.get<Business[]>(`${this.apiUrl}/public/search?name=${name}`);

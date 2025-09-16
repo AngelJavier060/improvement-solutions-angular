@@ -34,8 +34,10 @@ export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas pú
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     const token = this.authService.getToken();
     const isPublicRoute = this.publicRoutes.some((url: string) => request.url.includes(url));
-    // Mejorar detección de subidas de archivos (incluye tanto /upload como /profile-picture y FormData)
-    const isFileUpload = (request.url.includes('/upload') || request.url.includes('/profile-picture')) && 
+    // Mejorar detección de subidas de archivos (incluye tanto /upload como /profile-picture, /with-image y FormData)
+    const isFileUpload = (request.url.includes('/upload') || 
+                         request.url.includes('/profile-picture') || 
+                         request.url.includes('/with-image')) && 
                          request.method === 'POST' && 
                          request.body instanceof FormData;
     

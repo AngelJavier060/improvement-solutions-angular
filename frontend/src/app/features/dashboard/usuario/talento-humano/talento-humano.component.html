@@ -1,0 +1,43 @@
+<div class="talento-humano-container">
+  <!-- Navigation Header -->
+  <div class="module-header">
+    <div class="header-content">
+      <div class="title-section">
+        <div class="icon-container">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="title-text">
+          <h1>Talento Humano</h1>
+          <p>Gestiona eficientemente los recursos humanos de tu empresa</p>
+        </div>
+      </div>
+      
+      <div class="navigation-tabs">
+        <a 
+          routerLink="empleados" 
+          routerLinkActive="active"
+          class="nav-tab"
+        >
+          <i class="fas fa-user-friends"></i>
+          <span>Gestión de Empleados</span>
+        </a>
+        <!-- Más tabs para futuras funcionalidades -->
+        <div class="nav-tab disabled">
+          <i class="fas fa-calendar-alt"></i>
+          <span>Asistencias</span>
+          <small>(Próximo)</small>
+        </div>
+        <div class="nav-tab disabled">
+          <i class="fas fa-chart-line"></i>
+          <span>Reportes</span>
+          <small>(Próximo)</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Area -->
+  <div class="module-content">
+    <router-outlet></router-outlet>
+  </div>
+</div>

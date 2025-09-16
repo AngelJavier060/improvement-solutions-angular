@@ -1,0 +1,267 @@
+<div class="modal-overlay">
+  <div class="modal-container">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h2 class="modal-title">
+        <i class="fas fa-user-edit"></i>
+        Editar Empleado
+      </h2>
+      <button type="button" class="close-button" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body" *ngIf="employee">
+      <form [formGroup]="employeeForm" (ngSubmit)="onSubmit()">
+        <!-- Error Alert -->
+        <div *ngIf="error" class="alert alert-error">
+          <i class="fas fa-exclamation-triangle"></i>
+          {{ error }}
+        </div>
+
+        <!-- Employee Info Header -->
+        <div class="employee-info-header">
+          <div class="employee-avatar">
+            <img 
+              [src]="employee.profile_picture || 'assets/images/default-avatar.png'" 
+              [alt]="employee.name"
+              class="avatar-img"
+            />
+          </div>
+          <div class="employee-basic">
+            <h3>{{ employee.name }}</h3>
+            <p class="cedula">Cédula: {{ employee.cedula }}</p>
+            <div class="status-badge" [class.active]="employee.status" [class.inactive]="!employee.status">
+              <i class="fas fa-circle"></i>
+              {{ employee.status ? 'Activo' : 'Inactivo' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Información Personal -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-user"></i>
+            Información Personal
+          </h3>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="cedula">Cédula *</label>
+              <input
+                type="text"
+                id="cedula"
+                formControlName="cedula"
+                [class.error]="isFieldInvalid('cedula')"
+                placeholder="Ingrese la cédula"
+              />
+              <span *ngIf="isFieldInvalid('cedula')" class="error-message">
+                {{ getFieldError('cedula') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="name">Nombre Completo *</label>
+              <input
+                type="text"
+                id="name"
+                formControlName="name"
+                [class.error]="isFieldInvalid('name')"
+                placeholder="Ingrese el nombre completo"
+              />
+              <span *ngIf="isFieldInvalid('name')" class="error-message">
+                {{ getFieldError('name') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email *</label>
+              <input
+                type="email"
+                id="email"
+                formControlName="email"
+                [class.error]="isFieldInvalid('email')"
+                placeholder="ejemplo@correo.com"
+              />
+              <span *ngIf="isFieldInvalid('email')" class="error-message">
+                {{ getFieldError('email') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="phone">Teléfono *</label>
+              <input
+                type="tel"
+                id="phone"
+                formControlName="phone"
+                [class.error]="isFieldInvalid('phone')"
+                placeholder="Ej: 0999123456"
+              />
+              <span *ngIf="isFieldInvalid('phone')" class="error-message">
+                {{ getFieldError('phone') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="birthdate">Fecha de Nacimiento *</label>
+              <input
+                type="date"
+                id="birthdate"
+                formControlName="birthdate"
+                [class.error]="isFieldInvalid('birthdate')"
+              />
+              <span *ngIf="isFieldInvalid('birthdate')" class="error-message">
+                {{ getFieldError('birthdate') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="address">Dirección *</label>
+              <input
+                type="text"
+                id="address"
+                formControlName="address"
+                [class.error]="isFieldInvalid('address')"
+                placeholder="Ingrese la dirección"
+              />
+              <span *ngIf="isFieldInvalid('address')" class="error-message">
+                {{ getFieldError('address') }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado del Empleado -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-toggle-on"></i>
+            Estado del Empleado
+          </h3>
+
+          <div class="status-toggle">
+            <label class="toggle-switch">
+              <input type="checkbox" formControlName="status">
+              <span class="slider"></span>
+            </label>
+            <span class="toggle-label">
+              {{ employeeForm.get('status')?.value ? 'Empleado Activo' : 'Empleado Inactivo' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Información de Contacto de Emergencia -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-phone"></i>
+            Contacto de Emergencia
+          </h3>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="contact_name">Nombre del Contacto *</label>
+              <input
+                type="text"
+                id="contact_name"
+                formControlName="contact_name"
+                [class.error]="isFieldInvalid('contact_name')"
+                placeholder="Nombre del contacto de emergencia"
+              />
+              <span *ngIf="isFieldInvalid('contact_name')" class="error-message">
+                {{ getFieldError('contact_name') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="contact_kinship">Parentesco *</label>
+              <input
+                type="text"
+                id="contact_kinship"
+                formControlName="contact_kinship"
+                [class.error]="isFieldInvalid('contact_kinship')"
+                placeholder="Ej: Padre, Madre, Hermano"
+              />
+              <span *ngIf="isFieldInvalid('contact_kinship')" class="error-message">
+                {{ getFieldError('contact_kinship') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="contact_phone">Teléfono del Contacto *</label>
+              <input
+                type="tel"
+                id="contact_phone"
+                formControlName="contact_phone"
+                [class.error]="isFieldInvalid('contact_phone')"
+                placeholder="Ej: 0999123456"
+              />
+              <span *ngIf="isFieldInvalid('contact_phone')" class="error-message">
+                {{ getFieldError('contact_phone') }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información Adicional -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-info-circle"></i>
+            Información Adicional (Opcional)
+          </h3>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="position_id">Cargo</label>
+              <select id="position_id" formControlName="position_id">
+                <option value="">Seleccione un cargo</option>
+                <!-- Aquí irían las opciones desde el backend -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="gender_id">Género</label>
+              <select id="gender_id" formControlName="gender_id">
+                <option value="">Seleccione un género</option>
+                <!-- Aquí irían las opciones desde el backend -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="civil_status_id">Estado Civil</label>
+              <select id="civil_status_id" formControlName="civil_status_id">
+                <option value="">Seleccione estado civil</option>
+                <!-- Aquí irían las opciones desde el backend -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="ethnicity_id">Etnia</label>
+              <select id="ethnicity_id" formControlName="ethnicity_id">
+                <option value="">Seleccione una etnia</option>
+                <!-- Aquí irían las opciones desde el backend -->
+              </select>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+        Cancelar
+      </button>
+      <button 
+        type="submit" 
+        class="btn btn-primary" 
+        (click)="onSubmit()"
+        [disabled]="loading || employeeForm.invalid"
+      >
+        <i class="fas fa-save" *ngIf="!loading"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+        {{ loading ? 'Actualizando...' : 'Actualizar Empleado' }}
+      </button>
+    </div>
+  </div>
+</div>

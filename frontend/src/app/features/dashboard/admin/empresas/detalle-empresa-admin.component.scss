@@ -19,6 +19,29 @@
   font-weight: 600;
 }
 
+/* Asegurar que los títulos en cabeceras sean visibles y con buen contraste */
+.card-header h6 {
+  display: block;
+  visibility: visible;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Cuando el título tenga la clase text-dark, forzar color oscuro para evitar
+   que alguna regla de color blanco lo oculte en fondos claros */
+.card-header h6.text-dark {
+  color: #212529 !important;
+}
+
+/* Para los demás títulos en cabeceras con fondo oscuro, usar color blanco */
+.card-header h6:not(.text-dark) {
+  color: #ffffff !important;
+}
+
 .badge {
   font-size: 0.875rem;
   display: block;
@@ -137,6 +160,26 @@
 
 .spinner-border {
   animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* --- Comportamiento de expansión de cards (movido desde la plantilla) --- */
+.card .expanded-content {
+  max-height: 300px;
+  overflow-y: auto;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.card.expanded {
+  min-height: auto;
+}
+
+.card:not(.expanded) .expanded-content {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Estilos específicos para obligaciones de matriz legal */

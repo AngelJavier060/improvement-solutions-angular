@@ -97,11 +97,8 @@
           <div class="card h-100 border-0 shadow-sm hover-shadow animate__animated animate__fadeIn">
             <div class="card-header bg-white text-center p-4 border-0">
               <div class="logo-container mb-3">
-                <img *ngIf="empresa.logo" [src]="getLogoUrl(empresa.logo)" [alt]="empresa.name" 
-                     class="img-fluid" style="max-width: 120px; max-height: 80px;">
-                <div *ngIf="!empresa.logo" class="placeholder-logo">
-                  <i class="fas fa-building fa-3x text-secondary"></i>
-                </div>
+                <img [src]="empresa.logo ? getLogoUrl(empresa.logo) : '/assets/img/company-placeholder.svg'" [alt]="empresa.name" 
+                     class="img-fluid" style="max-width: 120px; max-height: 80px;" loading="lazy" decoding="async" onerror="this.src='/assets/img/company-placeholder.svg'">
               </div>
               <h5 class="card-title fw-bold mb-1">{{ empresa.name }}</h5>
               <div class="text-muted small">{{ empresa.ruc }}</div>
@@ -178,9 +175,8 @@
               <tr *ngFor="let empresa of empresasFiltradas" class="align-middle animate__animated animate__fadeIn">
                 <td>
                   <div class="logo-container">
-                    <img *ngIf="empresa.logo" [src]="getLogoUrl(empresa.logo)" [alt]="empresa.name" 
-                         class="img-fluid rounded" style="max-width: 60px; max-height: 40px;">
-                    <i *ngIf="!empresa.logo" class="fas fa-building text-secondary"></i>
+                    <img [src]="empresa.logo ? getLogoUrl(empresa.logo) : '/assets/img/company-placeholder.svg'" [alt]="empresa.name" 
+                         class="img-fluid rounded" style="max-width: 60px; max-height: 40px;" loading="lazy" decoding="async" onerror="this.src='/assets/img/company-placeholder.svg'">
                   </div>
                 </td>
                 <td><span class="fw-medium">{{ empresa.ruc }}</span></td>

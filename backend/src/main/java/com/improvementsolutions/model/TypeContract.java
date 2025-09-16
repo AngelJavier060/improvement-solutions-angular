@@ -1,5 +1,6 @@
 package com.improvementsolutions.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,6 +31,7 @@ public class TypeContract {
     private LocalDateTime updatedAt;
 
     @ManyToMany(mappedBy = "typeContracts")
+    @JsonIgnore // Evitar serialización bidireccional
     private Set<Business> businesses = new HashSet<>();
 
     // Métodos de utilidad

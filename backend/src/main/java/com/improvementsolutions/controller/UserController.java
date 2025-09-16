@@ -182,7 +182,7 @@ public class UserController {
     }
 
     @GetMapping("/roles")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<RoleDto>> getAllRoles() {
         List<Role> roles = roleRepository.findAll();
         List<RoleDto> response = roles.stream()

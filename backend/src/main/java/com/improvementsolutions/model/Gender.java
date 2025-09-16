@@ -1,5 +1,6 @@
 package com.improvementsolutions.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -33,6 +34,7 @@ public class Gender {
 
     // Relación uno a muchos con BusinessEmployee
     @OneToMany(mappedBy = "gender")
+    @JsonIgnore // Evitar serialización bidireccional
     private Set<BusinessEmployee> businessEmployees = new HashSet<>();
     
     // Método para configurar las fechas antes de persistir

@@ -24,11 +24,11 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 @Entity
-@Table(name = "business_obligation_matrix")
+@Table(name = "business_obligation_matrices")
 @Data
 @EqualsAndHashCode(exclude = {"business"})
 @ToString(exclude = {"business"})
-@SQLDelete(sql = "UPDATE business_obligation_matrix SET active = false WHERE id = ?")
+@SQLDelete(sql = "UPDATE business_obligation_matrices SET active = false WHERE id = ?")
 @FilterDef(name = "deletedBusinessObligationMatrixFilter", parameters = @ParamDef(name = "isDeleted", type = boolean.class))
 @Filter(name = "deletedBusinessObligationMatrixFilter", condition = "active = :isDeleted")
 public class BusinessObligationMatrix {
@@ -77,7 +77,7 @@ public class BusinessObligationMatrix {
         return this.name + " - " + this.description;
     }
 
-    public String getObligationMatrix() {
+    public String getObligationMatrixInfo() {
         return this.name + " - " + this.description;
     }
 
@@ -94,7 +94,7 @@ public class BusinessObligationMatrix {
         }
     }
 
-    public void setObligationMatrix(String obligationMatrix) {
+    public void setObligationMatrixInfo(String obligationMatrix) {
         if (obligationMatrix != null) {
             String[] parts = obligationMatrix.split(" - ", 2);
             if (parts.length > 1) {

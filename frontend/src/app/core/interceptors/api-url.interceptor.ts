@@ -31,12 +31,16 @@ export class ApiUrlInterceptor implements HttpInterceptor {
       url = '/api' + (url.startsWith('/') ? '' : '/') + url;
     }
     
-    // Construir la URL completa
-    const apiUrl = `${this.baseUrl}${url}`;
-    console.log(`[ApiUrlInterceptor] URL transformada: ${url}`);
+    // Si baseUrl está vacío (modo desarrollo con proxy), usar solo la URL relativa
+    let finalUrl = url;
+    if (this.baseUrl && this.baseUrl.trim() !== '') {
+      finalUrl = `${this.baseUrl}${url}`;
+    }
+    
+    console.log(`[ApiUrlInterceptor] URL original: ${request.url}, URL final: ${finalUrl}`);
     
     const apiRequest = request.clone({
-      url: apiUrl
+      url: finalUrl
     });
 
     return next.handle(apiRequest).pipe(

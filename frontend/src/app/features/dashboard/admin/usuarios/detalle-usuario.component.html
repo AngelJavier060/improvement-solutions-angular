@@ -46,7 +46,7 @@
               [src]="getProfilePictureUrl(user)" 
               alt="Foto de perfil" 
               class="img-fluid rounded-circle profile-image"
-              onerror="this.src='assets/img/default-avatar.png'"
+              onerror="this.src='/assets/img/default-avatar.png'"
             >
           </div>
           <h5>{{ user.name || 'Sin nombre' }}</h5>
@@ -85,6 +85,18 @@
               <div class="col-md-8">
                 <a [href]="'mailto:' + user.email">{{ user.email }}</a>
               </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4 fw-bold">Tipo de usuario:</div>
+              <div class="col-md-8">
+                <span class="badge" [ngClass]="(user.roles || []).includes('ROLE_ADMIN') ? 'bg-dark' : 'bg-info'">
+                  {{ (user.roles || []).includes('ROLE_ADMIN') ? 'Administrador' : 'Empresa' }}
+                </span>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-4 fw-bold">Empresa:</div>
+              <div class="col-md-8">{{ businessLabel }}</div>
             </div>
             
             <div class="row mb-3">

@@ -1,0 +1,84 @@
+<div class="empresas-contratistas-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Empresas Contratistas</h2>
+      <p>Administración de empresas contratistas y sus bloques operativos</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary mr-2" routerLink="/dashboard/admin/configuracion">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
+      <button class="btn-primary" routerLink="nueva">
+        <i class="fas fa-plus"></i> Nueva Empresa Contratista
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando empresas contratistas...</span>
+    </div>
+
+    <div *ngIf="error" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="cargarEmpresas()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <div *ngIf="!loading && !error">
+      <table class="data-table" *ngIf="empresas.length > 0; else noData">
+        <thead>
+          <tr>
+            <th class="th-id">ID</th>
+            <th>Nombre</th>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Bloques</th>
+            <th>Empleados</th>
+            <th>Estado</th>
+            <th class="th-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let empresa of empresas">
+            <td>{{ empresa.id }}</td>
+            <td>{{ empresa.name }}</td>
+            <td>{{ empresa.code || '-' }}</td>
+            <td>{{ empresa.description || '-' }}</td>
+            <td>{{ empresa.totalBlocks || 0 }}</td>
+            <td>{{ empresa.totalEmployees || 0 }}</td>
+            <td>
+              <span class="badge" [class]="empresa.active ? 'badge-success' : 'badge-danger'">
+                {{ empresa.active ? 'Activa' : 'Inactiva' }}
+              </span>
+            </td>
+            <td class="actions">
+              <div class="btn-group">
+                <button class="btn btn-icon" [routerLink]="['editar', empresa.id]" title="Editar empresa">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-icon" [routerLink]="[empresa.id, 'bloques']" title="Gestionar bloques">
+                  <i class="fas fa-th-large"></i>
+                </button>
+                <button class="btn btn-icon btn-delete" (click)="eliminarEmpresa(empresa.id!)" title="Eliminar empresa">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noData>
+        <div class="empty-state">
+          <i class="fas fa-building"></i>
+          <p>No hay empresas contratistas disponibles</p>
+          <button class="btn-primary" routerLink="nueva">Crear empresa contratista</button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

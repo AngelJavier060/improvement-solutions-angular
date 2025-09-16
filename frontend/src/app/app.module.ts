@@ -12,7 +12,7 @@ import { HomeComponent } from './features/home/home.component';
 import { DashboardAdminComponent } from './features/dashboard/admin/dashboard-admin.component';
 import { DashboardUsuarioComponent } from './features/dashboard/usuario/dashboard-usuario.component';
 import { SharedModule } from './shared/shared.module';
-import { ApiUrlInterceptor } from './core/interceptors/api-url.interceptor';
+// import { ApiUrlInterceptor } from './core/interceptors/api-url.interceptor'; // Temporalmente deshabilitado
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { AuthGuard } from './core/guards/auth.guard';
 import { FileService } from './services/file.service';
@@ -39,6 +39,59 @@ import { FileService } from './services/file.service';
     SharedModule,
     RouterModule.forRoot([
       { path: '', component: HomeComponent },
+      
+      // Nueva ruta de autenticación 
+      { 
+        path: 'auth/login', 
+        loadComponent: () => import('./pages/auth/login.component').then(m => m.LoginComponent) 
+      },
+      
+      // Nueva ruta para login de usuarios empresariales
+      {
+        path: 'auth/usuario-login',
+        loadComponent: () => import('./features/auth/usuario-login/usuario-login.component').then(m => m.UsuarioLoginComponent)
+      },
+      
+      // Nueva ruta para bienvenida de usuarios
+      {
+        path: 'usuario/:ruc/welcome',
+        loadComponent: () => import('./features/usuario/usuario-welcome/usuario-welcome.component').then(m => m.UsuarioWelcomeComponent)
+      },
+      
+      // Rutas del dashboard por RUC
+      {
+        path: ':ruc/dashboard',
+        loadComponent: () => import('./pages/dashboard/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+        canActivate: [AuthGuard],
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./pages/landing/landing-page.component').then(m => m.LandingPageComponent)
+          }
+        ]
+      },
+      
+      // Rutas específicas de servicios por RUC
+      {
+        path: ':ruc/empleados',
+        loadComponent: () => import('./pages/dashboard/empleados/empleados.component').then(m => m.EmpleadosComponent),
+        canActivate: [AuthGuard]
+      },
+      
+      // Rutas del dashboard de usuario por RUC
+      {
+        path: 'usuario/:ruc/dashboard',
+        component: DashboardUsuarioComponent,
+        canActivate: [AuthGuard],
+        children: [
+          {
+            path: 'talento-humano',
+            loadChildren: () => import('./features/dashboard/usuario/talento-humano/talento-humano.module').then(m => m.TalentoHumanoModule)
+          }
+        ]
+      },
+      
+      // Rutas existentes del admin
       {
         path: 'dashboard/admin', 
         component: DashboardAdminComponent,
@@ -62,7 +115,13 @@ import { FileService } from './services/file.service';
       { 
         path: 'dashboard/usuario', 
         component: DashboardUsuarioComponent,
-        canActivate: [AuthGuard] 
+        canActivate: [AuthGuard],
+        children: [
+          {
+            path: 'talento-humano',
+            loadChildren: () => import('./features/dashboard/usuario/talento-humano/talento-humano.module').then(m => m.TalentoHumanoModule)
+          }
+        ]
       },
       {
         path: 'business',
@@ -78,7 +137,7 @@ import { FileService } from './services/file.service';
   ],
   providers: [
     FileService,
-    { provide: HTTP_INTERCEPTORS, useClass: ApiUrlInterceptor, multi: true },
+    // { provide: HTTP_INTERCEPTORS, useClass: ApiUrlInterceptor, multi: true }, // Temporalmente deshabilitado para usar proxy
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
   ],
   bootstrap: [AppComponent]

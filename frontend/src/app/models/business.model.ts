@@ -21,4 +21,20 @@ export interface Business {
   description?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  
+  // Campos para empresas contratistas múltiples
+  contractor_companies?: ContractorCompany[];
+  contractorCompanies?: ContractorCompany[]; // Alternativa por si viene con camelCase
+  
+  // Campos para compatibilidad hacia atrás (empresa contratista singular)
+  contractor_company_id?: number;
+  contractor_company?: ContractorCompany;
+  contractorCompany?: ContractorCompany; // Alternativa por si viene con camelCase
+}
+
+export interface ContractorCompany {
+  id: number;
+  name: string;
+  description?: string;
+  isActive?: boolean;
 }

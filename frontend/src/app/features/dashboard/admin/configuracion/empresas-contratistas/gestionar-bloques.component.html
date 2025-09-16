@@ -1,0 +1,197 @@
+<div class="gestionar-bloques-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Gestionar Bloques</h2>
+      <p *ngIf="empresa">
+        <strong>Empresa:</strong> {{ empresa.name }}
+        <span *ngIf="empresa.code" class="badge-code">{{ empresa.code }}</span>
+      </p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary mr-2" routerLink="/dashboard/admin/configuracion/empresas-contratistas">
+        <i class="fas fa-arrow-left"></i> Volver a Empresas
+      </button>
+      <button class="btn-primary" (click)="mostrarFormulario()" *ngIf="!showForm">
+        <i class="fas fa-plus"></i> Nuevo Bloque
+      </button>
+    </div>
+  </div>
+
+  <!-- Estado de carga inicial -->
+  <div *ngIf="loading" class="card">
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando datos...</span>
+    </div>
+  </div>
+
+  <!-- Error de carga -->
+  <div *ngIf="error && !loading && !showForm" class="card">
+    <div class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="cargarDatos()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+  </div>
+
+  <!-- Mensajes de éxito -->
+  <div *ngIf="successMessage && !showForm" class="alert alert-success">
+    <i class="fas fa-check-circle"></i>
+    <span>{{ successMessage }}</span>
+  </div>
+
+  <!-- Contenido principal -->
+  <div *ngIf="!loading && !error">
+    
+    <!-- Formulario de bloque -->
+    <div *ngIf="showForm" class="card form-card">
+      <div class="form-header">
+        <h3>
+          <i class="fas fa-th-large"></i>
+          {{ editingBlock ? 'Editar Bloque' : 'Nuevo Bloque' }}
+        </h3>
+        <button class="btn-close" (click)="cancelarFormulario()" title="Cerrar">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <form [formGroup]="bloqueForm" (ngSubmit)="onSubmit()">
+        <!-- Mensaje de error del formulario -->
+        <div *ngIf="error" class="alert alert-error">
+          <i class="fas fa-exclamation-circle"></i>
+          <span>{{ error }}</span>
+        </div>
+
+        <div class="form-group">
+          <label for="name">Nombre del Bloque <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="name" 
+            formControlName="name"
+            placeholder="Ej: Bloque 15"
+            [class.invalid]="isFieldInvalid('name')"
+          >
+          <div *ngIf="isFieldInvalid('name')" class="error-message">
+            <span>{{ getFieldError('name') }}</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="code">Código</label>
+          <input 
+            type="text" 
+            id="code" 
+            formControlName="code"
+            placeholder="Ej: B15"
+            [class.invalid]="isFieldInvalid('code')"
+          >
+          <div *ngIf="isFieldInvalid('code')" class="error-message">
+            <span>{{ getFieldError('code') }}</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Descripción</label>
+          <textarea 
+            id="description" 
+            formControlName="description"
+            rows="3"
+            placeholder="Descripción del bloque operativo..."
+            [class.invalid]="isFieldInvalid('description')"
+          ></textarea>
+          <div *ngIf="isFieldInvalid('description')" class="error-message">
+            <span>{{ getFieldError('description') }}</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" formControlName="active">
+            <span>Bloque activo</span>
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="cancelarFormulario()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="submitting">
+            <i *ngIf="submitting" class="fas fa-spinner fa-spin"></i>
+            <i *ngIf="!submitting" class="fas fa-save"></i>
+            {{ submitting ? (editingBlock ? 'Actualizando...' : 'Creando...') : (editingBlock ? 'Actualizar' : 'Crear Bloque') }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Lista de bloques -->
+    <div class="card">
+      <div class="card-header">
+        <h3>
+          <i class="fas fa-list"></i>
+          Bloques de {{ empresa?.name }}
+        </h3>
+        <div class="header-actions">
+          <button *ngIf="loadingBloques" class="btn-icon" disabled>
+            <i class="fas fa-spinner fa-spin"></i>
+          </button>
+          <button *ngIf="!loadingBloques" class="btn-icon" (click)="cargarBloques()" title="Actualizar lista">
+            <i class="fas fa-sync"></i>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="bloques.length > 0; else noBloques">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="th-id">ID</th>
+              <th>Nombre</th>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Empleados</th>
+              <th>Estado</th>
+              <th class="th-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let bloque of bloques">
+              <td>{{ bloque.id }}</td>
+              <td>{{ bloque.name }}</td>
+              <td>{{ bloque.code || '-' }}</td>
+              <td>{{ bloque.description || '-' }}</td>
+              <td>{{ bloque.totalEmployees || 0 }}</td>
+              <td>
+                <span class="badge" [class]="bloque.active ? 'badge-success' : 'badge-danger'">
+                  {{ bloque.active ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="actions">
+                <div class="btn-group">
+                  <button class="btn btn-icon" (click)="editarBloque(bloque)" title="Editar bloque">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-icon btn-delete" (click)="eliminarBloque(bloque.id!)" title="Eliminar bloque">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noBloques>
+        <div class="empty-state">
+          <i class="fas fa-th-large"></i>
+          <p>No hay bloques registrados para esta empresa</p>
+          <button class="btn-primary" (click)="mostrarFormulario()" *ngIf="!showForm">
+            <i class="fas fa-plus"></i> Crear primer bloque
+          </button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

@@ -2,10 +2,12 @@ package com.improvementsolutions.service;
 
 import com.improvementsolutions.model.Role;
 import com.improvementsolutions.model.User;
+import com.improvementsolutions.model.UserSession;
 import com.improvementsolutions.repository.RoleRepository;
 import com.improvementsolutions.repository.UserRepository;
 import com.improvementsolutions.repository.UserSessionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
       private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -117,14 +120,16 @@ public class UserService {
             throw new RuntimeException("Usuario no encontrado");
         }
         
-        // Desactivar todas las sesiones del usuario primero
-        userSessionRepository.findByUserId(id).forEach(session -> {
-            session.setActive(false);
-            userSessionRepository.save(session);
-        });
+        // Eliminar todas las sesiones del usuario primero para evitar foreign key constraint
+        List<UserSession> userSessions = userSessionRepository.findByUserId(id);
+        if (!userSessions.isEmpty()) {
+            userSessionRepository.deleteAll(userSessions);
+            log.info("Eliminadas {} sesiones del usuario con ID: {}", userSessions.size(), id);
+        }
         
         // Ahora podemos eliminar el usuario de forma segura
         userRepository.deleteById(id);
+        log.info("Usuario con ID {} eliminado exitosamente", id);
     }
     
     @Transactional

@@ -481,6 +481,7 @@ public class MasterDataController {
         if (obligationMatrix.getDepartmentId() == null) {
             return ResponseEntity.badRequest().build();
         }
+        
         obligationMatrix.setCreatedAt(LocalDateTime.now());
         return ResponseEntity.status(HttpStatus.CREATED).body(obligationMatrixRepository.save(obligationMatrix));
     }
@@ -494,6 +495,7 @@ public class MasterDataController {
         }
 
         ObligationMatrix existingObligationMatrix = existingObligationMatrixOpt.get();
+        existingObligationMatrix.setName(obligationMatrix.getName());
         existingObligationMatrix.setLegalCompliance(obligationMatrix.getLegalCompliance());
         existingObligationMatrix.setLegalRegulation(obligationMatrix.getLegalRegulation());
         existingObligationMatrix.setDescription(obligationMatrix.getDescription());

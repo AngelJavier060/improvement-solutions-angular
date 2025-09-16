@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { BusinessService } from '../../../../services/business.service';
 import { DepartmentService } from '../../../../services/department.service';
@@ -9,6 +10,8 @@ import { TipoDocumentoService } from '../../../../services/tipo-documento.servic
 import { TypeContractService } from '../../../../services/type-contract.service';
 import { ObligationMatrixService } from '../../../../services/obligation-matrix.service';
 import { IessService } from '../../../../services/iess.service';
+import { ContractorCompanyService } from '../../../../services/contractor-company.service';
+import { ContractorBlockService } from '../../../../services/contractor-block.service';
 import { environment } from '../../../../../environments/environment';
 import { forkJoin } from 'rxjs';
 import { User } from './user-modal/user-modal.component';
@@ -32,6 +35,11 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   obligacionesMatriz: any[] = [];
   iessList: any[] = [];
   roles: Role[] = [];
+  
+  // Empresas contratistas y bloques
+  contractorCompanies: any[] = [];
+  contractorBlocks: any[] = [];
+  availableBlocks: any[] = [];
   
   // Variables para gestión de usuarios
   users: User[] = [];
@@ -61,6 +69,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   showAsignContractModal = false;
   showAsignObligationModal = false;
   showAsignIessModal = false;
+  showAsignContractorModal = false;
 
   // Variables para selección de elementos (permitir múltiples selecciones)
   selectedDepartamentos: string[] = [];
@@ -68,7 +77,12 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   selectedTiposDocumentos: string[] = [];
   selectedTiposContratos: string[] = [];
   selectedObligacionesMatriz: string[] = [];
-  selectedIess: string[] = [];
+  // Para IESS usaremos objetos completos con ngModel ([ngValue])
+  selectedIess: any[] = [];
+  
+  // Variables para empresas contratistas
+  selectedContractorCompanies: any[] = [];
+  selectedBlocks: any[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -79,7 +93,10 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private tipoDocumentoService: TipoDocumentoService,
     private typeContractService: TypeContractService,
     private obligationMatrixService: ObligationMatrixService,
-    private iessService: IessService
+    private iessService: IessService,
+    private contractorCompanyService: ContractorCompanyService,
+    private contractorBlockService: ContractorBlockService,
+    private title: Title
   ) {}
 
   ngOnInit(): void {
@@ -90,6 +107,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       }
     });
   }
+  /* Duplicated helper and early openCreateUserModal removed; single definitions exist further below */
 
   loadData(): void {
     this.loading = true;
@@ -97,10 +115,34 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     
     console.log('Cargando datos para empresa ID:', this.empresaId);
     
-    // Cargar empresa
-    this.businessService.getById(this.empresaId).subscribe({
+    // Cargar empresa con detalles de administración (incluye todas las relaciones)
+    this.businessService.getBusinessAdminDetails(this.empresaId).subscribe({
       next: (empresa: any) => {
-        console.log('Empresa cargada:', empresa);
+        console.log('=== DEBUGGING EMPRESA DATA ===');
+        console.log('Empresa completa:', empresa);
+        console.log('=== DEBUGGING IESS ===');
+        console.log('IESS data received from backend:', empresa.ieses);
+        console.log('Tipo de datos IESS:', typeof empresa.ieses);
+        console.log('Es array?:', Array.isArray(empresa.ieses));
+        console.log('Longitud de IESS:', empresa.ieses?.length);
+        
+        // Verificar si existe la propiedad
+        if (empresa.hasOwnProperty('ieses')) {
+          console.log('✅ Propiedad ieses existe');
+        } else {
+          console.log('❌ Propiedad ieses NO existe');
+          console.log('📋 Propiedades disponibles:', Object.keys(empresa));
+        }
+        
+        // Verificar otras propiedades relacionadas con IESS
+        console.log('🔍 Buscando propiedades relacionadas con IESS:');
+        const allKeys = Object.keys(empresa);
+        const iessRelated = allKeys.filter(key => key.toLowerCase().includes('ies'));
+        console.log('📋 Propiedades relacionadas con IESS:', iessRelated);
+        
+        // Imprimir toda la estructura de la empresa para análisis
+        console.log('🏢 Estructura completa de empresa:', JSON.stringify(empresa, null, 2));
+        
         this.empresa = empresa;
         
         // Asegurar que todas las propiedades array existen (como frontend-admin)
@@ -108,16 +150,49 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         if (!this.empresa.positions) this.empresa.positions = [];
         if (!this.empresa.type_documents) this.empresa.type_documents = [];
         if (!this.empresa.type_contracts) this.empresa.type_contracts = [];
-        if (!this.empresa.ieses) this.empresa.ieses = [];
+        // Normalizar nombre de propiedad de IESS desde backend
+        if (!this.empresa.ieses && (this.empresa as any).iessItems) {
+          this.empresa.ieses = (this.empresa as any).iessItems;
+        }
+        if (!this.empresa.ieses && (this.empresa as any).iess) {
+          this.empresa.ieses = (this.empresa as any).iess;
+        }
+        if (!this.empresa.ieses) {
+          console.log('Inicializando array de IESS vacío');
+          this.empresa.ieses = [];
+        }
         if (!this.empresa.users) this.empresa.users = [];
         if (!this.empresa.employees) this.empresa.employees = [];
         if (!this.empresa.obligation_matrices) this.empresa.obligation_matrices = [];
         
+        // Inicializar propiedades de empresas contratistas
+        if (!this.empresa.contractor_companies) this.empresa.contractor_companies = [];
+        if (!this.empresa.contractor_blocks) this.empresa.contractor_blocks = [];
+        
+        console.log('IESS después de inicialización:', this.empresa.ieses);
+        console.log('Longitud final de IESS:', this.empresa.ieses.length);
+        console.log('=== FIN DEBUGGING ===');
+
+        // Título dinámico del documento
+        try {
+          const empresaNombre = this.empresa?.name || this.empresa?.nameShort || `Empresa #${this.empresaId}`;
+          this.title.setTitle(`Administrando: ${empresaNombre}`);
+        } catch (e) {
+          console.warn('No se pudo actualizar el título del documento', e);
+        }
+        
         // Cargar usuarios por separado
         this.loadUsers();
         
-        // Cargar datos de configuración
+        // Cargar datos globales para las listas desplegables de asignación
         this.loadConfigurationData();
+        
+        console.log('Datos específicos de la empresa cargados:', empresa);
+        console.log('Departamentos de la empresa:', empresa.departments?.length || 0);
+        console.log('Cargos de la empresa:', empresa.positions?.length || 0);
+        console.log('Documentos de la empresa:', empresa.type_documents?.length || 0);
+        
+        this.loading = false;
       },
       error: (error: any) => {
         console.error('Error al cargar empresa:', error);
@@ -150,58 +225,177 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   }
 
   loadConfigurationData(): void {
-    // Cargar todos los datos de configuración en paralelo
-    forkJoin({
-      departamentos: this.departmentService.getAllDepartments(),
-      cargos: this.cargoService.getCargos(),
-      tiposDocumentos: this.tipoDocumentoService.getTiposDocumento(),
-      tiposContratos: this.typeContractService.getAllTypeContracts(),
-      obligacionesMatriz: this.obligationMatrixService.getObligationMatrices(),
-      iessList: this.iessService.getIessItems(),
-      roles: this.userService.getRoles()
-    }).subscribe({
+    console.log('Iniciando carga de datos de configuración para listas desplegables...');
+    
+    // Cargar cada servicio individualmente para las listas desplegables
+    // Estos datos NO sobrescriben los datos específicos de la empresa
+    this.loadDepartamentos();
+    this.loadCargos();
+    this.loadTiposDocumentos();
+    this.loadTiposContratos();
+    this.loadObligacionesMatriz();
+    this.loadIessList();
+    this.loadRoles();
+    this.loadContractorCompanies();
+  }
+
+  loadDepartamentos(): void {
+    this.departmentService.getAllDepartments().subscribe({
       next: (data) => {
-        console.log('Datos de configuración cargados:', data);
-        this.departamentos = data.departamentos || [];
-        this.cargos = data.cargos || [];
-        this.tiposDocumentos = data.tiposDocumentos || [];
-        this.tiposContratos = data.tiposContratos || [];
-        this.obligacionesMatriz = data.obligacionesMatriz || [];
-        this.iessList = data.iessList || [];
-        this.roles = data.roles || [];
-        
-        // Debug específico para obligaciones
-        console.log('ObligacionesMatriz cargadas:', this.obligacionesMatriz);
-        console.log('Cantidad de obligaciones:', this.obligacionesMatriz.length);
-        
-        this.loading = false;
+        // Solo cargar para las listas desplegables, NO sobrescribir datos de empresa
+        this.departamentos = data || [];
+        console.log('Departamentos globales cargados para listas desplegables:', this.departamentos.length);
       },
-      error: (error: any) => {
-        console.error('Error al cargar datos de configuración:', error);
-        // Inicializar con arrays vacíos en caso de error
+      error: (error) => {
+        console.error('Error al cargar departamentos globales:', error);
         this.departamentos = [];
-        this.cargos = [];
-        this.tiposDocumentos = [];
-        this.tiposContratos = [];
-        this.obligacionesMatriz = [];
-        this.iessList = [];
-        this.loading = false;
       }
     });
   }
 
-  getLogoUrl(): string {
-    if (this.empresa?.logo) {
-      // El backend sirve archivos desde /api/files/ y empresa.logo ya incluye la subcarpeta (ej: "logos/filename.png")
-      return `${environment.apiUrl}/api/files/${this.empresa.logo}`;
-    }
-    return 'assets/default-logo.png';
+  loadCargos(): void {
+    this.cargoService.getCargos().subscribe({
+      next: (data) => {
+        // Solo cargar para las listas desplegables, NO sobrescribir datos de empresa
+        this.cargos = data || [];
+        console.log('Cargos globales cargados para listas desplegables:', this.cargos.length);
+      },
+      error: (error) => {
+        console.error('Error al cargar cargos globales:', error);
+        this.cargos = [];
+      }
+    });
   }
 
+  loadTiposDocumentos(): void {
+    this.tipoDocumentoService.getTiposDocumento().subscribe({
+      next: (data) => {
+        // Solo cargar para las listas desplegables, NO sobrescribir datos de empresa
+        this.tiposDocumentos = data || [];
+        console.log('Tipos de documentos globales cargados para listas desplegables:', this.tiposDocumentos.length);
+      },
+      error: (error) => {
+        console.error('Error al cargar tipos de documentos globales:', error);
+        this.tiposDocumentos = [];
+      }
+    });
+  }
+
+  loadTiposContratos(): void {
+    this.typeContractService.getAllTypeContracts().subscribe({
+      next: (data) => {
+        // Solo cargar para las listas desplegables, NO sobrescribir datos de empresa
+        this.tiposContratos = data || [];
+        console.log('Tipos de contratos globales cargados para listas desplegables:', this.tiposContratos.length);
+      },
+      error: (error) => {
+        console.error('Error al cargar tipos de contratos globales:', error);
+        this.tiposContratos = [];
+      }
+    });
+  }
+
+  loadObligacionesMatriz(): void {
+    this.obligationMatrixService.getObligationMatrices().subscribe({
+      next: (data) => {
+        // Solo cargar para las listas desplegables, NO sobrescribir datos de empresa
+        this.obligacionesMatriz = data || [];
+        console.log('Obligaciones matriz globales cargadas para listas desplegables:', this.obligacionesMatriz.length);
+      },
+      error: (error) => {
+        console.error('Error al cargar obligaciones matriz globales:', error);
+        this.obligacionesMatriz = [];
+      }
+    });
+  }
+
+  loadIessList(): void {
+    console.log('🔄 Iniciando carga de IESS globales...');
+    this.iessService.getIessItems().subscribe({
+      next: (data) => {
+        // Solo cargar para las listas desplegables, NO sobrescribir datos de empresa
+        this.iessList = data || [];
+        console.log('🛡️ IESS items globales cargados para listas desplegables:', this.iessList.length);
+        console.log('🛡️ Datos IESS globales completos:', this.iessList);
+        console.log('🛡️ Primer item IESS:', this.iessList[0]);
+      },
+      error: (error) => {
+        console.error('❌ Error al cargar IESS items globales:', error);
+        this.iessList = [];
+      }
+    });
+  }
+
+  loadRoles(): void {
+    this.userService.getRoles().subscribe({
+      next: (data) => {
+        this.roles = data || [];
+        console.log('Roles cargados:', this.roles.length);
+      },
+      error: (error) => {
+        console.error('Error al cargar roles:', error);
+        this.roles = [
+          { id: 1, name: 'ROLE_ADMIN', description: 'Administrador' },
+          { id: 2, name: 'ROLE_USER', description: 'Usuario' }
+        ];
+      }
+    });
+  }
+
+  loadContractorCompanies(): void {
+    this.contractorCompanyService.getAllActiveCompanies().subscribe({
+      next: (data: any) => {
+        this.contractorCompanies = data || [];
+        console.log('Empresas contratistas globales cargadas para listas desplegables:', this.contractorCompanies.length);
+      },
+      error: (error: any) => {
+        console.error('Error al cargar empresas contratistas globales:', error);
+        this.contractorCompanies = [];
+      }
+    });
+  }
+
+  loadContractorBlocks(contractorCompanyId: number): void {
+    if (!contractorCompanyId) {
+      this.availableBlocks = [];
+      return;
+    }
+    
+    this.contractorBlockService.getActiveBlocksByCompanyId(contractorCompanyId).subscribe({
+      next: (data: any) => {
+        this.availableBlocks = data || [];
+        console.log('Bloques cargados para empresa contratista:', this.availableBlocks.length);
+      },
+      error: (error: any) => {
+        console.error('Error al cargar bloques:', error);
+        this.availableBlocks = [];
+      }
+    });
+  }
+  // Helper: resolver ID de rol por nombre (fallback a 2 => ROLE_USER)
+  private getRoleIdByName(name: string): number {
+    const found = (this.roles || []).find(r => (r.name || '').toUpperCase() === (name || '').toUpperCase());
+    return found && found.id != null ? Number(found.id) : 2;
+  }
+
+  // Logo de la empresa con fallback para evitar titileo por imagen faltante
+  getLogoUrl(): string {
+    const logo = this.empresa?.logo;
+    if (logo) {
+      return `${environment.apiUrl}/api/files/${logo}`;
+    }
+    return '/assets/img/company-placeholder.svg';
+  }
   // === USUARIOS ===
   // === USUARIOS ===
   openCreateUserModal(): void {
     this.resetUserForm();
+    this.isEditingUser = false;
+    // Forzar rol "Usuario estándar" (ROLE_USER) para creación dentro de la empresa
+    const roleUserId = this.getRoleIdByName('ROLE_USER')
+      ?? this.getRoleIdByName('USER')
+      ?? 2; // fallback común
+    this.newUser.selectedRoles = [Number(roleUserId)];
     this.showCreateUserModal = true;
   }
 
@@ -575,24 +769,49 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   }
 
   asignObligation(): void {
-    if (!this.selectedObligacionesMatriz.length) return;
+    if (!this.selectedObligacionesMatriz.length || !this.empresa?.id) return;
     
-    this.selectedObligacionesMatriz.forEach(selectedId => {
-      const obligacionSelected = this.obligacionesMatriz.find((o: any) => o.id == selectedId);
-      if (!obligacionSelected) return;
+    // Crear promesas para agregar cada matriz de obligación
+    const addPromises = this.selectedObligacionesMatriz.map(obligationMatrixId => 
+      this.businessService.addObligationMatrixToBusiness(this.empresa.id, Number(obligationMatrixId)).toPromise()
+    );
+
+    Promise.all(addPromises).then(() => {
+      // Agregar a la vista local
+      this.selectedObligacionesMatriz.forEach(selectedId => {
+        const obligacionSelected = this.obligacionesMatriz.find((o: any) => o.id == selectedId);
+        if (obligacionSelected) {
+          const exists = this.empresa.obligation_matrices.find((o: any) => o.id == selectedId);
+          if (!exists) {
+            this.empresa.obligation_matrices.push(obligacionSelected);
+          }
+        }
+      });
       
-      const exists = this.empresa.obligation_matrices.find((o: any) => o.id == selectedId);
-      if (!exists) {
-        this.empresa.obligation_matrices.push(obligacionSelected);
-      }
+      this.selectedObligacionesMatriz = [];
+      this.showAsignObligationModal = false;
+      alert('Matrices de obligación asignadas exitosamente');
+    }).catch(error => {
+      console.error('Error al asignar matrices de obligación:', error);
+      alert('Error al asignar matrices de obligación. Por favor, inténtelo de nuevo.');
     });
-    
-    this.selectedObligacionesMatriz = [];
-    this.showAsignObligationModal = false;
   }
 
   removeObligation(obligationId: number): void {
-    this.empresa.obligation_matrices = this.empresa.obligation_matrices.filter((o: any) => o.id !== obligationId);
+    if (!this.empresa?.id) return;
+    
+    if (confirm('¿Está seguro de eliminar esta matriz de obligación de la empresa?')) {
+      this.businessService.removeObligationMatrixFromBusiness(this.empresa.id, obligationId).subscribe({
+        next: () => {
+          this.empresa.obligation_matrices = this.empresa.obligation_matrices.filter((o: any) => o.id !== obligationId);
+          alert('Matriz de obligación eliminada exitosamente');
+        },
+        error: (error) => {
+          console.error('Error al eliminar matriz de obligación:', error);
+          alert('Error al eliminar la matriz de obligación. Por favor, inténtelo de nuevo.');
+        }
+      });
+    }
   }
 
   // === IESS ===
@@ -602,24 +821,289 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   }
 
   asignIess(): void {
-    if (!this.selectedIess.length) return;
+    if (!this.selectedIess.length) {
+      console.log('No hay IESS seleccionados');
+      return;
+    }
     
-    this.selectedIess.forEach(selectedId => {
-      const iessSelected = this.iessList.find((i: any) => i.id == selectedId);
-      if (!iessSelected) return;
-      
-      const exists = this.empresa.ieses.find((i: any) => i.id == selectedId);
+    console.log('✅ Asignando IESS (selección):', this.selectedIess);
+
+    // La selección puede venir como objetos completos (preferido) o IDs. Soportamos ambos.
+    const toAssign = this.selectedIess.map(sel => {
+      if (sel && typeof sel === 'object') return sel; // ya es el objeto IESS
+      const idNum = Number(sel);
+      return this.iessList.find((i: any) => i.id === idNum);
+    }).filter(Boolean);
+
+    toAssign.forEach((iessSelected: any) => {
+      const exists = this.empresa.ieses.find((i: any) => i.id === iessSelected.id);
       if (!exists) {
+        console.log('✅ Agregando IESS a empresa:', iessSelected.description || iessSelected.name);
         this.empresa.ieses.push(iessSelected);
       }
     });
     
+    console.log('✅ IESS finales en empresa:', this.empresa.ieses);
+    
     this.selectedIess = [];
     this.showAsignIessModal = false;
+    
+    // Guardar cambios en backend
+    this.saveIessChanges();
+    
+    console.log('✅ Modal cerrado, empresa actualizada');
+  }
+
+  trackByIessId(index: number, iess: any): number {
+    return iess.id;
   }
 
   removeIess(iessId: number): void {
     this.empresa.ieses = this.empresa.ieses.filter((i: any) => i.id !== iessId);
+    
+    // Guardar los cambios en el backend
+    this.saveIessChanges();
+  }
+  
+  // Función para obtener IESS disponibles (no asignados a la empresa)
+  getAvailableIess(): any[] {
+    if (!this.iessList || !this.empresa.ieses) {
+      return this.iessList || [];
+    }
+    
+    return this.iessList.filter(iess =>
+      !this.empresa.ieses.some((empresaIess: any) => Number(empresaIess.id) === Number(iess.id))
+    );
+  }
+
+  // Función para verificar si es array (para usar en template)
+  isArray(value: any): boolean {
+    return Array.isArray(value);
+  }
+
+  // Función para obtener nombre de visualización de IESS
+  getIessDisplayName(iess: any): string {
+    if (!iess) return 'IESS desconocido';
+    
+    // Simplemente mostrar la descripción
+    return iess.description || iess.name || `IESS #${iess.id}`;
+  }
+
+  // Función para obtener matrices de obligaciones disponibles (no asignadas a la empresa)
+  getAvailableObligacionesMatriz(): any[] {
+    if (!this.obligacionesMatriz || !this.empresa.obligationMatrices) {
+      return this.obligacionesMatriz || [];
+    }
+    
+    return this.obligacionesMatriz.filter(obligacion => 
+      !this.empresa.obligationMatrices.some((empresaObl: any) => empresaObl.id === obligacion.id)
+    );
+  }
+  
+  private saveIessChanges(): void {
+    console.log('Guardando cambios de IESS...');
+    console.log('IESS actuales en empresa:', this.empresa.ieses);
+    
+    const configurations = {
+      iessItems: this.empresa.ieses
+    };
+    
+    console.log('Configuraciones a enviar:', configurations);
+    
+    this.businessService.updateBusinessConfigurations(this.empresaId, configurations).subscribe({
+      next: (updatedBusiness: any) => {
+        console.log('IESS guardados correctamente. Respuesta:', updatedBusiness);
+        // Actualizar los datos locales con la respuesta del servidor (normalizando nombres)
+        const updatedIess = updatedBusiness?.ieses || updatedBusiness?.iessItems || updatedBusiness?.iess;
+        if (updatedIess) {
+          this.empresa.ieses = updatedIess;
+          console.log('IESS actualizados desde servidor:', this.empresa.ieses);
+        }
+      },
+      error: (error: any) => {
+        console.error('Error al guardar IESS:', error);
+        // Recargar los datos en caso de error para mantener consistencia
+        this.loadData();
+      }
+    });
+  }
+
+  // === EMPRESAS CONTRATISTAS ===
+  openAsignContractorModal(): void {
+    this.selectedContractorCompanies = [];
+    this.selectedBlocks = [];
+    this.availableBlocks = [];
+    this.showAsignContractorModal = true;
+  }
+
+  onContractorCompanyChange(): void {
+    // Limpiar bloques seleccionados cuando cambian las empresas contratistas
+    this.selectedBlocks = [];
+    this.availableBlocks = [];
+    
+    // Cargar bloques de todas las empresas contratistas seleccionadas
+    if (this.selectedContractorCompanies.length > 0) {
+      this.selectedContractorCompanies.forEach(company => {
+        this.loadContractorBlocks(company.id);
+      });
+    }
+  }
+
+  asignContractor(): void {
+    if (!this.selectedContractorCompanies.length || !this.empresa?.id) return;
+    
+    console.log('Agregando empresas contratistas:', this.selectedContractorCompanies);
+    console.log('Bloques seleccionados:', this.selectedBlocks);
+    
+    // Inicializar arrays si no existen
+    if (!this.empresa.contractor_companies) {
+      this.empresa.contractor_companies = [];
+    }
+    if (!this.empresa.contractor_blocks) {
+      this.empresa.contractor_blocks = [];
+    }
+    
+    // Agregar las nuevas empresas contratistas (evitar duplicados)
+    this.selectedContractorCompanies.forEach(newCompany => {
+      const exists = this.empresa.contractor_companies?.some((existingCompany: any) => 
+        existingCompany.id === newCompany.id
+      );
+      if (!exists) {
+        this.empresa.contractor_companies?.push(newCompany);
+      }
+    });
+    
+    // Agregar los nuevos bloques (evitar duplicados)
+    this.selectedBlocks.forEach(newBlock => {
+      const exists = this.empresa.contractor_blocks?.some((existingBlock: any) => 
+        existingBlock.id === newBlock.id
+      );
+      if (!exists) {
+        this.empresa.contractor_blocks?.push(newBlock);
+      }
+    });
+    
+    // Guardar en backend
+    this.saveContractorChanges();
+    
+    // Cerrar modal y limpiar selecciones
+    this.selectedContractorCompanies = [];
+    this.selectedBlocks = [];
+    this.availableBlocks = [];
+    this.showAsignContractorModal = false;
+    
+    alert('Empresas contratistas agregadas exitosamente');
+  }
+
+  removeContractor(): void {
+    if (confirm('¿Está seguro de eliminar todas las empresas contratistas asignadas y todos sus bloques?')) {
+      this.empresa.contractor_companies = [];
+      this.empresa.contractor_blocks = [];
+      
+      // Guardar cambios en backend
+      this.saveContractorChanges();
+      
+      alert('Empresas contratistas eliminadas exitosamente');
+    }
+  }
+
+  removeSpecificContractor(companyId: number): void {
+    const company = this.empresa.contractor_companies?.find((c: any) => c.id === companyId);
+    if (company && confirm(`¿Está seguro de eliminar la empresa contratista "${company.name}"?`)) {
+      // Remover la empresa contratista
+      this.empresa.contractor_companies = this.empresa.contractor_companies?.filter((c: any) => c.id !== companyId) || [];
+      
+      // Remover todos los bloques de esa empresa contratista
+      this.empresa.contractor_blocks = this.empresa.contractor_blocks?.filter((block: any) => 
+        block.contractorCompanyId !== companyId && 
+        block.contractor_company_id !== companyId
+      ) || [];
+      
+      // Guardar cambios en backend
+      this.saveContractorChanges();
+      
+      alert('Empresa contratista eliminada exitosamente');
+    }
+  }
+
+  removeContractorBlock(blockId: number): void {
+    if (confirm('¿Está seguro de eliminar este bloque de la empresa?')) {
+      this.empresa.contractor_blocks = this.empresa.contractor_blocks?.filter((block: any) => block.id !== blockId) || [];
+      
+      // Guardar cambios en backend
+      this.saveContractorChanges();
+      
+      alert('Bloque eliminado exitosamente');
+    }
+  }
+
+  private saveContractorChanges(): void {
+    console.log('Guardando cambios de empresas contratistas...');
+    console.log('Empresas contratistas actuales:', this.empresa.contractor_companies);
+    console.log('Bloques actuales:', this.empresa.contractor_blocks);
+    
+    const configurations = {
+      contractorCompanies: this.empresa.contractor_companies,
+      contractorBlocks: this.empresa.contractor_blocks
+    };
+    
+    console.log('Configuraciones a enviar:', configurations);
+    
+    this.businessService.updateBusinessConfigurations(this.empresaId, configurations).subscribe({
+      next: (updatedBusiness: any) => {
+        console.log('Empresas contratistas guardadas correctamente. Respuesta:', updatedBusiness);
+        // Actualizar los datos locales con la respuesta del servidor
+        if (updatedBusiness?.contractor_companies) {
+          this.empresa.contractor_companies = updatedBusiness.contractor_companies;
+        }
+        if (updatedBusiness?.contractor_blocks) {
+          this.empresa.contractor_blocks = updatedBusiness.contractor_blocks;
+        }
+      },
+      error: (error: any) => {
+        console.error('Error al guardar empresas contratistas:', error);
+        // Recargar los datos en caso de error para mantener consistencia
+        this.loadData();
+      }
+    });
+  }
+
+  // Función para obtener el nombre de visualización de la empresa contratista
+  getContractorCompanyDisplayName(company: any): string {
+    if (!company) return 'Sin empresa contratista';
+    return company.name || company.companyName || `Empresa #${company.id}`;
+  }
+
+  // Función para obtener todas las empresas contratistas como string
+  getContractorCompaniesDisplayNames(): string {
+    if (!this.empresa.contractor_companies || this.empresa.contractor_companies.length === 0) {
+      return 'Sin empresas contratistas';
+    }
+    return this.empresa.contractor_companies
+      .map((company: any) => this.getContractorCompanyDisplayName(company))
+      .join(', ');
+  }
+
+  // Función para obtener el nombre de visualización del bloque
+  getContractorBlockDisplayName(block: any): string {
+    if (!block) return 'Bloque desconocido';
+    return block.name || block.blockName || `Bloque #${block.id}`;
+  }
+
+  // Función para verificar si hay empresas contratistas configuradas
+  hasContractorCompanies(): boolean {
+    return this.empresa.contractor_companies && this.empresa.contractor_companies.length > 0;
+  }
+
+  // Función para obtener empresas contratistas disponibles (no asignadas)
+  getAvailableContractorCompanies(): any[] {
+    if (!this.contractorCompanies || !this.empresa.contractor_companies) {
+      return this.contractorCompanies || [];
+    }
+    
+    return this.contractorCompanies.filter(company =>
+      !this.empresa.contractor_companies?.some((assignedCompany: any) => assignedCompany.id === company.id)
+    );
   }
 
   // === GESTIÓN DE USUARIOS ===
@@ -652,33 +1136,15 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     this.showCreateUserModal = true;
   }
 
-  deleteUser(user: any): void {
-    if (confirm(`¿Está seguro de eliminar al usuario ${user.name}?`)) {
-      console.log('Eliminando usuario:', user);
-      
-      this.userService.deleteUser(user.id).subscribe({
-        next: (response) => {
-          console.log('Usuario eliminado exitosamente');
-          alert('Usuario eliminado exitosamente');
-          this.loadUsers(); // Recargar la lista de usuarios
-        },
-        error: (error) => {
-          console.error('Error al eliminar usuario:', error);
-          alert('Error al eliminar el usuario. Por favor, inténtelo de nuevo.');
-        }
-      });
-    }
-  }
-
-  // Método para actualizar usuario existente
+  // Método para actualizar usuario
   updateUser(): void {
-    if (!this.empresa?.id || !this.editingUserId) {
-      alert('Error: No se encontró la información necesaria para actualizar');
+    if (!this.editingUserId) {
+      console.error('No hay ID de usuario para actualizar');
       return;
     }
 
     const userData: CreateUserRequest = {
-      id: this.editingUserId, // Incluir el ID para la actualización
+      id: this.editingUserId || undefined, // Convertir null a undefined
       name: `${this.newUser.nombres} ${this.newUser.apellidos}`,
       email: this.newUser.email,
       username: this.newUser.username,
@@ -699,9 +1165,72 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al actualizar usuario:', error);
-        alert('Error al actualizar el usuario. Por favor, verifique los datos.');
+        let errorMessage = 'Error al actualizar el usuario. Por favor, verifique los datos.';
+        
+        if (error.status === 400) {
+          errorMessage = 'Los datos del usuario no son válidos. Verifique email, username y teléfono.';
+        } else if (error.status === 404) {
+          errorMessage = 'El usuario no fue encontrado.';
+        } else if (error.status === 409) {
+          errorMessage = 'El email o username ya están en uso por otro usuario.';
+        } else if (error.status === 403) {
+          errorMessage = 'No tiene permisos para actualizar este usuario.';
+        } else if (error.status === 500) {
+          errorMessage = 'Error del servidor. Inténtelo más tarde.';
+        }
+        
+        alert(errorMessage);
       }
     });
+  }
+
+  // Método para eliminar usuario
+  deleteUser(user: any): void {
+    if (confirm(`¿Está seguro de que desea eliminar al usuario ${user.name}?`)) {
+      console.log('Intentando eliminar usuario con ID:', user.id);
+      
+      // Debug: Verificar información del usuario actual
+      const currentUser = localStorage.getItem('currentUser');
+      const authToken = localStorage.getItem('authToken');
+      console.log('Usuario actual en localStorage:', currentUser);
+      console.log('Token disponible:', !!authToken);
+      
+      this.userService.deleteUser(user.id).subscribe({
+        next: (response) => {
+          console.log('Usuario eliminado exitosamente:', response);
+          alert('Usuario eliminado exitosamente');
+          this.loadUsers();
+        },
+        error: (error) => {
+          console.error('Error al eliminar usuario:', error);
+          console.error('Detalles completos del error:', {
+            status: error.status,
+            statusText: error.statusText,
+            message: error.message,
+            error: error.error
+          });
+          
+          let errorMessage = 'Error al eliminar el usuario.';
+          
+          if (error.status === 400) {
+            // Error 400 puede ser problema de restricciones de base de datos
+            if (error.error && error.error.message && error.error.message.includes('foreign key constraint')) {
+              errorMessage = 'No se puede eliminar el usuario porque tiene sesiones activas o datos relacionados. El usuario será eliminado ahora que se han limpiado sus dependencias.';
+            } else {
+              errorMessage = 'No se puede eliminar el usuario. Verifique que el usuario no tenga dependencias activas.';
+            }
+          } else if (error.status === 404) {
+            errorMessage = 'El usuario no fue encontrado.';
+          } else if (error.status === 403) {
+            errorMessage = 'No tiene permisos para eliminar este usuario.';
+          } else if (error.status === 500) {
+            errorMessage = 'Error del servidor. Inténtelo más tarde.';
+          }
+          
+          alert(errorMessage);
+        }
+      });
+    }
   }
 
   // Método para cerrar el modal de usuario

@@ -146,10 +146,10 @@
                     <span class="visually-hidden">Cargando...</span>
                   </div>
                 </div>                <img 
-                  [src]="imagePreview || 'assets/img/default-avatar.png'" 
+                  [src]="imagePreview || '/assets/img/default-avatar.png'" 
                   alt="Foto de perfil" 
                   class="rounded-circle img-thumbnail profile-picture"
-                  onerror="this.src='assets/img/default-avatar.png'"
+                  onerror="this.src='/assets/img/default-avatar.png'"
                   (load)="onImageLoaded()"
                   (error)="onImageError()"
                   loading="lazy"
@@ -193,7 +193,51 @@
                 Usuario activo
               </label>
             </div>
-                <div class="mb-3">
+            <div class="mb-3">
+              <label class="form-label">Tipo de usuario *</label>
+              <div class="form-check">
+                <input 
+                  class="form-check-input" 
+                  type="radio" 
+                  id="userTypeEmpresa" 
+                  value="empresa" 
+                  formControlName="userType"
+                  (change)="onUserTypeChange()"
+                >
+                <label class="form-check-label" for="userTypeEmpresa">Usuario de Empresa</label>
+              </div>
+              <div class="form-check">
+                <input 
+                  class="form-check-input" 
+                  type="radio" 
+                  id="userTypeAdmin" 
+                  value="administrador" 
+                  formControlName="userType"
+                  (change)="onUserTypeChange()"
+                >
+                <label class="form-check-label" for="userTypeAdmin">Administrador General</label>
+              </div>
+            </div>
+            <div class="mb-3" *ngIf="userForm.get('userType')?.value === 'empresa'">
+              <label for="businessId" class="form-label">Empresa asociada *</label>
+              <select 
+                id="businessId"
+                class="form-select"
+                [ngClass]="{'is-invalid': userForm.get('businessId')?.invalid && userForm.get('businessId')?.touched}"
+                formControlName="businessId">
+                <option [ngValue]="null">Seleccione una empresa...</option>
+                <option *ngFor="let b of businesses" [value]="b.id">{{ b.ruc }} - {{ b.name }}</option>
+              </select>
+              <div class="invalid-feedback" *ngIf="userForm.get('businessId')?.invalid && userForm.get('businessId')?.touched">
+                Seleccione una empresa.
+              </div>
+              <small class="text-muted">Seleccione la empresa a la que pertenecerá este usuario.</small>
+              <div class="mt-1 small text-secondary">
+                <i class="fas fa-building me-1"></i>
+                Empresa seleccionada: <strong>{{ getSelectedBusinessLabel() }}</strong>
+              </div>
+            </div>
+            <div class="mb-3">
               <label class="form-label">Roles *</label>
               <div class="card" [ngClass]="{'border-danger': userForm.get('roleIds')?.invalid && userForm.get('roleIds')?.touched}">
                 <div class="card-body">

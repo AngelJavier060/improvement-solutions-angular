@@ -7,6 +7,8 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { NotificationService } from '../../../../services/notification.service';
 import { environment } from '../../../../../environments/environment';
 import { ImageCacheService } from '../../../../services/image-cache.service';
+import { BusinessService } from '../../../../services/business.service';
+import { Business } from '../../../../models/business.model';
 
 @Component({
   selector: 'app-editar-usuario',
@@ -24,6 +26,7 @@ export class EditarUsuarioComponent implements OnInit {
   maxFileSize = 2 * 1024 * 1024; // 2MB en bytes
   allowedFileTypes = ['image/jpeg', 'image/png', 'image/jpg'];
   environment = environment;
+  businesses: Business[] = [];
   availableRoles = [
     { id: 1, name: 'ROLE_ADMIN' },
     { id: 2, name: 'ROLE_USER' },
@@ -35,7 +38,8 @@ export class EditarUsuarioComponent implements OnInit {
     private userService: UserAdminService,
     private modalService: NgbModal,
     private notificationService: NotificationService,
-    private imageCacheService: ImageCacheService
+    private imageCacheService: ImageCacheService,
+    private businessService: BusinessService
   ) {
     this.userForm = this.fb.group({
       username: ['', [
@@ -63,12 +67,25 @@ export class EditarUsuarioComponent implements OnInit {
         Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
       ]],
       confirmPassword: [''],
+      userType: ['empresa', Validators.required],
+      businessId: [null],
       active: [true],
       roleIds: [[], Validators.required]
     }, { validators: this.passwordMatchValidator });
   }
 
   ngOnInit(): void {
+    // Cargar empresas para el desplegable
+    this.businessService.getAll().subscribe({
+      next: (data) => {
+        this.businesses = data;
+      },
+      error: () => {
+        // Silenciar errores de carga de empresas para no bloquear el formulario
+      }
+    });
+    // Inicializar validadores de businessId según el userType por defecto
+    this.onUserTypeChange();
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (id) {
@@ -80,6 +97,18 @@ export class EditarUsuarioComponent implements OnInit {
         this.userForm.get('password')?.setValidators([Validators.required, Validators.minLength(6), Validators.maxLength(100)]);
         this.userForm.get('confirmPassword')?.setValidators([Validators.required]);
         this.userForm.updateValueAndValidity();
+        // Preseleccionar tipo por query param si existe
+        this.route.queryParamMap.subscribe(q => {
+          const type = q.get('type');
+          if (type === 'administrador' || type === 'empresa') {
+            this.userForm.get('userType')?.setValue(type);
+            this.onUserTypeChange();
+          }
+          const businessIdParam = q.get('businessId');
+          if (businessIdParam) {
+            this.userForm.get('businessId')?.setValue(Number(businessIdParam));
+          }
+        });
       }
     });
   }
@@ -98,6 +127,19 @@ export class EditarUsuarioComponent implements OnInit {
             const foundRole = this.availableRoles.find(r => r.name === role);
             return foundRole ? foundRole.id : null;
           }).filter((id: number | null) => id !== null) || []
+        });
+        // Definir tipo de usuario según roles
+        const isAdmin = (user.roles || []).includes('ROLE_ADMIN');
+        this.userForm.get('userType')?.setValue(isAdmin ? 'administrador' : 'empresa');
+        this.onUserTypeChange();
+        // Precargar asociación de empresa si existe
+        this.businessService.getByUserId(id).subscribe({
+          next: (list) => {
+            if (Array.isArray(list) && list.length > 0) {
+              this.userForm.get('businessId')?.setValue(list[0].id ?? null);
+            }
+          },
+          error: () => {}
         });
         
         // Resetear las validaciones de contraseña en modo edición
@@ -173,13 +215,12 @@ export class EditarUsuarioComponent implements OnInit {
           this.isSubmitting = true;            this.userService.uploadProfilePicture(this.userId, this.fileToUpload).subscribe({
             next: (response: any) => {
               console.log('Respuesta de subida de imagen (edición):', response);
-              // Actualizar el objeto userData con la ruta de la imagen
               // La API devuelve la respuesta en formato SuccessResponse con un campo 'data'
               userData.profilePicture = response.data || (typeof response === 'string' ? response : null);
               console.log('Ruta de imagen guardada:', userData.profilePicture);
               // Ahora actualizamos el usuario con la nueva ruta de imagen
               this.userService.updateUser(this.userId as number, userData).subscribe({
-                next: () => this.handleSaveSuccess(),
+                next: () => this.finalizeAfterAssociation(this.userId as number),
                 error: (error: any) => this.handleSaveError(error)
               });
             },            error: (error: any) => {
@@ -190,7 +231,7 @@ export class EditarUsuarioComponent implements OnInit {
               
               // Mostrar un mensaje pero continuar guardando el usuario aunque la imagen falle
               this.userService.updateUser(this.userId as number, userData).subscribe({
-                next: () => this.handleSaveSuccess(),
+                next: () => this.finalizeAfterAssociation(this.userId as number),
                 error: (error: any) => this.handleSaveError(error)
               });
             }
@@ -198,7 +239,7 @@ export class EditarUsuarioComponent implements OnInit {
         } else {
           // No hay nueva foto, solo actualizar usuario
           this.userService.updateUser(this.userId, userData).subscribe({
-            next: () => this.handleSaveSuccess(),
+            next: () => this.finalizeAfterAssociation(this.userId as number),
             error: (error) => this.handleSaveError(error)
           });
         }
@@ -209,35 +250,99 @@ export class EditarUsuarioComponent implements OnInit {
         next: (createdUser) => {          // Si hay un archivo para subir en modo creación
           if (this.fileToUpload && createdUser && createdUser.id) {
             this.userService.uploadProfilePicture(createdUser.id, this.fileToUpload).subscribe({              next: (uploadResponse: any) => {
-                // Actualizar el usuario con la ruta de la imagen
-                console.log('Respuesta de subida de imagen:', uploadResponse);
-                let profilePicturePath;
-                if (uploadResponse && uploadResponse.data) {
-                  profilePicturePath = uploadResponse.data;
-                } else if (uploadResponse && typeof uploadResponse === 'string') {
-                  profilePicturePath = uploadResponse;
-                }
-                console.log('Ruta de imagen guardada (creación):', profilePicturePath);
-                
-                const updateData = { profilePicture: profilePicturePath };
-                this.userService.updateUser(createdUser.id, updateData).subscribe({
-                  next: () => this.handleSaveSuccess(),
-                  error: () => this.handleSaveSuccess() // Continuar aunque falle la actualización
+              // Actualizar el usuario con la ruta de la imagen
+              console.log('Respuesta de subida de imagen:', uploadResponse);
+              let profilePicturePath;
+              if (uploadResponse && uploadResponse.data) {
+                profilePicturePath = uploadResponse.data;
+              } else if (uploadResponse && typeof uploadResponse === 'string') {
+                profilePicturePath = uploadResponse;
+              }
+              console.log('Ruta de imagen guardada (creación):', profilePicturePath);
+              
+              const updateData = { profilePicture: profilePicturePath };
+              this.userService.updateUser(createdUser.id, updateData).subscribe({
+                next: () => this.finalizeAfterAssociation(createdUser.id),
+                error: () => this.finalizeAfterAssociation(createdUser.id) // Continuar aunque falle la actualización
+              });
+            },
+            error: (error: any) => {
+              console.error('Error al subir imagen de perfil', error);
+              this.finalizeAfterAssociation(createdUser.id); // Continuar aunque la imagen falle
+            }
+          });
+          } else {
+            this.finalizeAfterAssociation(createdUser.id);
+          }
+        },
+        error: (error) => this.handleSaveError(error)
+      });
+    }
+  }  
+  private finalizeAfterAssociation(userId: number): void {
+    const userType = this.userForm.get('userType')?.value;
+    const businessId = this.userForm.get('businessId')?.value;
+    if (userType === 'empresa' && businessId) {
+      this.businessService.addUserToBusiness(Number(businessId), userId).subscribe({
+        next: () => this.handleSaveSuccess(),
+        error: () => this.handleSaveSuccess()
+      });
+    } else {
+      // Si es administrador, remover cualquier asociación previa
+      this.businessService.getByUserId(userId).subscribe({
+        next: (list) => {
+          if (Array.isArray(list) && list.length > 0) {
+            // Remover asociaciones en cadena y finalizar
+            let pending = list.length;
+            list.forEach(b => {
+              if (b.id != null) {
+                this.businessService.removeUserFromBusiness(Number(b.id), userId).subscribe({
+                  next: () => { if (--pending === 0) this.handleSaveSuccess(); },
+                  error: () => { if (--pending === 0) this.handleSaveSuccess(); }
                 });
-              },
-              error: (error: any) => {
-                console.error('Error al subir imagen de perfil', error);
-                this.handleSaveSuccess(); // Continuar aunque la imagen falle
+              } else {
+                if (--pending === 0) this.handleSaveSuccess();
               }
             });
           } else {
             this.handleSaveSuccess();
           }
         },
-        error: (error) => this.handleSaveError(error)
+        error: () => this.handleSaveSuccess()
       });
     }
-  }  handleSaveSuccess(): void {
+  }
+  onUserTypeChange(): void {
+    const type = this.userForm.get('userType')?.value;
+    const businessCtrl = this.userForm.get('businessId');
+    if (type === 'empresa') {
+      businessCtrl?.setValidators([Validators.required]);
+      // Asegurar que no tenga rol de administrador
+      const roleIdsControl = this.userForm.get('roleIds');
+      const currentRoleIds: number[] = [...(roleIdsControl?.value || [])];
+      const adminRole = this.availableRoles.find(r => r.name === 'ROLE_ADMIN');
+      if (adminRole) {
+        const idx = currentRoleIds.indexOf(adminRole.id);
+        if (idx !== -1) {
+          currentRoleIds.splice(idx, 1);
+          roleIdsControl?.setValue(currentRoleIds);
+        }
+      }
+    } else {
+      businessCtrl?.clearValidators();
+      businessCtrl?.setValue(null);
+      // Asegurar que tenga rol de administrador
+      const roleIdsControl = this.userForm.get('roleIds');
+      const currentRoleIds: number[] = [...(roleIdsControl?.value || [])];
+      const adminRole = this.availableRoles.find(r => r.name === 'ROLE_ADMIN');
+      if (adminRole && !currentRoleIds.includes(adminRole.id)) {
+        currentRoleIds.push(adminRole.id);
+        roleIdsControl?.setValue(currentRoleIds);
+      }
+    }
+    businessCtrl?.updateValueAndValidity();
+  }
+  handleSaveSuccess(): void {
     this.isSubmitting = false;
     const mensaje = this.isEditMode ? 'Usuario actualizado exitosamente' : 'Usuario creado exitosamente';
     this.notificationService.success(mensaje);
@@ -405,6 +510,14 @@ export class EditarUsuarioComponent implements OnInit {
     this.fileToUpload = null;
     this.imagePreview = null;
     this.imageError = null;
+  }
+  
+  getSelectedBusinessLabel(): string {
+    const id = this.userForm.get('businessId')?.value;
+    if (!id) return '—';
+    const found = this.businesses.find(b => Number(b.id) === Number(id));
+    if (!found) return '—';
+    return `${found.ruc ? found.ruc + ' - ' : ''}${found.name || found.nameShort || 'Empresa'}`;
   }
   
   passwordMatchValidator(group: FormGroup): {[key: string]: any} | null {

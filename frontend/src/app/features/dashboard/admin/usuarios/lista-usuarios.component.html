@@ -7,7 +7,7 @@
       <p class="text-muted">Administra los usuarios del sistema</p>
     </div>
     <div class="col-auto">
-      <button type="button" class="btn btn-primary" routerLink="/dashboard/admin/usuarios/nuevo">
+      <button type="button" class="btn btn-primary" [routerLink]="['/dashboard/admin/usuarios/nuevo']" [queryParams]="selectedBusinessId==='all' ? { type: 'empresa' } : { type: 'empresa', businessId: selectedBusinessId }">
         <i class="fas fa-user-plus me-1"></i> Nuevo Usuario
       </button>
     </div>
@@ -15,6 +15,28 @@
 
   <div class="card">
     <div class="card-body">
+      <nav class="mb-3">
+        <ul class="nav nav-pills">
+          <li class="nav-item">
+            <a class="nav-link" [class.active]="userTypeFilter==='todos'" (click)="setUserTypeFilter('todos')">
+              <i class="fas fa-users me-1"></i> Todos
+              <span class="badge bg-light text-dark ms-1">{{ totalUsuarios }}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" [class.active]="userTypeFilter==='empresa'" (click)="setUserTypeFilter('empresa')">
+              <i class="fas fa-building me-1"></i> Empresa
+              <span class="badge bg-light text-dark ms-1">{{ totalUsuariosEmpresa }}</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" [class.active]="userTypeFilter==='administrador'" (click)="setUserTypeFilter('administrador')">
+              <i class="fas fa-user-shield me-1"></i> Administradores
+              <span class="badge bg-light text-dark ms-1">{{ totalAdministradores }}</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
       <!-- Barra de búsqueda -->
       <div class="row mb-4">
         <div class="col-md-6">          <div class="input-group">
@@ -39,9 +61,16 @@
           </div>
         </div>
         <div class="col-md-6 text-end">
-          <button class="btn btn-outline-primary" (click)="loadUsers()">
-            <i class="fas fa-sync-alt me-1"></i> Actualizar
-          </button>
+          <div class="d-inline-flex align-items-center gap-2">
+            <label class="me-1 text-muted">Empresa:</label>
+            <select class="form-select form-select-sm w-auto" [(ngModel)]="selectedBusinessId" (change)="applyFilter()">
+              <option [ngValue]="'all'">Todas</option>
+              <option *ngFor="let b of businesses" [ngValue]="b.id">{{ b.ruc }} - {{ b.name }}</option>
+            </select>
+            <button class="btn btn-outline-primary" (click)="loadUsers()">
+              <i class="fas fa-sync-alt me-1"></i> Actualizar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -54,32 +83,36 @@
               <th scope="col">Usuario</th>
               <th scope="col">Nombre</th>
               <th scope="col">Email</th>
+              <th scope="col">Empresa</th>
               <th scope="col">Rol</th>
+              <th scope="col">Tipo</th>
               <th scope="col">Estado</th>
               <th scope="col">Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngIf="isLoading">
-              <td colspan="7" class="text-center py-4">
+              <td colspan="9" class="text-center py-4">
                 <div class="spinner-border text-primary" role="status">
                   <span class="visually-hidden">Cargando...</span>
                 </div>
               </td>
             </tr>
             <tr *ngIf="!isLoading && filteredUsers.length === 0">
-              <td colspan="7" class="text-center py-4">
+              <td colspan="9" class="text-center py-4">
                 No se encontraron usuarios
               </td>
             </tr>
-            <tr *ngFor="let user of pagedUsers" style="cursor: pointer;">              <td>                  <div class="avatar-container" (click)="$event.stopPropagation()">
+            <tr *ngFor="let user of pagedUsers; trackBy: trackByUserId" style="cursor: pointer;">
+              <td>
+                <div class="avatar-container" (click)="$event.stopPropagation()">
                   <div class="user-avatar-wrapper">                    <img 
                       [src]="getProfilePictureUrl(user)" 
                       alt="Profile" 
                       class="rounded-circle user-avatar profile-picture" 
                       width="40" 
                       height="40"
-                      onerror="this.src='assets/img/default-avatar.png'; this.classList.add('loaded', 'error-img');"
+                      onerror="this.src='/assets/img/user-placeholder.svg'; this.classList.add('loaded', 'error-img');"
                       loading="lazy"
                       onload="this.classList.add('loaded')"
                       [attr.data-userid]="user.id"
@@ -93,9 +126,16 @@
               <td>{{ user.username }}</td>
               <td>{{ user.name || '-' }}</td>
               <td>{{ user.email }}</td>
+              <td [attr.title]="getBusinessTooltip(user)">{{ getUserBusinessDisplay(user) }}</td>
               <td>
                 <span *ngFor="let role of user.roles" class="badge bg-info me-1">
                   {{ role.replace('ROLE_', '') }}
+                </span>
+              </td>
+              <td>
+                <span class="badge"
+                  [ngClass]="(user.roles || []).includes('ROLE_ADMIN') ? 'bg-dark' : 'bg-info'">
+                  {{ (user.roles || []).includes('ROLE_ADMIN') ? 'Administrador' : 'Empresa' }}
                 </span>
               </td>
               <td>

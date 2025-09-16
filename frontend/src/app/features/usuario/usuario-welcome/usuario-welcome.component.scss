@@ -1,0 +1,205 @@
+.welcome-container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.bg-gradient-light {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.welcome-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.logo-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-icon {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.service-card .card {
+  transition: all 0.3s ease;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.hover-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+.service-icon {
+  transition: transform 0.3s ease;
+}
+
+.service-card:hover .service-icon {
+  transform: scale(1.1);
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.alert {
+  border-radius: 15px;
+  border: none !important;
+}
+
+.card {
+  border-radius: 15px;
+}
+
+.shadow-sm {
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08) !important;
+}
+
+.text-primary {
+  color: #667eea !important;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  border: none;
+}
+
+.btn-outline-primary {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.btn-outline-primary:hover {
+  background-color: #667eea;
+  border-color: #667eea;
+}
+
+.btn-outline-warning {
+  border-color: #f39c12;
+  color: #f39c12;
+}
+
+.btn-outline-warning:hover {
+  background-color: #f39c12;
+  border-color: #f39c12;
+}
+
+.btn-outline-success {
+  border-color: #27ae60;
+  color: #27ae60;
+}
+
+.btn-outline-success:hover {
+  background-color: #27ae60;
+  border-color: #27ae60;
+}
+
+.btn-outline-info {
+  border-color: #3498db;
+  color: #3498db;
+}
+
+.btn-outline-info:hover {
+  background-color: #3498db;
+  border-color: #3498db;
+}
+
+.btn-outline-secondary {
+  border-color: #95a5a6;
+  color: #95a5a6;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #95a5a6;
+  border-color: #95a5a6;
+}
+
+.border-bottom {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+.border-top {
+  border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+.actions-section {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+// Animaciones suaves
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.service-card {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.service-card:nth-child(1) { animation-delay: 0.1s; }
+.service-card:nth-child(2) { animation-delay: 0.2s; }
+.service-card:nth-child(3) { animation-delay: 0.3s; }
+.service-card:nth-child(4) { animation-delay: 0.4s; }
+.service-card:nth-child(5) { animation-delay: 0.5s; }
+.service-card:nth-child(6) { animation-delay: 0.6s; }
+.service-card:nth-child(7) { animation-delay: 0.7s; }
+.service-card:nth-child(8) { animation-delay: 0.8s; }
+
+// Responsive
+@media (max-width: 768px) {
+  .logo-circle {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .avatar-circle {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .service-card .card-body {
+    padding: 1.5rem !important;
+  }
+  
+  .welcome-header .container {
+    text-align: center;
+  }
+  
+  .welcome-header .row > div:first-child {
+    margin-bottom: 1rem;
+  }
+}

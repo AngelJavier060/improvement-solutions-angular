@@ -1,53 +1,7 @@
 <!-- Layout profesional y moderno -->
 <div class="container-fluid p-4" *ngIf="!loading && empresa">
 
-  <!-- Estilos para el comportamiento de expansión -->
-  <style>
-    .card .expanded-content {
-      max-height: 300px;
-      overflow-y: auto;
-      animation: fadeIn 0.3s ease-in-out;
-    }
-    
-    .card.expanded {
-      min-height: auto;
-    }
-    
-    .card:not(.expanded) .expanded-content {
-      display: none;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* Asegurar que los títulos sean visibles */
-    .card-header h6 {
-      display: block !important;
-      visibility: visible !important;
-      color: white !important;
-      font-weight: bold !important;
-      font-size: 18px !important;
-      line-height: 1.2 !important;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-    }
-    
-    .card-header h6.text-dark {
-      color: #212529 !important;
-    }
-    
-    .card {
-      transition: all 0.3s ease;
-    }
-    
-    .card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
-    }
-  </style>
+  
   
   <!-- Header de la empresa con diseño profesional -->
   <div class="card shadow-lg border-0 mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
@@ -59,7 +13,8 @@
               [src]="getLogoUrl()" 
               [alt]="'Logo ' + empresa.name"
               class="rounded-circle border border-white border-3 shadow"
-              style="width: 100px; height: 100px; object-fit: cover;">
+              style="width: 100px; height: 100px; object-fit: cover;"
+              onerror="this.src='/assets/img/default-avatar.png'">
             <span class="position-absolute bottom-0 end-0 badge bg-success rounded-pill">
               <i class="fas fa-check"></i>
             </span>
@@ -152,7 +107,7 @@
     <!-- 1. Sección Departamentos -->
     <div class="col-lg-6 col-xl-3">
       <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.departments?.length > 0}">
-        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #ff9a9e 0%, #fecfef 100%); min-height: 70px;">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #ff9a9e 0%, #fecfef 100%);">
           <div class="d-flex align-items-center h-100">
             <div class="me-3">
               <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
@@ -202,7 +157,7 @@
     <!-- 2. Sección Gestión de documentos -->
     <div class="col-lg-6 col-xl-3">
       <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.type_documents?.length > 0}">
-        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); min-height: 70px;">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);">
           <div class="d-flex align-items-center h-100">
             <div class="me-3">
               <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
@@ -252,7 +207,7 @@
     <!-- 3. Sección Cargos -->
     <div class="col-lg-6 col-xl-3">
       <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.positions?.length > 0}">
-        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #a8edea 0%, #fed6e3 100%); min-height: 70px;">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #a8edea 0%, #fed6e3 100%);">
           <div class="d-flex align-items-center h-100">
             <div class="me-3">
               <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
@@ -302,7 +257,7 @@
     <!-- 3. Sección Gestionar seguros IESS -->
     <div class="col-lg-6 col-xl-3">
       <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.ieses?.length > 0}">
-        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); min-height: 70px;">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);">
           <div class="d-flex align-items-center h-100">
             <div class="me-3">
               <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
@@ -322,12 +277,12 @@
             </button>
           </div>
           
-          <div *ngIf="empresa.ieses?.length > 0" class="expanded-content">
-            <div class="mb-1" *ngFor="let ies of empresa.ieses">
+          <div *ngIf="empresa.ieses && empresa.ieses.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let ies of empresa.ieses; trackBy: trackByIessId">
               <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
                 <div class="d-flex align-items-center flex-grow-1">
                   <i class="fas fa-shield-check text-info me-2" style="font-size: 10px;"></i>
-                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ ies.description || ies.code || ies.name }}</span>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ ies.description || ies.name || 'IESS #' + ies.id }}</span>
                 </div>
                 <button class="btn btn-outline-danger btn-sm p-1" (click)="removeIess(ies.id)" title="Eliminar" style="font-size: 8px;">
                   <i class="fas fa-times"></i>
@@ -339,15 +294,70 @@
           <div *ngIf="empresa.ieses?.length === 0" class="text-center py-2">
             <i class="fas fa-shield-alt fa-lg text-muted opacity-50"></i>
             <p class="text-muted small mb-0" style="font-size: 10px;">Sin seguros IESS</p>
+            <!-- DEBUG: Información simplificada -->
+            <div class="mt-1" style="font-size: 8px; color: #666; background: #f8f9fa; padding: 3px; border-radius: 3px;">
+              DEBUG: empresa.ieses={{empresa?.ieses?.length}} | iessList={{iessList.length}} | disponibles={{getAvailableIess().length}}
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 4. Sección Gestionar contratos -->
+    <!-- 4. Sección Gestionar obligaciones legales -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.obligation_matrices?.length > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #ff7b54 0%, #ff9068 100%);">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-balance-scale text-white" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Matriz Legal</h6>
+              <small class="text-white-50" style="font-size: 12px;">{{ empresa.obligation_matrices?.length || 0 }} obligaciones</small>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-warning btn-sm w-100" (click)="openAsignObligationModal()">
+              <i class="fas fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+          
+          <div *ngIf="empresa.obligation_matrices?.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let obligation of empresa.obligation_matrices">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-gavel text-warning me-2" style="font-size: 10px;"></i>
+                  <div>
+                    <div class="small fw-semibold text-dark" style="font-size: 11px;">
+                      {{ obligation.name || obligation.obligationMatrix?.name }}
+                    </div>
+                    <div class="text-muted" style="font-size: 9px;">{{ obligation.obligationMatrix?.legalRegulation }}</div>
+                    <div class="text-muted" style="font-size: 8px;">{{ obligation.description || obligation.obligationMatrix?.description }}</div>
+                  </div>
+                </div>
+                <button class="btn btn-outline-danger btn-sm p-1" (click)="removeObligation(obligation.id)" title="Eliminar" style="font-size: 8px;">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="empresa.obligation_matrices?.length === 0" class="text-center py-2">
+            <i class="fas fa-balance-scale fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin obligaciones legales</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Sección Gestionar contratos -->
     <div class="col-lg-6 col-xl-3">
       <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.type_contracts?.length > 0}">
-        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #fa2fe3 0%, #fee140 100%); min-height: 70px;">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #fa2fe3 0%, #fee140 100%);">
           <div class="d-flex align-items-center h-100">
             <div class="me-3">
               <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
@@ -389,6 +399,99 @@
           <div *ngIf="empresa.type_contracts?.length === 0" class="text-center py-2">
             <i class="fas fa-file-contract fa-lg text-muted opacity-50"></i>
             <p class="text-muted small mb-0" style="font-size: 10px;">Sin contratos</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Sección Empresas Contratistas -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': hasContractorCompanies() || empresa.contractor_blocks?.length > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-building text-white" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Contratistas</h6>
+              <small class="text-white-50" style="font-size: 12px;">
+                {{ hasContractorCompanies() ? (empresa.contractor_companies?.length + ' empresas') : 'Sin asignar' }}
+              </small>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-primary btn-sm w-100" (click)="openAsignContractorModal()">
+              <i class="fas fa-plus me-1"></i>{{ hasContractorCompanies() ? 'Gestionar' : 'Asignar' }}
+            </button>
+          </div>
+          
+          <!-- Información de las empresas contratistas asignadas -->
+          <div *ngIf="hasContractorCompanies()" class="expanded-content">
+            <div class="mb-2" *ngFor="let company of empresa.contractor_companies">
+              <div class="d-flex align-items-center justify-content-between p-2 bg-primary bg-opacity-10 rounded mb-1">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-building text-primary me-2" style="font-size: 12px;"></i>
+                  <div>
+                    <div class="small fw-semibold text-dark" style="font-size: 11px;">
+                      {{ getContractorCompanyDisplayName(company) }}
+                    </div>
+                    <div class="text-muted" style="font-size: 9px;">
+                      {{ company?.code || 'Sin código' }}
+                    </div>
+                  </div>
+                </div>
+                <button class="btn btn-outline-danger btn-sm p-1" 
+                        title="Eliminar empresa contratista" 
+                        (click)="removeSpecificContractor(company.id)"
+                        style="font-size: 8px;">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Bloques asignados -->
+            <div *ngIf="empresa.contractor_blocks?.length > 0" class="mb-1">
+              <small class="text-muted fw-semibold" style="font-size: 9px;">BLOQUES ASIGNADOS:</small>
+              <div class="mt-1" *ngFor="let block of empresa.contractor_blocks">
+                <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                  <div class="d-flex align-items-center flex-grow-1">
+                    <i class="fas fa-cube text-info me-2" style="font-size: 8px;"></i>
+                    <span class="small fw-semibold text-dark" style="font-size: 10px;">
+                      {{ getContractorBlockDisplayName(block) }}
+                    </span>
+                  </div>
+                  <button class="btn btn-outline-danger btn-sm p-1" 
+                          title="Eliminar bloque" 
+                          (click)="removeContractorBlock(block.id)"
+                          style="font-size: 7px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div *ngIf="empresa.contractor_blocks?.length === 0" class="text-center py-1">
+              <small class="text-muted" style="font-size: 9px;">Sin bloques asignados</small>
+            </div>
+            
+            <!-- Botón para eliminar todas las empresas contratistas -->
+            <div class="mt-2 text-center">
+              <button class="btn btn-outline-danger btn-sm" 
+                      title="Eliminar todas las empresas contratistas" 
+                      (click)="removeContractor()"
+                      style="font-size: 10px;">
+                <i class="fas fa-trash me-1"></i>Eliminar todas
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="!hasContractorCompanies()" class="text-center py-2">
+            <i class="fas fa-building fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin empresas contratistas</p>
           </div>
         </div>
       </div>
@@ -810,7 +913,7 @@
             <i class="fas fa-list me-2"></i>Seleccionar Obligaciones
           </label>
           <select class="form-select form-select-lg" id="selectObligacion" [(ngModel)]="selectedObligacionesMatriz" multiple size="6">
-            <option *ngFor="let obligacion of obligacionesMatriz" [value]="obligacion.id">
+            <option *ngFor="let obligacion of getAvailableObligacionesMatriz()" [value]="obligacion.id">
               {{ obligacion.name || obligacion.description }} 
               <span *ngIf="obligacion.legalRegulation"> - {{ obligacion.legalRegulation }}</span>
             </option>
@@ -848,6 +951,11 @@
         <button type="button" class="btn-close btn-close-white" (click)="showAsignIessModal = false"></button>
       </div>
       <div class="modal-body">
+        <!-- DEBUG INFO en modal (simplificado) -->
+        <div class="alert alert-secondary" style="font-size: 10px; padding: 8px;">
+          Disponibles: {{ getAvailableIess().length }} IESS | Ya asignados: {{ empresa.ieses.length }}
+        </div>
+        
         <div class="alert alert-info">
           <small>
             <i class="fas fa-info-circle me-2"></i>
@@ -855,7 +963,9 @@
           </small>
         </div>
         <select class="form-select form-select-lg" id="selectIess" [(ngModel)]="selectedIess" multiple size="6">
-          <option *ngFor="let iess of iessList" [value]="iess.id">{{ iess.description }} - {{ iess.code }}</option>
+          <option *ngFor="let iess of iessList" [ngValue]="iess">
+            {{ iess.description }}
+          </option>
         </select>
       </div>
       <div class="modal-footer">
@@ -1070,6 +1180,135 @@
           Form Valid: {{ userForm.form.valid }} | 
           Required fields: nombres, apellidos, email, username, password
         </small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para asignar empresas contratistas -->
+<div *ngIf="showAsignContractorModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-gradient text-white border-0" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-building me-2"></i>
+          <h5 class="modal-title mb-0">Gestionar Empresas Contratistas</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" (click)="showAsignContractorModal = false"></button>
+      </div>
+      <div class="modal-body p-4">
+        <!-- Empresas contratistas actualmente asignadas -->
+        <div *ngIf="hasContractorCompanies()" class="mb-4">
+          <h6 class="text-primary fw-semibold">
+            <i class="fas fa-building me-2"></i>Empresas Contratistas Asignadas:
+          </h6>
+          <div class="row g-2">
+            <div class="col-md-6" *ngFor="let company of empresa.contractor_companies">
+              <div class="card bg-light border-primary">
+                <div class="card-body p-2">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong class="small">{{ company.name }}</strong><br>
+                      <small class="text-muted">{{ company.code || 'Sin código' }}</small>
+                    </div>
+                    <button class="btn btn-outline-danger btn-sm" 
+                            (click)="removeSpecificContractor(company.id)"
+                            title="Eliminar empresa">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selección de nuevas empresas contratistas -->
+        <div class="mb-4">
+          <label for="selectContractorCompanies" class="form-label fw-semibold">
+            <i class="fas fa-plus me-2 text-success"></i>Agregar Empresas Contratistas
+          </label>
+          <select class="form-select form-select-lg" 
+                  id="selectContractorCompanies" 
+                  [(ngModel)]="selectedContractorCompanies" 
+                  multiple size="5"
+                  (change)="onContractorCompanyChange()">
+            <option *ngFor="let company of getAvailableContractorCompanies()" [ngValue]="company">
+              {{ company.name }} ({{ company.code || 'Sin código' }})
+            </option>
+          </select>
+          <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples empresas contratistas
+          </div>
+          <div *ngIf="getAvailableContractorCompanies().length === 0" class="alert alert-info mt-2">
+            <i class="fas fa-info-circle me-2"></i>
+            Todas las empresas contratistas disponibles ya están asignadas.
+          </div>
+        </div>
+
+        <!-- Información de las empresas contratistas seleccionadas -->
+        <div *ngIf="selectedContractorCompanies.length > 0" class="alert alert-info">
+          <h6><i class="fas fa-info-circle me-2"></i>Empresas Seleccionadas para Agregar:</h6>
+          <ul class="mb-0">
+            <li *ngFor="let company of selectedContractorCompanies">
+              <strong>{{ company.name }}</strong>
+              <span *ngIf="company.code"> ({{ company.code }})</span>
+              <span *ngIf="company.description"> - {{ company.description }}</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Selección de bloques (opcional) -->
+        <div *ngIf="selectedContractorCompanies.length > 0" class="mb-4">
+          <label for="selectBlocks" class="form-label fw-semibold">
+            <i class="fas fa-cubes me-2 text-info"></i>Seleccionar Bloques (Opcional)
+          </label>
+          
+          <div *ngIf="availableBlocks.length > 0">
+            <select class="form-select form-select-lg" 
+                    id="selectBlocks" 
+                    [(ngModel)]="selectedBlocks" 
+                    multiple size="6">
+              <option *ngFor="let block of availableBlocks" [ngValue]="block">
+                {{ block.name }} - {{ block.code || 'Sin código' }}
+                <span *ngIf="block.description"> ({{ block.description }})</span>
+              </option>
+            </select>
+            <div class="form-text">
+              <i class="fas fa-info-circle me-1"></i>
+              Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples bloques
+            </div>
+          </div>
+          
+          <div *ngIf="availableBlocks.length === 0" class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Las empresas contratistas seleccionadas no tienen bloques disponibles.
+          </div>
+        </div>
+
+        <!-- Información sobre bloques seleccionados -->
+        <div *ngIf="selectedBlocks.length > 0" class="alert alert-success">
+          <h6><i class="fas fa-check-circle me-2"></i>Bloques Seleccionados:</h6>
+          <ul class="mb-0">
+            <li *ngFor="let block of selectedBlocks">
+              <strong>{{ block.name }}</strong>
+              <span *ngIf="block.code"> ({{ block.code }})</span>
+              <span *ngIf="block.description"> - {{ block.description }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="showAsignContractorModal = false">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" 
+                class="btn btn-primary" 
+                (click)="asignContractor()" 
+                [disabled]="selectedContractorCompanies.length === 0">
+          <i class="fas fa-save me-1"></i>Agregar Empresas Contratistas
+        </button>
       </div>
     </div>
   </div>

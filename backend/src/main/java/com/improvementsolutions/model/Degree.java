@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -33,5 +34,6 @@ public class Degree {
 
     // Relación uno a muchos con BusinessEmployee
     @OneToMany(mappedBy = "degree")
+    @JsonIgnore // Evitar serialización bidireccional
     private Set<BusinessEmployee> businessEmployees = new HashSet<>();
 }

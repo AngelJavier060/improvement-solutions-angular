@@ -1,0 +1,272 @@
+<div class="welcome-container">
+  <div class="container-fluid min-vh-100 bg-gradient-light">
+    
+    <!-- Header con información de la empresa -->
+    <div class="welcome-header py-5 bg-white shadow-sm border-bottom">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <div class="d-flex align-items-center">
+              <div class="company-logo me-4">
+                <div class="logo-circle bg-primary d-flex align-items-center justify-content-center">
+                  <i class="fas fa-building fa-3x text-white"></i>
+                </div>
+              </div>
+              <div>
+                <h1 class="h2 fw-bold text-dark mb-2">{{ empresaNombre || 'Empresa no disponible' }}</h1>
+                <p class="text-muted mb-1">RUC: {{ empresaRuc || 'No disponible' }}</p>
+                <p class="text-success mb-0">
+                  <i class="fas fa-circle me-1" style="font-size: 8px;"></i>
+                  Sistema activo
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 text-md-end">
+            <div class="user-info">
+              <div class="d-flex align-items-center justify-content-md-end">
+                <div class="me-3 text-end">
+                  <div class="fw-bold text-dark">{{ usuario?.name || 'Usuario' }}</div>
+                  <small class="text-muted">{{ usuario?.username || 'Sin usuario' }}</small>
+                </div>
+                <div class="user-avatar">
+                  <div class="avatar-circle bg-secondary d-flex align-items-center justify-content-center">
+                    <i class="fas fa-user text-white"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje de bienvenida -->
+    <div class="welcome-message py-4">
+      <div class="container">
+        <div class="alert alert-success border-0 shadow-sm bg-success bg-opacity-10">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <div class="welcome-icon bg-success bg-opacity-20 rounded-circle p-3">
+                <i class="fas fa-check-circle fa-2x text-success"></i>
+              </div>
+            </div>
+            <div class="col">
+              <h4 class="alert-heading text-success fw-bold mb-2">
+                ¡Bienvenido al Sistema de {{ empresaNombre || 'tu empresa' }}!
+              </h4>
+              <p class="mb-2 text-dark">
+                Has ingresado exitosamente. Tu sesión está activa y el sistema está listo para que comiences a trabajar.
+              </p>
+              <small class="text-muted">
+                <i class="fas fa-calendar-alt me-1"></i>
+                Fecha de acceso: {{ fechaAcceso }}
+                <span *ngIf="usuario?.businesses" class="ms-3">
+                  <i class="fas fa-building me-1"></i>
+                  Empresas disponibles: {{ usuario.businesses.length }}
+                </span>
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Servicios y módulos disponibles -->
+    <div class="services-section py-5">
+      <div class="container">
+        <div class="text-center mb-5">
+          <h2 class="h3 fw-bold text-dark mb-3">Servicios Disponibles</h2>
+          <p class="text-muted">Nuestra motivación es su confianza y nuestro compromiso, la solución óptima.</p>
+        </div>
+
+        <!-- Categorías de servicios -->
+        <div class="row g-4">
+          
+          <!-- Talento Humano -->
+          <div class="col-lg-3 col-md-6">
+            <div class="service-card h-100">
+              <div class="card border-0 shadow-sm h-100 hover-card">
+                <div class="card-body text-center p-4">
+                  <div class="service-icon mb-3">
+                    <i class="fas fa-users fa-3x text-primary"></i>
+                  </div>
+                  <h5 class="card-title fw-bold mb-3">Talento Humano</h5>
+                  <p class="card-text text-muted small">Gestión completa de recursos humanos y desarrollo del talento.</p>
+                  <button class="btn btn-outline-primary btn-sm mt-auto" (click)="goToModule('talento-humano')">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    Acceder
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seguridad Industrial -->
+          <div class="col-lg-3 col-md-6">
+            <div class="service-card h-100">
+              <div class="card border-0 shadow-sm h-100 hover-card">
+                <div class="card-body text-center p-4">
+                  <div class="service-icon mb-3">
+                    <i class="fas fa-hard-hat fa-3x text-warning"></i>
+                  </div>
+                  <h5 class="card-title fw-bold mb-3">Seguridad Industrial</h5>
+                  <p class="card-text text-muted small">Protocolos y medidas de seguridad para el entorno laboral.</p>
+                  <button class="btn btn-outline-warning btn-sm mt-auto" (click)="goToModule('seguridad-industrial')">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    Acceder
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Médico -->
+          <div class="col-lg-3 col-md-6">
+            <div class="service-card h-100">
+              <div class="card border-0 shadow-sm h-100 hover-card">
+                <div class="card-body text-center p-4">
+                  <div class="service-icon mb-3">
+                    <i class="fas fa-stethoscope fa-3x text-success"></i>
+                  </div>
+                  <h5 class="card-title fw-bold mb-3">Médico</h5>
+                  <p class="card-text text-muted small">Servicios médicos y seguimiento de salud ocupacional.</p>
+                  <button class="btn btn-outline-success btn-sm mt-auto" (click)="goToModule('medico')">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    Acceder
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calidad -->
+          <div class="col-lg-3 col-md-6">
+            <div class="service-card h-100">
+              <div class="card border-0 shadow-sm h-100 hover-card">
+                <div class="card-body text-center p-4">
+                  <div class="service-icon mb-3">
+                    <i class="fas fa-certificate fa-3x text-info"></i>
+                  </div>
+                  <h5 class="card-title fw-bold mb-3">Calidad</h5>
+                  <p class="card-text text-muted small">Control y aseguramiento de la calidad en procesos.</p>
+                  <button class="btn btn-outline-info btn-sm mt-auto" (click)="goToModule('calidad')">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    Acceder
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mantenimiento -->
+          <div class="col-lg-3 col-md-6">
+            <div class="service-card h-100">
+              <div class="card border-0 shadow-sm h-100 hover-card">
+                <div class="card-body text-center p-4">
+                  <div class="service-icon mb-3">
+                    <i class="fas fa-tools fa-3x text-secondary"></i>
+                  </div>
+                  <h5 class="card-title fw-bold mb-3">Mantenimiento</h5>
+                  <p class="card-text text-muted small">Gestión de mantenimiento preventivo y correctivo.</p>
+                  <button class="btn btn-outline-secondary btn-sm mt-auto" (click)="goToModule('mantenimiento')">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    Acceder
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Medio Ambiente -->
+          <div class="col-lg-3 col-md-6">
+            <div class="service-card h-100">
+              <div class="card border-0 shadow-sm h-100 hover-card">
+                <div class="card-body text-center p-4">
+                  <div class="service-icon mb-3">
+                    <i class="fas fa-leaf fa-3x text-success"></i>
+                  </div>
+                  <h5 class="card-title fw-bold mb-3">Medio Ambiente</h5>
+                  <p class="card-text text-muted small">Gestión ambiental y sostenibilidad empresarial.</p>
+                  <button class="btn btn-outline-success btn-sm mt-auto" (click)="goToModule('medio-ambiente')">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    Acceder
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Producción -->
+          <div class="col-lg-3 col-md-6">
+            <div class="service-card h-100">
+              <div class="card border-0 shadow-sm h-100 hover-card">
+                <div class="card-body text-center p-4">
+                  <div class="service-icon mb-3">
+                    <i class="fas fa-industry fa-3x text-primary"></i>
+                  </div>
+                  <h5 class="card-title fw-bold mb-3">Producción</h5>
+                  <p class="card-text text-muted small">Optimización y control de procesos productivos.</p>
+                  <button class="btn btn-outline-primary btn-sm mt-auto" (click)="goToModule('produccion')">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    Acceder
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Logística -->
+          <div class="col-lg-3 col-md-6">
+            <div class="service-card h-100">
+              <div class="card border-0 shadow-sm h-100 hover-card">
+                <div class="card-body text-center p-4">
+                  <div class="service-icon mb-3">
+                    <i class="fas fa-shipping-fast fa-3x text-info"></i>
+                  </div>
+                  <h5 class="card-title fw-bold mb-3">Logística</h5>
+                  <p class="card-text text-muted small">Gestión integral de la cadena de suministro.</p>
+                  <button class="btn btn-outline-info btn-sm mt-auto" (click)="goToModule('logistica')">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    Acceder
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Acciones principales -->
+    <div class="actions-section py-4 bg-white border-top">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <div class="d-flex align-items-center">
+              <div class="me-3">
+                <i class="fas fa-info-circle text-primary"></i>
+              </div>
+              <div>
+                <div class="fw-bold text-dark">¿Necesitas ayuda?</div>
+                <small class="text-muted">Contacta a nuestro equipo de soporte para cualquier consulta.</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <button type="button" class="btn btn-outline-danger me-2" (click)="logout()">
+              <i class="fas fa-sign-out-alt me-1"></i>
+              Cerrar Sesión
+            </button>
+            <button type="button" class="btn btn-primary" (click)="goToDashboard()">
+              <i class="fas fa-tachometer-alt me-1"></i>
+              Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

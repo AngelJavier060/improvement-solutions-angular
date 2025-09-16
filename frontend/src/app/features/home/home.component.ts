@@ -1,7 +1,9 @@
 import { Component, OnInit, HostListener } from '@angular/core';
+import { Router } from '@angular/router';
 import { TestimoniosService, Testimonio } from '../../shared/services/testimonios.service';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { LoginModalComponent } from '../../shared/components/login-modal/login-modal.component';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-home',
@@ -19,12 +21,28 @@ export class HomeComponent implements OnInit {
 
   constructor(
     private testimoniosService: TestimoniosService,
-    private modalService: NgbModal
+    private modalService: NgbModal,
+    private authService: AuthService,
+    private router: Router
   ) {
     console.log('Componente Home inicializado');
   }
   
   ngOnInit(): void {
+    // Comentamos la redirección automática para permitir que los usuarios 
+    // elijan entre Administrador y Usuario desde la página principal
+    
+    // if (this.authService.isAuthenticated()) {
+    //   const user = this.authService.getCurrentUser();
+    //   if (user?.business?.ruc) {
+    //     // Redirigir al dashboard de su empresa
+    //     this.router.navigate([`/${user.business.ruc}/dashboard`]);
+    //     return;
+    //   }
+    // }
+    
+    // Si no está autenticado, mostrar la landing page con opciones de acceso
+    
     // Obtener los testimonios del servicio
     this.testimonios = this.testimoniosService.getTestimonios();
     
@@ -63,6 +81,13 @@ export class HomeComponent implements OnInit {
 
   // Método para abrir el modal de login
   openLoginModal(userType: 'admin' | 'usuario'): void {
+    if (userType === 'usuario') {
+      // Para usuarios empresariales, redirigir a login simple
+      this.router.navigate(['/auth/usuario-login']);
+      return;
+    }
+    
+    // Para administradores, mantener el modal original
     const modalRef = this.modalService.open(LoginModalComponent, { 
       centered: true,
       backdrop: 'static',

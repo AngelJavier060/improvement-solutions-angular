@@ -5,6 +5,8 @@ import { UserAdminService } from './user-admin.service';
 import { User } from '../../../../models/user.model';
 import { NotificationService } from '../../../../services/notification.service';
 import { environment } from '../../../../../environments/environment';
+import { BusinessService } from '../../../../services/business.service';
+import { Business } from '../../../../models/business.model';
 
 @Component({
   selector: 'app-detalle-usuario',
@@ -17,12 +19,14 @@ export class DetalleUsuarioComponent implements OnInit {
   isLoading = true;
   errorMessage: string | null = null;
   environment = environment;
+  businessLabel: string = '—';
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private userService: UserAdminService,
     private modalService: NgbModal,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private businessService: BusinessService
   ) {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (!idParam) {
@@ -42,6 +46,21 @@ export class DetalleUsuarioComponent implements OnInit {
     this.userService.getUserById(this.userId).subscribe({
       next: (user) => {
         this.user = user;
+        // Cargar empresa asociada si NO es administrador
+        const isAdmin = (user.roles || []).includes('ROLE_ADMIN');
+        if (!isAdmin) {
+          this.businessService.getByUserId(this.userId).subscribe({
+            next: (list) => {
+              const b: any = Array.isArray(list) && list.length > 0 ? list[0] : null;
+              this.businessLabel = b ? `${b.ruc ? b.ruc + ' - ' : ''}${b.name || b.nameShort || 'Empresa'}` : '—';
+            },
+            error: () => {
+              this.businessLabel = '—';
+            }
+          });
+        } else {
+          this.businessLabel = '—';
+        }
         this.isLoading = false;
       },
       error: (error) => {
@@ -103,6 +122,6 @@ export class DetalleUsuarioComponent implements OnInit {
       // Agrega timestamp para evitar caché y titileo
       return `${environment.apiUrl}/files/${user.profilePicture}?v=${new Date().getTime()}`;
     }
-    return 'assets/img/default-avatar.png';
+    return '/assets/img/user-placeholder.svg';
   }
 }

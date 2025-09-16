@@ -1,0 +1,509 @@
+<div class="modal-overlay">
+  <div class="modal-container">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <h2 class="modal-title">
+        <i class="fas fa-user-plus"></i>
+        Crear Nuevo Empleado
+      </h2>
+      <button type="button" class="close-button" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body">
+      <form [formGroup]="employeeForm" (ngSubmit)="onSubmit()">
+        <!-- Error Alert -->
+        <div *ngIf="error" class="alert alert-error">
+          <i class="fas fa-exclamation-triangle"></i>
+          {{ error }}
+        </div>
+
+        <!-- Información Personal -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-user"></i>
+            Información Personal
+          </h3>
+
+          <!-- Foto de perfil -->
+          <div class="photo-upload-section">
+            <div class="photo-preview">
+              <img 
+                #photoPreview 
+                [src]="photoPreviewUrl || 'assets/img/user-placeholder.svg'" 
+                alt="Foto de perfil"
+                class="profile-photo-preview"
+              />
+            </div>
+            <div class="photo-upload">
+              <label for="profile_picture" class="btn btn-outline-primary">
+                <i class="fas fa-camera"></i>
+                Subir Foto
+              </label>
+              <input 
+                type="file" 
+                id="profile_picture" 
+                #fileInput
+                (change)="onFileSelected($event)"
+                accept="image/*"
+                style="display: none;"
+              />
+              <button 
+                type="button" 
+                class="btn btn-outline-danger btn-sm" 
+                (click)="removePhoto()"
+                *ngIf="selectedFile || photoPreviewUrl"
+              >
+                <i class="fas fa-trash"></i>
+                Quitar
+              </button>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="cedula">Cédula *</label>
+              <input
+                type="text"
+                id="cedula"
+                formControlName="cedula"
+                [class.error]="isFieldInvalid('cedula')"
+                placeholder="Ingrese la cédula"
+              />
+              <span *ngIf="isFieldInvalid('cedula')" class="error-message">
+                {{ getFieldError('cedula') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="codigoTrabajador">Código del Trabajador</label>
+              <input
+                type="text"
+                id="codigoTrabajador"
+                formControlName="codigoTrabajador"
+                placeholder="Ingrese el código del trabajador"
+              />
+              <small class="form-help-text">Código único que identifica al trabajador en la empresa</small>
+            </div>
+
+            <div class="form-group">
+              <label for="apellidos">Apellidos *</label>
+              <input
+                type="text"
+                id="apellidos"
+                formControlName="apellidos"
+                [class.error]="isFieldInvalid('apellidos')"
+                placeholder="Ingrese los apellidos"
+              />
+              <span *ngIf="isFieldInvalid('apellidos')" class="error-message">
+                {{ getFieldError('apellidos') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="nombres">Nombres *</label>
+              <input
+                type="text"
+                id="nombres"
+                formControlName="nombres"
+                [class.error]="isFieldInvalid('nombres')"
+                placeholder="Ingrese los nombres"
+              />
+              <span *ngIf="isFieldInvalid('nombres')" class="error-message">
+                {{ getFieldError('nombres') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email *</label>
+              <input
+                type="email"
+                id="email"
+                formControlName="email"
+                [class.error]="isFieldInvalid('email')"
+                placeholder="ejemplo@correo.com"
+              />
+              <span *ngIf="isFieldInvalid('email')" class="error-message">
+                {{ getFieldError('email') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="phone">Teléfono *</label>
+              <input
+                type="tel"
+                id="phone"
+                formControlName="phone"
+                [class.error]="isFieldInvalid('phone')"
+                placeholder="Ej: 0999123456"
+              />
+              <span *ngIf="isFieldInvalid('phone')" class="error-message">
+                {{ getFieldError('phone') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="birthdate">Fecha de Nacimiento *</label>
+              <input
+                type="date"
+                id="birthdate"
+                formControlName="birthdate"
+                [class.error]="isFieldInvalid('birthdate')"
+              />
+              <span *ngIf="isFieldInvalid('birthdate')" class="error-message">
+                {{ getFieldError('birthdate') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="address">Dirección *</label>
+              <input
+                type="text"
+                id="address"
+                formControlName="address"
+                [class.error]="isFieldInvalid('address')"
+                placeholder="Ingrese la dirección"
+              />
+              <span *ngIf="isFieldInvalid('address')" class="error-message">
+                {{ getFieldError('address') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="salario">Salario</label>
+              <input
+                type="number"
+                id="salario"
+                formControlName="salario"
+                placeholder="Ingrese el salario"
+                min="0"
+                step="0.01"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Información Laboral -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-briefcase"></i>
+            Información Laboral
+          </h3>
+
+          <div class="form-grid">
+            <!-- 1. Fecha de Ingreso -->
+            <div class="form-group">
+              <label for="fechaIngreso">Fecha de Ingreso</label>
+              <input
+                type="date"
+                id="fechaIngreso"
+                formControlName="fechaIngreso"
+              />
+            </div>
+
+            <!-- 2. Departamento -->
+            <div class="form-group">
+              <label for="department_id">Departamento</label>
+              <select id="department_id" formControlName="department_id">
+                <option value="">Seleccione un departamento</option>
+                <option *ngFor="let department of departments" [value]="department.id">
+                  {{ department.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- 3. Cargo -->
+            <div class="form-group">
+              <label for="position_id">Cargo</label>
+              <select id="position_id" formControlName="position_id" [class.error]="isFieldInvalid('position_id')">
+                <option value="">Seleccione un cargo</option>
+                <option *ngFor="let position of positions" [value]="position.id">
+                  {{ position.name }} - {{ position.description }}
+                </option>
+              </select>
+              <span *ngIf="isFieldInvalid('position_id')" class="error-message">
+                {{ getFieldError('position_id') }}
+              </span>
+            </div>
+
+            <!-- 4. Tipo de Contrato -->
+            <div class="form-group">
+              <label for="type_contract_id">Tipo de Contrato</label>
+              <select id="type_contract_id" formControlName="type_contract_id">
+                <option value="">Seleccione tipo de contrato</option>
+                <option *ngFor="let typeContract of typeContracts" [value]="typeContract.id">
+                  {{ typeContract.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- 5. Empresa Contratista -->
+            <div class="form-group">
+              <label for="contractor_company_id">
+                <i class="fas fa-building me-1"></i>
+                Empresa Contratista
+              </label>
+              <select 
+                id="contractor_company_id" 
+                formControlName="contractor_company_id"
+                (change)="onContractorCompanyChange()">
+                <option value="">
+                  <span *ngIf="contractorCompanies.length === 0">No hay empresas contratistas configuradas</span>
+                  <span *ngIf="contractorCompanies.length > 0">Seleccione empresa contratista</span>
+                </option>
+                <option *ngFor="let company of contractorCompanies" [value]="company.id">
+                  {{ company.name }}
+                  <span *ngIf="company.code"> - {{ company.code }}</span>
+                </option>
+              </select>
+              <small class="form-help-text">
+                <i class="fas fa-info-circle me-1"></i>
+                Solo se muestran las empresas contratistas configuradas para esta empresa
+              </small>
+            </div>
+
+            <!-- 6. Bloque (solo si hay empresa contratista seleccionada) -->
+            <div class="form-group" *ngIf="employeeForm.get('contractor_company_id')?.value">
+              <label for="contractor_block_id">
+                <i class="fas fa-cubes me-1"></i>
+                Bloque
+              </label>
+              <select id="contractor_block_id" formControlName="contractor_block_id">
+                <option value="">Seleccione un bloque</option>
+                <option *ngFor="let block of availableContractorBlocks" [value]="block.id">
+                  {{ block.name }}
+                  <span *ngIf="block.code"> - {{ block.code }}</span>
+                  <span *ngIf="block.description"> ({{ block.description }})</span>
+                </option>
+              </select>
+              <small class="form-help-text">
+                <i class="fas fa-info-circle me-1"></i>
+                Bloque específico dentro de la empresa contratista
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información Personal Adicional -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-info-circle"></i>
+            Información Personal Adicional
+          </h3>
+
+          <div class="form-grid">
+            <!-- Información de género, estado civil y etnia -->
+            <div class="form-group">
+              <label for="gender_id">Género</label>
+              <select id="gender_id" formControlName="gender_id" [class.error]="isFieldInvalid('gender_id')">
+                <option value="">Seleccione un género</option>
+                <option *ngFor="let gender of genders" [value]="gender.id">
+                  {{ gender.name }}
+                </option>
+              </select>
+              <span *ngIf="isFieldInvalid('gender_id')" class="error-message">
+                {{ getFieldError('gender_id') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="civil_status_id">Estado Civil</label>
+              <select id="civil_status_id" formControlName="civil_status_id" [class.error]="isFieldInvalid('civil_status_id')">
+                <option value="">Seleccione estado civil</option>
+                <option *ngFor="let status of civilStatuses" [value]="status.id">
+                  {{ status.name }}
+                </option>
+              </select>
+              <span *ngIf="isFieldInvalid('civil_status_id')" class="error-message">
+                {{ getFieldError('civil_status_id') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="ethnicity_id">Etnia</label>
+              <select id="ethnicity_id" formControlName="ethnicity_id" [class.error]="isFieldInvalid('ethnicity_id')">
+                <option value="">Seleccione una etnia</option>
+                <option *ngFor="let ethnicity of etnias" [value]="ethnicity.id">
+                  {{ ethnicity.name }}
+                </option>
+              </select>
+              <span *ngIf="isFieldInvalid('ethnicity_id')" class="error-message">
+                {{ getFieldError('ethnicity_id') }}
+              </span>
+            </div>
+
+            <!-- Lugar de Nacimiento -->
+            <div class="form-group">
+              <label for="lugarNacimientoProvincia">Provincia de Nacimiento</label>
+              <input
+                type="text"
+                id="lugarNacimientoProvincia"
+                formControlName="lugarNacimientoProvincia"
+                placeholder="Provincia donde nació"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="lugarNacimientoCiudad">Ciudad de Nacimiento</label>
+              <input
+                type="text"
+                id="lugarNacimientoCiudad"
+                formControlName="lugarNacimientoCiudad"
+                placeholder="Ciudad donde nació"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="lugarNacimientoParroquia">Parroquia de Nacimiento</label>
+              <input
+                type="text"
+                id="lugarNacimientoParroquia"
+                formControlName="lugarNacimientoParroquia"
+                placeholder="Parroquia donde nació"
+              />
+            </div>
+
+            <!-- Información médica y educativa -->
+            <div class="form-group">
+              <label for="tipoSangre">Tipo de Sangre</label>
+              <select id="tipoSangre" formControlName="tipoSangre">
+                <option value="">Seleccione tipo de sangre</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="nivelEducacion">Nivel de Educación</label>
+              <select id="nivelEducacion" formControlName="degree_id">
+                <option value="">Seleccione nivel educativo</option>
+                <option *ngFor="let degree of degrees" [value]="degree.id">
+                  {{ degree.name }} - {{ degree.description }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="discapacidad">Discapacidad</label>
+              <select id="discapacidad" formControlName="discapacidad">
+                <option value="">¿Tiene alguna discapacidad?</option>
+                <option value="No">No</option>
+                <option value="Física">Física</option>
+                <option value="Visual">Visual</option>
+                <option value="Auditiva">Auditiva</option>
+                <option value="Intelectual">Intelectual</option>
+                <option value="Psicosocial">Psicosocial</option>
+                <option value="Múltiple">Múltiple</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="codigoIess">Código IESS (Sectorial)</label>
+              <select id="codigoIess" formControlName="codigoIess">
+                <option value="">Seleccione código IESS</option>
+                <option *ngFor="let iess of iessCodes" [value]="iess.code">
+                  {{ iess.code }} - {{ iess.description }}
+                </option>
+              </select>
+              <small class="form-help-text">Seleccione el código sectorial IESS configurado para esta empresa</small>
+            </div>
+          </div>
+
+          <!-- Mensaje de carga para configuraciones -->
+          <div *ngIf="loadingConfigurations" class="loading-message">
+            <i class="fas fa-spinner fa-spin"></i>
+            Cargando opciones de configuración...
+          </div>
+        </div>
+
+        <!-- Información de Contacto de Emergencia -->
+        <div class="form-section">
+          <h3 class="section-title">
+            <i class="fas fa-phone"></i>
+            Contacto de Emergencia
+          </h3>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="contact_name">Nombre del Contacto *</label>
+              <input
+                type="text"
+                id="contact_name"
+                formControlName="contact_name"
+                [class.error]="isFieldInvalid('contact_name')"
+                placeholder="Nombre del contacto de emergencia"
+              />
+              <span *ngIf="isFieldInvalid('contact_name')" class="error-message">
+                {{ getFieldError('contact_name') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="contact_kinship">Parentesco *</label>
+              <input
+                type="text"
+                id="contact_kinship"
+                formControlName="contact_kinship"
+                [class.error]="isFieldInvalid('contact_kinship')"
+                placeholder="Ej: Padre, Madre, Hermano"
+              />
+              <span *ngIf="isFieldInvalid('contact_kinship')" class="error-message">
+                {{ getFieldError('contact_kinship') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="contact_phone">Teléfono del Contacto *</label>
+              <input
+                type="tel"
+                id="contact_phone"
+                formControlName="contact_phone"
+                [class.error]="isFieldInvalid('contact_phone')"
+                placeholder="Ej: 0999123456"
+              />
+              <span *ngIf="isFieldInvalid('contact_phone')" class="error-message">
+                {{ getFieldError('contact_phone') }}
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label for="direccionDomiciliaria">Dirección Domiciliaria</label>
+              <input
+                type="text"
+                id="direccionDomiciliaria"
+                formControlName="direccionDomiciliaria"
+                placeholder="Dirección de domicilio"
+              />
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+        Cancelar
+      </button>
+      <button 
+        type="submit" 
+        class="btn btn-primary" 
+        (click)="onSubmit()"
+        [disabled]="loading || employeeForm.invalid"
+      >
+        <i class="fas fa-save" *ngIf="!loading"></i>
+        <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+        {{ loading ? 'Creando...' : 'Crear Empleado' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -13,7 +13,8 @@ export class ApiUrlService {
    * Construye una URL de API correcta
    * @param endpoint El endpoint (puede incluir o no /api/)
    * @returns URL completa para la API
-   */  getUrl(endpoint: string): string {
+   */
+  getUrl(endpoint: string): string {
     // Asegurar que el endpoint comienza con /
     if (!endpoint.startsWith('/')) {
       endpoint = '/' + endpoint;
@@ -22,9 +23,10 @@ export class ApiUrlService {
     // Eliminar barras duplicadas
     endpoint = endpoint.replace(/\/+/g, '/'); // Reemplazar múltiples barras con una sola
     
-    // Asegurarse de que empiece con /
-    if (!endpoint.startsWith('/')) {
-      endpoint = '/' + endpoint;
+    // Si baseUrl está vacío (para usar proxy), devolver solo el endpoint
+    if (!this.baseUrl || this.baseUrl.trim() === '') {
+      console.log('ApiUrlService: Usando proxy, devolviendo endpoint relativo:', endpoint);
+      return endpoint;
     }
 
     // Asegurarse de que no haya doble // entre baseUrl y endpoint
@@ -32,6 +34,8 @@ export class ApiUrlService {
       ? this.baseUrl.slice(0, -1) 
       : this.baseUrl;
     
-    return `${baseUrl}${endpoint}`;
+    const finalUrl = `${baseUrl}${endpoint}`;
+    console.log('ApiUrlService: URL completa construida:', finalUrl);
+    return finalUrl;
   }
 }

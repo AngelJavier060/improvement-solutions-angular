@@ -39,45 +39,70 @@ export interface Role {
   providedIn: 'root'
 })
 export class UserService {
-  private apiUrl: string;
+  private apiUrl = 'http://localhost:8080/api'; // URL directa al backend
 
   constructor(
     private http: HttpClient,
     private apiUrlService: ApiUrlService
   ) {
-    this.apiUrl = this.apiUrlService.getUrl('/api');
+    console.log('UserService inicializado con apiUrl:', this.apiUrl);
   }
 
   createUser(userData: CreateUserRequest): Observable<UserResponse> {
-    return this.http.post<UserResponse>(`${this.apiUrl}/users`, userData);
+    const url = `${this.apiUrl}/users`;
+    console.log('UserService.createUser - URL:', url);
+    return this.http.post<UserResponse>(url, userData);
   }
 
   updateUser(userData: CreateUserRequest): Observable<UserResponse> {
-    return this.http.put<UserResponse>(`${this.apiUrl}/users/${userData.id}`, userData);
+    const url = `${this.apiUrl}/users/${userData.id}`;
+    console.log('UserService.updateUser - URL:', url);
+    return this.http.put<UserResponse>(url, userData);
   }
 
   deleteUser(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/users/${id}`);
+    const url = `${this.apiUrl}/users/${id}`;
+    console.log('UserService.deleteUser - URL:', url);
+    console.log('UserService.deleteUser - Eliminando usuario con ID:', id);
+    
+    // Verificar token antes de la petición
+    const token = localStorage.getItem('authToken');
+    console.log('UserService.deleteUser - Token presente:', !!token);
+    if (token) {
+      console.log('UserService.deleteUser - Token (primeros 50 chars):', token.substring(0, 50));
+    }
+    
+    return this.http.delete(url);
   }
 
   getUsersByBusiness(businessId: number): Observable<UserResponse[]> {
-    return this.http.get<UserResponse[]>(`${this.apiUrl}/businesses/${businessId}/users`);
+    const url = `${this.apiUrl}/businesses/${businessId}/users`;
+    console.log('UserService.getUsersByBusiness - URL:', url);
+    return this.http.get<UserResponse[]>(url);
   }
 
   getUserPermissions(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/permissions`);
+    const url = `${this.apiUrl}/permissions`;
+    console.log('UserService.getUserPermissions - URL:', url);
+    return this.http.get<any[]>(url);
   }
 
   getRoles(): Observable<Role[]> {
-    return this.http.get<Role[]>(`${this.apiUrl}/users/roles`);
+    const url = `${this.apiUrl}/users/roles`;
+    console.log('UserService.getRoles - URL:', url);
+    return this.http.get<Role[]>(url);
   }
 
   // Nuevos métodos para asociar usuarios existentes con empresas
   getAvailableUsers(): Observable<UserResponse[]> {
-    return this.http.get<UserResponse[]>(`${this.apiUrl}/businesses/available-users`);
+    const url = `${this.apiUrl}/businesses/available-users`;
+    console.log('UserService.getAvailableUsers - URL:', url);
+    return this.http.get<UserResponse[]>(url);
   }
 
   associateUserWithBusiness(businessRuc: string, userId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/businesses/ruc/${businessRuc}/users/${userId}`, {});
+    const url = `${this.apiUrl}/businesses/ruc/${businessRuc}/users/${userId}`;
+    console.log('UserService.associateUserWithBusiness - URL:', url);
+    return this.http.post(url, {});
   }
 }

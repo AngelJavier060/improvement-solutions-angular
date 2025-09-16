@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Empresa">
+  <defs>
+    <linearGradient id="gc" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f1f3f5"/>
+      <stop offset="100%" stop-color="#dee2e6"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="16" fill="url(#gc)"/>
+  <rect x="22" y="40" width="84" height="56" rx="6" fill="#adb5bd"/>
+  <rect x="30" y="48" width="16" height="16" rx="2" fill="#ced4da"/>
+  <rect x="56" y="48" width="16" height="16" rx="2" fill="#ced4da"/>
+  <rect x="82" y="48" width="16" height="16" rx="2" fill="#ced4da"/>
+  <rect x="30" y="70" width="68" height="18" rx="2" fill="#ced4da"/>
+</svg>

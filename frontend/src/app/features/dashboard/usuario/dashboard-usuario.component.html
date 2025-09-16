@@ -21,7 +21,56 @@
     </div>
   </header>
 
-  <div class="dashboard-welcome bg-light py-5 text-center">
+  <div class="dashboard-content">
+    <!-- Sidebar Menu -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h4>Menú de Usuario</h4>
+      </div>
+      <nav class="sidebar-nav">
+        <ul>
+          <li>
+            <a routerLink="/dashboard/usuario" 
+               routerLinkActive="active" 
+               [routerLinkActiveOptions]="{exact: true}"
+               class="nav-link">
+              <i class="fas fa-home"></i>
+              <span>Inicio</span>
+            </a>
+          </li>
+          <li>
+            <a (click)="navigateToModule('talento-humano')" 
+               class="nav-link"
+               href="javascript:void(0)">
+              <i class="fas fa-users"></i>
+              <span>Talento Humano</span>
+            </a>
+          </li>
+          <!-- Aquí se pueden agregar más módulos -->
+          <li>
+            <a href="#" class="nav-link disabled">
+              <i class="fas fa-chart-bar"></i>
+              <span>Reportes (Próximamente)</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="nav-link disabled">
+              <i class="fas fa-cog"></i>
+              <span>Configuración (Próximamente)</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+  <!-- Contenido por defecto cuando no hay rutas hijas activas -->
+  <div class="dashboard-welcome bg-light py-5 text-center" *ngIf="shouldShowWelcome()">
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-md-8">
@@ -37,139 +86,30 @@
               <p class="text-muted">
                 Utilice el menú de navegación para acceder a las diferentes funcionalidades del sistema.
               </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="dashboard-tasks py-5">
-    <div class="container">
-      <h3 class="mb-4">Mis Tareas Pendientes</h3>
-      <div class="row g-4">
-        <div class="col-md-6">
-          <div class="card h-100 border-0 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center border-0">
-              <h5 class="mb-0">Tareas Asignadas</h5>
-              <span class="badge bg-success rounded-pill">4 Nuevas</span>
-            </div>
-            <div class="card-body">
-              <ul class="list-group list-group-flush task-list">
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                  <div class="d-flex align-items-center">
-                    <div class="task-icon me-3 bg-primary-soft">
-                      <i class="fas fa-clipboard-check text-primary"></i>
-                    </div>
-                    <div>
-                      <h6 class="mb-0">Completar reporte mensual</h6>
-                      <small class="text-muted">Vence en 2 días</small>
-                    </div>
-                  </div>
-                  <button class="btn btn-sm btn-outline-primary rounded-pill">Ver detalles</button>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                  <div class="d-flex align-items-center">
-                    <div class="task-icon me-3 bg-warning-soft">
-                      <i class="fas fa-exclamation-triangle text-warning"></i>
-                    </div>
-                    <div>
-                      <h6 class="mb-0">Inspección de seguridad</h6>
-                      <small class="text-muted">Vence hoy</small>
-                    </div>
-                  </div>
-                  <button class="btn btn-sm btn-outline-primary rounded-pill">Ver detalles</button>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                  <div class="d-flex align-items-center">
-                    <div class="task-icon me-3 bg-success-soft">
-                      <i class="fas fa-file-signature text-success"></i>
-                    </div>
-                    <div>
-                      <h6 class="mb-0">Capacitación en primeros auxilios</h6>
-                      <small class="text-muted">Mañana, 10:00 AM</small>
-                    </div>
-                  </div>
-                  <button class="btn btn-sm btn-outline-primary rounded-pill">Ver detalles</button>
-                </li>
-                <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
-                  <div class="d-flex align-items-center">
-                    <div class="task-icon me-3 bg-info-soft">
-                      <i class="fas fa-hard-hat text-info"></i>
-                    </div>
-                    <div>
-                      <h6 class="mb-0">Actualizar registro EPP</h6>
-                      <small class="text-muted">En 3 días</small>
-                    </div>
-                  </div>
-                  <button class="btn btn-sm btn-outline-primary rounded-pill">Ver detalles</button>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-6">
-          <div class="card h-100 border-0 shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center border-0">
-              <h5 class="mb-0">Mis Estadísticas</h5>
-              <span class="badge bg-primary rounded-pill">Este mes</span>
-            </div>
-            <div class="card-body">
-              <div class="row g-4">
-                <div class="col-6">
-                  <div class="stat-card p-3 border rounded bg-light">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <h6 class="text-muted mb-0">Tareas Completadas</h6>
-                      <div class="stat-mini-icon bg-success-soft">
-                        <i class="fas fa-check text-success"></i>
-                      </div>
-                    </div>
-                    <h3 class="mt-2 mb-0">16</h3>
-                    <div class="progress mt-2" style="height: 4px;">
-                      <div class="progress-bar bg-success" role="progressbar" style="width: 80%"></div>
+              
+              <!-- Quick Access Cards -->
+              <div class="row mt-5">
+                <div class="col-md-6">
+                  <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                      <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                      <h5>Talento Humano</h5>
+                      <p class="text-muted">Gestiona el capital humano de tu organización</p>
+                      <button (click)="navigateToModule('talento-humano')" class="btn btn-primary">
+                        Acceder
+                      </button>
                     </div>
                   </div>
                 </div>
-                <div class="col-6">
-                  <div class="stat-card p-3 border rounded bg-light">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <h6 class="text-muted mb-0">Pendientes</h6>
-                      <div class="stat-mini-icon bg-warning-soft">
-                        <i class="fas fa-clock text-warning"></i>
-                      </div>
-                    </div>
-                    <h3 class="mt-2 mb-0">4</h3>
-                    <div class="progress mt-2" style="height: 4px;">
-                      <div class="progress-bar bg-warning" role="progressbar" style="width: 20%"></div>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-6">
-                  <div class="stat-card p-3 border rounded bg-light">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <h6 class="text-muted mb-0">Reportes</h6>
-                      <div class="stat-mini-icon bg-primary-soft">
-                        <i class="fas fa-file-alt text-primary"></i>
-                      </div>
-                    </div>
-                    <h3 class="mt-2 mb-0">7</h3>
-                    <div class="progress mt-2" style="height: 4px;">
-                      <div class="progress-bar bg-primary" role="progressbar" style="width: 70%"></div>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-6">
-                  <div class="stat-card p-3 border rounded bg-light">
-                    <div class="d-flex justify-content-between align-items-center">
-                      <h6 class="text-muted mb-0">Capacitaciones</h6>
-                      <div class="stat-mini-icon bg-info-soft">
-                        <i class="fas fa-graduation-cap text-info"></i>
-                      </div>
-                    </div>
-                    <h3 class="mt-2 mb-0">3</h3>
-                    <div class="progress mt-2" style="height: 4px;">
-                      <div class="progress-bar bg-info" role="progressbar" style="width: 60%"></div>
+                <div class="col-md-6">
+                  <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                      <i class="fas fa-chart-bar fa-3x text-info mb-3"></i>
+                      <h5>Reportes</h5>
+                      <p class="text-muted">Genera y consulta reportes del sistema</p>
+                      <button class="btn btn-secondary" disabled>
+                        Próximamente
+                      </button>
                     </div>
                   </div>
                 </div>

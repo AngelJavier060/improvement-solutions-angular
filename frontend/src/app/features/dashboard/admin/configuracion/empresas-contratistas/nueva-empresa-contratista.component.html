@@ -1,0 +1,101 @@
+<div class="empresas-contratistas-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Nueva Empresa Contratista</h2>
+      <p>Complete el formulario para crear una nueva empresa contratista</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" routerLink="/dashboard/admin/configuracion/empresas-contratistas">
+        <i class="fas fa-arrow-left"></i> Volver a Lista
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <!-- Mensaje de éxito y opciones después de guardar -->
+    <div *ngIf="successMessage && formSubmitted" class="success-container">
+      <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+      
+      <div class="action-buttons">
+        <button type="button" class="btn-secondary" (click)="crearNueva()">
+          <i class="fas fa-plus"></i> Crear nueva empresa contratista
+        </button>
+        <button type="button" class="btn-primary" (click)="volverALista()">
+          <i class="fas fa-list"></i> Volver a la lista
+        </button>
+      </div>
+    </div>
+
+    <!-- Formulario - solo visible cuando no se ha enviado exitosamente -->
+    <form *ngIf="!formSubmitted" [formGroup]="empresaForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="name">Nombre de la Empresa <span class="required">*</span></label>
+        <input 
+          type="text" 
+          id="name" 
+          formControlName="name" 
+          placeholder="Ej: Petroecuador, Schlumberger"
+          [class.invalid]="empresaForm.get('name')?.invalid && empresaForm.get('name')?.touched"
+        >
+        <div *ngIf="empresaForm.get('name')?.invalid && empresaForm.get('name')?.touched" class="error-message">
+          <span *ngIf="empresaForm.get('name')?.errors?.['required']">El nombre es obligatorio.</span>
+          <span *ngIf="empresaForm.get('name')?.errors?.['maxlength']">El nombre no puede exceder de 100 caracteres.</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="code">Código de la Empresa</label>
+        <input 
+          type="text" 
+          id="code" 
+          formControlName="code" 
+          placeholder="Ej: PEC, SLB"
+          [class.invalid]="empresaForm.get('code')?.invalid && empresaForm.get('code')?.touched"
+        >
+        <div *ngIf="empresaForm.get('code')?.invalid && empresaForm.get('code')?.touched" class="error-message">
+          <span *ngIf="empresaForm.get('code')?.errors?.['maxlength']">El código no puede exceder de 20 caracteres.</span>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea 
+          id="description" 
+          formControlName="description" 
+          placeholder="Descripción de la empresa contratista..."
+          [class.invalid]="empresaForm.get('description')?.invalid && empresaForm.get('description')?.touched"
+          rows="3"
+        ></textarea>
+        <div *ngIf="empresaForm.get('description')?.invalid && empresaForm.get('description')?.touched" class="error-message">
+          <span *ngIf="empresaForm.get('description')?.errors?.['maxlength']">La descripción no puede exceder de 500 caracteres.</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="active">
+          <span>Empresa activa</span>
+        </label>
+      </div>
+
+      <div *ngIf="error" class="alert alert-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ error }}</span>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="cancelar()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="submitting || empresaForm.invalid">
+          <i class="fas fa-save"></i> 
+          <span *ngIf="!submitting">Guardar</span>
+          <span *ngIf="submitting">Guardando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

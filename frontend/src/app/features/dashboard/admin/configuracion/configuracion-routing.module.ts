@@ -49,6 +49,10 @@ const routes: Routes = [
       {
         path: 'matriz-legal',
         loadChildren: () => import('./matriz-legal/matriz-legal.module').then(m => m.MatrizLegalModule)
+      },
+      {
+        path: 'empresas-contratistas',
+        loadChildren: () => import('./empresas-contratistas/empresas-contratistas.module').then(m => m.EmpresasContratistasModule)
       }
     ]
   }

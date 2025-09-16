@@ -3,11 +3,13 @@ package com.improvementsolutions.service;
 import com.improvementsolutions.model.*;
 import com.improvementsolutions.repository.BusinessRepository;
 import com.improvementsolutions.repository.UserRepository;
+import com.improvementsolutions.repository.ObligationMatrixRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -18,6 +20,7 @@ public class BusinessService {
 
     private final BusinessRepository businessRepository;
     private final UserRepository userRepository;
+    private final ObligationMatrixRepository obligationMatrixRepository;
 
     public List<Business> findAll() {
         return businessRepository.findAll();
@@ -25,6 +28,19 @@ public class BusinessService {
 
     public Optional<Business> findById(Long id) {
         return businessRepository.findById(id);
+    }
+
+    public Optional<Business> findByIdWithAllRelations(Long id) {
+        Optional<Business> businessOpt = businessRepository.findByIdWithAllRelations(id);
+        if (businessOpt.isPresent()) {
+            Business business = businessOpt.get();
+            // Load contractor companies separately to avoid MultipleBagFetchException
+            Optional<Business> businessWithContractors = businessRepository.findByIdWithContractorCompanies(id);
+            if (businessWithContractors.isPresent()) {
+                business.setContractorCompanies(businessWithContractors.get().getContractorCompanies());
+            }
+        }
+        return businessOpt;
     }
 
     public Optional<Business> findByRuc(String ruc) {
@@ -201,6 +217,48 @@ public class BusinessService {
         return businessRepository.save(business);
     }
 
+    @Transactional
+    public Business updateBusinessConfigurations(Long businessId, Set<Department> departments, 
+            Set<Iess> iessItems, Set<Position> positions, ContractorCompany contractorCompany, 
+            List<ContractorBlock> contractorBlocks) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        if (departments != null) business.setDepartments(departments);
+        if (iessItems != null) business.setIessItems(iessItems);
+        if (positions != null) business.setPositions(positions);
+        
+        // Compatibilidad hacia atrás: convertir una empresa contratista a lista
+        if (contractorCompany != null) {
+            business.setContractorCompanies(new ArrayList<>());
+            business.getContractorCompanies().add(contractorCompany);
+        }
+        
+        if (contractorBlocks != null) business.setContractorBlocks(contractorBlocks);
+        
+        business.setUpdatedAt(LocalDateTime.now());
+        
+        return businessRepository.save(business);
+    }
+    
+    @Transactional
+    public Business updateBusinessConfigurations(Long businessId, Set<Department> departments, 
+            Set<Iess> iessItems, Set<Position> positions, List<ContractorCompany> contractorCompanies, 
+            List<ContractorBlock> contractorBlocks) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        if (departments != null) business.setDepartments(departments);
+        if (iessItems != null) business.setIessItems(iessItems);
+        if (positions != null) business.setPositions(positions);
+        if (contractorCompanies != null) business.setContractorCompanies(contractorCompanies);
+        if (contractorBlocks != null) business.setContractorBlocks(contractorBlocks);
+        
+        business.setUpdatedAt(LocalDateTime.now());
+        
+        return businessRepository.save(business);
+    }
+
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
@@ -306,6 +364,41 @@ public class BusinessService {
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
         
         business.getTypeContracts().removeIf(typeCont -> typeCont.getId().equals(typeContractId));
+        business.setUpdatedAt(LocalDateTime.now());
+        
+        businessRepository.save(business);
+    }
+
+    // === MÉTODOS PARA MATRICES DE OBLIGACIONES ===
+    @Transactional
+    public Business addObligationMatrixToBusiness(Long businessId, Long obligationMatrixId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        ObligationMatrix obligationMatrix = obligationMatrixRepository.findById(obligationMatrixId)
+                .orElseThrow(() -> new RuntimeException("Matriz de obligación no encontrada"));
+        
+        // Crear la relación intermedia
+        BusinessObligationMatrix businessObligationMatrix = new BusinessObligationMatrix();
+        businessObligationMatrix.setBusiness(business);
+        businessObligationMatrix.setObligationMatrix(obligationMatrix);
+        businessObligationMatrix.setName(obligationMatrix.getLegalCompliance());
+        businessObligationMatrix.setDescription(obligationMatrix.getDescription());
+        businessObligationMatrix.setStatus("PENDING");
+        
+        business.addBusinessObligationMatrix(businessObligationMatrix);
+        business.setUpdatedAt(LocalDateTime.now());
+        
+        return businessRepository.save(business);
+    }
+
+    @Transactional
+    public void removeObligationMatrixFromBusiness(Long businessId, Long obligationMatrixId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        
+        business.getBusinessObligationMatrices().removeIf(bom -> 
+            bom.getObligationMatrix().getId().equals(obligationMatrixId));
         business.setUpdatedAt(LocalDateTime.now());
         
         businessRepository.save(business);

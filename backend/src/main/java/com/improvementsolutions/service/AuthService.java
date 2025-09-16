@@ -115,15 +115,36 @@ public class AuthService {
         response.setToken(jwt);
         response.setTokenType("Bearer");
         response.setExpiresIn(86400L);
+        
         UserInfoDto userInfo = new UserInfoDto();
         userInfo.setId(userDetails.getId());
         userInfo.setUsername(userDetails.getUsername());
         userInfo.setEmail(userDetails.getEmail());
         userInfo.setName(userDetails.getName());
+        
         List<String> roles = userDetails.getAuthorities().stream()
             .map(GrantedAuthority::getAuthority)
             .collect(Collectors.toList());
         userInfo.setRoles(roles);
+        
+        // Buscar el usuario completo para obtener las empresas
+        User user = userRepository.findByUsername(userDetails.getUsername()).orElse(null);
+        if (user != null && user.getBusinesses() != null && !user.getBusinesses().isEmpty()) {
+            List<LoginResponseDto.BusinessInfoDto> businesses = user.getBusinesses().stream()
+                .map(business -> new LoginResponseDto.BusinessInfoDto(
+                    business.getId(),
+                    business.getName(),
+                    business.getRuc(),
+                    business.getEmail(),
+                    business.getPhone()
+                ))
+                .collect(Collectors.toList());
+            userInfo.setBusinesses(businesses);
+            logger.debug("Usuario {} tiene {} empresas asociadas", user.getUsername(), businesses.size());
+        } else {
+            logger.debug("Usuario {} no tiene empresas asociadas", userDetails.getUsername());
+        }
+        
         response.setUserDetail(userInfo);
         return response;
     }

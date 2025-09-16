@@ -1,5 +1,6 @@
 package com.improvementsolutions.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -40,6 +41,7 @@ public class Department {
     
     @ManyToMany(mappedBy = "departments")
     @ToString.Exclude // Evitamos referencias circulares
+    @JsonIgnore // Evitar serialización bidireccional
     private Set<Business> businesses = new HashSet<>();
     
     // Métodos para manejar las fechas automáticamente

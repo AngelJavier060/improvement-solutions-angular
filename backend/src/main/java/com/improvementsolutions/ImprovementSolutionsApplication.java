@@ -9,6 +9,8 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 
 @SpringBootApplication
 @EntityScan(basePackages = "com.improvementsolutions.model")
@@ -18,8 +20,12 @@ public class ImprovementSolutionsApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(ImprovementSolutionsApplication.class, args);
+    }
+    
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady() {
         logger.info("Aplicación iniciada - Configuración CORS activa");
-    }    // La configuración CORS se ha movido a SecurityConfig para evitar duplicación
+    }
 }
 
 // El archivo está correcto y completo. No necesita modificaciones.

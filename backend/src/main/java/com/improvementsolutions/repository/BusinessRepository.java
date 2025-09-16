@@ -31,4 +31,19 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
     
     @Query("SELECT b FROM Business b WHERE b.registrationDate >= :startDate AND b.registrationDate <= :endDate")
     List<Business> findByRegistrationDateBetween(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+    
+    @Query("SELECT DISTINCT b FROM Business b " +
+           "LEFT JOIN FETCH b.departments " +
+           "LEFT JOIN FETCH b.positions " +
+           "LEFT JOIN FETCH b.typeDocuments " +
+           "LEFT JOIN FETCH b.typeContracts " +
+           "LEFT JOIN FETCH b.iessItems " +
+           "LEFT JOIN FETCH b.users " +
+           "WHERE b.id = :id")
+    Optional<Business> findByIdWithAllRelations(@Param("id") Long id);
+    
+    @Query("SELECT DISTINCT b FROM Business b " +
+           "LEFT JOIN FETCH b.contractorCompanies " +
+           "WHERE b.id = :id")
+    Optional<Business> findByIdWithContractorCompanies(@Param("id") Long id);
 }

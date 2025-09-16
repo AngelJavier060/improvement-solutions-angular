@@ -106,6 +106,13 @@ export class ConfiguracionComponent implements OnInit {
       icono: 'fas fa-balance-scale',
       proximamente: false
     },
+    {
+      nombre: 'Empresas Contratistas',
+      descripcion: 'Gestionar empresas contratistas y sus bloques operativos',
+      ruta: 'empresas-contratistas',
+      icono: 'fas fa-industry',
+      proximamente: false
+    },
   ];
   navegarA(ruta: string): void {
     console.log('Navegando a:', ruta);

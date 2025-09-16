@@ -1,0 +1,109 @@
+<div class="login-container">
+  <div class="container-fluid vh-100">
+    <div class="row h-100">
+      <!-- Lado izquierdo - Información de la empresa -->
+      <div class="col-lg-6 d-none d-lg-flex align-items-center justify-content-center bg-primary">
+        <div class="text-white text-center">
+          <h1 class="display-4 fw-bold mb-4">IMPROVEMENT SOLUTIONS</h1>
+          <p class="h5 mb-4">Acceso para Usuarios Empresariales</p>
+          <div class="mb-4">
+            <i class="fas fa-building fa-3x mb-3"></i>
+          </div>
+          <p class="lead">Ingrese con las credenciales de su empresa para acceder al sistema</p>
+        </div>
+      </div>
+
+      <!-- Lado derecho - Formulario de login -->
+      <div class="col-lg-6 d-flex align-items-center justify-content-center bg-light">
+        <div class="login-form-container w-100" style="max-width: 400px;">
+          
+          <!-- Botón para volver -->
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary mb-4"
+            (click)="goBack()">
+            <i class="fas fa-arrow-left me-2"></i> Volver al inicio
+          </button>
+
+          <!-- Título -->
+          <div class="text-center mb-4">
+            <h2 class="fw-bold text-dark">Acceso Empresarial</h2>
+            <p class="text-muted">Ingrese sus credenciales</p>
+          </div>
+
+          <!-- Formulario -->
+          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+            
+            <!-- Campo Usuario -->
+            <div class="mb-3">
+              <label for="username" class="form-label fw-bold">Usuario</label>
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="fas fa-user text-primary"></i>
+                </span>
+                <input
+                  type="text"
+                  id="username"
+                  class="form-control"
+                  formControlName="username"
+                  placeholder="Ingrese su usuario"
+                  [class.is-invalid]="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
+              </div>
+              <div class="invalid-feedback" *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
+                El usuario es requerido
+              </div>
+            </div>
+
+            <!-- Campo Contraseña -->
+            <div class="mb-4">
+              <label for="password" class="form-label fw-bold">Contraseña</label>
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="fas fa-lock text-primary"></i>
+                </span>
+                <input
+                  type="password"
+                  id="password"
+                  class="form-control"
+                  formControlName="password"
+                  placeholder="Ingrese su contraseña"
+                  [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+              </div>
+              <div class="invalid-feedback" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+                La contraseña es requerida
+              </div>
+            </div>
+
+            <!-- Mensaje de error -->
+            <div class="alert alert-danger" *ngIf="error">
+              <i class="fas fa-exclamation-circle me-2"></i>
+              {{ error }}
+            </div>
+
+            <!-- Botón de login -->
+            <div class="d-grid mb-3">
+              <button
+                type="submit"
+                class="btn btn-primary btn-lg"
+                [disabled]="loading || loginForm.invalid">
+                <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+                <i *ngIf="!loading" class="fas fa-sign-in-alt me-2"></i>
+                {{ loading ? 'Ingresando...' : 'Ingresar' }}
+              </button>
+            </div>
+
+          </form>
+
+          <!-- Información adicional -->
+          <div class="text-center mt-4">
+            <small class="text-muted">
+              <i class="fas fa-info-circle me-1"></i>
+              Use las credenciales proporcionadas por su empresa
+            </small>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

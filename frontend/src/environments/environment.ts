@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiUrl: ''
+  apiUrl: '' // URL vacía para usar el proxy configurado en proxy.conf.json
 };

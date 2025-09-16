@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,8 +16,9 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems"})
-@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems"})
+@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks"})
+@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks"})
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Business {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -123,6 +125,27 @@ public class Business {
     @JsonIgnore
     private Set<Iess> iessItems = new HashSet<>();
 
+    @OneToMany(mappedBy = "business", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<BusinessObligationMatrix> businessObligationMatrices = new ArrayList<>();
+
+    // Relaciones con empresas contratistas
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_contractor_companies",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "contractor_company_id")
+    )
+    private List<ContractorCompany> contractorCompanies = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_contractor_blocks",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "contractor_block_id")
+    )
+    private List<ContractorBlock> contractorBlocks = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -198,5 +221,73 @@ public class Business {
     public void removePosition(Position position) {
         positions.remove(position);
         position.getBusinesses().remove(this);
+    }
+
+    public void addBusinessObligationMatrix(BusinessObligationMatrix businessObligationMatrix) {
+        businessObligationMatrices.add(businessObligationMatrix);
+        businessObligationMatrix.setBusiness(this);
+    }
+
+    public void removeBusinessObligationMatrix(BusinessObligationMatrix businessObligationMatrix) {
+        businessObligationMatrices.remove(businessObligationMatrix);
+        businessObligationMatrix.setBusiness(null);
+    }
+
+    // Métodos para empresas contratistas
+    public void addContractorBlock(ContractorBlock contractorBlock) {
+        if (contractorBlocks == null) {
+            contractorBlocks = new ArrayList<>();
+        }
+        contractorBlocks.add(contractorBlock);
+    }
+
+    public void removeContractorBlock(ContractorBlock contractorBlock) {
+        if (contractorBlocks != null) {
+            contractorBlocks.remove(contractorBlock);
+        }
+    }
+
+    public void setContractorBlocks(List<ContractorBlock> contractorBlocks) {
+        this.contractorBlocks = contractorBlocks != null ? contractorBlocks : new ArrayList<>();
+    }
+    
+    // Métodos para empresas contratistas múltiples
+    public void addContractorCompany(ContractorCompany contractorCompany) {
+        if (contractorCompanies == null) {
+            contractorCompanies = new ArrayList<>();
+        }
+        if (!contractorCompanies.contains(contractorCompany)) {
+            contractorCompanies.add(contractorCompany);
+        }
+    }
+
+    public void removeContractorCompany(ContractorCompany contractorCompany) {
+        if (contractorCompanies != null) {
+            contractorCompanies.remove(contractorCompany);
+        }
+    }
+
+    public void setContractorCompanies(List<ContractorCompany> contractorCompanies) {
+        this.contractorCompanies = contractorCompanies != null ? contractorCompanies : new ArrayList<>();
+    }
+    
+    // Métodos de compatibilidad hacia atrás para contractorCompany (singular)
+    @Transient
+    public ContractorCompany getContractorCompany() {
+        return (contractorCompanies != null && !contractorCompanies.isEmpty()) 
+            ? contractorCompanies.get(0) 
+            : null;
+    }
+    
+    @Transient  
+    public void setContractorCompany(ContractorCompany contractorCompany) {
+        if (contractorCompanies == null) {
+            contractorCompanies = new ArrayList<>();
+        } else {
+            contractorCompanies.clear();
+        }
+        if (contractorCompany != null) {
+            contractorCompanies.add(contractorCompany);
+        }
     }
 }

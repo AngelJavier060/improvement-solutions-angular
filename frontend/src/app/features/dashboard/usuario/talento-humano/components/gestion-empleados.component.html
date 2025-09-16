@@ -1,0 +1,255 @@
+<div class="gestion-empleados-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="page-title">
+          <i class="fas fa-users text-primary me-2"></i>
+          Gestión de Empleados
+        </h2>
+        <p class="page-subtitle text-muted">
+          Administra y gestiona la información de todos los empleados
+        </p>
+      </div>
+      <button 
+        class="btn btn-primary btn-lg"
+        (click)="openCreateModal()">
+        <i class="fas fa-plus me-2"></i>
+        Nuevo Empleado
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando empleados...</span>
+    </div>
+    <p class="mt-3 text-muted">Cargando empleados...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="alert alert-danger" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    {{ error }}
+    <button class="btn btn-outline-danger btn-sm ms-3" (click)="loadEmployees()">
+      <i class="fas fa-redo me-1"></i>
+      Reintentar
+    </button>
+  </div>
+
+  <!-- Employees List -->
+  <div *ngIf="!loading && !error" class="employees-section">
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="card stats-card bg-primary text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h3 class="mb-0">{{ employees.length }}</h3>
+                <p class="mb-0">Total Empleados</p>
+              </div>
+              <div class="stats-icon">
+                <i class="fas fa-users fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stats-card bg-success text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h3 class="mb-0">{{ getActiveEmployeesCount() }}</h3>
+                <p class="mb-0">Activos</p>
+              </div>
+              <div class="stats-icon">
+                <i class="fas fa-user-check fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stats-card bg-warning text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h3 class="mb-0">{{ getInactiveEmployeesCount() }}</h3>
+                <p class="mb-0">Inactivos</p>
+              </div>
+              <div class="stats-icon">
+                <i class="fas fa-user-times fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stats-card bg-info text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h3 class="mb-0">0</h3>
+                <p class="mb-0">Nuevos (Este mes)</p>
+              </div>
+              <div class="stats-icon">
+                <i class="fas fa-user-plus fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Employees Table -->
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>
+            Lista de Empleados
+            <span *ngIf="searchTerm" class="text-muted ms-2">
+              ({{ filteredEmployees.length }} de {{ employees.length }} empleados)
+            </span>
+          </h5>
+          
+          <!-- Search Bar -->
+          <div class="search-container">
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="fas fa-search"></i>
+              </span>
+              <input 
+                type="text" 
+                class="form-control" 
+                placeholder="Buscar por nombre, cédula, email o cargo..."
+                [(ngModel)]="searchTerm"
+                (input)="onSearchChange()"
+                style="min-width: 300px;">
+              <button 
+                *ngIf="searchTerm" 
+                class="btn btn-outline-secondary" 
+                type="button"
+                (click)="searchTerm = ''; onSearchChange();">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        
+        <!-- Empty State -->
+        <div *ngIf="employees.length === 0" class="empty-state text-center py-5">
+          <i class="fas fa-users fa-4x text-muted mb-3"></i>
+          <h4 class="text-muted">No hay empleados registrados</h4>
+          <p class="text-muted">Comienza agregando tu primer empleado</p>
+          <button class="btn btn-primary" (click)="openCreateModal()">
+            <i class="fas fa-plus me-2"></i>
+            Agregar Primer Empleado
+          </button>
+        </div>
+
+        <!-- No Results State -->
+        <div *ngIf="employees.length > 0 && filteredEmployees.length === 0" class="empty-state text-center py-5">
+          <i class="fas fa-search fa-4x text-muted mb-3"></i>
+          <h4 class="text-muted">No se encontraron resultados</h4>
+          <p class="text-muted">Intenta con otros términos de búsqueda</p>
+          <button class="btn btn-outline-primary" (click)="searchTerm = ''; onSearchChange()">
+            <i class="fas fa-times me-2"></i>
+            Limpiar búsqueda
+          </button>
+        </div>
+
+        <!-- Table -->
+        <div *ngIf="filteredEmployees.length > 0" class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Nombre</th>
+                <th>Cédula</th>
+                <th>Cargo</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let employee of filteredEmployees" class="employee-row">
+                <td>
+                  <div class="employee-info">
+                    <h6 class="mb-0">{{ getFullName(employee) }}</h6>
+                  </div>
+                </td>
+                <td>
+                  <span class="fw-medium">{{ employee.cedula }}</span>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark">
+                    <i class="fas fa-briefcase me-1"></i>
+                    {{ getEmployeePosition(employee) }}
+                  </span>
+                </td>
+                <td>
+                  <a [href]="'mailto:' + employee.email" class="text-decoration-none">
+                    {{ employee.email }}
+                  </a>
+                </td>
+                <td>
+                  <a [href]="'tel:' + employee.phone" class="text-decoration-none">
+                    {{ employee.phone }}
+                  </a>
+                </td>
+                <td>
+                  <span 
+                    class="badge"
+                    [ngClass]="getStatusClass(employee.status)">
+                    {{ getStatusText(employee.status) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button 
+                      class="btn btn-sm btn-outline-primary me-1"
+                      (click)="openEditModal(employee)"
+                      title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button 
+                      class="btn btn-sm btn-outline-danger"
+                      (click)="deleteEmployee(employee)"
+                      title="Eliminar">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para crear empleado -->
+<app-create-employee-modal
+  *ngIf="showCreateModal"
+  [businessId]="businessId"
+  (onClose)="closeCreateModal()"
+  (onEmployeeCreated)="onEmployeeCreated()">
+</app-create-employee-modal>
+
+<!-- Modal para editar empleado -->
+<app-edit-employee-modal
+  *ngIf="showEditModal && employeeToEdit"
+  [employee]="employeeToEdit"
+  [businessId]="businessId"
+  (onClose)="closeEditModal()"
+  (onEmployeeUpdated)="onEmployeeUpdated()">
+</app-edit-employee-modal>
