@@ -55,6 +55,7 @@
                 formControlName="cedula"
                 [class.error]="isFieldInvalid('cedula')"
                 placeholder="Ingrese la cédula"
+                [disabled]="true"
               />
               <span *ngIf="isFieldInvalid('cedula')" class="error-message">
                 {{ getFieldError('cedula') }}
@@ -128,6 +129,29 @@
               <span *ngIf="isFieldInvalid('address')" class="error-message">
                 {{ getFieldError('address') }}
               </span>
+            </div>
+
+            <div class="form-group">
+              <label for="codigo_trabajador">Código del Trabajador</label>
+              <input
+                type="text"
+                id="codigo_trabajador"
+                formControlName="codigo_trabajador"
+                placeholder="Código interno"
+                [disabled]="true"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="salario">Salario</label>
+              <input
+                type="number"
+                id="salario"
+                formControlName="salario"
+                placeholder="Salario"
+                step="0.01"
+                [disabled]="true"
+              />
             </div>
           </div>
         </div>
@@ -214,7 +238,31 @@
               <label for="position_id">Cargo</label>
               <select id="position_id" formControlName="position_id">
                 <option value="">Seleccione un cargo</option>
-                <!-- Aquí irían las opciones desde el backend -->
+                <option *ngFor="let p of positions" [value]="p.id">{{ p.name }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="department_id">Departamento</label>
+              <select id="department_id" formControlName="department_id">
+                <option value="">Seleccione un departamento</option>
+                <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="type_contract_id">Tipo de Contrato</label>
+              <select id="type_contract_id" formControlName="type_contract_id">
+                <option value="">Seleccione un tipo de contrato</option>
+                <option *ngFor="let tc of typeContracts" [value]="tc.id">{{ tc.name }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="degree_id">Nivel de Educación</label>
+              <select id="degree_id" formControlName="degree_id">
+                <option value="">Seleccione un nivel</option>
+                <option *ngFor="let dg of degrees" [value]="dg.id">{{ dg.name }}</option>
               </select>
             </div>
 
@@ -222,7 +270,7 @@
               <label for="gender_id">Género</label>
               <select id="gender_id" formControlName="gender_id">
                 <option value="">Seleccione un género</option>
-                <!-- Aquí irían las opciones desde el backend -->
+                <option *ngFor="let g of genders" [value]="g.id">{{ g.name }}</option>
               </select>
             </div>
 
@@ -230,7 +278,7 @@
               <label for="civil_status_id">Estado Civil</label>
               <select id="civil_status_id" formControlName="civil_status_id">
                 <option value="">Seleccione estado civil</option>
-                <!-- Aquí irían las opciones desde el backend -->
+                <option *ngFor="let cs of civilStatuses" [value]="cs.id">{{ cs.name }}</option>
               </select>
             </div>
 
@@ -238,30 +286,30 @@
               <label for="ethnicity_id">Etnia</label>
               <select id="ethnicity_id" formControlName="ethnicity_id">
                 <option value="">Seleccione una etnia</option>
-                <!-- Aquí irían las opciones desde el backend -->
+                <option *ngFor="let e of etnias" [value]="e.id">{{ e.name }}</option>
               </select>
             </div>
           </div>
         </div>
-      </form>
-    </div>
 
-    <!-- Modal Footer -->
-    <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" (click)="closeModal()">
-        <i class="fas fa-times"></i>
-        Cancelar
-      </button>
-      <button 
-        type="submit" 
-        class="btn btn-primary" 
-        (click)="onSubmit()"
-        [disabled]="loading || employeeForm.invalid"
-      >
-        <i class="fas fa-save" *ngIf="!loading"></i>
-        <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
-        {{ loading ? 'Actualizando...' : 'Actualizar Empleado' }}
-      </button>
+        <!-- Modal Footer -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">
+            <i class="fas fa-times"></i>
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            class="btn btn-primary" 
+            (click)="onSubmit()"
+            [disabled]="loading || employeeForm.invalid"
+          >
+            <i class="fas fa-save" *ngIf="!loading"></i>
+            <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+            {{ loading ? 'Actualizando...' : 'Actualizar Empleado' }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

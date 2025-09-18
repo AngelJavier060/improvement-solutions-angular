@@ -1,0 +1,11 @@
+<div class="company-selector">
+  <label class="form-label mb-1">Empresa</label>
+  <div class="d-flex align-items-center">
+    <select class="form-select" [ngModel]="selectedRuc" (ngModelChange)="onSelect($event)" [disabled]="loading || businesses.length === 0">
+      <option value="" disabled>Seleccione empresa...</option>
+      <option *ngFor="let b of businesses" [value]="b.ruc">{{ b.name }} ({{ b.ruc }})</option>
+    </select>
+    <div *ngIf="loading" class="spinner-border spinner-border-sm text-primary ms-2" role="status"></div>
+  </div>
+  <div *ngIf="error" class="text-danger small mt-1">{{ error }}</div>
+</div>

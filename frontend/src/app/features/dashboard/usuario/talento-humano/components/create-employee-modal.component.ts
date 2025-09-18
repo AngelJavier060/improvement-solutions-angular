@@ -1,4 +1,4 @@
-﻿import { Component, EventEmitter, OnInit, Output, ViewChild, ElementRef, Input } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, ViewChild, ElementRef, Input } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ConfigurationService, Position, Degree, IessCode, Gender, CivilStatus, Ethnicity, Department, TypeContract } from '../services/configuration.service';
 import { EmployeeService } from '../services/employee.service';
@@ -395,23 +395,26 @@ export class CreateEmployeeModalComponent implements OnInit {
         fechaIngreso: formValue.fechaIngreso,
         businessId: this.businessId, // Usar businessId directo
         codigoEmpresa: formValue.codigoTrabajador, // Código del trabajador en la empresa
-        positionId: formValue.position_id,
-        departmentId: formValue.department_id,
-        typeContractId: formValue.type_contract_id,
+        // IDs en snake_case para que el backend los persista correctamente
+        position_id: formValue.position_id || null,
+        department_id: formValue.department_id || null,
+        type_contract_id: formValue.type_contract_id || null,
         tipoSangre: formValue.tipoSangre,
         salario: formValue.salario ? parseFloat(formValue.salario) : null,
-        genderId: formValue.gender_id,
-        civilStatusId: formValue.civil_status_id,
-        etniaId: formValue.ethnicity_id,
-        degreeId: formValue.degree_id,
+        gender_id: formValue.gender_id || null,
+        civil_status_id: formValue.civil_status_id || null,
+        // En BD la columna puede ser 'ethnia_id' (según captura). Enviar ambos por compatibilidad.
+        ethnicity_id: formValue.ethnicity_id || null,
+        ethnia_id: formValue.ethnicity_id || null,
+        degree_id: formValue.degree_id || null,
         nivelEducacion: formValue.degree_id ? (this.degrees.find(d => d.id === formValue.degree_id)?.name || null) : null,
         discapacidad: formValue.discapacidad,
         codigoIess: formValue.codigoIess,
         iess: formValue.codigoIess, // Usar el mismo valor para ambos campos
         
         // Campos de empresa contratista
-        contractorCompanyId: formValue.contractor_company_id || null,
-        contractorBlockId: formValue.contractor_block_id || null,
+        contractor_company_id: formValue.contractor_company_id || null,
+        contractor_block_id: formValue.contractor_block_id || null,
         
         active: true,
         status: 'ACTIVO'

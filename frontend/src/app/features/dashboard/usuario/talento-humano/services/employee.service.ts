@@ -7,14 +7,13 @@ import { Employee, CreateEmployeeRequest, UpdateEmployeeRequest, EmployeeRespons
   providedIn: 'root'
 })
 export class EmployeeService {
-  private apiUrl = 'http://localhost:8080/api'; // URL directa al backend
+  private apiUrl = '/api'; // Usar ruta relativa para que funcione con proxy/interceptor
 
   constructor(private http: HttpClient) {}
 
-  // Obtener todos los empleados de una empresa por RUC
+  // Obtener todos los empleados de una empresa por ID
   getEmployeesByBusiness(businessId: number): Observable<EmployeeResponse[]> {
-    // Usar el endpoint con RUC para obtener empleados
-    const url = `${this.apiUrl}/business-employees/company/${businessId}`;
+    const url = `${this.apiUrl}/businesses/${businessId}/employees`;
     console.log('EmployeeService.getEmployeesByBusiness - URL:', url);
     return this.http.get<EmployeeResponse[]>(url);
   }

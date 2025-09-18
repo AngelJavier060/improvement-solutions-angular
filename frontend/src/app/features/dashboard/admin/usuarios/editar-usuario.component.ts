@@ -500,10 +500,12 @@ export class EditarUsuarioComponent implements OnInit {
     }
   }
 
+  defaultAvatar: string = 'assets/img/default-avatar.svg';
+
   onImageError(): void {
     console.error('Error al cargar la imagen');
     this.isImageLoading = false;
-    this.imagePreview = 'assets/img/default-avatar.png';
+    this.imagePreview = this.defaultAvatar;
   }
 
   clearImage(): void {

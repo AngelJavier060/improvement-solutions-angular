@@ -8,13 +8,18 @@ import { GestionEmpleadosComponent } from './components/gestion-empleados.compon
 import { CreateEmployeeModalComponent } from './components/create-employee-modal.component';
 import { EditEmployeeModalComponent } from './components/edit-employee-modal.component';
 import { SharedModule } from '../../../../shared/shared.module';
+import { TalentoHumanoDashboardComponent } from './talento-humano-dashboard.component';
+import { DashboardUsuarioGraficasComponent } from '../graficas/dashboard-usuario-graficas.component';
+import { CompanySelectorComponent } from './components/company-selector.component';
 
 @NgModule({
   declarations: [
     TalentoHumanoComponent,
     GestionEmpleadosComponent,
+    TalentoHumanoDashboardComponent,
     CreateEmployeeModalComponent,
-    EditEmployeeModalComponent
+    EditEmployeeModalComponent,
+    CompanySelectorComponent
   ],
   imports: [
     CommonModule,
@@ -22,6 +27,7 @@ import { SharedModule } from '../../../../shared/shared.module';
     FormsModule,
     TalentoHumanoRoutingModule,
     SharedModule
-  ]
+  ],
+  exports: [CompanySelectorComponent]
 })
 export class TalentoHumanoModule { }

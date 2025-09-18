@@ -5,6 +5,8 @@ import { Employee, UpdateEmployeeRequest } from '../models/employee.model';
 import { ContractorCompanyService } from '../../../../../services/contractor-company.service';
 import { ContractorBlockService } from '../../../../../services/contractor-block.service';
 import { ContractorCompany, ContractorBlock } from '../../../../../models/contractor-company.model';
+import { ConfigurationService, Position, Degree, Gender, CivilStatus, Ethnicity, Department, TypeContract } from '../services/configuration.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-edit-employee-modal',
@@ -25,9 +27,19 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
   contractorCompanies: ContractorCompany[] = [];
   availableContractorBlocks: ContractorBlock[] = [];
 
+  // Catálogos de configuración
+  genders: Gender[] = [];
+  civilStatuses: CivilStatus[] = [];
+  etnias: Ethnicity[] = [];
+  positions: Position[] = [];
+  departments: Department[] = [];
+  typeContracts: TypeContract[] = [];
+  degrees: Degree[] = [];
+
   constructor(
     private fb: FormBuilder,
     private employeeService: EmployeeService,
+    private configurationService: ConfigurationService,
     private contractorCompanyService: ContractorCompanyService,
     private contractorBlockService: ContractorBlockService
   ) {
@@ -36,17 +48,23 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.populateForm();
+    this.loadConfigurations();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['employee'] && this.employee) {
       this.populateForm();
     }
+    if (changes['businessId'] && this.businessId) {
+      this.loadConfigurations();
+    }
   }
 
   createForm(): FormGroup {
     return this.fb.group({
-      cedula: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+      cedula: [{ value: '', disabled: true }, [Validators.required, Validators.pattern(/^\d{10}$/)]],
+      nombres: [''],
+      apellidos: [''],
       name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
       phone: ['', [Validators.required, Validators.pattern(/^\+?\d{10,12}$/)]],
       email: ['', [Validators.required, Validators.email]],
@@ -56,7 +74,11 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       contact_name: ['', [Validators.required]],
       contact_phone: ['', [Validators.required, Validators.pattern(/^\+?\d{10,12}$/)]],
       status: [true],
+      codigo_trabajador: [{ value: '', disabled: true }],
+      salario: [{ value: '', disabled: true }],
       position_id: [''],
+      department_id: [''],
+      type_contract_id: [''],
       gender_id: [''],
       ethnicity_id: [''],
       civil_status_id: [''],
@@ -66,31 +88,119 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     });
   }
 
+  private getId(source: any, ...keys: string[]): any {
+    // Try direct scalar ids by keys, then nested object { id }
+    for (const k of keys) {
+      if (source && source[k] !== undefined && source[k] !== null && source[k] !== '') {
+        const v = source[k];
+        const n = Number(v);
+        return isNaN(n) ? v?.id ?? '' : n;
+      }
+    }
+    // Try nested objects: position, department, etc.
+    const nestedKeys = keys
+      .map(k => k.replace(/_?id$/i, ''))
+      .map(k => k.replace(/Id$/i, ''));
+    for (const nk of nestedKeys) {
+      const obj = source?.[nk];
+      if (obj && obj.id !== undefined && obj.id !== null) {
+        const n = Number(obj.id);
+        return isNaN(n) ? '' : n;
+      }
+    }
+    return '';
+  }
+
+  private resolveIdByName(catalog: any[], name: string | null | undefined): string {
+    if (!catalog || !catalog.length || !name) return '';
+    const n = String(name).trim().toLowerCase();
+    const found = catalog.find((x: any) => (x?.name || x?.nombre || '').toString().trim().toLowerCase() === n);
+    return found ? String(found.id) : '';
+  }
+
+  private reapplyCatalogSelections(): void {
+    const emp: any = this.employee || {};
+    const toStrId = (v: any) => (v === '' || v === null || v === undefined) ? '' : String(v);
+    let positionId = this.getId(emp, 'position_id', 'positionId', 'position');
+    let departmentId = this.getId(emp, 'department_id', 'departmentId', 'department');
+    let typeContractId = this.getId(emp, 'type_contract_id', 'typeContractId', 'type_contract', 'typeContract');
+    let degreeId = this.getId(emp, 'degree_id', 'degreeId', 'degree');
+    let genderId = this.getId(emp, 'gender_id', 'genderId', 'gender');
+    let civilStatusId = this.getId(emp, 'civil_status_id', 'civilStatusId', 'civil_status', 'civilStatus');
+    let ethnicityId = this.getId(emp, 'ethnicity_id', 'ethnia_id', 'ethnicityId', 'ethnicity', 'ethnia');
+
+    // Fallback por nombre si no hay id
+    if (positionId === '') positionId = this.resolveIdByName(this.positions, emp.position_name || emp.positionName || emp.position?.name);
+    if (departmentId === '') departmentId = this.resolveIdByName(this.departments, emp.department_name || emp.departmentName || emp.department?.name);
+    if (typeContractId === '') typeContractId = this.resolveIdByName(this.typeContracts, emp.type_contract_name || emp.typeContractName || emp.type_contract?.name || emp.typeContract?.name);
+    if (degreeId === '') degreeId = this.resolveIdByName(this.degrees, emp.degree_name || emp.degreeName || emp.degree?.name);
+    if (genderId === '') genderId = this.resolveIdByName(this.genders, emp.gender_name || emp.genderName || emp.gender?.name);
+    if (civilStatusId === '') civilStatusId = this.resolveIdByName(this.civilStatuses, emp.civil_status_name || emp.civilStatusName || emp.civil_status?.name || emp.civilStatus?.name);
+    if (ethnicityId === '') ethnicityId = this.resolveIdByName(this.etnias, emp.ethnicity_name || emp.ethnia_name || emp.ethnicityName || emp.ethnia?.name || emp.ethnicity?.name);
+
+    this.employeeForm.patchValue({
+      position_id: toStrId(positionId),
+      department_id: toStrId(departmentId),
+      type_contract_id: toStrId(typeContractId),
+      degree_id: toStrId(degreeId),
+      gender_id: toStrId(genderId),
+      civil_status_id: toStrId(civilStatusId),
+      ethnicity_id: toStrId(ethnicityId)
+    });
+  }
+
   populateForm(): void {
     if (this.employee) {
       // Formatear la fecha para el input date
       const birthdate = this.employee.birthdate ? 
         new Date(this.employee.birthdate).toISOString().split('T')[0] : '';
 
+      const codigoTrab = (this as any).employee.codigoTrabajador || (this as any).employee.codigo_trabajador || (this as any).employee.codigoEmpresa || '';
+      const salario = (this as any).employee.salario || '';
+
+      const nombres = (this as any).employee.nombres || '';
+      const apellidos = (this as any).employee.apellidos || '';
+      const fullName = this.employee.name && this.employee.name.trim().length > 0
+        ? this.employee.name
+        : `${nombres} ${apellidos}`.trim();
+
+      // Flexible mapping for contact and address fields
+      const contactNameVal = (this as any).employee.contact_name || (this as any).employee.contactName || '';
+      const contactKinshipVal = (this as any).employee.contact_kinship || (this as any).employee.contactKinship || '';
+      const contactPhoneVal = (this as any).employee.contact_phone || (this as any).employee.contactPhone || '';
+      const addressVal = (this as any).employee.address || (this as any).employee.residentAddress || '';
+
+      const toStrId = (v: any) => (v === '' || v === null || v === undefined) ? '' : String(v);
       this.employeeForm.patchValue({
         cedula: this.employee.cedula,
-        name: this.employee.name,
+        nombres: nombres,
+        apellidos: apellidos,
+        name: fullName,
         phone: this.employee.phone,
         email: this.employee.email,
         birthdate: birthdate,
-        address: this.employee.address,
-        contact_kinship: this.employee.contact_kinship,
-        contact_name: this.employee.contact_name,
-        contact_phone: this.employee.contact_phone,
+        address: addressVal,
+        contact_kinship: contactKinshipVal,
+        contact_name: contactNameVal,
+        contact_phone: contactPhoneVal,
         status: this.employee.status,
-        position_id: this.employee.position_id || '',
-        gender_id: this.employee.gender_id || '',
-        ethnicity_id: this.employee.ethnicity_id || '',
-        civil_status_id: this.employee.civil_status_id || '',
-        resident_address_id: this.employee.resident_address_id || '',
-        iess_id: this.employee.iess_id || '',
-        degree_id: this.employee.degree_id || ''
+        codigo_trabajador: codigoTrab,
+        salario: salario,
+        position_id: toStrId(this.getId((this as any).employee, 'position_id', 'positionId', 'position')),
+        department_id: toStrId(this.getId((this as any).employee, 'department_id', 'departmentId', 'department')),
+        type_contract_id: toStrId(this.getId((this as any).employee, 'type_contract_id', 'typeContractId', 'type_contract', 'typeContract')),
+        gender_id: toStrId(this.getId((this as any).employee, 'gender_id', 'genderId', 'gender')),
+        ethnicity_id: toStrId(this.getId((this as any).employee, 'ethnicity_id', 'ethnia_id', 'ethnicityId', 'ethnicity', 'ethnia')),
+        civil_status_id: toStrId(this.getId((this as any).employee, 'civil_status_id', 'civilStatusId', 'civil_status', 'civilStatus')),
+        resident_address_id: toStrId(this.getId((this as any).employee, 'resident_address_id', 'residentAddressId', 'resident_address', 'residentAddress')),
+        iess_id: toStrId(this.getId((this as any).employee, 'iess_id', 'iessId', 'iess')),
+        degree_id: toStrId(this.getId((this as any).employee, 'degree_id', 'degreeId', 'degree'))
       });
+
+      // Si las opciones ya están cargadas, re-aplicar una vez más
+      if (this.positions?.length || this.departments?.length) {
+        this.reapplyCatalogSelections();
+      }
     }
   }
 
@@ -99,7 +209,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       this.loading = true;
       this.error = null;
 
-      const formData: UpdateEmployeeRequest = this.employeeForm.value;
+      const formData: UpdateEmployeeRequest = this.employeeForm.getRawValue();
 
       this.employeeService.updateEmployee(this.employee.id, formData).subscribe({
         next: (response) => {
@@ -146,5 +256,37 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
   isFieldInvalid(fieldName: string): boolean {
     const field = this.employeeForm.get(fieldName);
     return !!(field?.invalid && field?.touched);
+  }
+
+  private loadConfigurations(): void {
+    if (!this.businessId) {
+      return;
+    }
+    forkJoin({
+      genders: this.configurationService.getGenders(),
+      civil: this.configurationService.getCivilStatuses(),
+      etnias: this.configurationService.getEtnias(),
+      positions: this.configurationService.getPositionsByCompany(this.businessId),
+      departments: this.configurationService.getDepartmentsByCompany(this.businessId),
+      typeContracts: this.configurationService.getTypeContractsByCompany(this.businessId),
+      degrees: this.configurationService.getDegrees()
+    }).subscribe({
+      next: (res) => {
+        this.genders = res.genders || [];
+        this.civilStatuses = res.civil || [];
+        this.etnias = res.etnias || [];
+        this.positions = res.positions || [];
+        this.departments = res.departments || [];
+        this.typeContracts = res.typeContracts || [];
+        this.degrees = res.degrees || [];
+        // Reaplicar selecciones de catálogos una vez cargadas las opciones
+        if (this.employee) {
+          this.reapplyCatalogSelections();
+        }
+      },
+      error: (err) => {
+        console.error('Error cargando catálogos de configuración:', err);
+      }
+    });
   }
 }

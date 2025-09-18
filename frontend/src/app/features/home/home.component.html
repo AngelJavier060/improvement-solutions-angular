@@ -40,8 +40,9 @@
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item d-flex align-items-center fw-bold text-success" 
-                                   (click)="openLoginModal('usuario'); d.close()"
+                                <a class="dropdown-item d-flex align-items-center fw-bold text-success"
+                                   [routerLink]="['/auth/usuario-login']"
+                                   (click)="d.close()"
                                    style="cursor: pointer;">
                                     <i class="fas fa-user me-2 text-success"></i> Usuario
                                 </a>

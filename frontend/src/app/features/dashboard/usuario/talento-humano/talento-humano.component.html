@@ -12,14 +12,23 @@
         </div>
       </div>
       
-      <div class="navigation-tabs">
+      <div class="navigation-tabs" style="display: flex; align-items: center; gap: 12px;">
         <a 
-          routerLink="empleados" 
+          routerLink="" 
           routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
           class="nav-tab"
         >
           <i class="fas fa-user-friends"></i>
           <span>Gestión de Empleados</span>
+        </a>
+        <a 
+          routerLink="dashboard" 
+          routerLinkActive="active"
+          class="nav-tab"
+        >
+          <i class="fas fa-chart-bar"></i>
+          <span>Dashboard</span>
         </a>
         <!-- Más tabs para futuras funcionalidades -->
         <div class="nav-tab disabled">
@@ -31,6 +40,11 @@
           <i class="fas fa-chart-line"></i>
           <span>Reportes</span>
           <small>(Próximo)</small>
+        </div>
+
+        <!-- Company Selector aligned to the right -->
+        <div style="margin-left: auto; min-width: 320px;">
+          <app-company-selector></app-company-selector>
         </div>
       </div>
     </div>

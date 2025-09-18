@@ -12,6 +12,15 @@ import { BusinessFilesComponent } from './components/business-files/business-fil
 import { FileUploadComponent } from './components/file-upload/file-upload.component';
 import { FileViewerComponent } from './components/file-viewer/file-viewer.component';
 import { SafePipe } from '../pipes/safe.pipe';
+import { NameResolverPipe } from '../pipes/name-resolver.pipe';
+import { DashboardUsuarioGraficasComponent } from '../features/dashboard/usuario/graficas/dashboard-usuario-graficas.component';
+import { GraficaBarraTotalPersonalComponent } from '../features/dashboard/usuario/graficas/grafica-barra-total-personal.component';
+import { GraficaTotalPersonalComponent } from '../features/dashboard/usuario/graficas/grafica-total-personal.component';
+import { GraficaFormacionAcademicaComponent } from '../features/dashboard/usuario/graficas/grafica-formacion-academica.component';
+import { GraficaRangoEdadesComponent } from '../features/dashboard/usuario/graficas/grafica-rango-edades.component';
+import { GraficaTrabajadoresResidentesComponent } from '../features/dashboard/usuario/graficas/grafica-trabajadores-residentes.component';
+import { GraficaTiposEtniasComponent } from '../features/dashboard/usuario/graficas/grafica-tipos-etnias.component';
+import { GraficaCargosAsignadosComponent } from '../features/dashboard/usuario/graficas/grafica-cargos-asignados.component';
 
 @NgModule({
   declarations: [
@@ -22,7 +31,16 @@ import { SafePipe } from '../pipes/safe.pipe';
     BusinessFilesComponent,
     FileUploadComponent,
     FileViewerComponent,
-    SafePipe
+    SafePipe,
+    NameResolverPipe,
+    DashboardUsuarioGraficasComponent,
+    GraficaBarraTotalPersonalComponent,
+    GraficaTotalPersonalComponent,
+    GraficaFormacionAcademicaComponent,
+    GraficaRangoEdadesComponent,
+    GraficaTrabajadoresResidentesComponent,
+    GraficaTiposEtniasComponent,
+    GraficaCargosAsignadosComponent
   ],
   imports: [
     CommonModule,
@@ -41,7 +59,16 @@ import { SafePipe } from '../pipes/safe.pipe';
     BusinessFilesComponent,
     FileUploadComponent,
     FileViewerComponent,
-    SafePipe
+    SafePipe,
+    NameResolverPipe,
+    DashboardUsuarioGraficasComponent,
+    GraficaBarraTotalPersonalComponent,
+    GraficaTotalPersonalComponent,
+    GraficaFormacionAcademicaComponent,
+    GraficaRangoEdadesComponent,
+    GraficaTrabajadoresResidentesComponent,
+    GraficaTiposEtniasComponent,
+    GraficaCargosAsignadosComponent
   ]
 })
 export class SharedModule { }

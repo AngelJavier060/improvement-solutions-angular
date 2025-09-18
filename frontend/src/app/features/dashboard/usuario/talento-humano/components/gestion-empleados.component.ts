@@ -3,6 +3,9 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { EmployeeService } from '../services/employee.service';
 import { Employee, EmployeeResponse } from '../models/employee.model';
+import { environment } from '../../../../../../environments/environment';
+import { BusinessService } from '../../../../../services/business.service';
+import { BusinessContextService } from '../../../../../core/services/business-context.service';
 
 @Component({
   selector: 'app-gestion-empleados',
@@ -16,8 +19,9 @@ export class GestionEmpleadosComponent implements OnInit {
   searchTerm: string = '';
   loading = false;
   error: string | null = null;
-  businessId = 3; // OrientOil empresa ID = 3
-  businessRuc = '0365265569652'; // RUC de OrientOil
+  // Identificadores de empresa (se obtienen de la ruta)
+  businessId: number | null = null;
+  businessRuc: string | null = null;
 
   // Modal
   showCreateModal = false;
@@ -26,47 +30,121 @@ export class GestionEmpleadosComponent implements OnInit {
 
   constructor(
     private employeeService: EmployeeService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private businessService: BusinessService,
+    private businessContext: BusinessContextService
   ) {}
 
   ngOnInit(): void {
-    // Obtener el RUC de la URL (en lugar del businessId)
-    const routeRuc = this.route.snapshot.params['businessRuc'] || 
-                     this.route.parent?.snapshot.params['businessRuc'];
-    if (routeRuc) {
-      this.businessRuc = routeRuc;
-    }
-    
-    // Intentar obtener el businessId de la URL también para compatibilidad
-    const routeBusinessId = this.route.snapshot.params['businessId'] || 
-                           this.route.parent?.snapshot.params['businessId'];
-    if (routeBusinessId) {
-      this.businessId = parseInt(routeBusinessId, 10);
-    }
-    
+    // Extraer parámetros recorriendo toda la cadena de rutas ascendentes
+    this.extractRouteParams();
     console.log('Business RUC para empleados:', this.businessRuc);
     console.log('Business ID para empleados:', this.businessId);
     this.loadEmployees();
+
+    // Suscribirse a cambios de parámetros para recargar si cambian
+    this.route.params.subscribe(() => {
+      this.extractRouteParams();
+      this.loadEmployees();
+    });
+    this.route.parent?.params.subscribe(() => {
+      this.extractRouteParams();
+      this.loadEmployees();
+    });
+    this.route.parent?.parent?.params.subscribe(() => {
+      this.extractRouteParams();
+      this.loadEmployees();
+    });
+  }
+
+  private extractRouteParams(): void {
+    const findParamUp = (key: string): string | null => {
+      let r: any = this.route;
+      while (r) {
+        const val = r.snapshot?.params?.[key];
+        if (val !== undefined) {
+          return val;
+        }
+        r = r.parent;
+      }
+      return null;
+    };
+
+    const ruc = findParamUp('businessRuc') || findParamUp('ruc');
+    const bid = findParamUp('businessId');
+    this.businessRuc = ruc || null;
+    this.businessId = bid ? parseInt(bid, 10) : this.businessId; // conservar si ya estaba resuelto
+
+    // Fallback extra: intentar parsear el RUC desde la URL si aún no lo tenemos
+    if (!this.businessRuc && typeof window !== 'undefined') {
+      const match = window.location.pathname.match(/\/usuario\/([^/]+)\/dashboard/);
+      if (match && match[1]) {
+        this.businessRuc = match[1];
+        console.log('🔁 RUC extraído desde URL (fallback):', this.businessRuc);
+      }
+    }
+
+    // Fallback de contexto: usar empresa activa del BusinessContextService
+    if (!this.businessRuc || !this.businessId) {
+      const active = this.businessContext.getActiveBusiness();
+      if (active) {
+        this.businessRuc = this.businessRuc || active.ruc;
+        this.businessId = this.businessId || active.id;
+        console.log('🟢 Usando empresa activa desde contexto:', active);
+      }
+    }
+
+    // Si no hay businessId pero sí RUC, intentar resolverlo
+    if (!this.businessId && this.businessRuc) {
+      this.resolveBusinessIdFromRuc(this.businessRuc);
+    }
   }
 
   loadEmployees(): void {
+    // Asegurar que tenemos los parámetros más recientes antes de cargar
+    this.extractRouteParams();
     this.loading = true;
     this.error = null;
     
-    // Usar el RUC para obtener empleados
-    this.employeeService.getEmployeesByBusinessRuc(this.businessRuc).subscribe({
-      next: (employees) => {
-        this.employees = employees;
-        this.filteredEmployees = employees;
-        this.loading = false;
-        console.log('Empleados cargados:', employees);
-      },
-      error: (error) => {
-        console.error('Error al cargar empleados:', error);
-        this.error = 'Error al cargar los empleados';
-        this.loading = false;
-      }
-    });
+    // Decidir cómo obtener empleados según el parámetro disponible
+    if (this.businessRuc && this.businessRuc.trim() !== '') {
+      // Usar el RUC para obtener empleados
+      this.employeeService.getEmployeesByBusinessRuc(this.businessRuc).subscribe({
+        next: (employees) => {
+          this.employees = employees;
+          this.filteredEmployees = employees;
+          this.loading = false;
+          console.log('Empleados cargados por RUC:', employees);
+        },
+        error: (error) => {
+          console.error('Error al cargar empleados por RUC:', error);
+          this.error = 'Error al cargar los empleados';
+          this.loading = false;
+        }
+      });
+    } else if (this.businessId != null) {
+      // Usar el ID para obtener empleados
+      this.employeeService.getEmployeesByBusiness(this.businessId).subscribe({
+        next: (employees) => {
+          this.employees = employees;
+          this.filteredEmployees = employees;
+          this.loading = false;
+          console.log('Empleados cargados por ID:', employees);
+        },
+        error: (error) => {
+          console.error('Error al cargar empleados por ID:', error);
+          this.error = 'Error al cargar los empleados';
+          this.loading = false;
+        }
+      });
+    } else {
+      // No hay contexto de empresa: no disparamos petición
+      console.warn('No se encontró businessRuc ni businessId en la ruta.');
+      this.employees = [];
+      this.filteredEmployees = [];
+      this.loading = false;
+      this.error = 'Seleccione una empresa para ver sus empleados.';
+    }
   }
 
   // Método para filtrar empleados por búsqueda
@@ -212,23 +290,47 @@ export class GestionEmpleadosComponent implements OnInit {
 
   // Devuelve la URL absoluta del backend para la imagen de perfil
   getEmployeeImageUrl(employee: any): string {
-    const backendUrl = 'http://localhost:8080';
-    if (employee.imagePath) {
-      if (employee.imagePath.startsWith('http')) return employee.imagePath;
-      // Si la ruta ya contiene 'uploads/profiles/', solo anteponer el backend
-      if (employee.imagePath.startsWith('uploads/profiles/')) {
-        return `${backendUrl}/api/files/profiles/${employee.imagePath.replace('uploads/profiles/', '')}`;
-      }
-      // Si la ruta es relativa simple, anteponer el backend y la carpeta
-      return `${backendUrl}/api/files/profiles/${employee.imagePath}`;
+    // Preferir URLs relativas que pasen por el proxy/interceptor
+    // Soportar diferentes campos posibles desde backend
+    const addCacheBuster = (url: string) => {
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}v=${new Date().getTime()}`;
+    };
+
+    const resolveFromPath = (path: string) => {
+      if (!path) return '';
+      if (path.startsWith('http')) return addCacheBuster(path);
+      const filename = path.startsWith('uploads/profiles/')
+        ? path.replace('uploads/profiles/', '')
+        : path;
+      // environment.apiUrl puede estar vacío en dev, por lo que usamos ruta relativa
+      const base = (environment.apiUrl || '').trim();
+      const url = `${base}/api/files/profiles/${filename}`.replace(/\/+/, '/');
+      return addCacheBuster(url);
+    };
+
+    if (employee?.imagePath) {
+      return resolveFromPath(employee.imagePath);
     }
-    if (employee.profile_picture) {
-      if (employee.profile_picture.startsWith('http')) return employee.profile_picture;
-      if (employee.profile_picture.startsWith('uploads/profiles/')) {
-        return `${backendUrl}/api/files/profiles/${employee.profile_picture.replace('uploads/profiles/', '')}`;
-      }
-      return `${backendUrl}/api/files/profiles/${employee.profile_picture}`;
+    if (employee?.profile_picture) {
+      return resolveFromPath(employee.profile_picture);
     }
     return '';
+  }
+
+  private resolveBusinessIdFromRuc(ruc: string): void {
+    this.businessService.getByRuc(ruc).subscribe({
+      next: (business: any) => {
+        if (business?.id) {
+          this.businessId = Number(business.id);
+          console.log('✅ businessId resuelto desde RUC:', this.businessId);
+        } else {
+          console.warn('No se pudo resolver businessId desde RUC');
+        }
+      },
+      error: (err) => {
+        console.error('Error al resolver businessId por RUC:', err);
+      }
+    });
   }
 }

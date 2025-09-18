@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Title } from '@angular/platform-browser';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { BusinessService } from '../../../../services/business.service';
 import { DepartmentService } from '../../../../services/department.service';
 import { UserService } from '../../../../services/user.service';
@@ -13,6 +13,7 @@ import { IessService } from '../../../../services/iess.service';
 import { ContractorCompanyService } from '../../../../services/contractor-company.service';
 import { ContractorBlockService } from '../../../../services/contractor-block.service';
 import { environment } from '../../../../../environments/environment';
+import { BusinessAdapterService } from '../../../../core/adapters/business-adapter.service';
 import { forkJoin } from 'rxjs';
 import { User } from './user-modal/user-modal.component';
 
@@ -84,8 +85,12 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   selectedContractorCompanies: any[] = [];
   selectedBlocks: any[] = [];
 
+  // Contexto de edición inline por sección
+  editingContext: { section: 'department' | 'position', originalId: number } | null = null;
+
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private businessService: BusinessService,
     private departmentService: DepartmentService,
     private userService: UserService,
@@ -96,7 +101,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private iessService: IessService,
     private contractorCompanyService: ContractorCompanyService,
     private contractorBlockService: ContractorBlockService,
-    private title: Title
+    private title: Title,
+    private businessAdapter: BusinessAdapterService
   ) {}
 
   ngOnInit(): void {
@@ -108,6 +114,182 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     });
   }
   /* Duplicated helper and early openCreateUserModal removed; single definitions exist further below */
+
+  // === Helpers de presentación ===
+  getPositionNameByEmployee(employee: any): string {
+    if (!employee) return 'Sin asignar';
+    const direct = employee.position?.name || employee.position_name || employee.positionName;
+    if (direct && String(direct).trim().length > 0) return String(direct);
+
+    const posId = employee.position_id ?? employee.positionId ?? employee.position?.id;
+    if (posId != null) {
+      const fromEmpresa = (this.empresa?.positions || []).find((p: any) => Number(p?.id) === Number(posId));
+      if (fromEmpresa?.name) return String(fromEmpresa.name);
+      const fromCatalog = (this.cargos || []).find((p: any) => Number(p?.id) === Number(posId));
+      if (fromCatalog?.name) return String(fromCatalog.name);
+      return `#${posId}`;
+    }
+    return 'Sin asignar';
+  }
+
+  getDepartmentNameByEmployee(employee: any): string {
+    if (!employee) return 'Sin asignar';
+    const direct = employee.department?.name || employee.department_name || employee.departmentName;
+    if (direct && String(direct).trim().length > 0) return String(direct);
+
+    const depId = employee.department_id ?? employee.departmentId ?? employee.department?.id;
+    if (depId != null) {
+      const fromEmpresa = (this.empresa?.departments || []).find((d: any) => Number(d?.id) === Number(depId));
+      if (fromEmpresa?.name) return String(fromEmpresa.name);
+      const fromCatalog = (this.departamentos || []).find((d: any) => Number(d?.id) === Number(depId));
+      if (fromCatalog?.name) return String(fromCatalog.name);
+      return `#${depId}`;
+    }
+    return 'Sin asignar';
+  }
+
+  getContractorCompanyDisplayName(company: any): string {
+    if (!company) return '—';
+    const name = company.name || company.nombre || company.nameShort || '';
+    const ruc = company.ruc || '';
+    const code = company.code || '';
+    const label = [ruc, name].filter(Boolean).join(' - ') || name || ruc || code || 'Empresa contratista';
+    return label;
+  }
+
+  getContractorBlockDisplayName(block: any): string {
+    if (!block) return '—';
+    return block.name || block.nombre || block.code || `Bloque #${block.id ?? ''}`;
+  }
+
+  // Navegar a pantallas de configuración para editar catálogos/relaciones
+  editCatalog(section: string, id?: number): void {
+    const base = ['/dashboard', 'admin', 'configuracion', section];
+    if (id != null) {
+      this.router.navigate(base, { queryParams: { edit: id } });
+    } else {
+      this.router.navigate(base);
+    }
+  }
+
+  // Helpers de normalización (a nivel de clase)
+  private resolveNested(obj: any, path: string): any {
+    if (!obj || !path) return undefined;
+    const parts = path.split('.');
+    let cur: any = obj;
+    for (const p of parts) {
+      if (cur == null) return undefined;
+      cur = cur[p];
+    }
+    return cur;
+  }
+
+  private normalizeItemName(item: any, keys: string[]): any {
+    if (!item) return item;
+    const current = (item.name ?? '').toString().trim();
+    if (current.length > 0) return item;
+    for (const k of keys) {
+      const v = this.resolveNested(item, k);
+      if (v !== undefined && v !== null && String(v).trim().length > 0) {
+        item.name = v;
+        break;
+      }
+    }
+    return item;
+  }
+
+  // Obtener nombre desde un catálogo por ID con múltiples alternativas
+  private getNameFromCatalog(catalog: any[], id: any, altKeys: string[] = ['name', 'nombre', 'title', 'description']): string | null {
+    if (!catalog || !Array.isArray(catalog)) return null;
+    const nId = Number(id);
+    const found = catalog.find((x: any) => Number(x?.id) === nId);
+    if (!found) return null;
+    for (const k of altKeys) {
+      const v = this.resolveNested(found, k);
+      if (v !== undefined && v !== null && String(v).trim().length > 0) return String(v);
+    }
+    return null;
+  }
+
+  // Enriquecer arrays de la empresa con nombres desde catálogos globales si faltan
+  private hydrateEmpresaArrays(): void {
+    if (!this.empresa) return;
+
+    // Departamentos
+    if (Array.isArray(this.empresa.departments) && this.departamentos?.length) {
+      this.empresa.departments = this.empresa.departments.map((d: any) => {
+        if (typeof d === 'number') {
+          const name = this.getNameFromCatalog(this.departamentos, d);
+          return { id: d, name: name || `#${d}` };
+        }
+        if (!d?.name || String(d.name).trim().length === 0) {
+          const name = this.getNameFromCatalog(this.departamentos, d?.id ?? d?.department_id ?? d?.departmentId);
+          if (name) d.name = name;
+        }
+        return d;
+      });
+    }
+
+    // Cargos (positions)
+    if (Array.isArray(this.empresa.positions) && this.cargos?.length) {
+      this.empresa.positions = this.empresa.positions.map((p: any) => {
+        if (typeof p === 'number') {
+          const name = this.getNameFromCatalog(this.cargos, p);
+          return { id: p, name: name || `#${p}` };
+        }
+        if (!p?.name || String(p.name).trim().length === 0) {
+          const name = this.getNameFromCatalog(this.cargos, p?.id ?? p?.position_id ?? p?.positionId);
+          if (name) p.name = name;
+        }
+        return p;
+      });
+    }
+
+    // Tipos de documento
+    if (Array.isArray(this.empresa.type_documents) && this.tiposDocumentos?.length) {
+      this.empresa.type_documents = this.empresa.type_documents.map((t: any) => {
+        if (typeof t === 'number') {
+          const name = this.getNameFromCatalog(this.tiposDocumentos, t);
+          return { id: t, name: name || `#${t}` };
+        }
+        if (!t?.name || String(t.name).trim().length === 0) {
+          const name = this.getNameFromCatalog(this.tiposDocumentos, t?.id ?? t?.type_document_id ?? t?.typeDocumentId);
+          if (name) t.name = name;
+        }
+        return t;
+      });
+    }
+
+    // Tipos de contrato
+    if (Array.isArray(this.empresa.type_contracts) && this.tiposContratos?.length) {
+      this.empresa.type_contracts = this.empresa.type_contracts.map((t: any) => {
+        if (typeof t === 'number') {
+          const name = this.getNameFromCatalog(this.tiposContratos, t);
+          return { id: t, name: name || `#${t}` };
+        }
+        if (!t?.name || String(t.name).trim().length === 0) {
+          const name = this.getNameFromCatalog(this.tiposContratos, t?.id ?? t?.type_contract_id ?? t?.typeContractId);
+          if (name) t.name = name;
+        }
+        return t;
+      });
+    }
+
+    // Obligaciones (matriz)
+    if (Array.isArray(this.empresa.obligation_matrices) && this.obligacionesMatriz?.length) {
+      this.empresa.obligation_matrices = this.empresa.obligation_matrices.map((o: any) => {
+        if (typeof o === 'number') {
+          const name = this.getNameFromCatalog(this.obligacionesMatriz, o);
+          return { id: o, name: name || `#${o}` };
+        }
+        if (!o?.name || String(o.name).trim().length === 0) {
+          const name = this.getNameFromCatalog(this.obligacionesMatriz, o?.id ?? o?.obligation_matrix_id ?? o?.obligationMatrixId);
+          if (name) o.name = name;
+        }
+        return o;
+      });
+    }
+  }
 
   loadData(): void {
     this.loading = true;
@@ -144,6 +326,12 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         console.log('🏢 Estructura completa de empresa:', JSON.stringify(empresa, null, 2));
         
         this.empresa = empresa;
+        // Adaptar/normalizar inmediatamente las listas a objetos con {id, name}
+        try {
+          this.empresa = this.businessAdapter.adaptBusinessAdminDetails(this.empresa);
+        } catch (e) {
+          console.warn('No se pudo adaptar empresa via BusinessAdapterService:', e);
+        }
         
         // Asegurar que todas las propiedades array existen (como frontend-admin)
         if (!this.empresa.departments) this.empresa.departments = [];
@@ -171,6 +359,20 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         
         console.log('IESS después de inicialización:', this.empresa.ieses);
         console.log('Longitud final de IESS:', this.empresa.ieses.length);
+
+        // Normalizar nombres para que se muestren siempre, aunque vengan anidados o con otra clave
+        try {
+          this.empresa.departments = (this.empresa.departments || []).map((d: any) => this.normalizeItemName(d, ['name', 'department.name', 'nombre', 'title']));
+          this.empresa.positions = (this.empresa.positions || []).map((p: any) => this.normalizeItemName(p, ['name', 'position.name', 'nombre', 'title', 'description']));
+          this.empresa.type_documents = (this.empresa.type_documents || []).map((t: any) => this.normalizeItemName(t, ['name', 'typeDocument.name', 'nombre', 'description', 'title']));
+          this.empresa.type_contracts = (this.empresa.type_contracts || []).map((t: any) => this.normalizeItemName(t, ['name', 'typeContract.name', 'nombre', 'title', 'description']));
+          this.empresa.obligation_matrices = (this.empresa.obligation_matrices || []).map((o: any) => this.normalizeItemName(o, ['name', 'obligationMatrix.name', 'title', 'description']));
+        } catch (e) {
+          console.warn('No se pudo normalizar nombres de listas de empresa:', e);
+        }
+        // Enriquecer con nombres desde catálogos si están disponibles
+        this.hydrateEmpresaArrays();
+
         console.log('=== FIN DEBUGGING ===');
 
         // Título dinámico del documento
@@ -245,6 +447,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         // Solo cargar para las listas desplegables, NO sobrescribir datos de empresa
         this.departamentos = data || [];
         console.log('Departamentos globales cargados para listas desplegables:', this.departamentos.length);
+        this.hydrateEmpresaArrays();
       },
       error: (error) => {
         console.error('Error al cargar departamentos globales:', error);
@@ -259,6 +462,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         // Solo cargar para las listas desplegables, NO sobrescribir datos de empresa
         this.cargos = data || [];
         console.log('Cargos globales cargados para listas desplegables:', this.cargos.length);
+        this.hydrateEmpresaArrays();
       },
       error: (error) => {
         console.error('Error al cargar cargos globales:', error);
@@ -273,6 +477,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         // Solo cargar para las listas desplegables, NO sobrescribir datos de empresa
         this.tiposDocumentos = data || [];
         console.log('Tipos de documentos globales cargados para listas desplegables:', this.tiposDocumentos.length);
+        this.hydrateEmpresaArrays();
       },
       error: (error) => {
         console.error('Error al cargar tipos de documentos globales:', error);
@@ -287,6 +492,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         // Solo cargar para las listas desplegables, NO sobrescribir datos de empresa
         this.tiposContratos = data || [];
         console.log('Tipos de contratos globales cargados para listas desplegables:', this.tiposContratos.length);
+        this.hydrateEmpresaArrays();
       },
       error: (error) => {
         console.error('Error al cargar tipos de contratos globales:', error);
@@ -301,6 +507,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         // Solo cargar para las listas desplegables, NO sobrescribir datos de empresa
         this.obligacionesMatriz = data || [];
         console.log('Obligaciones matriz globales cargadas para listas desplegables:', this.obligacionesMatriz.length);
+        this.hydrateEmpresaArrays();
       },
       error: (error) => {
         console.error('Error al cargar obligaciones matriz globales:', error);
@@ -318,6 +525,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         console.log('🛡️ IESS items globales cargados para listas desplegables:', this.iessList.length);
         console.log('🛡️ Datos IESS globales completos:', this.iessList);
         console.log('🛡️ Primer item IESS:', this.iessList[0]);
+        this.hydrateEmpresaArrays();
       },
       error: (error) => {
         console.error('❌ Error al cargar IESS items globales:', error);
@@ -560,29 +768,30 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   asignDepartment(): void {
     if (!this.selectedDepartamentos.length || !this.empresa?.id) return;
     
-    // Crear promesas para agregar cada departamento
-    const addPromises = this.selectedDepartamentos.map(departmentId => 
-      this.businessService.addDepartmentToBusiness(this.empresa.id, Number(departmentId)).toPromise()
-    );
-
-    Promise.all(addPromises).then(() => {
-      // Agregar a la vista local
-      this.selectedDepartamentos.forEach(selectedId => {
-        const deptSelected = this.departamentos.find((d: any) => d.id == selectedId);
-        if (deptSelected) {
-          const exists = this.empresa.departments.find((d: any) => d.id == selectedId);
-          if (!exists) {
-            this.empresa.departments.push(deptSelected);
-          }
+    const performAdd = async () => {
+      // Si estamos en modo edición y hay un cambio, primero eliminar el original
+      if (this.editingContext?.section === 'department' && this.editingContext.originalId != null) {
+        const newId = Number(this.selectedDepartamentos[0]);
+        if (newId !== this.editingContext.originalId) {
+          await this.businessService.removeDepartmentFromBusiness(this.empresa.id, this.editingContext.originalId).toPromise();
         }
-      });
-      
+      }
+      // Agregar seleccionados (uno o varios)
+      for (const departmentId of this.selectedDepartamentos) {
+        await this.businessService.addDepartmentToBusiness(this.empresa.id, Number(departmentId)).toPromise();
+      }
+    };
+
+    performAdd().then(() => {
+      // Refrescar vista local de forma simple
+      this.loadData();
       this.selectedDepartamentos = [];
       this.showAsignDepartmentModal = false;
-      alert('Departamentos asignados exitosamente');
+      this.editingContext = null;
+      alert('Departamentos asignados/actualizados exitosamente');
     }).catch(error => {
-      console.error('Error al asignar departamentos:', error);
-      alert('Error al asignar departamentos. Por favor, inténtelo de nuevo.');
+      console.error('Error al asignar/actualizar departamentos:', error);
+      alert('Error al asignar/actualizar departamentos. Por favor, inténtelo de nuevo.');
     });
   }
 
@@ -612,30 +821,41 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   asignCargo(): void {
     if (!this.selectedCargos.length || !this.empresa?.id) return;
     
-    // Crear promesas para agregar cada cargo
-    const addPromises = this.selectedCargos.map(cargoId => 
-      this.businessService.addPositionToBusiness(this.empresa.id, Number(cargoId)).toPromise()
-    );
-
-    Promise.all(addPromises).then(() => {
-      // Agregar a la vista local
-      this.selectedCargos.forEach(selectedId => {
-        const cargoSelected = this.cargos.find((c: any) => c.id == selectedId);
-        if (cargoSelected) {
-          const exists = this.empresa.positions.find((p: any) => p.id == selectedId);
-          if (!exists) {
-            this.empresa.positions.push(cargoSelected);
-          }
+    const performAdd = async () => {
+      if (this.editingContext?.section === 'position' && this.editingContext.originalId != null) {
+        const newId = Number(this.selectedCargos[0]);
+        if (newId !== this.editingContext.originalId) {
+          await this.businessService.removePositionFromBusiness(this.empresa.id, this.editingContext.originalId).toPromise();
         }
-      });
-      
+      }
+      for (const cargoId of this.selectedCargos) {
+        await this.businessService.addPositionToBusiness(this.empresa.id, Number(cargoId)).toPromise();
+      }
+    };
+
+    performAdd().then(() => {
+      this.loadData();
       this.selectedCargos = [];
       this.showAsignCargoModal = false;
-      alert('Cargos asignados exitosamente');
+      this.editingContext = null;
+      alert('Cargos asignados/actualizados exitosamente');
     }).catch(error => {
-      console.error('Error al asignar cargos:', error);
-      alert('Error al asignar cargos. Por favor, inténtelo de nuevo.');
+      console.error('Error al asignar/actualizar cargos:', error);
+      alert('Error al asignar/actualizar cargos. Por favor, inténtelo de nuevo.');
     });
+  }
+
+  // Disparadores de edición inline
+  editDepartment(dept: any): void {
+    this.selectedDepartamentos = [String(dept?.id)];
+    this.editingContext = { section: 'department', originalId: Number(dept?.id) };
+    this.showAsignDepartmentModal = true;
+  }
+
+  editCargo(cargo: any): void {
+    this.selectedCargos = [String(cargo?.id)];
+    this.editingContext = { section: 'position', originalId: Number(cargo?.id) };
+    this.showAsignCargoModal = true;
   }
 
   removeCargo(cargoId: number): void {
@@ -1068,12 +1288,6 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     });
   }
 
-  // Función para obtener el nombre de visualización de la empresa contratista
-  getContractorCompanyDisplayName(company: any): string {
-    if (!company) return 'Sin empresa contratista';
-    return company.name || company.companyName || `Empresa #${company.id}`;
-  }
-
   // Función para obtener todas las empresas contratistas como string
   getContractorCompaniesDisplayNames(): string {
     if (!this.empresa.contractor_companies || this.empresa.contractor_companies.length === 0) {
@@ -1082,12 +1296,6 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     return this.empresa.contractor_companies
       .map((company: any) => this.getContractorCompanyDisplayName(company))
       .join(', ');
-  }
-
-  // Función para obtener el nombre de visualización del bloque
-  getContractorBlockDisplayName(block: any): string {
-    if (!block) return 'Bloque desconocido';
-    return block.name || block.blockName || `Bloque #${block.id}`;
   }
 
   // Función para verificar si hay empresas contratistas configuradas

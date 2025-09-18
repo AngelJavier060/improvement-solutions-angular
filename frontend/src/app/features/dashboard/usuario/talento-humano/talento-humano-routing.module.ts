@@ -3,6 +3,8 @@ import { RouterModule, Routes } from '@angular/router';
 import { TalentoHumanoComponent } from './talento-humano.component';
 import { GestionEmpleadosComponent } from './components/gestion-empleados.component';
 
+import { TalentoHumanoDashboardComponent } from './talento-humano-dashboard.component';
+
 const routes: Routes = [
   {
     path: '',
@@ -10,11 +12,20 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: 'empleados',
-        pathMatch: 'full'
+        component: GestionEmpleadosComponent
       },
       {
-        path: 'empleados',
+        path: 'dashboard',
+        component: TalentoHumanoDashboardComponent
+      },
+      // Ruta para cargar empleados por RUC de la empresa (multi-empresa)
+      {
+        path: ':businessRuc',
+        component: GestionEmpleadosComponent
+      },
+      // Ruta alternativa para cargar por ID de empresa
+      {
+        path: 'by-id/:businessId',
         component: GestionEmpleadosComponent
       }
     ]

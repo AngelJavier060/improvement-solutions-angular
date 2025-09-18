@@ -239,17 +239,17 @@
 
 <!-- Modal para crear empleado -->
 <app-create-employee-modal
-  *ngIf="showCreateModal"
-  [businessId]="businessId"
+  *ngIf="showCreateModal && businessId !== null"
+  [businessId]="businessId!"
   (onClose)="closeCreateModal()"
   (onEmployeeCreated)="onEmployeeCreated()">
 </app-create-employee-modal>
 
 <!-- Modal para editar empleado -->
 <app-edit-employee-modal
-  *ngIf="showEditModal && employeeToEdit"
+  *ngIf="showEditModal && employeeToEdit && businessId !== null"
   [employee]="employeeToEdit"
-  [businessId]="businessId"
+  [businessId]="businessId!"
   (onClose)="closeEditModal()"
   (onEmployeeUpdated)="onEmployeeUpdated()">
 </app-edit-employee-modal>

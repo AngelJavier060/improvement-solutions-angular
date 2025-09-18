@@ -111,12 +111,11 @@
           <div class="d-flex align-items-center h-100">
             <div class="me-3">
               <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
-                <i class="fas fa-building text-white" style="font-size: 14px;"></i>
+                <i class="fas fa-building text-dark" style="font-size: 14px;"></i>
               </div>
             </div>
             <div>
-              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Departamentos</h6>
-              <small class="text-white-50" style="font-size: 12px;">{{ empresa.departments?.length || 0 }} departamentos</small>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Departamentos</h6>
             </div>
           </div>
         </div>
@@ -132,9 +131,15 @@
               <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
                 <div class="d-flex align-items-center flex-grow-1">
                   <i class="fas fa-building text-warning me-2" style="font-size: 10px;"></i>
-                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ dept.name }}</span>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ dept | name:'department' }}</span>
                 </div>
                 <div class="d-flex gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1"
+                          title="Editar"
+                          (click)="editCatalog('departamentos', dept.id)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
                   <button class="btn btn-outline-danger btn-sm p-1" 
                           title="Eliminar" 
                           (click)="removeDepartment(dept.id)"
@@ -161,12 +166,11 @@
           <div class="d-flex align-items-center h-100">
             <div class="me-3">
               <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
-                <i class="fas fa-file-alt text-white" style="font-size: 14px;"></i>
+                <i class="fas fa-file-alt text-dark" style="font-size: 14px;"></i>
               </div>
             </div>
             <div>
-              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Documentos</h6>
-              <small class="text-white-50" style="font-size: 12px;">{{ empresa.type_documents?.length || 0 }} tipos</small>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Documentos</h6>
             </div>
           </div>
         </div>
@@ -182,9 +186,15 @@
               <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
                 <div class="d-flex align-items-center flex-grow-1">
                   <i class="fas fa-file-text text-primary me-2" style="font-size: 10px;"></i>
-                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ doc.name }}</span>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ doc | name:'type_document' }}</span>
                 </div>
                 <div class="d-flex gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1" 
+                          title="Editar" 
+                          (click)="editCatalog('tipo-documento', doc.id)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
                   <button class="btn btn-outline-danger btn-sm p-1" 
                           title="Eliminar" 
                           (click)="removeDocument(doc.id)"
@@ -215,8 +225,7 @@
               </div>
             </div>
             <div>
-              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px;">Cargos</h6>
-              <small class="text-dark opacity-75" style="font-size: 12px;">{{ empresa.positions?.length || 0 }} posiciones</small>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Cargos</h6>
             </div>
           </div>
         </div>
@@ -232,9 +241,15 @@
               <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
                 <div class="d-flex align-items-center flex-grow-1">
                   <i class="fas fa-user-tie text-info me-2" style="font-size: 10px;"></i>
-                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ cargo.name }}</span>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ cargo | name:'position' }}</span>
                 </div>
                 <div class="d-flex gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1" 
+                          title="Editar" 
+                          (click)="editCatalog('cargos', cargo.id)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
                   <button class="btn btn-outline-danger btn-sm p-1" 
                           title="Eliminar" 
                           (click)="removeCargo(cargo.id)"
@@ -261,12 +276,11 @@
           <div class="d-flex align-items-center h-100">
             <div class="me-3">
               <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
-                <i class="fas fa-shield-alt text-white" style="font-size: 14px;"></i>
+                <i class="fas fa-shield-alt text-dark" style="font-size: 14px;"></i>
               </div>
             </div>
             <div>
-              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">IESS</h6>
-              <small class="text-white-50" style="font-size: 12px;">{{ empresa.ieses?.length || 0 }} seguros</small>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">IESS</h6>
             </div>
           </div>
         </div>
@@ -284,9 +298,14 @@
                   <i class="fas fa-shield-check text-info me-2" style="font-size: 10px;"></i>
                   <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ ies.description || ies.name || 'IESS #' + ies.id }}</span>
                 </div>
-                <button class="btn btn-outline-danger btn-sm p-1" (click)="removeIess(ies.id)" title="Eliminar" style="font-size: 8px;">
-                  <i class="fas fa-times"></i>
-                </button>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1" (click)="editCatalog('iess', ies.id)" title="Editar" style="font-size: 8px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm p-1" (click)="removeIess(ies.id)" title="Eliminar" style="font-size: 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -310,12 +329,11 @@
           <div class="d-flex align-items-center h-100">
             <div class="me-3">
               <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
-                <i class="fas fa-balance-scale text-white" style="font-size: 14px;"></i>
+                <i class="fas fa-balance-scale text-dark" style="font-size: 14px;"></i>
               </div>
             </div>
             <div>
-              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Matriz Legal</h6>
-              <small class="text-white-50" style="font-size: 12px;">{{ empresa.obligation_matrices?.length || 0 }} obligaciones</small>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Matriz Legal</h6>
             </div>
           </div>
         </div>
@@ -339,9 +357,14 @@
                     <div class="text-muted" style="font-size: 8px;">{{ obligation.description || obligation.obligationMatrix?.description }}</div>
                   </div>
                 </div>
-                <button class="btn btn-outline-danger btn-sm p-1" (click)="removeObligation(obligation.id)" title="Eliminar" style="font-size: 8px;">
-                  <i class="fas fa-times"></i>
-                </button>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1" (click)="editCatalog('matriz-legal', obligation.id)" title="Editar" style="font-size: 8px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm p-1" (click)="removeObligation(obligation.id)" title="Eliminar" style="font-size: 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -358,31 +381,30 @@
     <div class="col-lg-6 col-xl-3">
       <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.type_contracts?.length > 0}">
         <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #fa2fe3 0%, #fee140 100%);">
-          <div class="d-flex align-items-center h-100">
-            <div class="me-3">
-              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
-                <i class="fas fa-file-contract text-white" style="font-size: 14px;"></i>
+          <div class="d-flex align-items-center justify-content-between h-100">
+            <div class="d-flex align-items-center">
+              <div class="me-3">
+                <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                  <i class="fas fa-file-contract text-dark" style="font-size: 14px;"></i>
+                </div>
+              </div>
+              <div>
+                <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Contratos</h6>
               </div>
             </div>
-            <div>
-              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Contratos</h6>
-              <small class="text-white-50" style="font-size: 12px;">{{ empresa.type_contracts?.length || 0 }} contratos</small>
-            </div>
-          </div>
-        </div>
-        <div class="card-body p-2">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <button class="btn btn-success btn-sm w-100" (click)="openAsignContractModal()">
+            <button class="btn btn-success btn-sm" (click)="openAsignContractModal()">
               <i class="fas fa-plus me-1"></i>Agregar
             </button>
           </div>
+        </div>
+        <div class="card-body p-2">
           
           <div *ngIf="empresa.type_contracts?.length > 0" class="expanded-content">
             <div class="mb-1" *ngFor="let contract of empresa.type_contracts">
               <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
                 <div class="d-flex align-items-center flex-grow-1">
                   <i class="fas fa-handshake text-success me-2" style="font-size: 10px;"></i>
-                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ contract.name }}</span>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ contract | name:'type_contract' }}</span>
                 </div>
                 <div class="d-flex gap-1">
                   <button class="btn btn-outline-danger btn-sm p-1" 
@@ -411,14 +433,11 @@
           <div class="d-flex align-items-center h-100">
             <div class="me-3">
               <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
-                <i class="fas fa-building text-white" style="font-size: 14px;"></i>
+                <i class="fas fa-building text-dark" style="font-size: 14px;"></i>
               </div>
             </div>
             <div>
-              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Contratistas</h6>
-              <small class="text-white-50" style="font-size: 12px;">
-                {{ hasContractorCompanies() ? (empresa.contractor_companies?.length + ' empresas') : 'Sin asignar' }}
-              </small>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Contratistas</h6>
             </div>
           </div>
         </div>
@@ -444,12 +463,20 @@
                     </div>
                   </div>
                 </div>
-                <button class="btn btn-outline-danger btn-sm p-1" 
-                        title="Eliminar empresa contratista" 
-                        (click)="removeSpecificContractor(company.id)"
-                        style="font-size: 8px;">
-                  <i class="fas fa-times"></i>
-                </button>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1" 
+                          title="Editar empresa contratista" 
+                          (click)="editCatalog('empresas-contratistas', company.id)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm p-1" 
+                          title="Eliminar empresa contratista" 
+                          (click)="removeSpecificContractor(company.id)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -464,12 +491,20 @@
                       {{ getContractorBlockDisplayName(block) }}
                     </span>
                   </div>
-                  <button class="btn btn-outline-danger btn-sm p-1" 
-                          title="Eliminar bloque" 
-                          (click)="removeContractorBlock(block.id)"
-                          style="font-size: 7px;">
-                    <i class="fas fa-times"></i>
-                  </button>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-outline-primary btn-sm p-1" 
+                            title="Editar bloque" 
+                            (click)="editCatalog('empresas-contratistas', block.id)"
+                            style="font-size: 7px;">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm p-1" 
+                            title="Eliminar bloque" 
+                            (click)="removeContractorBlock(block.id)"
+                            style="font-size: 7px;">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -508,8 +543,7 @@
               </div>
             </div>
             <div>
-              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Usuarios</h6>
-              <small class="text-white-50" style="font-size: 12px;">{{ users.length || 0 }} usuarios</small>
+              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Gestión de Usuarios</h6>
             </div>
           </div>
         </div>
@@ -655,12 +689,12 @@
                   </td>
                   <td class="py-3">
                     <span class="badge bg-primary px-3 py-2">
-                      {{ employee.position?.name || 'Sin asignar' }}
+                      {{ employee | name:'employee-position' }}
                     </span>
                   </td>
                   <td class="py-3">
                     <span class="badge bg-light text-dark px-3 py-2">
-                      {{ employee.department?.name || 'Sin asignar' }}
+                      {{ employee | name:'employee-department' }}
                     </span>
                   </td>
                   <td class="py-3">

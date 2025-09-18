@@ -16,13 +16,24 @@ import { SharedModule } from './shared/shared.module';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { AuthGuard } from './core/guards/auth.guard';
 import { FileService } from './services/file.service';
+import { DashboardUsuarioHomeComponent } from './features/dashboard/usuario/dashboard-usuario-home.component';
+import { DashboardUsuarioGraficasComponent } from './features/dashboard/usuario/graficas/dashboard-usuario-graficas.component';
+import { GraficaTotalPersonalComponent } from './features/dashboard/usuario/graficas/grafica-total-personal.component';
+import { GraficaFormacionAcademicaComponent } from './features/dashboard/usuario/graficas/grafica-formacion-academica.component';
+import { GraficaRangoEdadesComponent } from './features/dashboard/usuario/graficas/grafica-rango-edades.component';
+import { GraficaTrabajadoresResidentesComponent } from './features/dashboard/usuario/graficas/grafica-trabajadores-residentes.component';
+import { GraficaTiposEtniasComponent } from './features/dashboard/usuario/graficas/grafica-tipos-etnias.component';
+import { GraficaCargosAsignadosComponent } from './features/dashboard/usuario/graficas/grafica-cargos-asignados.component';
+import { GraficaBarraTotalPersonalComponent } from './features/dashboard/usuario/graficas/grafica-barra-total-personal.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     HomeComponent,
     DashboardAdminComponent,
-    DashboardUsuarioComponent
+    DashboardUsuarioComponent,
+    DashboardUsuarioHomeComponent,
+  // ...componentes de gráficas ahora solo en SharedModule
   ],
   schemas: [
     CUSTOM_ELEMENTS_SCHEMA
@@ -39,12 +50,6 @@ import { FileService } from './services/file.service';
     SharedModule,
     RouterModule.forRoot([
       { path: '', component: HomeComponent },
-      
-      // Nueva ruta de autenticación 
-      { 
-        path: 'auth/login', 
-        loadComponent: () => import('./pages/auth/login.component').then(m => m.LoginComponent) 
-      },
       
       // Nueva ruta para login de usuarios empresariales
       {
@@ -87,6 +92,10 @@ import { FileService } from './services/file.service';
           {
             path: 'talento-humano',
             loadChildren: () => import('./features/dashboard/usuario/talento-humano/talento-humano.module').then(m => m.TalentoHumanoModule)
+          },
+          {
+            path: 'seguridad-industrial',
+            loadChildren: () => import('./features/dashboard/usuario/seguridad-industrial/seguridad-industrial.module').then(m => m.SeguridadIndustrialModule)
           }
         ]
       },

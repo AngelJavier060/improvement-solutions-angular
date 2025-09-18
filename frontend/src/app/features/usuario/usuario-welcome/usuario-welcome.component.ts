@@ -89,13 +89,16 @@ export class UsuarioWelcomeComponent implements OnInit {
 
     const moduloNombre = moduleNames[moduleName] || moduleName;
     
-    // Solo Talento Humano está implementado por ahora
+    // Rutas implementadas
     if (moduleName === 'talento-humano') {
-      console.log(`Navegando a: /usuario/${this.empresaRuc}/dashboard/${moduleName}`);
       this.router.navigate([`/usuario/${this.empresaRuc}/dashboard/${moduleName}`]);
-    } else {
-      // Para módulos no implementados, mostrar mensaje
-      alert(`Accediendo al módulo: ${moduloNombre}\n\nEste módulo está en desarrollo. Pronto estará disponible para la empresa ${this.empresaNombre}.`);
+      return;
     }
+    if (moduleName === 'seguridad-industrial') {
+      this.router.navigate([`/usuario/${this.empresaRuc}/dashboard/seguridad-industrial`]);
+      return;
+    }
+    // Otros módulos: mensaje temporal
+    alert(`Accediendo al módulo: ${moduloNombre}\n\nEste módulo está en desarrollo. Pronto estará disponible para la empresa ${this.empresaNombre}.`);
   }
 }
