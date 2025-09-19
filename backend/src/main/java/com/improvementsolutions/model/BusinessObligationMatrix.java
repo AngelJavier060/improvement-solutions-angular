@@ -18,6 +18,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.Where;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -31,6 +32,7 @@ import lombok.ToString;
 @SQLDelete(sql = "UPDATE business_obligation_matrices SET active = false WHERE id = ?")
 @FilterDef(name = "deletedBusinessObligationMatrixFilter", parameters = @ParamDef(name = "isDeleted", type = boolean.class))
 @Filter(name = "deletedBusinessObligationMatrixFilter", condition = "active = :isDeleted")
+@Where(clause = "active = true")
 public class BusinessObligationMatrix {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

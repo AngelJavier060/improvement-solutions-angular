@@ -30,8 +30,8 @@
       <nav class="sidebar-nav">
         <ul>
           <li>
-            <a routerLink="/dashboard/usuario" 
-               routerLinkActive="active" 
+            <a [routerLink]="['/usuario', empresaRuc, 'dashboard']"
+               routerLinkActive="active"
                [routerLinkActiveOptions]="{exact: true}"
                class="nav-link">
               <i class="fas fa-home"></i>
@@ -39,11 +39,11 @@
             </a>
           </li>
           <li>
-            <a (click)="navigateToModule('talento-humano')" 
+            <a (click)="navigateToModule('seguridad-industrial')"
                class="nav-link"
                href="javascript:void(0)">
-              <i class="fas fa-users"></i>
-              <span>Talento Humano</span>
+              <i class="fas fa-balance-scale"></i>
+              <span>Matriz Legal</span>
             </a>
           </li>
           <!-- Aquí se pueden agregar más módulos -->

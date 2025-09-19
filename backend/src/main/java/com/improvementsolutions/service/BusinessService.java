@@ -4,6 +4,7 @@ import com.improvementsolutions.model.*;
 import com.improvementsolutions.repository.BusinessRepository;
 import com.improvementsolutions.repository.UserRepository;
 import com.improvementsolutions.repository.ObligationMatrixRepository;
+import com.improvementsolutions.repository.BusinessObligationMatrixRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ public class BusinessService {
     private final BusinessRepository businessRepository;
     private final UserRepository userRepository;
     private final ObligationMatrixRepository obligationMatrixRepository;
+    private final BusinessObligationMatrixRepository businessObligationMatrixRepository;
 
     public List<Business> findAll() {
         return businessRepository.findAll();
@@ -378,6 +380,16 @@ public class BusinessService {
         ObligationMatrix obligationMatrix = obligationMatrixRepository.findById(obligationMatrixId)
                 .orElseThrow(() -> new RuntimeException("Matriz de obligación no encontrada"));
         
+        // Evitar duplicados: si ya existe una relación activa para esta matriz en la empresa, no crear otra
+        boolean alreadyAssigned = business.getBusinessObligationMatrices().stream()
+            .anyMatch(bom -> bom.getObligationMatrix() != null 
+                    && obligationMatrixId.equals(bom.getObligationMatrix().getId())
+                    && bom.isActive());
+        if (alreadyAssigned) {
+            // No crear duplicados; devolver el estado actual
+            return business;
+        }
+
         // Crear la relación intermedia
         BusinessObligationMatrix businessObligationMatrix = new BusinessObligationMatrix();
         businessObligationMatrix.setBusiness(business);
@@ -394,13 +406,20 @@ public class BusinessService {
 
     @Transactional
     public void removeObligationMatrixFromBusiness(Long businessId, Long obligationMatrixId) {
+        // 1) Eliminar físicamente duplicados INACTIVOS para evitar violar el índice único
+        businessObligationMatrixRepository.hardDeleteInactiveByBusinessAndCatalog(businessId, obligationMatrixId);
+
+        // 2) Aplicar soft delete al registro ACTIVO correspondiente
+        int updated = businessObligationMatrixRepository.softDeleteActiveByBusinessAndCatalog(businessId, obligationMatrixId);
+        if (updated == 0) {
+            // No había registro activo; no es un error fatal, pero registramos el hecho
+            // Puede haber sido ya eliminado previamente
+        }
+
+        // 3) Actualizar timestamp de la empresa
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
-        
-        business.getBusinessObligationMatrices().removeIf(bom -> 
-            bom.getObligationMatrix().getId().equals(obligationMatrixId));
         business.setUpdatedAt(LocalDateTime.now());
-        
         businessRepository.save(business);
     }
 }

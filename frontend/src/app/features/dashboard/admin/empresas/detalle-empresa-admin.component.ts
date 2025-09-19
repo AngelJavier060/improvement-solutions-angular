@@ -9,6 +9,7 @@ import { CargoService } from '../../../../services/cargo.service';
 import { TipoDocumentoService } from '../../../../services/tipo-documento.service';
 import { TypeContractService } from '../../../../services/type-contract.service';
 import { ObligationMatrixService } from '../../../../services/obligation-matrix.service';
+import { BusinessObligationMatrixService } from '../../../../services/business-obligation-matrix.service';
 import { IessService } from '../../../../services/iess.service';
 import { ContractorCompanyService } from '../../../../services/contractor-company.service';
 import { ContractorBlockService } from '../../../../services/contractor-block.service';
@@ -73,11 +74,12 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   showAsignContractorModal = false;
 
   // Variables para selección de elementos (permitir múltiples selecciones)
-  selectedDepartamentos: string[] = [];
-  selectedCargos: string[] = [];
-  selectedTiposDocumentos: string[] = [];
-  selectedTiposContratos: string[] = [];
-  selectedObligacionesMatriz: string[] = [];
+  selectedDepartamentos: number[] = [];
+  selectedCargos: number[] = [];
+  selectedTiposDocumentos: number[] = [];
+  selectedTiposContratos: number[] = [];
+  // IDs de catálogo seleccionados para asignar matrices legales
+  selectedObligacionesMatriz: number[] = [];
   // Para IESS usaremos objetos completos con ngModel ([ngValue])
   selectedIess: any[] = [];
   
@@ -87,6 +89,31 @@ export class DetalleEmpresaAdminComponent implements OnInit {
 
   // Contexto de edición inline por sección
   editingContext: { section: 'department' | 'position', originalId: number } | null = null;
+
+  // Estado de eliminación en curso para matrices de obligación
+  private deletingObligationIds: Set<number> = new Set<number>();
+
+  // Estado de edición de obligación (relación por empresa)
+  showEditObligationModal = false;
+  savingObligation = false;
+  obligationToEdit: any = null;
+  editObligation: {
+    id: number | null,
+    name: string,
+    description: string,
+    dueDate: string | null,
+    status: string | null,
+    priority: string | null,
+    responsiblePerson: string | null
+  } = {
+    id: null,
+    name: '',
+    description: '',
+    dueDate: null,
+    status: null,
+    priority: null,
+    responsiblePerson: null
+  };
 
   constructor(
     private route: ActivatedRoute,
@@ -102,7 +129,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private contractorCompanyService: ContractorCompanyService,
     private contractorBlockService: ContractorBlockService,
     private title: Title,
-    private businessAdapter: BusinessAdapterService
+    private businessAdapter: BusinessAdapterService,
+    private bomService: BusinessObligationMatrixService
   ) {}
 
   ngOnInit(): void {
@@ -209,6 +237,79 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       if (v !== undefined && v !== null && String(v).trim().length > 0) return String(v);
     }
     return null;
+  }
+
+  // UI helper para saber si un item está en eliminación
+  isDeletingObligation(obligation: any): boolean {
+    const id = this.getObligationCatalogId(obligation);
+    if (id == null) return false;
+    return this.deletingObligationIds.has(Number(id));
+  }
+
+  // trackBy para listas de obligaciones en el modal
+  trackById(index: number, item: any): any {
+    const id = Number(item?.id);
+    return isNaN(id) ? index : id;
+  }
+
+  // Formatear etiqueta visible de la obligación en el modal
+  formatObligationLabel(ob: any): string {
+    if (!ob) return 'Matriz legal';
+    const name = ob.name || ob.title || ob.description || ob?.obligationMatrix?.name || '';
+    const legal = ob.legalRegulation || ob?.obligationMatrix?.legalRegulation || '';
+    const parts = [name || `#${ob.id}`];
+    if (legal) parts.push(`- ${legal}`);
+    return parts.join(' ');
+  }
+
+  // Abrir modal para editar la relación de obligación por empresa
+  openEditObligationModal(obligation: any): void {
+    if (!obligation) return;
+    this.obligationToEdit = obligation;
+    const relId = Number(obligation?.id);
+    const name = obligation?.name || obligation?.obligationMatrix?.name || '';
+    const description = obligation?.description || obligation?.obligationMatrix?.description || '';
+    const dueDate = obligation?.dueDate ? String(obligation.dueDate).substring(0, 10) : null;
+    const status = obligation?.status || null;
+    const priority = obligation?.priority || null;
+    const responsiblePerson = obligation?.responsiblePerson || null;
+    this.editObligation = { id: relId || null, name, description, dueDate, status, priority, responsiblePerson };
+    this.showEditObligationModal = true;
+  }
+
+  closeEditObligationModal(): void {
+    this.showEditObligationModal = false;
+    this.obligationToEdit = null;
+  }
+
+  saveObligationEdit(): void {
+    if (!this.editObligation.id || !this.obligationToEdit) return;
+    const relationId = Number(this.editObligation.id);
+    // Mantener el vínculo al catálogo para no romper la relación en backend
+    const catalogId = this.getObligationCatalogId(this.obligationToEdit);
+    const payload: any = {
+      obligationMatrix: catalogId ? { id: Number(catalogId) } : undefined,
+      name: this.editObligation.name,
+      description: this.editObligation.description,
+      dueDate: this.editObligation.dueDate,
+      status: this.editObligation.status,
+      priority: this.editObligation.priority,
+      responsiblePerson: this.editObligation.responsiblePerson
+    };
+    this.savingObligation = true;
+    this.bomService.update(relationId, payload).subscribe({
+      next: () => {
+        this.savingObligation = false;
+        this.showEditObligationModal = false;
+        this.loadData();
+        alert('Matriz legal actualizada exitosamente');
+      },
+      error: (e) => {
+        console.error('Error al actualizar matriz legal (relación):', e);
+        this.savingObligation = false;
+        alert('No se pudo actualizar la matriz legal. Intente nuevamente.');
+      }
+    });
   }
 
   // Enriquecer arrays de la empresa con nombres desde catálogos globales si faltan
@@ -776,8 +877,17 @@ export class DetalleEmpresaAdminComponent implements OnInit {
           await this.businessService.removeDepartmentFromBusiness(this.empresa.id, this.editingContext.originalId).toPromise();
         }
       }
-      // Agregar seleccionados (uno o varios)
-      for (const departmentId of this.selectedDepartamentos) {
+      // Agregar seleccionados (uno o varios), evitando duplicados ya asignados
+      const ids = Array.from(new Set(this.selectedDepartamentos.map((n: number) => Number(n)).filter((n: number) => !isNaN(n) && n > 0)));
+      const assignedIds = new Set<number>((this.empresa?.departments || []).map((d: any) => Number(d?.id)).filter((n: number) => !isNaN(n)));
+      const idsToAdd = ids.filter((id: number) => {
+        // Si está en modo edición, no volver a agregar el original
+        if (this.editingContext?.section === 'department' && this.editingContext.originalId != null && id === Number(this.editingContext.originalId)) {
+          return false;
+        }
+        return !assignedIds.has(id);
+      });
+      for (const departmentId of idsToAdd) {
         await this.businessService.addDepartmentToBusiness(this.empresa.id, Number(departmentId)).toPromise();
       }
     };
@@ -828,7 +938,15 @@ export class DetalleEmpresaAdminComponent implements OnInit {
           await this.businessService.removePositionFromBusiness(this.empresa.id, this.editingContext.originalId).toPromise();
         }
       }
-      for (const cargoId of this.selectedCargos) {
+      const ids = Array.from(new Set(this.selectedCargos.map((n: number) => Number(n)).filter((n: number) => !isNaN(n) && n > 0)));
+      const assignedIds = new Set<number>((this.empresa?.positions || []).map((p: any) => Number(p?.id)).filter((n: number) => !isNaN(n)));
+      const idsToAdd = ids.filter((id: number) => {
+        if (this.editingContext?.section === 'position' && this.editingContext.originalId != null && id === Number(this.editingContext.originalId)) {
+          return false;
+        }
+        return !assignedIds.has(id);
+      });
+      for (const cargoId of idsToAdd) {
         await this.businessService.addPositionToBusiness(this.empresa.id, Number(cargoId)).toPromise();
       }
     };
@@ -847,13 +965,13 @@ export class DetalleEmpresaAdminComponent implements OnInit {
 
   // Disparadores de edición inline
   editDepartment(dept: any): void {
-    this.selectedDepartamentos = [String(dept?.id)];
+    this.selectedDepartamentos = [Number(dept?.id)];
     this.editingContext = { section: 'department', originalId: Number(dept?.id) };
     this.showAsignDepartmentModal = true;
   }
 
   editCargo(cargo: any): void {
-    this.selectedCargos = [String(cargo?.id)];
+    this.selectedCargos = [Number(cargo?.id)];
     this.editingContext = { section: 'position', originalId: Number(cargo?.id) };
     this.showAsignCargoModal = true;
   }
@@ -884,14 +1002,19 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   asignDocument(): void {
     if (!this.selectedTiposDocumentos.length || !this.empresa?.id) return;
     
+    // IDs únicos y válidos
+    const ids = Array.from(new Set(this.selectedTiposDocumentos.map((n: number) => Number(n)).filter((n: number) => !isNaN(n) && n > 0)));
+    // Excluir ya asignados
+    const assignedIds = new Set<number>((this.empresa?.type_documents || []).map((t: any) => Number(t?.id)).filter((n: number) => !isNaN(n)));
+    const idsToAdd = ids.filter((id: number) => !assignedIds.has(id));
     // Crear promesas para agregar cada tipo de documento
-    const addPromises = this.selectedTiposDocumentos.map(typeDocumentId => 
+    const addPromises = idsToAdd.map(typeDocumentId => 
       this.businessService.addTypeDocumentToBusiness(this.empresa.id, Number(typeDocumentId)).toPromise()
     );
 
     Promise.all(addPromises).then(() => {
       // Agregar a la vista local
-      this.selectedTiposDocumentos.forEach(selectedId => {
+      idsToAdd.forEach(selectedId => {
         const tipoSelected = this.tiposDocumentos.find((t: any) => t.id == selectedId);
         if (tipoSelected) {
           const exists = this.empresa.type_documents.find((t: any) => t.id == selectedId);
@@ -936,14 +1059,19 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   asignContract(): void {
     if (!this.selectedTiposContratos.length || !this.empresa?.id) return;
     
+    // IDs únicos y válidos
+    const ids = Array.from(new Set(this.selectedTiposContratos.map((n: number) => Number(n)).filter((n: number) => !isNaN(n) && n > 0)));
+    // Excluir ya asignados
+    const assignedIds = new Set<number>((this.empresa?.type_contracts || []).map((t: any) => Number(t?.id)).filter((n: number) => !isNaN(n)));
+    const idsToAdd = ids.filter((id: number) => !assignedIds.has(id));
     // Crear promesas para agregar cada tipo de contrato
-    const addPromises = this.selectedTiposContratos.map(typeContractId => 
+    const addPromises = idsToAdd.map(typeContractId => 
       this.businessService.addTypeContractToBusiness(this.empresa.id, Number(typeContractId)).toPromise()
     );
 
     Promise.all(addPromises).then(() => {
       // Agregar a la vista local
-      this.selectedTiposContratos.forEach(selectedId => {
+      idsToAdd.forEach(selectedId => {
         const tipoSelected = this.tiposContratos.find((t: any) => t.id == selectedId);
         if (tipoSelected) {
           const exists = this.empresa.type_contracts.find((t: any) => t.id == selectedId);
@@ -982,34 +1110,35 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   // === OBLIGACIONES ===
   openAsignObligationModal(): void {
     console.log('Abriendo modal de obligaciones');
-    console.log('ObligacionesMatriz disponibles:', this.obligacionesMatriz);
-    console.log('Cantidad:', this.obligacionesMatriz.length);
+    console.log('Catálogo de obligaciones cargado:', this.obligacionesMatriz);
+    console.log('Total catálogo:', this.obligacionesMatriz.length);
+    const available = this.getAvailableObligacionesMatriz();
+    console.log('Disponibles para asignar (filtrados):', available);
+    console.log('Cantidad disponibles:', available.length);
     this.selectedObligacionesMatriz = [];
     this.showAsignObligationModal = true;
   }
 
   asignObligation(): void {
-    if (!this.selectedObligacionesMatriz.length || !this.empresa?.id) return;
-    
+    if (!this.selectedObligacionesMatriz.length || !this.empresa?.id) {
+      console.warn('asignObligation: nada seleccionado o empresa sin ID', this.selectedObligacionesMatriz, this.empresa?.id);
+      return;
+    }
+
+    // Asegurar números únicos
+    const ids = Array.from(new Set(this.selectedObligacionesMatriz.map(n => Number(n)).filter(n => !isNaN(n) && n > 0)));
+    console.log('asignObligation -> empresa:', this.empresa.id, 'catalog IDs:', ids);
+
     // Crear promesas para agregar cada matriz de obligación
-    const addPromises = this.selectedObligacionesMatriz.map(obligationMatrixId => 
-      this.businessService.addObligationMatrixToBusiness(this.empresa.id, Number(obligationMatrixId)).toPromise()
+    const addPromises = ids.map(obligationMatrixId =>
+      this.businessService.addObligationMatrixToBusiness(this.empresa.id, obligationMatrixId).toPromise()
     );
 
     Promise.all(addPromises).then(() => {
-      // Agregar a la vista local
-      this.selectedObligacionesMatriz.forEach(selectedId => {
-        const obligacionSelected = this.obligacionesMatriz.find((o: any) => o.id == selectedId);
-        if (obligacionSelected) {
-          const exists = this.empresa.obligation_matrices.find((o: any) => o.id == selectedId);
-          if (!exists) {
-            this.empresa.obligation_matrices.push(obligacionSelected);
-          }
-        }
-      });
-      
       this.selectedObligacionesMatriz = [];
       this.showAsignObligationModal = false;
+      // Recargar desde backend para reflejar el objeto relación (BusinessObligationMatrix)
+      this.loadData();
       alert('Matrices de obligación asignadas exitosamente');
     }).catch(error => {
       console.error('Error al asignar matrices de obligación:', error);
@@ -1017,21 +1146,100 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     });
   }
 
-  removeObligation(obligationId: number): void {
+  removeObligation(obligation: any | number): void {
     if (!this.empresa?.id) return;
-    
-    if (confirm('¿Está seguro de eliminar esta matriz de obligación de la empresa?')) {
-      this.businessService.removeObligationMatrixFromBusiness(this.empresa.id, obligationId).subscribe({
+    const obligationId = typeof obligation === 'number' ? obligation : this.getObligationCatalogId(obligation);
+    if (obligationId == null) {
+      alert('No se pudo determinar el ID de la obligación a eliminar.');
+      return;
+    }
+
+    // Construir detalles para confirmación
+    const name = (typeof obligation === 'object') 
+      ? (obligation?.name || obligation?.obligationMatrix?.name || `#${obligationId}`)
+      : `#${obligationId}`;
+    const legal = (typeof obligation === 'object') ? (obligation?.obligationMatrix?.legalRegulation || '') : '';
+    const desc = (typeof obligation === 'object') ? (obligation?.description || obligation?.obligationMatrix?.description || '') : '';
+    const confirmMsg = `¿Eliminar esta matriz legal de la empresa?\n\nNombre: ${name}\nNormativa: ${legal}\nDescripción: ${desc}`;
+
+    if (confirm(confirmMsg)) {
+      this.deletingObligationIds.add(Number(obligationId));
+      this.businessService.removeObligationMatrixFromBusiness(this.empresa.id, Number(obligationId)).subscribe({
         next: () => {
-          this.empresa.obligation_matrices = this.empresa.obligation_matrices.filter((o: any) => o.id !== obligationId);
-          alert('Matriz de obligación eliminada exitosamente');
+          // Actualizar UI local inmediatamente
+          this.empresa.obligation_matrices = (this.empresa.obligation_matrices || []).filter((o: any) => {
+            const id = this.getObligationCatalogId(o);
+            return Number(id) !== Number(obligationId);
+          });
+
+          // Verificación: recargar detalles admin para confirmar que persistió
+          this.businessService.getBusinessAdminDetails(this.empresa.id).subscribe({
+            next: (empresaDet: any) => {
+              const stillThere = (empresaDet?.obligation_matrices || []).some((o: any) => {
+                const id = this.getObligationCatalogId(o);
+                return Number(id) === Number(obligationId);
+              });
+              if (stillThere) {
+                console.warn('La obligación aún aparece tras eliminar con ID catálogo. Intentando eliminar por ID de relación...');
+                const relationId = (typeof obligation === 'object') ? Number(obligation?.id) : null;
+                if (relationId) {
+                  this.bomService.delete(relationId).subscribe({
+                    next: () => {
+                      this.loadData();
+                      alert('Matriz de obligación eliminada exitosamente (por relación).');
+                      this.deletingObligationIds.delete(Number(obligationId));
+                    },
+                    error: (e2) => {
+                      console.error('Falló eliminación por ID de relación:', e2);
+                      this.deletingObligationIds.delete(Number(obligationId));
+                      alert('No se pudo eliminar la relación de la matriz legal. Verifique el backend.');
+                    }
+                  });
+                } else {
+                  this.loadData();
+                  alert('La obligación sigue presente tras eliminar. Es posible que el backend espere otro ID.');
+                  this.deletingObligationIds.delete(Number(obligationId));
+                }
+              } else {
+                // Todo bien: refrescar desde backend para mantener consistencia
+                this.loadData();
+                alert('Matriz de obligación eliminada exitosamente');
+                this.deletingObligationIds.delete(Number(obligationId));
+              }
+            },
+            error: (e) => {
+              console.warn('No se pudo verificar desde backend; se confía en la eliminación local.', e);
+              alert('Matriz de obligación eliminada exitosamente');
+              this.deletingObligationIds.delete(Number(obligationId));
+            }
+          });
         },
         error: (error) => {
           console.error('Error al eliminar matriz de obligación:', error);
           alert('Error al eliminar la matriz de obligación. Por favor, inténtelo de nuevo.');
+          this.deletingObligationIds.delete(Number(obligationId));
         }
       });
     }
+  }
+
+  // Obtiene el ID del catálogo de matriz legal independientemente de la forma del objeto
+  private getObligationCatalogId(obligation: any): number | null {
+    if (obligation == null) return null;
+    // Priorizar el ID del catálogo si viene anidado
+    const candidates = [
+      obligation?.obligationMatrix?.id,
+      obligation?.obligation_matrix_id,
+      obligation?.obligationMatrixId,
+      obligation?.id
+    ];
+    for (const c of candidates) {
+      if (c !== undefined && c !== null && String(c).trim() !== '') {
+        const n = Number(c);
+        return isNaN(n) ? null : n;
+      }
+    }
+    return null;
   }
 
   // === IESS ===
@@ -1087,13 +1295,17 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   
   // Función para obtener IESS disponibles (no asignados a la empresa)
   getAvailableIess(): any[] {
-    if (!this.iessList || !this.empresa.ieses) {
-      return this.iessList || [];
-    }
-    
-    return this.iessList.filter(iess =>
-      !this.empresa.ieses.some((empresaIess: any) => Number(empresaIess.id) === Number(iess.id))
-    );
+    if (!Array.isArray(this.iessList)) return [];
+    const assignedIds = new Set<number>((this.empresa?.ieses || [])
+      .map((i: any) => Number(i?.id))
+      .filter((n: number) => !isNaN(n)));
+    const selectedIds = new Set<number>((this.selectedIess || [])
+      .map((sel: any) => Number(typeof sel === 'object' ? sel?.id : sel))
+      .filter((n: number) => !isNaN(n)));
+    return this.iessList.filter((iess: any) => {
+      const id = Number(iess?.id);
+      return !isNaN(id) && !assignedIds.has(id) && !selectedIds.has(id);
+    });
   }
 
   // Función para verificar si es array (para usar en template)
@@ -1111,15 +1323,122 @@ export class DetalleEmpresaAdminComponent implements OnInit {
 
   // Función para obtener matrices de obligaciones disponibles (no asignadas a la empresa)
   getAvailableObligacionesMatriz(): any[] {
-    if (!this.obligacionesMatriz || !this.empresa.obligationMatrices) {
-      return this.obligacionesMatriz || [];
-    }
-    
-    return this.obligacionesMatriz.filter(obligacion => 
-      !this.empresa.obligationMatrices.some((empresaObl: any) => empresaObl.id === obligacion.id)
+    // Catálogo global (configuración general)
+    if (!Array.isArray(this.obligacionesMatriz)) return [];
+
+    // Relaciones actuales de esta empresa únicamente
+    const assigned = Array.isArray(this.empresa?.obligation_matrices) ? this.empresa.obligation_matrices : [];
+    const assignedIds = new Set<number>(
+      assigned
+        .map((rel: any) => Number(this.getObligationCatalogId(rel)))
+        .filter((v: number) => !isNaN(v) && v > 0)
     );
+
+    // Selecciones en curso (para que "desaparezcan" al ir eligiendo)
+    const selectedIds = new Set<number>(
+      (this.selectedObligacionesMatriz || [])
+        .map((v: any) => Number(v))
+        .filter((n: number) => !isNaN(n) && n > 0)
+    );
+
+    // Filtrar por no asignados y deduplicar por id de catálogo (evitar colisiones visuales)
+    const seen = new Set<number>();
+    const result: any[] = [];
+    for (const item of this.obligacionesMatriz) {
+      const id = Number(item?.id);
+      if (isNaN(id) || id <= 0) continue;
+      if (assignedIds.has(id)) continue; // ya asignado a esta empresa
+      if (selectedIds.has(id)) continue; // ya seleccionado en el modal
+      if (seen.has(id)) continue; // evitar duplicados en catálogo
+      seen.add(id);
+      // asegurar una etiqueta mínima para visualización
+      item.name = item.name || item.title || item.description || `Matriz #${id}`;
+      result.push(item);
+    }
+
+    return result;
   }
   
+  // === DISPONIBLES (no asignados y no seleccionados) PARA TODOS LOS CATÁLOGOS ===
+  getAvailableDepartamentos(): any[] {
+    if (!Array.isArray(this.departamentos)) return [];
+    const assignedIds = new Set<number>((this.empresa?.departments || [])
+      .map((d: any) => Number(d?.id)).filter((n: number) => !isNaN(n)));
+    const selectedIds = new Set<number>((this.selectedDepartamentos || [])
+      .map((n: number) => Number(n)).filter((n: number) => !isNaN(n)));
+    const result = this.departamentos.filter((d: any) => {
+      const id = Number(d?.id);
+      return !isNaN(id) && !assignedIds.has(id) && !selectedIds.has(id);
+    });
+    // Si estamos editando un departamento, incluir el original en la lista
+    if (this.editingContext?.section === 'department' && this.editingContext.originalId != null) {
+      const originalId = Number(this.editingContext.originalId);
+      const orig = this.departamentos.find((d: any) => Number(d?.id) === originalId);
+      if (orig && !result.some((d: any) => Number(d?.id) === originalId)) {
+        result.unshift(orig);
+      }
+    }
+    return result;
+  }
+
+  getAvailableCargos(): any[] {
+    if (!Array.isArray(this.cargos)) return [];
+    const assignedIds = new Set<number>((this.empresa?.positions || [])
+      .map((p: any) => Number(p?.id)).filter((n: number) => !isNaN(n)));
+    const selectedIds = new Set<number>((this.selectedCargos || [])
+      .map((n: number) => Number(n)).filter((n: number) => !isNaN(n)));
+    const result = this.cargos.filter((p: any) => {
+      const id = Number(p?.id);
+      return !isNaN(id) && !assignedIds.has(id) && !selectedIds.has(id);
+    });
+    // Si estamos editando un cargo, incluir el original en la lista
+    if (this.editingContext?.section === 'position' && this.editingContext.originalId != null) {
+      const originalId = Number(this.editingContext.originalId);
+      const orig = this.cargos.find((p: any) => Number(p?.id) === originalId);
+      if (orig && !result.some((p: any) => Number(p?.id) === originalId)) {
+        result.unshift(orig);
+      }
+    }
+    return result;
+  }
+
+  getAvailableTiposDocumentos(): any[] {
+    if (!Array.isArray(this.tiposDocumentos)) return [];
+    const assignedIds = new Set<number>((this.empresa?.type_documents || [])
+      .map((t: any) => Number(t?.id)).filter((n: number) => !isNaN(n)));
+    const selectedIds = new Set<number>((this.selectedTiposDocumentos || [])
+      .map((n: number) => Number(n)).filter((n: number) => !isNaN(n)));
+    return this.tiposDocumentos.filter((t: any) => {
+      const id = Number(t?.id);
+      return !isNaN(id) && !assignedIds.has(id) && !selectedIds.has(id);
+    });
+  }
+
+  getAvailableTiposContratos(): any[] {
+    if (!Array.isArray(this.tiposContratos)) return [];
+    const assignedIds = new Set<number>((this.empresa?.type_contracts || [])
+      .map((t: any) => Number(t?.id)).filter((n: number) => !isNaN(n)));
+    const selectedIds = new Set<number>((this.selectedTiposContratos || [])
+      .map((n: number) => Number(n)).filter((n: number) => !isNaN(n)));
+    return this.tiposContratos.filter((t: any) => {
+      const id = Number(t?.id);
+      return !isNaN(id) && !assignedIds.has(id) && !selectedIds.has(id);
+    });
+  }
+
+  getAvailableContractorCompanies(): any[] {
+    if (!Array.isArray(this.contractorCompanies)) return [];
+    const assignedIds = new Set<number>((this.empresa?.contractor_companies || [])
+      .map((c: any) => Number(c?.id)).filter((n: number) => !isNaN(n)));
+    const selectedIds = new Set<number>((this.selectedContractorCompanies || [])
+      .map((c: any) => Number(c?.id)).filter((n: number) => !isNaN(n)));
+    return this.contractorCompanies.filter((c: any) => {
+      const id = Number(c?.id);
+      return !isNaN(id) && !assignedIds.has(id) && !selectedIds.has(id);
+    });
+  }
+  
+  // Persist IESS changes to backend
   private saveIessChanges(): void {
     console.log('Guardando cambios de IESS...');
     console.log('IESS actuales en empresa:', this.empresa.ieses);
@@ -1147,6 +1466,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       }
     });
   }
+  
+  
 
   // === EMPRESAS CONTRATISTAS ===
   openAsignContractorModal(): void {
@@ -1303,16 +1624,6 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     return this.empresa.contractor_companies && this.empresa.contractor_companies.length > 0;
   }
 
-  // Función para obtener empresas contratistas disponibles (no asignadas)
-  getAvailableContractorCompanies(): any[] {
-    if (!this.contractorCompanies || !this.empresa.contractor_companies) {
-      return this.contractorCompanies || [];
-    }
-    
-    return this.contractorCompanies.filter(company =>
-      !this.empresa.contractor_companies?.some((assignedCompany: any) => assignedCompany.id === company.id)
-    );
-  }
 
   // === GESTIÓN DE USUARIOS ===
   editUser(user: any): void {

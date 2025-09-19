@@ -39,12 +39,13 @@ export interface Role {
   providedIn: 'root'
 })
 export class UserService {
-  private apiUrl = 'http://localhost:8080/api'; // URL directa al backend
+  private apiUrl: string; // Base proxy-friendly
 
   constructor(
     private http: HttpClient,
     private apiUrlService: ApiUrlService
   ) {
+    this.apiUrl = this.apiUrlService.getUrl('api');
     console.log('UserService inicializado con apiUrl:', this.apiUrl);
   }
 

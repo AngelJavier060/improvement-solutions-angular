@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
 import { ObligationMatrix } from '../models/obligation-matrix.model';
+import { ApiUrlService } from '../core/services/api-url.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,8 +10,9 @@ import { ObligationMatrix } from '../models/obligation-matrix.model';
 export class ObligationMatrixService {
   private apiUrl: string;
 
-  constructor(private http: HttpClient) {
-    this.apiUrl = environment.apiUrl + '/api/master-data/obligation-matrices';
+  constructor(private http: HttpClient, private apiUrlService: ApiUrlService) {
+    // Unificar construcción de URL con ApiUrlService (usa proxy cuando apiUrl está vacío)
+    this.apiUrl = this.apiUrlService.getUrl('api/master-data/obligation-matrices');
   }
 
   // Obtener todas las matrices de obligación del catálogo

@@ -172,7 +172,17 @@ public class BusinessController {
         response.put("type_documents", business.getTypeDocuments());
         response.put("type_contracts", business.getTypeContracts());
         response.put("ieses", business.getIessItems());
-        response.put("obligation_matrices", business.getBusinessObligationMatrices());
+        // Filtrar duplicados: solo una relación activa por matriz de obligación (por catalog id)
+        java.util.Map<Long, com.improvementsolutions.model.BusinessObligationMatrix> obligationMap = new java.util.LinkedHashMap<>();
+        for (com.improvementsolutions.model.BusinessObligationMatrix bom : business.getBusinessObligationMatrices()) {
+            if (bom.getObligationMatrix() == null) continue;
+            Long catId = bom.getObligationMatrix().getId();
+            // Conservar la primera aparición
+            if (!obligationMap.containsKey(catId)) {
+                obligationMap.put(catId, bom);
+            }
+        }
+        response.put("obligation_matrices", new java.util.ArrayList<>(obligationMap.values()));
         response.put("users", business.getUsers());
         response.put("contractor_companies", business.getContractorCompanies());
         response.put("contractor_blocks", business.getContractorBlocks());

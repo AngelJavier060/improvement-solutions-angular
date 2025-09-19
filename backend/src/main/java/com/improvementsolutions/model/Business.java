@@ -9,6 +9,7 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Where;
 import lombok.*;
 
 @Entity
@@ -126,6 +127,7 @@ public class Business {
     private Set<Iess> iessItems = new HashSet<>();
 
     @OneToMany(mappedBy = "business", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Where(clause = "active = true")
     @JsonIgnore
     private List<BusinessObligationMatrix> businessObligationMatrices = new ArrayList<>();
 
