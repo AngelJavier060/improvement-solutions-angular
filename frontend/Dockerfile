@@ -4,11 +4,13 @@ WORKDIR /app
 
 # Copy package files and install dependencies with optimizations
 COPY package*.json ./
-RUN npm install --silent --no-audit --no-fund
+RUN npm ci --silent --no-audit --no-fund
 
 # Copy source code and build
 COPY . .
-RUN npm run build --silent
+# Ensure local Angular CLI binary is executable and build with npx
+RUN chmod +x node_modules/.bin/ng || true \
+  && npx ng build --configuration production
 
 # Etapa de producción
 FROM nginx:alpine
