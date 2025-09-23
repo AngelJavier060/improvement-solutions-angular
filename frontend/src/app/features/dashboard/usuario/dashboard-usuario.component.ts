@@ -12,7 +12,7 @@ export class DashboardUsuarioComponent implements OnInit {
   empresaRuc: string = '';
 
   constructor(
-    private router: Router, 
+    public router: Router, 
     private route: ActivatedRoute,
     private authService: AuthService
   ) { }
@@ -49,6 +49,14 @@ export class DashboardUsuarioComponent implements OnInit {
       this.router.navigate([`/usuario/${this.empresaRuc}/dashboard/${moduleName}`]);
     } else {
       this.router.navigate([`/dashboard/usuario/${moduleName}`]);
+    }
+  }
+
+  goToWelcome(): void {
+    if (this.empresaRuc) {
+      this.router.navigate([`/usuario/${this.empresaRuc}/welcome`]);
+    } else {
+      this.router.navigate(['/usuario']);
     }
   }
 }

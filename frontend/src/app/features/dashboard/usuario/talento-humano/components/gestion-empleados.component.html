@@ -116,28 +116,58 @@
               ({{ filteredEmployees.length }} de {{ employees.length }} empleados)
             </span>
           </h5>
-          
+
           <!-- Search Bar -->
           <div class="search-container">
             <div class="input-group">
               <span class="input-group-text">
                 <i class="fas fa-search"></i>
               </span>
-              <input 
-                type="text" 
-                class="form-control" 
+              <input
+                type="text"
+                class="form-control"
                 placeholder="Buscar por nombre, cédula, email o cargo..."
                 [(ngModel)]="searchTerm"
                 (input)="onSearchChange()"
                 style="min-width: 300px;">
-              <button 
-                *ngIf="searchTerm" 
-                class="btn btn-outline-secondary" 
+              <button
+                *ngIf="searchTerm"
+                class="btn btn-outline-secondary"
                 type="button"
                 (click)="searchTerm = ''; onSearchChange();">
                 <i class="fas fa-times"></i>
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="d-flex justify-content-start mt-3">
+          <div class="btn-group" role="group">
+            <button
+              type="button"
+              class="btn btn-outline-primary"
+              [class.active]="filterStatus === 'active'"
+              (click)="setFilterStatus('active')">
+              <i class="fas fa-user-check me-1"></i>
+              Activos ({{ getActiveEmployeesCount() }})
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-warning"
+              [class.active]="filterStatus === 'inactive'"
+              (click)="setFilterStatus('inactive')">
+              <i class="fas fa-user-slash me-1"></i>
+              Inactivos ({{ getInactiveEmployeesCount() }})
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              [class.active]="filterStatus === 'all'"
+              (click)="setFilterStatus('all')">
+              <i class="fas fa-users me-1"></i>
+              Todos ({{ employees.length }})
+            </button>
           </div>
         </div>
       </div>
@@ -180,10 +210,22 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let employee of filteredEmployees" class="employee-row">
+              <tr *ngFor="let employee of filteredEmployees; trackBy: trackByEmployee" class="employee-row">
                 <td>
-                  <div class="employee-info">
-                    <h6 class="mb-0">{{ getFullName(employee) }}</h6>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="employee-avatar">
+                      <ng-container *ngIf="getEmployeeImageUrl(employee) as imgUrl; else avatarPlaceholder">
+                        <img class="avatar-img" [src]="imgUrl" (error)="onImageError($event)" alt="Foto de {{ getFullName(employee) }}" />
+                      </ng-container>
+                      <ng-template #avatarPlaceholder>
+                        <div class="avatar-placeholder">{{ getInitials(employee) }}</div>
+                      </ng-template>
+                    </div>
+                    <div class="employee-info">
+                      <a href="#" (click)="openEmployeeModal(employee); $event.preventDefault()" class="text-decoration-none">
+                        <h6 class="mb-0 text-primary">{{ getFullName(employee) }}</h6>
+                      </a>
+                    </div>
                   </div>
                 </td>
                 <td>
@@ -208,17 +250,29 @@
                 <td>
                   <span 
                     class="badge"
-                    [ngClass]="getStatusClass(employee.status)">
-                    {{ getStatusText(employee.status) }}
+                    [ngClass]="getStatusClassFor(employee)">
+                    {{ getStatusTextFor(employee) }}
                   </span>
                 </td>
                 <td>
                   <div class="action-buttons">
                     <button 
+                      class="btn btn-sm btn-outline-info me-1"
+                      (click)="viewEmployeeDetail(employee, 'documents')"
+                      title="Gestionar Documentos">
+                      <i class="fas fa-file-alt"></i>
+                    </button>
+                    <button 
                       class="btn btn-sm btn-outline-primary me-1"
                       (click)="openEditModal(employee)"
                       title="Editar">
                       <i class="fas fa-edit"></i>
+                    </button>
+                    <button
+                      class="btn btn-sm btn-outline-warning me-1"
+                      (click)="toggleActive(employee)"
+                      [title]="isActive(employee) ? 'Desactivar' : 'Activar'">
+                      <i class="fas" [ngClass]="isActive(employee) ? 'fa-user-slash' : 'fa-user-check'"></i>
                     </button>
                     <button 
                       class="btn btn-sm btn-outline-danger"
@@ -251,5 +305,182 @@
   [employee]="employeeToEdit"
   [businessId]="businessId!"
   (onClose)="closeEditModal()"
-  (onEmployeeUpdated)="onEmployeeUpdated()">
+  (onEmployeeUpdated)="onEmployeeUpdated()"
+  (onPhotoUpdated)="onPhotoUpdated()">
 </app-edit-employee-modal>
+
+<!-- Modal para cursos -->
+<div class="modal fade" [class.show]="showCoursesModal" [style.display]="showCoursesModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-graduation-cap me-2"></i>
+          Cursos de {{ selectedEmployee ? getFullName(selectedEmployee) : '' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeCoursesModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p>Aquí se mostrarán los cursos del empleado.</p>
+        <!-- TODO: Implementar lista de cursos y formulario para agregar -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeCoursesModal()">Cerrar</button>
+        <button type="button" class="btn btn-primary">Agregar Curso</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para documentos -->
+<div class="modal fade" [class.show]="showDocumentsModal" [style.display]="showDocumentsModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-file-alt me-2"></i>
+          Documentos Personales de {{ selectedEmployee ? getFullName(selectedEmployee) : '' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeDocumentsModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p>Aquí se mostrarán los documentos personales del empleado.</p>
+        <!-- TODO: Implementar lista de documentos y formulario para subir -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeDocumentsModal()">Cerrar</button>
+        <button type="button" class="btn btn-primary">Subir Documento</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para gestión del empleado -->
+<div class="modal fade" [class.show]="showEmployeeModal" [style.display]="showEmployeeModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-user me-2"></i>
+          Gestionar: {{ selectedEmployee ? getFullName(selectedEmployee) : '' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeEmployeeModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row" *ngIf="selectedEmployee">
+          <div class="col-md-6 mb-3">
+            <div class="card h-100 border-primary">
+              <div class="card-body text-center">
+                <i class="fas fa-graduation-cap fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Cursos y Certificaciones</h5>
+                <p class="card-text">Gestionar cursos, capacitaciones y certificaciones del empleado</p>
+                <button class="btn btn-success btn-lg w-100" (click)="selectedEmployee && viewEmployeeDetail(selectedEmployee, 'courses'); closeEmployeeModal()">
+                  <i class="fas fa-graduation-cap me-2"></i>
+                  Gestionar Cursos
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="card h-100 border-info">
+              <div class="card-body text-center">
+                <i class="fas fa-file-alt fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Documentos Personales</h5>
+                <p class="card-text">Subir y gestionar documentos personales del empleado</p>
+                <button class="btn btn-info btn-lg w-100" (click)="selectedEmployee && viewEmployeeDetail(selectedEmployee, 'documents'); closeEmployeeModal()">
+                  <i class="fas fa-file-alt me-2"></i>
+                  Gestionar Documentos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="text-center mt-3">
+          <button class="btn btn-outline-secondary" (click)="selectedEmployee && viewEmployeeDetail(selectedEmployee, 'profile'); closeEmployeeModal()">
+            <i class="fas fa-eye me-2"></i>
+            Ver Perfil Completo
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeEmployeeModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop para los modales -->
+<div class="modal-backdrop fade show" *ngIf="showCoursesModal || showDocumentsModal || showEmployeeModal || showDeactivateModal || showReactivateModal"></div>
+
+<!-- Modal Desvinculación -->
+<div class="modal fade" [class.show]="showDeactivateModal" [style.display]="showDeactivateModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-user-slash me-2"></i>
+          Desvincular empleado
+        </h5>
+        <button type="button" class="btn-close" (click)="closeDeactivateModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p *ngIf="movementTarget">Empleado: <strong>{{ getFullName(movementTarget) }}</strong></p>
+        <div class="mb-3">
+          <label class="form-label">Fecha de desvinculación</label>
+          <input class="form-control" type="date" [(ngModel)]="movementDate" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Motivo / Descripción (opcional)</label>
+          <textarea class="form-control" rows="4" [(ngModel)]="movementReason" placeholder="Explique brevemente las razones"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeDeactivateModal()">Cancelar</button>
+        <button type="button" class="btn btn-danger" (click)="confirmDeactivate()">
+          <i class="fas fa-user-slash me-1"></i> Desvincular
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Reingreso -->
+<div class="modal fade" [class.show]="showReactivateModal" [style.display]="showReactivateModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-user-check me-2"></i>
+          Reingresar empleado
+        </h5>
+        <button type="button" class="btn-close" (click)="closeReactivateModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p *ngIf="movementTarget">Empleado: <strong>{{ getFullName(movementTarget) }}</strong></p>
+        <div class="mb-3">
+          <label class="form-label">Fecha de reingreso</label>
+          <input class="form-control" type="date" [(ngModel)]="movementDate" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeReactivateModal()">Cancelar</button>
+        <button type="button" class="btn btn-success" (click)="confirmReactivate()">
+          <i class="fas fa-user-check me-1"></i> Reingresar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast/Snackbar -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;" *ngIf="toastVisible">
+  <div class="alert"
+       [ngClass]="{
+         'alert-success': toastType === 'success',
+         'alert-danger': toastType === 'error',
+         'alert-info': toastType === 'info'
+       }"
+       role="alert">
+    {{ toastMessage }}
+  </div>
+</div>

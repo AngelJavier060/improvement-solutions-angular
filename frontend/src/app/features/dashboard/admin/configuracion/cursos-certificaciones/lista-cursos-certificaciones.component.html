@@ -1,0 +1,71 @@
+<div class="cc-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Cursos y certificaciones</h2>
+      <p>Administrar el catálogo de cursos y certificaciones</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-back mr-2" routerLink="/dashboard/admin/configuracion">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
+      <button class="btn btn-new" routerLink="nuevo">
+        <i class="fas fa-plus"></i> Nuevo
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando...</span>
+    </div>
+
+    <div *ngIf="error" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="load()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <div *ngIf="!loading && !error">
+      <table class="data-table" *ngIf="items.length > 0; else noData">
+        <thead>
+          <tr>
+            <th class="th-id">ID</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th class="th-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let it of items">
+            <td>{{ it.id }}</td>
+            <td>{{ it.name }}</td>
+            <td>{{ it.description || '-' }}</td>
+            <td class="actions">
+              <div class="btn-group">
+                <button class="btn btn-icon" [routerLink]="['editar', it.id]" title="Editar">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-icon btn-delete" (click)="delete(it.id!)" title="Eliminar">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noData>
+        <div class="empty-state">
+          <i class="fas fa-info-circle"></i>
+          <p>No hay registros aún.</p>
+          <button class="btn btn-new" routerLink="nuevo">
+            <i class="fas fa-plus"></i> Agregar
+          </button>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

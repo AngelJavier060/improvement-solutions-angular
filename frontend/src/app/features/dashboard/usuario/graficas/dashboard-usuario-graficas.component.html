@@ -2,12 +2,20 @@
   <span>Cargando datos...</span>
 </div>
 <div *ngIf="!loading && data" class="graficas-grid">
-  <app-grafica-barra-total-personal [data]="{ masculino: data.totalPersonal.masculino, femenino: data.totalPersonal.femenino, discapacitado: 0 }"></app-grafica-barra-total-personal>
-  <div style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #0001; min-height: 200px; margin-bottom: 1rem; padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-    <h4 style="margin-bottom: 12px; font-weight: 700; color: #222; letter-spacing: 0.5px;">Cargos</h4>
+  <div class="chart-card">
+    <app-grafica-barra-total-personal [data]="{ masculino: data.totalPersonal.masculino, femenino: data.totalPersonal.femenino, discapacitado: 0 }"></app-grafica-barra-total-personal>
+  </div>
+  <div class="chart-card">
+    <h4 class="chart-title">Cargos</h4>
     <app-grafica-cargos-asignados [data]="data.cargosAsignados"></app-grafica-cargos-asignados>
   </div>
-  <app-grafica-rango-edades [data]="data.rangoEdades"></app-grafica-rango-edades>
-  <app-grafica-trabajadores-residentes [data]="data.trabajadoresResidentes"></app-grafica-trabajadores-residentes>
-  <app-grafica-tipos-etnias [data]="data.tiposEtnias"></app-grafica-tipos-etnias>
+  <div class="chart-card">
+    <app-grafica-rango-edades [data]="data.rangoEdades"></app-grafica-rango-edades>
+  </div>
+  <div class="chart-card">
+    <app-grafica-trabajadores-residentes [data]="data.trabajadoresResidentes"></app-grafica-trabajadores-residentes>
+  </div>
+  <div class="chart-card">
+    <app-grafica-tipos-etnias [data]="data.tiposEtnias"></app-grafica-tipos-etnias>
+  </div>
 </div>

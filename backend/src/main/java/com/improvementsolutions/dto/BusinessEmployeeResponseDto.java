@@ -54,6 +54,8 @@ public class BusinessEmployeeResponseDto {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate fechaIngreso;
     private String codigoEmpresa;
+    // Código único del trabajador en la empresa
+    private String codigoTrabajador;
     
     // IDs de relaciones
     private Long businessId;
@@ -74,6 +76,12 @@ public class BusinessEmployeeResponseDto {
     private String civilStatusName;
     private String etniaName;
     private String degreeName;
+    
+    // Empresa contratista y bloque asociados
+    private Long contractorCompanyId;
+    private String contractorCompanyName;
+    private Long contractorBlockId;
+    private String contractorBlockName;
     
     // Información personal
     private String tipoSangre;

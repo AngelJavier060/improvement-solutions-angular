@@ -1,0 +1,627 @@
+<div class="employee-detail-container">
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="page-title">
+          <i class="fas fa-user me-2"></i>
+          Detalle del Empleado
+        </h2>
+      </div>
+      <button class="btn btn-secondary" (click)="goBack()">
+        <i class="fas fa-arrow-left me-2"></i>
+        Volver
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'employees'" [routerLink]="[]" [queryParams]="{ tab: 'employees' }" queryParamsHandling="merge">
+        <i class="fas fa-users me-2"></i>
+        Empleados
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'profile'" [routerLink]="[]" [queryParams]="{ tab: 'profile' }" queryParamsHandling="merge">
+        <i class="fas fa-user me-2"></i>
+        Perfil
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'documents'" [routerLink]="[]" [queryParams]="{ tab: 'documents' }" queryParamsHandling="merge">
+        <i class="fas fa-file-alt me-2"></i>
+        Documentos Personales
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'courses'" [routerLink]="[]" [queryParams]="{ tab: 'courses' }" queryParamsHandling="merge">
+        <i class="fas fa-graduation-cap me-2"></i>
+        Cursos
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'cards'" [routerLink]="[]" [queryParams]="{ tab: 'cards' }" queryParamsHandling="merge">
+        <i class="fas fa-id-card me-2"></i>
+        Tarjetas
+      </a>
+    </li>
+  </ul>
+
+  <!-- Tab Content -->
+  <div class="tab-content">
+    <!-- Employees Tab -->
+    <div class="tab-pane fade" [class.show]="activeTab === 'employees'" [class.active]="activeTab === 'employees'">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            <i class="fas fa-users me-2"></i>
+            Empleados de la empresa
+          </h5>
+          <div class="d-flex align-items-center gap-3">
+            <div class="form-check form-switch m-0">
+              <input class="form-check-input" type="checkbox" id="toggleHistory" [(ngModel)]="showHistory" (change)="onHistoryToggle()">
+              <label class="form-check-label" for="toggleHistory">Ver histórico</label>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" (click)="loadEmployeesList()">
+              <i class="fas fa-sync-alt"></i> Recargar
+            </button>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <!-- Filtros -->
+          <div class="filters px-3 py-3 border-bottom bg-light">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-md-3">
+                <label class="form-label mb-1">Identificación</label>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="filterCedula" (ngModelChange)="onFilterChanged()" placeholder="Cédula">
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label mb-1">Nombre</label>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="filterNombre" (ngModelChange)="onFilterChanged()" placeholder="Nombre">
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label mb-1">Apellido</label>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="filterApellido" (ngModelChange)="onFilterChanged()" placeholder="Apellido">
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label mb-1">Código Empleado</label>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="filterCodigo" (ngModelChange)="onFilterChanged()" placeholder="Código">
+              </div>
+            </div>
+          </div>
+          <div *ngIf="listLoading" class="text-center py-4">Cargando empleados...</div>
+          <div *ngIf="!listLoading && (!listEmployees || listEmployees.length===0)" class="text-center py-4 text-muted">No hay empleados</div>
+          <div *ngIf="!listLoading && listEmployees && listEmployees.length>0" class="table-responsive">
+            <table class="table table-hover mb-0 align-middle employees-table">
+              <thead class="table-dark">
+                <tr>
+                  <th style="width: 320px;">Empleado</th>
+                  <th>Tipo</th>
+                  <th>Emisión</th>
+                  <th>Vencimiento</th>
+                  <th>Vigencia</th>
+                  <th>Días</th>
+                  <th>Documento</th>
+                </tr>
+              </thead>
+              <tbody>
+                <ng-container *ngFor="let emp of listEmployees">
+                  <ng-container *ngIf="ensureEmployeeOverview(emp); true"></ng-container>
+                  <ng-container *ngIf="getBusinessEmployeeIdFor(emp) as beId">
+                    <!-- Si ya hay items cargados -->
+                    <ng-container *ngIf="employeeItemsMap[beId] as items; else awaiting">
+                      <!-- Con registros -->
+                      <ng-container *ngIf="items.length > 0; else noItems">
+                        <tr *ngFor="let it of items; let i = index"
+                            [ngClass]="{
+                              'table-danger': it && getExpiryStatus(it.expiry_date) === 'Caducado',
+                              'table-warning': it && getExpiryStatus(it.expiry_date) === 'Próximo a vencer'
+                            }">
+                          <td *ngIf="i === 0" [attr.rowspan]="items.length" class="align-top">
+                            <div class="d-flex gap-3">
+                              <img [src]="getImageUrlFor(emp)" alt="Foto" class="mini-avatar" (error)="onImgError($event)" loading="lazy" decoding="async">
+                              <div>
+                                <div class="emp-name clickable" (click)="goToEmployeeTab(emp, 'profile')">
+                                  {{ emp.nombres || emp.name }} {{ emp.apellidos || '' }}
+                                </div>
+                                <div class="emp-meta">{{ emp.positionName || '-' }}</div>
+                                <div class="small"><strong>Código:</strong> {{ emp.codigoTrabajador || '-' }}</div>
+                                <div class="small mt-1">
+                                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'profile')">Perfil</a>
+                                  · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'documents')">Documentos</a>
+                                  · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'courses')">Cursos</a>
+                                  · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'cards')">Tarjetas</a>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <div class="d-flex align-items-center gap-2">
+                              <span class="doc-icon">
+                                <i class="fas" [ngClass]="{
+                                  'fa-user': it.type==='document',
+                                  'fa-graduation-cap': it.type==='course',
+                                  'fa-id-card': it.type==='card'
+                                }"></i>
+                              </span>
+                              <div>
+                                <div class="fw-semibold">{{ it.name }}</div>
+                                <div class="text-muted small">{{ it.category }}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>{{ it.issue_date || '-' }}</td>
+                          <td>{{ it.expiry_date || '-' }}</td>
+                          <td>
+                            <span class="badge" [ngClass]="getExpiryBadgeClass(it.expiry_date)">{{ getExpiryStatus(it.expiry_date) }}</span>
+                          </td>
+                          <td>{{ getDaysLeft(it.expiry_date) }}</td>
+                          <td>
+                            <ng-container *ngIf="it.files?.length; else noFile">
+                              <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-outline-danger btn-sm rounded-3 pdf-btn" *ngIf="isPdf(it.files[0])" (click)="openDocFile(it.files[0])" title="Abrir PDF">
+                                  <i class="far fa-file-pdf"></i>
+                                </button>
+                                <span *ngIf="!isPdf(it.files[0])">-</span>
+                              </div>
+                            </ng-container>
+                            <ng-template #noFile>-</ng-template>
+                          </td>
+                        </tr>
+                      </ng-container>
+                      <!-- Sin registros -->
+                      <ng-template #noItems>
+                        <tr>
+                          <td class="align-top">
+                            <div class="d-flex gap-3">
+                              <img [src]="getImageUrlFor(emp)" alt="Foto" class="mini-avatar" (error)="onImgError($event)" loading="lazy" decoding="async">
+                              <div>
+                                <div class="emp-name clickable" (click)="goToEmployeeTab(emp, 'profile')">
+                                  {{ emp.nombres || emp.name }} {{ emp.apellidos || '' }}
+                                </div>
+                                <div class="emp-meta">{{ emp.positionName || '-' }}</div>
+                                <div class="small"><strong>Código:</strong> {{ emp.codigoTrabajador || '-' }}</div>
+                                <div class="small mt-1">
+                                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'profile')">Perfil</a>
+                                  · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'documents')">Documentos</a>
+                                  · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'courses')">Cursos</a>
+                                  · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'cards')">Tarjetas</a>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td colspan="6" class="text-center text-muted">Sin registros</td>
+                        </tr>
+                      </ng-template>
+                    </ng-container>
+                    <!-- A la espera de datos o cargando -->
+                    <ng-template #awaiting>
+                      <tr>
+                        <td class="align-top">
+                          <div class="d-flex gap-3">
+                            <img [src]="getImageUrlFor(emp)" alt="Foto" class="mini-avatar" (error)="onImgError($event)" loading="lazy" decoding="async">
+                            <div>
+                              <div class="emp-name clickable" (click)="goToEmployeeTab(emp, 'profile')">
+                                {{ emp.nombres || emp.name }} {{ emp.apellidos || '' }}
+                              </div>
+                              <div class="emp-meta">{{ emp.positionName || '-' }}</div>
+                              <div class="small"><strong>Código:</strong> {{ emp.codigoTrabajador || '-' }}</div>
+                              <div class="small mt-1">
+                                <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'profile')">Perfil</a>
+                                · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'documents')">Documentos</a>
+                                · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'courses')">Cursos</a>
+                                · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'cards')">Tarjetas</a>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td colspan="6" class="text-center text-muted">
+                          {{ employeeItemsLoading[beId] ? 'Cargando...' : 'Sin registros' }}
+                        </td>
+                      </tr>
+                    </ng-template>
+                  </ng-container>
+                </ng-container>
+              </tbody>
+            </table>
+            <div class="px-3 py-2 border-top d-flex justify-content-between align-items-center bg-light">
+              <div class="small text-muted">
+                Mostrando {{ totalElements === 0 ? 0 : (pageIndex * pageSize + 1) }} - {{ Math.min(totalElements, (pageIndex + 1) * pageSize) }} de {{ totalElements }}
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <div class="input-group input-group-sm" style="width: auto;">
+                  <span class="input-group-text">Tamaño</span>
+                  <select class="form-select form-select-sm" [ngModel]="pageSize" (ngModelChange)="changePageSize($event)">
+                    <option [ngValue]="10">10</option>
+                    <option [ngValue]="25">25</option>
+                    <option [ngValue]="50">50</option>
+                    <option [ngValue]="100">100</option>
+                  </select>
+                </div>
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-secondary" [disabled]="pageIndex === 0" (click)="prevPage()">
+                    <i class="fas fa-chevron-left"></i>
+                  </button>
+                  <button class="btn btn-outline-secondary" [disabled]="(pageIndex + 1) * pageSize >= totalElements" (click)="nextPage()">
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Profile Tab -->
+    <div class="tab-pane fade" [class.show]="activeTab === 'profile'" [class.active]="activeTab === 'profile'">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            <i class="fas fa-user me-2"></i>
+            Perfil del Empleado
+          </h5>
+          <button *ngIf="employee" class="btn btn-sm btn-outline-primary" (click)="openEdit()" aria-label="Editar perfil del empleado">
+            <i class="fas fa-edit me-1"></i>
+            Editar
+          </button>
+        </div>
+        <div class="card-body">
+          <ng-container *ngIf="employee; else profilePlaceholder">
+            <!-- Profile Hero -->
+            <div class="profile-hero d-flex align-items-center gap-3 gap-md-4 mb-4">
+              <div class="profile-avatar">
+                <img [src]="getEmployeeImageUrl()" alt="Foto del empleado" class="avatar-img" (error)="onImgError($event)" />
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                  <h4 class="mb-0 me-2 profile-name">
+                    {{ employee.nombres || employee.name }} {{ employee.apellidos || '' }}
+                  </h4>
+                  <span class="badge" [ngClass]="employee.active ? 'bg-success' : 'bg-secondary'">
+                    {{ employee.active ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </div>
+                <div class="text-muted mt-1 small">
+                  Cédula: <span class="text-body">{{ employee.cedula }}</span>
+                  <span class="mx-2">·</span>
+                  Correo: <span class="text-body">{{ employee.email || '-' }}</span>
+                </div>
+              </div>
+              <div class="d-none d-md-block">
+                <a class="btn btn-outline-secondary" [routerLink]="[]" [queryParams]="{ tab: 'documents' }" queryParamsHandling="merge">
+                  <i class="fas fa-folder-open me-1"></i>
+                  Ver Documentos
+                </a>
+              </div>
+            </div>
+
+            <!-- KPI Chips -->
+            <div class="kpi-grid row g-3 mb-4">
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-chip">
+                  <div class="kpi-icon"><i class="fas fa-building"></i></div>
+                  <div>
+                    <div class="kpi-label">Empresa</div>
+                    <div class="kpi-value">{{ employee.businessName || employee.codigoEmpresa || '-' }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-chip">
+                  <div class="kpi-icon"><i class="fas fa-briefcase"></i></div>
+                  <div>
+                    <div class="kpi-label">Cargo</div>
+                    <div class="kpi-value">{{ employee.positionName || '-' }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-chip">
+                  <div class="kpi-icon"><i class="fas fa-sitemap"></i></div>
+                  <div>
+                    <div class="kpi-label">Departamento</div>
+                    <div class="kpi-value">{{ employee.departmentName || '-' }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-3">
+                <div class="kpi-chip">
+                  <div class="kpi-icon"><i class="fas fa-calendar-check"></i></div>
+                  <div>
+                    <div class="kpi-label">Fecha Ingreso</div>
+                    <div class="kpi-value">{{ employee.fechaIngreso || '-' }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Personal Information -->
+            <h6 class="profile-section-title">Información Personal</h6>
+            <div class="profile-grid mb-4">
+              <div>
+                <label class="form-label mb-0">Nombres</label>
+                <div class="fw-semibold">{{ employee.nombres || employee.name }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Apellidos</label>
+                <div class="fw-semibold">{{ employee.apellidos || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Cédula</label>
+                <div>{{ employee.cedula }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Fecha Nacimiento</label>
+                <div>{{ employee.dateBirth || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Tipo Sangre</label>
+                <div>{{ employee.tipoSangre || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Género</label>
+                <div>{{ employee.genderName || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Estado Civil</label>
+                <div>{{ employee.civilStatusName || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Nivel Educación</label>
+                <div>{{ employee.nivelEducacion || employee.degreeName || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Discapacidad</label>
+                <div>{{ employee.discapacidad || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Dirección</label>
+                <div>{{ employee.address || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Dirección Domiciliaria</label>
+                <div>{{ employee.direccionDomiciliaria || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Provincia Nacimiento</label>
+                <div>{{ employee.lugarNacimientoProvincia || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Ciudad Nacimiento</label>
+                <div>{{ employee.lugarNacimientoCiudad || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Parroquia Nacimiento</label>
+                <div>{{ employee.lugarNacimientoParroquia || '-' }}</div>
+              </div>
+            </div>
+
+            <!-- Company Information -->
+            <h6 class="profile-section-title">Información de Empresa</h6>
+            <div class="profile-grid">
+              <div>
+                <label class="form-label mb-0">Empresa</label>
+                <div>{{ employee.businessName || employee.codigoEmpresa || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Departamento</label>
+                <div>{{ employee.departmentName || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Cargo</label>
+                <div>{{ employee.positionName || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Tipo Contrato</label>
+                <div>{{ employee.contractTypeName || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Fecha Ingreso</label>
+                <div>{{ employee.fechaIngreso || '-' }}</div>
+              </div>
+              <div>
+                <label class="form-label mb-0">Código IESS</label>
+                <div>{{ employee.codigoIess || '-' }}</div>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #profilePlaceholder>
+            <div class="profile-skeleton">
+              <div class="d-flex align-items-center gap-3 gap-md-4 mb-4">
+                <div class="skeleton skeleton-avatar"></div>
+                <div class="flex-grow-1">
+                  <div class="skeleton skeleton-line" style="width: 240px;"></div>
+                  <div class="skeleton skeleton-line mt-2" style="width: 320px;"></div>
+                </div>
+              </div>
+              <div class="row g-3 mb-4">
+                <div class="col-12 col-sm-6 col-lg-3" *ngFor="let i of [1,2,3,4]">
+                  <div class="skeleton skeleton-kpi"></div>
+                </div>
+              </div>
+              <div class="profile-grid mb-4">
+                <div *ngFor="let i of [1,2,3,4,5,6]">
+                  <div class="skeleton skeleton-line" style="width: 40%; margin-bottom: 6px;"></div>
+                  <div class="skeleton skeleton-line" style="width: 90%; height: 18px;"></div>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documents Tab -->
+    <div class="tab-pane fade" [class.show]="activeTab === 'documents'" [class.active]="activeTab === 'documents'">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            <i class="fas fa-file-alt me-2"></i>
+            Documentos Personales
+          </h5>
+          <button class="btn btn-sm btn-outline-primary" (click)="openEmployeePicker()">
+            <i class="fas fa-users me-1"></i>
+            Listado de trabajadores
+          </button>
+        </div>
+        <div class="card-body">
+          <!-- Mini hero with photo and basic info above documents list -->
+          <ng-container *ngIf="employee">
+            <div class="mini-hero d-flex align-items-center gap-3 mb-4">
+              <img [src]="getEmployeeImageUrl()" alt="Foto del empleado" class="mini-avatar" (error)="onImgError($event)" />
+              <div>
+                <div class="fw-semibold">{{ employee.nombres || employee.name }} {{ employee.apellidos || '' }}</div>
+                <div class="text-muted small">Cédula: <span class="text-body">{{ employee.cedula }}</span></div>
+              </div>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="businessEmployeeId as beId; else documentsPlaceholder">
+            <app-employee-documents
+              *ngIf="activeTab === 'documents'"
+              [employeeId]="beId"
+              [employeeCedula]="cedula || ''"
+              (changed)="onChildChanged()">
+            </app-employee-documents>
+          </ng-container>
+          <ng-template #documentsPlaceholder>
+            <div class="text-center py-5">
+              <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>
+              <h4 class="text-muted">Documentos Personales</h4>
+              <p class="text-muted">Seleccione un empleado para gestionar sus documentos.</p>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Courses Tab -->
+    <div class="tab-pane fade" [class.show]="activeTab === 'courses'" [class.active]="activeTab === 'courses'">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-graduation-cap me-2"></i>
+            Gestión de Cursos
+          </h5>
+        </div>
+        <div class="card-body">
+          <ng-container *ngIf="employee">
+            <div class="mini-hero d-flex align-items-center gap-3 mb-4">
+              <img [src]="getEmployeeImageUrl()" alt="Foto del empleado" class="mini-avatar" (error)="onImgError($event)" />
+              <div>
+                <div class="fw-semibold">{{ employee.nombres || employee.name }} {{ employee.apellidos || '' }}</div>
+                <div class="text-muted small">Cédula: <span class="text-body">{{ employee.cedula }}</span></div>
+              </div>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="businessEmployeeId as beId; else coursesPlaceholder">
+            <app-employee-courses
+              *ngIf="activeTab === 'courses'"
+              [employeeId]="beId"
+              [employeeCedula]="cedula || ''"
+              (changed)="onChildChanged()">
+            </app-employee-courses>
+          </ng-container>
+          <ng-template #coursesPlaceholder>
+            <div class="text-center py-5">
+              <i class="fas fa-graduation-cap fa-4x text-muted mb-3"></i>
+              <h4 class="text-muted">Cursos del Empleado</h4>
+              <p class="text-muted">Seleccione un empleado para gestionar sus cursos y certificaciones.</p>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cards Tab -->
+    <div class="tab-pane fade" [class.show]="activeTab === 'cards'" [class.active]="activeTab === 'cards'">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-id-card me-2"></i>
+            Gestión de Tarjetas
+          </h5>
+        </div>
+        <div class="card-body">
+          <ng-container *ngIf="employee">
+            <div class="mini-hero d-flex align-items-center gap-3 mb-4">
+              <img [src]="getEmployeeImageUrl()" alt="Foto del empleado" class="mini-avatar" (error)="onImgError($event)" />
+              <div>
+                <div class="fw-semibold">{{ employee.nombres || employee.name }} {{ employee.apellidos || '' }}</div>
+                <div class="text-muted small">Cédula: <span class="text-body">{{ employee.cedula }}</span></div>
+              </div>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="businessEmployeeId as beId; else cardsPlaceholder">
+            <app-employee-cards
+              *ngIf="activeTab === 'cards'"
+              [employeeId]="beId"
+              [employeeCedula]="cedula || ''"
+              (changed)="onChildChanged()">
+            </app-employee-cards>
+          </ng-container>
+          <ng-template #cardsPlaceholder>
+            <div class="text-center py-5">
+              <i class="fas fa-id-card fa-4x text-muted mb-3"></i>
+              <h4 class="text-muted">Tarjetas del Empleado</h4>
+              <p class="text-muted">Seleccione un empleado para gestionar sus tarjetas.</p>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Listado de trabajadores -->
+  <div class="modal fade" [class.show]="showEmployeePicker" [style.display]="showEmployeePicker ? 'block' : 'none'" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-users me-2"></i>Seleccionar trabajador</h5>
+          <button type="button" class="btn-close" (click)="closeEmployeePicker()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control" placeholder="Buscar por nombre o cédula" [(ngModel)]="pickerSearch">
+              <button class="btn btn-outline-secondary" type="button" (click)="loadEmployeesForPicker()">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+            </div>
+          </div>
+          <div *ngIf="pickerLoading" class="text-center py-4">Cargando empleados...</div>
+          <div *ngIf="!pickerLoading && filteredPickerEmployees().length === 0" class="text-center text-muted py-4">No hay resultados</div>
+          <div *ngIf="!pickerLoading && filteredPickerEmployees().length > 0" class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Nombre</th>
+                  <th>Cédula</th>
+                  <th>Cargo</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let e of filteredPickerEmployees()">
+                  <td>{{ (e.nombres || e.name) + ' ' + (e.apellidos || '') }}</td>
+                  <td>{{ e.cedula }}</td>
+                  <td>{{ e.positionName || e.position?.name || e.position || '-' }}</td>
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-primary" (click)="goToEmployeeDocuments(e)">
+                      <i class="fas fa-folder-open me-1"></i>
+                      Ver documentos
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeEmployeePicker()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

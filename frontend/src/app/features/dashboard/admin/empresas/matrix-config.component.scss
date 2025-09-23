@@ -1,0 +1,51 @@
+.soft-badge {
+  display: inline-block;
+  padding: 0.25em 0.7em;
+  border-radius: 0.8em;
+  font-size: 0.95em;
+  font-weight: 500;
+  background: #f5f7fa;
+  color: #4a5568;
+  border: 1px solid #e2e8f0;
+  transition: background 0.2s, color 0.2s;
+}
+.soft-badge.status-pendiente {
+  background: #f0f4ff;
+  color: #3b82f6;
+  border-color: #dbeafe;
+}
+.soft-badge.status-cumplido {
+  background: #e6f9f0;
+  color: #10b981;
+  border-color: #bbf7d0;
+}
+.soft-badge.status-vencida {
+  background: #fff0f0;
+  color: #ef4444;
+  border-color: #fecaca;
+}
+.soft-badge.status-enproceso {
+  background: #fef9c3;
+  color: #eab308;
+  border-color: #fde68a;
+}
+.soft-badge.priority-alta {
+  background: #fff7ed;
+  color: #f97316;
+  border-color: #fed7aa;
+}
+.soft-badge.priority-media {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+.soft-badge.priority-baja {
+  background: #f0fdf4;
+  color: #22c55e;
+  border-color: #bbf7d0;
+}
+.soft-observacion {
+  color: #64748b;
+  font-style: italic;
+  font-size: 0.97em;
+}

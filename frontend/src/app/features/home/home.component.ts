@@ -81,20 +81,31 @@ export class HomeComponent implements OnInit {
 
   // Método para abrir el modal de login
   openLoginModal(userType: 'admin' | 'usuario'): void {
+    console.log('[HomeComponent] openLoginModal llamado con userType:', userType);
+
     if (userType === 'usuario') {
       // Para usuarios empresariales, redirigir a login simple
-      this.router.navigate(['/auth/usuario-login']);
+      console.log('[HomeComponent] Navegando a /auth/usuario-login');
+      this.router.navigate(['/auth/usuario-login']).then(
+        (success) => {
+          console.log('[HomeComponent] Navegación exitosa:', success);
+        },
+        (error) => {
+          console.error('[HomeComponent] Error en navegación:', error);
+        }
+      );
       return;
     }
-    
+
     // Para administradores, mantener el modal original
-    const modalRef = this.modalService.open(LoginModalComponent, { 
+    console.log('[HomeComponent] Abriendo modal para admin');
+    const modalRef = this.modalService.open(LoginModalComponent, {
       centered: true,
       backdrop: 'static',
       windowClass: 'login-modal'
     });
     modalRef.componentInstance.userType = userType;
-    
+
     modalRef.result.then(
       (result) => {
         if (result === 'success') {
@@ -104,6 +115,20 @@ export class HomeComponent implements OnInit {
       },
       (reason) => {
         console.log('Modal cerrado', reason);
+      }
+    );
+  }
+
+  // Método para manejar clic en usuario (diagnóstico)
+  onUsuarioClick(): void {
+    console.log('[HomeComponent] Clic en Usuario detectado');
+    console.log('[HomeComponent] Navegando manualmente a /auth/usuario-login');
+    this.router.navigate(['/auth/usuario-login']).then(
+      (success) => {
+        console.log('[HomeComponent] Navegación manual exitosa:', success);
+      },
+      (error) => {
+        console.error('[HomeComponent] Error en navegación manual:', error);
       }
     );
   }

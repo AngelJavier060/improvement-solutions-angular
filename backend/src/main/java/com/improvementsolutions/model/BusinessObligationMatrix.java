@@ -49,6 +49,7 @@ public class BusinessObligationMatrix {
     private String name;
     private String obligationType;
     private String description;
+    private String observations;
     private LocalDate dueDate;
     private String status;
     private String priority;
@@ -56,6 +57,9 @@ public class BusinessObligationMatrix {
     private boolean completed;
     private LocalDateTime completionDate;
     private boolean active = true;
+    
+    @Column(name = "current_version")
+    private Integer currentVersion = 1;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -68,6 +72,9 @@ public class BusinessObligationMatrix {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.currentVersion == null || this.currentVersion <= 0) {
+            this.currentVersion = 1;
+        }
     }
 
     @PreUpdate

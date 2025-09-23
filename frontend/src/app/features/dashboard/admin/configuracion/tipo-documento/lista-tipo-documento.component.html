@@ -1,15 +1,15 @@
 <div class="tipo-documento-container">
   <div class="header">
     <div class="title-section">
-      <h2>Tipos de Documento</h2>
-      <p>Administración de tipos de documentos de identificación</p>
+      <h2>Documentos personales</h2>
+      <p>Administración del catálogo de documentos personales</p>
     </div>
     <div class="actions">
       <button class="btn btn-back mr-2" routerLink="/dashboard/admin/configuracion">
         <i class="fas fa-arrow-left"></i> Volver a Configuración
       </button>
       <button class="btn btn-new" routerLink="nuevo">
-        <i class="fas fa-plus"></i> Nuevo Tipo de Documento
+        <i class="fas fa-plus"></i> Nuevo documento personal
       </button>
     </div>
   </div>
@@ -17,7 +17,7 @@
   <div class="card">
     <div *ngIf="loading" class="loading-state">
       <i class="fas fa-spinner fa-spin"></i>
-      <span>Cargando tipos de documento...</span>
+      <span>Cargando documentos personales...</span>
     </div>
 
     <div *ngIf="error" class="error-state">
@@ -60,9 +60,9 @@
       <ng-template #noData>
         <div class="empty-state">
           <i class="fas fa-info-circle"></i>
-          <p>No hay tipos de documento registrados aún.</p>
+          <p>No hay documentos personales registrados aún.</p>
           <button class="btn btn-new" routerLink="nuevo">
-            <i class="fas fa-plus"></i> Agregar un tipo de documento
+            <i class="fas fa-plus"></i> Agregar un documento personal
           </button>
         </div>
       </ng-template>

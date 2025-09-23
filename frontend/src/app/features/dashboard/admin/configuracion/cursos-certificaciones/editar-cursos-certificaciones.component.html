@@ -1,0 +1,62 @@
+<div class="tipo-documento-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Editar curso o certificación</h2>
+      <p>Modifique los campos y guarde los cambios</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" routerLink="/dashboard/admin/configuracion/cursos-certificaciones">
+        <i class="fas fa-arrow-left"></i> Volver a Lista
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando información...</span>
+    </div>
+
+    <div *ngIf="error && !loading" class="alert alert-error">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="load()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <form *ngIf="!loading && !error" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div *ngIf="successMessage" class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+
+      <div class="form-group">
+        <label for="name">Nombre <span class="required">*</span></label>
+        <input id="name" type="text" formControlName="name"
+               [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched" />
+        <div *ngIf="form.get('name')?.invalid && form.get('name')?.touched" class="error-message">
+          <span *ngIf="form.get('name')?.errors?.['required']">El nombre es obligatorio</span>
+          <span *ngIf="form.get('name')?.errors?.['maxlength']">Máximo 100 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea id="description" rows="3" formControlName="description"
+                  [class.is-invalid]="form.get('description')?.invalid && form.get('description')?.touched"></textarea>
+        <div *ngIf="form.get('description')?.invalid && form.get('description')?.touched" class="error-message">
+          <span *ngIf="form.get('description')?.errors?.['maxlength']">Máximo 255 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="volverALista()">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="submitting">
+          <i *ngIf="submitting" class="fas fa-spinner fa-spin"></i>
+          Guardar cambios
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

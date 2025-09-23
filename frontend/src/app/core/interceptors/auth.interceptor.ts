@@ -25,21 +25,21 @@ export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas pú
     '/api/v1/public/validacion',
     '/api/v1/public/generos',
     '/api/v1/public/estado-civil',
-    '/api/files/upload',
     '/api/files/logos',
-    '/api/files/upload/logos'
+    '/api/files/upload/logos',
+    // Health check endpoint used by dev diagnostics script; must not trigger auth flows
+    '/api/health'
   ];
 
   constructor(private authService: AuthService, private router: Router) {}
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     const token = this.authService.getToken();
     const isPublicRoute = this.publicRoutes.some((url: string) => request.url.includes(url));
-    // Mejorar detección de subidas de archivos (incluye tanto /upload como /profile-picture, /with-image y FormData)
-    const isFileUpload = (request.url.includes('/upload') || 
-                         request.url.includes('/profile-picture') || 
-                         request.url.includes('/with-image')) && 
-                         request.method === 'POST' && 
-                         request.body instanceof FormData;
+    // Detectar subida de archivos de forma genérica: si el body es FormData no forzar Content-Type JSON
+    const isFileUpload = request.body instanceof FormData;
+    // Detectar descargas de archivos o respuestas binarias: no forzar headers JSON
+    const isFileEndpoint = request.url.includes('/api/files/');
+    const expectsBlob = (request as any).responseType === 'blob' || isFileEndpoint;
     
     console.log(`[AuthInterceptor] URL: ${request.url}, Es ruta pública: ${isPublicRoute}, Es subida de archivo: ${isFileUpload}`);
     
@@ -54,7 +54,7 @@ export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas pú
         };
         
         // Para peticiones que no son de archivos, añadimos los headers de contenido
-        if (!isFileUpload) {
+        if (!isFileUpload && !expectsBlob) {
           headers['Content-Type'] = 'application/json';
           headers['Accept'] = 'application/json';
         }
@@ -68,7 +68,7 @@ export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas pú
       console.log('[AuthInterceptor] Ruta pública, no se requiere token');
       
       // Para peticiones que no son de archivos en rutas públicas
-      if (!isFileUpload) {
+      if (!isFileUpload && !expectsBlob) {
         request = request.clone({
           setHeaders: {
             'Content-Type': 'application/json',
@@ -95,8 +95,8 @@ export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas pú
         if (error.status === 401) {
           if (!isPublicRoute) {
             console.log('[AuthInterceptor] Error 401 en ruta protegida - redirigiendo a login');
-            this.authService.logout();
-            this.router.navigate(['/auth/login']);
+            this.authService.clearSession();
+            this.router.navigate(['/auth/usuario-login']);
           } else {
             console.log('[AuthInterceptor] Error 401 en ruta pública - continuando...');
           }

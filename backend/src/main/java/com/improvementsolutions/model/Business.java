@@ -17,8 +17,8 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks"})
-@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks"})
+@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards"})
+@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards"})
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Business {
     @Id
@@ -116,6 +116,24 @@ public class Business {
     )
     @JsonIgnore
     private Set<Department> departments = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_course_certification",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "course_certification_id")
+    )
+    @JsonIgnore
+    private Set<CourseCertification> courseCertifications = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_card",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "card_id")
+    )
+    @JsonIgnore
+    private Set<CardCatalog> cards = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -291,5 +309,22 @@ public class Business {
         if (contractorCompany != null) {
             contractorCompanies.add(contractorCompany);
         }
+    }
+
+    // Nuevos helpers para catálogos por empresa
+    public void addCourseCertification(CourseCertification cc) {
+        courseCertifications.add(cc);
+    }
+
+    public void removeCourseCertification(CourseCertification cc) {
+        courseCertifications.remove(cc);
+    }
+
+    public void addCard(CardCatalog card) {
+        cards.add(card);
+    }
+
+    public void removeCard(CardCatalog card) {
+        cards.remove(card);
     }
 }

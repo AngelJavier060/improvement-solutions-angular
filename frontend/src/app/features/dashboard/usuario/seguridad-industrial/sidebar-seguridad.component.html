@@ -1,0 +1,37 @@
+<aside class="sidebar-seguridad shadow" [ngClass]="{ 'collapsed': collapsed }">
+  <div class="sidebar-header">
+    <button type="button" class="btn btn-light btn-sm sidebar-collapse-btn" (click)="toggle()" aria-label="Contraer/Expandir">
+      <i class="fas" [ngClass]="collapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+    </button>
+    <div class="sidebar-icon mb-2"><i class="fas fa-shield-alt"></i></div>
+    <h4 class="sidebar-title">Seguridad Industrial</h4>
+  </div>
+  <nav class="sidebar-nav">
+    <ul>
+      <li>
+        <a routerLink="dashboard-cumplimiento" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
+          <i class="fas fa-home"></i>
+          <span>Inicio</span>
+        </a>
+      </li>
+      <li>
+        <a routerLink="matriz-legal" routerLinkActive="active" class="nav-link">
+          <i class="fas fa-balance-scale"></i>
+          <span>Matriz Legal</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="nav-link disabled">
+          <i class="fas fa-chart-bar"></i>
+          <span>Reportes (Próximamente)</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="nav-link disabled">
+          <i class="fas fa-cog"></i>
+          <span>Configuración (Próximamente)</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+</aside>

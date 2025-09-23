@@ -28,6 +28,9 @@ public class BusinessObligationMatrixFile {
     @Column(nullable = false)
     private String path;
 
+    @Column(name = "version")
+    private Integer version = 1;
+
     private String description;
 
     @Column(name = "created_at")

@@ -34,12 +34,12 @@ sudo usermod -aG docker $USER
 
 ### 3. 🔧 Deployment manual (primera vez)
 
-Copia el archivo `manual-deploy.sh` a tu servidor y ejecútalo:
+Copia el archivo `scripts/deployment/manual-deploy.sh` a tu servidor y ejecútalo:
 
 ```bash
 # En tu servidor
-chmod +x manual-deploy.sh
-./manual-deploy.sh
+chmod +x scripts/deployment/manual-deploy.sh
+./scripts/deployment/manual-deploy.sh
 ```
 
 ### 4. 🔍 Verificar servicios

@@ -1,0 +1,14 @@
+/* estilos básicos para tablas y cabecera */
+.cc-container { }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td { padding: .5rem .75rem; border-bottom: 1px solid #e5e7eb; }
+.th-actions { width: 120px; text-align: right; }
+.actions .btn { margin-left: .5rem; }
+.empty-state, .error-state, .loading-state { padding: 1rem; text-align: center; }
+.btn-new, .btn-secondary { padding: .5rem .75rem; border: 1px solid #e5e7eb; border-radius: .25rem; }
+.btn-new { background: #2563eb; color: #fff; border-color: #2563eb; }
+.btn-secondary { background: #f3f4f6; color: #111827; }
+.btn-retry { margin-left: .5rem; }
+.btn-icon { background: transparent; border: 1px solid #e5e7eb; border-radius: .25rem; padding: .35rem .5rem; }
+.btn-delete { color: #b91c1c; border-color: #fecaca; }

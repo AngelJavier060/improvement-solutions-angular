@@ -1,6 +1,8 @@
 package com.improvementsolutions.controller;
 
 import com.improvementsolutions.model.CivilStatus;
+import com.improvementsolutions.model.CourseCertification;
+import com.improvementsolutions.model.CardCatalog;
 import com.improvementsolutions.model.Degree;
 import com.improvementsolutions.model.Department;
 import com.improvementsolutions.model.Etnia;
@@ -10,6 +12,8 @@ import com.improvementsolutions.model.Position;
 import com.improvementsolutions.model.ResidentAddress;
 import com.improvementsolutions.model.TypeDocument;
 import com.improvementsolutions.repository.CivilStatusRepository;
+import com.improvementsolutions.repository.CourseCertificationRepository;
+import com.improvementsolutions.repository.CardCatalogRepository;
 import com.improvementsolutions.repository.DegreeRepository;
 import com.improvementsolutions.repository.DepartmentRepository;
 import com.improvementsolutions.repository.EtniaRepository;
@@ -38,6 +42,8 @@ public class MasterDataController {
     private final ResidentAddressRepository residenceTypeRepository; // Cambiado de ResidenceTypeRepository
     private final EtniaRepository ethnicGroupRepository; // Cambiado de EthnicGroupRepository
     private final TypeDocumentRepository documentTypeRepository; // Cambiado de DocumentTypeRepository
+    private final CourseCertificationRepository courseCertificationRepository;
+    private final CardCatalogRepository cardCatalogRepository;
     private final DepartmentRepository departmentRepository;
     private final PositionRepository positionRepository;
     private final ObligationMatrixRepository obligationMatrixRepository;
@@ -91,6 +97,108 @@ public class MasterDataController {
             return ResponseEntity.notFound().build();
         }
         genderRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    // Course & Certification (CourseCertification)
+    @GetMapping("/course-certifications")
+    public ResponseEntity<List<CourseCertification>> getAllCourseCertifications() {
+        return ResponseEntity.ok(courseCertificationRepository.findAll());
+    }
+
+    @GetMapping("/course-certifications/{id}")
+    public ResponseEntity<CourseCertification> getCourseCertificationById(@PathVariable Long id) {
+        return courseCertificationRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/course-certifications")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CourseCertification> createCourseCertification(@RequestBody CourseCertification cc) {
+        if (courseCertificationRepository.findByName(cc.getName()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        cc.setCreatedAt(java.time.LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.CREATED).body(courseCertificationRepository.save(cc));
+    }
+
+    @PutMapping("/course-certifications/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CourseCertification> updateCourseCertification(@PathVariable Long id, @RequestBody CourseCertification cc) {
+        var existingOpt = courseCertificationRepository.findById(id);
+        if (existingOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        var nameClash = courseCertificationRepository.findByName(cc.getName());
+        if (nameClash.isPresent() && !nameClash.get().getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        var existing = existingOpt.get();
+        existing.setName(cc.getName());
+        existing.setDescription(cc.getDescription());
+        existing.setUpdatedAt(java.time.LocalDateTime.now());
+        return ResponseEntity.ok(courseCertificationRepository.save(existing));
+    }
+
+    @DeleteMapping("/course-certifications/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteCourseCertification(@PathVariable Long id) {
+        if (!courseCertificationRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        courseCertificationRepository.deleteById(id);
+        return ResponseEntity.ok().build();
+    }
+
+    // Cards (CardCatalog)
+    @GetMapping("/cards")
+    public ResponseEntity<List<CardCatalog>> getAllCards() {
+        return ResponseEntity.ok(cardCatalogRepository.findAll());
+    }
+
+    @GetMapping("/cards/{id}")
+    public ResponseEntity<CardCatalog> getCardById(@PathVariable Long id) {
+        return cardCatalogRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/cards")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CardCatalog> createCard(@RequestBody CardCatalog card) {
+        if (cardCatalogRepository.findByName(card.getName()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        card.setCreatedAt(java.time.LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.CREATED).body(cardCatalogRepository.save(card));
+    }
+
+    @PutMapping("/cards/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CardCatalog> updateCard(@PathVariable Long id, @RequestBody CardCatalog card) {
+        var existingOpt = cardCatalogRepository.findById(id);
+        if (existingOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        var nameClash = cardCatalogRepository.findByName(card.getName());
+        if (nameClash.isPresent() && !nameClash.get().getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        var existing = existingOpt.get();
+        existing.setName(card.getName());
+        existing.setDescription(card.getDescription());
+        existing.setUpdatedAt(java.time.LocalDateTime.now());
+        return ResponseEntity.ok(cardCatalogRepository.save(existing));
+    }
+
+    @DeleteMapping("/cards/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteCard(@PathVariable Long id) {
+        if (!cardCatalogRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        cardCatalogRepository.deleteById(id);
         return ResponseEntity.ok().build();
     }
 

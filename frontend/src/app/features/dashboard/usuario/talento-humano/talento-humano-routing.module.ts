@@ -2,6 +2,8 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { TalentoHumanoComponent } from './talento-humano.component';
 import { GestionEmpleadosComponent } from './components/gestion-empleados.component';
+import { EmployeeDetailComponent } from './components/employee-detail.component';
+import { DocumentsCertificationsComponent } from './components/documents-certifications.component';
 
 import { TalentoHumanoDashboardComponent } from './talento-humano-dashboard.component';
 
@@ -12,11 +14,21 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        component: GestionEmpleadosComponent
+        pathMatch: 'full',
+        redirectTo: 'inicio'
+      },
+      {
+        path: 'inicio',
+        component: TalentoHumanoDashboardComponent
       },
       {
         path: 'dashboard',
         component: TalentoHumanoDashboardComponent
+      },
+      // Listado principal de empleados para la empresa del contexto (RUC tomado del padre :ruc)
+      {
+        path: 'gestion-empleados',
+        component: GestionEmpleadosComponent
       },
       // Ruta para cargar empleados por RUC de la empresa (multi-empresa)
       {
@@ -27,6 +39,16 @@ const routes: Routes = [
       {
         path: 'by-id/:businessId',
         component: GestionEmpleadosComponent
+      },
+      // Ruta para detalle de empleado
+      {
+        path: 'employee/:cedula',
+        component: EmployeeDetailComponent
+      },
+      // Ruta para documentos y certificaciones
+      {
+        path: 'documentos-certificaciones',
+        component: DocumentsCertificationsComponent
       }
     ]
   }

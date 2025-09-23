@@ -10,4 +10,6 @@ import java.util.List;
 public interface BusinessObligationMatrixFileRepository extends JpaRepository<BusinessObligationMatrixFile, Long> {
     
     List<BusinessObligationMatrixFile> findByBusinessObligationMatrixId(Long businessObligationMatrixId);
+
+    List<BusinessObligationMatrixFile> findByBusinessObligationMatrixIdAndVersion(Long businessObligationMatrixId, Integer version);
 }

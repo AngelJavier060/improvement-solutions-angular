@@ -54,7 +54,13 @@ import { GraficaBarraTotalPersonalComponent } from './features/dashboard/usuario
       // Nueva ruta para login de usuarios empresariales
       {
         path: 'auth/usuario-login',
-        loadComponent: () => import('./features/auth/usuario-login/usuario-login.component').then(m => m.UsuarioLoginComponent)
+        loadComponent: () => {
+          console.log('[AppModule] Iniciando carga lazy del UsuarioLoginComponent');
+          return import('./features/auth/usuario-login/usuario-login.component').then(m => {
+            console.log('[AppModule] UsuarioLoginComponent cargado exitosamente');
+            return m.UsuarioLoginComponent;
+          });
+        }
       },
       
       // Nueva ruta para bienvenida de usuarios

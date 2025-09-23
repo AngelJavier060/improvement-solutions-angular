@@ -1,10 +1,13 @@
 package com.improvementsolutions.controller;
 
 import com.improvementsolutions.model.BusinessObligationMatrix;
+import com.improvementsolutions.dto.ComplianceSummaryDTO;
+import com.improvementsolutions.model.BusinessObligationMatrixVersion;
 import com.improvementsolutions.service.BusinessObligationMatrixService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +26,21 @@ public class BusinessObligationMatrixController {
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<List<BusinessObligationMatrix>> getMatricesByBusiness(@PathVariable Long businessId) {
         List<BusinessObligationMatrix> matrices = matrixService.findByBusinessId(businessId);
-        return ResponseEntity.ok(matrices);
+        return ResponseEntity
+                .ok()
+                .cacheControl(CacheControl.noStore())
+                .body(matrices);
+    }
+
+    // Resumen de cumplimiento para velocímetro
+    @GetMapping("/business/{businessId}/compliance-summary")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<ComplianceSummaryDTO> getComplianceSummary(@PathVariable Long businessId) {
+        ComplianceSummaryDTO summary = matrixService.getComplianceSummary(businessId);
+        return ResponseEntity
+                .ok()
+                .cacheControl(CacheControl.noStore())
+                .body(summary);
     }
 
     @GetMapping("/{id}")
@@ -71,7 +88,7 @@ public class BusinessObligationMatrixController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BusinessObligationMatrix> updateMatrix(
             @PathVariable Long id,
             @RequestBody BusinessObligationMatrix matrix) {
@@ -93,5 +110,44 @@ public class BusinessObligationMatrixController {
             @RequestParam String status) {
         matrixService.updateStatus(id, status);
         return ResponseEntity.ok().build();
+    }
+
+    // Crear relación por empresa y catálogo con datos opcionales
+    @PostMapping("/business/{businessId}/catalog/{obligationMatrixId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<BusinessObligationMatrix> createForBusinessAndCatalog(
+            @PathVariable Long businessId,
+            @PathVariable Long obligationMatrixId,
+            @RequestBody(required = false) BusinessObligationMatrix details) {
+        BusinessObligationMatrix created = matrixService.createForBusinessAndCatalog(businessId, obligationMatrixId, details);
+        return new ResponseEntity<>(created, HttpStatus.CREATED);
+    }
+
+    // Marcar como cumplida/no cumplida
+    @PatchMapping("/{id}/complete")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<Void> markCompletion(
+            @PathVariable Long id,
+            @RequestParam boolean completed) {
+        matrixService.markCompletion(id, completed);
+        return ResponseEntity.ok().build();
+    }
+
+    // Renovación (nueva versión) con posibilidad de enviar nuevos detalles
+    @PostMapping("/{id}/renew")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BusinessObligationMatrix> renew(
+            @PathVariable Long id,
+            @RequestBody(required = false) BusinessObligationMatrix details
+    ) {
+        BusinessObligationMatrix renewed = matrixService.renew(id, details);
+        return ResponseEntity.ok(renewed);
+    }
+
+    // Listar historial de versiones
+    @GetMapping("/{id}/versions")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<List<BusinessObligationMatrixVersion>> listVersions(@PathVariable Long id) {
+        return ResponseEntity.ok(matrixService.listVersions(id));
     }
 }

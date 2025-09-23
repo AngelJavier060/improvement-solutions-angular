@@ -171,6 +171,8 @@ public class BusinessController {
         response.put("positions", business.getPositions());
         response.put("type_documents", business.getTypeDocuments());
         response.put("type_contracts", business.getTypeContracts());
+        response.put("course_certifications", business.getCourseCertifications());
+        response.put("cards", business.getCards());
         response.put("ieses", business.getIessItems());
         // Filtrar duplicados: solo una relación activa por matriz de obligación (por catalog id)
         java.util.Map<Long, com.improvementsolutions.model.BusinessObligationMatrix> obligationMap = new java.util.LinkedHashMap<>();
@@ -194,6 +196,56 @@ public class BusinessController {
             response.put("contractor_company", null);
         }
         
+        return ResponseEntity.ok(response);
+    }
+
+    // === ENDPOINTS PARA CURSOS Y CERTIFICACIONES ===
+    @PostMapping("/{businessId}/course-certifications/{courseCertificationId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> addCourseCertificationToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long courseCertificationId) {
+
+        businessService.addCourseCertificationToBusiness(businessId, courseCertificationId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Curso/Certificación agregado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{businessId}/course-certifications/{courseCertificationId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> removeCourseCertificationFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long courseCertificationId) {
+
+        businessService.removeCourseCertificationFromBusiness(businessId, courseCertificationId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Curso/Certificación eliminado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    // === ENDPOINTS PARA TARJETAS ===
+    @PostMapping("/{businessId}/cards/{cardId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> addCardToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long cardId) {
+
+        businessService.addCardToBusiness(businessId, cardId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Tarjeta agregada exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{businessId}/cards/{cardId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> removeCardFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long cardId) {
+
+        businessService.removeCardFromBusiness(businessId, cardId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Tarjeta eliminada exitosamente");
         return ResponseEntity.ok(response);
     }
 
@@ -555,5 +607,50 @@ public class BusinessController {
         Map<String, String> response = new HashMap<>();
         response.put("message", "Matriz de obligación eliminada exitosamente");
         return ResponseEntity.ok(response);
+    }
+
+    // Replicar matrices de obligaciones desde una empresa origen a múltiples empresas destino
+    @PostMapping("/{sourceBusinessId}/obligation-matrices/replicate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> replicateObligationMatrices(
+            @PathVariable Long sourceBusinessId,
+            @RequestBody Map<String, Object> body) {
+        @SuppressWarnings("unchecked")
+        List<Object> rawIds = (List<Object>) body.get("targetBusinessIds");
+        if (rawIds == null) {
+            throw new RuntimeException("Debe enviar 'targetBusinessIds' en el cuerpo");
+        }
+        List<Long> targetIds = new java.util.ArrayList<>();
+        for (Object o : rawIds) {
+            if (o == null) continue;
+            targetIds.add(Long.valueOf(o.toString()));
+        }
+        businessService.replicateObligationMatrices(sourceBusinessId, targetIds);
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Matrices replicadas exitosamente");
+        response.put("sourceBusinessId", sourceBusinessId);
+        response.put("replicatedTo", targetIds);
+        return ResponseEntity.ok(response);
+    }
+
+    // Agregar en bloque matrices de catálogo a una empresa
+    @PostMapping("/{businessId}/obligation-matrices/bulk")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Business> addObligationMatricesBulk(
+            @PathVariable Long businessId,
+            @RequestBody Map<String, Object> body) {
+        @SuppressWarnings("unchecked")
+        List<Object> rawCatalogIds = (List<Object>) body.get("catalogIds");
+        if (rawCatalogIds == null) {
+            throw new RuntimeException("Debe enviar 'catalogIds' en el cuerpo");
+        }
+        List<Long> catalogIds = new java.util.ArrayList<>();
+        for (Object o : rawCatalogIds) {
+            if (o == null) continue;
+            catalogIds.add(Long.valueOf(o.toString()));
+        }
+
+        Business updated = businessService.addObligationMatricesToBusinessBulk(businessId, catalogIds);
+        return ResponseEntity.ok(updated);
     }
 }

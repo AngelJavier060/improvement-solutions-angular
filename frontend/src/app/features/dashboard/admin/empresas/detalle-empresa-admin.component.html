@@ -38,7 +38,7 @@
           </div>
         </div>
         <div class="col-auto">
-          <button class="btn btn-outline-light btn-lg" title="Editar empresa">
+          <button class="btn btn-outline-light btn-lg" (click)="openEditEmpresaModal()" title="Editar empresa">
             <i class="fas fa-edit me-2"></i>Editar
           </button>
         </div>
@@ -49,21 +49,21 @@
         <div class="col-lg-3 col-md-6 mb-3">
           <div class="d-flex align-items-center">
             <div class="me-3">
-              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 40px; height: 40px;">
-                <i class="fas fa-user-tie text-white"></i>
+              <div class="bg-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                <i class="fas fa-user-tie text-dark" style="font-size: 18px;"></i>
               </div>
             </div>
             <div>
               <small class="text-white-50 d-block">REPRESENTANTE LEGAL</small>
-              <strong>{{ empresa.representative_legal || 'No especificado' }}</strong>
+              <strong>{{ empresa.legalRepresentative || 'No especificado' }}</strong>
             </div>
           </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
           <div class="d-flex align-items-center">
             <div class="me-3">
-              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 40px; height: 40px;">
-                <i class="fas fa-envelope text-white"></i>
+              <div class="bg-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                <i class="fas fa-envelope text-dark" style="font-size: 18px;"></i>
               </div>
             </div>
             <div>
@@ -75,8 +75,8 @@
         <div class="col-lg-3 col-md-6 mb-3">
           <div class="d-flex align-items-center">
             <div class="me-3">
-              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 40px; height: 40px;">
-                <i class="fas fa-map-marker-alt text-white"></i>
+              <div class="bg-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                <i class="fas fa-map-marker-alt text-dark" style="font-size: 18px;"></i>
               </div>
             </div>
             <div>
@@ -88,8 +88,8 @@
         <div class="col-lg-3 col-md-6 mb-3">
           <div class="d-flex align-items-center">
             <div class="me-3">
-              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 40px; height: 40px;">
-                <i class="fas fa-phone text-white"></i>
+              <div class="bg-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                <i class="fas fa-phone text-dark" style="font-size: 18px;"></i>
               </div>
             </div>
             <div>
@@ -136,7 +136,7 @@
                 <div class="d-flex gap-1">
                   <button class="btn btn-outline-primary btn-sm p-1"
                           title="Editar"
-                          (click)="editCatalog('departamentos', dept.id)"
+                          (click)="editDepartment(dept)"
                           style="font-size: 8px;">
                     <i class="fas fa-edit"></i>
                   </button>
@@ -161,7 +161,7 @@
       </div>
     </div>
 
-    <!-- 2. Sección Gestión de documentos -->
+    <!-- 2. Sección Gestión de documentos personales -->
     <div class="col-lg-6 col-xl-3">
       <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.type_documents?.length > 0}">
         <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);">
@@ -172,7 +172,7 @@
               </div>
             </div>
             <div>
-              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Documentos</h6>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Documentos personales</h6>
             </div>
           </div>
         </div>
@@ -193,7 +193,7 @@
                 <div class="d-flex gap-1">
                   <button class="btn btn-outline-primary btn-sm p-1" 
                           title="Editar" 
-                          (click)="editCatalog('tipo-documento', doc.id)"
+                          (click)="editDocument(doc)"
                           style="font-size: 8px;">
                     <i class="fas fa-edit"></i>
                   </button>
@@ -210,7 +210,117 @@
 
           <div *ngIf="empresa.type_documents?.length === 0" class="text-center py-2">
             <i class="fas fa-file-alt fa-lg text-muted opacity-50"></i>
-            <p class="text-muted small mb-0" style="font-size: 10px;">Sin documentos</p>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin documentos personales</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2b. Sección Cursos y certificaciones -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.course_certifications?.length > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #34d399 0%, #10b981 100%);">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-certificate text-dark" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Cursos y certificaciones</h6>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-success btn-sm w-100" (click)="openAsignCourseCertModal()">
+              <i class="fas fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+
+          <div *ngIf="empresa.course_certifications?.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let cc of empresa.course_certifications">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-certificate text-success me-2" style="font-size: 10px;"></i>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ cc.name || cc.title || cc.description || ('#' + cc.id) }}</span>
+                </div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1"
+                          title="Editar"
+                          (click)="editCourseCert(cc)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm p-1"
+                          title="Eliminar"
+                          (click)="removeCourseCert(cc.id)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="empresa.course_certifications?.length === 0" class="text-center py-2">
+            <i class="fas fa-certificate fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin cursos/certificaciones</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2c. Sección Tarjetas -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.cards?.length > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-id-badge text-dark" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Tarjetas</h6>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-warning btn-sm w-100" (click)="openAsignCardModal()">
+              <i class="fas fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+
+          <div *ngIf="empresa.cards?.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let card of empresa.cards">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-id-badge text-warning me-2" style="font-size: 10px;"></i>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ card.name || card.title || card.description || ('#' + card.id) }}</span>
+                </div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1"
+                          title="Editar"
+                          (click)="editCard(card)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm p-1"
+                          title="Eliminar"
+                          (click)="removeCard(card.id)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="empresa.cards?.length === 0" class="text-center py-2">
+            <i class="fas fa-id-badge fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin tarjetas</p>
           </div>
         </div>
       </div>
@@ -248,7 +358,7 @@
                 <div class="d-flex gap-1">
                   <button class="btn btn-outline-primary btn-sm p-1" 
                           title="Editar" 
-                          (click)="editCatalog('cargos', cargo.id)"
+                          (click)="editCargo(cargo)"
                           style="font-size: 8px;">
                     <i class="fas fa-edit"></i>
                   </button>
@@ -301,7 +411,7 @@
                   <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ ies.description || ies.name || 'IESS #' + ies.id }}</span>
                 </div>
                 <div class="d-flex gap-1">
-                  <button class="btn btn-outline-primary btn-sm p-1" (click)="editCatalog('iess', ies.id)" title="Editar" style="font-size: 8px;">
+                  <button class="btn btn-outline-primary btn-sm p-1" (click)="editIess(ies)" title="Editar" style="font-size: 8px;">
                     <i class="fas fa-edit"></i>
                   </button>
                   <button class="btn btn-outline-danger btn-sm p-1" (click)="removeIess(ies.id)" title="Eliminar" style="font-size: 8px;">
@@ -360,7 +470,7 @@
                   </div>
                 </div>
                 <div class="d-flex gap-1">
-                  <button class="btn btn-outline-primary btn-sm p-1" (click)="openEditObligationModal(obligation)" title="Editar" style="font-size: 8px;">
+                  <button class="btn btn-outline-primary btn-sm p-1" (click)="replaceObligation(obligation)" title="Editar (reemplazar)" style="font-size: 8px;">
                     <i class="fas fa-edit"></i>
                   </button>
                   <button class="btn btn-outline-danger btn-sm p-1" 
@@ -413,6 +523,12 @@
                   <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ contract | name:'type_contract' }}</span>
                 </div>
                 <div class="d-flex gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1" 
+                          title="Editar"
+                          (click)="editContract(contract)"
+                          style="font-size: 8px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
                   <button class="btn btn-outline-danger btn-sm p-1" 
                           title="Eliminar" 
                           (click)="removeContract(contract.id)"
@@ -471,8 +587,8 @@
                 </div>
                 <div class="d-flex gap-1">
                   <button class="btn btn-outline-primary btn-sm p-1" 
-                          title="Editar empresa contratista" 
-                          (click)="editCatalog('empresas-contratistas', company.id)"
+                          title="Editar (reemplazar) empresa contratista" 
+                          (click)="editContractorCompany(company)"
                           style="font-size: 8px;">
                     <i class="fas fa-edit"></i>
                   </button>
@@ -595,8 +711,38 @@
 
           <div *ngIf="users.length === 0" class="text-center py-2">
             <i class="fas fa-users-cog fa-lg text-muted opacity-50"></i>
-            <p class="text-muted small mb-0" style="font-size: 10px;">Sin usuarios</p>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección Configuración Matriz Legal (admin) -->
+  <div class="row g-4 mb-4">
+    <div class="col-12">
+      <div class="card shadow border-0 h-100">
+        <div class="card-header bg-gradient" style="background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <div class="me-3">
+                <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 40px; height: 40px;">
+                  <i class="fas fa-bell text-white"></i>
+                </div>
+              </div>
+              <div>
+                <h5 class="text-white mb-0 fw-bold">Configuración matriz legal</h5>
+                <small class="text-white-50">Empresa #{{ empresaId }}</small>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <a class="btn btn-outline-light btn-sm" [routerLink]="['/dashboard','admin','empresas','configuracion-matriz', empresaId]">
+                <i class="fas fa-cog me-1"></i> Abrir en pantalla completa
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-3">
+          <app-matrix-config [businessId]="empresaId"></app-matrix-config>
         </div>
       </div>
     </div>
@@ -615,115 +761,281 @@
                 </div>
               </div>
               <div>
-                <h5 class="text-white mb-0 fw-bold">Personal</h5>
+                <h5 class="text-white mb-0 fw-bold">Gestionar personal de la empresa</h5>
                 <small class="text-white-50">{{ empresa.employees?.length || 0 }} empleados</small>
               </div>
             </div>
           </div>
         </div>
         <div class="card-body p-4">
-          <!-- Botón de agregar visible y destacado para empleados -->
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="text-muted mb-0">
               <i class="fas fa-users me-2"></i>Gestionar personal de la empresa
             </h6>
-            <button class="btn btn-success btn-sm" (click)="openCreateEmployeeModal()">
-              <i class="fas fa-plus me-1"></i>Agregar Empleado
-            </button>
-          </div>
-          
-          <div *ngIf="empresa.employees?.length === 0" class="text-center py-5">
-            <div class="mb-4">
-              <i class="fas fa-users fa-4x text-muted opacity-50"></i>
+            <div class="d-flex align-items-center gap-2">
+              <div class="input-group input-group-sm" style="width: 280px;">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" placeholder="Buscar por nombre o cédula" [(ngModel)]="employeesFilter">
+              </div>
+              <button class="btn btn-sm btn-outline-secondary" (click)="loadCompanyEmployees()" [disabled]="employeesLoading">
+                <i class="fas" [ngClass]="employeesLoading ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+                {{ employeesLoading ? 'Cargando...' : 'Recargar' }}
+              </button>
+              <button class="btn btn-sm btn-outline-primary" (click)="goToTHEmployees()">
+                <i class="fas fa-external-link-alt me-1"></i>
+                Ir a Talento Humano
+              </button>
             </div>
-            <h5 class="text-muted mb-3">No hay personal registrado</h5>
-            <p class="text-muted mb-4">Aún no hay empleados asignados a esta empresa</p>
-            <button class="btn btn-success btn-lg" (click)="openCreateEmployeeModal()">
-              <i class="fas fa-plus me-2"></i>Agregar primer empleado
-            </button>
           </div>
 
-          <div *ngIf="empresa.employees?.length > 0" class="table-responsive">
-            <table class="table table-hover mb-0">
+          <div class="px-3 py-2 border-bottom bg-light small text-muted" *ngIf="!employeesLoading">
+            Mostrando {{ filteredCompanyEmployees().length }} empleado{{ filteredCompanyEmployees().length === 1 ? '' : 's' }}
+          </div>
+
+          <div *ngIf="employeesLoading" class="text-center py-5">Cargando personal...</div>
+          <div *ngIf="!employeesLoading && filteredCompanyEmployees().length === 0" class="text-center py-5 text-muted">
+            <i class="fas fa-users fa-2x mb-2"></i>
+            <div>No hay personal registrado</div>
+          </div>
+          <div *ngIf="!employeesLoading && filteredCompanyEmployees().length > 0" class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
               <thead class="table-light">
                 <tr>
-                  <th class="border-0 px-4 py-3">
-                    <div class="d-flex align-items-center">
-                      <i class="fas fa-user me-2 text-muted"></i>
-                      Empleado
-                    </div>
-                  </th>
-                  <th class="border-0 py-3">
-                    <div class="d-flex align-items-center">
-                      <i class="fas fa-briefcase me-2 text-muted"></i>
-                      Cargo
-                    </div>
-                  </th>
-                  <th class="border-0 py-3">
-                    <div class="d-flex align-items-center">
-                      <i class="fas fa-building me-2 text-muted"></i>
-                      Departamento
-                    </div>
-                  </th>
-                  <th class="border-0 py-3">
-                    <div class="d-flex align-items-center">
-                      <i class="fas fa-circle me-2 text-muted"></i>
-                      Estado
-                    </div>
-                  </th>
-                  <th class="border-0 text-center py-3">Acciones</th>
+                  <th style="width: 60px;">Foto</th>
+                  <th>Nombre</th>
+                  <th style="width: 180px;">Cédula</th>
+                  <th style="width: 240px;">Departamento</th>
+                  <th style="width: 280px;">Cargo</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let employee of empresa.employees" class="border-bottom">
-                  <td class="px-4 py-3">
-                    <div class="d-flex align-items-center">
-                      <div class="position-relative me-3">
-                        <div class="bg-success rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" 
-                             style="width: 45px; height: 45px;">
-                          {{ (employee.name || 'E')?.charAt(0)?.toUpperCase() }}
-                        </div>
-                        <span class="position-absolute bottom-0 end-0 badge bg-primary rounded-pill p-1">
-                          <i class="fas fa-briefcase" style="font-size: 8px;"></i>
-                        </span>
-                      </div>
-                      <div>
-                        <h6 class="mb-0 fw-semibold">{{ employee.name || 'Sin nombre' }}</h6>
-                        <small class="text-muted">{{ employee.email || 'Sin email' }}</small>
-                      </div>
-                    </div>
+                <tr *ngFor="let e of filteredCompanyEmployees()">
+                  <td>
+                    <img [src]="getEmployeePhotoUrlAdmin(e)" alt="Foto" class="rounded-circle" style="width:40px;height:40px;object-fit:cover;" (error)="onImgError($event)"/>
                   </td>
-                  <td class="py-3">
-                    <span class="badge bg-primary px-3 py-2">
-                      {{ employee | name:'employee-position' }}
-                    </span>
+                  <td>
+                    <div class="fw-semibold">{{ (e.nombres || e.name) + ' ' + (e.apellidos || '') }}</div>
+                    <div class="text-muted small">{{ e.businessName || '' }}</div>
                   </td>
-                  <td class="py-3">
-                    <span class="badge bg-light text-dark px-3 py-2">
-                      {{ employee | name:'employee-department' }}
-                    </span>
-                  </td>
-                  <td class="py-3">
-                    <span class="badge bg-success px-3 py-2">
-                      <i class="fas fa-check-circle me-1"></i>Activo
-                    </span>
-                  </td>
-                  <td class="text-center py-3">
-                    <div class="btn-group" role="group">
-                      <button class="btn btn-sm btn-outline-primary" title="Editar empleado">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="btn btn-sm btn-outline-info" title="Ver perfil">
-                        <i class="fas fa-eye"></i>
-                      </button>
-                      <button class="btn btn-sm btn-outline-danger" title="Eliminar">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </td>
+                  <td>{{ e.cedula }}</td>
+                  <td>{{ getDepartmentNameByEmployee(e) }}</td>
+                  <td>{{ getPositionNameByEmployee(e) }}</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Modal para editar empresa -->
+      <div *ngIf="showEditEmpresaModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white border-0">
+              <div class="d-flex align-items-center">
+                <i class="fas fa-edit me-2"></i>
+                <h5 class="modal-title mb-0">Editar Información de Empresa</h5>
+              </div>
+              <button type="button" class="btn-close btn-close-white" (click)="closeEditEmpresaModal()"></button>
+            </div>
+            <div class="modal-body p-4">
+              <form>
+                <div class="row">
+                  <!-- Nombre de la empresa -->
+                  <div class="col-md-6 mb-3">
+                    <label for="empresaName" class="form-label fw-semibold">
+                      <i class="fas fa-building me-2 text-primary"></i>Razón Social *
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="empresaName"
+                      [(ngModel)]="editEmpresa.name"
+                      name="name"
+                      required
+                      placeholder="Ingrese la razón social">
+                  </div>
+      
+                  <!-- RUC -->
+                  <div class="col-md-6 mb-3">
+                    <label for="empresaRuc" class="form-label fw-semibold">
+                      <i class="fas fa-id-card me-2 text-primary"></i>RUC *
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="empresaRuc"
+                      [(ngModel)]="editEmpresa.ruc"
+                      name="ruc"
+                      required
+                      placeholder="Ingrese el RUC">
+                  </div>
+                </div>
+      
+                <div class="row">
+                  <!-- Tipo de empresa -->
+                  <div class="col-md-6 mb-3">
+                    <label for="empresaBusinessType" class="form-label fw-semibold">
+                      <i class="fas fa-industry me-2 text-primary"></i>Tipo de Empresa
+                    </label>
+                    <select
+                      class="form-select"
+                      id="empresaBusinessType"
+                      [(ngModel)]="editEmpresa.businessType"
+                      name="businessType">
+                      <option value="">Seleccionar tipo</option>
+                      <option value="PRIVADA">Privada</option>
+                      <option value="PUBLICA">Pública</option>
+                      <option value="MIXTA">Mixta</option>
+                    </select>
+                  </div>
+
+                  <!-- Estado (activo) -->
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">
+                      <i class="fas fa-toggle-on me-2 text-primary"></i>Estado
+                    </label>
+                    <div class="form-check form-switch mt-2">
+                      <input class="form-check-input" type="checkbox" id="empresaActive"
+                             [(ngModel)]="editEmpresa.active" name="active">
+                      <label class="form-check-label" for="empresaActive">{{ editEmpresa.active ? 'Activo' : 'Inactivo' }}</label>
+                    </div>
+                  </div>
+                </div>
+      
+                <!-- Representante legal -->
+                <div class="mb-3">
+                  <label for="empresaRepresentative" class="form-label fw-semibold">
+                    <i class="fas fa-user-tie me-2 text-primary"></i>Representante Legal
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="empresaRepresentative"
+                    [(ngModel)]="editEmpresa.representative_legal"
+                    name="representative_legal"
+                    placeholder="Ingrese el nombre del representante legal">
+                </div>
+      
+                <div class="row">
+                  <!-- Email -->
+                  <div class="col-md-6 mb-3">
+                    <label for="empresaEmail" class="form-label fw-semibold">
+                      <i class="fas fa-envelope me-2 text-primary"></i>Email
+                    </label>
+                    <input
+                      type="email"
+                      class="form-control"
+                      id="empresaEmail"
+                      [(ngModel)]="editEmpresa.email"
+                      name="email"
+                      placeholder="empresa@ejemplo.com">
+                  </div>
+      
+                  <!-- Teléfono -->
+                  <div class="col-md-6 mb-3">
+                    <label for="empresaPhone" class="form-label fw-semibold">
+                      <i class="fas fa-phone me-2 text-primary"></i>Teléfono
+                    </label>
+                    <input
+                      type="tel"
+                      class="form-control"
+                      id="empresaPhone"
+                      [(ngModel)]="editEmpresa.phone"
+                      name="phone"
+                      placeholder="Ingrese el teléfono">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <!-- Teléfono Secundario -->
+                  <div class="col-md-6 mb-3">
+                    <label for="empresaSecondaryPhone" class="form-label fw-semibold">
+                      <i class="fas fa-phone-volume me-2 text-primary"></i>Teléfono secundario
+                    </label>
+                    <input
+                      type="tel"
+                      class="form-control"
+                      id="empresaSecondaryPhone"
+                      [(ngModel)]="editEmpresa.secondaryPhone"
+                      name="secondaryPhone"
+                      placeholder="Opcional">
+                  </div>
+
+                  <!-- Sitio web -->
+                  <div class="col-md-6 mb-3">
+                    <label for="empresaWebsite" class="form-label fw-semibold">
+                      <i class="fas fa-globe me-2 text-primary"></i>Sitio web
+                    </label>
+                    <input
+                      type="url"
+                      class="form-control"
+                      id="empresaWebsite"
+                      [(ngModel)]="editEmpresa.website"
+                      name="website"
+                      placeholder="https://ejemplo.com">
+                  </div>
+                </div>
+      
+                <!-- Dirección -->
+                <div class="mb-3">
+                  <label for="empresaAddress" class="form-label fw-semibold">
+                    <i class="fas fa-map-marker-alt me-2 text-primary"></i>Dirección
+                  </label>
+                  <textarea
+                    class="form-control"
+                    id="empresaAddress"
+                    [(ngModel)]="editEmpresa.address"
+                    name="address"
+                    rows="3"
+                    placeholder="Ingrese la dirección completa"></textarea>
+                </div>
+
+                <!-- Nombre corto y comercial -->
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="empresaNameShort" class="form-label fw-semibold">
+                      <i class="fas fa-tag me-2 text-primary"></i>Nombre corto
+                    </label>
+                    <input type="text" class="form-control" id="empresaNameShort"
+                           [(ngModel)]="editEmpresa.nameShort" name="nameShort" placeholder="Opcional">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="empresaTradeName" class="form-label fw-semibold">
+                      <i class="fas fa-briefcase me-2 text-primary"></i>Nombre comercial
+                    </label>
+                    <input type="text" class="form-control" id="empresaTradeName"
+                           [(ngModel)]="editEmpresa.tradeName" name="tradeName" placeholder="Opcional">
+                  </div>
+                </div>
+
+                <!-- Actividad comercial y descripción -->
+                <div class="mb-3">
+                  <label for="empresaCommercialActivity" class="form-label fw-semibold">
+                    <i class="fas fa-industry me-2 text-primary"></i>Actividad comercial
+                  </label>
+                  <input type="text" class="form-control" id="empresaCommercialActivity"
+                         [(ngModel)]="editEmpresa.commercialActivity" name="commercialActivity" placeholder="Opcional">
+                </div>
+
+                <div class="mb-3">
+                  <label for="empresaDescription" class="form-label fw-semibold">
+                    <i class="fas fa-align-left me-2 text-primary"></i>Descripción
+                  </label>
+                  <textarea class="form-control" id="empresaDescription" rows="3"
+                            [(ngModel)]="editEmpresa.description" name="description" placeholder="Opcional"></textarea>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer border-0 bg-light">
+              <button type="button" class="btn btn-outline-secondary" (click)="closeEditEmpresaModal()" [disabled]="savingEmpresa">
+                <i class="fas fa-times me-1"></i>Cancelar
+              </button>
+              <button type="button" class="btn btn-primary" (click)="saveEmpresaEdit()" [disabled]="savingEmpresa || !editEmpresa.name || !editEmpresa.ruc">
+                <i class="fas" [ngClass]="savingEmpresa ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                <span class="ms-1">{{ savingEmpresa ? 'Guardando...' : 'Guardar Cambios' }}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -999,6 +1311,117 @@
     </div>
   </div>
 </div>
+<!-- Modal para asignar cursos y certificaciones -->
+<div *ngIf="showAsignCourseCertModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-success text-white border-0">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-certificate me-2"></i>
+          <h5 class="modal-title mb-0">Asignar Cursos y certificaciones</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" (click)="showAsignCourseCertModal = false"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-4">
+          <label for="selectCourseCert" class="form-label fw-semibold">
+            <i class="fas fa-list me-2"></i>Seleccionar Cursos/Certificaciones
+          </label>
+          <select class="form-select form-select-lg" id="selectCourseCert" [(ngModel)]="selectedCourseCertifications" multiple size="6">
+            <option *ngFor="let cc of getAvailableCourseCertifications()" [ngValue]="cc.id">{{ cc.name || cc.title || cc.description }}</option>
+          </select>
+          <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples items
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="showAsignCourseCertModal = false">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-success" (click)="asignCourseCert()" [disabled]="!selectedCourseCertifications.length">
+          <i class="fas fa-plus me-1"></i>Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para asignar tarjetas -->
+<div *ngIf="showAsignCardModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-warning text-dark border-0">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-id-badge me-2"></i>
+          <h5 class="modal-title mb-0">Asignar Tarjetas</h5>
+        </div>
+        <button type="button" class="btn-close" (click)="showAsignCardModal = false"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-4">
+          <label for="selectCards" class="form-label fw-semibold">
+            <i class="fas fa-list me-2"></i>Seleccionar Tarjetas
+          </label>
+          <select class="form-select form-select-lg" id="selectCards" [(ngModel)]="selectedCards" multiple size="6">
+            <option *ngFor="let c of getAvailableCards()" [ngValue]="c.id">{{ c.name || c.title || c.description }}</option>
+          </select>
+          <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples tarjetas
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="showAsignCardModal = false">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-warning" (click)="asignCard()" [disabled]="!selectedCards.length">
+          <i class="fas fa-plus me-1"></i>Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para asignar IESS -->
+<div *ngIf="showAsignIessModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white border-0">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-shield-alt me-2"></i>
+          <h5 class="modal-title mb-0">Asignar IESS</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" (click)="showAsignIessModal = false"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-4">
+          <label for="selectIess" class="form-label fw-semibold">
+            <i class="fas fa-list me-2"></i>Seleccionar IESS
+          </label>
+          <select class="form-select form-select-lg" id="selectIess" [(ngModel)]="selectedIess" multiple size="6">
+            <option *ngFor="let i of getAvailableIess()" [ngValue]="i">{{ getIessDisplayName(i) }}</option>
+          </select>
+          <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples items
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="showAsignIessModal = false">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="asignIess()" [disabled]="!selectedIess.length">
+          <i class="fas fa-plus me-1"></i>Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal para asignar obligación -->
 <div *ngIf="showAsignObligationModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
   <div class="modal-dialog modal-dialog-centered">
@@ -1042,45 +1465,7 @@
   </div>
 </div>
 
-<!-- Modal Asignar IESS -->
-<div *ngIf="showAsignIessModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content shadow-lg border-0 rounded-3">
-      <div class="modal-header bg-info text-white">
-        <h5 class="modal-title">
-          <i class="fas fa-shield-alt me-2"></i>Seleccionar Seguros IESS
-        </h5>
-        <button type="button" class="btn-close btn-close-white" (click)="showAsignIessModal = false"></button>
-      </div>
-      <div class="modal-body">
-        <!-- DEBUG INFO en modal (simplificado) -->
-        <div class="alert alert-secondary" style="font-size: 10px; padding: 8px;">
-          Disponibles: {{ getAvailableIess().length }} IESS | Ya asignados: {{ empresa.ieses.length }}
-        </div>
-        
-        <div class="alert alert-info">
-          <small>
-            <i class="fas fa-info-circle me-2"></i>
-            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples seguros IESS
-          </small>
-        </div>
-        <select class="form-select form-select-lg" id="selectIess" [(ngModel)]="selectedIess" multiple size="6">
-          <option *ngFor="let iess of getAvailableIess()" [ngValue]="iess">
-            {{ iess.description }}
-          </option>
-        </select>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" (click)="showAsignIessModal = false">
-          <i class="fas fa-times me-1"></i>Cancelar
-        </button>
-        <button type="button" class="btn btn-info" (click)="asignIess()" [disabled]="!selectedIess.length">
-          <i class="fas fa-plus me-1"></i>Asignar IESS
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Eliminado modal duplicado de IESS -->
 
 <!-- Modal Crear Usuario -->
 <div *ngIf="showCreateUserModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
@@ -1313,11 +1698,18 @@
                       <strong class="small">{{ company.name }}</strong><br>
                       <small class="text-muted">{{ company.code || 'Sin código' }}</small>
                     </div>
-                    <button class="btn btn-outline-danger btn-sm" 
-                            (click)="removeSpecificContractor(company.id)"
-                            title="Eliminar empresa">
-                      <i class="fas fa-times"></i>
-                    </button>
+                    <div class="btn-group">
+                      <button class="btn btn-outline-primary btn-sm" 
+                              (click)="editContractorCompany(company)"
+                              title="Reemplazar">
+                        <i class="fas fa-exchange-alt"></i>
+                      </button>
+                      <button class="btn btn-outline-danger btn-sm" 
+                              (click)="removeSpecificContractor(company.id)"
+                              title="Eliminar empresa">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

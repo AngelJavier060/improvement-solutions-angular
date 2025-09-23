@@ -14,6 +14,8 @@ import { DashboardEmpresasComponent } from './dashboard-empresas.component';
 import { UserModalComponent } from './user-modal/user-modal.component';
 import { EmpresasRoutingModule } from './empresas-routing.module';
 import { SharedModule } from '../../../../shared/shared.module';
+import { ApprovalsListComponent } from './approvals-list.component';
+import { MatrixConfigComponent } from './matrix-config.component';
 
 @NgModule({
   declarations: [
@@ -23,12 +25,15 @@ import { SharedModule } from '../../../../shared/shared.module';
     DetalleEmpresaComponent,
     DetalleEmpresaAdminComponent,
     DashboardEmpresasComponent,
-    UserModalComponent
+    UserModalComponent,
+    ApprovalsListComponent,
+    MatrixConfigComponent
   ],
   imports: [
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
+    RouterModule,
     EmpresasRoutingModule,
     SharedModule,
     MatDialogModule,

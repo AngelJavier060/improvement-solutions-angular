@@ -3,6 +3,9 @@ package com.improvementsolutions.improvement_solutions_api.controller;
 import com.improvementsolutions.dto.CreateBusinessEmployeeDto;
 import com.improvementsolutions.dto.UpdateBusinessEmployeeDto;
 import com.improvementsolutions.dto.BusinessEmployeeResponseDto;
+import com.improvementsolutions.dto.EmployeeStatsDto;
+import com.improvementsolutions.dto.AgeRangeStatsDto;
+import com.improvementsolutions.dto.EmployeeMovementRequestDto;
 import com.improvementsolutions.improvement_solutions_api.dto.ErrorResponseDto;
 import com.improvementsolutions.improvement_solutions_api.service.BusinessEmployeeService;
 import lombok.RequiredArgsConstructor;
@@ -84,10 +87,11 @@ public class BusinessEmployeeController {
         try {
             log.info("Actualizando empleado ID: {}, Cédula: {}", id, employeeCedula);
             
-            // TODO: Manejar archivo de imagen si está presente
+            // Manejar archivo de imagen si está presente
             if (file != null && !file.isEmpty()) {
                 log.info("Archivo de imagen recibido para actualización: {}", file.getOriginalFilename());
-                // Aquí puedes agregar lógica para actualizar la imagen
+                String imagePath = businessEmployeeService.saveEmployeeImage(file);
+                updateDto.setImagePath(imagePath);
             }
             
             BusinessEmployeeResponseDto updatedEmployee = businessEmployeeService.updateEmployee(id, updateDto);
@@ -183,13 +187,21 @@ public class BusinessEmployeeController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "apellidos") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir) {
+            @RequestParam(defaultValue = "asc") String sortDir,
+            // filtros opcionales
+            @RequestParam(required = false) String cedula,
+            @RequestParam(required = false) String nombres,
+            @RequestParam(required = false) String apellidos,
+            @RequestParam(required = false, name = "codigo") String codigoEmpleado) {
         try {
             Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-            
-            log.info("Obteniendo empleados paginados para la empresa: {}, página: {}, tamaño: {}", codigoEmpresa, page, size);
-            Page<BusinessEmployeeResponseDto> employees = businessEmployeeService.getAllEmployeesByCompanyPaginated(codigoEmpresa, pageable);
+
+            log.info("[Paginated] Empresa: {}, page: {}, size: {}, filtros: cedula={}, nombres={}, apellidos={}, codigo={}",
+                    codigoEmpresa, page, size, cedula, nombres, apellidos, codigoEmpleado);
+
+            Page<BusinessEmployeeResponseDto> employees = businessEmployeeService.searchEmployeesByFilters(
+                    codigoEmpresa, cedula, nombres, apellidos, codigoEmpleado, pageable);
             return ResponseEntity.ok(employees);
         } catch (Exception e) {
             log.error("Error al obtener empleados paginados para la empresa {}: {}", codigoEmpresa, e.getMessage());
@@ -206,6 +218,30 @@ public class BusinessEmployeeController {
             return ResponseEntity.ok(employees);
         } catch (Exception e) {
             log.error("Error al obtener empleados activos para la empresa {}: {}", codigoEmpresa, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/business-employees/company/{codigoEmpresa}/stats")
+    public ResponseEntity<EmployeeStatsDto> getEmployeeStatsByCompany(@PathVariable String codigoEmpresa) {
+        try {
+            log.info("Obteniendo estadísticas de empleados para la empresa: {}", codigoEmpresa);
+            EmployeeStatsDto stats = businessEmployeeService.getEmployeeStatsByCompany(codigoEmpresa);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error al obtener estadísticas de empleados para la empresa {}: {}", codigoEmpresa, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/business-employees/company/{codigoEmpresa}/age-ranges")
+    public ResponseEntity<AgeRangeStatsDto> getEmployeeAgeRangesByCompany(@PathVariable String codigoEmpresa) {
+        try {
+            log.info("Obteniendo rangos de edad para la empresa: {}", codigoEmpresa);
+            AgeRangeStatsDto stats = businessEmployeeService.getAgeRangesByCompany(codigoEmpresa);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error al obtener rangos de edad para la empresa {}: {}", codigoEmpresa, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -391,6 +427,84 @@ public class BusinessEmployeeController {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
             log.error("Error al eliminar empleado {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // === DESVINCULACIÓN / REINGRESO ===
+    @PostMapping("/employees/{id}/deactivate")
+    public ResponseEntity<BusinessEmployeeResponseDto> deactivateEmployee(
+            @PathVariable Long id,
+            @RequestBody EmployeeMovementRequestDto body) {
+        try {
+            log.info("[DEACTIVATE] Empleado {}", id);
+            BusinessEmployeeResponseDto updated = businessEmployeeService.deactivateEmployee(
+                    id,
+                    body != null ? body.getReason() : null,
+                    body != null ? body.getEffectiveDate() : null
+            );
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            log.error("Error al desactivar empleado {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error inesperado al desactivar empleado {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/employees/{id}/reactivate")
+    public ResponseEntity<BusinessEmployeeResponseDto> reactivateEmployee(
+            @PathVariable Long id,
+            @RequestBody EmployeeMovementRequestDto body) {
+        try {
+            log.info("[REACTIVATE] Empleado {}", id);
+            BusinessEmployeeResponseDto updated = businessEmployeeService.reactivateEmployee(
+                    id,
+                    body != null ? body.getEffectiveDate() : null
+            );
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            log.error("Error al reactivar empleado {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error inesperado al reactivar empleado {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * Activa o desactiva un empleado (campo booleano active) y sincroniza el campo textual status.
+     * Endpoint compatible con Angular/Next: /api/employees/{id}/active?value=true|false
+     */
+    @PatchMapping("/employees/{id}/active")
+    public ResponseEntity<BusinessEmployeeResponseDto> setEmployeeActive(
+            @PathVariable Long id,
+            @RequestParam(name = "value") boolean active) {
+        try {
+            log.info("[PATCH] Actualizando 'active' del empleado {} => {}", id, active);
+            BusinessEmployeeResponseDto updated = businessEmployeeService.setEmployeeActiveStatus(id, active);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            log.error("Error al actualizar estado activo del empleado {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error interno al actualizar estado activo del empleado {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/employees/{id}/profile-picture")
+    public ResponseEntity<BusinessEmployeeResponseDto> deleteProfilePicture(@PathVariable Long id) {
+        try {
+            log.info("Eliminando imagen de perfil del empleado ID: {}", id);
+            BusinessEmployeeResponseDto updated = businessEmployeeService.deleteEmployeeImage(id);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            log.error("Error al eliminar imagen del empleado {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error interno al eliminar imagen del empleado {}: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

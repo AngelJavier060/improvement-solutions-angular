@@ -14,9 +14,9 @@ if (-not $mysqlProcess) {
 
 # Configurar variables de entorno para desarrollo local
 $env:SPRING_PROFILES_ACTIVE = "local"
-$env:DB_USER = "javier"
-$env:DB_PASSWORD = "12345"
-$env:SERVER_PORT = "8080"
+$env:DB_USER = "admin"
+$env:DB_PASSWORD = "root"
+$env:SERVER_PORT = "8081"
 
 Write-Host "Variables de entorno configuradas:" -ForegroundColor Cyan
 Write-Host "  SPRING_PROFILES_ACTIVE: $env:SPRING_PROFILES_ACTIVE"
@@ -29,7 +29,19 @@ Set-Location backend
 Write-Host "Compilando y ejecutando aplicación..." -ForegroundColor Yellow
 Write-Host "Logs disponibles en: logs/application-local.log" -ForegroundColor Cyan
 
-# Ejecutar la aplicación
-mvn spring-boot:run
+# Ejecutar la aplicación con Maven; si falla, intentar con JAR
+try {
+    mvn spring-boot:run
+} catch {
+    Write-Host "Maven falló al iniciar. Intentando ejecutar el JAR construido..." -ForegroundColor Yellow
+    $jarPath = "target/improvement-solutions-api-0.0.1-SNAPSHOT.jar"
+    if (Test-Path $jarPath) {
+        Write-Host "Ejecutando: java -jar $jarPath" -ForegroundColor Cyan
+        & java -jar $jarPath
+    } else {
+        Write-Host "No se encontró el JAR en $jarPath. Ejecuta 'mvn clean package -DskipTests' y vuelve a intentar." -ForegroundColor Red
+        exit 1
+    }
+}
 
 Write-Host "Aplicación finalizada." -ForegroundColor Green

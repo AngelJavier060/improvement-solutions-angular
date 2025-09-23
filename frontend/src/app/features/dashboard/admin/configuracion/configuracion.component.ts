@@ -68,8 +68,8 @@ export class ConfiguracionComponent implements OnInit {
       icono: 'fas fa-users',
       proximamente: false
     },    { 
-      nombre: 'Tipo de Documento', 
-      descripcion: 'Gestionar los tipos de documentos de identificación', 
+      nombre: 'Documentos personales', 
+      descripcion: 'Gestionar los tipos de documentos personales', 
       ruta: 'tipo-documento',
       icono: 'fas fa-id-card',
       proximamente: false
@@ -113,6 +113,20 @@ export class ConfiguracionComponent implements OnInit {
       icono: 'fas fa-industry',
       proximamente: false
     },
+    {
+      nombre: 'Cursos y certificaciones',
+      descripcion: 'Gestionar catálogo de cursos y certificaciones',
+      ruta: 'cursos-certificaciones',
+      icono: 'fas fa-certificate',
+      proximamente: false
+    },
+    {
+      nombre: 'Tarjetas',
+      descripcion: 'Gestionar catálogo de tarjetas',
+      ruta: 'tarjetas',
+      icono: 'fas fa-id-badge',
+      proximamente: false
+    },
   ];
   navegarA(ruta: string): void {
     console.log('Navegando a:', ruta);
@@ -125,8 +139,8 @@ export class ConfiguracionComponent implements OnInit {
 
   opciones = [
     {
-      nombre: 'Tipo de Documento',
-      descripcion: 'Gestionar los tipos de documentos de identidad',
+      nombre: 'Documentos personales',
+      descripcion: 'Gestionar los tipos de documentos personales',
       ruta: '/dashboard/admin/configuracion/tipo-documento',
       icono: 'fa-id-card'
     },
@@ -154,6 +168,20 @@ export class ConfiguracionComponent implements OnInit {
       ruta: '#',
       icono: 'fa-file-contract',
       proximamente: true
+    },
+    {
+      nombre: 'Cursos y certificaciones',
+      descripcion: 'Gestionar catálogo de cursos y certificaciones',
+      ruta: '/dashboard/admin/configuracion/cursos-certificaciones',
+      icono: 'fa-certificate',
+      proximamente: false
+    },
+    {
+      nombre: 'Tarjetas',
+      descripcion: 'Gestionar catálogo de tarjetas',
+      ruta: '/dashboard/admin/configuracion/tarjetas',
+      icono: 'fa-id-badge',
+      proximamente: false
     }
   ];
 }

@@ -72,6 +72,7 @@ export interface CreateEmployeeRequest {
 }
 
 export interface UpdateEmployeeRequest {
+  // Compatibilidad anterior (snake_case y campos UI)
   cedula?: string;
   name?: string;
   status?: boolean;
@@ -82,14 +83,40 @@ export interface UpdateEmployeeRequest {
   contact_kinship?: string;
   contact_name?: string;
   contact_phone?: string;
-  position_id?: number;
-  gender_id?: number;
-  ethnicity_id?: number;
-  civil_status_id?: number;
-  resident_address_id?: number;
-  iess_id?: number;
-  degree_id?: number;
+  position_id?: number | string;
+  gender_id?: number | string;
+  ethnicity_id?: number | string;
+  civil_status_id?: number | string;
+  resident_address_id?: number | string;
+  iess_id?: number | string;
+  degree_id?: number | string;
   profile_picture?: File;
+
+  // Nuevos campos esperados por backend (camelCase)
+  apellidos?: string;
+  nombres?: string;
+  dateBirth?: string; // yyyy-MM-dd HH:mm:ss
+  direccionDomiciliaria?: string;
+  residentAddress?: string;
+  lugarNacimientoProvincia?: string;
+  lugarNacimientoCiudad?: string;
+  lugarNacimientoParroquia?: string;
+  contactKinship?: string;
+  contactName?: string;
+  contactPhone?: string;
+  fechaIngreso?: string; // yyyy-MM-dd
+  tipoSangre?: string;
+  discapacidad?: string;
+  codigoIess?: string;
+  positionId?: number;
+  departmentId?: number;
+  typeContractId?: number;
+  genderId?: number;
+  civilStatusId?: number;
+  etniaId?: number;
+  degreeId?: number;
+  contractorCompanyId?: number;
+  contractorBlockId?: number;
 }
 
 export interface EmployeeResponse {
@@ -123,8 +150,10 @@ export interface EmployeeResponse {
   lugarNacimientoCiudad?: string;
   lugarNacimientoParroquia?: string;
   direccionDomiciliaria?: string;
+  residentAddress?: string;
   fechaIngreso?: string;
   codigoEmpresa?: string;
+  codigoTrabajador?: string; // Código único del trabajador (expuesto por backend)
   businessId?: number;
   positionId?: number;
   departmentId?: number;
@@ -147,4 +176,8 @@ export interface EmployeeResponse {
   codigoIess?: string;
   active?: boolean;
   imagePath?: string;
+  contractorCompanyId?: number;
+  contractorCompanyName?: string;
+  contractorBlockId?: number;
+  contractorBlockName?: string;
 }

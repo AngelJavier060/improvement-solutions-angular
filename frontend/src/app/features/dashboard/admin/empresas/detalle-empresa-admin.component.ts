@@ -13,10 +13,15 @@ import { BusinessObligationMatrixService } from '../../../../services/business-o
 import { IessService } from '../../../../services/iess.service';
 import { ContractorCompanyService } from '../../../../services/contractor-company.service';
 import { ContractorBlockService } from '../../../../services/contractor-block.service';
+import { ApprovalService } from '../../../../services/approval.service';
+import { CourseCertificationService } from '../../../../services/course-certification.service';
+import { CardService } from '../../../../services/card.service';
 import { environment } from '../../../../../environments/environment';
 import { BusinessAdapterService } from '../../../../core/adapters/business-adapter.service';
 import { forkJoin } from 'rxjs';
 import { User } from './user-modal/user-modal.component';
+import { EmployeeService } from '../../usuario/talento-humano/services/employee.service';
+import { EmployeeResponse } from '../../usuario/talento-humano/models/employee.model';
 
 @Component({
   selector: 'app-detalle-empresa-admin',
@@ -36,7 +41,15 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   tiposContratos: any[] = [];
   obligacionesMatriz: any[] = [];
   iessList: any[] = [];
+  cursosCertificaciones: any[] = [];
+  tarjetas: any[] = [];
   roles: Role[] = [];
+  // Aprobaciones de la empresa
+  approvals: any[] = [];
+  approvalsLoading = false;
+  approvalsError: string | null = null;
+  pendingApprovals: any[] = [];
+  private readonly pendingStatuses = new Set(['PENDING','CREATED','REQUESTED','WAITING','NEW','OPEN','PENDIENTE','EN_REVISION']);
   
   // Empresas contratistas y bloques
   contractorCompanies: any[] = [];
@@ -47,6 +60,11 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   users: User[] = [];
   userToEdit: User | null = null;
   showUserModal = false;
+
+  // Listado de personal por empresa (multi-empresa por RUC/ID)
+  companyEmployees: EmployeeResponse[] = [];
+  employeesLoading = false;
+  employeesFilter = '';
 
   // Variables para crear usuarios
   showCreateUserModal = false;
@@ -72,12 +90,16 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   showAsignObligationModal = false;
   showAsignIessModal = false;
   showAsignContractorModal = false;
+  showAsignCourseCertModal = false;
+  showAsignCardModal = false;
 
   // Variables para selección de elementos (permitir múltiples selecciones)
   selectedDepartamentos: number[] = [];
   selectedCargos: number[] = [];
   selectedTiposDocumentos: number[] = [];
   selectedTiposContratos: number[] = [];
+  selectedCourseCertifications: number[] = [];
+  selectedCards: number[] = [];
   // IDs de catálogo seleccionados para asignar matrices legales
   selectedObligacionesMatriz: number[] = [];
   // Para IESS usaremos objetos completos con ngModel ([ngValue])
@@ -88,7 +110,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   selectedBlocks: any[] = [];
 
   // Contexto de edición inline por sección
-  editingContext: { section: 'department' | 'position', originalId: number } | null = null;
+  editingContext: { section: 'department' | 'position' | 'type_document' | 'course_cert' | 'card' | 'iess' | 'obligation' | 'type_contract' | 'contractor_company', originalId: number } | null = null;
 
   // Estado de eliminación en curso para matrices de obligación
   private deletingObligationIds: Set<number> = new Set<number>();
@@ -97,6 +119,26 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   showEditObligationModal = false;
   savingObligation = false;
   obligationToEdit: any = null;
+
+  // Modal para editar empresa
+  showEditEmpresaModal = false;
+  savingEmpresa = false;
+  editEmpresa = {
+    name: '',
+    ruc: '',
+    businessType: '',
+    active: true,
+    representative_legal: '',
+    email: '',
+    phone: '',
+    secondaryPhone: '',
+    website: '',
+    address: '',
+    nameShort: '',
+    tradeName: '',
+    commercialActivity: '',
+    description: ''
+  };
   editObligation: {
     id: number | null,
     name: string,
@@ -130,7 +172,11 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private contractorBlockService: ContractorBlockService,
     private title: Title,
     private businessAdapter: BusinessAdapterService,
-    private bomService: BusinessObligationMatrixService
+    private bomService: BusinessObligationMatrixService,
+    private approvalService: ApprovalService,
+    private courseCertificationService: CourseCertificationService,
+    private cardService: CardService,
+    private employeeService: EmployeeService
   ) {}
 
   ngOnInit(): void {
@@ -138,8 +184,108 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       if (params['id']) {
         this.empresaId = +params['id'];
         this.loadData();
+        this.loadApprovals();
       }
     });
+  }
+
+  // === Personal por Empresa (para panel de "Gestionar personal de la empresa") ===
+  loadCompanyEmployees(): void {
+    if (!this.empresaId && !this.empresa?.ruc) return;
+    this.employeesLoading = true;
+    const done = () => { this.employeesLoading = false; };
+    // Preferir RUC si está disponible para mayor precisión multi-empresa
+    const ruc = this.empresa?.ruc;
+    const obs = ruc
+      ? this.employeeService.getEmployeesByBusinessRuc(String(ruc))
+      : this.employeeService.getEmployeesByBusiness(Number(this.empresaId));
+    obs.subscribe({
+      next: (list) => {
+        this.companyEmployees = (list || []).map((e: any) => ({ ...e } as EmployeeResponse));
+        done();
+      },
+      error: (err) => {
+        console.error('Error cargando empleados de la empresa', err);
+        this.companyEmployees = [];
+        done();
+      }
+    });
+  }
+
+  filteredCompanyEmployees(): EmployeeResponse[] {
+    const term = (this.employeesFilter || '').trim().toLowerCase();
+    if (!term) return this.companyEmployees || [];
+    return (this.companyEmployees || []).filter((e: any) => {
+      const full = `${e.nombres || ''} ${e.apellidos || ''} ${e.name || ''}`.toLowerCase();
+      const ced = String(e.cedula || '').toLowerCase();
+      return full.includes(term) || ced.includes(term);
+    });
+  }
+
+  getEmployeePhotoUrlAdmin(emp: any): string {
+    try {
+      let rel = String(emp?.imagePath || emp?.photo || emp?.profile_picture || '').replace(/\\/g, '/').replace(/^\.?\/?/, '').trim();
+      if (!rel) return 'assets/img/default-avatar.svg';
+      if (/^https?:\/\//i.test(rel)) return rel;
+      if (rel.startsWith('/api/')) return rel;
+      if (rel.startsWith('uploads/')) rel = rel.substring('uploads/'.length);
+      if (rel.startsWith('profiles/') || rel.includes('/profiles/')) return `/api/files/${rel}`;
+      if (!rel.includes('/')) return `/api/files/profiles/${rel}`;
+      return `/api/files/${rel}`;
+    } catch { return 'assets/img/default-avatar.svg'; }
+  }
+
+  onImgError(event: Event): void {
+    const img = event?.target as HTMLImageElement | null;
+    if (img) {
+      img.src = 'assets/img/default-avatar.svg';
+    }
+  }
+
+  goToTHEmployees(): void {
+    const ruc = this.empresa?.ruc;
+    if (ruc) {
+      this.router.navigate(['/usuario', ruc, 'dashboard', 'talento-humano', 'gestion-empleados']);
+    }
+  }
+
+  loadCourseCertifications(): void {
+    this.courseCertificationService.getAll().subscribe({
+      next: (data: any[]) => {
+        this.cursosCertificaciones = data || [];
+        this.hydrateEmpresaArrays();
+      },
+      error: (error: any) => {
+        console.error('Error al cargar cursos/certificaciones globales:', error);
+        this.cursosCertificaciones = [];
+      }
+    });
+  }
+
+  loadCards(): void {
+    this.cardService.getAll().subscribe({
+      next: (data: any[]) => {
+        this.tarjetas = data || [];
+        this.hydrateEmpresaArrays();
+      },
+      error: (error: any) => {
+        console.error('Error al cargar tarjetas globales:', error);
+        this.tarjetas = [];
+      }
+    });
+  }
+
+  private getStatus(req: any): string {
+    try {
+      const raw = (req?.status ?? req?.state ?? req?.approvalStatus ?? '').toString().toUpperCase();
+      return raw;
+    } catch {
+      return '';
+    }
+  }
+
+  canDecide(req: any): boolean {
+    return this.pendingStatuses.has(this.getStatus(req));
   }
   /* Duplicated helper and early openCreateUserModal removed; single definitions exist further below */
 
@@ -280,6 +426,73 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   closeEditObligationModal(): void {
     this.showEditObligationModal = false;
     this.obligationToEdit = null;
+  }
+
+  // === MODAL PARA EDITAR EMPRESA ===
+  openEditEmpresaModal(): void {
+    if (!this.empresa) return;
+
+    this.editEmpresa = {
+      name: this.empresa.name || '',
+      ruc: this.empresa.ruc || '',
+      businessType: this.empresa.businessType || '',
+      active: (this.empresa.active === undefined ? true : !!this.empresa.active),
+      representative_legal: this.empresa.legalRepresentative || this.empresa.representative_legal || '',
+      email: this.empresa.email || '',
+      phone: this.empresa.phone || '',
+      secondaryPhone: this.empresa.secondaryPhone || '',
+      website: this.empresa.website || '',
+      address: this.empresa.address || '',
+      nameShort: this.empresa.nameShort || '',
+      tradeName: this.empresa.tradeName || '',
+      commercialActivity: this.empresa.commercialActivity || '',
+      description: this.empresa.description || ''
+    };
+
+    this.showEditEmpresaModal = true;
+  }
+
+  closeEditEmpresaModal(): void {
+    this.showEditEmpresaModal = false;
+  }
+
+  saveEmpresaEdit(): void {
+    if (!this.empresa?.id) return;
+
+    this.savingEmpresa = true;
+
+    const payload = {
+      name: this.editEmpresa.name,
+      ruc: this.editEmpresa.ruc,
+      businessType: this.editEmpresa.businessType,
+      active: !!this.editEmpresa.active,
+      legalRepresentative: this.editEmpresa.representative_legal,
+      email: this.editEmpresa.email,
+      phone: this.editEmpresa.phone,
+      secondaryPhone: this.editEmpresa.secondaryPhone,
+      website: this.editEmpresa.website,
+      address: this.editEmpresa.address,
+      nameShort: this.editEmpresa.nameShort,
+      tradeName: this.editEmpresa.tradeName,
+      commercialActivity: this.editEmpresa.commercialActivity,
+      description: this.editEmpresa.description
+    };
+
+    this.businessService.update(this.empresa.id, payload).subscribe({
+      next: (updatedEmpresa) => {
+        this.empresa = { ...this.empresa, ...updatedEmpresa };
+        this.savingEmpresa = false;
+        this.showEditEmpresaModal = false;
+        alert('Empresa actualizada exitosamente');
+        // Actualizar el título de la página
+        this.title.setTitle(`Administrando: ${this.empresa.name || `Empresa #${this.empresaId}`}`);
+      },
+      error: (error) => {
+        console.error('Error al actualizar empresa:', error);
+        this.savingEmpresa = false;
+        alert('Error al actualizar la empresa. Por favor, inténtelo de nuevo.');
+      }
+    });
   }
 
   saveObligationEdit(): void {
@@ -439,6 +652,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         if (!this.empresa.positions) this.empresa.positions = [];
         if (!this.empresa.type_documents) this.empresa.type_documents = [];
         if (!this.empresa.type_contracts) this.empresa.type_contracts = [];
+        if (!this.empresa.course_certifications) this.empresa.course_certifications = [];
+        if (!this.empresa.cards) this.empresa.cards = [];
         // Normalizar nombre de propiedad de IESS desde backend
         if (!this.empresa.ieses && (this.empresa as any).iessItems) {
           this.empresa.ieses = (this.empresa as any).iessItems;
@@ -468,6 +683,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
           this.empresa.type_documents = (this.empresa.type_documents || []).map((t: any) => this.normalizeItemName(t, ['name', 'typeDocument.name', 'nombre', 'description', 'title']));
           this.empresa.type_contracts = (this.empresa.type_contracts || []).map((t: any) => this.normalizeItemName(t, ['name', 'typeContract.name', 'nombre', 'title', 'description']));
           this.empresa.obligation_matrices = (this.empresa.obligation_matrices || []).map((o: any) => this.normalizeItemName(o, ['name', 'obligationMatrix.name', 'title', 'description']));
+          this.empresa.course_certifications = (this.empresa.course_certifications || []).map((c: any) => this.normalizeItemName(c, ['name', 'nombre', 'title', 'description']));
+          this.empresa.cards = (this.empresa.cards || []).map((c: any) => this.normalizeItemName(c, ['name', 'nombre', 'title', 'description']));
         } catch (e) {
           console.warn('No se pudo normalizar nombres de listas de empresa:', e);
         }
@@ -496,6 +713,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         console.log('Documentos de la empresa:', empresa.type_documents?.length || 0);
         
         this.loading = false;
+        // Cargar listado de personal de esta empresa
+        this.loadCompanyEmployees();
       },
       error: (error: any) => {
         console.error('Error al cargar empresa:', error);
@@ -540,6 +759,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     this.loadIessList();
     this.loadRoles();
     this.loadContractorCompanies();
+    this.loadCourseCertifications();
+    this.loadCards();
   }
 
   loadDepartamentos(): void {
@@ -976,6 +1197,44 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     this.showAsignCargoModal = true;
   }
 
+  editDocument(doc: any): void {
+    this.selectedTiposDocumentos = [Number(doc?.id)];
+    this.editingContext = { section: 'type_document', originalId: Number(doc?.id) };
+    this.showAsignDocumentModal = true;
+  }
+
+  editIess(ies: any): void {
+    const match = this.iessList?.find((i: any) => Number(i?.id) === Number(ies?.id));
+    this.selectedIess = [match || ies];
+    this.editingContext = { section: 'iess', originalId: Number(ies?.id) };
+    this.showAsignIessModal = true;
+  }
+
+  // Reemplazar relación de Matriz Legal por otra del catálogo a nivel empresa
+  replaceObligation(obligation: any): void {
+    const catId = this.getObligationCatalogId(obligation);
+    if (!catId) return;
+    this.selectedObligacionesMatriz = [Number(catId)];
+    this.editingContext = { section: 'obligation', originalId: Number(catId) };
+    this.showAsignObligationModal = true;
+  }
+
+  // Editar relación de Tipo de Contrato (reemplazar por otro) a nivel empresa
+  editContract(contract: any): void {
+    this.selectedTiposContratos = [Number(contract?.id)];
+    this.editingContext = { section: 'type_contract', originalId: Number(contract?.id) };
+    this.showAsignContractModal = true;
+  }
+
+  // Editar empresa contratista (reemplazo) a nivel empresa
+  editContractorCompany(company: any): void {
+    // Preferir la referencia desde el catálogo global si está
+    const match = this.contractorCompanies?.find((c: any) => Number(c?.id) === Number(company?.id));
+    this.selectedContractorCompanies = [match || company];
+    this.editingContext = { section: 'contractor_company', originalId: Number(company?.id) };
+    this.showAsignContractorModal = true;
+  }
+
   removeCargo(cargoId: number): void {
     if (!this.empresa?.id) return;
     
@@ -993,6 +1252,20 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     }
   }
 
+  // Editar relación de Cursos/Certificaciones a nivel empresa
+  editCourseCert(cc: any): void {
+    this.selectedCourseCertifications = [Number(cc?.id)];
+    this.editingContext = { section: 'course_cert', originalId: Number(cc?.id) };
+    this.showAsignCourseCertModal = true;
+  }
+
+  // Editar relación de Tarjetas a nivel empresa
+  editCard(card: any): void {
+    this.selectedCards = [Number(card?.id)];
+    this.editingContext = { section: 'card', originalId: Number(card?.id) };
+    this.showAsignCardModal = true;
+  }
+
   // === TIPOS DE DOCUMENTOS ===
   openAsignDocumentModal(): void {
     this.selectedTiposDocumentos = [];
@@ -1001,35 +1274,44 @@ export class DetalleEmpresaAdminComponent implements OnInit {
 
   asignDocument(): void {
     if (!this.selectedTiposDocumentos.length || !this.empresa?.id) return;
-    
-    // IDs únicos y válidos
-    const ids = Array.from(new Set(this.selectedTiposDocumentos.map((n: number) => Number(n)).filter((n: number) => !isNaN(n) && n > 0)));
-    // Excluir ya asignados
-    const assignedIds = new Set<number>((this.empresa?.type_documents || []).map((t: any) => Number(t?.id)).filter((n: number) => !isNaN(n)));
-    const idsToAdd = ids.filter((id: number) => !assignedIds.has(id));
-    // Crear promesas para agregar cada tipo de documento
-    const addPromises = idsToAdd.map(typeDocumentId => 
-      this.businessService.addTypeDocumentToBusiness(this.empresa.id, Number(typeDocumentId)).toPromise()
-    );
 
-    Promise.all(addPromises).then(() => {
-      // Agregar a la vista local
-      idsToAdd.forEach(selectedId => {
-        const tipoSelected = this.tiposDocumentos.find((t: any) => t.id == selectedId);
-        if (tipoSelected) {
-          const exists = this.empresa.type_documents.find((t: any) => t.id == selectedId);
-          if (!exists) {
-            this.empresa.type_documents.push(tipoSelected);
-          }
+    const performAdd = async () => {
+      // Si estamos editando y hay cambio, eliminar el original primero
+      if (this.editingContext?.section === 'type_document' && this.editingContext.originalId != null) {
+        const newId = Number(this.selectedTiposDocumentos[0]);
+        if (newId !== Number(this.editingContext.originalId)) {
+          await this.businessService.removeTypeDocumentFromBusiness(this.empresa.id, Number(this.editingContext.originalId)).toPromise();
         }
+      }
+
+      // IDs únicos y válidos
+      const ids = Array.from(new Set(this.selectedTiposDocumentos
+        .map((n: number) => Number(n))
+        .filter((n: number) => !isNaN(n) && n > 0)));
+      // Excluir ya asignados
+      const assignedIds = new Set<number>((this.empresa?.type_documents || [])
+        .map((t: any) => Number(t?.id)).filter((n: number) => !isNaN(n)));
+      const idsToAdd = ids.filter((id: number) => {
+        if (this.editingContext?.section === 'type_document' && this.editingContext.originalId != null && id === Number(this.editingContext.originalId)) {
+          return false; // no volver a agregar el original en modo edición
+        }
+        return !assignedIds.has(id);
       });
-      
+      for (const typeDocumentId of idsToAdd) {
+        await this.businessService.addTypeDocumentToBusiness(this.empresa.id, Number(typeDocumentId)).toPromise();
+      }
+    };
+
+    performAdd().then(() => {
+      // Refrescar desde backend para consistencia
+      this.loadData();
       this.selectedTiposDocumentos = [];
       this.showAsignDocumentModal = false;
-      alert('Tipos de documento asignados exitosamente');
+      this.editingContext = null;
+      alert('Tipos de documento asignados/actualizados exitosamente');
     }).catch(error => {
-      console.error('Error al asignar tipos de documento:', error);
-      alert('Error al asignar tipos de documento. Por favor, inténtelo de nuevo.');
+      console.error('Error al asignar/actualizar tipos de documento:', error);
+      alert('Error al asignar/actualizar tipos de documento. Por favor, inténtelo de nuevo.');
     });
   }
 
@@ -1050,6 +1332,141 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     }
   }
 
+  // === CURSOS Y CERTIFICACIONES ===
+  openAsignCourseCertModal(): void {
+    this.selectedCourseCertifications = [];
+    this.showAsignCourseCertModal = true;
+  }
+
+  asignCourseCert(): void {
+    if (!this.selectedCourseCertifications.length || !this.empresa?.id) return;
+
+    const performAdd = async () => {
+      // Si estamos editando y hay cambio, eliminar el original primero
+      if (this.editingContext?.section === 'course_cert' && this.editingContext.originalId != null) {
+        const newId = Number(this.selectedCourseCertifications[0]);
+        if (newId !== Number(this.editingContext.originalId)) {
+          await this.businessService.removeCourseCertificationFromBusiness(this.empresa.id, Number(this.editingContext.originalId)).toPromise();
+        }
+      }
+
+      // IDs únicos y válidos
+      const ids = Array.from(new Set(this.selectedCourseCertifications
+        .map((n: number) => Number(n))
+        .filter((n: number) => !isNaN(n) && n > 0)));
+      // Excluir ya asignados
+      const assignedIds = new Set<number>((this.empresa?.course_certifications || [])
+        .map((c: any) => Number(c?.id))
+        .filter((n: number) => !isNaN(n)));
+      const idsToAdd = ids.filter((id: number) => {
+        if (this.editingContext?.section === 'course_cert' && this.editingContext.originalId != null && id === Number(this.editingContext.originalId)) {
+          return false; // no volver a agregar el original en modo edición
+        }
+        return !assignedIds.has(id);
+      });
+      for (const courseCertificationId of idsToAdd) {
+        await this.businessService.addCourseCertificationToBusiness(this.empresa.id, Number(courseCertificationId)).toPromise();
+      }
+    };
+
+    performAdd().then(() => {
+      // Refrescar desde backend para mantener consistencia
+      this.loadData();
+      this.selectedCourseCertifications = [];
+      this.showAsignCourseCertModal = false;
+      this.editingContext = null;
+      alert('Cursos y certificaciones asignados/actualizados exitosamente');
+    }).catch(error => {
+      console.error('Error al asignar/actualizar cursos y certificaciones:', error);
+      alert('Error al asignar/actualizar cursos y certificaciones. Por favor, inténtelo de nuevo.');
+    });
+  }
+
+  removeCourseCert(courseCertificationId: number): void {
+    if (!this.empresa?.id) return;
+
+    if (confirm('¿Está seguro de eliminar este curso/certificación de la empresa?')) {
+      this.businessService.removeCourseCertificationFromBusiness(this.empresa.id, Number(courseCertificationId)).subscribe({
+        next: () => {
+          this.empresa.course_certifications = (this.empresa.course_certifications || [])
+            .filter((c: any) => Number(c.id) !== Number(courseCertificationId));
+          alert('Curso/Certificación eliminado exitosamente');
+        },
+        error: (error) => {
+          console.error('Error al eliminar curso/certificación:', error);
+          alert('Error al eliminar el curso/certificación. Por favor, inténtelo de nuevo.');
+        }
+      });
+    }
+  }
+
+  // === TARJETAS ===
+  openAsignCardModal(): void {
+    this.selectedCards = [];
+    this.showAsignCardModal = true;
+  }
+
+  asignCard(): void {
+    if (!this.selectedCards.length || !this.empresa?.id) return;
+
+    const performAdd = async () => {
+      // Si estamos editando y hay cambio, eliminar el original primero
+      if (this.editingContext?.section === 'card' && this.editingContext.originalId != null) {
+        const newId = Number(this.selectedCards[0]);
+        if (newId !== Number(this.editingContext.originalId)) {
+          await this.businessService.removeCardFromBusiness(this.empresa.id, Number(this.editingContext.originalId)).toPromise();
+        }
+      }
+
+      // IDs únicos y válidos
+      const ids = Array.from(new Set(this.selectedCards
+        .map((n: number) => Number(n))
+        .filter((n: number) => !isNaN(n) && n > 0)));
+      // Excluir ya asignados
+      const assignedIds = new Set<number>((this.empresa?.cards || [])
+        .map((c: any) => Number(c?.id))
+        .filter((n: number) => !isNaN(n)));
+      const idsToAdd = ids.filter((id: number) => {
+        if (this.editingContext?.section === 'card' && this.editingContext.originalId != null && id === Number(this.editingContext.originalId)) {
+          return false; // no volver a agregar el original en modo edición
+        }
+        return !assignedIds.has(id);
+      });
+      for (const cardId of idsToAdd) {
+        await this.businessService.addCardToBusiness(this.empresa.id, Number(cardId)).toPromise();
+      }
+    };
+
+    performAdd().then(() => {
+      // Refrescar desde backend para mantener consistencia
+      this.loadData();
+      this.selectedCards = [];
+      this.showAsignCardModal = false;
+      this.editingContext = null;
+      alert('Tarjetas asignadas/actualizadas exitosamente');
+    }).catch(error => {
+      console.error('Error al asignar/actualizar tarjetas:', error);
+      alert('Error al asignar/actualizar tarjetas. Por favor, inténtelo de nuevo.');
+    });
+  }
+
+  removeCard(cardId: number): void {
+    if (!this.empresa?.id) return;
+
+    if (confirm('¿Está seguro de eliminar esta tarjeta de la empresa?')) {
+      this.businessService.removeCardFromBusiness(this.empresa.id, Number(cardId)).subscribe({
+        next: () => {
+          this.empresa.cards = (this.empresa.cards || []).filter((c: any) => Number(c.id) !== Number(cardId));
+          alert('Tarjeta eliminada exitosamente');
+        },
+        error: (error) => {
+          console.error('Error al eliminar tarjeta:', error);
+          alert('Error al eliminar la tarjeta. Por favor, inténtelo de nuevo.');
+        }
+      });
+    }
+  }
+
   // === TIPOS DE CONTRATOS ===
   openAsignContractModal(): void {
     this.selectedTiposContratos = [];
@@ -1059,34 +1476,52 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   asignContract(): void {
     if (!this.selectedTiposContratos.length || !this.empresa?.id) return;
     
-    // IDs únicos y válidos
-    const ids = Array.from(new Set(this.selectedTiposContratos.map((n: number) => Number(n)).filter((n: number) => !isNaN(n) && n > 0)));
-    // Excluir ya asignados
-    const assignedIds = new Set<number>((this.empresa?.type_contracts || []).map((t: any) => Number(t?.id)).filter((n: number) => !isNaN(n)));
-    const idsToAdd = ids.filter((id: number) => !assignedIds.has(id));
-    // Crear promesas para agregar cada tipo de contrato
-    const addPromises = idsToAdd.map(typeContractId => 
-      this.businessService.addTypeContractToBusiness(this.empresa.id, Number(typeContractId)).toPromise()
-    );
+    const performAdd = async () => {
+      // Si estamos editando y cambió la selección, eliminar el original primero
+      if (this.editingContext?.section === 'type_contract' && this.editingContext.originalId != null) {
+        const newId = Number(this.selectedTiposContratos[0]);
+        if (!isNaN(newId) && newId !== Number(this.editingContext.originalId)) {
+          await this.businessService.removeTypeContractFromBusiness(this.empresa.id, Number(this.editingContext.originalId)).toPromise();
+        }
+      }
 
-    Promise.all(addPromises).then(() => {
-      // Agregar a la vista local
+      // IDs únicos y válidos
+      const ids = Array.from(new Set(this.selectedTiposContratos.map((n: number) => Number(n)).filter((n: number) => !isNaN(n) && n > 0)));
+      // Excluir ya asignados y el original en modo edición
+      const assignedIds = new Set<number>((this.empresa?.type_contracts || []).map((t: any) => Number(t?.id)).filter((n: number) => !isNaN(n)));
+      const idsToAdd = ids.filter((id: number) => {
+        if (this.editingContext?.section === 'type_contract' && this.editingContext.originalId != null && id === Number(this.editingContext.originalId)) {
+          return false;
+        }
+        return !assignedIds.has(id);
+      });
+
+      // Crear promesas para agregar cada tipo de contrato
+      const addPromises = idsToAdd.map(typeContractId => 
+        this.businessService.addTypeContractToBusiness(this.empresa.id, Number(typeContractId)).toPromise()
+      );
+      await Promise.all(addPromises);
+
+      // Actualizar la vista local
       idsToAdd.forEach(selectedId => {
-        const tipoSelected = this.tiposContratos.find((t: any) => t.id == selectedId);
+        const tipoSelected = this.tiposContratos.find((t: any) => Number(t.id) === Number(selectedId));
         if (tipoSelected) {
-          const exists = this.empresa.type_contracts.find((t: any) => t.id == selectedId);
+          const exists = (this.empresa.type_contracts || []).some((t: any) => Number(t.id) === Number(selectedId));
           if (!exists) {
-            this.empresa.type_contracts.push(tipoSelected);
+            this.empresa.type_contracts = [...(this.empresa.type_contracts || []), tipoSelected];
           }
         }
       });
-      
+    };
+
+    performAdd().then(() => {
       this.selectedTiposContratos = [];
       this.showAsignContractModal = false;
-      alert('Tipos de contrato asignados exitosamente');
+      this.editingContext = null;
+      alert('Tipos de contrato asignados/actualizados exitosamente');
     }).catch(error => {
-      console.error('Error al asignar tipos de contrato:', error);
-      alert('Error al asignar tipos de contrato. Por favor, inténtelo de nuevo.');
+      console.error('Error al asignar/actualizar tipos de contrato:', error);
+      alert('Error al asignar/actualizar tipos de contrato. Por favor, inténtelo de nuevo.');
     });
   }
 
@@ -1125,24 +1560,45 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       return;
     }
 
-    // Asegurar números únicos
-    const ids = Array.from(new Set(this.selectedObligacionesMatriz.map(n => Number(n)).filter(n => !isNaN(n) && n > 0)));
-    console.log('asignObligation -> empresa:', this.empresa.id, 'catalog IDs:', ids);
+    // Si estamos en modo edición y cambió la selección, eliminar el original antes
+    const performAdd = async () => {
+      if (this.editingContext?.section === 'obligation' && this.editingContext.originalId != null) {
+        const newId = Number(this.selectedObligacionesMatriz[0]);
+        if (!isNaN(newId) && newId !== Number(this.editingContext.originalId)) {
+          await this.businessService.removeObligationMatrixFromBusiness(this.empresa.id, Number(this.editingContext.originalId)).toPromise();
+        }
+      }
 
-    // Crear promesas para agregar cada matriz de obligación
-    const addPromises = ids.map(obligationMatrixId =>
-      this.businessService.addObligationMatrixToBusiness(this.empresa.id, obligationMatrixId).toPromise()
-    );
+      // Asegurar números únicos
+      const ids = Array.from(new Set(this.selectedObligacionesMatriz.map(n => Number(n)).filter(n => !isNaN(n) && n > 0)));
+      console.log('asignObligation -> empresa:', this.empresa.id, 'catalog IDs:', ids);
 
-    Promise.all(addPromises).then(() => {
+      // Excluir ya asignados y excluir el original en modo edición
+      const assignedIds = new Set<number>((this.empresa?.obligation_matrices || [])
+        .map((o: any) => Number(this.getObligationCatalogId(o))).filter((n: number) => !isNaN(n)));
+      const idsToAdd = ids.filter((id: number) => {
+        if (this.editingContext?.section === 'obligation' && this.editingContext.originalId != null && id === Number(this.editingContext.originalId)) {
+          return false;
+        }
+        return !assignedIds.has(id);
+      });
+
+      const addPromises = idsToAdd.map(obligationMatrixId =>
+        this.businessService.addObligationMatrixToBusiness(this.empresa.id, Number(obligationMatrixId)).toPromise()
+      );
+      await Promise.all(addPromises);
+    };
+
+    performAdd().then(() => {
       this.selectedObligacionesMatriz = [];
       this.showAsignObligationModal = false;
+      this.editingContext = null;
       // Recargar desde backend para reflejar el objeto relación (BusinessObligationMatrix)
       this.loadData();
-      alert('Matrices de obligación asignadas exitosamente');
+      alert('Matrices de obligación asignadas/actualizadas exitosamente');
     }).catch(error => {
-      console.error('Error al asignar matrices de obligación:', error);
-      alert('Error al asignar matrices de obligación. Por favor, inténtelo de nuevo.');
+      console.error('Error al asignar/actualizar matrices de obligación:', error);
+      alert('Error al asignar/actualizar matrices de obligación. Por favor, inténtelo de nuevo.');
     });
   }
 
@@ -1256,15 +1712,25 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     
     console.log('✅ Asignando IESS (selección):', this.selectedIess);
 
+    // Si estamos editando un IESS puntual y la selección cambió, eliminar el original primero
+    if (this.editingContext?.section === 'iess' && this.editingContext.originalId != null) {
+      const newFirstId = Number(typeof this.selectedIess[0] === 'object' ? (this.selectedIess[0] as any)?.id : this.selectedIess[0]);
+      if (!isNaN(newFirstId) && newFirstId !== Number(this.editingContext.originalId)) {
+        // Eliminar el original de la lista de la empresa
+        this.empresa.ieses = (this.empresa.ieses || []).filter((i: any) => Number(i?.id) !== Number(this.editingContext!.originalId));
+      }
+    }
+
     // La selección puede venir como objetos completos (preferido) o IDs. Soportamos ambos.
     const toAssign = this.selectedIess.map(sel => {
       if (sel && typeof sel === 'object') return sel; // ya es el objeto IESS
       const idNum = Number(sel);
-      return this.iessList.find((i: any) => i.id === idNum);
+      return this.iessList.find((i: any) => Number(i.id) === idNum);
     }).filter(Boolean);
 
+    // Agregar nuevos elementos evitando duplicados
     toAssign.forEach((iessSelected: any) => {
-      const exists = this.empresa.ieses.find((i: any) => i.id === iessSelected.id);
+      const exists = (this.empresa.ieses || []).find((i: any) => Number(i.id) === Number(iessSelected.id));
       if (!exists) {
         console.log('✅ Agregando IESS a empresa:', iessSelected.description || iessSelected.name);
         this.empresa.ieses.push(iessSelected);
@@ -1275,6 +1741,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     
     this.selectedIess = [];
     this.showAsignIessModal = false;
+    this.editingContext = null;
     
     // Guardar cambios en backend
     this.saveIessChanges();
@@ -1302,10 +1769,19 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     const selectedIds = new Set<number>((this.selectedIess || [])
       .map((sel: any) => Number(typeof sel === 'object' ? sel?.id : sel))
       .filter((n: number) => !isNaN(n)));
-    return this.iessList.filter((iess: any) => {
+    const result = this.iessList.filter((iess: any) => {
       const id = Number(iess?.id);
       return !isNaN(id) && !assignedIds.has(id) && !selectedIds.has(id);
     });
+    // Si estamos editando, incluir el original al inicio
+    if (this.editingContext?.section === 'iess' && this.editingContext.originalId != null) {
+      const originalId = Number(this.editingContext.originalId);
+      const orig = this.iessList.find((i: any) => Number(i?.id) === originalId);
+      if (orig && !result.some((i: any) => Number(i?.id) === originalId)) {
+        result.unshift(orig);
+      }
+    }
+    return result;
   }
 
   // Función para verificar si es array (para usar en template)
@@ -1354,6 +1830,15 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       // asegurar una etiqueta mínima para visualización
       item.name = item.name || item.title || item.description || `Matriz #${id}`;
       result.push(item);
+    }
+
+    // Si estamos editando, incluir el original al inicio
+    if (this.editingContext?.section === 'obligation' && this.editingContext.originalId != null) {
+      const originalId = Number(this.editingContext.originalId);
+      const orig = this.obligacionesMatriz.find((o: any) => Number(o?.id) === originalId);
+      if (orig && !result.some((o: any) => Number(o?.id) === originalId)) {
+        result.unshift(orig);
+      }
     }
 
     return result;
@@ -1408,10 +1893,19 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       .map((t: any) => Number(t?.id)).filter((n: number) => !isNaN(n)));
     const selectedIds = new Set<number>((this.selectedTiposDocumentos || [])
       .map((n: number) => Number(n)).filter((n: number) => !isNaN(n)));
-    return this.tiposDocumentos.filter((t: any) => {
+    const result = this.tiposDocumentos.filter((t: any) => {
       const id = Number(t?.id);
       return !isNaN(id) && !assignedIds.has(id) && !selectedIds.has(id);
     });
+    // Si estamos editando un tipo de documento, incluir el original en la lista
+    if (this.editingContext?.section === 'type_document' && this.editingContext.originalId != null) {
+      const originalId = Number(this.editingContext.originalId);
+      const orig = this.tiposDocumentos.find((t: any) => Number(t?.id) === originalId);
+      if (orig && !result.some((t: any) => Number(t?.id) === originalId)) {
+        result.unshift(orig);
+      }
+    }
+    return result;
   }
 
   getAvailableTiposContratos(): any[] {
@@ -1420,10 +1914,63 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       .map((t: any) => Number(t?.id)).filter((n: number) => !isNaN(n)));
     const selectedIds = new Set<number>((this.selectedTiposContratos || [])
       .map((n: number) => Number(n)).filter((n: number) => !isNaN(n)));
-    return this.tiposContratos.filter((t: any) => {
+    const result = this.tiposContratos.filter((t: any) => {
       const id = Number(t?.id);
       return !isNaN(id) && !assignedIds.has(id) && !selectedIds.has(id);
     });
+    // Si estamos editando un tipo de contrato, incluir el original en la lista
+    if (this.editingContext?.section === 'type_contract' && this.editingContext.originalId != null) {
+      const originalId = Number(this.editingContext.originalId);
+      const orig = this.tiposContratos.find((t: any) => Number(t?.id) === originalId);
+      if (orig && !result.some((t: any) => Number(t?.id) === originalId)) {
+        result.unshift(orig);
+      }
+    }
+    return result;
+  }
+
+  // Disponibles para Cursos y Certificaciones (no asignados/seleccionados)
+  getAvailableCourseCertifications(): any[] {
+    if (!Array.isArray(this.cursosCertificaciones)) return [];
+    const assignedIds = new Set<number>((this.empresa?.course_certifications || [])
+      .map((c: any) => Number(c?.id)).filter((n: number) => !isNaN(n)));
+    const selectedIds = new Set<number>((this.selectedCourseCertifications || [])
+      .map((n: number) => Number(n)).filter((n: number) => !isNaN(n)));
+    const result = this.cursosCertificaciones.filter((c: any) => {
+      const id = Number(c?.id);
+      return !isNaN(id) && !assignedIds.has(id) && !selectedIds.has(id);
+    });
+    // Si estamos editando, incluir el original
+    if (this.editingContext?.section === 'course_cert' && this.editingContext.originalId != null) {
+      const originalId = Number(this.editingContext.originalId);
+      const orig = this.cursosCertificaciones.find((c: any) => Number(c?.id) === originalId);
+      if (orig && !result.some((c: any) => Number(c?.id) === originalId)) {
+        result.unshift(orig);
+      }
+    }
+    return result;
+  }
+
+  // Disponibles para Tarjetas (no asignados/seleccionados)
+  getAvailableCards(): any[] {
+    if (!Array.isArray(this.tarjetas)) return [];
+    const assignedIds = new Set<number>((this.empresa?.cards || [])
+      .map((c: any) => Number(c?.id)).filter((n: number) => !isNaN(n)));
+    const selectedIds = new Set<number>((this.selectedCards || [])
+      .map((n: number) => Number(n)).filter((n: number) => !isNaN(n)));
+    const result = this.tarjetas.filter((c: any) => {
+      const id = Number(c?.id);
+      return !isNaN(id) && !assignedIds.has(id) && !selectedIds.has(id);
+    });
+    // Si estamos editando, incluir el original
+    if (this.editingContext?.section === 'card' && this.editingContext.originalId != null) {
+      const originalId = Number(this.editingContext.originalId);
+      const orig = this.tarjetas.find((c: any) => Number(c?.id) === originalId);
+      if (orig && !result.some((c: any) => Number(c?.id) === originalId)) {
+        result.unshift(orig);
+      }
+    }
+    return result;
   }
 
   getAvailableContractorCompanies(): any[] {
@@ -1432,10 +1979,19 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       .map((c: any) => Number(c?.id)).filter((n: number) => !isNaN(n)));
     const selectedIds = new Set<number>((this.selectedContractorCompanies || [])
       .map((c: any) => Number(c?.id)).filter((n: number) => !isNaN(n)));
-    return this.contractorCompanies.filter((c: any) => {
+    const result = this.contractorCompanies.filter((c: any) => {
       const id = Number(c?.id);
       return !isNaN(id) && !assignedIds.has(id) && !selectedIds.has(id);
     });
+    // Si estamos editando una empresa contratista, incluir la original
+    if (this.editingContext?.section === 'contractor_company' && this.editingContext.originalId != null) {
+      const originalId = Number(this.editingContext.originalId);
+      const orig = this.contractorCompanies.find((c: any) => Number(c?.id) === originalId);
+      if (orig && !result.some((c: any) => Number(c?.id) === originalId)) {
+        result.unshift(orig);
+      }
+    }
+    return result;
   }
   
   // Persist IESS changes to backend
@@ -1504,6 +2060,21 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       this.empresa.contractor_blocks = [];
     }
     
+    // Si estamos editando una empresa contratista y cambió la selección, eliminar la original primero
+    if (this.editingContext?.section === 'contractor_company' && this.editingContext.originalId != null) {
+      const newFirst = this.selectedContractorCompanies[0];
+      const newId = Number(newFirst?.id);
+      if (!isNaN(newId) && newId !== Number(this.editingContext.originalId)) {
+        // Remover la empresa contratista original
+        this.empresa.contractor_companies = (this.empresa.contractor_companies || []).filter((c: any) => Number(c?.id) !== Number(this.editingContext!.originalId));
+        // Remover bloques asociados a esa empresa (si los hay)
+        this.empresa.contractor_blocks = (this.empresa.contractor_blocks || []).filter((block: any) => 
+          Number(block?.contractorCompanyId) !== Number(this.editingContext!.originalId) &&
+          Number(block?.contractor_company_id) !== Number(this.editingContext!.originalId)
+        );
+      }
+    }
+
     // Agregar las nuevas empresas contratistas (evitar duplicados)
     this.selectedContractorCompanies.forEach(newCompany => {
       const exists = this.empresa.contractor_companies?.some((existingCompany: any) => 
@@ -1765,5 +2336,71 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     console.log('Abrir modal de crear empleado');
     // TODO: Esta funcionalidad se implementará en otra pantalla para gestión de empleados
     alert('La gestión de empleados se realizará en el módulo de Recursos Humanos');
+  }
+
+  // === APROBACIONES ===
+  loadApprovals(): void {
+    if (!this.empresaId) return;
+    this.approvalsLoading = true;
+    this.approvalsError = null;
+    // No forzar estado desde el servicio para evitar discrepancias con el backend
+    this.approvalService.listByBusiness(this.empresaId).subscribe({
+      next: (data) => {
+        // Aceptar array directo o respuestas paginadas/objeto
+        let list: any[] = [];
+        if (Array.isArray(data)) list = data;
+        else if (data && Array.isArray((data as any).content)) list = (data as any).content;
+        else if (data && Array.isArray((data as any).items)) list = (data as any).items;
+        else if (data && Array.isArray((data as any).data)) list = (data as any).data;
+        else list = [];
+        this.approvals = list;
+        console.log('Aprobaciones recibidas (total):', this.approvals.length, this.approvals);
+        // Calcular pendientes considerando múltiples nombres/campos de estado
+        this.pendingApprovals = (this.approvals || []).filter((x: any) => this.pendingStatuses.has(this.getStatus(x)));
+        console.log('Aprobaciones pendientes detectadas:', this.pendingApprovals.length, this.pendingApprovals.map(x => ({ id: x?.id, status: this.getStatus(x), type: x?.type })));
+        this.approvalsLoading = false;
+      },
+      error: (err) => {
+        console.error('Error al cargar aprobaciones:', err);
+        this.approvals = [];
+        this.pendingApprovals = [];
+        this.approvalsError = 'No se pudieron cargar las solicitudes de aprobación.';
+        this.approvalsLoading = false;
+      }
+    });
+  }
+
+  approveRequest(req: any): void {
+    if (!req?.id) return;
+    this.approvalService.approve(Number(req.id)).subscribe({
+      next: () => {
+        this.loadApprovals();
+        this.loadData();
+        alert('Solicitud aprobada y aplicada.');
+      },
+      error: (err) => {
+        console.error('Error al aprobar solicitud:', err);
+        alert('No se pudo aprobar la solicitud.');
+      }
+    });
+  }
+
+  rejectRequest(req: any): void {
+    if (!req?.id) return;
+    this.approvalService.reject(Number(req.id)).subscribe({
+      next: () => {
+        this.loadApprovals();
+        alert('Solicitud rechazada.');
+      },
+      error: (err) => {
+        console.error('Error al rechazar solicitud:', err);
+        alert('No se pudo rechazar la solicitud.');
+      }
+    });
+  }
+
+  trackByApprovalId(index: number, item: any) {
+    const id = Number(item?.id);
+    return isNaN(id) ? index : id;
   }
 }

@@ -129,6 +129,15 @@ export class AuthService {
     this.router.navigate(['/']);
   }
 
+  /**
+   * Clear session without navigation. Useful when entering login views
+   * to ensure a clean state without bouncing the user to Home.
+   */
+  clearSession(): void {
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.userKey);
+  }
+
   getToken(): string | null {
     return localStorage.getItem(this.tokenKey);
   }

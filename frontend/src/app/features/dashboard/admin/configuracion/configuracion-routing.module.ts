@@ -54,6 +54,15 @@ const routes: Routes = [
         path: 'empresas-contratistas',
         loadChildren: () => import('./empresas-contratistas/empresas-contratistas.module').then(m => m.EmpresasContratistasModule)
       }
+      ,
+      {
+        path: 'cursos-certificaciones',
+        loadChildren: () => import('./cursos-certificaciones/cursos-certificaciones.module').then(m => m.CursosCertificacionesModule)
+      },
+      {
+        path: 'tarjetas',
+        loadChildren: () => import('./tarjetas/tarjetas.module').then(m => m.TarjetasModule)
+      }
     ]
   }
 ];

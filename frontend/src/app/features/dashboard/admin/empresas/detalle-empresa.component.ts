@@ -14,6 +14,8 @@ export class DetalleEmpresaComponent implements OnInit {
   loading = false;
   error = '';
   empresaId: number;
+  // URL estable del logo para evitar cambios durante el ciclo de detección
+  logoUrl: string = '';
 
   constructor(
     private businessService: BusinessService,
@@ -34,6 +36,13 @@ export class DetalleEmpresaComponent implements OnInit {
       next: (empresa: Business) => {
         this.empresa = empresa;
         this.loading = false;
+        // Calcular una sola vez la URL del logo para evitar ExpressionChangedAfterItHasBeenChecked
+        try {
+          const path = this.empresa?.logo || '';
+          this.logoUrl = path ? this.getLogoUrl(path) : '';
+        } catch (e) {
+          this.logoUrl = '';
+        }
       },
       error: (err) => {
         this.error = 'Error al cargar los datos de la empresa';
@@ -48,7 +57,7 @@ export class DetalleEmpresaComponent implements OnInit {
   }
 
   volver(): void {
-    this.router.navigate(['/dashboard/admin/empresas/lista']);
+    this.router.navigate(['/dashboard/admin/empresas']);
   }  /**
    * Obtiene la URL correcta para el logotipo de la empresa
    * @param logoPath Ruta del logo almacenado en la BD

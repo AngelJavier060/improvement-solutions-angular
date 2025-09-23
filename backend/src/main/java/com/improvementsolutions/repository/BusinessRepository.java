@@ -37,6 +37,8 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
            "LEFT JOIN FETCH b.positions " +
            "LEFT JOIN FETCH b.typeDocuments " +
            "LEFT JOIN FETCH b.typeContracts " +
+           "LEFT JOIN FETCH b.courseCertifications " +
+           "LEFT JOIN FETCH b.cards " +
            "LEFT JOIN FETCH b.iessItems " +
            "LEFT JOIN FETCH b.users " +
            "WHERE b.id = :id")

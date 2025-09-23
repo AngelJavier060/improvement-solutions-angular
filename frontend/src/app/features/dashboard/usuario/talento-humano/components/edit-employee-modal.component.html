@@ -13,7 +13,20 @@
 
     <!-- Modal Body -->
     <div class="modal-body" *ngIf="employee">
-      <form [formGroup]="employeeForm" (ngSubmit)="onSubmit()">
+      <!-- Tabs Navigation -->
+      <div class="btn-group mb-3" role="group" aria-label="Tabs">
+        <button type="button" class="btn" [ngClass]="{'btn-primary': activeTab==='datos', 'btn-outline-primary': activeTab!=='datos'}" (click)="setTab('datos')">
+          <i class="fas fa-id-card me-1"></i> Datos
+        </button>
+        <button type="button" class="btn" [ngClass]="{'btn-primary': activeTab==='documentos', 'btn-outline-primary': activeTab!=='documentos'}" (click)="setTab('documentos')">
+          <i class="far fa-file-pdf me-1"></i> Documentos
+        </button>
+        <button type="button" class="btn" [ngClass]="{'btn-primary': activeTab==='contratos', 'btn-outline-primary': activeTab!=='contratos'}" (click)="setTab('contratos')">
+          <i class="fas fa-file-signature me-1"></i> Contratos
+        </button>
+      </div>
+
+      <form [formGroup]="employeeForm" (ngSubmit)="onSubmit()" [hidden]="activeTab !== 'datos'">
         <!-- Error Alert -->
         <div *ngIf="error" class="alert alert-error">
           <i class="fas fa-exclamation-triangle"></i>
@@ -24,10 +37,22 @@
         <div class="employee-info-header">
           <div class="employee-avatar">
             <img 
-              [src]="employee.profile_picture || 'assets/images/default-avatar.png'" 
+              [src]="selectedProfilePicturePreview || getProfileImageSrc()" 
               [alt]="employee.name"
               class="avatar-img"
             />
+            <div class="upload-btn-wrapper mt-2">
+              <label class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-camera me-1"></i>
+                Cambiar foto
+                <input type="file" accept="image/*" (change)="onProfilePictureChange($event)" hidden />
+              </label>
+              <button type="button" class="btn btn-sm btn-outline-danger ms-2" (click)="onRemoveProfilePicture()" [disabled]="loading">
+                <i class="fas fa-trash me-1"></i>
+                Eliminar foto
+              </button>
+              <small class="form-help-text d-block">Máx. 5MB. Formatos: JPG, PNG, WEBP.</small>
+            </div>
           </div>
           <div class="employee-basic">
             <h3>{{ employee.name }}</h3>
@@ -238,7 +263,7 @@
               <label for="position_id">Cargo</label>
               <select id="position_id" formControlName="position_id">
                 <option value="">Seleccione un cargo</option>
-                <option *ngFor="let p of positions" [value]="p.id">{{ p.name }}</option>
+                <option *ngFor="let p of positions" [value]="'' + p.id">{{ p.name }}</option>
               </select>
             </div>
 
@@ -246,7 +271,7 @@
               <label for="department_id">Departamento</label>
               <select id="department_id" formControlName="department_id">
                 <option value="">Seleccione un departamento</option>
-                <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+                <option *ngFor="let d of departments" [value]="'' + d.id">{{ d.name }}</option>
               </select>
             </div>
 
@@ -254,15 +279,25 @@
               <label for="type_contract_id">Tipo de Contrato</label>
               <select id="type_contract_id" formControlName="type_contract_id">
                 <option value="">Seleccione un tipo de contrato</option>
-                <option *ngFor="let tc of typeContracts" [value]="tc.id">{{ tc.name }}</option>
+                <option *ngFor="let tc of typeContracts" [value]="'' + tc.id">{{ tc.name }}</option>
               </select>
+            </div>
+
+            <!-- Fecha de Ingreso -->
+            <div class="form-group">
+              <label for="fechaIngreso">Fecha de Ingreso</label>
+              <input
+                type="date"
+                id="fechaIngreso"
+                formControlName="fechaIngreso"
+              />
             </div>
 
             <div class="form-group">
               <label for="degree_id">Nivel de Educación</label>
               <select id="degree_id" formControlName="degree_id">
                 <option value="">Seleccione un nivel</option>
-                <option *ngFor="let dg of degrees" [value]="dg.id">{{ dg.name }}</option>
+                <option *ngFor="let dg of degrees" [value]="'' + dg.id">{{ dg.name }}</option>
               </select>
             </div>
 
@@ -270,7 +305,7 @@
               <label for="gender_id">Género</label>
               <select id="gender_id" formControlName="gender_id">
                 <option value="">Seleccione un género</option>
-                <option *ngFor="let g of genders" [value]="g.id">{{ g.name }}</option>
+                <option *ngFor="let g of genders" [value]="'' + g.id">{{ g.name }}</option>
               </select>
             </div>
 
@@ -278,7 +313,7 @@
               <label for="civil_status_id">Estado Civil</label>
               <select id="civil_status_id" formControlName="civil_status_id">
                 <option value="">Seleccione estado civil</option>
-                <option *ngFor="let cs of civilStatuses" [value]="cs.id">{{ cs.name }}</option>
+                <option *ngFor="let cs of civilStatuses" [value]="'' + cs.id">{{ cs.name }}</option>
               </select>
             </div>
 
@@ -286,9 +321,118 @@
               <label for="ethnicity_id">Etnia</label>
               <select id="ethnicity_id" formControlName="ethnicity_id">
                 <option value="">Seleccione una etnia</option>
-                <option *ngFor="let e of etnias" [value]="e.id">{{ e.name }}</option>
+                <option *ngFor="let e of etnias" [value]="'' + e.id">{{ e.name }}</option>
               </select>
             </div>
+
+            <!-- Empresa Contratista -->
+            <div class="form-group">
+              <label for="contractor_company_id">
+                <i class="fas fa-building me-1"></i>
+                Empresa Contratista
+              </label>
+              <select
+                id="contractor_company_id"
+                formControlName="contractor_company_id"
+                (change)="onContractorCompanyChange()">
+                <option value="">
+                  <span *ngIf="contractorCompanies.length === 0">No hay empresas contratistas configuradas</span>
+                  <span *ngIf="contractorCompanies.length > 0">Seleccione empresa contratista</span>
+                </option>
+                <option *ngFor="let company of contractorCompanies" [value]="'' + company.id">
+                  {{ company.name }}
+                  <span *ngIf="company.code"> - {{ company.code }}</span>
+                </option>
+              </select>
+              <small class="form-help-text">
+                <i class="fas fa-info-circle me-1"></i>
+                Solo se muestran las empresas contratistas configuradas para esta empresa
+              </small>
+            </div>
+
+            <!-- Bloque -->
+            <div class="form-group" *ngIf="employeeForm.get('contractor_company_id')?.value">
+              <label for="contractor_block_id">
+                <i class="fas fa-cubes me-1"></i>
+                Bloque
+              </label>
+              <select id="contractor_block_id" formControlName="contractor_block_id">
+                <option value="">Seleccione un bloque</option>
+                <option *ngFor="let block of availableContractorBlocks" [value]="'' + block.id">
+                  {{ block.name }}
+                  <span *ngIf="block.code"> - {{ block.code }}</span>
+                  <span *ngIf="block.description"> ({{ block.description }})</span>
+                </option>
+              </select>
+              <small class="form-help-text">
+                <i class="fas fa-info-circle me-1"></i>
+                Bloque específico dentro de la empresa contratista
+              </small>
+            </div>
+
+            <!-- Lugar de Nacimiento -->
+            <div class="form-group">
+              <label for="lugarNacimientoProvincia">Provincia de Nacimiento</label>
+              <input type="text" id="lugarNacimientoProvincia" formControlName="lugarNacimientoProvincia" placeholder="Provincia donde nació" />
+            </div>
+            <div class="form-group">
+              <label for="lugarNacimientoCiudad">Ciudad de Nacimiento</label>
+              <input type="text" id="lugarNacimientoCiudad" formControlName="lugarNacimientoCiudad" placeholder="Ciudad donde nació" />
+            </div>
+            <div class="form-group">
+              <label for="lugarNacimientoParroquia">Parroquia de Nacimiento</label>
+              <input type="text" id="lugarNacimientoParroquia" formControlName="lugarNacimientoParroquia" placeholder="Parroquia donde nació" />
+            </div>
+
+            <!-- Dirección Domiciliaria -->
+            <div class="form-group">
+              <label for="direccionDomiciliaria">Dirección Domiciliaria</label>
+              <input type="text" id="direccionDomiciliaria" formControlName="direccionDomiciliaria" placeholder="Dirección de domicilio" />
+            </div>
+
+            <!-- Tipo de Sangre -->
+            <div class="form-group">
+              <label for="tipoSangre">Tipo de Sangre</label>
+              <select id="tipoSangre" formControlName="tipoSangre">
+                <option value="">Seleccione tipo de sangre</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
+
+            <!-- Discapacidad -->
+            <div class="form-group">
+              <label for="discapacidad">Discapacidad</label>
+              <select id="discapacidad" formControlName="discapacidad">
+                <option value="">¿Tiene alguna discapacidad?</option>
+                <option value="No">No</option>
+                <option value="Física">Física</option>
+                <option value="Visual">Visual</option>
+                <option value="Auditiva">Auditiva</option>
+                <option value="Intelectual">Intelectual</option>
+                <option value="Psicosocial">Psicosocial</option>
+                <option value="Múltiple">Múltiple</option>
+              </select>
+            </div>
+
+            <!-- Código IESS -->
+            <div class="form-group">
+              <label for="codigoIess">Código IESS (Sectorial)</label>
+              <select id="codigoIess" formControlName="codigoIess">
+                <option value="">Seleccione código IESS</option>
+                <option *ngFor="let iess of iessCodes" [value]="iess.code">
+                  {{ iess.code }} - {{ iess.description }}
+                </option>
+              </select>
+              <small class="form-help-text">Seleccione el código sectorial IESS configurado para esta empresa</small>
+            </div>
+
           </div>
         </div>
 
@@ -310,6 +454,23 @@
           </button>
         </div>
       </form>
+
+      <!-- Documents Tab Content -->
+      <div *ngIf="activeTab === 'documentos'">
+        <app-employee-documents 
+          [employeeId]="employee.id!" 
+          [employeeCedula]="employee.cedula">
+        </app-employee-documents>
+      </div>
+
+      <!-- Contracts Tab Content -->
+      <div *ngIf="activeTab === 'contratos'">
+        <app-employee-contracts 
+          [employeeId]="employee.id!" 
+          [employeeCedula]="employee.cedula"
+          [businessId]="businessId">
+        </app-employee-contracts>
+      </div>
     </div>
   </div>
 </div>

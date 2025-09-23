@@ -1,0 +1,53 @@
+:root {
+  --topbar-h: 64px;
+  --sidebar-w: 200px; /* reducido para que no tape títulos al expandir */
+  --sidebar-gap: 16px;
+}
+
+/* Columna de contenido: deja espacio lateral para el sidebar fijo */
+.content-col {
+  margin-left: calc(var(--sidebar-w) + 16px);
+  padding-top: 16px;
+  padding-left: 16px; /* evita que el botón/títulos se peguen al borde */
+  min-height: 100vh;
+  position: relative;
+  z-index: 30; /* por encima del sidebar (z-index 10) */
+
+  &.full {
+    /* ancho del sidebar colapsado (64px) + pequeño gap */
+    margin-left: 80px;
+  }
+}
+
+/* Botón flotante para colapsar/expandir el sidebar */
+.sidebar-toggle {
+  position: fixed;
+  /* bajar el botón para no tapar "Dashboard de Cumplimiento" ni la banda azul */
+  top: calc(var(--topbar-h) + var(--sidebar-gap) + 96px);
+  /* sitúa el botón sobre el borde del sidebar, no encima del contenido */
+  left: calc(var(--sidebar-w) - 20px);
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  z-index: 25;
+  transition: left .2s ease, transform .2s ease;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+}
+
+.sidebar-toggle.collapsed {
+  /* al colapsar, mantenlo cerca del borde del sidebar compacto */
+  left: 44px; /* ~64px (ancho colapsado) - 20px */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-w: 220px;
+  }
+  .content-col {
+    margin-left: calc(var(--sidebar-w) + 12px);
+  }
+}

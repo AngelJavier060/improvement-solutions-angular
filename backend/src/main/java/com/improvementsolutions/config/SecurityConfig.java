@@ -52,7 +52,6 @@ public class SecurityConfig {    private final JwtAuthenticationEntryPoint unaut
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/configuration/**").permitAll() // Permitir endpoints de configuración
-                .requestMatchers("/api/files/**").permitAll() // Permitir todos los endpoints de archivos
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/health").permitAll()
                 .anyRequest().authenticated()

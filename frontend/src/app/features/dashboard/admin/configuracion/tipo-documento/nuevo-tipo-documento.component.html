@@ -1,8 +1,8 @@
 <div class="tipo-documento-container">
   <div class="header">
     <div class="title-section">
-      <h2>Nuevo Tipo de Documento</h2>
-      <p>Complete el formulario para crear un nuevo tipo de documento</p>
+      <h2>Nuevo documento personal</h2>
+      <p>Complete el formulario para crear un nuevo documento personal</p>
     </div>
     <div class="actions">
       <button class="btn-secondary" routerLink="/dashboard/admin/configuracion/tipo-documento">
@@ -46,8 +46,8 @@
           [class.is-invalid]="tipoDocumentoForm.get('name')?.invalid && tipoDocumentoForm.get('name')?.touched"
         >
         <div *ngIf="tipoDocumentoForm.get('name')?.invalid && tipoDocumentoForm.get('name')?.touched" class="error-message">
-          <span *ngIf="tipoDocumentoForm.get('name')?.errors?.['required']">El nombre es obligatorio</span>
-          <span *ngIf="tipoDocumentoForm.get('name')?.errors?.['maxlength']">El nombre no debe exceder los 50 caracteres</span>
+          <span *ngIf="tipoDocumentoForm.get('name')?.errors?.['required']">El nombre del documento personal es obligatorio</span>
+          <span *ngIf="tipoDocumentoForm.get('name')?.errors?.['maxlength']">El nombre del documento personal no debe exceder los 50 caracteres</span>
         </div>
       </div>
 

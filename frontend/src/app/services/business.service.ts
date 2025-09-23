@@ -118,4 +118,22 @@ export class BusinessService {
   getByRuc(ruc: string): Observable<Business> {
     return this.http.get<Business>(`${this.apiUrl}/public/ruc/${ruc}`);
   }
+
+  // === MÉTODOS PARA CURSOS Y CERTIFICACIONES ===
+  addCourseCertificationToBusiness(businessId: number, courseCertificationId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/course-certifications/${courseCertificationId}`, {});
+  }
+
+  removeCourseCertificationFromBusiness(businessId: number, courseCertificationId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${businessId}/course-certifications/${courseCertificationId}`);
+  }
+
+  // === MÉTODOS PARA TARJETAS ===
+  addCardToBusiness(businessId: number, cardId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/cards/${cardId}`, {});
+  }
+
+  removeCardFromBusiness(businessId: number, cardId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${businessId}/cards/${cardId}`);
+  }
 }

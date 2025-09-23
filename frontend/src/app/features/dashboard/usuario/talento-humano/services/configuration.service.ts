@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { ApiUrlService } from '../../../../../core/services/api-url.service';
 import { Observable } from 'rxjs';
 
 export interface ConfigurationOption {
@@ -57,9 +58,11 @@ export interface AllConfigurations {
   providedIn: 'root'
 })
 export class ConfigurationService {
-  private apiUrl = 'http://localhost:8080/api/configuration';
+  private apiUrl: string;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private apiUrlService: ApiUrlService) {
+    this.apiUrl = this.apiUrlService.getUrl('/api/configuration');
+  }
 
   // Obtener todas las configuraciones en una sola llamada
   getAllConfigurations(): Observable<AllConfigurations> {

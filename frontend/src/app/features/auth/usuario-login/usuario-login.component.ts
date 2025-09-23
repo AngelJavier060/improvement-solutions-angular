@@ -21,19 +21,27 @@ export class UsuarioLoginComponent implements OnInit {
     private authService: AuthService,
     private router: Router
   ) {
+    console.log('[UsuarioLoginComponent] Constructor - Creando componente');
+
     this.loginForm = this.fb.group({
       username: ['', [Validators.required]],
       password: ['', [Validators.required]]
     });
+
+    console.log('[UsuarioLoginComponent] Formulario creado:', this.loginForm);
   }
 
   ngOnInit(): void {
+    console.log('[UsuarioLoginComponent] ngOnInit - Componente inicializado');
+
     // Limpiar cualquier sesión anterior cuando se accede al login de usuario
     // Esto asegura que siempre se muestre el formulario de login
     if (this.authService.isAuthenticated()) {
-      console.log('Limpiando sesión anterior para mostrar login');
-      this.authService.logout();
+      console.log('[UsuarioLoginComponent] Limpiando sesión anterior para mostrar login');
+      this.authService.clearSession();
     }
+
+    console.log('[UsuarioLoginComponent] Componente listo para recibir input del usuario');
   }
 
   onSubmit(): void {

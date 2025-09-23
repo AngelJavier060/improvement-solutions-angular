@@ -21,6 +21,8 @@ backend/target/
 # Logs
 *.log
 backend/*.log
+backend/logs/**
+!backend/logs/.gitkeep
 
 # OS generated files
 Thumbs.db
@@ -38,3 +40,15 @@ Thumbs.db
 
 # Package manager files - keep only important ones
 frontend/package-lock.json
+
+# Uploaded files (keep directory, ignore contents)
+backend/uploads/**
+!backend/uploads/.gitkeep
+backend/test-uploads/**
+!backend/test-uploads/.gitkeep
+
+# Secrets/keys - never commit private keys
+*.pem
+*.key
+improvement-key
+improvement-key.pub

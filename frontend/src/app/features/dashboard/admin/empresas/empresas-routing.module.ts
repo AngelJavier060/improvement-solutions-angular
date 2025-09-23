@@ -6,6 +6,8 @@ import { EditarEmpresaComponent } from './editar-empresa.component';
 import { DetalleEmpresaComponent } from './detalle-empresa.component';
 import { DetalleEmpresaAdminComponent } from './detalle-empresa-admin.component';
 import { DashboardEmpresasComponent } from './dashboard-empresas.component';
+import { ApprovalsListComponent } from './approvals-list.component';
+import { MatrixConfigComponent } from './matrix-config.component';
 
 const routes: Routes = [
   { path: '', component: ListaEmpresasComponent },
@@ -13,7 +15,9 @@ const routes: Routes = [
   { path: 'editar/:id', component: EditarEmpresaComponent },
   { path: 'detalle/:id', component: DetalleEmpresaComponent },
   { path: 'admin/:id', component: DetalleEmpresaAdminComponent },
-  { path: 'dashboard', component: DashboardEmpresasComponent }
+  { path: 'dashboard', component: DashboardEmpresasComponent },
+  { path: 'aprobaciones/:id', component: ApprovalsListComponent },
+  { path: 'configuracion-matriz/:id', component: MatrixConfigComponent }
 ];
 
 @NgModule({

@@ -5,9 +5,13 @@ import com.improvementsolutions.repository.BusinessRepository;
 import com.improvementsolutions.repository.UserRepository;
 import com.improvementsolutions.repository.ObligationMatrixRepository;
 import com.improvementsolutions.repository.BusinessObligationMatrixRepository;
+import com.improvementsolutions.repository.CourseCertificationRepository;
+import com.improvementsolutions.repository.CardCatalogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,11 +22,14 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class BusinessService {
+    private static final Logger log = LoggerFactory.getLogger(BusinessService.class);
 
     private final BusinessRepository businessRepository;
     private final UserRepository userRepository;
     private final ObligationMatrixRepository obligationMatrixRepository;
     private final BusinessObligationMatrixRepository businessObligationMatrixRepository;
+    private final CourseCertificationRepository courseCertificationRepository;
+    private final CardCatalogRepository cardCatalogRepository;
 
     public List<Business> findAll() {
         return businessRepository.findAll();
@@ -145,10 +152,77 @@ public class BusinessService {
 
     @Transactional
     public void delete(Long id) {
-        if (!businessRepository.existsById(id)) {
-            throw new RuntimeException("Empresa no encontrada");
+        log.info("[BusinessService] Deleting business id={} ...", id);
+        Business business = businessRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        log.info("[BusinessService] Current relations before cleanup: users={}, departments={}, positions={}, typeDocuments={}, typeContracts={}, courseCertifications={}, cards={}, iessItems={}, contractorCompanies={}, contractorBlocks={}, employees={}, obligationMatrices={}",
+                (business.getUsers() == null ? 0 : business.getUsers().size()),
+                (business.getDepartments() == null ? 0 : business.getDepartments().size()),
+                (business.getPositions() == null ? 0 : business.getPositions().size()),
+                (business.getTypeDocuments() == null ? 0 : business.getTypeDocuments().size()),
+                (business.getTypeContracts() == null ? 0 : business.getTypeContracts().size()),
+                (business.getCourseCertifications() == null ? 0 : business.getCourseCertifications().size()),
+                (business.getCards() == null ? 0 : business.getCards().size()),
+                (business.getIessItems() == null ? 0 : business.getIessItems().size()),
+                (business.getContractorCompanies() == null ? 0 : business.getContractorCompanies().size()),
+                (business.getContractorBlocks() == null ? 0 : business.getContractorBlocks().size()),
+                (business.getEmployees() == null ? 0 : business.getEmployees().size()),
+                (business.getBusinessObligationMatrices() == null ? 0 : business.getBusinessObligationMatrices().size()));
+
+        // Desvincular usuarios (lado inverso)
+        if (business.getUsers() != null && !business.getUsers().isEmpty()) {
+            // Crear copia para evitar ConcurrentModification
+            java.util.Set<com.improvementsolutions.model.User> usersCopy = new java.util.HashSet<>(business.getUsers());
+            for (com.improvementsolutions.model.User u : usersCopy) {
+                u.getBusinesses().remove(business);
+                userRepository.save(u);
+            }
+            business.getUsers().clear();
         }
-        businessRepository.deleteById(id);
+        log.info("[BusinessService] Detached users and cleared user links");
+
+        // Limpiar relaciones ManyToMany (tablas intermedias)
+        if (business.getDepartments() != null) business.getDepartments().clear();
+        if (business.getPositions() != null) business.getPositions().clear();
+        if (business.getTypeDocuments() != null) business.getTypeDocuments().clear();
+        if (business.getTypeContracts() != null) business.getTypeContracts().clear();
+        if (business.getCourseCertifications() != null) business.getCourseCertifications().clear();
+        if (business.getCards() != null) business.getCards().clear();
+        if (business.getIessItems() != null) business.getIessItems().clear();
+        log.info("[BusinessService] Cleared ManyToMany relations (departments, positions, typeDocuments, typeContracts, courseCertifications, cards, iessItems)");
+
+        // Limpiar contratistas y bloques
+        business.setContractorCompanies(new java.util.ArrayList<>());
+        business.setContractorBlocks(new java.util.ArrayList<>());
+        log.info("[BusinessService] Cleared contractor companies and blocks relations");
+
+        // Eliminar empleados (orphanRemoval)
+        if (business.getEmployees() != null && !business.getEmployees().isEmpty()) {
+            java.util.List<com.improvementsolutions.model.BusinessEmployee> employeesCopy = new java.util.ArrayList<>(business.getEmployees());
+            for (com.improvementsolutions.model.BusinessEmployee be : employeesCopy) {
+                business.removeEmployee(be);
+            }
+        }
+        log.info("[BusinessService] Removed employees (orphan removal)");
+
+        // Eliminar matrices de obligaciones vinculadas (aplica SQLDelete -> active=false)
+        if (business.getBusinessObligationMatrices() != null && !business.getBusinessObligationMatrices().isEmpty()) {
+            java.util.List<com.improvementsolutions.model.BusinessObligationMatrix> bomCopy = new java.util.ArrayList<>(business.getBusinessObligationMatrices());
+            for (com.improvementsolutions.model.BusinessObligationMatrix bom : bomCopy) {
+                business.removeBusinessObligationMatrix(bom);
+                businessObligationMatrixRepository.delete(bom);
+            }
+        }
+        log.info("[BusinessService] Removed business obligation matrices");
+
+        // Persistir la limpieza de relaciones antes de eliminar
+        businessRepository.save(business);
+        log.info("[BusinessService] Persisted cleanup for business id={}", id);
+
+        // Eliminar la empresa
+        businessRepository.delete(business);
+        log.info("[BusinessService] Business id={} deleted successfully", id);
     }
 
     @Transactional
@@ -203,6 +277,135 @@ public class BusinessService {
         business.setActive(!business.isActive());
         business.setUpdatedAt(LocalDateTime.now());
         businessRepository.save(business);
+    }
+
+    // === MÉTODOS PARA CURSOS Y CERTIFICACIONES ===
+    @Transactional
+    public Business addCourseCertificationToBusiness(Long businessId, Long courseCertificationId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        CourseCertification cc = courseCertificationRepository.findById(courseCertificationId)
+                .orElseThrow(() -> new RuntimeException("Curso/Certificación no encontrado"));
+
+        business.getCourseCertifications().add(cc);
+        business.setUpdatedAt(LocalDateTime.now());
+
+        return businessRepository.save(business);
+    }
+
+    @Transactional
+    public void removeCourseCertificationFromBusiness(Long businessId, Long courseCertificationId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        business.getCourseCertifications().removeIf(cc -> cc.getId().equals(courseCertificationId));
+        business.setUpdatedAt(LocalDateTime.now());
+
+        businessRepository.save(business);
+    }
+
+    // === MÉTODOS PARA TARJETAS ===
+    @Transactional
+    public Business addCardToBusiness(Long businessId, Long cardId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        CardCatalog card = cardCatalogRepository.findById(cardId)
+                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada"));
+
+        business.getCards().add(card);
+        business.setUpdatedAt(LocalDateTime.now());
+
+        return businessRepository.save(business);
+    }
+
+    @Transactional
+    public void removeCardFromBusiness(Long businessId, Long cardId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        business.getCards().removeIf(c -> c.getId().equals(cardId));
+        business.setUpdatedAt(LocalDateTime.now());
+
+        businessRepository.save(business);
+    }
+
+    // === REPLICACIÓN MULTI-EMPRESA ===
+    @Transactional
+    public void replicateObligationMatrices(Long sourceBusinessId, List<Long> targetBusinessIds) {
+        if (targetBusinessIds == null || targetBusinessIds.isEmpty()) {
+            throw new RuntimeException("La lista de empresas destino está vacía");
+        }
+
+        // Obtener matrices activas de la empresa origen
+        List<BusinessObligationMatrix> sourceMatrices = businessObligationMatrixRepository.findByBusinessId(sourceBusinessId);
+
+        for (Long targetId : targetBusinessIds) {
+            Business target = businessRepository.findById(targetId)
+                    .orElseThrow(() -> new RuntimeException("Empresa destino no encontrada: " + targetId));
+
+            for (BusinessObligationMatrix src : sourceMatrices) {
+                Long catalogId = (src.getObligationMatrix() != null) ? src.getObligationMatrix().getId() : null;
+                if (catalogId == null) continue;
+
+                // Evitar duplicado activo
+                boolean exists = businessObligationMatrixRepository
+                        .existsByBusiness_IdAndObligationMatrix_IdAndActiveTrue(targetId, catalogId);
+                if (exists) continue;
+
+                BusinessObligationMatrix clone = new BusinessObligationMatrix();
+                clone.setBusiness(target);
+                clone.setObligationMatrix(src.getObligationMatrix());
+                clone.setName(src.getName());
+                clone.setDescription(src.getDescription());
+                clone.setObligationType(src.getObligationType());
+                clone.setDueDate(src.getDueDate());
+                clone.setStatus(src.getStatus());
+                clone.setPriority(src.getPriority());
+                clone.setResponsiblePerson(src.getResponsiblePerson());
+                clone.setCompleted(src.isCompleted());
+                clone.setCompletionDate(src.getCompletionDate());
+
+                target.addBusinessObligationMatrix(clone);
+            }
+
+            target.setUpdatedAt(LocalDateTime.now());
+            businessRepository.save(target);
+        }
+    }
+
+    // === CARGA MASIVA DE MATRICES DE CATÁLOGO A UNA EMPRESA ===
+    @Transactional
+    public Business addObligationMatricesToBusinessBulk(Long businessId, List<Long> obligationCatalogIds) {
+        if (obligationCatalogIds == null || obligationCatalogIds.isEmpty()) {
+            return businessRepository.findById(businessId)
+                    .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        }
+
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        for (Long catalogId : obligationCatalogIds) {
+            boolean exists = businessObligationMatrixRepository
+                    .existsByBusiness_IdAndObligationMatrix_IdAndActiveTrue(businessId, catalogId);
+            if (exists) continue;
+
+            ObligationMatrix obligationMatrix = obligationMatrixRepository.findById(catalogId)
+                    .orElseThrow(() -> new RuntimeException("Matriz de obligación no encontrada: " + catalogId));
+
+            BusinessObligationMatrix bom = new BusinessObligationMatrix();
+            bom.setBusiness(business);
+            bom.setObligationMatrix(obligationMatrix);
+            bom.setName(obligationMatrix.getLegalCompliance());
+            bom.setDescription(obligationMatrix.getDescription());
+            bom.setStatus("PENDIENTE");
+
+            business.addBusinessObligationMatrix(bom);
+        }
+
+        business.setUpdatedAt(LocalDateTime.now());
+        return businessRepository.save(business);
     }
     
     @Transactional
@@ -396,7 +599,7 @@ public class BusinessService {
         businessObligationMatrix.setObligationMatrix(obligationMatrix);
         businessObligationMatrix.setName(obligationMatrix.getLegalCompliance());
         businessObligationMatrix.setDescription(obligationMatrix.getDescription());
-        businessObligationMatrix.setStatus("PENDING");
+        businessObligationMatrix.setStatus("PENDIENTE");
         
         business.addBusinessObligationMatrix(businessObligationMatrix);
         business.setUpdatedAt(LocalDateTime.now());

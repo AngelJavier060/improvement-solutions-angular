@@ -18,12 +18,12 @@ public interface BusinessObligationMatrixRepository extends JpaRepository<Busine
     List<BusinessObligationMatrix> findByBusinessIdAndStatus(Long businessId, String status);
     
     @Query("SELECT bom FROM BusinessObligationMatrix bom WHERE bom.business.id = :businessId AND bom.dueDate BETWEEN :startDate AND :endDate")
-    List<BusinessObligationMatrix> findObligationsWithDueDateInRange(Long businessId, LocalDate startDate, LocalDate endDate);
+    List<BusinessObligationMatrix> findObligationsWithDueDateInRange(@Param("businessId") Long businessId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
     
     @Query("SELECT bom FROM BusinessObligationMatrix bom WHERE bom.business.id = :businessId AND " +
            "(LOWER(bom.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(bom.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
-    List<BusinessObligationMatrix> searchByNameOrDescription(Long businessId, String searchTerm);
+    List<BusinessObligationMatrix> searchByNameOrDescription(@Param("businessId") Long businessId, @Param("searchTerm") String searchTerm);
 
     // Eliminar físicamente duplicados inactivos para evitar violar el índice único (business_id, obligation_matrix_id, active)
     @Modifying
@@ -34,4 +34,10 @@ public interface BusinessObligationMatrixRepository extends JpaRepository<Busine
     @Modifying
     @Query(value = "UPDATE business_obligation_matrices SET active = false WHERE business_id = :businessId AND obligation_matrix_id = :obligationMatrixId AND active = true", nativeQuery = true)
     int softDeleteActiveByBusinessAndCatalog(@Param("businessId") Long businessId, @Param("obligationMatrixId") Long obligationMatrixId);
+
+    // Verificar si ya existe una relación activa para evitar duplicados
+    boolean existsByBusiness_IdAndObligationMatrix_IdAndActiveTrue(Long businessId, Long obligationMatrixId);
+
+    // Recuperar la relación activa específica (si se requiere para validaciones adicionales)
+    List<BusinessObligationMatrix> findByBusiness_IdAndObligationMatrix_IdAndActiveTrue(Long businessId, Long obligationMatrixId);
 }
