@@ -71,6 +71,21 @@ public class AuthController {
     }
 
     /**
+     * Valida un token de restablecimiento de contraseña sin consumirlo
+     */
+    @PostMapping("/validate-reset-token")
+    public ResponseEntity<Boolean> validateResetToken(@RequestBody Map<String, String> body) {
+        try {
+            String token = body != null ? body.get("token") : null;
+            boolean valid = token != null && authService.isResetTokenValid(token);
+            return ResponseEntity.ok(valid);
+        } catch (Exception e) {
+            logger.error("Error al validar token de reset: {}", e.getMessage());
+            return ResponseEntity.ok(false);
+        }
+    }
+
+    /**
      * Maneja las solicitudes de inicio de sesión
      */    @PostMapping("/login")
     public ResponseEntity<?> login(
@@ -150,11 +165,9 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> requestPasswordReset(@Valid @RequestBody PasswordResetRequestDto requestDto) {
         try {
-            if (authService.handlePasswordResetRequest(requestDto.getEmail())) {
-                return ResponseEntity.ok().body(new SuccessResponse("Se ha enviado un email con las instrucciones"));
-            } else {
-                return ResponseEntity.badRequest().body(new ErrorResponse("No se pudo procesar la solicitud"));
-            }
+            String resetLink = authService.handlePasswordResetRequest(requestDto.getEmail());
+            // Devolvemos mensaje estándar y adjuntamos el enlace en data para entornos de desarrollo
+            return ResponseEntity.ok().body(new SuccessResponse("Se ha enviado un email con las instrucciones", resetLink));
         } catch (UserNotFoundException e) {
             logger.error("Usuario no encontrado para reset de contraseña: {}", e.getMessage());
             // Por seguridad, no indicamos si el email existe o no

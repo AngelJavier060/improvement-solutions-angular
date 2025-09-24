@@ -1,6 +1,7 @@
 package com.improvementsolutions.controller;
 
 import com.improvementsolutions.dto.SuccessResponse;
+import com.improvementsolutions.dto.ErrorResponse;
 import com.improvementsolutions.dto.user.UserDto;
 import com.improvementsolutions.dto.user.UserUpdateDto;
 import com.improvementsolutions.model.Role;
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 import java.util.Set;
@@ -29,7 +31,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/admin/users")
-@PreAuthorize("hasRole('ROLE_ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
 public class UserAdminController {
     
     private static final Logger logger = LoggerFactory.getLogger(UserAdminController.class);    
@@ -126,9 +128,20 @@ public class UserAdminController {
         try {
             userService.delete(id);
             return ResponseEntity.ok(new SuccessResponse("Usuario eliminado correctamente"));
+        } catch (DataIntegrityViolationException dive) {
+            logger.error("Violación de integridad al eliminar usuario {}: {}", id, dive.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(
+                            "No se puede eliminar el usuario porque tiene relaciones activas (roles/asociaciones). Intente desasociar primero.",
+                            "CONSTRAINT_VIOLATION",
+                            409));
         } catch (Exception e) {
             logger.error("Error al eliminar usuario: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(
+                            "Error al eliminar el usuario",
+                            "BAD_REQUEST",
+                            400));
         }
     }
       /**
@@ -156,9 +169,18 @@ public class UserAdminController {
         try {
             User user = userService.toggleUserActive(id);
             return ResponseEntity.ok(convertToDto(user));
+        } catch (IllegalStateException ise) {
+            logger.warn("Regla de negocio impide cambiar estado para usuario {}: {}", id, ise.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(ise.getMessage(), "BUSINESS_RULE", 409));
+        } catch (java.util.NoSuchElementException | org.springframework.dao.EmptyResultDataAccessException notFound) {
+            logger.error("Usuario no encontrado al cambiar estado: {}", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("Usuario no encontrado", "NOT_FOUND", 404));
         } catch (Exception e) {
             logger.error("Error al cambiar estado de activación: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse("Error al cambiar estado del usuario", "BAD_REQUEST", 400));
         }
     }
     

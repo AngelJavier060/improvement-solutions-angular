@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { AuthService } from '../../../core/services/auth.service';
+import { AuthService, PasswordResetRequestResult } from '../../../core/services/auth.service';
 import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
@@ -39,7 +39,6 @@ export class ForgotPasswordModalComponent implements OnInit {
     this.successMessage = '';
 
     const email = this.emailControl?.value;
-
     if (!email) {
       this.error = 'El correo electrónico es requerido';
       this.loading = false;
@@ -47,11 +46,15 @@ export class ForgotPasswordModalComponent implements OnInit {
     }
 
     this.authService.requestPasswordReset(email)
-      .subscribe({
-        next: (response: boolean) => {
+      .subscribe(
+        (result: PasswordResetRequestResult) => {
           this.loading = false;
-          if (response) {
+          if (result && result.success) {
             this.successMessage = 'Se ha enviado un correo con las instrucciones para restablecer tu contraseña.';
+            if (result.link) {
+              // En entornos de desarrollo, el backend puede retornar el enlace para pruebas manuales
+              console.log('[DEV] Enlace de restablecimiento de contraseña:', result.link);
+            }
             setTimeout(() => {
               this.activeModal.close('success');
             }, 3000);
@@ -59,19 +62,18 @@ export class ForgotPasswordModalComponent implements OnInit {
             this.error = 'No se pudo procesar la solicitud';
           }
         },
-        error: (err: HttpErrorResponse) => {
+        (err: HttpErrorResponse) => {
           this.loading = false;
           this.error = err.error?.message || 'Error al procesar la solicitud';
           console.error('Error requesting password reset:', err);
         }
-      });
+      );
+  }
+  dismiss(): void {
+    this.activeModal.dismiss();
   }
 
   backToLogin(): void {
     this.activeModal.dismiss('login');
-  }
-
-  dismiss(): void {
-    this.activeModal.dismiss();
   }
 }

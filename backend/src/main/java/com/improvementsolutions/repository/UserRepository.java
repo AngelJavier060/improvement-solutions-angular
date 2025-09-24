@@ -2,7 +2,9 @@ package com.improvementsolutions.repository;
 
 import com.improvementsolutions.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -39,4 +41,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("select distinct u from User u left join fetch u.roles")
     List<User> findAllWithRoles();
+
+    // Limpieza explícita de filas en tablas de unión antes de eliminar usuario
+    @Modifying
+    @Query(value = "DELETE FROM user_roles WHERE user_id = :userId", nativeQuery = true)
+    void deleteFromUserRoles(@Param("userId") Long userId);
+
+    // Conteo de usuarios activos por nombre de rol
+    @Query("SELECT COUNT(u) FROM User u JOIN u.roles r WHERE u.active = true AND r.name = :roleName")
+    long countActiveUsersByRoleName(@Param("roleName") String roleName);
 }

@@ -42,6 +42,9 @@ public class DataInitializer implements CommandLineRunner {
         // Inicializar usuario administrador global si no existe
         initializeAdminUser();
         
+        // Asegurar usuario de desarrollo 'javier' con contraseña 12345 y rol ADMIN
+        ensureDevJavierUser();
+        
         // Asegurar que los usuarios existentes tengan las asociaciones correctas con empresas
         ensureUserBusinessAssociations();
         
@@ -75,8 +78,47 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Rol ROLE_ADMIN actualizado");
         }
     }
-    
+
+    /**
+     * Crea o actualiza el usuario de desarrollo 'javier' con password '12345', activo y rol ADMIN.
+     * Útil para entorno local y pruebas manuales.
+     */
     @Transactional
+    private void ensureDevJavierUser() {
+        try {
+            User user = userRepository.findByUsername("javier").orElse(null);
+            Role adminRole = roleRepository.findByName("ROLE_ADMIN").orElse(null);
+
+            if (user == null) {
+                user = new User();
+                user.setUsername("javier");
+                user.setEmail("javier@local.dev");
+                user.setName("Javier");
+                user.setActive(true);
+                user.setPassword(passwordEncoder.encode("12345"));
+                Set<Role> roles = new HashSet<>();
+                if (adminRole != null) roles.add(adminRole);
+                user.setCreatedAt(LocalDateTime.now());
+                user.setUpdatedAt(LocalDateTime.now());
+                userRepository.save(user);
+                log.info("Usuario DEV 'javier' creado con contraseña 12345 y rol ADMIN");
+            } else {
+                // Asegurar activo y rol admin SIN tocar la contraseña existente
+                user.setActive(true);
+                if (adminRole != null) {
+                    Set<Role> roles = user.getRoles() != null ? new HashSet<>(user.getRoles()) : new HashSet<>();
+                    roles.add(adminRole);
+                    user.setRoles(roles);
+                }
+                user.setUpdatedAt(LocalDateTime.now());
+                userRepository.save(user);
+                log.info("Usuario DEV 'javier' actualizado (roles/activo) sin modificar la contraseña");
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo garantizar el usuario DEV 'javier': {}", e.getMessage());
+        }
+    }
+
     private void initializeAdminUser() {
         // Verificar si ya existe un usuario administrador
         if (!userRepository.existsByUsername("admin")) {

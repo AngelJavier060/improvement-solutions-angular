@@ -1,6 +1,7 @@
 package com.improvementsolutions.repository;
 
 import com.improvementsolutions.model.Business;
+import com.improvementsolutions.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,6 +22,9 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
     
     @Query("SELECT b FROM Business b JOIN b.users u WHERE u.id = :userId")
     List<Business> findBusinessesByUserId(Long userId);
+    
+    // Empresas creadas por un usuario específico (columna created_by)
+    List<Business> findByCreatedBy(User createdBy);
     
     List<Business> findByActiveTrue();
     

@@ -28,9 +28,10 @@ export class EditarUsuarioComponent implements OnInit {
   environment = environment;
   businesses: Business[] = [];
   availableRoles = [
-    { id: 1, name: 'ROLE_ADMIN' },
-    { id: 2, name: 'ROLE_USER' },
-    { id: 3, name: 'ROLE_MANAGER' }
+    // IMPORTANTE: IDs deben coincidir con la BD (ver V1_0__initial_schema.sql)
+    // En migraciones: primero se inserta ROLE_USER (id=1), luego ROLE_ADMIN (id=2)
+    { id: 2, name: 'ROLE_ADMIN' },
+    { id: 1, name: 'ROLE_USER' }
   ];  constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -72,6 +73,28 @@ export class EditarUsuarioComponent implements OnInit {
       active: [true],
       roleIds: [[], Validators.required]
     }, { validators: this.passwordMatchValidator });
+  }
+
+  private extractBackendMessage(error: any): string {
+    try {
+      if (!error) return 'Error desconocido';
+      // HttpErrorResponse de Angular
+      if (error.error) {
+        if (typeof error.error === 'string') {
+          return error.error;
+        }
+        if (typeof error.error.message === 'string') {
+          return error.error.message;
+        }
+      }
+      if (typeof error.message === 'string') {
+        return error.message;
+      }
+      // Intentar serializar
+      return JSON.stringify(error);
+    } catch {
+      return 'Error desconocido';
+    }
   }
 
   ngOnInit(): void {
@@ -352,7 +375,8 @@ export class EditarUsuarioComponent implements OnInit {
   handleSaveError(error: any): void {
     console.error('Error al guardar usuario', error);
     this.isSubmitting = false;
-    this.notificationService.error('Error al guardar el usuario: ' + (error.error || error.message || 'Error desconocido'));
+    const backendMessage = this.extractBackendMessage(error);
+    this.notificationService.error('Error al guardar el usuario: ' + backendMessage);
   }  onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {

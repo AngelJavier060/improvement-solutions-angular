@@ -4,12 +4,15 @@ import com.improvementsolutions.dto.auth.*;
 import com.improvementsolutions.dto.auth.LoginResponseDto.UserInfoDto;
 import com.improvementsolutions.exception.UserInactiveException;
 import com.improvementsolutions.exception.UserNotFoundException;
+import com.improvementsolutions.model.PasswordResetToken;
 import com.improvementsolutions.model.User;
 import com.improvementsolutions.model.UserSession;
+import com.improvementsolutions.repository.PasswordResetTokenRepository;
 import com.improvementsolutions.repository.UserRepository;
 import com.improvementsolutions.repository.UserSessionRepository;
 import com.improvementsolutions.security.JwtTokenProvider;
 import com.improvementsolutions.security.UserDetailsImpl;
+import com.improvementsolutions.service.EmailService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +29,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -43,6 +48,18 @@ public class AuthService {
     
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Value("${app.frontend.base-url:https://improvement-solution.com}")
+    private String frontendBaseUrl;
 
     private User findUserByEmailOrUsername(String email, String username) {
         User user = null;
@@ -157,33 +174,146 @@ public class AuthService {
     }
 
     @Transactional
-    public boolean handlePasswordResetRequest(String email) {
-        // Implementación básica: solo para compilar
-        throw new UnsupportedOperationException("handlePasswordResetRequest no implementado");
+    public String handlePasswordResetRequest(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado para el email proporcionado"));
+
+        // Eliminar tokens previos del usuario para evitar múltiples válidos
+        try {
+            passwordResetTokenRepository.deleteByUser(user);
+        } catch (Exception e) {
+            logger.debug("No se pudieron eliminar tokens previos: {}", e.getMessage());
+        }
+
+        // Crear y guardar un nuevo token válido por 24 horas
+        String rawToken = UUID.randomUUID().toString();
+        PasswordResetToken token = new PasswordResetToken();
+        token.setToken(rawToken);
+        token.setUser(user);
+        token.setCreatedAt(LocalDateTime.now());
+        token.setExpiryDate(LocalDateTime.now().plusHours(24));
+        token.setUsed(false);
+        passwordResetTokenRepository.save(token);
+
+        // Construir enlace de restablecimiento para frontend
+        String resetLink = frontendBaseUrl + "/auth/reset-password?token=" + rawToken;
+
+        // Intentar enviar el correo (si el mail sender no está configurado, solo se loguea)
+        try {
+            emailService.sendPasswordResetEmail(user.getEmail(), rawToken, frontendBaseUrl);
+        } catch (Exception e) {
+            logger.warn("Fallo enviando email de reset (continuando): {}", e.getMessage());
+        }
+
+        return resetLink;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isResetTokenValid(String token) {
+        try {
+            PasswordResetToken prt = passwordResetTokenRepository.findByToken(token)
+                    .orElse(null);
+            if (prt == null) return false;
+            if (prt.isExpired()) return false;
+            if (prt.isUsed()) return false;
+            return true;
+        } catch (Exception e) {
+            logger.warn("Error validando token de reset: {}", e.getMessage());
+            return false;
+        }
     }
 
     @Transactional
     public boolean handlePasswordReset(PasswordResetDto resetDto) {
-        // Implementación básica: solo para compilar
-        throw new UnsupportedOperationException("handlePasswordReset no implementado");
+        if (resetDto.getNewPassword() == null || resetDto.getConfirmPassword() == null
+                || !resetDto.getNewPassword().equals(resetDto.getConfirmPassword())) {
+            throw new IllegalArgumentException("Las contraseñas no coinciden");
+        }
+
+        PasswordResetToken prt = passwordResetTokenRepository.findByToken(resetDto.getToken())
+                .orElseThrow(() -> new IllegalArgumentException("Token inválido"));
+
+        if (prt.isExpired()) {
+            throw new IllegalArgumentException("El token ha expirado");
+        }
+        if (prt.isUsed()) {
+            throw new IllegalArgumentException("El token ya ha sido utilizado");
+        }
+
+        User user = prt.getUser();
+        user.setPassword(passwordEncoder.encode(resetDto.getNewPassword()));
+        userRepository.save(user);
+
+        prt.setUsed(true);
+        passwordResetTokenRepository.save(prt);
+
+        // Opcional: limpiar otros tokens del usuario
+        try {
+            passwordResetTokenRepository.deleteByUser(user);
+        } catch (Exception e) {
+            logger.debug("No se pudieron limpiar tokens tras el uso: {}", e.getMessage());
+        }
+
+        return true;
     }
 
     @Transactional
     public boolean handlePasswordChange(String username, PasswordChangeDto changeDto) {
-        // Implementación básica: solo para compilar
-        throw new UnsupportedOperationException("handlePasswordChange no implementado");
+        if (changeDto == null) {
+            throw new IllegalArgumentException("Solicitud inválida");
+        }
+        if (changeDto.getNewPassword() == null || changeDto.getConfirmPassword() == null
+                || !changeDto.getNewPassword().equals(changeDto.getConfirmPassword())) {
+            throw new IllegalArgumentException("Las contraseñas no coinciden");
+        }
+
+        // Buscar usuario por username o email
+        User user = userRepository.findByUsername(username)
+                .orElseGet(() -> userRepository.findByEmail(username).orElse(null));
+        if (user == null) {
+            throw new UserNotFoundException("Usuario no encontrado para cambio de contraseña");
+        }
+
+        // Validar contraseña actual
+        if (changeDto.getCurrentPassword() == null || !passwordEncoder.matches(changeDto.getCurrentPassword(), user.getPassword())) {
+            throw new BadCredentialsException("La contraseña actual no es correcta");
+        }
+
+        // Actualizar contraseña
+        user.setPassword(passwordEncoder.encode(changeDto.getNewPassword()));
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        // Opcional: invalidar otras sesiones del usuario (mejor práctica)
+        try {
+            // Obtener sesión actual desde el contexto (si se quisiera preservar) no es trivial aquí;
+            // desactivamos todas las otras sesiones dejando que el front mantenga la actual o reloguee.
+            List<UserSession> sessions = userSessionRepository.findActiveSessionsByUserId(user.getId());
+            for (UserSession s : sessions) {
+                s.setActive(false);
+            }
+            userSessionRepository.saveAll(sessions);
+        } catch (Exception e) {
+            logger.warn("No se pudieron invalidar sesiones tras cambio de contraseña: {}", e.getMessage());
+        }
+
+        return true;
     }
 
     @Transactional
     public void deactivateSession(String token) {
-        // Implementación básica: solo para compilar
-        throw new UnsupportedOperationException("deactivateSession no implementado");
+        if (token == null || token.isEmpty()) return;
+        userSessionRepository.findByToken(token).ifPresent(session -> {
+            session.setActive(false);
+            session.setLastActivity(LocalDateTime.now());
+            userSessionRepository.save(session);
+        });
     }
 
     @Transactional
     public List<UserSession> getActiveSessions(Long userId) {
-        // Implementación básica para compilar
-        return new java.util.ArrayList<>();
+        if (userId == null) return java.util.Collections.emptyList();
+        return userSessionRepository.findActiveSessionsByUserId(userId);
     }
     
     private void createUserSession(User user, String token) {
@@ -207,13 +337,36 @@ public class AuthService {
 
     @Transactional
     public void revokeSession(Long userId, Long sessionId) {
-        // Implementación básica: solo para compilar
-        throw new UnsupportedOperationException("revokeSession no implementado");
+        if (userId == null || sessionId == null) return;
+        userSessionRepository.findById(sessionId).ifPresent(session -> {
+            if (session.getUser() != null && session.getUser().getId().equals(userId)) {
+                session.setActive(false);
+                session.setLastActivity(LocalDateTime.now());
+                userSessionRepository.save(session);
+            }
+        });
     }
 
     @Transactional
     public void revokeOtherSessions(Long userId, String currentToken) {
-        // Implementación básica: solo para compilar
-        throw new UnsupportedOperationException("revokeOtherSessions no implementado");
+        if (userId == null) return;
+        Long currentSessionId = null;
+        try {
+            if (currentToken != null) {
+                currentSessionId = userSessionRepository.findByToken(currentToken)
+                        .map(UserSession::getId).orElse(null);
+            }
+        } catch (Exception ignored) {}
+
+        if (currentSessionId != null) {
+            userSessionRepository.deactivateOtherSessions(userId, currentSessionId);
+        } else {
+            // Si no se identificó la sesión actual, desactivar todas
+            List<UserSession> sessions = userSessionRepository.findActiveSessionsByUserId(userId);
+            for (UserSession s : sessions) {
+                s.setActive(false);
+            }
+            userSessionRepository.saveAll(sessions);
+        }
     }
 }

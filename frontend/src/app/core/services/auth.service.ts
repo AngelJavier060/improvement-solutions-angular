@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, tap, map } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 
@@ -40,6 +40,11 @@ export interface PasswordReset {
 
 export interface PasswordResetRequest {
   email: string;
+}
+
+export interface PasswordResetRequestResult {
+  success: boolean;
+  link?: string; // dev helper link if backend includes it in SuccessResponse.data
 }
 
 @Injectable({
@@ -161,8 +166,9 @@ export class AuthService {
   }
 
   resetPassword(resetData: PasswordReset): Observable<boolean> {
-    return this.http.post<boolean>(`${this.apiUrl}/reset-password`, resetData)
+    return this.http.post<any>(`${this.apiUrl}/reset-password`, resetData)
       .pipe(
+        map(() => true),
         catchError(error => {
           console.error('Error al restablecer contraseña:', error);
           return throwError(() => error);
@@ -170,10 +176,14 @@ export class AuthService {
       );
   }
 
-  requestPasswordReset(email: string): Observable<boolean> {
+  requestPasswordReset(email: string): Observable<PasswordResetRequestResult> {
     const request: PasswordResetRequest = { email };
-    return this.http.post<boolean>(`${this.apiUrl}/forgot-password`, request)
+    return this.http.post<any>(`${this.apiUrl}/forgot-password`, request)
       .pipe(
+        map((resp: any) => ({
+          success: true,
+          link: typeof resp?.data === 'string' ? resp.data : undefined
+        })),
         catchError(error => {
           console.error('Error al solicitar restablecimiento de contraseña:', error);
           return throwError(() => error);

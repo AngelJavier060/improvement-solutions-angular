@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import java.util.Set;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -33,24 +35,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                     .orElse(null));
         } catch (Exception e) {
             throw new UsernameNotFoundException("Error al buscar usuario: " + e.getMessage());
-        }
-
-        // Si no se encuentra en la base de datos y es "javier", crear usuario hardcodeado
-        if (user == null && "javier".equals(usernameOrEmail)) {
-            user = new User();
-            user.setId(1L);
-            user.setUsername("javier");
-            user.setEmail("javierangelmsn@outlook.es");
-            user.setName("Javier");
-            user.setPassword("$2a$10$iyH.Xiv1ASsMqL.yNen/0.1l98vhPF2U/BMJS/HMJQwkcHJtQSQD6");
-            user.setActive(true);
-            
-            Set<Role> roles = new HashSet<>();
-            Role adminRole = new Role();
-            adminRole.setId(1L);
-            adminRole.setName("ROLE_ADMIN");
-            roles.add(adminRole);
-            user.setRoles(roles);
         }
 
         if (user == null) {

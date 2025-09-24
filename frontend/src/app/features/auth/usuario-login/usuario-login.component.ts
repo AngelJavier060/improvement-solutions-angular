@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { ForgotPasswordModalComponent } from '../../../shared/components/forgot-password-modal/forgot-password-modal.component';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -19,7 +21,8 @@ export class UsuarioLoginComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private modalService: NgbModal
   ) {
     console.log('[UsuarioLoginComponent] Constructor - Creando componente');
 
@@ -116,5 +119,15 @@ export class UsuarioLoginComponent implements OnInit {
   // Método para volver al home
   goBack(): void {
     this.router.navigate(['/']);
+  }
+
+  // Abrir modal de "Olvidé mi contraseña"
+  openForgotPassword(): void {
+    this.modalService.open(ForgotPasswordModalComponent, {
+      centered: true,
+      size: 'md',
+      backdrop: 'static',
+      keyboard: true
+    });
   }
 }

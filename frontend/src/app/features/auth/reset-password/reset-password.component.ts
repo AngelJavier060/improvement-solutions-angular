@@ -85,7 +85,6 @@ export class ResetPasswordComponent implements OnInit {
       newPassword: this.newPasswordControl?.value,
       confirmPassword: this.confirmPasswordControl?.value
     };
-
     this.authService.resetPassword(passwordReset)
       .subscribe({
         next: (success) => {
@@ -93,14 +92,13 @@ export class ResetPasswordComponent implements OnInit {
           if (success) {
             this.successMessage = 'Tu contraseña ha sido actualizada exitosamente';
             setTimeout(() => {
-              this.router.navigate(['/auth/login']);
+              this.router.navigate(['/auth/usuario-login']);
             }, 3000);
           } else {
             this.error = 'Error al restablecer la contraseña';
           }
         },
         error: (err: HttpErrorResponse) => {
-          this.loading = false;
           this.error = 'Error al restablecer la contraseña';
           console.error('Error resetting password:', err);
         }

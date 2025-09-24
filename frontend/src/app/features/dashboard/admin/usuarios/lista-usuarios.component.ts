@@ -28,7 +28,16 @@ export class ListaUsuariosComponent implements OnInit {
   selectedBusinessId: number | 'all' = 'all';
   page = 1;
   pageSize = 10;
-  environment = environment;  constructor(
+  environment = environment;
+
+  // Variable para almacenar las URLs de imágenes de perfil
+  private profileImageUrls: Map<number, string> = new Map();
+  // Cache de empresa por usuario (muestra "RUC - Nombre")
+  private userBusinessCache: Map<number, string> = new Map();
+  private userBusinessLoading: Set<number> = new Set();
+  private userBusinessIdMap: Map<number, number> = new Map();
+
+  constructor(
     private userService: UserAdminService,
     private modalService: NgbModal,
     private router: Router,
@@ -196,10 +205,16 @@ export class ListaUsuariosComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al eliminar usuario', error);
-        this.notificationService.error('Error al eliminar el usuario: ' + (error.error || error.message || 'Error desconocido'));
+        const msg = (error?.error && typeof error.error === 'object' && 'message' in error.error)
+          ? (error.error as any).message
+          : (typeof error?.error === 'string' ? error.error : (error?.message || 'Error desconocido'));
+        this.notificationService.error('Error al eliminar el usuario: ' + msg);
+        // Recargar usuarios para asegurar consistencia visual
+        this.loadUsers();
       }
-    });  }
-  
+    });
+  }
+
   toggleUserActive(id: number, event: Event): void {
     event.stopPropagation();
     this.isLoading = true; // Mostramos un indicador de carga
@@ -217,15 +232,23 @@ export class ListaUsuariosComponent implements OnInit {
       error: (error) => {
         console.error('Error al cambiar estado del usuario', error);
         this.isLoading = false;
-        this.notificationService.error('Error al cambiar el estado del usuario: ' + (error.error || error.message || 'Error desconocido'));
+        // Revertir el estado visual del checkbox
+        try {
+          const input = event.target as HTMLInputElement;
+          if (input && typeof input.checked === 'boolean') {
+            input.checked = !input.checked;
+          }
+        } catch {}
+        // Mensaje claro desde el backend (ErrorResponse)
+        const msg = (error?.error && typeof error.error === 'object' && 'message' in error.error)
+          ? (error.error as any).message
+          : (typeof error?.error === 'string' ? error.error : (error?.message || 'Error desconocido'));
+        this.notificationService.error('Error al cambiar el estado del usuario: ' + msg);
+        // Recargar usuarios para asegurar consistencia visual
+        this.loadUsers();
       }
     });
-  }  // Variable para almacenar las URLs de imágenes de perfil
-  private profileImageUrls: Map<number, string> = new Map();
-  // Cache de empresa por usuario (muestra "RUC - Nombre")
-  private userBusinessCache: Map<number, string> = new Map();
-  private userBusinessLoading: Set<number> = new Set();
-  private userBusinessIdMap: Map<number, number> = new Map();
+  }
 
   private preloadBusinessesForPagedUsers(): void {
     (this.pagedUsers || []).forEach(u => {
