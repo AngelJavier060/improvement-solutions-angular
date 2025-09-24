@@ -14,7 +14,8 @@ RUN chmod +x node_modules/.bin/ng || true \
 
 # Etapa de producción
 FROM nginx:alpine
-COPY --from=build /app/dist/improvement-solutions/ /usr/share/nginx/html/
+# Angular con localize=true genera salida en subcarpeta de locale (p.ej., en-US)
+COPY --from=build /app/dist/improvement-solutions/en-US/ /usr/share/nginx/html/
 COPY nginx-ssl.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80 443
 CMD ["nginx", "-g", "daemon off;"]
