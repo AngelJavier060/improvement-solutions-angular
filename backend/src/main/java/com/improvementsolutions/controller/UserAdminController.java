@@ -48,7 +48,7 @@ public class UserAdminController {
     @GetMapping
     public ResponseEntity<List<UserDto>> getAllUsers() {
         logger.info("Obteniendo lista de usuarios");
-        List<User> users = userService.findAll();
+        List<User> users = userService.findAllWithRoles();
         List<UserDto> usersDto = users.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());

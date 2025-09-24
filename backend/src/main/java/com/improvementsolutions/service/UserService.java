@@ -33,6 +33,13 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    /**
+     * Obtiene todos los usuarios con roles usando JOIN FETCH para evitar LazyInitializationException
+     */
+    public List<User> findAllWithRoles() {
+        return userRepository.findAllWithRoles();
+    }
+
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);
     }
