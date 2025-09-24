@@ -5,6 +5,7 @@ import com.improvementsolutions.model.User;
 import com.improvementsolutions.model.UserSession;
 import com.improvementsolutions.repository.RoleRepository;
 import com.improvementsolutions.repository.UserRepository;
+import com.improvementsolutions.repository.ApprovalRequestRepository;
 import com.improvementsolutions.repository.UserSessionRepository;
 import com.improvementsolutions.repository.PasswordResetTokenRepository;
 import com.improvementsolutions.repository.BusinessRepository;
@@ -19,7 +20,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -34,6 +37,7 @@ public class UserService {
     private final BusinessRepository businessRepository;
     private final PasswordEncoder passwordEncoder;
     private final com.improvementsolutions.storage.StorageService fileStorageService;
+    private final ApprovalRequestRepository approvalRequestRepository;
 
     public List<User> findAll() {
         return userRepository.findAll();
@@ -159,6 +163,15 @@ public class UserService {
             userRepository.deleteFromUserRoles(id); // Tabla actual según migraciones
         } catch (Exception e) {
             log.warn("No se pudo limpiar tabla user_roles para usuario {}: {}", id, e.getMessage());
+        }
+
+        // 3.2) Limpiar referencias en ApprovalRequest (requester/decisionBy) que bloquean la eliminación por FK
+        try {
+            approvalRequestRepository.clearDecisionByForUser(user);
+            approvalRequestRepository.deleteByRequester(user);
+            log.info("Limpieza de referencias en ApprovalRequest completada para usuario {}", id);
+        } catch (Exception e) {
+            log.warn("No se pudo limpiar ApprovalRequest para usuario {}: {}", id, e.getMessage());
         }
 
         // 4) (Opcional) Limpiar asociaciones con empresas; la tabla user_business tiene ON DELETE CASCADE,
@@ -372,5 +385,100 @@ public class UserService {
             user.setLastLogin(LocalDateTime.now());
             userRepository.save(user);
         });
+    }
+    @Transactional
+    public Map<String, Object> deleteWithReport(Long id, boolean force) {
+        Map<String, Object> report = new LinkedHashMap<>();
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // 1) Eliminar sesiones
+        List<UserSession> sessions = userSessionRepository.findByUserId(id);
+        int removedSessions = sessions != null ? sessions.size() : 0;
+        if (removedSessions > 0) {
+            userSessionRepository.deleteAll(sessions);
+        }
+        report.put("removedSessions", removedSessions);
+
+        // 2) Eliminar tokens de reseteo
+        long resetTokens = 0L;
+        try {
+            resetTokens = passwordResetTokenRepository.countByUser(user);
+            passwordResetTokenRepository.deleteByUser(user);
+        } catch (Exception e) {
+            // continuar
+        }
+        report.put("removedResetTokens", resetTokens);
+
+        // 3) Limpiar roles (user_roles)
+        int rolesCount = user.getRoles() != null ? user.getRoles().size() : 0;
+        if (rolesCount > 0) {
+            user.getRoles().clear();
+            userRepository.save(user);
+        }
+        report.put("clearedRoles", rolesCount);
+        boolean userRoleRowsDeleted = false;
+        try {
+            userRepository.deleteFromUserRoles(id);
+            userRoleRowsDeleted = true;
+        } catch (Exception e) {
+            // continuar
+        }
+        report.put("userRoleRowsDeleted", userRoleRowsDeleted);
+
+        // 3.2) Limpiar referencias en ApprovalRequest
+        int approvalDecisionCleared = 0;
+        int approvalRequestsDeleted = 0;
+        try {
+            approvalDecisionCleared = approvalRequestRepository.clearDecisionByForUser(user);
+            approvalRequestsDeleted = approvalRequestRepository.deleteByRequester(user);
+        } catch (Exception e) {
+            // continuar
+        }
+        report.put("approvalDecisionCleared", approvalDecisionCleared);
+        report.put("approvalRequestsDeleted", approvalRequestsDeleted);
+
+        // 4) Limpiar asociaciones con empresas (user_business)
+        int businessesAssoc = user.getBusinesses() != null ? user.getBusinesses().size() : 0;
+        if (businessesAssoc > 0) {
+            user.getBusinesses().clear();
+            userRepository.save(user);
+        }
+        report.put("clearedBusinessesAssociations", businessesAssoc);
+
+        // 4.1) Quitar created_by en empresas
+        int createdByCleared = 0;
+        try {
+            List<com.improvementsolutions.model.Business> createdBusinesses = businessRepository.findByCreatedBy(user);
+            if (createdBusinesses != null && !createdBusinesses.isEmpty()) {
+                createdByCleared = createdBusinesses.size();
+                for (com.improvementsolutions.model.Business b : createdBusinesses) {
+                    b.setCreatedBy(null);
+                }
+                businessRepository.saveAll(createdBusinesses);
+            }
+        } catch (Exception e) {
+            // continuar
+        }
+        report.put("clearedCreatedByOnBusinesses", createdByCleared);
+
+        // 4.2) Eliminar foto de perfil si existe
+        boolean profilePictureDeleted = false;
+        try {
+            if (user.getProfilePicture() != null && !user.getProfilePicture().isEmpty()) {
+                fileStorageService.delete(user.getProfilePicture());
+                profilePictureDeleted = true;
+            }
+        } catch (Exception e) {
+            // continuar
+        }
+        report.put("profilePictureDeleted", profilePictureDeleted);
+
+        // 5) Eliminar usuario
+        userRepository.delete(user);
+        report.put("userDeleted", true);
+        report.put("forced", force);
+
+        return report;
     }
 }

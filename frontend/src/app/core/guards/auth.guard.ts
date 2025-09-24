@@ -35,7 +35,7 @@ export class AuthGuard implements CanActivate {
         console.log('Usuario no tiene el rol requerido');
         // Redirigir según el rol del usuario
         if (this.authService.hasRole('ROLE_ADMIN')) {
-          this.router.navigate(['/dashboard/admin'], { replaceUrl: true });
+          this.router.navigate(['/dashboard/admin/configuracion'], { replaceUrl: true });
         } else {
           this.router.navigate(['/dashboard/usuario'], { replaceUrl: true });
         }

@@ -15,6 +15,20 @@
 
   <div class="card">
     <div class="card-body">
+      <!-- Banners de error globales -->
+      <div *ngIf="errorUsersMessage" class="alert alert-danger d-flex align-items-center" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <div>
+          {{ errorUsersMessage }}
+          <ng-container *ngIf="errorUsersCode === 401">
+            <a routerLink="/auth/usuario-login" class="ms-2">Iniciar sesión</a>
+          </ng-container>
+        </div>
+      </div>
+      <div *ngIf="errorBusinessesMessage" class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="fas fa-info-circle me-2"></i>
+        <div>{{ errorBusinessesMessage }}</div>
+      </div>
       <nav class="mb-3">
         <ul class="nav nav-pills">
           <li class="nav-item">
@@ -198,6 +212,9 @@
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">Cancelar</button>
-    <button type="button" class="btn btn-danger" (click)="modal.close('confirm')">Eliminar</button>
+    <button type="button" class="btn btn-outline-danger" (click)="modal.close('confirm')">Eliminar</button>
+    <button type="button" class="btn btn-danger" (click)="modal.close('confirm_force')" title="Limpia asociaciones y elimina">
+      Eliminar forzado
+    </button>
   </div>
 </ng-template>

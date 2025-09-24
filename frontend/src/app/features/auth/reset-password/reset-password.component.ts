@@ -92,7 +92,11 @@ export class ResetPasswordComponent implements OnInit {
           if (success) {
             this.successMessage = 'Tu contraseña ha sido actualizada exitosamente';
             setTimeout(() => {
-              this.router.navigate(['/auth/usuario-login']);
+              // Enviar al login con una ruta de retorno hacia la configuración del admin.
+              // Si el usuario no es admin, el login component redirigirá según sus roles.
+              this.router.navigate(['/auth/usuario-login'], {
+                queryParams: { returnUrl: '/dashboard/admin/configuracion' }
+              });
             }, 3000);
           } else {
             this.error = 'Error al restablecer la contraseña';

@@ -43,8 +43,9 @@ export class UserAdminService {
   /**
    * Elimina un usuario
    */
-  deleteUser(id: number): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/${id}`);
+  deleteUser(id: number, force: boolean = false): Observable<any> {
+    const url = force ? `${this.baseUrl}/${id}?force=true` : `${this.baseUrl}/${id}`;
+    return this.http.delete(url);
   }  /**
    * Sube una imagen de perfil para un usuario
    */  uploadProfilePicture(userId: number, file: File): Observable<any> {

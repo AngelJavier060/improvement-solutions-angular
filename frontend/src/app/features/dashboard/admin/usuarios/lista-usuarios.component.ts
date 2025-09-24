@@ -21,6 +21,11 @@ export class ListaUsuariosComponent implements OnInit {
   filteredUsers: User[] = [];
   pagedUsers: User[] = []; // Nueva propiedad para usuarios paginados
   isLoading = true;
+  // Estado de error para usuarios y empresas
+  errorUsersCode: number | null = null;
+  errorUsersMessage: string = '';
+  errorBusinessesCode: number | null = null;
+  errorBusinessesMessage: string = '';
   searchText = '';
   userTypeFilter: 'todos' | 'empresa' | 'administrador' = 'empresa';
   // Empresas para filtro
@@ -61,10 +66,25 @@ export class ListaUsuariosComponent implements OnInit {
     this.businessService.getAll().subscribe({
       next: (data) => {
         this.businesses = data || [];
+        // limpiar estado de error de empresas si venía de antes
+        this.errorBusinessesCode = null;
+        this.errorBusinessesMessage = '';
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
+        console.error('Error al cargar empresas', err);
         this.businesses = [];
+        this.errorBusinessesCode = Number(err?.status) || null;
+        if (this.errorBusinessesCode === 401) {
+          this.errorBusinessesMessage = 'No autenticado. Por favor, vuelve a iniciar sesión.';
+        } else if (this.errorBusinessesCode === 403) {
+          this.errorBusinessesMessage = 'No tienes permisos para consultar las empresas.';
+        } else if (this.errorBusinessesCode === 500) {
+          this.errorBusinessesMessage = 'Error del servidor al obtener empresas. Intenta nuevamente.';
+        } else {
+          this.errorBusinessesMessage = (err?.error?.message) || 'No se pudieron cargar las empresas.';
+        }
+        this.cdr.markForCheck();
       }
     });
   }
@@ -74,15 +94,33 @@ export class ListaUsuariosComponent implements OnInit {
   }
 
   loadUsers(): void {
-    this.isLoading = true;    this.userService.getUsers().subscribe({
-      next: (data) => {        this.users = data;
+    this.isLoading = true;
+    this.userService.getUsers().subscribe({
+      next: (data) => {
+        this.users = data;
+        // limpiar estado de error previo
+        this.errorUsersCode = null;
+        this.errorUsersMessage = '';
         this.applyFilter(); // Esto también llamará a updatePagedUsers()
         this.isLoading = false;
         this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error al cargar usuarios', error);
+        this.users = [];
+        this.filteredUsers = [];
         this.isLoading = false;
+        this.errorUsersCode = Number(error?.status) || null;
+        if (this.errorUsersCode === 401) {
+          this.errorUsersMessage = 'Tu sesión ha expirado o no estás autenticado. Por favor, vuelve a iniciar sesión.';
+        } else if (this.errorUsersCode === 403) {
+          this.errorUsersMessage = 'No tienes permisos para ver la lista de usuarios. Requiere rol de Administrador.';
+        } else if (this.errorUsersCode === 500) {
+          this.errorUsersMessage = 'Ocurrió un error interno al obtener usuarios. Intenta nuevamente.';
+        } else {
+          this.errorUsersMessage = (error?.error?.message) || 'No se pudo cargar la lista de usuarios.';
+        }
+        this.cdr.markForCheck();
       }
     });
   }
@@ -192,19 +230,25 @@ export class ListaUsuariosComponent implements OnInit {
     this.modalService.open(content, { ariaLabelledBy: 'modal-delete-title' }).result.then(
       (result) => {
         if (result === 'confirm') {
-          this.deleteUser(user.id);
+          this.deleteUser(user.id, false);
+        } else if (result === 'confirm_force') {
+          this.deleteUser(user.id, true);
         }
       }
     );
   }
-  deleteUser(id: number): void {
-    this.userService.deleteUser(id).subscribe({
+  deleteUser(id: number, force: boolean = false): void {
+    this.userService.deleteUser(id, force).subscribe({
       next: () => {
         this.notificationService.success('Usuario eliminado exitosamente');
         this.loadUsers();
       },
       error: (error) => {
         console.error('Error al eliminar usuario', error);
+        // Si fue un 409 y no es forzado, sugerir forzar
+        if (Number(error?.status) === 409 && !force) {
+          this.notificationService.error('No se pudo eliminar por relaciones activas. Intenta "Eliminar forzado".');
+        }
         const msg = (error?.error && typeof error.error === 'object' && 'message' in error.error)
           ? (error.error as any).message
           : (typeof error?.error === 'string' ? error.error : (error?.message || 'Error desconocido'));

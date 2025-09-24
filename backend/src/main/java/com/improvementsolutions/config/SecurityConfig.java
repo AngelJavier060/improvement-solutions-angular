@@ -54,6 +54,8 @@ public class SecurityConfig {    private final JwtAuthenticationEntryPoint unaut
                 .requestMatchers("/api/configuration/**").permitAll() // Permitir endpoints de configuración
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/health").permitAll()
+                .requestMatchers("/api/health").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

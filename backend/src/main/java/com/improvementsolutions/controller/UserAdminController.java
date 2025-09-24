@@ -123,16 +123,18 @@ public class UserAdminController {
      * Elimina un usuario
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
-        logger.info("Eliminando usuario con ID: {}", id);
+    public ResponseEntity<?> deleteUser(@PathVariable Long id,
+                                        @RequestParam(name = "force", required = false, defaultValue = "false") boolean force) {
+        logger.info("Eliminando usuario con ID: {} (force={})", id, force);
         try {
-            userService.delete(id);
-            return ResponseEntity.ok(new SuccessResponse("Usuario eliminado correctamente"));
+            java.util.Map<String, Object> report = userService.deleteWithReport(id, force);
+            String msg = force ? "Usuario eliminado con limpieza forzada" : "Usuario eliminado correctamente";
+            return ResponseEntity.ok(new SuccessResponse(msg, report));
         } catch (DataIntegrityViolationException dive) {
             logger.error("Violación de integridad al eliminar usuario {}: {}", id, dive.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(new ErrorResponse(
-                            "No se puede eliminar el usuario porque tiene relaciones activas (roles/asociaciones). Intente desasociar primero.",
+                            "No se puede eliminar el usuario porque tiene relaciones activas (roles/asociaciones). Intente desasociar primero o use ?force=true.",
                             "CONSTRAINT_VIOLATION",
                             409));
         } catch (Exception e) {

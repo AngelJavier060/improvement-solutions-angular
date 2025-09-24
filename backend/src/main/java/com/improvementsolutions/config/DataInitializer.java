@@ -98,6 +98,8 @@ public class DataInitializer implements CommandLineRunner {
                 user.setPassword(passwordEncoder.encode("12345"));
                 Set<Role> roles = new HashSet<>();
                 if (adminRole != null) roles.add(adminRole);
+                // Asignar roles al usuario recién creado
+                user.setRoles(roles);
                 user.setCreatedAt(LocalDateTime.now());
                 user.setUpdatedAt(LocalDateTime.now());
                 userRepository.save(user);

@@ -2,6 +2,7 @@ package com.improvementsolutions.controller;
 
 import com.improvementsolutions.model.*;
 import com.improvementsolutions.dto.UserResponseDto;
+import com.improvementsolutions.dto.business.BusinessListDto;
 import com.improvementsolutions.service.BusinessService;
 import com.improvementsolutions.repository.IessRepository;
 import com.improvementsolutions.repository.BusinessRepository;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
@@ -126,9 +128,12 @@ public class BusinessController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<List<Business>> getAllBusinesses() {
+    public ResponseEntity<List<BusinessListDto>> getAllBusinesses() {
         List<Business> businesses = businessService.findAll();
-        return ResponseEntity.ok(businesses);
+        List<BusinessListDto> dtos = businesses.stream()
+                .map(BusinessListDto::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/{id}")
