@@ -6,14 +6,17 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Etapa de producción (Java 17)
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
-# Crear usuario no root
-RUN addgroup -g 1001 appgroup && adduser -u 1001 -G appgroup -s /bin/sh -D appuser
+# Instalar utilidades necesarias para healthcheck (curl)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Instalar utilidades necesarias para healthcheck
-RUN apk add --no-cache curl
+# Crear usuario no root (Debian/Ubuntu)
+RUN groupadd -g 1001 appgroup \
+    && useradd -u 1001 -g appgroup -m -s /bin/bash appuser
 
 # Copiar el JAR construido
 COPY --from=build --chown=appuser:appgroup /app/target/*.jar app.jar
