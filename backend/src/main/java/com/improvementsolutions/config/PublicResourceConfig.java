@@ -41,7 +41,11 @@ public class PublicResourceConfig implements WebMvcConfigurer {
         
         // Configurar acceso al directorio de logos
         registry.addResourceHandler("/api/files/logos/**")
-                .addResourceLocations("file:" + uploadPath + "/logos/")
+                // Buscar primero en la carpeta de logos y luego en la raíz como fallback
+                .addResourceLocations(
+                    "file:" + uploadPath + "/logos/",
+                    "file:" + uploadPath + "/"
+                )
                 .setCachePeriod(3600);
         
         logger.info("Handler para directorio de logos configurado: file:{}/logos/", uploadPath);

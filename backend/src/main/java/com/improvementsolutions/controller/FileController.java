@@ -170,8 +170,19 @@ public class FileController {
                     .header(HttpHeaders.PRAGMA, "cache")
                     .body(file);
         } catch (StorageException e) {
-            logger.error("Logo no encontrado: {}", filename, e);
-            return ResponseEntity.notFound().build();
+            // Fallback: intentar cargar desde la raíz en caso de archivos legados sin subcarpeta 'logos'
+            logger.warn("Logo no encontrado en carpeta 'logos': {}. Intentando ruta raíz como fallback...", filename);
+            try {
+                Resource fallback = storageService.loadAsResource(filename);
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fallback.getFilename() + "\"")
+                        .header(HttpHeaders.CACHE_CONTROL, "max-age=31536000")
+                        .header(HttpHeaders.PRAGMA, "cache")
+                        .body(fallback);
+            } catch (StorageException ex) {
+                logger.error("Logo no encontrado en ninguna ruta: {}", filename, ex);
+                return ResponseEntity.notFound().build();
+            }
         }
     }
 

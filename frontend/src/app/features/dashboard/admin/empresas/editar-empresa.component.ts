@@ -127,7 +127,8 @@ export class EditarEmpresaComponent implements OnInit {
           this.actualizarEmpresa(empresaData);
         },
         error: (err) => {
-          this.error = 'Error al subir el logo: ' + (err.error?.message || err.message || 'Error desconocido');
+          const backendMsg = this.extractErrorMessage(err);
+          this.error = backendMsg ? `Error al subir el logo: ${backendMsg}` : 'Error al subir el logo';
           this.loading = false;
           console.error('Error al subir logo:', err);
         }
@@ -149,11 +150,65 @@ export class EditarEmpresaComponent implements OnInit {
         this.router.navigate(['/dashboard/admin/empresas']);
       },
       error: (err) => {
-        this.error = 'Error al actualizar la empresa';
-        console.error(err);
+        const backendMsg = this.extractErrorMessage(err);
+        this.error = backendMsg ? `Error al actualizar la empresa: ${backendMsg}` : 'Error al actualizar la empresa';
+        console.error('Actualizar empresa error:', err);
         this.loading = false;
       }
     });
+  }
+
+  private extractErrorMessage(err: any): string {
+    try {
+      if (!err) return '';
+      // HttpErrorResponse suele traer el payload en err.error
+      const payload = (err && 'error' in err) ? err.error : err;
+
+      // Si es string directo (p.ej. texto plano del backend)
+      if (typeof payload === 'string' && payload.trim()) return payload.trim();
+
+      // Mensaje típico en { message: '...'}
+      if (payload && typeof payload.message === 'string' && payload.message.trim()) {
+        return payload.message.trim();
+      }
+
+      // Errores de validación comunes: arrays
+      if (Array.isArray(payload?.errors)) {
+        const msgs = payload.errors
+          .map((x: any) => {
+            if (typeof x === 'string') return x;
+            if (x?.defaultMessage) return x.defaultMessage;
+            if (x?.message) return x.message;
+            const field = x?.field ? `${x.field}: ` : '';
+            return field + (x?.error || x?.code || '').toString();
+          })
+          .filter((m: any) => !!m && String(m).trim());
+        if (msgs.length) return msgs.join('; ');
+      }
+
+      // Otra convención: fieldErrors
+      if (Array.isArray(payload?.fieldErrors)) {
+        const msgs = payload.fieldErrors
+          .map((fe: any) => `${fe.field || ''}: ${fe.message || fe.defaultMessage || fe.error || ''}`.trim())
+          .filter((m: any) => !!m && String(m).trim());
+        if (msgs.length) return msgs.join('; ');
+      }
+
+      // Detalle alternativo
+      if (typeof payload?.details === 'string' && payload.details.trim()) return payload.details.trim();
+      if (typeof payload?.detail === 'string' && payload.detail.trim()) return payload.detail.trim();
+
+      // Si viene como Error simple arrojado por interceptores/servicios
+      if (typeof err?.message === 'string' && err.message.trim()) return err.message.trim();
+
+      // Último recurso: serializar un resumen
+      if (payload && typeof payload === 'object') {
+        return JSON.stringify(payload);
+      }
+      return '';
+    } catch {
+      return '';
+    }
   }
 
   cancelar(): void {

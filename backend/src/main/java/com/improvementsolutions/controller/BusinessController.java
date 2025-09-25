@@ -516,7 +516,10 @@ public class BusinessController {
     @GetMapping("/{businessId}/users")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<UserResponseDto>> getUsersByBusiness(@PathVariable Long businessId) {
-        Business business = businessService.findById(businessId)
+        // En producción spring.jpa.open-in-view está deshabilitado, por lo que
+        // acceder a colecciones LAZY fuera de una transacción causa LazyInitializationException.
+        // Usamos el método transaccional que inicializa todas las relaciones necesarias.
+        Business business = businessService.findByIdWithAllRelations(businessId)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
         return ResponseEntity.ok(UserResponseDto.fromUsers(business.getUsers()));
     }
