@@ -911,10 +911,20 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   // Logo de la empresa con fallback para evitar titileo por imagen faltante
   getLogoUrl(): string {
     const logo = this.empresa?.logo;
-    if (logo) {
-      return `${environment.apiUrl}/api/files/${logo}`;
+    if (!logo) {
+      return '/assets/img/company-placeholder.svg';
     }
-    return '/assets/img/company-placeholder.svg';
+
+    // Normalizar: quitar backslashes, barras iniciales y extraer solo el nombre de archivo
+    try {
+      let normalized = String(logo).replace(/\\/g, '/').replace(/^\/+/, '');
+      try { normalized = decodeURIComponent(normalized); } catch {}
+      const filename = normalized.split('/').pop() || '';
+      if (!filename) return '/assets/img/company-placeholder.svg';
+      return `${environment.apiUrl}/api/files/logos/${filename}`;
+    } catch {
+      return '/assets/img/company-placeholder.svg';
+    }
   }
   // === USUARIOS ===
   // === USUARIOS ===
@@ -2014,6 +2024,10 @@ export class DetalleEmpresaAdminComponent implements OnInit {
           this.empresa.ieses = updatedIess;
           console.log('IESS actualizados desde servidor:', this.empresa.ieses);
         }
+        // Importante: recargar completamente los datos de la empresa porque
+        // el endpoint de actualización devuelve un Business con @JsonIgnore en iessItems
+        // y podría no incluir la lista; así garantizamos consistencia visual.
+        this.loadData();
       },
       error: (error: any) => {
         console.error('Error al guardar IESS:', error);
