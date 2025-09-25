@@ -77,6 +77,20 @@ public class BusinessService {
                 java.util.List<ContractorBlock> blocks = business.getContractorBlocks();
                 if (blocks != null) {
                     blocks.size();
+                    // Initialize nested contractorCompany for each block to avoid lazy issues during serialization
+                    for (ContractorBlock block : blocks) {
+                        if (block != null && block.getContractorCompany() != null) {
+                            block.getContractorCompany().getId();
+                        }
+                    }
+                }
+                // Ensure user roles are initialized to prevent lazy loading during serialization
+                if (business.getUsers() != null) {
+                    for (User u : business.getUsers()) {
+                        if (u != null && u.getRoles() != null) {
+                            u.getRoles().size();
+                        }
+                    }
                 }
             } catch (Exception e) {
                 log.warn("[BusinessService] Could not initialize obligation matrices for business {}: {}", id, e.getMessage());

@@ -23,6 +23,8 @@ import org.hibernate.annotations.Where;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "business_obligation_matrices")
@@ -33,6 +35,7 @@ import lombok.ToString;
 @FilterDef(name = "deletedBusinessObligationMatrixFilter", parameters = @ParamDef(name = "isDeleted", type = boolean.class))
 @Filter(name = "deletedBusinessObligationMatrixFilter", condition = "active = :isDeleted")
 @Where(clause = "active = true")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class BusinessObligationMatrix {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,6 +43,7 @@ public class BusinessObligationMatrix {
 
     @ManyToOne
     @JoinColumn(name = "business_id")
+    @JsonIgnore
     private Business business;
 
     @ManyToOne
