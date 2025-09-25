@@ -95,7 +95,7 @@ public class DebugController {
     /**
      * Verifica si un archivo específico existe en el sistema
      */
-    @GetMapping("/file-exists/{directory}/{filename}")
+    @GetMapping("/file-exists/{directory}/{filename:.+}")
     public ResponseEntity<Map<String, Object>> checkFileExists(
             @PathVariable String directory, 
             @PathVariable String filename) {
