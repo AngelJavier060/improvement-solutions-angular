@@ -278,18 +278,25 @@ public class BusinessController {
                 
                 System.out.println("Datos IESS recibidos: " + iessItemsData);
                 
-                // Limpiar las relaciones IESS actuales
-                business.getIessItems().clear();
-                
-                // Agregar los nuevos IESS
+                // Limpiar las relaciones IESS actuales (mantener relación bidireccional)
+                for (Iess existingIess : new java.util.HashSet<>(business.getIessItems())) {
+                    business.removeIessItem(existingIess);
+                }
+
+                // Agregar los nuevos IESS usando helper para relación bidireccional
                 for (Map<String, Object> iessData : iessItemsData) {
-                    Long iessId = Long.valueOf(iessData.get("id").toString());
+                    Object rawId = iessData.get("id");
+                    if (rawId == null) {
+                        System.err.println("IESS sin 'id' en payload: " + iessData);
+                        continue;
+                    }
+                    Long iessId = Long.valueOf(rawId.toString());
                     System.out.println("Buscando IESS con ID: " + iessId);
                     
                     Optional<Iess> iessOptional = iessRepository.findById(iessId);
                     if (iessOptional.isPresent()) {
                         Iess iess = iessOptional.get();
-                        business.getIessItems().add(iess);
+                        business.addIessItem(iess);
                         System.out.println("IESS agregado: " + iess.getDescription());
                     } else {
                         System.err.println("IESS no encontrado con ID: " + iessId);
