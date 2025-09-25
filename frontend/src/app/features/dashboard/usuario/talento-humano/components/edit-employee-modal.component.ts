@@ -364,10 +364,10 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
   }
 
   getProfileImageSrc(): string {
-    if (!this.employee) return 'assets/images/default-avatar.png';
+    if (!this.employee) return '/assets/img/user-placeholder.svg';
     const emp: any = this.employee;
     const path: string = emp.imagePath || emp.profile_picture || emp.photoFileName || '';
-    if (!path) return 'assets/images/default-avatar.png';
+    if (!path) return '/assets/img/user-placeholder.svg';
     if (path.startsWith('http')) return path;
     if (path.startsWith('uploads/')) {
       const rel = path.replace(/^uploads\//, '');

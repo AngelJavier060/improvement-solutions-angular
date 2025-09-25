@@ -67,7 +67,8 @@ export class FileService {
     const formData = new FormData();
     formData.append('file', file);
 
-    return this.http.post<FileResponse>(`${this.baseUrl}/upload/${directory}`, formData).pipe(
+    const headers = this.getAuthHeaders();
+    return this.http.post<FileResponse>(`${this.baseUrl}/upload/${directory}`, formData, { headers }).pipe(
       map(response => {
         console.log('[FileService] Respuesta del servidor:', response);
         return {
@@ -87,6 +88,11 @@ export class FileService {
           return throwError(() => new Error('El archivo es demasiado grande. El tamaño máximo permitido es 2MB.'));
         } else if (error.status === 415) {
           return throwError(() => new Error('Tipo de archivo no permitido. Solo se permiten imágenes JPG y PNG.'));
+        } else if (error.status === 400) {
+          const msg = (error?.error && typeof error.error === 'object' && 'message' in error.error)
+            ? (error.error as any).message
+            : (typeof error?.error === 'string' ? error.error : (error?.message || 'Solicitud inválida al subir archivo'));
+          return throwError(() => new Error(msg));
         }
         return throwError(() => error);
       })

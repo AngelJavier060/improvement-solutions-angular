@@ -79,6 +79,7 @@ public class Business {
     private List<BusinessEmployee> employees = new ArrayList<>();
     
     @ManyToMany(mappedBy = "businesses", fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<User> users = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -156,6 +157,7 @@ public class Business {
         joinColumns = @JoinColumn(name = "business_id"),
         inverseJoinColumns = @JoinColumn(name = "contractor_company_id")
     )
+    @JsonIgnore
     private List<ContractorCompany> contractorCompanies = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -164,6 +166,7 @@ public class Business {
         joinColumns = @JoinColumn(name = "business_id"),
         inverseJoinColumns = @JoinColumn(name = "contractor_block_id")
     )
+    @JsonIgnore
     private List<ContractorBlock> contractorBlocks = new ArrayList<>();
 
     @PrePersist
