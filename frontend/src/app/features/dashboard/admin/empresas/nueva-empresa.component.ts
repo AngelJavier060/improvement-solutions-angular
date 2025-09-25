@@ -138,7 +138,10 @@ export class NuevaEmpresaComponent implements OnInit {
         this.dialogRef.close('refresh');
       },
       error: (err) => {
-        this.error = 'Error al crear la empresa';
+        const backendMsg = (err?.error && typeof err.error === 'object' && 'message' in err.error)
+          ? (err.error as any).message
+          : (typeof err?.error === 'string' ? err.error : (err?.message || 'Error desconocido'));
+        this.error = 'Error al crear la empresa: ' + backendMsg;
         console.error('Error en createBusiness:', err);
         this.loading = false;
       }

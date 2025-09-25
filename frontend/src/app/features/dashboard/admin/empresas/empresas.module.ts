@@ -16,6 +16,7 @@ import { EmpresasRoutingModule } from './empresas-routing.module';
 import { SharedModule } from '../../../../shared/shared.module';
 import { ApprovalsListComponent } from './approvals-list.component';
 import { MatrixConfigComponent } from './matrix-config.component';
+import { DiagnosticoBdComponent } from './diagnostico-bd.component';
 
 @NgModule({
   declarations: [
@@ -27,7 +28,8 @@ import { MatrixConfigComponent } from './matrix-config.component';
     DashboardEmpresasComponent,
     UserModalComponent,
     ApprovalsListComponent,
-    MatrixConfigComponent
+    MatrixConfigComponent,
+    DiagnosticoBdComponent
   ],
   imports: [
     CommonModule,

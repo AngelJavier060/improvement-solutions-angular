@@ -30,6 +30,7 @@ public class BusinessService {
     private final BusinessObligationMatrixRepository businessObligationMatrixRepository;
     private final CourseCertificationRepository courseCertificationRepository;
     private final CardCatalogRepository cardCatalogRepository;
+    private final com.improvementsolutions.storage.StorageService storageService;
 
     public List<Business> findAll() {
         return businessRepository.findAll();
@@ -84,6 +85,9 @@ public class BusinessService {
         if (business.getEmail() == null || business.getEmail().trim().isEmpty()) {
             throw new RuntimeException("El email es requerido");
         }
+        if (business.getPhone() == null || business.getPhone().trim().isEmpty()) {
+            throw new RuntimeException("El teléfono es requerido");
+        }
         
         // Establecer valores por defecto
         business.setActive(true);
@@ -123,6 +127,9 @@ public class BusinessService {
         if (businessDetails.getEmail() == null || businessDetails.getEmail().trim().isEmpty()) {
             throw new RuntimeException("El email es requerido");
         }
+        if (businessDetails.getPhone() == null || businessDetails.getPhone().trim().isEmpty()) {
+            throw new RuntimeException("El teléfono es requerido");
+        }
         
         // Actualizar los campos
         business.setRuc(businessDetails.getRuc());
@@ -142,7 +149,17 @@ public class BusinessService {
         
         // Solo actualiza el logo si se proporciona uno nuevo
         if (businessDetails.getLogo() != null && !businessDetails.getLogo().isEmpty()) {
-            business.setLogo(businessDetails.getLogo());
+            String oldLogo = business.getLogo();
+            String newLogo = businessDetails.getLogo();
+            if (oldLogo != null && !oldLogo.trim().isEmpty() && !oldLogo.equals(newLogo)) {
+                try {
+                    storageService.delete(oldLogo);
+                    log.info("[BusinessService] Deleted old logo file: {}", oldLogo);
+                } catch (Exception e) {
+                    log.warn("[BusinessService] Could not delete old logo {}: {}", oldLogo, e.getMessage());
+                }
+            }
+            business.setLogo(newLogo);
         }
         
         business.setUpdatedAt(LocalDateTime.now());
@@ -206,15 +223,33 @@ public class BusinessService {
         }
         log.info("[BusinessService] Removed employees (orphan removal)");
 
-        // Eliminar matrices de obligaciones vinculadas (aplica SQLDelete -> active=false)
-        if (business.getBusinessObligationMatrices() != null && !business.getBusinessObligationMatrices().isEmpty()) {
-            java.util.List<com.improvementsolutions.model.BusinessObligationMatrix> bomCopy = new java.util.ArrayList<>(business.getBusinessObligationMatrices());
-            for (com.improvementsolutions.model.BusinessObligationMatrix bom : bomCopy) {
-                business.removeBusinessObligationMatrix(bom);
-                businessObligationMatrixRepository.delete(bom);
+        // Eliminar matrices de obligaciones y sus versiones (evitar FKs)
+        try {
+            // Primero, eliminar versiones que referencian matrices de esta empresa
+            businessObligationMatrixRepository.hardDeleteVersionsByBusinessId(id);
+            // Luego, eliminar todas las matrices (activas o inactivas) de esta empresa
+            businessObligationMatrixRepository.hardDeleteAllByBusinessId(id);
+            // Limpiar colección en memoria para el contexto JPA
+            if (business.getBusinessObligationMatrices() != null) {
+                business.getBusinessObligationMatrices().clear();
             }
+            log.info("[BusinessService] Hard-deleted obligation matrices and versions for business {}", id);
+        } catch (Exception e) {
+            log.warn("[BusinessService] Could not hard-delete obligation matrices for business {}: {}", id, e.getMessage());
         }
-        log.info("[BusinessService] Removed business obligation matrices");
+
+        // Intentar eliminar el archivo de logo asociado si existe
+        try {
+            String logoPath = business.getLogo();
+            if (logoPath != null && !logoPath.trim().isEmpty()) {
+                // Acepta tanto "logos/archivo.png" como rutas limpias
+                storageService.delete(logoPath);
+                log.info("[BusinessService] Deleted logo file: {}", logoPath);
+                business.setLogo(null);
+            }
+        } catch (Exception e) {
+            log.warn("[BusinessService] Could not delete business logo for id {}: {}", id, e.getMessage());
+        }
 
         // Persistir la limpieza de relaciones antes de eliminar
         businessRepository.save(business);
@@ -222,7 +257,25 @@ public class BusinessService {
 
         // Eliminar la empresa
         businessRepository.delete(business);
-        log.info("[BusinessService] Business id={} deleted successfully", id);
+        // Forzar sincronización inmediata para observar en logs y consultas subsecuentes
+        try {
+            businessRepository.flush();
+        } catch (Exception e) {
+            log.warn("[BusinessService] Flush after delete failed for business {}: {}", id, e.getMessage());
+        }
+
+        boolean stillExists = false;
+        try {
+            stillExists = businessRepository.existsById(id);
+        } catch (Exception e) {
+            log.warn("[BusinessService] existsById check failed after delete for {}: {}", id, e.getMessage());
+        }
+
+        if (stillExists) {
+            log.warn("[BusinessService] Business id={} STILL EXISTS after delete attempt", id);
+        } else {
+            log.info("[BusinessService] Business id={} deleted successfully", id);
+        }
     }
 
     @Transactional

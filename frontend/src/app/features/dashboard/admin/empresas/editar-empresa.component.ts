@@ -60,7 +60,8 @@ export class EditarEmpresaComponent implements OnInit {
           phone: empresa.phone
         });
         if (empresa.logo) {
-          this.logoPreviewUrl = this.fileService.getFileDirectoryUrl('logos', empresa.logo, true);
+          const filename = (empresa.logo || '').split('/').pop() || '';
+          this.logoPreviewUrl = filename ? this.fileService.getFileDirectoryUrl('logos', filename, true) : '';
         }
         this.loading = false;
       },

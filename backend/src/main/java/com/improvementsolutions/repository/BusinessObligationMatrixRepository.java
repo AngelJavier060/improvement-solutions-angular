@@ -40,4 +40,14 @@ public interface BusinessObligationMatrixRepository extends JpaRepository<Busine
 
     // Recuperar la relación activa específica (si se requiere para validaciones adicionales)
     List<BusinessObligationMatrix> findByBusiness_IdAndObligationMatrix_IdAndActiveTrue(Long businessId, Long obligationMatrixId);
+
+    // Hard delete helper: eliminar versiones asociadas a matrices de una empresa
+    @Modifying
+    @Query(value = "DELETE FROM business_obligation_matrix_versions WHERE business_obligation_matrix_id IN (SELECT id FROM business_obligation_matrices WHERE business_id = :businessId)", nativeQuery = true)
+    void hardDeleteVersionsByBusinessId(@Param("businessId") Long businessId);
+
+    // Hard delete helper: eliminar todas las matrices (activas o inactivas) de una empresa
+    @Modifying
+    @Query(value = "DELETE FROM business_obligation_matrices WHERE business_id = :businessId", nativeQuery = true)
+    void hardDeleteAllByBusinessId(@Param("businessId") Long businessId);
 }

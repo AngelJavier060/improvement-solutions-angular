@@ -6,7 +6,6 @@ import { FileService } from '../../../../services/file.service';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { environment } from '../../../../../environments/environment';
 import { MatDialog } from '@angular/material/dialog';
 import { NuevaEmpresaComponent } from './nueva-empresa.component';
 
@@ -37,6 +36,8 @@ export class ListaEmpresasComponent implements OnInit {
 
   // Cache de URLs de logos para evitar regeneración constante
   private logoUrlCache: Map<string, string> = new Map();
+  // Registro de logos con error (por id de empresa) para mostrar indicador visual
+  private logoErrors: Set<number> = new Set();
 
   constructor(
     private businessService: BusinessService,
@@ -157,8 +158,8 @@ export class ListaEmpresasComponent implements OnInit {
     if (confirm('¿Está seguro de eliminar esta empresa?')) {
       this.businessService.delete(id).subscribe({
         next: () => {
-          this.empresas = this.empresas.filter(empresa => empresa.id !== id);
-          this.empresasFiltradas = this.empresasFiltradas.filter(empresa => empresa.id !== id);
+          // Reconsultar desde el servidor para garantizar consistencia
+          this.cargarEmpresas();
         },
         error: (error) => {
           console.error('Error al eliminar empresa:', error);
@@ -183,40 +184,65 @@ export class ListaEmpresasComponent implements OnInit {
       return this.logoUrlCache.get(logoPath)!;
     }
 
-    // Generar la nueva URL con timestamp
-    const baseUrl = `${environment.apiUrl}/api/files/logos/`;
+    // Generar URL normalizando cualquier formato de ruta (http, uploads/logos/..., backslashes, etc.)
     let url: string;
-
-    // Si es una URL completa, extraemos solo el nombre del archivo
     if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
+      // Si es URL absoluta, extraer solo el nombre del archivo
       try {
         const urlObj = new URL(logoPath);
         const pathname = urlObj.pathname;
         const filename = pathname.split('/').pop() || '';
-        url = `${baseUrl}${filename}?v=${Date.now()}`;
+        url = `/api/files/logos/${filename}?v=${Date.now()}`;
       } catch (e) {
         console.error('Error al procesar URL de logo:', e);
         url = logoPath;
       }
-    }
-    // Si ya contiene logos/ en la ruta, extraemos solo el nombre
-    else if (logoPath.includes('logos/')) {
-      const filename = logoPath.split('/').pop() || '';
-      url = `${baseUrl}${filename}?v=${Date.now()}`;
-    }
-    // Si es solo un nombre de archivo, lo usamos directamente
-    else {
-      url = `${baseUrl}${logoPath}?v=${Date.now()}`;
+    } else {
+      // Normalizar separadores y extraer último segmento como nombre de archivo
+      const normalized = String(logoPath).replace(/\\/g, '/').replace(/^\/+/, '');
+      // Decodificar por si viene URL-encoded (ej: 'logos%2Ffile.png' o 'uploads%2Flogos%2Ffile.png')
+      let decoded = normalized;
+      try { decoded = decodeURIComponent(normalized); } catch {}
+      // Tomar solo el último segmento
+      const filename = decoded.split('/').pop() || '';
+      if (!filename) {
+        return '';
+      }
+      url = `/api/files/logos/${filename}?v=${Date.now()}`;
     }
 
     // Guardar en caché
     this.logoUrlCache.set(logoPath, url);
+    // Debug opcional: ver URL calculada
+    try { console.debug('[ListaEmpresas] Logo URL calculada para', logoPath, '=>', url); } catch {}
     return url;
   }
 
   // Método para limpiar el caché cuando sea necesario
   clearLogoUrlCache(): void {
     this.logoUrlCache.clear();
+  }
+
+  // Handlers de carga/errores de imagen para mostrar indicador visual
+  onLogoError(event: Event, empresa: Business): void {
+    const img = event.target as HTMLImageElement;
+    if (img && img.src && !img.src.includes('/assets/img/company-placeholder.svg')) {
+      img.src = '/assets/img/company-placeholder.svg';
+    }
+    if (empresa?.id != null) {
+      this.logoErrors.add(empresa.id);
+    }
+    try { console.warn('[ListaEmpresas] Error cargando logo de', empresa?.name, 'URL:', img?.src); } catch {}
+  }
+
+  onLogoLoad(empresa: Business): void {
+    if (empresa?.id != null) {
+      this.logoErrors.delete(empresa.id);
+    }
+  }
+
+  hasLogoError(empresa: Business): boolean {
+    return empresa?.id != null ? this.logoErrors.has(empresa.id) : false;
   }
 
   openNuevaEmpresaModal(): void {

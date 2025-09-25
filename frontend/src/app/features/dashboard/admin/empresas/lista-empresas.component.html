@@ -11,8 +11,11 @@
           <button class="btn btn-primary btn-lg shadow-sm animate__animated animate__fadeIn me-2" (click)="openNuevaEmpresaModal()">
             <i class="fas fa-plus-circle me-2"></i>Nueva Empresa
           </button>
-          <button class="btn btn-outline-secondary btn-lg" routerLink="/dashboard/admin/empresas/dashboard">
+          <button class="btn btn-outline-secondary btn-lg me-2" routerLink="/dashboard/admin/empresas/dashboard">
             <i class="fas fa-chart-line me-2"></i>Dashboard
+          </button>
+          <button class="btn btn-outline-primary btn-lg" routerLink="/dashboard/admin/empresas/diagnostico">
+            <i class="fas fa-stethoscope me-2"></i>Diagnóstico BD
           </button>
         </div>
       </div>
@@ -97,8 +100,19 @@
           <div class="card h-100 border-0 shadow-sm hover-shadow animate__animated animate__fadeIn">
             <div class="card-header bg-white text-center p-4 border-0">
               <div class="logo-container mb-3">
-                <img [src]="empresa.logo ? getLogoUrl(empresa.logo) : '/assets/img/company-placeholder.svg'" [alt]="empresa.name" 
-                     class="img-fluid" style="max-width: 120px; max-height: 80px;" loading="lazy" decoding="async" onerror="this.src='/assets/img/company-placeholder.svg'">
+                <img [src]="empresa.logo ? getLogoUrl(empresa.logo) : '/assets/img/company-placeholder.svg'"
+                     [alt]="empresa.name"
+                     [title]="empresa.logo ? getLogoUrl(empresa.logo) : ''"
+                     (load)="onLogoLoad(empresa)"
+                     (error)="onLogoError($event, empresa)"
+                     class="img-fluid"
+                     style="max-width: 120px; max-height: 80px;"
+                     loading="lazy" decoding="async">
+                <div *ngIf="hasLogoError(empresa)" class="mt-2">
+                  <span class="badge bg-danger-subtle text-danger" title="No se pudo cargar el logo">
+                    <i class="fas fa-image me-1"></i> Logo no encontrado
+                  </span>
+                </div>
               </div>
               <h5 class="card-title fw-bold mb-1">{{ empresa.name }}</h5>
               <div class="text-muted small">{{ empresa.ruc }}</div>
@@ -175,8 +189,17 @@
               <tr *ngFor="let empresa of empresasFiltradas" class="align-middle animate__animated animate__fadeIn">
                 <td>
                   <div class="logo-container">
-                    <img [src]="empresa.logo ? getLogoUrl(empresa.logo) : '/assets/img/company-placeholder.svg'" [alt]="empresa.name" 
-                         class="img-fluid rounded" style="max-width: 60px; max-height: 40px;" loading="lazy" decoding="async" onerror="this.src='/assets/img/company-placeholder.svg'">
+                    <img [src]="empresa.logo ? getLogoUrl(empresa.logo) : '/assets/img/company-placeholder.svg'"
+                         [alt]="empresa.name"
+                         [title]="empresa.logo ? getLogoUrl(empresa.logo) : ''"
+                         (load)="onLogoLoad(empresa)"
+                         (error)="onLogoError($event, empresa)"
+                         class="img-fluid rounded"
+                         style="max-width: 60px; max-height: 40px;"
+                         loading="lazy" decoding="async">
+                    <div *ngIf="hasLogoError(empresa)" class="small text-danger mt-1">
+                      <i class="fas fa-exclamation-triangle me-1"></i> Logo no encontrado
+                    </div>
                   </div>
                 </td>
                 <td><span class="fw-medium">{{ empresa.ruc }}</span></td>

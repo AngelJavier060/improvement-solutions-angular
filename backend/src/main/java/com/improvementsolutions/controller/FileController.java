@@ -159,6 +159,22 @@ public class FileController {
         }
     }
 
+    @GetMapping("/logos/{filename:.+}")
+    public ResponseEntity<Resource> serveLogoPublic(@PathVariable String filename) {
+        try {
+            logger.info("Solicitando logo: {}", filename);
+            Resource file = storageService.loadAsResource("logos", filename);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"")
+                    .header(HttpHeaders.CACHE_CONTROL, "max-age=31536000")
+                    .header(HttpHeaders.PRAGMA, "cache")
+                    .body(file);
+        } catch (StorageException e) {
+            logger.error("Logo no encontrado: {}", filename, e);
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @DeleteMapping("/delete/{filename:.+}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<Void> deleteFile(@PathVariable String filename) {

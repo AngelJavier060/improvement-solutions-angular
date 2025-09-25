@@ -9,6 +9,8 @@ import com.improvementsolutions.repository.BusinessRepository;
 import com.improvementsolutions.repository.ContractorCompanyRepository;
 import com.improvementsolutions.repository.ContractorBlockRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +29,7 @@ import java.util.ArrayList;
 @RestController
 @RequestMapping("/api/businesses")
 @RequiredArgsConstructor
+@Slf4j
 public class BusinessController {
 
     private final BusinessService businessService;
@@ -413,22 +416,80 @@ public class BusinessController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Business> createBusiness(@RequestBody Business business) {
-        Business createdBusiness = businessService.create(business);
-        return new ResponseEntity<>(createdBusiness, HttpStatus.CREATED);
+    public ResponseEntity<?> createBusiness(@RequestBody Business business) {
+        try {
+            Business createdBusiness = businessService.create(business);
+            return new ResponseEntity<>(createdBusiness, HttpStatus.CREATED);
+        } catch (DataIntegrityViolationException dive) {
+            log.error("[BusinessController] Violación de integridad al crear empresa: {}", dive.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new com.improvementsolutions.dto.ErrorResponse(
+                            "Conflicto de datos (posible RUC duplicado)",
+                            "CONFLICT",
+                            409));
+        } catch (IllegalArgumentException iae) {
+            log.warn("[BusinessController] Datos inválidos al crear empresa: {}", iae.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new com.improvementsolutions.dto.ErrorResponse(iae.getMessage(), "BAD_REQUEST", 400));
+        } catch (RuntimeException re) {
+            log.warn("[BusinessController] Error de validación al crear empresa: {}", re.getMessage());
+            // Nuestras validaciones en servicio lanzan RuntimeException con mensajes claros
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new com.improvementsolutions.dto.ErrorResponse(re.getMessage(), "BAD_REQUEST", 400));
+        } catch (Exception e) {
+            log.error("[BusinessController] Error inesperado al crear empresa: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new com.improvementsolutions.dto.ErrorResponse(
+                            "Error interno al crear empresa",
+                            "INTERNAL_SERVER_ERROR",
+                            500));
+        }
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Business> updateBusiness(@PathVariable Long id, @RequestBody Business business) {
-        Business updatedBusiness = businessService.update(id, business);
-        return ResponseEntity.ok(updatedBusiness);
+    public ResponseEntity<?> updateBusiness(@PathVariable Long id, @RequestBody Business business) {
+        try {
+            Business updatedBusiness = businessService.update(id, business);
+            return ResponseEntity.ok(updatedBusiness);
+        } catch (DataIntegrityViolationException dive) {
+            log.error("[BusinessController] Violación de integridad al actualizar empresa {}: {}", id, dive.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new com.improvementsolutions.dto.ErrorResponse(
+                            "Conflicto de datos (posible RUC duplicado)",
+                            "CONFLICT",
+                            409));
+        } catch (IllegalArgumentException iae) {
+            log.warn("[BusinessController] Datos inválidos al actualizar empresa {}: {}", id, iae.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new com.improvementsolutions.dto.ErrorResponse(iae.getMessage(), "BAD_REQUEST", 400));
+        } catch (RuntimeException re) {
+            log.warn("[BusinessController] Error de validación al actualizar empresa {}: {}", id, re.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new com.improvementsolutions.dto.ErrorResponse(re.getMessage(), "BAD_REQUEST", 400));
+        } catch (Exception e) {
+            log.error("[BusinessController] Error inesperado al actualizar empresa {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new com.improvementsolutions.dto.ErrorResponse(
+                            "Error interno al actualizar empresa",
+                            "INTERNAL_SERVER_ERROR",
+                            500));
+        }
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteBusiness(@PathVariable Long id) {
         businessService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/ruc/{ruc}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteBusinessByRuc(@PathVariable String ruc) {
+        Business business = businessService.findByRuc(ruc)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada con RUC: " + ruc));
+        businessService.delete(business.getId());
         return ResponseEntity.noContent().build();
     }
 

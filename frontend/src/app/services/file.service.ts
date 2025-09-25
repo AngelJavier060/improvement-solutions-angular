@@ -127,20 +127,29 @@ export class FileService {
    * Obtiene la URL de descarga de un archivo
    */
   getFileUrl(filename: string): string {
-    return `${this.baseUrl}/${filename}`;
+    const cleanFile = String(filename || '').replace(/^\/+/, '');
+    return `${this.baseUrl}/${cleanFile}`;
   }
 
   /**
    * Obtiene la URL de descarga de un archivo en una carpeta específica
    */
   getFileDirectoryUrl(directory: string, filename: string, preventCache: boolean = true): string {
-    const url = `${this.baseUrl}/${directory}/${filename}`;
-    return preventCache ? `${url}?v=${new Date().getTime()}` : url;
+    // Normalizar: quitar barras extra y si filename viene con 'logos/...', usar solo el nombre
+    const cleanDir = String(directory || '').replace(/^\/+|\/+$/g, '');
+    const cleanFile = String(filename || '').split('/').pop() || '';
+    if (!cleanFile) {
+      return '';
+    }
+    const url = `${this.baseUrl}/${cleanDir}/${cleanFile}`;
+    return preventCache ? `${url}?v=${Date.now()}` : url;
   }
+
   /**
-   * Obtiene la URL de un archivo desde un directorio específico
+   * Compatibilidad hacia atrás: alias de getFileDirectoryUrl
    */
   getFileUrlFromDirectory(directory: string, filename: string, preventCache: boolean = true): string {
     return this.getFileDirectoryUrl(directory, filename, preventCache);
   }
+
 }

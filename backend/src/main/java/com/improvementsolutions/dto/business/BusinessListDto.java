@@ -15,6 +15,7 @@ public class BusinessListDto {
     private String email;
     private String phone;
     private Boolean active;
+    private String logo;
 
     public static BusinessListDto fromEntity(Business b) {
         if (b == null) return null;
@@ -24,7 +25,8 @@ public class BusinessListDto {
             b.getRuc(),
             b.getEmail(),
             b.getPhone(),
-            b.isActive()
+            b.isActive(),
+            b.getLogo()
         );
     }
 }
