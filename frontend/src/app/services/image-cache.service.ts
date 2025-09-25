@@ -9,7 +9,7 @@ import { environment } from '../../environments/environment';
 })
 export class ImageCacheService {
   private imageCache: Map<string, string> = new Map();
-  private defaultImage = 'assets/img/default-avatar.png';
+  private defaultImage = '/assets/img/user-placeholder.svg';
   private loadingImages: Map<string, BehaviorSubject<string>> = new Map();
 
   constructor(private http: HttpClient) {}

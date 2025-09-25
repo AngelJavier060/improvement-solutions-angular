@@ -58,7 +58,7 @@ export class CarnetDigitalComponent implements OnInit {
   }
 
   getProfilePictureUrl(): string {
-    if (!this.user) return 'assets/img/default-avatar.png';
+    if (!this.user) return '/assets/img/user-placeholder.svg';
     
     if (this.user.profilePicture) {
       const profileName = this.user.profilePicture.includes('/') 
@@ -68,7 +68,7 @@ export class CarnetDigitalComponent implements OnInit {
       return `${environment.apiUrl}/api/files/profiles/${profileName}?v=${Date.now()}`;
     }
     
-    return 'assets/img/default-avatar.png';
+    return '/assets/img/user-placeholder.svg';
   }
 
   close(): void {
