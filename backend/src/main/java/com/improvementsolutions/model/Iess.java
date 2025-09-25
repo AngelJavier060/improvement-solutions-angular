@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -18,6 +20,7 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Iess {
     
     @Id
@@ -37,7 +40,8 @@ public class Iess {
     
     // Actualizamos el mappedBy para que coincida con el nuevo nombre en Business
     @ManyToMany(mappedBy = "iessItems")
-    @ToString.Exclude // Añadimos para evitar problemas con referencias circulares
+    @ToString.Exclude // Evitar problemas en toString por referencias circulares
+    @JsonIgnore // Evitar serialización del lado inverso y LazyInitialization
     private Set<Business> businesses = new HashSet<>();
     
     // Métodos para manejar las fechas automáticamente

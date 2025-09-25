@@ -2,6 +2,8 @@ package com.improvementsolutions.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -18,6 +20,7 @@ import java.util.Set;
 @AllArgsConstructor
 @EqualsAndHashCode(of = {"id", "name"})
 @ToString(exclude = "businesses")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class TypeDocument {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,6 +38,7 @@ public class TypeDocument {
     private LocalDateTime updatedAt;
 
     @ManyToMany(mappedBy = "typeDocuments", fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<Business> businesses = new HashSet<>();
 
     public void addBusiness(Business business) {
