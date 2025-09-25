@@ -40,6 +40,7 @@ public class BusinessService {
         return businessRepository.findById(id);
     }
 
+    @Transactional(readOnly = true)
     public Optional<Business> findByIdWithAllRelations(Long id) {
         Optional<Business> businessOpt = businessRepository.findByIdWithAllRelations(id);
         if (businessOpt.isPresent()) {
@@ -48,6 +49,37 @@ public class BusinessService {
             Optional<Business> businessWithContractors = businessRepository.findByIdWithContractorCompanies(id);
             if (businessWithContractors.isPresent()) {
                 business.setContractorCompanies(businessWithContractors.get().getContractorCompanies());
+            }
+
+            // Initialize lazy collections needed by controller outside of transaction
+            try {
+                // Basic collections fetched with JOIN FETCH, but force initialization explicitly
+                if (business.getDepartments() != null) business.getDepartments().size();
+                if (business.getPositions() != null) business.getPositions().size();
+                if (business.getTypeDocuments() != null) business.getTypeDocuments().size();
+                if (business.getTypeContracts() != null) business.getTypeContracts().size();
+                if (business.getCourseCertifications() != null) business.getCourseCertifications().size();
+                if (business.getCards() != null) business.getCards().size();
+                if (business.getIessItems() != null) business.getIessItems().size();
+                if (business.getUsers() != null) business.getUsers().size();
+                if (business.getContractorCompanies() != null) business.getContractorCompanies().size();
+                // Load obligation matrices and their nested catalog to avoid LazyInitializationException
+                java.util.List<BusinessObligationMatrix> bomList = business.getBusinessObligationMatrices();
+                if (bomList != null) {
+                    bomList.size(); // triggers initialization
+                    for (BusinessObligationMatrix bom : bomList) {
+                        if (bom != null && bom.getObligationMatrix() != null) {
+                            bom.getObligationMatrix().getId(); // initialize nested relation
+                        }
+                    }
+                }
+                // Load contractor blocks
+                java.util.List<ContractorBlock> blocks = business.getContractorBlocks();
+                if (blocks != null) {
+                    blocks.size();
+                }
+            } catch (Exception e) {
+                log.warn("[BusinessService] Could not initialize obligation matrices for business {}: {}", id, e.getMessage());
             }
         }
         return businessOpt;
