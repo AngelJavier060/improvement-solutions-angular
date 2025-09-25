@@ -36,26 +36,25 @@
         </button>
         <button class="btn btn-danger" (click)="confirmDelete(deleteModal)">
           <i class="fas fa-trash me-1"></i> Eliminar
+        </button>
       </div>
     </div>
     <div class="card-body">
       <div class="row">
         <!-- Columna izquierda -->
-          <div class="col-md-4 text-center mb-4 mb-md-0">          <div class="profile-image-container mb-3">            <img 
+        <div class="col-md-4 text-center mb-4 mb-md-0">
+          <div class="profile-image-container mb-3">
+            <img 
               [src]="getProfilePictureUrl(user)" 
               alt="Foto de perfil" 
               class="img-fluid rounded-circle profile-image"
-              onerror="this.src='/assets/img/user-placeholder.svg'"
-            >
+              onerror="this.src='/assets/img/user-placeholder.svg'">
           </div>
           <h5>{{ user.name || 'Sin nombre' }}</h5>
           <p class="text-muted">{{ user.username }}</p>
-          
-            <span class="badge" [ngClass]="user.active ? 'bg-success' : 'bg-danger'">
-              {{ user.active ? 'Activo' : 'Inactivo' }}
-            </span>
-          </div>
-          
+          <span class="badge" [ngClass]="user.active ? 'bg-success' : 'bg-danger'">
+            {{ user.active ? 'Activo' : 'Inactivo' }}
+          </span>
           <div class="mt-3">
             <button class="btn btn-sm" [ngClass]="user.active ? 'btn-outline-danger' : 'btn-outline-success'" (click)="toggleUserActive()">
               {{ user.active ? 'Desactivar usuario' : 'Activar usuario' }}
