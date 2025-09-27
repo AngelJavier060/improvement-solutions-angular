@@ -1,16 +1,19 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
 import { Iess } from '../models/iess.model';
+import { ApiUrlService } from '../core/services/api-url.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class IessService {
-  private apiUrl = `${environment.apiUrl}/api/master-data/iess`;
+  private apiUrl: string;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private apiUrlService: ApiUrlService) {
+    // Construir URL relativa o absoluta según entorno
+    this.apiUrl = this.apiUrlService.getUrl('api/master-data/iess');
+  }
 
   getIessItems(): Observable<Iess[]> {
     return this.http.get<Iess[]>(this.apiUrl);

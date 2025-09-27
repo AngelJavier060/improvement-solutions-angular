@@ -6,25 +6,25 @@ import com.improvementsolutions.dto.business.BusinessListDto;
 import com.improvementsolutions.service.BusinessService;
 import com.improvementsolutions.repository.IessRepository;
 import com.improvementsolutions.repository.BusinessRepository;
-import com.improvementsolutions.repository.ContractorCompanyRepository;
 import com.improvementsolutions.repository.ContractorBlockRepository;
+import com.improvementsolutions.repository.ContractorCompanyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.Map;
-import java.util.Set;
-import java.util.Optional;
-import java.util.ArrayList;
+ import java.time.LocalDateTime;
+ import java.util.ArrayList;
+ import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.Set;
+ import java.util.Optional;
+ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/businesses")
@@ -259,6 +259,7 @@ public class BusinessController {
 
     @PutMapping("/{id}/admin/configurations")
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ADMIN')")
+    @Transactional
     public ResponseEntity<Business> updateBusinessAdminConfigurations(
             @PathVariable Long id,
             @RequestBody Map<String, Object> configurations) {
@@ -278,10 +279,9 @@ public class BusinessController {
                 
                 System.out.println("Datos IESS recibidos: " + iessItemsData);
                 
-                // Limpiar las relaciones IESS actuales (mantener relación bidireccional)
-                for (Iess existingIess : new java.util.HashSet<>(business.getIessItems())) {
-                    business.removeIessItem(existingIess);
-                }
+                // Limpiar relaciones IESS actuales de forma segura en el lado propietario
+                // Evita tocar el lado inverso LAZY (iess.businesses) que puede causar LazyInitializationException
+                business.getIessItems().clear();
 
                 // Agregar los nuevos IESS usando helper para relación bidireccional
                 for (Map<String, Object> iessData : iessItemsData) {
@@ -554,9 +554,9 @@ public class BusinessController {
     }
 
     @GetMapping("/public/ruc/{ruc}")
-    public ResponseEntity<Business> getBusinessByRuc(@PathVariable String ruc) {
+    public ResponseEntity<BusinessListDto> getBusinessByRuc(@PathVariable String ruc) {
         return businessService.findByRuc(ruc)
-                .map(ResponseEntity::ok)
+                .map(b -> ResponseEntity.ok(BusinessListDto.fromEntity(b)))
                 .orElse(ResponseEntity.notFound().build());
     }
 

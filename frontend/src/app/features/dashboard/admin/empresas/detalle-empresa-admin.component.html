@@ -430,6 +430,13 @@
               DEBUG: empresa.ieses={{empresa?.ieses?.length}} | iessList={{iessList.length}} | disponibles={{getAvailableIess().length}}
             </div>
           </div>
+
+          <!-- Botón explícito para guardar cambios de IESS -->
+          <div class="text-end mt-2">
+            <button class="btn btn-primary btn-sm" (click)="saveIessChanges()">
+              <i class="fas fa-save me-1"></i>Guardar cambios
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -649,6 +656,13 @@
           <div *ngIf="!hasContractorCompanies()" class="text-center py-2">
             <i class="fas fa-building fa-lg text-muted opacity-50"></i>
             <p class="text-muted small mb-0" style="font-size: 10px;">Sin empresas contratistas</p>
+          </div>
+
+          <!-- Botón explícito para guardar cambios de Contratistas/Bloques -->
+          <div class="text-end mt-2">
+            <button class="btn btn-primary btn-sm" (click)="saveContractorChanges()">
+              <i class="fas fa-save me-1"></i>Guardar cambios
+            </button>
           </div>
         </div>
       </div>

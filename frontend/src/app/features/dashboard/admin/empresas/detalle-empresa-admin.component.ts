@@ -2005,7 +2005,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   }
   
   // Persist IESS changes to backend
-  private saveIessChanges(): void {
+  saveIessChanges(): void {
     console.log('Guardando cambios de IESS...');
     console.log('IESS actuales en empresa:', this.empresa.ieses);
     
@@ -2163,7 +2163,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     }
   }
 
-  private saveContractorChanges(): void {
+  saveContractorChanges(): void {
     console.log('Guardando cambios de empresas contratistas...');
     console.log('Empresas contratistas actuales:', this.empresa.contractor_companies);
     console.log('Bloques actuales:', this.empresa.contractor_blocks);

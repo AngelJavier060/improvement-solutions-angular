@@ -295,6 +295,7 @@ public class Business {
     }
     
     // Métodos de compatibilidad hacia atrás para contractorCompany (singular)
+    @JsonIgnore
     @Transient
     public ContractorCompany getContractorCompany() {
         return (contractorCompanies != null && !contractorCompanies.isEmpty()) 
@@ -302,6 +303,7 @@ public class Business {
             : null;
     }
     
+    @JsonIgnore
     @Transient  
     public void setContractorCompany(ContractorCompany contractorCompany) {
         if (contractorCompanies == null) {

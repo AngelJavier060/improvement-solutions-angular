@@ -17,5 +17,5 @@ CREATE TABLE IF NOT EXISTS business_iess (
 );
 
 -- Helpful indexes
-CREATE INDEX IF NOT EXISTS idx_business_iess_business ON business_iess(business_id);
-CREATE INDEX IF NOT EXISTS idx_business_iess_iess ON business_iess(iess_id);
+CREATE INDEX idx_business_iess_business ON business_iess(business_id);
+CREATE INDEX idx_business_iess_iess ON business_iess(iess_id);
