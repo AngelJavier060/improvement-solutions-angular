@@ -2,6 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BusinessObligationMatrixService } from '../../../../services/business-obligation-matrix.service';
 import { ApprovalService } from '../../../../services/approval.service';
+import { NotificationService } from '../../../../services/notification.service';
 
 @Component({
   selector: 'app-matrix-config',
@@ -43,7 +44,8 @@ export class MatrixConfigComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private bomService: BusinessObligationMatrixService,
-    private approvalService: ApprovalService
+    private approvalService: ApprovalService,
+    private notify: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -493,7 +495,7 @@ export class MatrixConfigComponent implements OnInit {
       next: () => {
         this.loadFiles(id);
         input.value = '';
-        alert('Archivo subido correctamente.');
+        this.notify.success('Archivo subido correctamente.');
       },
       error: (err) => {
         console.warn('Subida directa falló, intentando staging + aprobación:', err);
@@ -501,7 +503,7 @@ export class MatrixConfigComponent implements OnInit {
         if (!this.businessId) {
           console.error('No se pudo determinar la empresa (businessId) para la aprobación');
           input.value = '';
-          alert('No se pudo subir el archivo ni crear solicitud de aprobación (empresa no resuelta).');
+          this.notify.error('No se pudo subir el archivo ni crear solicitud de aprobación (empresa no resuelta).');
           return;
         }
         // Intentar subir a STAGING y luego crear Approval para que el admin aplique el archivo
@@ -512,7 +514,7 @@ export class MatrixConfigComponent implements OnInit {
             if (!stagingPath) {
               console.error('Respuesta de staging inválida', staging);
               input.value = '';
-              alert('No se pudo preparar el archivo para aprobación.');
+              this.notify.error('No se pudo preparar el archivo para aprobación.');
               return;
             }
             this.approvalService.createApproval({
@@ -524,12 +526,12 @@ export class MatrixConfigComponent implements OnInit {
             }).subscribe({
               next: () => {
                 input.value = '';
-                alert('Solicitud de carga enviada al administrador.');
+                this.notify.success('Solicitud de carga enviada al administrador.');
               },
               error: (err2) => {
                 console.error('Error al crear solicitud de aprobación:', err2);
                 input.value = '';
-                alert('No se pudo enviar la solicitud de aprobación.');
+                this.notify.error('No se pudo enviar la solicitud de aprobación.');
               }
             });
           },
@@ -550,18 +552,28 @@ export class MatrixConfigComponent implements OnInit {
               }).subscribe({
                 next: () => {
                   input.value = '';
-                  alert('No se pudo subir el archivo. Se envió una solicitud al administrador.');
+                  this.notify.warning('No tienes permiso para subir archivos. Se envió una solicitud al administrador para adjuntarlo.');
                 },
                 error: (err3) => {
                   console.error('Error al enviar solicitud alternativa:', err3);
                   input.value = '';
-                  alert('No se pudo subir el archivo ni enviar la solicitud.');
+                  this.notify.error('No se pudo subir el archivo ni enviar la solicitud.');
                 }
               });
               return;
             }
             input.value = '';
-            alert('No se pudo subir el archivo. Verifique que sea PDF o Word válido.');
+            // Mensajes profesionales según el código devuelto por backend
+            const backendMsg = (errStage?.error?.message as string) || '';
+            if (errStage?.status === 413) {
+              this.notify.error('El archivo excede el límite permitido (20 MB). Por favor, reduzca su tamaño e inténtelo nuevamente.');
+            } else if (errStage?.status === 400) {
+              this.notify.warning(backendMsg || 'El archivo no se pudo procesar. Asegúrese de seleccionar un PDF o Word válido.');
+            } else if (errStage?.status === 500) {
+              this.notify.error(backendMsg || 'No se pudo almacenar el archivo en el servidor. Intente más tarde o contacte al administrador.');
+            } else {
+              this.notify.error(backendMsg || 'No se pudo subir el archivo a staging. Intente nuevamente.');
+            }
           }
         });
       }

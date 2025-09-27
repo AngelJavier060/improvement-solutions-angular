@@ -2,11 +2,14 @@ package com.improvementsolutions.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 
 import com.improvementsolutions.storage.StorageException;
 import com.improvementsolutions.storage.StorageFileNotFoundException;
@@ -14,6 +17,9 @@ import com.improvementsolutions.storage.StorageFileNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.io.IOException;
+
+@Order(Ordered.LOWEST_PRECEDENCE)
 @ControllerAdvice
 public class FileUploadExceptionAdvice {
     
@@ -36,7 +42,9 @@ public class FileUploadExceptionAdvice {
                     exc.getMessage(),
                     "FILE_NOT_FOUND"
                 ));
-    }    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<?> handleMaxSizeException(MaxUploadSizeExceededException exc) {
         logger.error("❌ Archivo excede el tamaño máximo: {}", exc.getMessage());
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
@@ -45,14 +53,27 @@ public class FileUploadExceptionAdvice {
                     "El archivo excede el tamaño máximo permitido",
                     "MAX_SIZE_EXCEEDED"
                 ));
-    }    @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleGenericException(Exception exc) {
-        logger.error("❌ Error interno del servidor: {}", exc.getMessage(), exc);
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<?> handleMultipartException(MultipartException exc) {
+        logger.error("❌ Error multipart/form-data: {}", exc.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                    "Error al procesar el archivo",
+                    "No se pudo procesar el contenido enviado. Verifique que sea un archivo válido.",
+                    "MULTIPART_ERROR"
+                ));
+    }
+
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<?> handleIOException(IOException exc) {
+        logger.error("❌ Error de E/S al almacenar archivo: {}", exc.getMessage(), exc);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse(
-                    "Error interno del servidor",
-                    "Se produjo un error al procesar la solicitud",
-                    "INTERNAL_ERROR"
+                    "Error de almacenamiento",
+                    "No se pudo escribir el archivo en el almacenamiento. Verifique permisos y espacio en disco.",
+                    "STORAGE_WRITE_ERROR"
                 ));
     }
     

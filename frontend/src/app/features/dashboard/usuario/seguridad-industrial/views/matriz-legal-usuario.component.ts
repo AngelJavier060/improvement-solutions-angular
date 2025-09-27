@@ -4,6 +4,7 @@ import { BusinessService } from '../../../../../services/business.service';
 import { ObligationMatrixService } from '../../../../../services/obligation-matrix.service';
 import { BusinessObligationMatrixService } from '../../../../../services/business-obligation-matrix.service';
 import { ApprovalService } from '../../../../../services/approval.service';
+import { NotificationService } from '../../../../../services/notification.service';
 
 @Component({
   selector: 'app-matriz-legal-usuario',
@@ -233,7 +234,8 @@ export class MatrizLegalUsuarioComponent implements OnInit {
     private businessService: BusinessService,
     private obligationCatalogService: ObligationMatrixService,
     private bomService: BusinessObligationMatrixService,
-    private approvalService: ApprovalService
+    private approvalService: ApprovalService,
+    private notify: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -675,7 +677,7 @@ export class MatrizLegalUsuarioComponent implements OnInit {
     if (!item?.id || !file) return;
     this.uploading[item.id] = true;
     if (!this.businessId) {
-      alert('No se pudo determinar la empresa para la aprobación');
+      this.notify.error('No se pudo determinar la empresa para la aprobación');
       this.uploading[item.id] = false;
       input.value = '';
       return;
@@ -694,7 +696,7 @@ export class MatrizLegalUsuarioComponent implements OnInit {
         this.loadFiles(Number(item.id));
         this.uploading[item.id] = false;
         input.value = '';
-        alert('Archivo subido correctamente.');
+        this.notify.success('Archivo subido correctamente.');
       },
       error: (errDirect) => {
         console.warn('Subida directa falló, probando staging + aprobación', errDirect);
@@ -716,13 +718,13 @@ export class MatrizLegalUsuarioComponent implements OnInit {
               next: () => {
                 this.uploading[item.id] = false;
                 input.value = '';
-                alert('Solicitud de carga enviada al administrador.');
+                this.notify.success('Solicitud de carga enviada al administrador.');
               },
               error: (err) => {
                 console.error('Error al solicitar aprobación de carga:', err);
                 this.uploading[item.id] = false;
                 input.value = '';
-                alert('No se pudo enviar la solicitud. Intente nuevamente.');
+                this.notify.error('No se pudo enviar la solicitud. Intente nuevamente.');
               }
             });
           },
@@ -745,19 +747,29 @@ export class MatrizLegalUsuarioComponent implements OnInit {
                 next: () => {
                   this.uploading[item.id] = false;
                   input.value = '';
-                  alert('No tienes permiso para subir archivos. Se envió una solicitud de cambio para que el administrador lo gestione.');
+                  this.notify.warning('No tienes permiso para subir archivos. Se envió una solicitud para que el administrador lo gestione.');
                 },
                 error: () => {
                   this.uploading[item.id] = false;
                   input.value = '';
-                  alert('No se pudo enviar la solicitud. Intente nuevamente.');
+                  this.notify.error('No se pudo enviar la solicitud. Intente nuevamente.');
                 }
               });
               return;
             }
             this.uploading[item.id] = false;
             input.value = '';
-            alert('No se pudo subir el archivo. Verifique que sea PDF.');
+            // Mensajes específicos según el código del backend
+            const backendMsg = (err?.error?.message as string) || '';
+            if (err?.status === 413) {
+              this.notify.error('El archivo excede el límite permitido (20 MB). Por favor, reduzca su tamaño e inténtelo nuevamente.');
+            } else if (err?.status === 400) {
+              this.notify.warning(backendMsg || 'El archivo no se pudo procesar. Asegúrese de seleccionar un PDF o Word válido.');
+            } else if (err?.status === 500) {
+              this.notify.error(backendMsg || 'No se pudo almacenar el archivo en el servidor. Intente más tarde o contacte al administrador.');
+            } else {
+              this.notify.error(backendMsg || 'No se pudo subir el archivo a staging. Intente nuevamente.');
+            }
           }
         });
       }
@@ -796,7 +808,7 @@ export class MatrizLegalUsuarioComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al previsualizar archivo:', err);
-        alert('No se pudo abrir la vista previa.');
+        this.notify.error('No se pudo abrir la vista previa.');
       }
     });
   }

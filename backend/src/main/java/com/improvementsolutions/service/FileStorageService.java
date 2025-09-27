@@ -1,6 +1,7 @@
 package com.improvementsolutions.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -18,6 +19,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FileStorageService {
 
     @Value("${file.upload-dir:upload}")
@@ -61,10 +63,12 @@ public class FileStorageService {
 
         // Crear directorio
         Path targetDirectory = Paths.get(uploadDir).resolve(subdirectory).normalize();
+        log.debug("[Storage] uploadDir='{}', subdirectory='{}', targetDirectory='{}'", uploadDir, subdirectory, targetDirectory);
         Files.createDirectories(targetDirectory);
 
         // Copiar
         Path targetLocation = targetDirectory.resolve(newFilename);
+        log.debug("[Storage] targetLocation='{}' (size={} bytes, type='{}')", targetLocation, file.getSize(), file.getContentType());
         Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
         return subdirectory + "/" + newFilename;
