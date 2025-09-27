@@ -1,5 +1,4 @@
 package com.improvementsolutions.controller;
-
 import com.improvementsolutions.model.CivilStatus;
 import com.improvementsolutions.model.CourseCertification;
 import com.improvementsolutions.model.CardCatalog;
@@ -7,31 +6,33 @@ import com.improvementsolutions.model.Degree;
 import com.improvementsolutions.model.Department;
 import com.improvementsolutions.model.Etnia;
 import com.improvementsolutions.model.Gender;
-import com.improvementsolutions.model.ObligationMatrix;
 import com.improvementsolutions.model.Position;
-import com.improvementsolutions.model.ResidentAddress;
 import com.improvementsolutions.model.TypeDocument;
+import com.improvementsolutions.model.ResidentAddress;
+import com.improvementsolutions.model.ObligationMatrix;
 import com.improvementsolutions.repository.CivilStatusRepository;
 import com.improvementsolutions.repository.CourseCertificationRepository;
 import com.improvementsolutions.repository.CardCatalogRepository;
 import com.improvementsolutions.repository.DegreeRepository;
 import com.improvementsolutions.repository.DepartmentRepository;
-import com.improvementsolutions.repository.EtniaRepository;
-import com.improvementsolutions.repository.GenderRepository;
 import com.improvementsolutions.repository.ObligationMatrixRepository;
 import com.improvementsolutions.repository.PositionRepository;
 import com.improvementsolutions.repository.ResidentAddressRepository;
 import com.improvementsolutions.repository.TypeDocumentRepository;
+import com.improvementsolutions.repository.GenderRepository;
+import com.improvementsolutions.repository.EtniaRepository;
+import com.improvementsolutions.repository.BusinessRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
 @RestController
 @RequestMapping("/api/master-data") // Prefijo /api/ para consistencia
 @RequiredArgsConstructor
@@ -47,6 +48,7 @@ public class MasterDataController {
     private final DepartmentRepository departmentRepository;
     private final PositionRepository positionRepository;
     private final ObligationMatrixRepository obligationMatrixRepository;
+    private final BusinessRepository businessRepository;
 
     // Gender
     @GetMapping("/genders")
@@ -351,12 +353,27 @@ public class MasterDataController {
 
     @DeleteMapping("/positions/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deletePosition(@PathVariable Long id) {
+    @Transactional
+    public ResponseEntity<?> deletePosition(@PathVariable Long id) {
         if (!positionRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
-        positionRepository.deleteById(id);
-        return ResponseEntity.ok().build();
+        try {
+            positionRepository.deleteById(id);
+            return ResponseEntity.ok().build();
+        } catch (DataIntegrityViolationException dive) {
+            java.util.Map<String, Object> body = new java.util.HashMap<>();
+            body.put("title", "No se puede eliminar");
+            body.put("message", "El cargo está en uso por otros registros (empleados, contratos o empresas). Desasocie o desactive antes de eliminar.");
+            body.put("code", "ENTITY_IN_USE");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+        } catch (Exception e) {
+            java.util.Map<String, Object> body = new java.util.HashMap<>();
+            body.put("title", "Error interno del servidor");
+            body.put("message", "Se produjo un error al procesar la solicitud");
+            body.put("code", "INTERNAL_ERROR");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+        }
     }
     
     // Los endpoints IESS se han movido a IessController

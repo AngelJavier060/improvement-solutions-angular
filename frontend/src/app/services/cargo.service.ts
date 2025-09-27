@@ -26,7 +26,7 @@ export class CargoService {
         ...cargo,
         department: { id: Number(cargo.departmentId) } as any
       };
-      delete cargo.departmentId; // Eliminar departmentId ya que enviamos department
+      delete (cargo as any).departmentId; // Eliminar departmentId ya que enviamos department
     }
     return this.http.post<Position>(this.apiUrl, cargo);
   }
@@ -40,10 +40,16 @@ export class CargoService {
       };
       delete cargo.departmentId; // Eliminar departmentId ya que enviamos department
     }
-    return this.http.put<Position>(`${this.apiUrl}/${id}`, cargo);
+    // Usar PATCH para actualización parcial (name, description, active, department)
+    return this.http.patch<Position>(`${this.apiUrl}/${id}`, cargo);
   }
 
   deleteCargo(id: number): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/${id}`);
   }
-} 
+
+  // Desasociar de todas las empresas y eliminar (endpoint backend dedicado)
+  detachAndDeleteCargo(id: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${id}/detach-and-delete`, {});
+  }
+}

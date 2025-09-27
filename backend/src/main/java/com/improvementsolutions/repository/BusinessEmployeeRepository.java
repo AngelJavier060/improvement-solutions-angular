@@ -44,11 +44,16 @@ public interface BusinessEmployeeRepository extends JpaRepository<BusinessEmploy
                     "AND (:cedula IS NULL OR LOWER(be.cedula) LIKE LOWER(CONCAT('%', :cedula, '%'))) " +
                     "AND (:nombres IS NULL OR LOWER(be.nombres) LIKE LOWER(CONCAT('%', :nombres, '%'))) " +
                     "AND (:apellidos IS NULL OR LOWER(be.apellidos) LIKE LOWER(CONCAT('%', :apellidos, '%'))) " +
-                    "AND (:codigo IS NULL OR LOWER(be.codigoEmpresa) LIKE LOWER(CONCAT('%', :codigo, '%')))")
+                    "AND (:codigo IS NULL OR LOWER(be.codigoEmpresa) LIKE LOWER(CONCAT('%', :codigo, '%')))"
+    )
     Page<BusinessEmployee> searchByFilters(Long businessId,
                                            String cedula,
                                            String nombres,
                                            String apellidos,
                                            String codigo,
                                            Pageable pageable);
+
+    // Para desasociar empleados del cargo antes de eliminarlo definitivamente
+    List<BusinessEmployee> findByPositionEntityId(Long positionId);
 }
+

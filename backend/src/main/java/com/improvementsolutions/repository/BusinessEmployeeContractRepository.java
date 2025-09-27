@@ -14,4 +14,7 @@ public interface BusinessEmployeeContractRepository extends JpaRepository<Busine
 
     @Query("SELECT c FROM BusinessEmployeeContract c WHERE c.businessEmployee.cedula = :cedula")
     List<BusinessEmployeeContract> findByEmployeeCedula(String cedula);
+
+    // Para desasociar contratos de un cargo específico antes de eliminar el cargo
+    List<BusinessEmployeeContract> findByPositionId(Long positionId);
 }
