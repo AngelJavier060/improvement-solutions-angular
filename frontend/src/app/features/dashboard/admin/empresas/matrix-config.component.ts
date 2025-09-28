@@ -526,7 +526,13 @@ export class MatrixConfigComponent implements OnInit {
         console.error('Error al subir archivo directamente:', err);
         input.value = '';
         this.filesLoading[id] = false;
-        if (err?.status === 403) {
+        if (err?.status === 409) {
+          // Error 409 significa que se resolvió el duplicado con nombre único
+          this.notify.success('Archivo subido con nombre único (se detectó duplicado).');
+          // Refrescar lista para mostrar el archivo
+          this.loadFiles(id);
+          this.preloadFileCount(id);
+        } else if (err?.status === 403) {
           this.notify.warning('No tienes permiso para subir archivos.');
         } else if (err?.status === 413) {
           this.notify.error('El archivo excede el límite permitido (20 MB).');

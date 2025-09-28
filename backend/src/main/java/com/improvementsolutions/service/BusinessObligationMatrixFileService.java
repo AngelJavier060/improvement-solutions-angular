@@ -71,7 +71,7 @@ public class BusinessObligationMatrixFileService {
 
         log.info("Subiendo archivo de matriz legal: matrixId={}, businessId={}, originalName={}, subdir={}", matrixId, businessId, originalName, subdirectory);
 
-        // Verificar si ya existe un archivo con el mismo nombre en la misma versión
+        // Obtener versión actual de la matriz
         Integer currentVersion;
         try {
             currentVersion = matrix.getCurrentVersion();
@@ -80,26 +80,6 @@ public class BusinessObligationMatrixFileService {
             }
         } catch (Exception ignored) {
             currentVersion = 1;
-        }
-
-        // Buscar archivos existentes con el mismo nombre y versión
-        List<BusinessObligationMatrixFile> existingFiles = fileRepository.findByBusinessObligationMatrixIdAndVersion(matrixId, currentVersion);
-        final String finalOriginalName = originalName; // Variable final para usar en lambda
-        boolean nameExists = existingFiles.stream()
-                .anyMatch(f -> finalOriginalName.equalsIgnoreCase(f.getName()));
-        
-        if (nameExists) {
-            // Generar un nombre único agregando timestamp
-            String timestamp = String.valueOf(System.currentTimeMillis());
-            String extension = "";
-            int dotIndex = originalName.lastIndexOf('.');
-            if (dotIndex > 0) {
-                extension = originalName.substring(dotIndex);
-                originalName = originalName.substring(0, dotIndex) + "_" + timestamp + extension;
-            } else {
-                originalName = originalName + "_" + timestamp;
-            }
-            log.info("Nombre de archivo duplicado, usando nombre único: {}", originalName);
         }
 
         // Almacenar el archivo y obtener la ruta
@@ -115,9 +95,44 @@ public class BusinessObligationMatrixFileService {
         matrixFile.setCreatedAt(LocalDateTime.now());
         matrixFile.setUpdatedAt(LocalDateTime.now());
 
-        BusinessObligationMatrixFile saved = fileRepository.save(matrixFile);
-        log.info("Archivo guardado en DB: id={}, path={}, version={}", saved.getId(), saved.getPath(), saved.getVersion());
-        return saved;
+        try {
+            BusinessObligationMatrixFile saved = fileRepository.save(matrixFile);
+            log.info("Archivo guardado en DB: id={}, path={}, version={}", saved.getId(), saved.getPath(), saved.getVersion());
+            return saved;
+        } catch (Exception e) {
+            // Si hay error al guardar, eliminar el archivo físico que ya se subió
+            try {
+                fileStorageService.deleteFile(filePath);
+            } catch (Exception deleteError) {
+                log.warn("No se pudo eliminar archivo físico tras error de BD: {}", deleteError.getMessage());
+            }
+            
+            // Si es un error de duplicado, intentar con nombre único
+            if (e.getMessage() != null && (e.getMessage().contains("Duplicate") || e.getMessage().contains("duplicate"))) {
+                log.info("Detectado duplicado, intentando con nombre único...");
+                String timestamp = String.valueOf(System.currentTimeMillis());
+                String extension = "";
+                int dotIndex = originalName.lastIndexOf('.');
+                if (dotIndex > 0) {
+                    extension = originalName.substring(dotIndex);
+                    originalName = originalName.substring(0, dotIndex) + "_" + timestamp + extension;
+                } else {
+                    originalName = originalName + "_" + timestamp;
+                }
+                
+                // Reintentar subir archivo con nombre único
+                String newFilePath = fileStorageService.storeFile(file, subdirectory);
+                matrixFile.setName(originalName);
+                matrixFile.setPath(newFilePath);
+                
+                BusinessObligationMatrixFile saved = fileRepository.save(matrixFile);
+                log.info("Archivo guardado con nombre único: id={}, path={}, version={}", saved.getId(), saved.getPath(), saved.getVersion());
+                return saved;
+            }
+            
+            log.error("Error al guardar archivo en BD: {}", e.getMessage(), e);
+            throw new RuntimeException("No se pudo guardar el archivo: " + e.getMessage(), e);
+        }
     }
 
     @Transactional

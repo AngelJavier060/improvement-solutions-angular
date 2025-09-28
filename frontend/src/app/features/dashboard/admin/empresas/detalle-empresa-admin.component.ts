@@ -570,7 +570,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.matrixFilesLoading[matrixId] = false;
         
         if (err?.status === 409) {
-          alert('Ya existe un archivo con este nombre. El archivo se guardó con un nombre único.');
+          alert('Archivo subido con nombre único (se detectó duplicado).');
           this.refreshMatrixFiles(matrixId);
         } else if (err?.status === 403) {
           alert('No tienes permisos para subir archivos.');
