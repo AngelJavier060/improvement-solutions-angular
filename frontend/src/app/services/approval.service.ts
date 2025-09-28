@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEvent } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { ApiUrlService } from '../core/services/api-url.service';
@@ -63,5 +63,13 @@ export class ApprovalService {
         return of(normalized);
       })
     );
+  }
+
+  // Staging upload with progress events for UI progress bars
+  uploadStagingObligationFileWithProgress(file: File): Observable<HttpEvent<any>> {
+    const form = new FormData();
+    form.append('file', file);
+    const stagingUrl = this.apiUrlService.getUrl('api/files/staging/obligation-matrix');
+    return this.http.post<any>(stagingUrl, form, { reportProgress: true, observe: 'events' });
   }
 }

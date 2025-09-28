@@ -38,7 +38,8 @@ public class StagingFileController {
         log.info("[Staging] Upload received: name='{}', contentType='{}', size={} bytes", original, contentType, file.getSize());
         if (!(contentType.equalsIgnoreCase("application/pdf") || original.toLowerCase().endsWith(".pdf") ||
               contentType.equalsIgnoreCase("application/vnd.openxmlformats-officedocument.wordprocessingml.document") ||
-              original.toLowerCase().endsWith(".docx"))) {
+              original.toLowerCase().endsWith(".docx") ||
+              contentType.equalsIgnoreCase("application/msword") || original.toLowerCase().endsWith(".doc"))) {
             log.warn("[Staging] Upload rejected: invalid type. name='{}', contentType='{}'", original, contentType);
             resp.put("success", false);
             resp.put("message", "Solo se permiten archivos PDF y Word");
