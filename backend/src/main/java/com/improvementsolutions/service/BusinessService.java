@@ -51,6 +51,12 @@ public class BusinessService {
                 business.setContractorCompanies(businessWithContractors.get().getContractorCompanies());
             }
 
+            // Load contractor blocks and their contractor company via JOIN FETCH (separate query)
+            Optional<Business> businessWithBlocks = businessRepository.findByIdWithContractorBlocksAndCompany(id);
+            if (businessWithBlocks.isPresent()) {
+                business.setContractorBlocks(businessWithBlocks.get().getContractorBlocks());
+            }
+
             // Initialize lazy collections needed by controller outside of transaction
             try {
                 // Basic collections fetched with JOIN FETCH, but force initialization explicitly

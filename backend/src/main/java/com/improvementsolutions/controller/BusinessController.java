@@ -234,16 +234,53 @@ public class BusinessController {
         response.put("createdAt", business.getCreatedAt());
         response.put("updatedAt", business.getUpdatedAt());
 
-        // Relaciones necesarias para el flujo de usuario (selector contratistas/bloques)
-        response.put("contractor_companies", business.getContractorCompanies());
-        response.put("contractor_blocks", business.getContractorBlocks());
+        // Mapear relaciones a DTOs ligeros para evitar problemas de serialización LAZY
+        List<Map<String, Object>> contractorCompaniesDto = new ArrayList<>();
+        if (business.getContractorCompanies() != null) {
+            for (ContractorCompany cc : business.getContractorCompanies()) {
+                if (cc == null) continue;
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", cc.getId());
+                m.put("name", cc.getName());
+                m.put("code", cc.getCode());
+                m.put("active", cc.getActive());
+                contractorCompaniesDto.add(m);
+            }
+        }
+
+        List<Map<String, Object>> contractorBlocksDto = new ArrayList<>();
+        if (business.getContractorBlocks() != null) {
+            for (ContractorBlock cb : business.getContractorBlocks()) {
+                if (cb == null) continue;
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", cb.getId());
+                m.put("name", cb.getName());
+                m.put("code", cb.getCode());
+                m.put("active", cb.getActive());
+                ContractorCompany cc = cb.getContractorCompany();
+                if (cc != null) {
+                    m.put("contractorCompanyId", cc.getId());
+                    m.put("contractorCompanyName", cc.getName());
+                } else {
+                    m.put("contractorCompanyId", null);
+                    m.put("contractorCompanyName", null);
+                }
+                contractorBlocksDto.add(m);
+            }
+        }
+
+        response.put("contractor_companies", contractorCompaniesDto);
+        response.put("contractor_blocks", contractorBlocksDto);
 
         // Compatibilidad hacia atrás: contractor_company singular
-        if (!business.getContractorCompanies().isEmpty()) {
-            response.put("contractor_company", business.getContractorCompanies().get(0));
+        if (!contractorCompaniesDto.isEmpty()) {
+            response.put("contractor_company", contractorCompaniesDto.get(0));
         } else {
             response.put("contractor_company", null);
         }
+
+        log.debug("[BusinessController] getBusinessDetails id={} companies={} blocks={}", id,
+                contractorCompaniesDto.size(), contractorBlocksDto.size());
 
         return ResponseEntity.ok(response);
     }

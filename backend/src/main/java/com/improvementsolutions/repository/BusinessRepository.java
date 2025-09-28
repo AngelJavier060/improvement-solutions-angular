@@ -46,4 +46,11 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
 
     @Query("SELECT b FROM Business b JOIN b.positions p WHERE p.id = :positionId")
     List<Business> findByPositionId(@Param("positionId") Long positionId);
+
+    // Eagerly fetch contractor blocks and their contractor company (separate query to avoid MultipleBagFetchException)
+    @Query("SELECT DISTINCT b FROM Business b " +
+           "LEFT JOIN FETCH b.contractorBlocks cb " +
+           "LEFT JOIN FETCH cb.contractorCompany " +
+           "WHERE b.id = :id")
+    Optional<Business> findByIdWithContractorBlocksAndCompany(@Param("id") Long id);
 }
