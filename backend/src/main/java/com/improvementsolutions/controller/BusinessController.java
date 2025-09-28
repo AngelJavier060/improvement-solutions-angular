@@ -207,6 +207,47 @@ public class BusinessController {
         return ResponseEntity.ok(response);
     }
 
+    // Detalles accesibles para ADMIN y USER: incluye contratistas y bloques
+    @GetMapping("/{id}/details")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<Map<String, Object>> getBusinessDetails(@PathVariable Long id) {
+        Business business = businessService.findByIdWithAllRelations(id)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", business.getId());
+        response.put("name", business.getName());
+        response.put("nameShort", business.getNameShort());
+        response.put("ruc", business.getRuc());
+        response.put("email", business.getEmail());
+        response.put("phone", business.getPhone());
+        response.put("secondaryPhone", business.getSecondaryPhone());
+        response.put("address", business.getAddress());
+        response.put("website", business.getWebsite());
+        response.put("description", business.getDescription());
+        response.put("commercialActivity", business.getCommercialActivity());
+        response.put("tradeName", business.getTradeName());
+        response.put("legalRepresentative", business.getLegalRepresentative());
+        response.put("logo", business.getLogo());
+        response.put("active", business.isActive());
+        response.put("registrationDate", business.getRegistrationDate());
+        response.put("createdAt", business.getCreatedAt());
+        response.put("updatedAt", business.getUpdatedAt());
+
+        // Relaciones necesarias para el flujo de usuario (selector contratistas/bloques)
+        response.put("contractor_companies", business.getContractorCompanies());
+        response.put("contractor_blocks", business.getContractorBlocks());
+
+        // Compatibilidad hacia atrás: contractor_company singular
+        if (!business.getContractorCompanies().isEmpty()) {
+            response.put("contractor_company", business.getContractorCompanies().get(0));
+        } else {
+            response.put("contractor_company", null);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
     // === ENDPOINTS PARA CURSOS Y CERTIFICACIONES ===
     @PostMapping("/{businessId}/course-certifications/{courseCertificationId}")
     @PreAuthorize("hasRole('ADMIN')")

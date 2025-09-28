@@ -22,6 +22,11 @@ export class BusinessService {
     return this.http.get<Business>(`${this.apiUrl}/${id}`);
   }
 
+  // Detalles accesibles para USER/ADMIN con relaciones necesarias (contratistas/bloques)
+  getDetails(id: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${id}/details`);
+  }
+
   getBusinessAdminDetails(id: number): Observable<Business> {
     return this.http.get<Business>(`${this.apiUrl}/${id}/admin`);
   }

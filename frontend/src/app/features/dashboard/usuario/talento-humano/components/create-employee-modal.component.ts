@@ -104,11 +104,14 @@ export class CreateEmployeeModalComponent implements OnInit {
   ngOnInit(): void {
     this.loadBusinessInfo();
     this.loadAllConfigurations();
+    // Cargar empresas contratistas para el selector
+    this.loadContractorCompanies();
   }
 
   private async loadBusinessInfo(): Promise<void> {
     try {
-      const business = await this.businessService.getById(this.businessId).toPromise();
+      // Usar endpoint de detalles que expone contratistas/bloques para USER/ADMIN
+      const business = await this.businessService.getDetails(this.businessId).toPromise();
       if (business) {
         this.businessRuc = business.ruc;
         console.log('🏢 RUC de la empresa obtenido:', this.businessRuc);
@@ -151,15 +154,15 @@ export class CreateEmployeeModalComponent implements OnInit {
       this.departments = departmentsResponse || [];
       this.typeContracts = typeContractsResponse || [];
       this.degrees = degreesResponse || [];
-      this.iessCodes = iessCodesResponse || [];
       
       // Cargar empresas contratistas configuradas para esta empresa
       await this.loadContractorCompanies();
       
-      // NO establecer automáticamente el código IESS - ahora el usuario debe seleccionar
-      console.log('Códigos IESS disponibles para la empresa:', this.iessCodes);
+      // Asignar y mostrar códigos IESS
+      this.iessCodes = iessCodesResponse || [];
+      console.log('Códigos IESS disponibles para la empresa:', this.iessCodes.length);
       
-      console.log('Configuraciones cargadas:', {
+      console.log('Cargas iniciales:', {
         genders: this.genders.length,
         civilStatuses: this.civilStatuses.length,
         etnias: this.etnias.length,
@@ -167,14 +170,12 @@ export class CreateEmployeeModalComponent implements OnInit {
         departments: this.departments.length,
         typeContracts: this.typeContracts.length,
         degrees: this.degrees.length,
-        contractorCompanies: this.contractorCompanies.length,
-        iessCode: this.iessCode
+        contractorCompanies: this.contractorCompanies.length
       });
 
       console.log('Departamentos disponibles para la empresa:', this.departments);
       console.log('Tipos de contrato disponibles para la empresa:', this.typeContracts);
       console.log('Empresas contratistas disponibles:', this.contractorCompanies);
-      
     } catch (error) {
       console.error('Error cargando configuraciones:', error);
       this.error = 'Error al cargar las configuraciones necesarias';
@@ -182,6 +183,7 @@ export class CreateEmployeeModalComponent implements OnInit {
       this.loadingConfigurations = false;
     }
   }
+  
 
   onFileSelected(event: any): void {
     const file = event.target.files?.[0];
@@ -224,7 +226,7 @@ export class CreateEmployeeModalComponent implements OnInit {
       console.log('🔍 Iniciando carga de empresas contratistas para businessId:', this.businessId);
       
       // Obtener la información de la empresa para ver qué empresas contratistas tiene configuradas
-      const business: any = await this.businessService.getById(this.businessId).toPromise();
+      const business: any = await this.businessService.getDetails(this.businessId).toPromise();
       
       console.log('🏢 Información completa de la empresa obtenida:', business);
       console.log('🏢 contractor_companies (múltiples):', business?.contractor_companies);
@@ -302,7 +304,7 @@ export class CreateEmployeeModalComponent implements OnInit {
     console.log('🔍 Cargando bloques configurados para la empresa y contratista:', contractorCompanyId);
     
     // Cargar bloques específicos configurados para esta empresa y esta empresa contratista
-    this.businessService.getById(this.businessId).subscribe({
+    this.businessService.getDetails(this.businessId).subscribe({
       next: (business: any) => {
         console.log('🏢 Datos completos de empresa obtenidos:', business);
         console.log('📋 contractor_blocks:', business?.contractor_blocks);
@@ -394,27 +396,25 @@ export class CreateEmployeeModalComponent implements OnInit {
         contactPhone: formValue.contact_phone,
         fechaIngreso: formValue.fechaIngreso,
         businessId: this.businessId, // Usar businessId directo
-        codigoEmpresa: formValue.codigoTrabajador, // Código del trabajador en la empresa
-        // IDs en snake_case para que el backend los persista correctamente
-        position_id: formValue.position_id || null,
-        department_id: formValue.department_id || null,
-        type_contract_id: formValue.type_contract_id || null,
+        codigoEmpresa: this.businessRuc || null, // RUC de la empresa (backend usará businessId si está)
+        // IDs en camelCase como espera el backend (CreateBusinessEmployeeDto)
+        positionId: formValue.position_id || null,
+        departmentId: formValue.department_id || null,
+        typeContractId: formValue.type_contract_id || null,
         tipoSangre: formValue.tipoSangre,
         salario: formValue.salario ? parseFloat(formValue.salario) : null,
-        gender_id: formValue.gender_id || null,
-        civil_status_id: formValue.civil_status_id || null,
-        // En BD la columna puede ser 'ethnia_id' (según captura). Enviar ambos por compatibilidad.
-        ethnicity_id: formValue.ethnicity_id || null,
-        ethnia_id: formValue.ethnicity_id || null,
-        degree_id: formValue.degree_id || null,
+        genderId: formValue.gender_id || null,
+        civilStatusId: formValue.civil_status_id || null,
+        etniaId: formValue.ethnicity_id || null,
+        degreeId: formValue.degree_id || null,
         nivelEducacion: formValue.degree_id ? (this.degrees.find(d => d.id === formValue.degree_id)?.name || null) : null,
         discapacidad: formValue.discapacidad,
         codigoIess: formValue.codigoIess,
         iess: formValue.codigoIess, // Usar el mismo valor para ambos campos
         
         // Campos de empresa contratista
-        contractor_company_id: formValue.contractor_company_id || null,
-        contractor_block_id: formValue.contractor_block_id || null,
+        contractorCompanyId: formValue.contractor_company_id || null,
+        contractorBlockId: formValue.contractor_block_id || null,
         
         active: true,
         status: 'ACTIVO'
