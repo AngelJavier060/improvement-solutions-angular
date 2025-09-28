@@ -497,7 +497,20 @@
               </div>
               <!-- Archivos y pendientes -->
               <div class="mt-1 p-2 border rounded bg-white" *ngIf="matrixFilesVisible[getMatrixRelationId(obligation)]">
-                <div class="small fw-bold mb-1">Archivos aprobados (versión actual)</div>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <div class="small fw-bold">Archivos de matriz legal</div>
+                  <div>
+                    <input type="file" class="d-none" accept=".pdf,.doc,.docx" 
+                           [id]="'upload-matrix-' + getMatrixRelationId(obligation)" 
+                           (change)="uploadMatrixFile(obligation, $event)">
+                    <label class="btn btn-sm btn-outline-primary p-1" 
+                           [for]="'upload-matrix-' + getMatrixRelationId(obligation)" 
+                           title="Subir archivo" style="font-size: 8px;">
+                      <i class="fas fa-upload"></i>
+                    </label>
+                  </div>
+                </div>
+                
                 <div *ngIf="matrixFilesLoading[getMatrixRelationId(obligation)]" class="text-muted small">Cargando archivos...</div>
                 <div *ngIf="!matrixFilesLoading[getMatrixRelationId(obligation)] && (matrixFiles[getMatrixRelationId(obligation)]?.length || 0) === 0" class="text-muted small">Sin archivos.</div>
                 <div *ngFor="let f of (matrixFiles[getMatrixRelationId(obligation)] || [])" class="d-flex align-items-center justify-content-between py-1">

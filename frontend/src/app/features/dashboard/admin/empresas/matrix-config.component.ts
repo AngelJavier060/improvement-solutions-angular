@@ -559,6 +559,37 @@ export class MatrixConfigComponent implements OnInit {
     });
   }
 
+  deleteFile(file: any, item: any): void {
+    if (!file?.id) return;
+    
+    const fileName = this.displayFileName(file);
+    if (!confirm(`¿Está seguro de eliminar el archivo "${fileName}"?`)) return;
+
+    const matrixId = Number(item?.id);
+    this.bomService.deleteFile(Number(file.id)).subscribe({
+      next: () => {
+        this.notify.success('Archivo eliminado correctamente.');
+        // Refrescar lista y conteo
+        this.loadFiles(matrixId);
+        this.preloadFileCount(matrixId);
+      },
+      error: (err) => {
+        console.error('Error al eliminar archivo:', err);
+        if (err?.status === 403) {
+          this.notify.warning('No tienes permisos para eliminar este archivo.');
+        } else if (err?.status === 404) {
+          this.notify.warning('El archivo no fue encontrado.');
+          // Refrescar lista por si ya fue eliminado
+          this.loadFiles(matrixId);
+          this.preloadFileCount(matrixId);
+        } else {
+          const msg = err?.error?.message || 'No se pudo eliminar el archivo.';
+          this.notify.error(msg);
+        }
+      }
+    });
+  }
+
   previewFile(file: any): void {
     if (!file?.id) return;
     const fileName = this.displayFileName(file);

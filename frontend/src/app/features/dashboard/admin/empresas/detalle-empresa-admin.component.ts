@@ -428,6 +428,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   refreshMatrixFiles(matrixId: number): void {
     if (!matrixId) return;
     this.matrixFilesLoading[matrixId] = true;
+    // NO usar currentOnly=true para mostrar TODOS los archivos
     this.bomService.listFiles(matrixId).subscribe({
       next: (files) => {
         const list = Array.isArray(files) ? files : [];
@@ -441,6 +442,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         });
         this.matrixFiles[matrixId] = list;
         this.matrixFilesLoading[matrixId] = false;
+        console.log(`Archivos cargados para matriz ${matrixId}:`, list.length);
       },
       error: (e) => {
         console.error('Error listando archivos de matriz', matrixId, e);
@@ -495,14 +497,89 @@ export class DetalleEmpresaAdminComponent implements OnInit {
 
   deleteMatrixFile(fileId: number, matrixId: number): void {
     if (!fileId) return;
-    if (!confirm('¿Eliminar este archivo?')) return;
+    
+    // Buscar el nombre del archivo para la confirmación
+    const files = this.matrixFiles[matrixId] || [];
+    const file = files.find(f => Number(f?.id) === Number(fileId));
+    const fileName = file?.name || `Archivo #${fileId}`;
+    
+    if (!confirm(`¿Está seguro de eliminar el archivo "${fileName}"?`)) return;
+    
     this.bomService.deleteFile(fileId).subscribe({
       next: () => {
         this.refreshMatrixFiles(matrixId);
+        alert('Archivo eliminado correctamente.');
       },
       error: (e) => {
-        console.error('No se pudo eliminar el archivo', e);
-        alert('No se pudo eliminar el archivo.');
+        console.error('Error al eliminar archivo:', e);
+        if (e?.status === 403) {
+          alert('No tienes permisos para eliminar este archivo.');
+        } else if (e?.status === 404) {
+          alert('El archivo no fue encontrado. Actualizando lista...');
+          this.refreshMatrixFiles(matrixId);
+        } else {
+          const msg = e?.error?.message || 'No se pudo eliminar el archivo.';
+          alert(msg);
+        }
+      }
+    });
+  }
+
+  uploadMatrixFile(obligation: any, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    const matrixId = this.getMatrixRelationId(obligation);
+    if (!matrixId) {
+      alert('No se pudo determinar el ID de la matriz legal.');
+      input.value = '';
+      return;
+    }
+
+    // Validar tamaño (20MB)
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('El archivo es demasiado grande. Máximo permitido: 20 MB');
+      input.value = '';
+      return;
+    }
+
+    // Validar tipo
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const fileName = file.name.toLowerCase();
+    const isValidType = allowedTypes.includes(file.type) || fileName.endsWith('.pdf') || fileName.endsWith('.doc') || fileName.endsWith('.docx');
+    
+    if (!isValidType) {
+      alert('Solo se permiten archivos PDF y Word (.doc, .docx)');
+      input.value = '';
+      return;
+    }
+
+    this.matrixFilesLoading[matrixId] = true;
+    this.bomService.uploadFile(matrixId, file).subscribe({
+      next: () => {
+        input.value = '';
+        this.refreshMatrixFiles(matrixId);
+        this.matrixFilesLoading[matrixId] = false;
+        alert('Archivo subido correctamente.');
+      },
+      error: (err) => {
+        console.error('Error al subir archivo:', err);
+        input.value = '';
+        this.matrixFilesLoading[matrixId] = false;
+        
+        if (err?.status === 409) {
+          alert('Ya existe un archivo con este nombre. El archivo se guardó con un nombre único.');
+          this.refreshMatrixFiles(matrixId);
+        } else if (err?.status === 403) {
+          alert('No tienes permisos para subir archivos.');
+        } else if (err?.status === 413) {
+          alert('El archivo es demasiado grande.');
+        } else {
+          const msg = err?.error?.message || 'Error al subir el archivo.';
+          alert(msg);
+        }
       }
     });
   }

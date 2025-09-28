@@ -49,14 +49,16 @@ public class BusinessObligationMatrixFileService {
 
     @Transactional
     public BusinessObligationMatrixFile uploadFile(Long matrixId, MultipartFile file, String description) throws IOException {
-        if (file == null || file.isEmpty()) {
-            throw new RuntimeException("Archivo vacío o no provisto");
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("El archivo no puede estar vacío");
         }
-        BusinessObligationMatrix matrix = matrixRepository.findById(matrixId)
-                .orElseThrow(() -> new RuntimeException("Matriz de obligaciones no encontrada (id=" + matrixId + ")"));
 
-        if (matrix.getBusiness() == null || matrix.getBusiness().getId() == null) {
-            throw new RuntimeException("La matriz de obligaciones no tiene empresa asociada");
+        BusinessObligationMatrix matrix = matrixRepository.findById(matrixId)
+                .orElseThrow(() -> new RuntimeException("Matriz de obligaciones no encontrada"));
+
+        // Validar que la matriz pertenece a una empresa válida
+        if (matrix.getBusiness() == null) {
+            throw new RuntimeException("La matriz debe estar asociada a una empresa");
         }
 
         Long businessId = matrix.getBusiness().getId();
@@ -69,6 +71,37 @@ public class BusinessObligationMatrixFileService {
 
         log.info("Subiendo archivo de matriz legal: matrixId={}, businessId={}, originalName={}, subdir={}", matrixId, businessId, originalName, subdirectory);
 
+        // Verificar si ya existe un archivo con el mismo nombre en la misma versión
+        Integer currentVersion;
+        try {
+            currentVersion = matrix.getCurrentVersion();
+            if (currentVersion == null || currentVersion <= 0) {
+                currentVersion = 1;
+            }
+        } catch (Exception ignored) {
+            currentVersion = 1;
+        }
+
+        // Buscar archivos existentes con el mismo nombre y versión
+        List<BusinessObligationMatrixFile> existingFiles = fileRepository.findByBusinessObligationMatrixIdAndVersion(matrixId, currentVersion);
+        final String finalOriginalName = originalName; // Variable final para usar en lambda
+        boolean nameExists = existingFiles.stream()
+                .anyMatch(f -> finalOriginalName.equalsIgnoreCase(f.getName()));
+        
+        if (nameExists) {
+            // Generar un nombre único agregando timestamp
+            String timestamp = String.valueOf(System.currentTimeMillis());
+            String extension = "";
+            int dotIndex = originalName.lastIndexOf('.');
+            if (dotIndex > 0) {
+                extension = originalName.substring(dotIndex);
+                originalName = originalName.substring(0, dotIndex) + "_" + timestamp + extension;
+            } else {
+                originalName = originalName + "_" + timestamp;
+            }
+            log.info("Nombre de archivo duplicado, usando nombre único: {}", originalName);
+        }
+
         // Almacenar el archivo y obtener la ruta
         String filePath = fileStorageService.storeFile(file, subdirectory);
 
@@ -77,19 +110,13 @@ public class BusinessObligationMatrixFileService {
         matrixFile.setBusinessObligationMatrix(matrix);
         matrixFile.setName(originalName);
         matrixFile.setPath(filePath);
-        // Asociar archivo a la versión actual de la matriz
-        try {
-            Integer v = matrix.getCurrentVersion();
-            matrixFile.setVersion((v != null && v > 0) ? v : 1);
-        } catch (Exception ignored) {
-            matrixFile.setVersion(1);
-        }
+        matrixFile.setVersion(currentVersion);
         matrixFile.setDescription(description);
         matrixFile.setCreatedAt(LocalDateTime.now());
         matrixFile.setUpdatedAt(LocalDateTime.now());
 
         BusinessObligationMatrixFile saved = fileRepository.save(matrixFile);
-        log.info("Archivo guardado en DB: id={}, path={}", saved.getId(), saved.getPath());
+        log.info("Archivo guardado en DB: id={}, path={}, version={}", saved.getId(), saved.getPath(), saved.getVersion());
         return saved;
     }
 
