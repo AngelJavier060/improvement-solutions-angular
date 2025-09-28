@@ -25,7 +25,7 @@ COPY --from=build --chown=appuser:appgroup /app/target/*.jar app.jar
 USER appuser
 
 # Exponer puerto
-EXPOSE 8089
+EXPOSE 8081
 
 # Variables de entorno por defecto
 ENV SPRING_PROFILES_ACTIVE=prod
@@ -36,4 +36,4 @@ ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -fsS http://localhost:8089/health || exit 1
+  CMD curl -fsS http://localhost:8081/health || exit 1
