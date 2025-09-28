@@ -100,6 +100,17 @@ public class ApprovalRequestController {
         return ResponseEntity.ok(toDto(updated));
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    public ResponseEntity<Void> cancel(@PathVariable Long id, Authentication auth) {
+        String username = auth != null ? auth.getName() : null;
+        if (username == null) throw new RuntimeException("Usuario no autenticado");
+        boolean isAdmin = auth.getAuthorities() != null && auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        approvalService.cancel(id, username, isAdmin);
+        return ResponseEntity.noContent().build();
+    }
+
     private ApprovalRequestDto toDto(ApprovalRequest req) {
         ApprovalRequestDto dto = new ApprovalRequestDto();
         dto.setId(req.getId());

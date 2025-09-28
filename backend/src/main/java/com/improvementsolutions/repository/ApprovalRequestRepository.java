@@ -16,6 +16,9 @@ public interface ApprovalRequestRepository extends JpaRepository<ApprovalRequest
     List<ApprovalRequest> findByBusiness_IdAndStatus(Long businessId, String status);
     List<ApprovalRequest> findByStatus(String status);
 
+    List<ApprovalRequest> findByTargetTypeAndTargetIdAndStatus(String targetType, Long targetId, String status);
+    List<ApprovalRequest> findByTargetTypeAndTargetIdAndStatusAndRequester_Username(String targetType, Long targetId, String status, String username);
+
     // Limpiar referencias de usuario para permitir su eliminación segura
     @Modifying
     @Query("UPDATE ApprovalRequest ar SET ar.decisionBy = null WHERE ar.decisionBy = :user")

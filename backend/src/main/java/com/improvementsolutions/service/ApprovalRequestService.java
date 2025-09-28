@@ -160,4 +160,33 @@ public class ApprovalRequestService {
             }
         }
     }
+
+    @Transactional
+    public void cancel(Long id, String username, boolean isAdmin) {
+        ApprovalRequest req = approvalRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
+        if (!"PENDING".equalsIgnoreCase(req.getStatus())) {
+            throw new RuntimeException("La solicitud no es cancelable (ya fue procesada)");
+        }
+        // Autorización: admin o el mismo solicitante
+        String requester = req.getRequester() != null ? req.getRequester().getUsername() : null;
+        if (!isAdmin && (username == null || requester == null || !requester.equalsIgnoreCase(username))) {
+            throw new RuntimeException("No autorizado para cancelar esta solicitud");
+        }
+        // Si es un FILE_UPLOAD a matriz legal, intentar borrar el archivo en staging
+        try {
+            if ("FILE_UPLOAD".equalsIgnoreCase(req.getType()) &&
+                    "BUSINESS_OBLIGATION_MATRIX".equalsIgnoreCase(req.getTargetType())) {
+                Map<String, Object> payload = objectMapper.readValue(
+                        req.getPayloadJson() == null ? "{}" : req.getPayloadJson(),
+                        new TypeReference<Map<String, Object>>() {});
+                String stagingPath = payload.get("stagingPath") != null ? String.valueOf(payload.get("stagingPath")) : null;
+                if (stagingPath != null && !stagingPath.isBlank()) {
+                    try { fileStorageService.deleteFile(stagingPath); } catch (Exception ignored) {}
+                }
+            }
+        } catch (Exception ignored) { }
+        // Eliminar la solicitud pendiente
+        approvalRepo.delete(req);
+    }
 }

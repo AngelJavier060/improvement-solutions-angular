@@ -120,6 +120,13 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   savingObligation = false;
   obligationToEdit: any = null;
 
+  // Archivos de matrices legales y pendientes
+  matrixFiles: { [matrixId: number]: any[] } = {};
+  matrixPending: { [matrixId: number]: any[] } = {};
+  matrixFilesVisible: { [matrixId: number]: boolean } = {};
+  matrixFilesLoading: { [matrixId: number]: boolean } = {};
+  matrixPendingLoading: { [matrixId: number]: boolean } = {};
+
   // Modal para editar empresa
   showEditEmpresaModal = false;
   savingEmpresa = false;
@@ -406,6 +413,98 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     const parts = [name || `#${ob.id}`];
     if (legal) parts.push(`- ${legal}`);
     return parts.join(' ');
+  }
+
+  // === Archivos por matriz legal ===
+  toggleMatrixFiles(obligation: any): void {
+    const matrixId = Number(obligation?.id ?? obligation?.obligation_matrix_id ?? obligation?.obligationMatrixId);
+    if (isNaN(matrixId)) return;
+    this.matrixFilesVisible[matrixId] = !this.matrixFilesVisible[matrixId];
+    if (this.matrixFilesVisible[matrixId]) {
+      this.refreshMatrixFiles(matrixId);
+    }
+  }
+
+  refreshMatrixFiles(matrixId: number): void {
+    if (!matrixId) return;
+    this.matrixFilesLoading[matrixId] = true;
+    this.bomService.listFiles(matrixId).subscribe({
+      next: (files) => {
+        const list = Array.isArray(files) ? files : [];
+        // Ordenar: más recientes primero (por updatedAt o id)
+        list.sort((a: any, b: any) => {
+          const da = a?.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+          const db = b?.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+          if (db !== da) return db - da;
+          const ia = Number(a?.id) || 0; const ib = Number(b?.id) || 0;
+          return ib - ia;
+        });
+        this.matrixFiles[matrixId] = list;
+        this.matrixFilesLoading[matrixId] = false;
+      },
+      error: (e) => {
+        console.error('Error listando archivos de matriz', matrixId, e);
+        this.matrixFiles[matrixId] = [];
+        this.matrixFilesLoading[matrixId] = false;
+      }
+    });
+    this.refreshMatrixPending(matrixId);
+  }
+
+  refreshMatrixPending(matrixId: number): void {
+    if (!matrixId) return;
+    this.matrixPendingLoading[matrixId] = true;
+    this.bomService.listPendingUploads(matrixId).subscribe({
+      next: (pending) => {
+        this.matrixPending[matrixId] = pending || [];
+        this.matrixPendingLoading[matrixId] = false;
+      },
+      error: (e) => {
+        console.error('Error listando pendientes de matriz', matrixId, e);
+        this.matrixPending[matrixId] = [];
+        this.matrixPendingLoading[matrixId] = false;
+      }
+    });
+  }
+
+  cancelPendingUpload(approvalRequestId: number, matrixId: number): void {
+    if (!approvalRequestId) return;
+    if (!confirm('¿Cancelar esta subida pendiente? El archivo en staging será eliminado.')) return;
+    this.approvalService.cancel(approvalRequestId).subscribe({
+      next: () => {
+        this.refreshMatrixPending(matrixId);
+      },
+      error: (e) => {
+        console.error('No se pudo cancelar la subida pendiente', e);
+        alert('No se pudo cancelar la subida pendiente.');
+      }
+    });
+  }
+
+  getMatrixFileUrl(file: any): string {
+    const id = Number(file?.id);
+    if (isNaN(id)) return '#';
+    return `${environment.apiUrl}/api/obligation-matrices/files/${id}/download`;
+  }
+
+  getMatrixRelationId(obligation: any): number {
+    // La relación BusinessObligationMatrix tiene su propio ID (relación por empresa)
+    const relId = Number(obligation?.id ?? obligation?.relationId ?? obligation?.relation_id);
+    return isNaN(relId) ? 0 : relId;
+  }
+
+  deleteMatrixFile(fileId: number, matrixId: number): void {
+    if (!fileId) return;
+    if (!confirm('¿Eliminar este archivo?')) return;
+    this.bomService.deleteFile(fileId).subscribe({
+      next: () => {
+        this.refreshMatrixFiles(matrixId);
+      },
+      error: (e) => {
+        console.error('No se pudo eliminar el archivo', e);
+        alert('No se pudo eliminar el archivo.');
+      }
+    });
   }
 
   // Abrir modal para editar la relación de obligación por empresa

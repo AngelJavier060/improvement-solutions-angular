@@ -52,6 +52,12 @@ export class BusinessObligationMatrixService {
     return this.http.get<any[]>(url);
   }
 
+  // Pendientes de aprobación (staging)
+  listPendingUploads(matrixId: number): Observable<any[]> {
+    const url = `${this.baseUrl}/${matrixId}/pending-uploads`;
+    return this.http.get<any[]>(url);
+  }
+
   uploadFile(matrixId: number, file: File, description?: string): Observable<any> {
     const form = new FormData();
     form.append('file', file);

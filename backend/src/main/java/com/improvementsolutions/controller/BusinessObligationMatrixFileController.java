@@ -1,6 +1,11 @@
 package com.improvementsolutions.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.improvementsolutions.dto.approval.PendingMatrixFileDto;
+import com.improvementsolutions.model.ApprovalRequest;
 import com.improvementsolutions.model.BusinessObligationMatrixFile;
+import com.improvementsolutions.repository.ApprovalRequestRepository;
 import com.improvementsolutions.service.BusinessObligationMatrixFileService;
 import com.improvementsolutions.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
@@ -9,12 +14,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/obligation-matrices")
@@ -23,6 +30,8 @@ public class BusinessObligationMatrixFileController {
 
     private final BusinessObligationMatrixFileService fileService;
     private final FileStorageService fileStorageService;
+    private final ApprovalRequestRepository approvalRequestRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping("/{matrixId}/files")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
@@ -38,6 +47,44 @@ public class BusinessObligationMatrixFileController {
             return ResponseEntity.ok(fileService.findByMatrixIdAndVersion(matrixId, version));
         }
         return ResponseEntity.ok(fileService.findByMatrixId(matrixId));
+    }
+
+    // Lista las subidas PENDIENTES (staging) para una matriz legal.
+    // ADMIN ve todas; USER ve solo las suyas.
+    @GetMapping("/{matrixId}/pending-uploads")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<List<PendingMatrixFileDto>> listPendingUploads(
+            @PathVariable Long matrixId,
+            Authentication auth
+    ) {
+        String username = auth != null ? auth.getName() : null;
+        boolean isAdmin = auth != null && auth.getAuthorities() != null && auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+
+        List<ApprovalRequest> approvals = isAdmin
+                ? approvalRequestRepository.findByTargetTypeAndTargetIdAndStatus("BUSINESS_OBLIGATION_MATRIX", matrixId, "PENDING")
+                : approvalRequestRepository.findByTargetTypeAndTargetIdAndStatusAndRequester_Username("BUSINESS_OBLIGATION_MATRIX", matrixId, "PENDING", username);
+
+        List<PendingMatrixFileDto> list = approvals.stream()
+                .filter(ar -> "FILE_UPLOAD".equalsIgnoreCase(ar.getType()))
+                .map(ar -> {
+            PendingMatrixFileDto dto = new PendingMatrixFileDto();
+            dto.setApprovalRequestId(ar.getId());
+            dto.setRequesterUsername(ar.getRequester() != null ? ar.getRequester().getUsername() : null);
+            dto.setCreatedAt(ar.getCreatedAt());
+            try {
+                Map<String, Object> payload = objectMapper.readValue(
+                        ar.getPayloadJson() == null ? "{}" : ar.getPayloadJson(),
+                        new TypeReference<Map<String, Object>>() {}
+                );
+                dto.setStagingPath(payload.get("stagingPath") != null ? String.valueOf(payload.get("stagingPath")) : null);
+                dto.setOriginalName(payload.get("originalName") != null ? String.valueOf(payload.get("originalName")) : null);
+                dto.setDescription(payload.get("description") != null ? String.valueOf(payload.get("description")) : null);
+            } catch (Exception ignored) {}
+            return dto;
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(list);
     }
 
     @PostMapping(value = "/{matrixId}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

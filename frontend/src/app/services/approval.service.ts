@@ -43,6 +43,11 @@ export class ApprovalService {
     return this.http.post<any>(`${this.baseUrl}/${id}/reject`, { reason });
   }
 
+  // Cancelar (eliminar) una solicitud pendiente, incluyendo limpiar staging si aplica
+  cancel(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
   // Staging upload for obligation matrix files (PDF only)
   uploadStagingObligationFile(file: File): Observable<any> {
     const form = new FormData();

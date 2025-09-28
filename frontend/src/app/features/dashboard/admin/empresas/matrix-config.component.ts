@@ -511,61 +511,31 @@ export class MatrixConfigComponent implements OnInit {
       return;
     }
 
-    if (!this.businessId) {
-      console.error('No se pudo determinar la empresa (businessId) para la aprobación');
-      input.value = '';
-      this.notify.error('No se pudo enviar la solicitud de aprobación (empresa no resuelta).');
-      return;
-    }
-
-    // Flujo staging-only: subir a staging y crear solicitud de aprobación
+    // Flujo ADMIN directo: guardar en BD inmediatamente
     this.filesLoading[id] = true;
-    this.approvalService.uploadStagingObligationFile(file).subscribe({
-      next: (staging) => {
-        const stagingPath = staging?.stagingPath;
-        const originalName = staging?.originalName || file.name;
-        if (!stagingPath) {
-          console.error('Respuesta de staging inválida', staging);
-          input.value = '';
-          this.filesLoading[id] = false;
-          this.notify.error('No se pudo preparar el archivo para aprobación.');
-          return;
-        }
-        this.approvalService.createApproval({
-          businessId: this.businessId as number,
-          type: 'FILE_UPLOAD',
-          targetType: 'BUSINESS_OBLIGATION_MATRIX',
-          targetId: id,
-          payload: { stagingPath, originalName }
-        }).subscribe({
-          next: () => {
-            input.value = '';
-            this.filesLoading[id] = false;
-            this.notify.success('Solicitud de carga enviada al administrador.');
-          },
-          error: (err2) => {
-            console.error('Error al crear solicitud de aprobación:', err2);
-            input.value = '';
-            this.filesLoading[id] = false;
-            this.notify.error('No se pudo enviar la solicitud de aprobación.');
-          }
-        });
+    this.bomService.uploadFile(id, file).subscribe({
+      next: () => {
+        input.value = '';
+        // Refrescar lista y conteo
+        this.loadFiles(id);
+        this.preloadFileCount(id);
+        this.filesLoading[id] = false;
+        this.notify.success('Archivo subido correctamente.');
       },
-      error: (errStage) => {
-        console.error('Error al subir a staging:', errStage);
+      error: (err) => {
+        console.error('Error al subir archivo directamente:', err);
         input.value = '';
         this.filesLoading[id] = false;
-        const backendMsg = (errStage?.error?.message as string) || '';
-        if (errStage?.status === 413) {
-          this.notify.error('El archivo excede el límite permitido (20 MB). Por favor, reduzca su tamaño e inténtelo nuevamente.');
-        } else if (errStage?.status === 400) {
-          this.notify.warning(backendMsg || 'El archivo no se pudo procesar. Asegúrese de seleccionar un PDF o Word válido.');
-        } else if (errStage?.status === 500) {
-          this.notify.error(backendMsg || 'No se pudo almacenar el archivo en el servidor. Intente más tarde o contacte al administrador.');
-        } else if (errStage?.status === 403) {
-          this.notify.warning('No tienes permiso para subir archivos. Contacta al administrador.');
+        if (err?.status === 403) {
+          this.notify.warning('No tienes permiso para subir archivos.');
+        } else if (err?.status === 413) {
+          this.notify.error('El archivo excede el límite permitido (20 MB).');
+        } else if (err?.status === 400) {
+          const msg = (err?.error?.message as string) || 'Archivo no válido.';
+          this.notify.warning(msg);
         } else {
-          this.notify.error(backendMsg || 'No se pudo subir el archivo a staging. Intente nuevamente.');
+          const msg = (err?.error?.message as string) || 'No se pudo subir el archivo.';
+          this.notify.error(msg);
         }
       }
     });
