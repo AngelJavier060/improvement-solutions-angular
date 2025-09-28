@@ -315,7 +315,7 @@ export class CreateEmployeeModalComponent implements OnInit {
         
         console.log('📋 Bloques configurados para la empresa (total):', configuredBlocks.length);
         configuredBlocks.forEach((block: any, index: number) => {
-          console.log(`  ${index + 1}. ${block.name} (ID: ${block.id}) - Empresa contratista: ${block.contractor_company_id || block.contractorCompany?.id || block.contractor_company?.id || 'No definida'}`);
+          console.log(`  ${index + 1}. ${block.name} (ID: ${block.id}) - Empresa contratista: ${block.contractorCompanyId || block.contractor_company_id || block.contractorCompany?.id || block.contractor_company?.id || 'No definida'}`);
         });
         
         if (configuredBlocks.length === 0) {
@@ -326,24 +326,26 @@ export class CreateEmployeeModalComponent implements OnInit {
         
         // Filtrar bloques que pertenecen a la empresa contratista seleccionada
         const blocksForSelectedCompany = configuredBlocks.filter((block: any) => {
-          // Intentar múltiples formas de obtener el contractor_company_id
-          let blockContractorId = null;
-          
-          if (block.contractor_company_id) {
+          // Intentar múltiples formas de obtener el contractor company id, priorizando el nuevo DTO (contractorCompanyId)
+          let blockContractorId: number | null = null;
+
+          if (block.contractorCompanyId !== undefined && block.contractorCompanyId !== null) {
+            blockContractorId = Number(block.contractorCompanyId);
+          } else if (block.contractor_company_id) {
             blockContractorId = Number(block.contractor_company_id);
           } else if (block.contractorCompany?.id) {
             blockContractorId = Number(block.contractorCompany.id);
           } else if (block.contractor_company?.id) {
             blockContractorId = Number(block.contractor_company.id);
           }
-          
+
           const belongsToCompany = blockContractorId === Number(contractorCompanyId);
-          
+
           console.log(`🔄 Analizando bloque "${block.name}" (ID: ${block.id})`);
-          console.log(`   - contractor_company_id del bloque: ${blockContractorId}`);
+          console.log(`   - contractorCompanyId del bloque: ${blockContractorId}`);
           console.log(`   - contractor_company_id seleccionado: ${contractorCompanyId}`);
           console.log(`   - ¿Coincide?: ${belongsToCompany}`);
-          
+
           return belongsToCompany;
         });
         
