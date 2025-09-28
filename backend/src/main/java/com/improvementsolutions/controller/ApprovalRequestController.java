@@ -1,6 +1,8 @@
 package com.improvementsolutions.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.improvementsolutions.dto.approval.ApprovalResponseDto;
+import com.improvementsolutions.dto.approval.ApprovalRequestDto;
 import com.improvementsolutions.model.ApprovalRequest;
 import com.improvementsolutions.service.ApprovalRequestService;
 import lombok.Data;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/approvals")
@@ -27,7 +30,7 @@ public class ApprovalRequestController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public ResponseEntity<ApprovalRequest> create(@RequestBody CreateApprovalDto dto, Authentication auth) {
+    public ResponseEntity<ApprovalResponseDto> create(@RequestBody CreateApprovalDto dto, Authentication auth) {
         String username = auth != null ? auth.getName() : null;
         if (username == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no autenticado");
@@ -44,7 +47,12 @@ public class ApprovalRequestController {
                     dto.getTargetId(),
                     payloadJson
             );
-            return ResponseEntity.ok(req);
+            ApprovalResponseDto res = new ApprovalResponseDto(
+                    req.getId(),
+                    req.getStatus(),
+                    "Solicitud creada exitosamente"
+            );
+            return ResponseEntity.ok(res);
         } catch (Exception e) {
             String msg = e.getMessage() == null ? "Error interno" : e.getMessage();
             // Clasificar errores conocidos como 400 (bad request)
@@ -59,31 +67,61 @@ public class ApprovalRequestController {
 
     @GetMapping("/business/{businessId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<ApprovalRequest>> listByBusiness(@PathVariable Long businessId,
-                                                                @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(approvalService.listByBusiness(businessId, status));
+    public ResponseEntity<List<ApprovalRequestDto>> listByBusiness(@PathVariable Long businessId,
+                                                                   @RequestParam(required = false) String status) {
+        List<ApprovalRequestDto> list = approvalService.listByBusiness(businessId, status)
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(list);
     }
 
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApprovalRequest> approve(@PathVariable Long id,
+    public ResponseEntity<ApprovalRequestDto> approve(@PathVariable Long id,
                                                    @RequestBody(required = false) DecisionDto dto,
                                                    Authentication auth) {
         String username = auth != null ? auth.getName() : null;
         if (username == null) throw new RuntimeException("Usuario no autenticado");
         String reason = dto != null ? dto.getReason() : null;
-        return ResponseEntity.ok(approvalService.approve(id, username, reason));
+        ApprovalRequest updated = approvalService.approve(id, username, reason);
+        return ResponseEntity.ok(toDto(updated));
     }
 
     @PostMapping("/{id}/reject")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApprovalRequest> reject(@PathVariable Long id,
+    public ResponseEntity<ApprovalRequestDto> reject(@PathVariable Long id,
                                                   @RequestBody(required = false) DecisionDto dto,
                                                   Authentication auth) {
         String username = auth != null ? auth.getName() : null;
         if (username == null) throw new RuntimeException("Usuario no autenticado");
         String reason = dto != null ? dto.getReason() : null;
-        return ResponseEntity.ok(approvalService.reject(id, username, reason));
+        ApprovalRequest updated = approvalService.reject(id, username, reason);
+        return ResponseEntity.ok(toDto(updated));
+    }
+
+    private ApprovalRequestDto toDto(ApprovalRequest req) {
+        ApprovalRequestDto dto = new ApprovalRequestDto();
+        dto.setId(req.getId());
+        dto.setBusinessId(req.getBusiness() != null ? req.getBusiness().getId() : null);
+        if (req.getRequester() != null) {
+            dto.setRequesterUserId(req.getRequester().getId());
+            dto.setRequesterUsername(req.getRequester().getUsername());
+        }
+        dto.setType(req.getType());
+        dto.setTargetType(req.getTargetType());
+        dto.setTargetId(req.getTargetId());
+        dto.setStatus(req.getStatus());
+        dto.setPayloadJson(req.getPayloadJson());
+        dto.setCreatedAt(req.getCreatedAt());
+        dto.setUpdatedAt(req.getUpdatedAt());
+        dto.setDecisionAt(req.getDecisionAt());
+        if (req.getDecisionBy() != null) {
+            dto.setDecisionByUserId(req.getDecisionBy().getId());
+            dto.setDecisionByUsername(req.getDecisionBy().getUsername());
+        }
+        dto.setDecisionReason(req.getDecisionReason());
+        return dto;
     }
 
     @Data
