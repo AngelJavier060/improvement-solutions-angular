@@ -35,6 +35,16 @@ public interface BusinessEmployeeRepository extends JpaRepository<BusinessEmploy
     @Query("SELECT be FROM BusinessEmployee be LEFT JOIN FETCH be.gender WHERE be.business.id = :businessId")
     List<BusinessEmployee> findByBusinessIdWithGender(Long businessId);
 
+    // Para datos legados: considerar empleados que no tengan seteada la relación 'business'
+    // y usen el campo codigoEmpresa (RUC) o cuando el RUC coincide con el de la empresa
+    @Query("SELECT DISTINCT be FROM BusinessEmployee be " +
+           "LEFT JOIN FETCH be.gender g " +
+           "LEFT JOIN be.business b " +
+           "WHERE (b.id = :businessId) " +
+           "   OR (LOWER(TRIM(be.codigoEmpresa)) = LOWER(TRIM(:ruc))) " +
+           "   OR (b.ruc IS NOT NULL AND LOWER(TRIM(b.ruc)) = LOWER(TRIM(:ruc)))")
+    List<BusinessEmployee> findByBusinessOrRucOrCodigo(Long businessId, String ruc);
+
     @Query(value = "SELECT be FROM BusinessEmployee be WHERE be.business.id = :businessId " +
             "AND (:cedula IS NULL OR LOWER(be.cedula) LIKE LOWER(CONCAT('%', :cedula, '%'))) " +
             "AND (:nombres IS NULL OR LOWER(be.nombres) LIKE LOWER(CONCAT('%', :nombres, '%'))) " +

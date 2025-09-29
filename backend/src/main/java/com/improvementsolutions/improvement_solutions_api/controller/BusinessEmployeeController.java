@@ -4,6 +4,7 @@ import com.improvementsolutions.dto.CreateBusinessEmployeeDto;
 import com.improvementsolutions.dto.UpdateBusinessEmployeeDto;
 import com.improvementsolutions.dto.BusinessEmployeeResponseDto;
 import com.improvementsolutions.dto.EmployeeStatsDto;
+import com.improvementsolutions.dto.StatsAggregationDto;
 import com.improvementsolutions.dto.AgeRangeStatsDto;
 import com.improvementsolutions.dto.EmployeeMovementRequestDto;
 import com.improvementsolutions.improvement_solutions_api.dto.ErrorResponseDto;
@@ -48,6 +49,54 @@ public class BusinessEmployeeController {
             return ResponseEntity.ok(employees);
         } catch (Exception e) {
             log.error("Error al obtener empleados para RUC {}: {}", ruc, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Nuevos endpoints para estadísticas completamente calculadas en el backend
+    @GetMapping("/businesses/{businessId}/stats")
+    public ResponseEntity<EmployeeStatsDto> getEmployeeStatsByBusinessId(@PathVariable Long businessId) {
+        try {
+            log.info("Obteniendo estadísticas por businessId: {}", businessId);
+            EmployeeStatsDto stats = businessEmployeeService.getEmployeeStatsByBusinessId(businessId);
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Error al obtener estadísticas por businessId {}: {}", businessId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/business-employees/stats/aggregate")
+    public ResponseEntity<StatsAggregationDto> getAggregatedStatsByBusinessIds(
+            @RequestParam("businessIds") java.util.List<Long> businessIds,
+            @RequestParam(value = "currentBusinessId", required = false) Long currentBusinessId) {
+        try {
+            log.info("Agregando estadísticas para businessIds: {}", businessIds);
+            StatsAggregationDto dto = businessEmployeeService.getAggregatedStatsByBusinessIds(businessIds);
+            // Asignar currentBusiness si se proporcionó
+            if (currentBusinessId != null && dto.getAllBusinesses() != null) {
+                dto.setCurrentBusiness(
+                    dto.getAllBusinesses().stream()
+                        .filter(it -> it.getBusinessId().equals(currentBusinessId))
+                        .findFirst()
+                        .orElse(null)
+                );
+            }
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            log.error("Error al agregar estadísticas: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/users/{userId}/businesses/stats")
+    public ResponseEntity<StatsAggregationDto> getAggregatedStatsByUser(@PathVariable Long userId) {
+        try {
+            log.info("Agregando estadísticas para las empresas del usuario: {}", userId);
+            StatsAggregationDto dto = businessEmployeeService.getAggregatedStatsByUser(userId);
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            log.error("Error al agregar estadísticas por usuario {}: {}", userId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

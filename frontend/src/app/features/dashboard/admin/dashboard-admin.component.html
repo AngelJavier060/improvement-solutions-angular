@@ -2,7 +2,13 @@
   <header class="dashboard-header bg-primary text-white py-3">
     <div class="container-fluid">
       <div class="row align-items-center">
-        <div class="col">
+        <div class="col d-flex align-items-center gap-2">
+          <!-- Botón hamburguesa para mostrar/ocultar sidebar -->
+          <button class="btn btn-light btn-sm d-inline-flex align-items-center" type="button"
+                  aria-label="Alternar menú" (click)="toggleSidebar()"
+                  title="Mostrar/Ocultar menú lateral (se recordará tu preferencia)">
+            <i class="fas fa-bars"></i>
+          </button>
           <h1 class="mb-0">
             <i class="fas fa-tachometer-alt me-2"></i> Panel de Administrador
           </h1>
@@ -23,7 +29,7 @@
 
   <div class="dashboard-content">
     <!-- Sidebar Menu -->
-    <aside class="sidebar">
+    <aside class="sidebar" [class.open]="isSidebarOpen" [class.collapsed]="!isSidebarOpen">
       <div class="sidebar-header">
         <h4>Menú de Administración</h4>
       </div>
@@ -57,6 +63,9 @@
         </ul>
       </nav>
     </aside>
+
+    <!-- Backdrop para móviles cuando el sidebar está abierto -->
+    <div class="sidebar-backdrop" *ngIf="isSidebarOpen" (click)="toggleSidebar()"></div>
 
     <!-- Main Content Area -->
     <main class="main-content">

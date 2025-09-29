@@ -8,12 +8,13 @@
 .dashboard-header {
   background-color: #2563eb;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  z-index: 100;
+  z-index: 1100;
 }
 
 .dashboard-content {
   display: flex;
   flex: 1;
+  position: relative;
 }
 
 .sidebar {
@@ -22,6 +23,31 @@
   border-right: 1px solid #e2e8f0;
   box-shadow: 1px 0 5px rgba(0, 0, 0, 0.05);
   padding: 20px 0;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1000;
+
+  // Estado colapsado en desktop
+  &.collapsed {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+    border-right: none;
+  }
+
+  // Comportamiento responsivo
+  @media (max-width: 991.98px) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1050;
+    transform: translateX(-100%);
+    
+    &.open {
+      transform: translateX(0);
+    }
+  }
 }
 
 .sidebar-header {
@@ -85,11 +111,33 @@
   }
 }
 
+// Backdrop para móviles
+.sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+  display: none;
+
+  @media (max-width: 991.98px) {
+    display: block;
+  }
+}
+
 .main-content {
   flex: 1;
   padding: 20px;
   background-color: #f5f7fa;
   overflow-y: auto;
+  transition: margin-left 0.3s ease;
+
+  @media (max-width: 991.98px) {
+    margin-left: 0;
+    padding: 15px;
+  }
 }
 
 .welcome-content {

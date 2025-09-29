@@ -78,7 +78,6 @@ public class BusinessEmployeeService {
         if (business.isPresent()) {
             return business.get().getId();
         } else {
-            // Si no existe, crear o retornar error
             throw new IllegalArgumentException("No se encontró empresa con RUC: " + ruc);
         }
     }
@@ -87,17 +86,15 @@ public class BusinessEmployeeService {
     public List<BusinessEmployeeResponseDto> getAllEmployeesByCompany(String codigoEmpresa) {
         log.info("Obteniendo todos los empleados para la empresa: {}", codigoEmpresa);
         try {
-            Long businessId = getBusinessIdFromRuc(codigoEmpresa);
-            List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessId);
+            List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessOrRucOrCodigo(null, codigoEmpresa);
             return employees.stream()
                     .map(this::convertToResponseDto)
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            log.error("Error al buscar empleados por empresa {}: {}", codigoEmpresa, e.getMessage());
-            // Si no se puede convertir RUC, intentar buscar directamente por el string como ID
+            // Si no se puede resolver por RUC, intentar interpretar como ID directamente
             try {
                 Long businessId = Long.parseLong(codigoEmpresa);
-                List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessId);
+                List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessOrRucOrCodigo(businessId, "");
                 return employees.stream()
                         .map(this::convertToResponseDto)
                         .collect(Collectors.toList());
@@ -107,7 +104,7 @@ public class BusinessEmployeeService {
             }
         }
     }
-    
+
     @Transactional(readOnly = true)
     public Page<BusinessEmployeeResponseDto> getAllEmployeesByCompanyPaginated(String codigoEmpresa, Pageable pageable) {
         log.info("Obteniendo empleados paginados para la empresa: {}, página: {}", codigoEmpresa, pageable.getPageNumber());
@@ -577,9 +574,8 @@ public class BusinessEmployeeService {
         log.info("Calculando estadísticas de empleados para la empresa: {}", codigoEmpresa);
 
         Long businessId = getBusinessIdFromRuc(codigoEmpresa);
-
-        // Usar consulta personalizada que incluye JOIN FETCH para cargar las relaciones
-        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessIdWithGender(businessId);
+        // Incluir también empleados legados que solo tienen codigoEmpresa (RUC)
+        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessOrRucOrCodigo(businessId, codigoEmpresa);
 
         EmployeeStatsDto stats = new EmployeeStatsDto();
         stats.setTotal(employees.size());
@@ -601,10 +597,15 @@ public class BusinessEmployeeService {
 
         // Contar personas con discapacidad
         long discapacidad = employees.stream()
-                .filter(emp -> emp.getDiscapacidad() != null &&
-                        (emp.getDiscapacidad().toLowerCase().contains("si") ||
-                         emp.getDiscapacidad().toLowerCase().contains("true") ||
-                         "1".equals(emp.getDiscapacidad())))
+                .filter(emp -> {
+                    String d = emp.getDiscapacidad();
+                    if (d == null) return false;
+                    String v = d.trim().toLowerCase();
+                    // Falsos comunes
+                    if (v.isEmpty() || v.equals("no") || v.equals("ninguna") || v.equals("ninguno") || v.equals("false") || v.equals("0") || v.equals("n")) return false;
+                    // Verdaderos comunes
+                    return v.equals("si") || v.equals("sí") || v.equals("true") || v.equals("1") || v.contains("discap") || v.contains("si ");
+                })
                 .count();
         stats.setDiscapacidad((int) discapacidad);
 
@@ -626,6 +627,107 @@ public class BusinessEmployeeService {
         stats.setAdolescentes((int) adolescentes);
 
         return stats;
+    }
+
+    /**
+     * Obtiene estadísticas de empleados para una empresa por businessId
+     */
+    @Transactional(readOnly = true)
+    public EmployeeStatsDto getEmployeeStatsByBusinessId(Long businessId) {
+        log.info("Calculando estadísticas de empleados para businessId: {}", businessId);
+        // Buscar RUC para cubrir datos legados
+        String ruc = null;
+        try {
+            com.improvementsolutions.model.Business b = businessRepository.findById(businessId).orElse(null);
+            ruc = (b != null ? b.getRuc() : null);
+        } catch (Exception ignored) {}
+        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessOrRucOrCodigo(businessId, ruc != null ? ruc : "");
+
+        EmployeeStatsDto stats = new EmployeeStatsDto();
+        stats.setTotal(employees.size());
+
+        long hombres = employees.stream()
+                .filter(emp -> emp.getGender() != null &&
+                        ("masculino".equalsIgnoreCase(emp.getGender().getName()) ||
+                         "hombre".equalsIgnoreCase(emp.getGender().getName())))
+                .count();
+        stats.setHombres((int) hombres);
+
+        long mujeres = employees.stream()
+                .filter(emp -> emp.getGender() != null &&
+                        ("femenino".equalsIgnoreCase(emp.getGender().getName()) ||
+                         "mujer".equalsIgnoreCase(emp.getGender().getName())))
+                .count();
+        stats.setMujeres((int) mujeres);
+
+        long discapacidad = employees.stream()
+                .filter(emp -> emp.getDiscapacidad() != null &&
+                        (emp.getDiscapacidad().toLowerCase().contains("si") ||
+                         emp.getDiscapacidad().toLowerCase().contains("true") ||
+                         "1".equals(emp.getDiscapacidad())))
+                .count();
+        stats.setDiscapacidad((int) discapacidad);
+
+        long adolescentes = employees.stream()
+                .filter(emp -> {
+                    if (emp.getDateBirth() == null) return false;
+                    try {
+                        int age = java.time.Period.between(
+                                emp.getDateBirth().toLocalDate(),
+                                java.time.LocalDate.now()
+                        ).getYears();
+                        return age >= 15 && age <= 17;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
+                .count();
+        stats.setAdolescentes((int) adolescentes);
+
+        return stats;
+    }
+
+    /**
+     * Agrega estadísticas para una lista de empresas y devuelve totales combinados
+     */
+    @Transactional(readOnly = true)
+    public com.improvementsolutions.dto.StatsAggregationDto getAggregatedStatsByBusinessIds(java.util.List<Long> businessIds) {
+        java.util.List<com.improvementsolutions.dto.BusinessStatsItemDto> items = new java.util.ArrayList<>();
+
+        for (Long bid : businessIds) {
+            if (bid == null) continue;
+            EmployeeStatsDto stats = getEmployeeStatsByBusinessId(bid);
+            com.improvementsolutions.model.Business b = businessRepository.findById(bid).orElse(null);
+            String name = (b != null ? b.getName() : ("Empresa " + bid));
+            String ruc = (b != null ? b.getRuc() : null);
+            items.add(new com.improvementsolutions.dto.BusinessStatsItemDto(bid, name, ruc, stats));
+        }
+
+        EmployeeStatsDto totalCombined = new EmployeeStatsDto();
+        for (com.improvementsolutions.dto.BusinessStatsItemDto it : items) {
+            if (it == null || it.getStats() == null) continue;
+            totalCombined.setTotal(totalCombined.getTotal() + it.getStats().getTotal());
+            totalCombined.setHombres(totalCombined.getHombres() + it.getStats().getHombres());
+            totalCombined.setMujeres(totalCombined.getMujeres() + it.getStats().getMujeres());
+            totalCombined.setDiscapacidad(totalCombined.getDiscapacidad() + it.getStats().getDiscapacidad());
+            totalCombined.setAdolescentes(totalCombined.getAdolescentes() + it.getStats().getAdolescentes());
+        }
+
+        com.improvementsolutions.dto.StatsAggregationDto dto = new com.improvementsolutions.dto.StatsAggregationDto();
+        dto.setAllBusinesses(items);
+        dto.setTotalCombined(totalCombined);
+        // currentBusiness será asignado en el controlador si se provee
+        return dto;
+    }
+
+    /**
+     * Agrega estadísticas para todas las empresas asociadas a un usuario
+     */
+    @Transactional(readOnly = true)
+    public com.improvementsolutions.dto.StatsAggregationDto getAggregatedStatsByUser(Long userId) {
+        java.util.List<com.improvementsolutions.model.Business> businesses = businessRepository.findBusinessesByUserId(userId);
+        java.util.List<Long> ids = businesses.stream().map(com.improvementsolutions.model.Business::getId).toList();
+        return getAggregatedStatsByBusinessIds(ids);
     }
 
     /**

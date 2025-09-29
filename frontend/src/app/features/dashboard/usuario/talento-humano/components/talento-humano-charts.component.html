@@ -1,0 +1,153 @@
+<div class="talento-humano-charts">
+  <div class="chart-header">
+    <h3 class="chart-title">
+      <i class="fas fa-chart-bar me-2"></i>
+      Estadísticas de Personal por Género y Discapacidad
+    </h3>
+    
+    <!-- Selector de empresa -->
+    <div class="business-selector" *ngIf="hasMultipleBusinesses()">
+      <label for="businessSelect" class="form-label">Filtrar por empresa:</label>
+      <select 
+        id="businessSelect" 
+        class="form-select" 
+        [(ngModel)]="selectedBusinessId" 
+        (change)="onBusinessChange()">
+        <option [ngValue]="'all'">Todas las empresas</option>
+        <option 
+          *ngFor="let business of statsData?.allBusinesses" 
+          [ngValue]="business.businessId">
+          {{ business.businessName }} ({{ business.businessRuc }})
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p class="mt-2 text-muted">Cargando estadísticas de personal...</p>
+  </div>
+
+  <!-- Error state -->
+  <div *ngIf="error" class="alert alert-danger" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    {{ error }}
+    <button class="btn btn-sm btn-outline-danger ms-2" (click)="reloadStats()">
+      <i class="fas fa-redo me-1"></i>
+      Reintentar
+    </button>
+  </div>
+
+  <!-- Chart container -->
+  <div *ngIf="!loading && !error && statsData" class="chart-container">
+    <div #chartContainer class="chart-svg-container"></div>
+    
+    <!-- Summary cards -->
+    <div class="summary-cards mt-4">
+      <div class="row g-3">
+        <div class="col-md-3" *ngIf="isShowingAllBusinesses()">
+          <div class="card summary-card">
+            <div class="card-body text-center">
+              <i class="fas fa-building fa-2x text-primary mb-2"></i>
+              <h5 class="card-title">{{ getBusinessCount() }}</h5>
+              <p class="card-text text-muted">Empresas</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <div class="card summary-card">
+            <div class="card-body text-center">
+              <i class="fas fa-users fa-2x text-info mb-2"></i>
+              <h5 class="card-title">{{ getCurrentStats().total }}</h5>
+              <p class="card-text text-muted">Total Empleados</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <div class="card summary-card">
+            <div class="card-body text-center">
+              <i class="fas fa-male fa-2x text-primary mb-2"></i>
+              <h5 class="card-title">{{ getCurrentStats().hombres }}</h5>
+              <p class="card-text text-muted">Hombres</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-3">
+          <div class="card summary-card">
+            <div class="card-body text-center">
+              <i class="fas fa-female fa-2x text-danger mb-2"></i>
+              <h5 class="card-title">{{ getCurrentStats().mujeres }}</h5>
+              <p class="card-text text-muted">Mujeres</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-12">
+          <div class="card summary-card bg-light">
+            <div class="card-body text-center">
+              <i class="fas fa-wheelchair fa-2x text-success mb-2"></i>
+              <h5 class="card-title">{{ getCurrentStats().discapacidad }}</h5>
+              <p class="card-text text-muted">Personas con Discapacidad</p>
+              <small class="text-muted">
+                {{ getDisabilityPercentage() }}% del total de empleados
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Business breakdown (only when showing all businesses) -->
+    <div *ngIf="isShowingAllBusinesses() && hasMultipleBusinesses()" class="business-breakdown mt-4">
+      <h4 class="mb-3">
+        <i class="fas fa-list me-2"></i>
+        Desglose por Empresa
+      </h4>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Empresa</th>
+              <th>RUC</th>
+              <th>Total</th>
+              <th>Hombres</th>
+              <th>Mujeres</th>
+              <th>Con Discapacidad</th>
+              <th>% Discapacidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let business of statsData?.allBusinesses" 
+                class="business-row" 
+                (click)="selectBusiness(business.businessId)">
+              <td class="fw-medium">{{ business.businessName }}</td>
+              <td class="text-muted">{{ business.businessRuc }}</td>
+              <td><span class="badge bg-info">{{ business.stats.total }}</span></td>
+              <td><span class="badge bg-primary">{{ business.stats.hombres }}</span></td>
+              <td><span class="badge bg-danger">{{ business.stats.mujeres }}</span></td>
+              <td><span class="badge bg-success">{{ business.stats.discapacidad }}</span></td>
+              <td class="text-muted">
+                {{ getBusinessDisabilityPercentage(business) }}%
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- No data state -->
+  <div *ngIf="!loading && !error && statsData && getCurrentStats().total === 0" class="no-data-container">
+    <div class="text-center py-5">
+      <i class="fas fa-users fa-3x text-muted mb-3"></i>
+      <h4 class="text-muted">No hay empleados registrados</h4>
+      <p class="text-muted">Agregue empleados para ver las estadísticas de personal.</p>
+    </div>
+  </div>
+</div>
