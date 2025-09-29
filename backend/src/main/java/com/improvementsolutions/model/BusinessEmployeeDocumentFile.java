@@ -49,9 +49,16 @@ public class BusinessEmployeeDocumentFile {
     @Column(name = "uploaded_at")
     private LocalDateTime uploadedAt;
 
+    // Campo active requerido por la BD de producción
+    @Column(name = "active")
+    private Boolean active = true;
+
     @PrePersist
     protected void onCreate() {
         this.uploadedAt = LocalDateTime.now();
+        if (this.active == null) {
+            this.active = true;
+        }
         if (this.file == null) {
             this.file = this.filePath;
         }
@@ -78,6 +85,9 @@ public class BusinessEmployeeDocumentFile {
 
     @PreUpdate
     protected void onUpdate() {
+        if (this.active == null) {
+            this.active = true;
+        }
         if (this.file == null) {
             this.file = this.filePath;
         }
