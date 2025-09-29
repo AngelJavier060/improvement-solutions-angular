@@ -55,21 +55,74 @@ public class EmployeeDocumentController {
             @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "files[]", required = false) MultipartFile[] files
     ) {
+        log.info("=== INICIO createEmployeeDocument ===");
+        log.info("Parámetros recibidos: businessEmployeeId={}, typeDocumentId={}, startDate={}, endDate={}, description={}", 
+                businessEmployeeId, typeDocumentId, startDate, endDate, description);
+        log.info("Archivos recibidos: {}", files != null ? files.length : 0);
+        
         try {
+            // Validaciones tempranas con logging detallado
+            log.info("Iniciando validaciones...");
+            
+            if (businessEmployeeId == null) {
+                log.error("business_employee_id es requerido");
+                return ResponseEntity.badRequest().body(Map.of("error", "business_employee_id es requerido"));
+            }
+            
+            if (typeDocumentId == null) {
+                log.error("type_document_id es requerido");
+                return ResponseEntity.badRequest().body(Map.of("error", "type_document_id es requerido"));
+            }
+            
+            log.info("Validaciones básicas OK");
+            
+            // Validar archivos si existen
+            if (files != null && files.length > 0) {
+                log.info("Validando {} archivos...", files.length);
+                for (int i = 0; i < files.length; i++) {
+                    MultipartFile file = files[i];
+                    if (file != null && !file.isEmpty()) {
+                        log.info("Archivo {}: nombre={}, tamaño={}, tipo={}", 
+                                i, file.getOriginalFilename(), file.getSize(), file.getContentType());
+                        
+                        // Validar tamaño (20MB máximo según config)
+                        if (file.getSize() > 20 * 1024 * 1024) {
+                            log.error("Archivo {} excede 20MB: {} bytes", file.getOriginalFilename(), file.getSize());
+                            return ResponseEntity.badRequest().body(Map.of(
+                                    "error", "FILE_TOO_LARGE",
+                                    "message", "El archivo " + file.getOriginalFilename() + " excede el límite de 20MB"
+                            ));
+                        }
+                    }
+                }
+            }
+            
+            log.info("Validaciones de archivos OK, llamando al servicio...");
+            
             List<MultipartFile> fileList = files != null ? Arrays.asList(files) : List.of();
             EmployeeDocumentResponse resp = documentService.create(businessEmployeeId, typeDocumentId, startDate, endDate, description, fileList);
+            
+            log.info("=== FIN createEmployeeDocument EXITOSO ===");
             return ResponseEntity.status(HttpStatus.CREATED).body(resp);
+            
         } catch (IllegalArgumentException ex) {
-            log.error("Error de validación al crear documento: {}", ex.getMessage(), ex);
+            log.error("=== ERROR DE VALIDACIÓN en createEmployeeDocument ===");
+            log.error("Mensaje: {}", ex.getMessage());
+            log.error("Clase: {}", ex.getClass().getSimpleName());
+            log.error("Stack trace:", ex);
             return ResponseEntity.badRequest().body(Map.of(
                     "error", "VALIDATION_ERROR",
                     "message", ex.getMessage()
             ));
         } catch (Exception e) {
-            log.error("Error interno al crear documento", e);
+            log.error("=== ERROR INTERNO en createEmployeeDocument ===");
+            log.error("Mensaje: {}", e.getMessage());
+            log.error("Clase: {}", e.getClass().getSimpleName());
+            log.error("Stack trace completo:", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "error", "INTERNAL_ERROR",
-                    "message", e.getMessage() != null ? e.getMessage() : "Unexpected error"
+                    "message", e.getMessage() != null ? e.getMessage() : "Error interno del servidor",
+                    "type", e.getClass().getSimpleName()
             ));
         }
     }
