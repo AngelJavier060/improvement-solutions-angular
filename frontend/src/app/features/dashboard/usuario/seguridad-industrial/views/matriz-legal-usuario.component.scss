@@ -74,3 +74,31 @@
 /* Ocultar el sidebar/toggle locales y usar el sidebar global del módulo */
 .ml-sidebar { display: none !important; }
 .ml-container .ml-toggle { display: none !important; }
+
+/* Título impactante centrado para "Matriz Legal" */
+.ml-impact-title {
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  line-height: 1.25;
+  margin: 6px 0 18px;
+  font-size: clamp(1.8rem, 3.2vw, 2.8rem);
+  text-transform: uppercase;
+  color: #111827; /* fallback */
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 10px rgba(17, 24, 39, 0.10);
+}
+
+.ml-impact-title::after {
+  content: '';
+  display: block;
+  width: 140px;
+  height: 4px;
+  margin: 10px auto 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22c55e 0%, #06b6d4 50%, #6366f1 100%);
+  box-shadow: 0 2px 6px rgba(99,102,241,0.25);
+}

@@ -108,25 +108,12 @@
     }
   }
 }
-
 /* Main Content */
 .main-content {
   flex: 1;
-  margin-left: 250px; // Ancho del sidebar
   padding: 0;
   background-color: #f8f9fa;
   min-height: calc(100vh - 80px);
-}
-
-.welcome-icon {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background-color: rgba(25, 135, 84, 0.1); // Color verde para usuario
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
 }
 
 .task-list .list-group-item {

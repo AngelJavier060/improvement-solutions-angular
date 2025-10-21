@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgxEchartsModule, NGX_ECHARTS_CONFIG } from 'ngx-echarts';
 
 import { LoginModalComponent } from './components/login-modal/login-modal.component';
 import { TestimonioCardComponent } from './components/testimonio-card/testimonio-card.component';
@@ -46,7 +47,8 @@ import { GraficaCargosAsignadosComponent } from '../features/dashboard/usuario/g
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
-    NgbModule
+    NgbModule,
+    NgxEchartsModule
   ],
   exports: [
     CommonModule,
@@ -69,6 +71,12 @@ import { GraficaCargosAsignadosComponent } from '../features/dashboard/usuario/g
     GraficaTrabajadoresResidentesComponent,
     GraficaTiposEtniasComponent,
     GraficaCargosAsignadosComponent
+  ],
+  providers: [
+    {
+      provide: NGX_ECHARTS_CONFIG,
+      useValue: { echarts: () => import('echarts') }
+    }
   ]
 })
 export class SharedModule { }

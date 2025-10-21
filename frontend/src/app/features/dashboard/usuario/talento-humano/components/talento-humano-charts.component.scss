@@ -153,3 +153,175 @@
   z-index: 1000;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* ==========================
+   New Tile Grid Layout
+   ========================== */
+.th-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; // dos columnas fijas como en imagen 2
+  gap: 24px;
+  width: 100%;
+}
+
+.th-tile {
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 8px;
+  padding: 18px;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+.tile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255,255,255,0.95);
+  border: 2px solid #224ea8;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.tile-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0f235a;
+  letter-spacing: 0.3px;
+}
+
+.tile-total {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #0ea5e9;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 4px 10px;
+  border-radius: 9999px;
+}
+
+.tile-body {
+  background: #fff;
+  border: 2px solid #224ea8;
+  border-radius: 8px;
+  flex: 1;
+  display: flex;
+  align-items: stretch; // que el contenido llene la altura
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4);
+}
+
+.tile-chart {
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+}
+
+/* Span-2 helper for wider tiles */
+.th-tile.span-2 { grid-column: span 2; min-height: 520px; }
+
+/* Pyramid layout: images at sides and chart centered */
+.pyramid-layout {
+  display: grid;
+  grid-template-columns: 120px 1fr 120px; // imágenes laterales + gráfico al centro
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  height: 100%;
+  width: 100%;
+}
+.pyramid-side { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.pyramid-side svg { max-width: 100%; height: auto; }
+.pyramid-label { margin-top: 6px; font-weight: 800; letter-spacing: .08em; color: #374151; }
+.pyramid-label.women { color: #EC407A; }
+.pyramid-label.men { color: #1976D2; }
+.pyramid-chart { width: 100%; height: 100%; }
+.pyramid-chart .tile-chart { min-height: 320px; height: 100%; }
+
+.tile-body.placeholder {
+  background: rgba(59, 130, 246, 0.12);
+  border-style: dashed;
+}
+
+@media (max-width: 576px) {
+  .th-tile { min-height: 360px; padding: 16px; }
+}
+
+/* Responsive: 1 columna en pantallas medianas/pequeñas y ocultar imágenes */
+@media (max-width: 992px) {
+  .th-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .th-tile.span-2 { grid-column: span 1; }
+  .pyramid-layout { grid-template-columns: 1fr; }
+  .pyramid-side { display: none; }
+  .pyramid-chart .tile-chart { min-height: 320px; }
+}
+
+/* Gender tile content */
+.gender-tile {
+  padding: 10px;
+}
+
+.gender-icons {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 36px;
+  margin-bottom: 12px;
+}
+
+.gender-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gender-pct {
+  font-weight: 800;
+  font-size: 2.6rem;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.gender-pct.women { color: #EC407A; }
+.gender-pct.men { color: #1976D2; }
+
+.gender-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.gender-progress {
+  display: flex;
+  height: 52px;
+  width: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  border: 1px solid #e5e7eb;
+}
+.gender-progress > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  transition: width .6s ease;
+}
+.gender-progress .women { background: #EC407A; }
+.gender-progress .men { background: #1976D2; }
+.gender-progress .others { background: #7B1FA2; }
+
+@media (max-width: 768px) {
+  .gender-pct { font-size: 2rem; }
+  .gender-progress { height: 42px; }
+}

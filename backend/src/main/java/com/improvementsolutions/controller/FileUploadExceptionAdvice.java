@@ -20,7 +20,7 @@ import lombok.Data;
 import java.io.IOException;
 
 @Order(Ordered.LOWEST_PRECEDENCE)
-@ControllerAdvice
+@ControllerAdvice(assignableTypes = { FileController.class })
 public class FileUploadExceptionAdvice {
     
     private static final Logger logger = LoggerFactory.getLogger(FileUploadExceptionAdvice.class);

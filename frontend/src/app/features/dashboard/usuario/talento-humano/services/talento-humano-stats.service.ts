@@ -26,6 +26,12 @@ export interface StatsAggregationDto {
   totalCombined: EmployeeStatsDto;
 }
 
+export interface AgeGenderRangeDto {
+  label: string;
+  women: number;
+  men: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TalentoHumanoStatsService {
   private readonly baseUrl = `${environment.apiUrl}/api`;
@@ -67,6 +73,16 @@ export class TalentoHumanoStatsService {
   // Stats por businessId
   getStatsByBusinessId(businessId: number): Observable<EmployeeStatsDto> {
     return this.http.get<EmployeeStatsDto>(`${this.baseUrl}/businesses/${businessId}/stats`, this.getHttpOptions());
+  }
+
+  // Stats por código de empresa (RUC)
+  getCompanyStatsByRuc(ruc: string): Observable<EmployeeStatsDto> {
+    return this.http.get<EmployeeStatsDto>(`${this.baseUrl}/business-employees/company/${ruc}/stats`, this.getHttpOptions());
+  }
+
+  // Pirámide Edad/Género por RUC
+  getAgeGenderPyramidByRuc(ruc: string): Observable<AgeGenderRangeDto[]> {
+    return this.http.get<AgeGenderRangeDto[]>(`${this.baseUrl}/business-employees/company/${ruc}/age-gender`, this.getHttpOptions());
   }
 
   // Agregado por lista de empresas

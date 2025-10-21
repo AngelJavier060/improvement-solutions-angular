@@ -31,29 +31,56 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
+    private ResponseEntity<Map<String, Object>> conflictWithDetails(String title, String message, String code, Throwable ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("title", title);
+        body.put("message", message);
+        body.put("code", code);
+        Throwable root = getRootCause(ex);
+        if (root != null) {
+            body.put("rootMessage", root.getMessage());
+            // Intentar exponer nombre del constraint y SQLState cuando sea posible
+            if (root instanceof java.sql.SQLIntegrityConstraintViolationException sqlEx) {
+                body.put("sqlState", sqlEx.getSQLState());
+                body.put("errorCode", sqlEx.getErrorCode());
+            }
+            if (root instanceof org.hibernate.exception.ConstraintViolationException hEx) {
+                if (hEx.getConstraintName() != null) body.put("constraint", hEx.getConstraintName());
+                if (hEx.getSQLException() != null) {
+                    body.put("sqlState", hEx.getSQLException().getSQLState());
+                    body.put("errorCode", hEx.getSQLException().getErrorCode());
+                }
+            }
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<?> handleDataIntegrity(DataIntegrityViolationException ex) {
         // Try to detect FK or unique constraint issues
         Throwable root = getRootCause(ex);
         if (root instanceof SQLIntegrityConstraintViolationException
                 || (root != null && root.getClass().getSimpleName().toLowerCase().contains("constraint"))) {
-            return conflict(
+            return conflictWithDetails(
                 "No se puede completar la operación",
                 "La operación viola una restricción de integridad (por ejemplo, está en uso o el nombre ya existe).",
-                "DATA_INTEGRITY_CONFLICT");
+                "DATA_INTEGRITY_CONFLICT",
+                ex);
         }
-        return conflict(
+        return conflictWithDetails(
             "No se puede completar la operación",
             "La operación viola una restricción de integridad.",
-            "DATA_INTEGRITY_CONFLICT");
+            "DATA_INTEGRITY_CONFLICT",
+            ex);
     }
 
     @ExceptionHandler(org.hibernate.exception.ConstraintViolationException.class)
     public ResponseEntity<?> handleHibernateConstraint(org.hibernate.exception.ConstraintViolationException ex) {
-        return conflict(
+        return conflictWithDetails(
             "No se puede completar la operación",
             "La operación viola una restricción de integridad (Hibernate).",
-            "CONSTRAINT_VIOLATION");
+            "CONSTRAINT_VIOLATION",
+            ex);
     }
 
     @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
@@ -90,14 +117,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
-    @ExceptionHandler(IOException.class)
-    public ResponseEntity<?> handleIO(IOException ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("title", "Error de almacenamiento");
-        body.put("message", "No se pudo escribir el archivo en el almacenamiento. Verifique permisos y espacio en disco.");
-        body.put("code", "STORAGE_WRITE_ERROR");
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
-    }
+    // @ExceptionHandler(IOException.class)
+    // public ResponseEntity<?> handleIO(IOException ex) {
+    //     Map<String, Object> body = new HashMap<>();
+    //     body.put("title", "Error de almacenamiento");
+    //     body.put("message", "No se pudo escribir el archivo en el almacenamiento. Verifique permisos y espacio en disco.");
+    //     body.put("code", "STORAGE_WRITE_ERROR");
+    //     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    // }
 
     private Throwable getRootCause(Throwable t) {
         Throwable result = t;

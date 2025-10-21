@@ -1,27 +1,4 @@
 <div class="talento-humano-charts">
-  <div class="chart-header">
-    <h3 class="chart-title">
-      <i class="fas fa-chart-bar me-2"></i>
-      Estadísticas de Personal por Género y Discapacidad
-    </h3>
-    
-    <!-- Selector de empresa -->
-    <div class="business-selector" *ngIf="hasMultipleBusinesses()">
-      <label for="businessSelect" class="form-label">Filtrar por empresa:</label>
-      <select 
-        id="businessSelect" 
-        class="form-select" 
-        [(ngModel)]="selectedBusinessId" 
-        (change)="onBusinessChange()">
-        <option [ngValue]="'all'">Todas las empresas</option>
-        <option 
-          *ngFor="let business of statsData?.allBusinesses" 
-          [ngValue]="business.businessId">
-          {{ business.businessName }} ({{ business.businessRuc }})
-        </option>
-      </select>
-    </div>
-  </div>
 
   <!-- Loading state -->
   <div *ngIf="loading" class="loading-container">
@@ -41,104 +18,167 @@
     </button>
   </div>
 
-  <!-- Chart container -->
-  <div *ngIf="!loading && !error && statsData" class="chart-container">
-    <div #chartContainer class="chart-svg-container"></div>
-    
-    <!-- Summary cards -->
-    <div class="summary-cards mt-4">
-      <div class="row g-3">
-        <div class="col-md-3" *ngIf="isShowingAllBusinesses()">
-          <div class="card summary-card">
-            <div class="card-body text-center">
-              <i class="fas fa-building fa-2x text-primary mb-2"></i>
-              <h5 class="card-title">{{ getBusinessCount() }}</h5>
-              <p class="card-text text-muted">Empresas</p>
-            </div>
+  <!-- Grid de tiles -->
+  <div *ngIf="!loading && !error && statsData" class="th-grid">
+    <!-- Tile 1: Total del personal -->
+    <div class="th-tile">
+      <div class="tile-header">
+        <div class="tile-title">TOTAL DEL PERSONAL</div>
+        <div class="tile-total"><i class="fas fa-users me-1"></i>{{ getCurrentStats().total }}</div>
+      </div>
+      <div class="tile-body gender-tile">
+        <!-- Iconos Mujer / Hombre -->
+        <div class="gender-icons">
+          <!-- Mujer -->
+          <div class="gender-icon">
+            <svg width="120" height="180" viewBox="0 0 140 220" class="mb-2">
+              <defs>
+                <linearGradient id="womanGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#EC407A" />
+                  <stop offset="100%" stop-color="#C2185B" />
+                </linearGradient>
+                <filter id="wShadow">
+                  <feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity="0.3" />
+                </filter>
+              </defs>
+              <circle cx="70" cy="30" r="22" fill="url(#womanGradient)" filter="url(#wShadow)" />
+              <ellipse cx="70" cy="52" rx="8" ry="5" fill="#EC407A" />
+              <path d="M 45 55 Q 50 52 70 52 Q 90 52 95 55 L 88 85 L 52 85 Z" fill="url(#womanGradient)" filter="url(#wShadow)" />
+              <ellipse cx="70" cy="85" rx="18" ry="8" fill="#D81B60" />
+              <path d="M 52 85 Q 40 120 35 150 L 105 150 Q 100 120 88 85 Z" fill="url(#womanGradient)" filter="url(#wShadow)" />
+              <rect x="48" y="150" width="16" height="60" fill="#EC407A" rx="8" filter="url(#wShadow)" />
+              <rect x="76" y="150" width="16" height="60" fill="#EC407A" rx="8" filter="url(#wShadow)" />
+              <ellipse cx="56" cy="210" rx="10" ry="5" fill="#C2185B" />
+              <ellipse cx="84" cy="210" rx="10" ry="5" fill="#C2185B" />
+            </svg>
+            <div class="gender-pct women">{{ genderPct.mujeres }}%</div>
+            <div class="gender-label">Mujeres</div>
+          </div>
+
+          <!-- Hombre -->
+          <div class="gender-icon">
+            <svg width="120" height="180" viewBox="0 0 140 220" class="mb-2">
+              <defs>
+                <linearGradient id="manGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#42A5F5" />
+                  <stop offset="100%" stop-color="#1976D2" />
+                </linearGradient>
+                <filter id="mShadow">
+                  <feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity="0.3" />
+                </filter>
+              </defs>
+              <circle cx="70" cy="30" r="22" fill="url(#manGradient)" filter="url(#mShadow)" />
+              <rect x="62" y="50" width="16" height="8" fill="#42A5F5" rx="3" />
+              <path d="M 50 58 L 45 110 L 95 110 L 90 58 Z" fill="url(#manGradient)" filter="url(#mShadow)" />
+              <circle cx="45" cy="65" r="8" fill="#64B5F6" />
+              <circle cx="95" cy="65" r="8" fill="#64B5F6" />
+              <rect x="32" y="65" width="10" height="50" fill="#42A5F5" rx="5" filter="url(#mShadow)" />
+              <rect x="98" y="65" width="10" height="50" fill="#42A5F5" rx="5" filter="url(#mShadow)" />
+              <circle cx="37" cy="115" r="6" fill="#64B5F6" />
+              <circle cx="103" cy="115" r="6" fill="#64B5F6" />
+              <rect x="45" y="108" width="50" height="4" fill="#1565C0" />
+              <rect x="50" y="112" width="16" height="88" fill="#1976D2" rx="8" filter="url(#mShadow)" />
+              <rect x="74" y="112" width="16" height="88" fill="#1976D2" rx="8" filter="url(#mShadow)" />
+              <ellipse cx="58" cy="200" rx="12" ry="6" fill="#0D47A1" />
+              <ellipse cx="82" cy="200" rx="12" ry="6" fill="#0D47A1" />
+            </svg>
+            <div class="gender-pct men">{{ genderPct.hombres }}%</div>
+            <div class="gender-label">Hombres</div>
           </div>
         </div>
-        
-        <div class="col-md-3">
-          <div class="card summary-card">
-            <div class="card-body text-center">
-              <i class="fas fa-users fa-2x text-info mb-2"></i>
-              <h5 class="card-title">{{ getCurrentStats().total }}</h5>
-              <p class="card-text text-muted">Total Empleados</p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="col-md-3">
-          <div class="card summary-card">
-            <div class="card-body text-center">
-              <i class="fas fa-male fa-2x text-primary mb-2"></i>
-              <h5 class="card-title">{{ getCurrentStats().hombres }}</h5>
-              <p class="card-text text-muted">Hombres</p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="col-md-3">
-          <div class="card summary-card">
-            <div class="card-body text-center">
-              <i class="fas fa-female fa-2x text-danger mb-2"></i>
-              <h5 class="card-title">{{ getCurrentStats().mujeres }}</h5>
-              <p class="card-text text-muted">Mujeres</p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="col-md-12">
-          <div class="card summary-card bg-light">
-            <div class="card-body text-center">
-              <i class="fas fa-wheelchair fa-2x text-success mb-2"></i>
-              <h5 class="card-title">{{ getCurrentStats().discapacidad }}</h5>
-              <p class="card-text text-muted">Personas con Discapacidad</p>
-              <small class="text-muted">
-                {{ getDisabilityPercentage() }}% del total de empleados
-              </small>
-            </div>
-          </div>
+
+        <!-- Barra de progreso -->
+        <div class="gender-progress" aria-label="Distribución por género">
+          <div class="women" [style.width.%]="genderPct.mujeres">{{ genderPct.mujeres > 12 ? (genderPct.mujeres + '%') : '' }}</div>
+          <div class="men" [style.width.%]="genderPct.hombres">{{ genderPct.hombres > 12 ? (genderPct.hombres + '%') : '' }}</div>
+          <div class="others" [style.width.%]="genderPct.otros">{{ genderPct.otros > 12 ? (genderPct.otros + '%') : '' }}</div>
         </div>
       </div>
     </div>
 
-    <!-- Business breakdown (only when showing all businesses) -->
-    <div *ngIf="isShowingAllBusinesses() && hasMultipleBusinesses()" class="business-breakdown mt-4">
-      <h4 class="mb-3">
-        <i class="fas fa-list me-2"></i>
-        Desglose por Empresa
-      </h4>
-      <div class="table-responsive">
-        <table class="table table-hover">
-          <thead class="table-light">
-            <tr>
-              <th>Empresa</th>
-              <th>RUC</th>
-              <th>Total</th>
-              <th>Hombres</th>
-              <th>Mujeres</th>
-              <th>Con Discapacidad</th>
-              <th>% Discapacidad</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let business of statsData?.allBusinesses" 
-                class="business-row" 
-                (click)="selectBusiness(business.businessId)">
-              <td class="fw-medium">{{ business.businessName }}</td>
-              <td class="text-muted">{{ business.businessRuc }}</td>
-              <td><span class="badge bg-info">{{ business.stats.total }}</span></td>
-              <td><span class="badge bg-primary">{{ business.stats.hombres }}</span></td>
-              <td><span class="badge bg-danger">{{ business.stats.mujeres }}</span></td>
-              <td><span class="badge bg-success">{{ business.stats.discapacidad }}</span></td>
-              <td class="text-muted">
-                {{ getBusinessDisabilityPercentage(business) }}%
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Tile 2: Distribución por Edad y Género (Pirámide) -->
+    <div class="th-tile">
+      <div class="tile-header">
+        <div class="tile-title">DISTRIBUCIÓN POR EDAD Y GÉNERO</div>
       </div>
+      <div class="tile-body pyramid-layout">
+        <!-- Lado Mujeres -->
+        <div class="pyramid-side">
+          <svg width="120" height="180" viewBox="0 0 140 220" class="mb-2">
+            <defs>
+              <linearGradient id="pyrWomanGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#EC407A" />
+                <stop offset="100%" stop-color="#C2185B" />
+              </linearGradient>
+              <filter id="pyrWShadow">
+                <feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity="0.3" />
+              </filter>
+            </defs>
+            <circle cx="70" cy="30" r="22" fill="url(#pyrWomanGradient)" filter="url(#pyrWShadow)" />
+            <ellipse cx="70" cy="52" rx="8" ry="5" fill="#EC407A" />
+            <path d="M 45 55 Q 50 52 70 52 Q 90 52 95 55 L 88 85 L 52 85 Z" fill="url(#pyrWomanGradient)" filter="url(#pyrWShadow)" />
+            <ellipse cx="70" cy="85" rx="18" ry="8" fill="#D81B60" />
+            <path d="M 52 85 Q 40 120 35 150 L 105 150 Q 100 120 88 85 Z" fill="url(#pyrWomanGradient)" filter="url(#pyrWShadow)" />
+            <rect x="48" y="150" width="16" height="60" fill="#EC407A" rx="8" filter="url(#pyrWShadow)" />
+            <rect x="76" y="150" width="16" height="60" fill="#EC407A" rx="8" filter="url(#pyrWShadow)" />
+            <ellipse cx="56" cy="210" rx="10" ry="5" fill="#C2185B" />
+            <ellipse cx="84" cy="210" rx="10" ry="5" fill="#C2185B" />
+          </svg>
+          <div class="pyramid-label women">MUJERES</div>
+        </div>
+
+        <!-- Centro: Gráfico -->
+        <div class="pyramid-chart">
+          <div echarts [options]="pyramidOptions" [autoResize]="true" class="tile-chart"></div>
+        </div>
+
+        <!-- Lado Hombres -->
+        <div class="pyramid-side">
+          <svg width="120" height="180" viewBox="0 0 140 220" class="mb-2">
+            <defs>
+              <linearGradient id="pyrManGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#42A5F5" />
+                <stop offset="100%" stop-color="#1976D2" />
+              </linearGradient>
+              <filter id="pyrMShadow">
+                <feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity="0.3" />
+              </filter>
+            </defs>
+            <circle cx="70" cy="30" r="22" fill="url(#pyrManGradient)" filter="url(#pyrMShadow)" />
+            <rect x="62" y="50" width="16" height="8" fill="#42A5F5" rx="3" />
+            <path d="M 50 58 L 45 110 L 95 110 L 90 58 Z" fill="url(#pyrManGradient)" filter="url(#pyrMShadow)" />
+            <circle cx="45" cy="65" r="8" fill="#64B5F6" />
+            <circle cx="95" cy="65" r="8" fill="#64B5F6" />
+            <rect x="32" y="65" width="10" height="50" fill="#42A5F5" rx="5" filter="url(#pyrMShadow)" />
+            <rect x="98" y="65" width="10" height="50" fill="#42A5F5" rx="5" filter="url(#pyrMShadow)" />
+            <circle cx="37" cy="115" r="6" fill="#64B5F6" />
+            <circle cx="103" cy="115" r="6" fill="#64B5F6" />
+            <rect x="45" y="108" width="50" height="4" fill="#1565C0" />
+            <rect x="50" y="112" width="16" height="88" fill="#1976D2" rx="8" filter="url(#pyrMShadow)" />
+            <rect x="74" y="112" width="16" height="88" fill="#1976D2" rx="8" filter="url(#pyrMShadow)" />
+            <ellipse cx="58" cy="200" rx="12" ry="6" fill="#0D47A1" />
+            <ellipse cx="82" cy="200" rx="12" ry="6" fill="#0D47A1" />
+          </svg>
+          <div class="pyramid-label men">HOMBRES</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tile 3: Género (Donut) -->
+    <div class="th-tile">
+      <div class="tile-header">
+        <div class="tile-title">GÉNERO</div>
+        <div class="tile-total"><i class="fas fa-venus-mars me-1"></i>{{ getCurrentStats().total }}</div>
+      </div>
+      <div class="tile-body">
+        <div echarts [options]="donutGeneroOptions" [autoResize]="true" class="tile-chart donut"></div>
+      </div>
+    </div>
+
+    <!-- Placeholder temporal (solo uno) -->
+    <div class="th-tile" *ngFor="let _ of [1]">
+      <div class="tile-header"><div class="tile-title">&nbsp;</div></div>
+      <div class="tile-body placeholder"></div>
     </div>
   </div>
 

@@ -1,0 +1,42 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1 class="dashboard-title">
+      <i class="fas fa-tachometer-alt"></i>
+      Dashboard de Inventario
+    </h1>
+    <p class="dashboard-subtitle">Resumen general del módulo de inventario</p>
+  </div>
+
+  <!-- Tarjetas de estadísticas -->
+  <div class="stats-grid">
+    <div class="stat-card" *ngFor="let stat of stats">
+      <div class="stat-icon" [style.background-color]="stat.bgColor">
+        <i [class]="stat.icon" [style.color]="stat.color"></i>
+      </div>
+      <div class="stat-content">
+        <h3 class="stat-value">{{ stat.value }}</h3>
+        <p class="stat-title">{{ stat.title }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección de información -->
+  <div class="info-section">
+    <div class="info-card">
+      <div class="info-header">
+        <i class="fas fa-info-circle"></i>
+        <h3>Bienvenido al Módulo de Inventario</h3>
+      </div>
+      <div class="info-content">
+        <p>Desde aquí podrás gestionar todo lo relacionado con el inventario de tu empresa:</p>
+        <ul>
+          <li><strong>Registro de Ingreso:</strong> Registra nuevos productos y entradas al inventario</li>
+          <li><strong>Registrar Salida:</strong> Registra el consumo de piezas o EPP</li>
+          <li><strong>Stock:</strong> Visualiza el inventario actual disponible</li>
+          <li><strong>Historial de Ingresos:</strong> Consulta todos los ingresos registrados</li>
+          <li><strong>Historial de Salidas:</strong> Consulta todas las salidas realizadas</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

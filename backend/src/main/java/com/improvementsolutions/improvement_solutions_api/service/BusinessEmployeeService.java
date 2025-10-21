@@ -5,6 +5,7 @@ import com.improvementsolutions.dto.UpdateBusinessEmployeeDto;
 import com.improvementsolutions.dto.BusinessEmployeeResponseDto;
 import com.improvementsolutions.dto.EmployeeStatsDto;
 import com.improvementsolutions.dto.AgeRangeStatsDto;
+import com.improvementsolutions.dto.AgeGenderRangeDto;
 import com.improvementsolutions.repository.BusinessEmployeeRepository;
 import com.improvementsolutions.repository.BusinessRepository;
 import com.improvementsolutions.repository.EmployeeRepository;
@@ -80,6 +81,68 @@ public class BusinessEmployeeService {
         } else {
             throw new IllegalArgumentException("No se encontró empresa con RUC: " + ruc);
         }
+    }
+
+    /**
+     * Devuelve la distribución por Edad y Género (piramide) para una empresa (por RUC).
+     * Rangos: <18, 19-25, 26-35, 36-50, >50
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<AgeGenderRangeDto> getAgeGenderPyramidByCompany(String codigoEmpresa) {
+        log.info("Calculando pirámide Edad/Género para la empresa: {}", codigoEmpresa);
+        Long businessId = getBusinessIdFromRuc(codigoEmpresa);
+        java.util.List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessOrRucOrCodigo(businessId, codigoEmpresa);
+        // Solo activos
+        java.util.List<BusinessEmployee> activeEmployees = employees.stream().filter(this::isActive).collect(java.util.stream.Collectors.toList());
+
+        java.util.List<AgeGenderRangeDto> ranges = new java.util.ArrayList<>();
+        ranges.add(new AgeGenderRangeDto("< 18", 0, 0));
+        ranges.add(new AgeGenderRangeDto("18 - 25", 0, 0)); // incluir 18
+        ranges.add(new AgeGenderRangeDto("26 - 35", 0, 0));
+        ranges.add(new AgeGenderRangeDto("36 - 50", 0, 0));
+        ranges.add(new AgeGenderRangeDto("> 50", 0, 0));
+        ranges.add(new AgeGenderRangeDto("Sin dato", 0, 0)); // sin fecha de nacimiento
+
+        for (BusinessEmployee emp : activeEmployees) {
+            try {
+                int idx = -1;
+                Integer age = null;
+                if (emp.getDateBirth() != null) {
+                    age = java.time.Period.between(emp.getDateBirth().toLocalDate(), java.time.LocalDate.now()).getYears();
+                }
+
+                String gName = emp.getGender() != null ? emp.getGender().getName() : null;
+                String gl = gName != null ? gName.trim().toLowerCase() : "";
+                boolean isWoman = gl.startsWith("fem") || gl.startsWith("muj") || "f".equals(gl) || "femenina".equals(gl) || "female".equals(gl);
+                boolean isMan = gl.startsWith("masc") || gl.startsWith("hom") || "m".equals(gl) || "masculina".equals(gl) || "male".equals(gl);
+
+                if (age == null) idx = 5; // sin dato
+                else if (age < 18) idx = 0;
+                else if (age >= 18 && age <= 25) idx = 1;
+                else if (age >= 26 && age <= 35) idx = 2;
+                else if (age >= 36 && age <= 50) idx = 3;
+                else if (age > 50) idx = 4;
+                else idx = 5; // casos fuera de rango
+
+                if (idx >= 0) {
+                    AgeGenderRangeDto r = ranges.get(idx);
+                    if (isWoman) r.setWomen(r.getWomen() + 1);
+                    else if (isMan) r.setMen(r.getMen() + 1);
+                }
+            } catch (Exception ignored) {}
+        }
+        return ranges;
+    }
+
+    // Considera activo si active=true o status="ACTIVO" (case-insensitive)
+    private boolean isActive(BusinessEmployee emp) {
+        try {
+            if (emp == null) return false;
+            Boolean a = emp.getActive();
+            if (a != null && a) return true;
+            String s = emp.getStatus();
+            return s != null && s.trim().equalsIgnoreCase("ACTIVO");
+        } catch (Exception ignored) { return false; }
     }
     
     @Transactional(readOnly = true)
@@ -576,19 +639,21 @@ public class BusinessEmployeeService {
         Long businessId = getBusinessIdFromRuc(codigoEmpresa);
         // Incluir también empleados legados que solo tienen codigoEmpresa (RUC)
         List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessOrRucOrCodigo(businessId, codigoEmpresa);
+        // Solo personal ACTIVO
+        List<BusinessEmployee> activeEmployees = employees.stream().filter(this::isActive).collect(java.util.stream.Collectors.toList());
 
         EmployeeStatsDto stats = new EmployeeStatsDto();
-        stats.setTotal(employees.size());
+        stats.setTotal(activeEmployees.size());
 
         // Contar por género
-        long hombres = employees.stream()
+        long hombres = activeEmployees.stream()
                 .filter(emp -> emp.getGender() != null &&
                         ("masculino".equalsIgnoreCase(emp.getGender().getName()) ||
                          "hombre".equalsIgnoreCase(emp.getGender().getName())))
                 .count();
         stats.setHombres((int) hombres);
 
-        long mujeres = employees.stream()
+        long mujeres = activeEmployees.stream()
                 .filter(emp -> emp.getGender() != null &&
                         ("femenino".equalsIgnoreCase(emp.getGender().getName()) ||
                          "mujer".equalsIgnoreCase(emp.getGender().getName())))
@@ -596,7 +661,7 @@ public class BusinessEmployeeService {
         stats.setMujeres((int) mujeres);
 
         // Contar personas con discapacidad
-        long discapacidad = employees.stream()
+        long discapacidad = activeEmployees.stream()
                 .filter(emp -> {
                     String d = emp.getDiscapacidad();
                     if (d == null) return false;
@@ -610,7 +675,7 @@ public class BusinessEmployeeService {
         stats.setDiscapacidad((int) discapacidad);
 
         // Contar adolescentes (15-17 años)
-        long adolescentes = employees.stream()
+        long adolescentes = activeEmployees.stream()
                 .filter(emp -> {
                     if (emp.getDateBirth() == null) return false;
                     try {
@@ -642,25 +707,27 @@ public class BusinessEmployeeService {
             ruc = (b != null ? b.getRuc() : null);
         } catch (Exception ignored) {}
         List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessOrRucOrCodigo(businessId, ruc != null ? ruc : "");
+        // Solo personal ACTIVO
+        List<BusinessEmployee> activeEmployees = employees.stream().filter(this::isActive).collect(java.util.stream.Collectors.toList());
 
         EmployeeStatsDto stats = new EmployeeStatsDto();
-        stats.setTotal(employees.size());
+        stats.setTotal(activeEmployees.size());
 
-        long hombres = employees.stream()
+        long hombres = activeEmployees.stream()
                 .filter(emp -> emp.getGender() != null &&
                         ("masculino".equalsIgnoreCase(emp.getGender().getName()) ||
                          "hombre".equalsIgnoreCase(emp.getGender().getName())))
                 .count();
         stats.setHombres((int) hombres);
 
-        long mujeres = employees.stream()
+        long mujeres = activeEmployees.stream()
                 .filter(emp -> emp.getGender() != null &&
                         ("femenino".equalsIgnoreCase(emp.getGender().getName()) ||
                          "mujer".equalsIgnoreCase(emp.getGender().getName())))
                 .count();
         stats.setMujeres((int) mujeres);
 
-        long discapacidad = employees.stream()
+        long discapacidad = activeEmployees.stream()
                 .filter(emp -> emp.getDiscapacidad() != null &&
                         (emp.getDiscapacidad().toLowerCase().contains("si") ||
                          emp.getDiscapacidad().toLowerCase().contains("true") ||
@@ -668,7 +735,7 @@ public class BusinessEmployeeService {
                 .count();
         stats.setDiscapacidad((int) discapacidad);
 
-        long adolescentes = employees.stream()
+        long adolescentes = activeEmployees.stream()
                 .filter(emp -> {
                     if (emp.getDateBirth() == null) return false;
                     try {

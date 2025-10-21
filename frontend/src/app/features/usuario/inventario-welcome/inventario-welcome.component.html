@@ -1,0 +1,247 @@
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <button class="btn btn-outline-secondary" (click)="goBack()">
+      <i class="fas fa-arrow-left me-1"></i> Volver
+    </button>
+    <div class="text-muted small">RUC: <strong>{{ ruc }}</strong></div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Alerts -->
+    <div class="col-12" *ngIf="errorMessage">
+      <div class="alert alert-danger py-2">{{ errorMessage }}</div>
+    </div>
+    <div class="col-12" *ngIf="successMessage">
+      <div class="alert alert-success py-2">{{ successMessage }}</div>
+    </div>
+
+    <!-- Create product form -->
+    <div class="col-12 col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title mb-0">
+              <i [class]="editingProduct ? 'fas fa-edit me-2 text-warning' : 'fas fa-plus-circle me-2 text-success'"></i>
+              {{ editingProduct ? 'Editar Producto' : 'Nuevo Producto' }}
+            </h5>
+            <button *ngIf="editingProduct" class="btn btn-sm btn-outline-secondary" (click)="cancelEdit()">
+              <i class="fas fa-times me-1"></i>Cancelar
+            </button>
+          </div>
+          <form [formGroup]="form" (ngSubmit)="submit()" *ngIf="form">
+            <div class="mb-2">
+              <label class="form-label">Código</label>
+              <input class="form-control" formControlName="code" placeholder="Código interno" />
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Nombre</label>
+              <input class="form-control" formControlName="name" placeholder="Nombre del producto" />
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Categoría</label>
+              <select class="form-select" formControlName="category">
+                <option *ngFor="let c of categoryOptions" [value]="c">{{ c }}</option>
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Proveedor</label>
+              <select class="form-select" formControlName="supplier">
+                <option [ngValue]="null">-- Sin proveedor --</option>
+                <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Imagen</label>
+              <input type="file" class="form-control" (change)="onFileSelected($event)" accept="image/*" />
+              <div class="mt-2" *ngIf="imagePreviewUrl">
+                <img [src]="imagePreviewUrl" alt="preview" class="img-thumbnail" style="max-height: 120px;" />
+              </div>
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label">Unidad de medida</label>
+              <input type="text" class="form-control" formControlName="unitOfMeasure" placeholder="p.ej. UND, KG, LT" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Descripción</label>
+              <textarea class="form-control" formControlName="description" rows="2" placeholder="Descripción del producto (opcional)"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Stock mínimo</label>
+              <input type="number" class="form-control" formControlName="minStock" />
+            </div>
+            <button class="btn btn-primary w-100" [disabled]="loading || form.invalid">
+              <span *ngIf="!loading">
+                <i [class]="editingProduct ? 'fas fa-save me-2' : 'fas fa-plus me-2'"></i>
+                {{ editingProduct ? 'Actualizar' : 'Guardar' }}
+              </span>
+              <span *ngIf="loading"><i class="fas fa-spinner fa-spin me-2"></i>{{ editingProduct ? 'Actualizando...' : 'Guardando...' }}</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products table -->
+    <div class="col-12 col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="card-title mb-0"><i class="fas fa-boxes me-2 text-info"></i>Productos</h5>
+            <span class="badge text-bg-light">{{ products.length || 0 }} items</span>
+          </div>
+
+          <div *ngIf="loading" class="text-center text-muted py-3">
+            <i class="fas fa-spinner fa-spin me-2"></i> Cargando...
+          </div>
+
+          <div class="table-responsive" *ngIf="!loading">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th style="width: 60px">Foto</th>
+                  <th>Código</th>
+                  <th>Nombre</th>
+                  <th>Categoría</th>
+                  <th>Unidad</th>
+                  <th class="text-end">Stock Mín.</th>
+                  <th>Estatus</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let p of products">
+                  <td>
+                    <img *ngIf="p.image" [src]="getImageUrl(p.image)" class="rounded" 
+                         style="width: 40px; height: 40px; object-fit: cover;" 
+                         [alt]="p.name" />
+                    <div *ngIf="!p.image" class="bg-light rounded d-flex align-items-center justify-content-center" 
+                         style="width: 40px; height: 40px;">
+                      <i class="fas fa-box text-muted"></i>
+                    </div>
+                  </td>
+                  <td class="fw-semibold">{{ p.code }}</td>
+                  <td>{{ p.name }}</td>
+                  <td><span class="badge text-bg-secondary">{{ p.category }}</span></td>
+                  <td>{{ p.unitOfMeasure || '-' }}</td>
+                  <td class="text-end">{{ p.minStock || 0 }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="p.status === 'INACTIVO' ? 'text-bg-warning' : 'text-bg-success'">
+                      {{ p.status || 'ACTIVO' }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-warning" (click)="edit(p)" title="Editar">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-primary" (click)="selectProduct(p)" title="Variantes">
+                        <i class="fas fa-layer-group"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" (click)="delete(p)" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="!products || products.length === 0">
+                  <td colspan="8" class="text-center text-muted py-3">Sin productos aún</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Variants panel -->
+    <div class="col-12" *ngIf="selectedProduct">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-layer-group me-2 text-primary"></i>
+              Variantes de: <span class="fw-semibold">{{ selectedProduct.code }} - {{ selectedProduct.name }}</span>
+            </h5>
+            <button class="btn btn-sm btn-outline-secondary" (click)="selectedProduct = null">Cerrar</button>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">
+              <i [class]="editingVariant ? 'fas fa-edit me-2 text-warning' : 'fas fa-plus me-2 text-success'"></i>
+              {{ editingVariant ? 'Editar Variante' : 'Nueva Variante' }}
+            </h6>
+            <button *ngIf="editingVariant" class="btn btn-sm btn-outline-secondary" (click)="cancelVariantEdit()" type="button">
+              <i class="fas fa-times me-1"></i>Cancelar
+            </button>
+          </div>
+          <form [formGroup]="variantForm" (ngSubmit)="submitVariant()" class="row g-2 mb-3">
+            <div class="col-12 col-md-2">
+              <label class="form-label">Código</label>
+              <input class="form-control" formControlName="code" placeholder="p.ej. T25" />
+            </div>
+            <div class="col-12 col-md-2">
+              <label class="form-label">Talla</label>
+              <input class="form-control" formControlName="sizeLabel" placeholder="25 / M / 40" />
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label">Dimensiones</label>
+              <input class="form-control" formControlName="dimensions" placeholder="40x60 cm" />
+            </div>
+            <div class="col-12 col-md-2">
+              <label class="form-label">Precio venta</label>
+              <input type="number" class="form-control" formControlName="salePrice" />
+            </div>
+            <div class="col-12 col-md-2">
+              <label class="form-label">Stock mín.</label>
+              <input type="number" class="form-control" formControlName="minQty" />
+            </div>
+            <div class="col-12 col-md-1 d-flex align-items-end">
+              <button class="btn btn-primary w-100" [disabled]="loading || variantForm.invalid">
+                <i [class]="editingVariant ? 'fas fa-save' : 'fas fa-plus'"></i>
+              </button>
+            </div>
+          </form>
+
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Talla</th>
+                  <th>Dimensiones</th>
+                  <th class="text-end">Precio venta</th>
+                  <th class="text-end">Costo prom.</th>
+                  <th class="text-end">Stock</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let v of variants">
+                  <td class="fw-semibold">{{ v.code }}</td>
+                  <td>{{ v.sizeLabel || '-' }}</td>
+                  <td>{{ v.dimensions || '-' }}</td>
+                  <td class="text-end">{{ v.salePrice || 0 }}</td>
+                  <td class="text-end">{{ v.unitCost || 0 }}</td>
+                  <td class="text-end">{{ v.currentQty || 0 }}</td>
+                  <td class="text-end">
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-warning" (click)="editVariant(v)" title="Editar variante">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" (click)="deleteVariant(v)" title="Eliminar variante">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="!variants || variants.length === 0">
+                  <td colspan="7" class="text-center text-muted py-3">Sin variantes aún</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

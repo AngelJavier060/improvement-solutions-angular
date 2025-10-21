@@ -7,6 +7,43 @@
     background: linear-gradient(135deg, #0d6efd 0%, #6f42c1 100%);
   }
 
+  /* Fondo con imagen para el lado izquierdo (solo desktop) */
+  .login-hero {
+    position: relative;
+    background-image: linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)), url('/assets/img/usuario.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow: hidden;
+  }
+
+  /* Tinte sutil en marca (azul -> morado) encima de la foto */
+  .login-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(37,99,235,.35), rgba(124,58,237,.35));
+    pointer-events: none;
+  }
+
+  /* Bloque de texto con efecto glass para mejor legibilidad */
+  .login-hero > .text-center {
+    position: relative;
+    z-index: 1;
+    padding: 2rem 2.25rem;
+    border-radius: 14px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.18);
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .login-hero h1 { text-shadow: 0 3px 10px rgba(0,0,0,.35); letter-spacing: .5px; }
+  .login-hero p { color: rgba(255,255,255,.95); }
+  .login-hero i { color: #ffffff; filter: drop-shadow(0 4px 8px rgba(0,0,0,.25)); }
+  
+
   .login-form-container {
     padding: 2rem;
   }

@@ -771,6 +771,188 @@
         </div>
       </div>
     </div>
+
+    <!-- Categorías de Inventario -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': (inventoryCategories?.length || 0) > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #8ec5fc 0%, #e0c3fc 100%);">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-tags text-dark" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Inventario - Categorías</h6>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="invCatError" class="alert alert-danger py-1 small mb-2">{{ invCatError }}</div>
+          <div *ngIf="invCatOk" class="alert alert-success py-1 small mb-2">{{ invCatOk }}</div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-12">
+              <label class="form-label" style="font-size: 11px;">Asignar desde catálogo global</label>
+              <select class="form-select form-select-sm" [(ngModel)]="selectedGlobalCategoryName" [disabled]="(availableGlobalCategoryCatalog() || []).length === 0">
+                <option [ngValue]="null">{{ (availableGlobalCategoryCatalog() || []).length === 0 ? 'No hay categorías disponibles' : 'Seleccione una categoría global' }}</option>
+                <option *ngFor="let c of availableGlobalCategoryCatalog()" [ngValue]="c.name">{{ c.name }}</option>
+              </select>
+            </div>
+            <div class="col-12 d-grid">
+              <button class="btn btn-outline-primary btn-sm" (click)="addCategoryFromGlobalCatalog()" [disabled]="invCatLoading || !selectedGlobalCategoryName">
+                <i class="fas fa-check"></i> Agregar a esta empresa
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="(activeInventoryCategories()?.length || 0) > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let c of activeInventoryCategories()">
+              <!-- Modo vista normal -->
+              <div *ngIf="editingCategoryId !== c.id" class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-tag text-info me-2" style="font-size: 10px;"></i>
+                  <div>
+                    <div class="small fw-semibold text-dark" style="font-size: 11px;">{{ c.name }}</div>
+                    <div class="text-muted" style="font-size: 9px;">{{ c.description || '-' }}</div>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1" title="Editar" (click)="startEditCategory(c)" style="font-size: 10px; min-width: 26px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm p-1" title="Eliminar del listado" (click)="removeFromActiveCategories(c)" style="font-size: 10px; min-width: 26px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+              <!-- Modo edición inline -->
+              <div *ngIf="editingCategoryId === c.id" class="p-2 bg-white border rounded">
+                <div class="mb-2">
+                  <label class="form-label small mb-1" style="font-size: 10px;">Nombre</label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="editCategoryForm.name" placeholder="Nombre de la categoría" style="font-size: 11px;">
+                </div>
+                <div class="mb-2">
+                  <label class="form-label small mb-1" style="font-size: 10px;">Descripción</label>
+                  <textarea class="form-control form-control-sm" [(ngModel)]="editCategoryForm.description" placeholder="Descripción" rows="2" style="font-size: 11px;"></textarea>
+                </div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-success btn-sm" (click)="saveEditCategory()" [disabled]="invCatLoading" style="font-size: 10px;">
+                    <i class="fas fa-check me-1"></i>Guardar
+                  </button>
+                  <button class="btn btn-secondary btn-sm" (click)="cancelEditCategory()" style="font-size: 10px;">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="(activeInventoryCategories()?.length || 0) === 0" class="text-center py-2">
+            <i class="fas fa-tags fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin categorías</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proveedores de Inventario -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': (inventorySuppliers?.length || 0) > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #f6d365 0%, #fda085 100%);">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-truck text-dark" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Inventario - Proveedores</h6>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="invSupError" class="alert alert-danger py-1 small mb-2">{{ invSupError }}</div>
+          <div *ngIf="invSupOk" class="alert alert-success py-1 small mb-2">{{ invSupOk }}</div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-12">
+              <label class="form-label" style="font-size: 11px;">Asignar desde catálogo global</label>
+              <select class="form-select form-select-sm" [(ngModel)]="selectedGlobalSupplier" [disabled]="(availableGlobalSupplierCatalog() || []).length === 0">
+                <option [ngValue]="null">{{ (availableGlobalSupplierCatalog() || []).length === 0 ? 'No hay proveedores disponibles' : 'Seleccione un proveedor global' }}</option>
+                <option *ngFor="let s of availableGlobalSupplierCatalog()" [ngValue]="s">{{ s.name }} {{ s.ruc ? ('(RUC: ' + s.ruc + ')') : '' }}</option>
+              </select>
+            </div>
+            <div class="col-12 d-grid">
+              <button class="btn btn-outline-primary btn-sm" (click)="addSupplierFromGlobalCatalog()" [disabled]="invSupLoading || !selectedGlobalSupplier">
+                <i class="fas fa-check"></i> Agregar a esta empresa
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="(activeInventorySuppliers()?.length || 0) > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let s of activeInventorySuppliers()">
+              <!-- Modo vista normal -->
+              <div *ngIf="editingSupplierId !== s.id" class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-truck text-warning me-2" style="font-size: 10px;"></i>
+                  <div>
+                    <div class="small fw-semibold text-dark" style="font-size: 11px;">{{ s.name }}</div>
+                    <div class="text-muted" style="font-size: 9px;">RUC: {{ s.ruc || '-' }} · {{ s.phone || '-' }} · {{ s.email || '-' }}</div>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1" title="Editar" (click)="startEditSupplier(s)" style="font-size: 10px; min-width: 26px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm p-1" title="Eliminar del listado" (click)="removeFromActiveSuppliers(s)" style="font-size: 10px; min-width: 26px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+              <!-- Modo edición inline -->
+              <div *ngIf="editingSupplierId === s.id" class="p-2 bg-white border rounded">
+                <div class="row g-2 mb-2">
+                  <div class="col-12">
+                    <label class="form-label small mb-1" style="font-size: 10px;">Nombre</label>
+                    <input type="text" class="form-control form-control-sm" [(ngModel)]="editSupplierForm.name" placeholder="Nombre del proveedor" style="font-size: 11px;">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small mb-1" style="font-size: 10px;">RUC</label>
+                    <input type="text" class="form-control form-control-sm" [(ngModel)]="editSupplierForm.ruc" placeholder="RUC" style="font-size: 11px;">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small mb-1" style="font-size: 10px;">Teléfono</label>
+                    <input type="text" class="form-control form-control-sm" [(ngModel)]="editSupplierForm.phone" placeholder="Teléfono" style="font-size: 11px;">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small mb-1" style="font-size: 10px;">Email</label>
+                    <input type="email" class="form-control form-control-sm" [(ngModel)]="editSupplierForm.email" placeholder="Email" style="font-size: 11px;">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small mb-1" style="font-size: 10px;">Dirección</label>
+                    <textarea class="form-control form-control-sm" [(ngModel)]="editSupplierForm.address" placeholder="Dirección" rows="2" style="font-size: 11px;"></textarea>
+                  </div>
+                </div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-success btn-sm" (click)="saveEditSupplier()" [disabled]="invSupLoading" style="font-size: 10px;">
+                    <i class="fas fa-check me-1"></i>Guardar
+                  </button>
+                  <button class="btn btn-secondary btn-sm" (click)="cancelEditSupplier()" style="font-size: 10px;">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="(activeInventorySuppliers()?.length || 0) === 0" class="text-center py-2">
+            <i class="fas fa-truck fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin proveedores</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Sección Configuración Matriz Legal (admin) -->

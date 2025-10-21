@@ -63,6 +63,16 @@ const routes: Routes = [
         path: 'tarjetas',
         loadChildren: () => import('./tarjetas/tarjetas.module').then(m => m.TarjetasModule)
       }
+      
+      ,
+      {
+        path: 'inventario-categorias',
+        loadChildren: () => import('./inventario-categorias/inventario-categorias.module').then(m => m.InventarioCategoriasModule)
+      },
+      {
+        path: 'inventario-proveedores',
+        loadChildren: () => import('./inventario-proveedores/inventario-proveedores.module').then(m => m.InventarioProveedoresModule)
+      }
     ]
   }
 ];

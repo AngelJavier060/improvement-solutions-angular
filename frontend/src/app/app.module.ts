@@ -10,30 +10,17 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AppComponent } from './app.component';
 import { HomeComponent } from './features/home/home.component';
 import { DashboardAdminComponent } from './features/dashboard/admin/dashboard-admin.component';
-import { DashboardUsuarioComponent } from './features/dashboard/usuario/dashboard-usuario.component';
 import { SharedModule } from './shared/shared.module';
 // import { ApiUrlInterceptor } from './core/interceptors/api-url.interceptor'; // Temporalmente deshabilitado
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { AuthGuard } from './core/guards/auth.guard';
 import { FileService } from './services/file.service';
-import { DashboardUsuarioHomeComponent } from './features/dashboard/usuario/dashboard-usuario-home.component';
-import { DashboardUsuarioGraficasComponent } from './features/dashboard/usuario/graficas/dashboard-usuario-graficas.component';
-import { GraficaTotalPersonalComponent } from './features/dashboard/usuario/graficas/grafica-total-personal.component';
-import { GraficaFormacionAcademicaComponent } from './features/dashboard/usuario/graficas/grafica-formacion-academica.component';
-import { GraficaRangoEdadesComponent } from './features/dashboard/usuario/graficas/grafica-rango-edades.component';
-import { GraficaTrabajadoresResidentesComponent } from './features/dashboard/usuario/graficas/grafica-trabajadores-residentes.component';
-import { GraficaTiposEtniasComponent } from './features/dashboard/usuario/graficas/grafica-tipos-etnias.component';
-import { GraficaCargosAsignadosComponent } from './features/dashboard/usuario/graficas/grafica-cargos-asignados.component';
-import { GraficaBarraTotalPersonalComponent } from './features/dashboard/usuario/graficas/grafica-barra-total-personal.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     HomeComponent,
-    DashboardAdminComponent,
-    DashboardUsuarioComponent,
-    DashboardUsuarioHomeComponent,
-  // ...componentes de gráficas ahora solo en SharedModule
+    DashboardAdminComponent
   ],
   schemas: [
     CUSTOM_ELEMENTS_SCHEMA
@@ -68,8 +55,38 @@ import { GraficaBarraTotalPersonalComponent } from './features/dashboard/usuario
         path: 'usuario/:ruc/welcome',
         loadComponent: () => import('./features/usuario/usuario-welcome/usuario-welcome.component').then(m => m.UsuarioWelcomeComponent)
       },
+      // Ruta para Inventario con menú lateral y sub-rutas
+      {
+        path: 'usuario/:ruc/inventario',
+        loadComponent: () => import('./features/usuario/inventario/inventario-layout.component').then(m => m.InventarioLayoutComponent),
+        canActivate: [AuthGuard],
+        children: [
+          { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+          { path: 'dashboard', loadComponent: () => import('./features/usuario/inventario/pages/dashboard/inventario-dashboard.component').then(m => m.InventarioDashboardComponent) },
+          // INVENTARIO
+          { path: 'catalogo-productos', loadComponent: () => import('./features/usuario/inventario/pages/catalogo-productos/catalogo-productos.component').then(m => m.CatalogoProductosComponent) },
+          { path: 'stock-actual', loadComponent: () => import('./features/usuario/inventario/pages/stock-actual/stock-actual.component').then(m => m.StockActualComponent) },
+          { path: 'buscar-producto', loadComponent: () => import('./features/usuario/inventario/pages/buscar-producto/buscar-producto.component').then(m => m.BuscarProductoComponent) },
+          // ENTRADAS
+          { path: 'nueva-entrada', loadComponent: () => import('./features/usuario/inventario/pages/nueva-entrada/nueva-entrada.component').then(m => m.NuevaEntradaComponent) },
+          { path: 'historial-entradas', loadComponent: () => import('./features/usuario/inventario/pages/historial-entradas/historial-entradas.component').then(m => m.HistorialEntradasComponent) },
+          // SALIDAS
+          { path: 'nueva-salida', loadComponent: () => import('./features/usuario/inventario/pages/nueva-salida/nueva-salida.component').then(m => m.NuevaSalidaComponent) },
+          { path: 'historial-salidas', loadComponent: () => import('./features/usuario/inventario/pages/historial-salidas/historial-salidas.component').then(m => m.HistorialSalidasComponent) },
+          // GESTIÓN ESPECIAL
+          { path: 'cambios-reemplazos', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/cambios-reemplazos.component').then(m => m.CambiosReemplazosComponent) },
+          { path: 'devoluciones', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/devoluciones.component').then(m => m.DevolucionesComponent) },
+          { path: 'prestamos', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/prestamos.component').then(m => m.PrestamosComponent) },
+          { path: 'ajustes', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/ajustes.component').then(m => m.AjustesComponent) },
+          // REPORTES
+          { path: 'reportes-general', loadComponent: () => import('./features/usuario/inventario/pages/reportes/reportes-general.component').then(m => m.ReportesGeneralComponent) },
+          { path: 'reportes-kardex', loadComponent: () => import('./features/usuario/inventario/pages/reportes/reportes-kardex.component').then(m => m.ReportesKardexComponent) },
+          { path: 'reportes-alertas', loadComponent: () => import('./features/usuario/inventario/pages/reportes/reportes-alertas.component').then(m => m.ReportesAlertasComponent) },
+          { path: 'reportes-financiero', loadComponent: () => import('./features/usuario/inventario/pages/reportes/reportes-financiero.component').then(m => m.ReportesFinancieroComponent) }
+        ]
+      },
       
-      // Rutas del dashboard por RUC
+      // Rutas del dashboard por RUC (para admin)
       {
         path: ':ruc/dashboard',
         loadComponent: () => import('./pages/dashboard/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
@@ -87,23 +104,6 @@ import { GraficaBarraTotalPersonalComponent } from './features/dashboard/usuario
         path: ':ruc/empleados',
         loadComponent: () => import('./pages/dashboard/empleados/empleados.component').then(m => m.EmpleadosComponent),
         canActivate: [AuthGuard]
-      },
-      
-      // Rutas del dashboard de usuario por RUC
-      {
-        path: 'usuario/:ruc/dashboard',
-        component: DashboardUsuarioComponent,
-        canActivate: [AuthGuard],
-        children: [
-          {
-            path: 'talento-humano',
-            loadChildren: () => import('./features/dashboard/usuario/talento-humano/talento-humano.module').then(m => m.TalentoHumanoModule)
-          },
-          {
-            path: 'seguridad-industrial',
-            loadChildren: () => import('./features/dashboard/usuario/seguridad-industrial/seguridad-industrial.module').then(m => m.SeguridadIndustrialModule)
-          }
-        ]
       },
       
       // Rutas existentes del admin
@@ -124,17 +124,6 @@ import { GraficaBarraTotalPersonalComponent } from './features/dashboard/usuario
           {
             path: 'usuarios',
             loadChildren: () => import('./features/dashboard/admin/usuarios/usuarios.module').then(m => m.UsuariosModule)
-          }
-        ]
-      },
-      { 
-        path: 'dashboard/usuario', 
-        component: DashboardUsuarioComponent,
-        canActivate: [AuthGuard],
-        children: [
-          {
-            path: 'talento-humano',
-            loadChildren: () => import('./features/dashboard/usuario/talento-humano/talento-humano.module').then(m => m.TalentoHumanoModule)
           }
         ]
       },

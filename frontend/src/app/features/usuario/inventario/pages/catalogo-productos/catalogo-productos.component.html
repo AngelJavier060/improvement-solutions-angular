@@ -1,0 +1,409 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="mb-2"><i class="fas fa-book me-2 text-primary"></i>Catálogo de Productos</h2>
+      <p class="text-muted">Gestiona el catálogo completo de productos y sus variantes</p>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  <div class="row" *ngIf="errorMessage">
+    <div class="col-12">
+      <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ errorMessage }}
+        <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" *ngIf="successMessage">
+    <div class="col-12">
+      <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>{{ successMessage }}
+        <button type="button" class="btn-close" (click)="successMessage = ''"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Layout dos columnas: Formulario (izquierda) y Lista (derecha) -->
+  <div class="row">
+    <!-- Columna izquierda: Formulario -->
+    <div class="col-md-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fas fa-edit me-2"></i>{{ editingProductId ? 'Editar Producto' : 'Nuevo Producto' }}</h5>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelEdit()">
+            <i class="fas fa-plus me-1"></i>Nuevo
+          </button>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="productForm" (ngSubmit)="submitProduct()">
+            <div class="row g-2">
+              <!-- Fila 1: Código con botón Sugerir -->
+              <div class="col-12">
+                <label class="form-label fw-semibold small mb-1">Código <span class="text-danger">*</span></label>
+                <div class="input-group input-group-sm">
+                  <input type="text" class="form-control" formControlName="code" placeholder="Código">
+                  <button type="button" class="btn btn-outline-secondary" (click)="suggestCode()" title="Sugerir">
+                    <i class="fas fa-magic"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Fila 2: Nombre -->
+              <div class="col-12">
+                <label class="form-label fw-semibold small mb-1">Nombre <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-sm" formControlName="name" placeholder="Nombre del producto">
+              </div>
+
+              <!-- Fila 3: Categoría + Unidad -->
+              <div class="col-7">
+                <label class="form-label fw-semibold small mb-1">Categoría <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" formControlName="category">
+                  <option value="">-- Seleccionar --</option>
+                  <option *ngFor="let cat of categories" [value]="cat.name">{{ cat.name }}</option>
+                </select>
+              </div>
+              <div class="col-5">
+                <label class="form-label fw-semibold small mb-1">Unidad</label>
+                <input type="text" class="form-control form-control-sm" formControlName="unitOfMeasure" placeholder="Ej: UND">
+              </div>
+
+              <!-- Fila 4: Stock + Estado -->
+              <div class="col-5">
+                <label class="form-label fw-semibold small mb-1">Stock mín.</label>
+                <input type="number" class="form-control form-control-sm" formControlName="minStock" min="0">
+              </div>
+              <div class="col-7">
+                <label class="form-label fw-semibold small mb-1">Estado <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" formControlName="status">
+                  <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
+                </select>
+              </div>
+
+              <!-- Fila 5: Proveedor -->
+              <div class="col-12">
+                <label class="form-label fw-semibold small mb-1">Proveedor</label>
+                <select class="form-select form-select-sm" formControlName="supplierId">
+                  <option [ngValue]="null">-- Seleccionar --</option>
+                  <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
+                </select>
+              </div>
+
+              <!-- Fila 6: Descripción -->
+              <div class="col-12">
+                <label class="form-label fw-semibold small mb-1">Descripción</label>
+                <textarea class="form-control form-control-sm" rows="2" formControlName="description" placeholder="Descripción breve"></textarea>
+              </div>
+
+              <!-- Fila 7: Imagen -->
+              <div class="col-12">
+                <label class="form-label fw-semibold small mb-1">Imagen</label>
+                <input type="file" class="form-control form-control-sm" (change)="onImageSelected($event)" accept="image/*">
+                <div *ngIf="imagePreviewUrl" class="mt-1">
+                  <img [src]="imagePreviewUrl" alt="Preview" class="img-thumbnail" style="max-width: 80px; max-height: 80px; border-radius: 6px;">
+                </div>
+              </div>
+
+              <!-- Fila 8: Botones horizontales -->
+              <div class="col-12 d-flex gap-2 mt-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" (click)="cancelEdit()">
+                  <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="submit" class="btn btn-sm btn-success flex-fill">
+                  <i class="fas fa-save me-1"></i>{{ editingProductId ? 'Actualizar' : 'Crear' }}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna derecha: Filtros + Lista -->
+    <div class="col-md-8 right-panel">
+      <!-- Filtros y Búsqueda -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Buscar Producto</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" [(ngModel)]="searchTerm" placeholder="Buscar por código, nombre o categoría...">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Filtrar por Categoría</label>
+              <select class="form-select" [(ngModel)]="filterCategory">
+                <option value="">Todas las categorías</option>
+                <option *ngFor="let cat of categories" [value]="cat.name">{{ cat.name }}</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Estado</label>
+              <select class="form-select" [(ngModel)]="filterStatus">
+                <option value="">Todos</option>
+                <option value="ACTIVO">Activos</option>
+                <option value="INACTIVO">Inactivos</option>
+                <option value="DESCONTINUADO">Descontinuados</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contador -->
+      <div class="mb-3">
+        <p class="text-muted mb-0"><strong>{{ getFilteredProducts().length }}</strong> productos encontrados</p>
+      </div>
+
+      <!-- Lista de Productos -->
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive" *ngIf="getFilteredProducts().length > 0; else noProducts">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 50px"></th>
+                  <th style="width: 12%">Código</th>
+                  <th style="width: 22%">Nombre</th>
+                  <th style="width: 12%">Categoría</th>
+                  <th style="width: 10%">Unidad</th>
+                  <th style="width: 15%">Proveedor</th>
+                  <th style="width: 10%">Estado</th>
+                  <th style="width: 10%" class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let product of getFilteredProducts()" 
+                    class="product-row" 
+                    (click)="editProduct(product)"
+                    [class.table-active]="editingProductId === product.id">
+                  <td>
+                    <img [src]="getImageUrl(product.image || '')" [alt]="product.name" 
+                         class="product-thumbnail rounded-circle" 
+                         style="width: 40px; height: 40px; object-fit: cover;">
+                  </td>
+                  <td class="fw-semibold">{{ product.code }}</td>
+                  <td>{{ product.name }}</td>
+                  <td><span class="badge bg-light text-dark">{{ product.category }}</span></td>
+                  <td><small class="text-muted">{{ product.unitOfMeasure || '-' }}</small></td>
+                  <td><small class="text-muted">{{ getSupplierName(product.supplier?.id) }}</small></td>
+                  <td>
+                    <span class="badge"
+                          [ngClass]="{
+                            'bg-success': product.status === 'ACTIVO',
+                            'bg-secondary': product.status === 'INACTIVO',
+                            'bg-danger': product.status === 'DESCONTINUADO'
+                          }">{{ product.status }}</span>
+                  </td>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-primary me-1" 
+                            (click)="viewProductDetails(product, $event)" title="Ver detalles">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-info me-1" 
+                            (click)="openVariants(product, $event)" title="Variantes">
+                      <i class="fas fa-tags"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success me-1" 
+                            (click)="editProduct(product); $event.stopPropagation()" title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <!-- Solo mostrar 'Desactivar' si está ACTIVO -->
+                    <button *ngIf="product.status === 'ACTIVO'" type="button" class="btn btn-sm btn-outline-warning" 
+                            (click)="confirmDeactivate(product, $event)" title="Desactivar">
+                      <i class="fas fa-ban"></i>
+                    </button>
+                    <!-- Solo mostrar 'Eliminar' si está INACTIVO -->
+                    <button *ngIf="product.status === 'INACTIVO'" type="button" class="btn btn-sm btn-outline-danger" 
+                            (click)="confirmDelete(product, $event)" title="Eliminar definitivamente">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ng-template #noProducts>
+            <div class="text-center py-4">
+              <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+              <p class="text-muted mb-0">No se encontraron productos</p>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Detalle de Producto -->
+<div class="modal fade show d-block" *ngIf="selectedProduct" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-info-circle me-2"></i>{{ selectedProduct.name }}
+        </h5>
+        <button type="button" class="btn-close" (click)="selectedProduct = null"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <!-- Información del Producto -->
+          <div class="col-md-4">
+            <img [src]="getImageUrl(selectedProduct.image || '')" [alt]="selectedProduct.name" 
+                 class="img-fluid rounded mb-3" style="width: 100%; max-height: 300px; object-fit: cover;">
+            
+            <table class="table table-sm">
+              <tbody>
+                <tr>
+                  <th style="width: 40%">Código:</th>
+                  <td>{{ selectedProduct.code }}</td>
+                </tr>
+                <tr>
+                  <th>Categoría:</th>
+                  <td>{{ selectedProduct.category }}</td>
+                </tr>
+                <tr>
+                  <th>Unidad:</th>
+                  <td>{{ selectedProduct.unitOfMeasure }}</td>
+                </tr>
+                <tr>
+                  <th>Stock Mín:</th>
+                  <td>{{ selectedProduct.minStock }}</td>
+                </tr>
+                <tr>
+                  <th>Estado:</th>
+                  <td>
+                    <span class="badge" 
+                          [ngClass]="{
+                            'bg-success': selectedProduct.status === 'ACTIVO',
+                            'bg-secondary': selectedProduct.status === 'INACTIVO',
+                            'bg-danger': selectedProduct.status === 'DESCONTINUADO'
+                          }">
+                      {{ selectedProduct.status }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="mb-3">
+              <label class="fw-semibold">Descripción:</label>
+              <p class="text-muted">{{ selectedProduct.description || 'Sin descripción' }}</p>
+            </div>
+          </div>
+
+          <!-- Variantes del Producto -->
+          <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0">Variantes ({{ productVariants.length }})</h6>
+              <button class="btn btn-sm btn-success" (click)="createVariant()">
+                <i class="fas fa-plus me-1"></i>Nueva Variante
+              </button>
+            </div>
+
+            <div *ngIf="showVariantForm" class="card card-body mb-3">
+              <form [formGroup]="variantForm" (ngSubmit)="submitVariant()">
+                <div class="row g-2">
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold small mb-1">Código SKU</label>
+                    <input type="text" class="form-control form-control-sm" formControlName="code" placeholder="SKU">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold small mb-1">Talla/Tamaño</label>
+                    <input type="text" class="form-control form-control-sm" formControlName="sizeLabel">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold small mb-1">Dimensiones</label>
+                    <input type="text" class="form-control form-control-sm" formControlName="dimensions">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold small mb-1">Precio Venta</label>
+                    <input type="number" class="form-control form-control-sm" formControlName="salePrice" min="0" step="0.01">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-semibold small mb-1">Stock mín.</label>
+                    <input type="number" class="form-control form-control-sm" formControlName="minQty" min="0">
+                  </div>
+                  <div class="col-12 d-flex gap-2 mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" (click)="cancelVariantEdit()">Cancelar</button>
+                    <button type="submit" class="btn btn-sm btn-success flex-fill">{{ editingVariant ? 'Actualizar Variante' : 'Crear Variante' }}</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th style="width: 80px">Foto</th>
+                    <th>Código</th>
+                    <th>Talla/Tamaño</th>
+                    <th>Stock</th>
+                    <th>Costo</th>
+                    <th>Precio Venta</th>
+                    <th>Estado</th>
+                    <th style="width: 100px">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let variant of productVariants">
+                    <td>
+                      <img [src]="getImageUrl(variant.image || selectedProduct.image || '')" 
+                           [alt]="variant.code" 
+                           class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                    </td>
+                    <td class="fw-semibold">{{ variant.code }}</td>
+                    <td>{{ variant.sizeLabel || '-' }}</td>
+                    <td>
+                      <span class="badge" 
+                            [ngClass]="{
+                              'bg-success': (variant.currentQty || 0) > (variant.minQty || 0),
+                              'bg-warning': (variant.currentQty || 0) <= (variant.minQty || 0) && (variant.currentQty || 0) > 0,
+                              'bg-danger': (variant.currentQty || 0) === 0
+                            }">
+                        {{ variant.currentQty || 0 }}
+                      </span>
+                    </td>
+                    <td>${{ variant.unitCost | number:'1.2-2' }}</td>
+                    <td>${{ variant.salePrice | number:'1.2-2' }}</td>
+                    <td>
+                      <span class="badge" 
+                            [ngClass]="{
+                              'bg-success': variant.status === 'ACTIVO',
+                              'bg-secondary': variant.status === 'INACTIVO'
+                            }">
+                        {{ variant.status }}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-primary me-1" 
+                              (click)="editVariant(variant)" title="Editar">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="productVariants.length === 0">
+                    <td colspan="8" class="text-center text-muted py-3">
+                      Este producto no tiene variantes. Crea una para poder registrar stock.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="selectedProduct = null">Cerrar</button>
+        <button type="button" class="btn btn-primary" (click)="editProduct(selectedProduct)">
+          <i class="fas fa-edit me-2"></i>Editar Producto
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

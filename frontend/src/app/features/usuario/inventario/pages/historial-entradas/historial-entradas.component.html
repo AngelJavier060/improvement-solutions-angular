@@ -1,0 +1,212 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="mb-2"><i class="fas fa-history me-2 text-info"></i>Historial de Entradas</h2>
+        <p class="text-muted">Consulta todas las entradas registradas al inventario</p>
+      </div>
+      <button class="btn btn-success" routerLink="../nueva-entrada">
+        <i class="fas fa-plus me-2"></i>Nueva Entrada
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Fecha Inicio</label>
+              <input type="date" class="form-control" [(ngModel)]="startDate" (change)="applyFilters()">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Fecha Fin</label>
+              <input type="date" class="form-control" [(ngModel)]="endDate" (change)="applyFilters()">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Proveedor</label>
+              <select class="form-select" [(ngModel)]="filterSupplierId" (change)="applyFilters()">
+                <option [ngValue]="null">-- Todos --</option>
+                <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">&nbsp;</label>
+              <button class="btn btn-secondary w-100" (click)="clearFilters()">
+                <i class="fas fa-eraser me-2"></i>Limpiar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Entradas -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <span><i class="fas fa-list me-2"></i>Registros: <strong>{{ entries.length }}</strong></span>
+          <span class="badge bg-primary">Total: ${{ getTotalAmount() | number:'1.2-2' }}</span>
+        </div>
+        <div class="card-body">
+          <div *ngIf="loading" class="text-center py-5">
+            <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+            <p class="mt-3">Cargando entradas...</p>
+          </div>
+
+          <div *ngIf="!loading && entries.length === 0" class="text-center py-5 text-muted">
+            <i class="fas fa-inbox fa-3x mb-3"></i>
+            <p>No hay entradas registradas</p>
+          </div>
+
+          <div class="table-responsive" *ngIf="!loading && entries.length > 0">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Nº Documento</th>
+                  <th>Tipo</th>
+                  <th>Proveedor/Origen</th>
+                  <th>Recibido Por</th>
+                  <th class="text-end">Items</th>
+                  <th>Estado</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let entry of entries">
+                  <td>{{ entry.entryDate | date:'dd/MM/yyyy' }}</td>
+                  <td><span class="fw-semibold">{{ entry.entryNumber }}</span></td>
+                  <td>
+                    <span class="badge" [ngClass]="getEntryTypeBadge(entry.entryType)">
+                      {{ entry.entryType }}
+                    </span>
+                  </td>
+                  <td>
+                    <span *ngIf="entry.supplierName">{{ entry.supplierName }}</span>
+                    <span *ngIf="!entry.supplierName && entry.origin" class="text-muted">{{ entry.origin }}</span>
+                    <span *ngIf="!entry.supplierName && !entry.origin" class="text-muted">--</span>
+                  </td>
+                  <td>{{ entry.receivedBy }}</td>
+                  <td class="text-end">
+                    <span class="badge bg-secondary">{{ entry.details?.length || 0 }}</span>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusBadge(entry.status)">
+                      {{ entry.status }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <button class="btn btn-sm btn-outline-info" (click)="viewDetails(entry)" title="Ver Detalle">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Detalle -->
+<div class="modal fade show d-block" *ngIf="selectedEntry" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-file-invoice me-2"></i>Detalle de Entrada: {{ selectedEntry.entryNumber }}
+        </h5>
+        <button type="button" class="btn-close" (click)="selectedEntry = null"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Info General -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <table class="table table-sm">
+              <tr>
+                <th style="width: 40%">Fecha:</th>
+                <td>{{ selectedEntry.entryDate | date:'dd/MM/yyyy' }}</td>
+              </tr>
+              <tr>
+                <th>Tipo:</th>
+                <td><span class="badge" [ngClass]="getEntryTypeBadge(selectedEntry.entryType)">{{ selectedEntry.entryType }}</span></td>
+              </tr>
+              <tr>
+                <th>Proveedor:</th>
+                <td>{{ selectedEntry.supplierName || selectedEntry.origin || '--' }}</td>
+              </tr>
+            </table>
+          </div>
+          <div class="col-md-6">
+            <table class="table table-sm">
+              <tr>
+                <th style="width: 40%">Recibido Por:</th>
+                <td>{{ selectedEntry.receivedBy }}</td>
+              </tr>
+              <tr>
+                <th>Autorizado Por:</th>
+                <td>{{ selectedEntry.authorizedBy || '--' }}</td>
+              </tr>
+              <tr>
+                <th>Estado:</th>
+                <td><span class="badge" [ngClass]="getStatusBadge(selectedEntry.status)">{{ selectedEntry.status }}</span></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="row mb-4" *ngIf="selectedEntry.notes">
+          <div class="col-12">
+            <strong>Observaciones:</strong>
+            <p class="text-muted">{{ selectedEntry.notes }}</p>
+          </div>
+        </div>
+
+        <!-- Detalle de Productos -->
+        <div class="row">
+          <div class="col-12">
+            <h6 class="mb-3">Productos Recibidos</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered">
+                <thead class="table-light">
+                  <tr>
+                    <th>Producto</th>
+                    <th class="text-end">Cantidad</th>
+                    <th class="text-end">Costo Unit.</th>
+                    <th class="text-end">IVA</th>
+                    <th class="text-end">Total</th>
+                    <th>Lote</th>
+                    <th>Ubicación</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let detail of selectedEntry.details">
+                    <td>{{ detail.productName || 'Producto' }} - {{ detail.variantCode }}</td>
+                    <td class="text-end">{{ detail.quantity }}</td>
+                    <td class="text-end">${{ detail.unitCost | number:'1.2-2' }}</td>
+                    <td class="text-end">${{ detail.taxAmount | number:'1.2-2' }}</td>
+                    <td class="text-end fw-bold">${{ detail.totalCost | number:'1.2-2' }}</td>
+                    <td>{{ detail.lotNumber || '--' }}</td>
+                    <td>{{ detail.warehouseLocation || '--' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="selectedEntry = null">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

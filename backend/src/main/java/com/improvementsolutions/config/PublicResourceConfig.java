@@ -79,6 +79,8 @@ public class PublicResourceConfig implements WebMvcConfigurer {
             .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Permitir todas las solicitudes OPTIONS
+                // Permitir acceso público a archivos servidos vía GET para que <img> pueda cargarlos sin token
+                .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/files/logos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/files/profiles/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/files/upload/logos").permitAll() // Corregido: sin /** al final

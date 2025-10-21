@@ -1,9 +1,8 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import * as d3 from 'd3';
-import { TalentoHumanoStatsService, StatsAggregationDto } from '../services/talento-humano-stats.service';
+import { TalentoHumanoStatsService, StatsAggregationDto, AgeGenderRangeDto } from '../services/talento-humano-stats.service';
 import { AuthService } from '../../../../../core/services/auth.service';
 
 @Component({
@@ -11,9 +10,7 @@ import { AuthService } from '../../../../../core/services/auth.service';
   templateUrl: './talento-humano-charts.component.html',
   styleUrls: ['./talento-humano-charts.component.scss']
 })
-export class TalentoHumanoChartsComponent implements OnInit, OnDestroy, AfterViewInit {
-  @ViewChild('chartContainer', { static: true }) chartContainer!: ElementRef;
-  private resizeObserver: ResizeObserver | null = null;
+export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
   private pendingRender = false;
 
   private destroy$ = new Subject<void>();
@@ -25,6 +22,13 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy, AfterVie
   
   currentBusinessId: number = 0;
   allBusinessIds: number[] = [];
+  barOptions: any = {};
+  genderPct: { mujeres: number; hombres: number; otros: number } = { mujeres: 0, hombres: 0, otros: 0 };
+  private rucParam: string = '';
+  private currentBusinessName: string = '';
+  donutDiscapOptions: any = {};
+  donutGeneroOptions: any = {};
+  pyramidOptions: any = {};
 
   constructor(
     private route: ActivatedRoute,
@@ -33,31 +37,102 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy, AfterVie
   ) {}
 
   ngOnInit(): void {
-    // Obtener el RUC de la ruta y convertirlo a business ID
+    // Obtener el RUC de la ruta (buscando en toda la jerarquía) y convertirlo a business ID
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
-      const ruc = params['ruc'];
+      const directRuc = params['ruc'];
+      const deepRuc = this.getParamDeep('ruc');
+      const ruc = directRuc || deepRuc || '';
+      this.rucParam = ruc;
       if (ruc) {
         this.getBusinessIdFromRuc(ruc);
       } else {
         // Si no hay RUC en la ruta, usar un ID por defecto
         this.currentBusinessId = 1;
+        this.selectedBusinessId = this.currentBusinessId;
         this.loadBusinessIds();
       }
     });
   }
 
-  ngAfterViewInit(): void {
-    // Redibujar cuando cambie el tamaño del contenedor
-    try {
-      if (typeof ResizeObserver !== 'undefined') {
-        this.resizeObserver = new ResizeObserver(() => this.scheduleRender());
-        this.resizeObserver.observe(this.chartContainer.nativeElement);
-      } else {
-        window.addEventListener('resize', this.handleResize);
-      }
-    } catch {
-      window.addEventListener('resize', this.handleResize);
+  private loadAgeGenderPyramid(): void {
+    if (!this.rucParam) return;
+    this.statsService.getAgeGenderPyramidByRuc(this.rucParam)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (ranges: AgeGenderRangeDto[]) => {
+          const labels = ranges.map(r => r.label);
+          const womenRaw = ranges.map(r => r.women);
+          const menRaw = ranges.map(r => r.men);
+          const maxVal = Math.max(0, ...womenRaw, ...menRaw);
+          const safeMax = Math.max(1, maxVal); // evita min=max=0 que rompe el eje
+          const women = womenRaw.map(v => -v); // lado izquierdo
+          const men = menRaw; // lado derecho
+
+          this.pyramidOptions = {
+            tooltip: {
+              trigger: 'axis',
+              axisPointer: { type: 'shadow' },
+              formatter: (params: any[]) => {
+                const l = params?.[0]?.axisValue || '';
+                const w = Math.abs(params?.[0]?.value || 0);
+                const m = Math.abs(params?.[1]?.value || 0);
+                return `${l}<br/>Mujeres: ${w}<br/>Hombres: ${m}`;
+              }
+            },
+            grid: { left: '2%', right: '2%', top: 16, bottom: 16, containLabel: true },
+            xAxis: [{
+              type: 'value',
+              min: -safeMax,
+              max: safeMax,
+              splitNumber: 8,
+              axisLabel: { formatter: (v: number) => Math.abs(v), color: '#6b7280' },
+              axisLine: { show: true, lineStyle: { color: '#e5e7eb' } },
+              splitLine: { show: true, lineStyle: { color: '#e5e7eb' } }
+            }],
+            yAxis: [{ type: 'category', data: labels, axisTick: { show: false }, inverse: true, axisLabel: { color: '#6b7280' }, splitLine: { show: false } }],
+            series: [
+              { 
+                name: 'Mujeres',
+                type: 'bar',
+                stack: 'total',
+                data: women,
+                barWidth: 22,
+                itemStyle: { color: '#ec4899' },
+                label: { show: true, position: 'insideLeft', formatter: (p: any) => { const v = Math.abs(p.value || 0); return v === 0 ? '' : String(v); } }
+              },
+              { 
+                name: 'Hombres',
+                type: 'bar',
+                stack: 'total',
+                data: men,
+                barWidth: 22,
+                itemStyle: { color: '#1d4ed8' },
+                label: { show: true, position: 'insideRight', formatter: (p: any) => { const v = Math.abs(p.value || 0); return v === 0 ? '' : String(v); } },
+                markLine: { silent: true, symbol: 'none', data: [{ xAxis: 0 }], lineStyle: { color: '#111827', width: 1 } }
+              }
+            ]
+          };
+        },
+        error: (err) => {
+          console.error('Error cargando pirámide edad/género:', err);
+          this.pyramidOptions = {};
+        }
+      });
+  }
+
+  private getParamDeep(key: string): string | null {
+    let r: any = this.route;
+    while (r) {
+      const v = r.snapshot?.paramMap?.get?.(key);
+      if (v) return v;
+      r = r.parent;
     }
+    return null;
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private getBusinessIdFromRuc(ruc: string): void {
@@ -67,27 +142,21 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy, AfterVie
       .subscribe({
         next: (business: any) => {
           this.currentBusinessId = business.id || business.businessId || 1;
+          this.currentBusinessName = business?.name || business?.businessName || business?.razonSocial || business?.tradeName || '';
+          this.selectedBusinessId = this.currentBusinessId;
           this.loadBusinessIds();
         },
         error: (error: any) => {
           console.error('Error obteniendo empresa por RUC:', error);
           // Fallback: usar ID por defecto
           this.currentBusinessId = 1;
+          this.currentBusinessName = '';
+          this.selectedBusinessId = this.currentBusinessId;
           this.loadBusinessIds();
         }
       });
   }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-      this.resizeObserver = null;
-    }
-    window.removeEventListener('resize', this.handleResize);
-  }
-
+  
   private loadBusinessIds(): void {
     // Obtener empresas asociadas al usuario desde el backend
     const currentUser = this.authService.getCurrentUser();
@@ -122,6 +191,41 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy, AfterVie
     this.loading = true;
     this.error = null;
 
+    // Si tenemos RUC, tomamos stats directas por empresa
+    if (this.rucParam) {
+      this.statsService.getCompanyStatsByRuc(this.rucParam)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (stats) => {
+            this.statsData = {
+              currentBusiness: {
+                businessId: this.currentBusinessId,
+                businessName: this.currentBusinessName || 'Empresa',
+                businessRuc: this.rucParam,
+                stats
+              },
+              allBusinesses: [],
+              totalCombined: stats
+            } as any;
+            this.loading = false;
+            this.scheduleRender();
+            // cargar pirámide edad/género en paralelo
+            this.loadAgeGenderPyramid();
+          },
+          error: (error) => {
+            console.error('Error cargando estadísticas por RUC:', error);
+            // Fallback al agregado si falla
+            this.loadAggregatedFallback();
+          }
+        });
+      return;
+    }
+
+    // Fallback: usar agregado cuando no hay RUC
+    this.loadAggregatedFallback();
+  }
+
+  private loadAggregatedFallback(): void {
     this.statsService.getAggregatedStatsByBusinessIds(this.allBusinessIds, this.currentBusinessId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -145,21 +249,24 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy, AfterVie
   private getChartData() {
     if (!this.statsData) return null;
 
-    if (this.selectedBusinessId === 'all') {
+    // Preferir lo que viene del backend como empresa actual
+    if (this.statsData.currentBusiness && this.statsData.currentBusiness.stats) {
       return {
-        title: 'Todas las Empresas',
-        data: this.statsData.totalCombined
+        title: this.statsData.currentBusiness.businessName,
+        data: this.statsData.currentBusiness.stats
       };
-    } else {
+    }
+
+    // Fallback por ID seleccionado
+    if (this.selectedBusinessId !== 'all') {
       const business = this.statsData.allBusinesses.find(b => b.businessId === this.selectedBusinessId);
       if (business) {
-        return {
-          title: business.businessName,
-          data: business.stats
-        };
+        return { title: business.businessName, data: business.stats };
       }
     }
-    return null;
+
+    // Último recurso: agregado total
+    return { title: 'Todas las Empresas', data: this.statsData.totalCombined };
   }
 
   getDisabilityPercentage(): string {
@@ -180,12 +287,12 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy, AfterVie
   // Métodos auxiliares para el template
   getCurrentStats() {
     if (!this.statsData) return { hombres: 0, mujeres: 0, discapacidad: 0, total: 0 };
-    if (this.selectedBusinessId === 'all') {
-      return this.statsData.totalCombined;
-    } else {
+    if (this.statsData.currentBusiness?.stats) return this.statsData.currentBusiness.stats;
+    if (this.selectedBusinessId !== 'all') {
       const business = this.statsData.allBusinesses.find(b => b.businessId === this.selectedBusinessId);
-      return business ? business.stats : { hombres: 0, mujeres: 0, discapacidad: 0, total: 0 };
+      if (business) return business.stats;
     }
+    return this.statsData.totalCombined;
   }
 
   getBusinessCount(): number {
@@ -205,173 +312,141 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy, AfterVie
     return ((business.stats.discapacidad / business.stats.total) * 100).toFixed(1);
   }
 
-  private renderChart(): void {
+  private updateChartOptions(): void {
     const chartData = this.getChartData();
-    if (!chartData) return;
-
-    const container = this.chartContainer.nativeElement;
-    container.innerHTML = '';
-
-    const margin = { top: 28, right: 24, bottom: 48, left: 56 };
-    const rect = container.getBoundingClientRect();
-    // Medir ancho real del contenedor o su padre inmediato
-    const rawWidth = Math.floor(
-      (container.clientWidth || rect.width || container.parentElement?.clientWidth || 600)
-    );
-    const width = Math.max(280, rawWidth - margin.left - margin.right);
-    const ratio = 9 / 16; // más compacto en vertical
-    const height = Math.max(180, Math.floor(width * ratio));
-
-    const data = [
-      { label: 'Hombres', value: chartData.data.hombres, color: '#3b82f6' },
-      { label: 'Mujeres', value: chartData.data.mujeres, color: '#ec4899' },
-      { label: 'Personas con Discapacidad', value: chartData.data.discapacidad, color: '#10b981' }
-    ];
-
-    const svg = d3.select(container)
-      .append('svg')
-      .attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
-      .attr('preserveAspectRatio', 'xMidYMid meet')
-      .style('width', '100%')
-      .style('height', 'auto');
-
-    const g = svg.append('g')
-      .attr('transform', `translate(${margin.left},${margin.top})`);
-
-    // Título
-    svg.append('text')
-      .attr('x', (width + margin.left + margin.right) / 2)
-      .attr('y', 22)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '14px')
-      .attr('font-weight', 'bold')
-      .attr('fill', '#1f2937')
-      .text(`Distribución de Personal - ${chartData.title}`);
-
-    // Escalas
-    const x = d3.scaleBand()
-      .domain(data.map(d => d.label))
-      .range([0, width])
-      .padding(0.2);
-
-    const y = d3.scaleLinear()
-      .domain([0, Math.max(...data.map(d => d.value)) * 1.1])
-      .range([height, 0]);
-
-    // Ejes
-    g.append('g')
-      .attr('transform', `translate(0,${height})`)
-      .call(d3.axisBottom(x))
-      .selectAll('text')
-      .style('text-anchor', 'middle')
-      .attr('dy', '0.9em');
-
-    g.append('g')
-      .call(d3.axisLeft(y).ticks(5));
-
-    // Etiqueta del eje Y
-    g.append('text')
-      .attr('transform', 'rotate(-90)')
-      .attr('y', 0 - margin.left)
-      .attr('x', 0 - (height / 2))
-      .attr('dy', '0.6em')
-      .style('text-anchor', 'middle')
-      .attr('font-size', '11px')
-      .attr('fill', '#6b7280')
-      .text('Número de Empleados');
-
-    // Barras
-    g.selectAll('.bar')
-      .data(data)
-      .enter()
-      .append('rect')
-      .attr('class', 'bar')
-      .attr('x', d => x(d.label)!)
-      .attr('y', d => y(d.value))
-      .attr('width', x.bandwidth())
-      .attr('height', d => height - y(d.value))
-      .attr('fill', d => d.color)
-      .attr('rx', 4)
-      .style('cursor', 'pointer')
-      .on('mouseover', function(event, d) {
-        d3.select(this).attr('opacity', 0.8);
-        
-        // Tooltip
-        const tooltip = d3.select('body').append('div')
-          .attr('class', 'chart-tooltip')
-          .style('position', 'absolute')
-          .style('background', 'rgba(0, 0, 0, 0.8)')
-          .style('color', 'white')
-          .style('padding', '8px')
-          .style('border-radius', '4px')
-          .style('font-size', '12px')
-          .style('pointer-events', 'none')
-          .style('opacity', 0);
-
-        tooltip.transition().duration(200).style('opacity', 1);
-        tooltip.html(`${d.label}: ${d.value} empleados`)
-          .style('left', (event.pageX + 10) + 'px')
-          .style('top', (event.pageY - 10) + 'px');
-      })
-      .on('mouseout', function() {
-        d3.select(this).attr('opacity', 1);
-        d3.selectAll('.chart-tooltip').remove();
-      });
-
-    // Etiquetas de valores
-    g.selectAll('.value-label')
-      .data(data)
-      .enter()
-      .append('text')
-      .attr('class', 'value-label')
-      .attr('x', d => x(d.label)! + x.bandwidth() / 2)
-      .attr('y', d => y(d.value) - 5)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '14px')
-      .attr('font-weight', 'bold')
-      .attr('fill', '#1f2937')
-      .text(d => d.value);
-
-    // Estadísticas adicionales
-    const totalEmployees = chartData.data.total;
-    const statsText = g.append('g')
-      .attr('transform', `translate(${width - 110}, 8)`);
-
-    statsText.append('rect')
-      .attr('width', 100)
-      .attr('height', 54)
-      .attr('fill', '#f9fafb')
-      .attr('stroke', '#e5e7eb')
-      .attr('rx', 4);
-
-    statsText.append('text')
-      .attr('x', 55)
-      .attr('y', 13)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '11px')
-      .attr('font-weight', 'bold')
-      .attr('fill', '#374151')
-      .text('Total Empleados');
-
-    statsText.append('text')
-      .attr('x', 55)
-      .attr('y', 31)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '18px')
-      .attr('font-weight', 'bold')
-      .attr('fill', '#1f2937')
-      .text(totalEmployees);
-
-    if (totalEmployees > 0) {
-      const disabilityPercentage = ((chartData.data.discapacidad / totalEmployees) * 100).toFixed(1);
-      statsText.append('text')
-        .attr('x', 55)
-        .attr('y', 48)
-        .attr('text-anchor', 'middle')
-        .attr('font-size', '10px')
-        .attr('fill', '#6b7280')
-        .text(`${disabilityPercentage}% con discapacidad`);
+    if (!chartData) {
+      this.barOptions = {};
+      this.genderPct = { mujeres: 0, hombres: 0, otros: 0 };
+      return;
     }
+    const categories = ['Hombres', 'Mujeres', 'Personas con Discapacidad'];
+    const values = [
+      chartData.data.hombres,
+      chartData.data.mujeres,
+      chartData.data.discapacidad
+    ];
+    const colors = ['#3b82f6', '#ec4899', '#10b981'];
+
+    // Compute percentages: Mujeres, Hombres, Discapacidad (otros)
+    const total = Number(chartData.data.total) || 0;
+    if (total > 0) {
+      const hombresBase = (Number(chartData.data.hombres) || 0) / total; // 0..1
+      const mujeresBase = (Number(chartData.data.mujeres) || 0) / total; // 0..1
+      const discBase = (Number(chartData.data.discapacidad) || 0) / total; // 0..1
+
+      // Repartimos la porción no-discapacidad entre hombres/mujeres manteniendo su proporción
+      const remain = Math.max(0, 1 - discBase);
+      const hombresPct = Math.round(hombresBase * remain * 100);
+      const mujeresPct = Math.round(mujeresBase * remain * 100);
+      let otrosPct = Math.round(discBase * 100);
+
+      // Ajuste por redondeo para sumar 100
+      const sum = hombresPct + mujeresPct + otrosPct;
+      if (sum !== 100) {
+        otrosPct = Math.max(0, 100 - hombresPct - mujeresPct);
+      }
+
+      this.genderPct = { mujeres: mujeresPct, hombres: hombresPct, otros: otrosPct };
+    } else {
+      this.genderPct = { mujeres: 0, hombres: 0, otros: 0 };
+    }
+
+    this.barOptions = {
+      title: {
+        text: `Distribución de Personal - ${chartData.title}`,
+        left: 'center',
+        textStyle: { fontSize: 14, fontWeight: 'bold', color: '#1f2937' }
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: (p: any) => `${p.name}: ${p.value} empleados`
+      },
+      grid: { left: 56, right: 24, top: 48, bottom: 48 },
+      xAxis: {
+        type: 'category',
+        data: categories,
+        axisLabel: { interval: 0 }
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Número de Empleados',
+        nameTextStyle: { color: '#6b7280', fontSize: 11 }
+      },
+      series: [
+        {
+          type: 'bar',
+          data: values,
+          itemStyle: {
+            color: (params: any) => colors[params.dataIndex] || '#3b82f6',
+            borderRadius: [4, 4, 0, 0]
+          },
+          label: {
+            show: true,
+            position: 'top',
+            fontSize: 14,
+            fontWeight: 'bold',
+            color: '#1f2937'
+          }
+        }
+      ]
+    };
+
+    // --- Tile 2: Donut Discapacidad ---
+    const disc = Number(chartData.data.discapacidad) || 0;
+    const totalDiscBase = Math.max(0, Number(chartData.data.total) || 0);
+    const noDisc = Math.max(0, totalDiscBase - disc);
+    const discPct = totalDiscBase > 0 ? Math.round((disc / totalDiscBase) * 100) : 0;
+    this.donutDiscapOptions = {
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      legend: { show: false },
+      series: [
+        {
+          name: 'Discapacidad',
+          type: 'pie',
+          radius: ['56%', '78%'],
+          avoidLabelOverlap: true,
+          label: { show: false },
+          labelLine: { show: false },
+          data: [
+            {
+              value: disc,
+              name: 'Con discapacidad',
+              itemStyle: { color: '#10b981' },
+              label: {
+                show: true,
+                position: 'center',
+                formatter: () => `${discPct}%\nTotal ${totalDiscBase}`,
+                fontSize: 16,
+                fontWeight: 'bold',
+                color: '#111827'
+              }
+            },
+            { value: noDisc, name: 'Sin discapacidad', itemStyle: { color: '#e5e7eb' } }
+          ]
+        }
+      ]
+    };
+
+    // --- Tile 3: Donut Género (H vs M) ---
+    const hombres = Number(chartData.data.hombres) || 0;
+    const mujeres = Number(chartData.data.mujeres) || 0;
+    this.donutGeneroOptions = {
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      legend: { bottom: 0, icon: 'circle', textStyle: { color: '#374151' } },
+      series: [
+        {
+          name: 'Género',
+          type: 'pie',
+          radius: ['50%', '72%'],
+          label: { show: false },
+          labelLine: { show: false },
+          data: [
+            { value: hombres, name: 'Hombres', itemStyle: { color: '#1d4ed8' } },
+            { value: mujeres, name: 'Mujeres', itemStyle: { color: '#ec4899' } }
+          ]
+        }
+      ]
+    };
   }
 
   // Evita renders repetidos en el mismo tick y cuando todavía está cargando
@@ -381,9 +456,8 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy, AfterVie
     this.pendingRender = true;
     setTimeout(() => {
       this.pendingRender = false;
-      this.renderChart();
+      this.updateChartOptions();
     }, 0);
   }
 
-  private handleResize = () => this.scheduleRender();
 }

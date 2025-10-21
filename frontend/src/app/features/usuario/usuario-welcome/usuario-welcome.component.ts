@@ -77,8 +77,7 @@ export class UsuarioWelcomeComponent implements OnInit {
   goToModule(moduleName: string): void {
     // Mapeo de nombres de módulos
     const moduleNames: { [key: string]: string } = {
-      'talento-humano': 'Talento Humano',
-      'seguridad-industrial': 'Seguridad Industrial',
+      'inventario': 'Inventario',
       'medico': 'Módulo Médico',
       'calidad': 'Control de Calidad',
       'mantenimiento': 'Mantenimiento',
@@ -89,15 +88,12 @@ export class UsuarioWelcomeComponent implements OnInit {
 
     const moduloNombre = moduleNames[moduleName] || moduleName;
     
-    // Rutas implementadas
-    if (moduleName === 'talento-humano') {
-      this.router.navigate([`/usuario/${this.empresaRuc}/dashboard/${moduleName}`]);
+    // Ruta implementada: solo inventario
+    if (moduleName === 'inventario') {
+      this.router.navigate([`/usuario/${this.empresaRuc}/inventario`]);
       return;
     }
-    if (moduleName === 'seguridad-industrial') {
-      this.router.navigate([`/usuario/${this.empresaRuc}/dashboard/seguridad-industrial`]);
-      return;
-    }
+    
     // Otros módulos: mensaje temporal
     alert(`Accediendo al módulo: ${moduloNombre}\n\nEste módulo está en desarrollo. Pronto estará disponible para la empresa ${this.empresaNombre}.`);
   }

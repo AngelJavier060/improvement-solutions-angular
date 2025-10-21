@@ -127,6 +127,20 @@ export class ConfiguracionComponent implements OnInit {
       icono: 'fas fa-id-badge',
       proximamente: false
     },
+    {
+      nombre: 'Inventario - Categorías',
+      descripcion: 'Gestionar categorías de productos de inventario por empresa',
+      ruta: 'inventario-categorias',
+      icono: 'fas fa-tags',
+      proximamente: false
+    },
+    {
+      nombre: 'Inventario - Proveedores',
+      descripcion: 'Gestionar proveedores del inventario por empresa',
+      ruta: 'inventario-proveedores',
+      icono: 'fas fa-truck',
+      proximamente: false
+    },
   ];
   navegarA(ruta: string): void {
     console.log('Navegando a:', ruta);

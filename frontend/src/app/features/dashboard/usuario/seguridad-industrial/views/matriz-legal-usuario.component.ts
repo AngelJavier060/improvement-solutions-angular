@@ -50,11 +50,23 @@ import { NotificationService } from '../../../../../services/notification.servic
           <a class="btn btn-outline-success btn-sm" [routerLink]="inicioLink">
             <i class="fas fa-home me-1"></i> Inicio
           </a>
-          <div class="text-muted fw-semibold">Bienvenido al Dashboard — Matriz Legal</div>
+          <div></div>
         </div>
 
         <!-- Título principal de la página -->
-        <h4 class="mb-2" style="font-weight: 500; color: #111827; letter-spacing: 0.5px;">Matriz Legal</h4>
+        <h4 class="ml-impact-title">Matriz Legal</h4>
+
+        <!-- Resumen visual del módulo (solo gauge) reutilizando el dashboard de inicio -->
+        <div class="mb-3">
+          <app-dashboard-cumplimiento
+            [showHeader]="false"
+            [showCompanyInfo]="false"
+            [showEmployeeStats]="true"
+            [showGauge]="true"
+            [showAgeBar]="true"
+            [showLegalSection]="false">
+          </app-dashboard-cumplimiento>
+        </div>
 
         <!-- Contenido: listado real de obligaciones de la empresa -->
         <div class="card shadow-sm border-0">

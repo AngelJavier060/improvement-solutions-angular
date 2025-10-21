@@ -1,0 +1,105 @@
+<div class="inventory-container" [class.sidebar-collapsed]="collapsed">
+  <!-- Sidebar -->
+  <aside class="inventory-sidebar" [class.collapsed]="collapsed">
+    <!-- Header del sidebar -->
+    <div class="sidebar-header">
+      <div class="company-logo">
+        <div class="logo-circle">
+          <i class="fas fa-warehouse"></i>
+        </div>
+      </div>
+      <div class="company-info" *ngIf="!collapsed">
+        <h3 class="company-name">{{ companyName }}</h3>
+        <p class="module-title">Módulo Inventario</p>
+      </div>
+    </div>
+
+    <!-- Menú de navegación -->
+    <nav class="sidebar-nav">
+      <ul class="nav-list">
+        <!-- Iterar sobre las secciones del menú -->
+        <ng-container *ngFor="let section of menuSections">
+          
+          <!-- Sección tipo "single" (item único sin grupo) -->
+          <li 
+            *ngIf="section.type === 'single' && section.route" 
+            class="nav-item"
+            [class.active]="isActive(section.route)"
+            (click)="navigateTo(section.route)"
+          >
+            <div class="nav-link">
+              <i [class]="section.icon" class="nav-icon"></i>
+              <span class="nav-label" *ngIf="!collapsed">{{ section.label }}</span>
+            </div>
+          </li>
+
+          <!-- Sección tipo "group" (grupo con subitems) -->
+          <li *ngIf="section.type === 'group'" class="nav-group">
+            <!-- Título del grupo -->
+            <div 
+              class="nav-group-title" 
+              (click)="toggleSection(section)"
+              [class.collapsed]="!section.expanded"
+            >
+              <i [class]="section.icon" class="nav-icon"></i>
+              <span class="nav-label" *ngIf="!collapsed">{{ section.label }}</span>
+              <i 
+                *ngIf="!collapsed" 
+                class="fas fa-chevron-down nav-arrow" 
+                [class.rotated]="!section.expanded"
+              ></i>
+            </div>
+
+            <!-- Subitems del grupo -->
+            <ul 
+              class="nav-sublist" 
+              *ngIf="section.expanded && !collapsed"
+              [@slideDown]
+            >
+              <li 
+                *ngFor="let item of section.items" 
+                class="nav-subitem"
+                [class.active]="isActive(item.route)"
+                (click)="navigateTo(item.route)"
+              >
+                <div class="nav-sublink">
+                  <i [class]="item.icon" class="nav-subicon"></i>
+                  <span class="nav-sublabel">{{ item.label }}</span>
+                  <span 
+                    *ngIf="item.badge" 
+                    class="nav-badge"
+                    [class.badge-danger]="item.badgeColor === 'danger'"
+                    [class.badge-warning]="item.badgeColor === 'warning'"
+                  >
+                    {{ item.badge }}
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </li>
+
+        </ng-container>
+      </ul>
+    </nav>
+
+    <!-- Footer del sidebar con botón de regresar -->
+    <div class="sidebar-footer">
+      <div class="nav-item" (click)="goBack()">
+        <div class="nav-link">
+          <i class="fas fa-arrow-left nav-icon"></i>
+          <span class="nav-label" *ngIf="!collapsed">Volver</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Botón toggle para colapsar/expandir -->
+  <button class="sidebar-toggle" (click)="toggleSidebar()" [class.collapsed]="collapsed">
+    <i class="fas" [class.fa-chevron-left]="!collapsed" [class.fa-chevron-right]="collapsed"></i>
+  </button>
+
+  <!-- Área de contenido principal -->
+  <main class="inventory-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

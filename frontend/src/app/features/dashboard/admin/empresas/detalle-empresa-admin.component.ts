@@ -22,6 +22,9 @@ import { forkJoin } from 'rxjs';
 import { User } from './user-modal/user-modal.component';
 import { EmployeeService } from '../../usuario/talento-humano/services/employee.service';
 import { EmployeeResponse } from '../../usuario/talento-humano/models/employee.model';
+import { InventoryCategoryService, InventoryCategory } from '../../../../services/inventory-category.service';
+import { InventorySupplierService, InventorySupplier } from '../../../../services/inventory-supplier.service';
+import { BusinessContextService } from '../../../../core/services/business-context.service';
 
 @Component({
   selector: 'app-detalle-empresa-admin',
@@ -109,6 +112,32 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   selectedContractorCompanies: any[] = [];
   selectedBlocks: any[] = [];
 
+  // Inventario (por empresa)
+  inventoryCategories: InventoryCategory[] = [];
+  inventorySuppliers: InventorySupplier[] = [];
+  invCatLoading = false; invCatError: string | null = null;
+  invSupLoading = false; invSupError: string | null = null;
+  newCategoryName: string = '';
+  newCategoryDescription: string = '';
+  invCatOk: string | null = null;
+  invSupOk: string | null = null;
+  newSupplier: { name: string; ruc?: string; phone?: string; email?: string; address?: string } = {
+    name: '', ruc: '', phone: '', email: '', address: ''
+  };
+  globalCategoryCatalog: Array<{ name: string; description?: string }> = [];
+  globalSupplierCatalog: Array<{ name: string; ruc?: string; phone?: string; email?: string; address?: string }> = [];
+  selectedGlobalCategoryName: string | null = null;
+  selectedGlobalSupplier: any = null;
+  // Selección desde configuración existente
+  selectedCategoryId: number | null = null;
+  selectedSupplierId: number | null = null;
+  // Edición de categoría
+  editingCategoryId: number | null = null;
+  editCategoryForm: { name: string; description: string } = { name: '', description: '' };
+  // Edición de proveedor
+  editingSupplierId: number | null = null;
+  editSupplierForm: { name: string; ruc: string; phone: string; email: string; address: string } = { name: '', ruc: '', phone: '', email: '', address: '' };
+
   // Contexto de edición inline por sección
   editingContext: { section: 'department' | 'position' | 'type_document' | 'course_cert' | 'card' | 'iess' | 'obligation' | 'type_contract' | 'contractor_company', originalId: number } | null = null;
 
@@ -183,7 +212,10 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private approvalService: ApprovalService,
     private courseCertificationService: CourseCertificationService,
     private cardService: CardService,
-    private employeeService: EmployeeService
+    private employeeService: EmployeeService,
+    private inventoryCategoryService: InventoryCategoryService,
+    private inventorySupplierService: InventorySupplierService,
+    private businessCtx: BusinessContextService
   ) {}
 
   ngOnInit(): void {
@@ -192,6 +224,136 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.empresaId = +params['id'];
         this.loadData();
         this.loadApprovals();
+      }
+    });
+  }
+
+  // === Catálogo global de inventario (sin RUC) ===
+  loadGlobalCategoryCatalog(): void {
+    this.inventoryCategoryService.listCatalog().subscribe({
+      next: (data) => {
+        this.globalCategoryCatalog = Array.isArray(data) ? data : [];
+      },
+      error: (err) => {
+        console.error('[INVENTORY] Error cargando catálogo global de categorías:', err);
+        this.globalCategoryCatalog = [];
+      }
+    });
+  }
+
+  loadGlobalSupplierCatalog(): void {
+    this.inventorySupplierService.listCatalog().subscribe({
+      next: (data) => {
+        this.globalSupplierCatalog = Array.isArray(data) ? data : [];
+      },
+      error: (err) => {
+        console.error('[INVENTORY] Error cargando catálogo global de proveedores:', err);
+        this.globalSupplierCatalog = [];
+      }
+    });
+  }
+
+  addCategoryFromGlobalCatalog(): void {
+    const ruc = this.getBusinessRuc();
+    const nameRaw = (this.selectedGlobalCategoryName || '').trim();
+    if (!ruc || !nameRaw) return;
+    const name = nameRaw;
+    const lower = name.toLowerCase();
+    const existing = (this.inventoryCategories || []).find(c => c && String(c.name || '').trim().toLowerCase() === lower);
+    if (existing) {
+      if (existing.active === true) {
+        this.invCatOk = 'Categoría ya asignada';
+        this.selectedGlobalCategoryName = null;
+        return;
+      }
+      this.invCatLoading = true; this.invCatError = null; this.invCatOk = null;
+      const payload: InventoryCategory = { name: existing.name, description: existing.description, active: true } as InventoryCategory;
+      this.inventoryCategoryService.update(ruc, Number(existing.id), payload).subscribe({
+        next: () => {
+          this.invCatOk = 'Categoría asignada';
+          this.selectedGlobalCategoryName = null;
+          this.loadInventoryCategories();
+        },
+        error: (err) => {
+          this.invCatLoading = false;
+          this.invCatError = err?.error?.message || 'No se pudo asignar la categoría';
+        }
+      });
+      return;
+    }
+    const found = (this.globalCategoryCatalog || []).find(g => String(g?.name) === name);
+    const description = found?.description || '';
+    this.invCatLoading = true; this.invCatError = null; this.invCatOk = null;
+    this.inventoryCategoryService.create(ruc, { name, description, active: true } as InventoryCategory).subscribe({
+      next: () => {
+        this.invCatOk = 'Categoría agregada';
+        this.selectedGlobalCategoryName = null;
+        this.loadInventoryCategories();
+      },
+      error: (err) => {
+        this.invCatLoading = false;
+        this.invCatError = err?.error?.message || 'No se pudo agregar la categoría';
+      }
+    });
+  }
+
+  addSupplierFromGlobalCatalog(): void {
+    const ruc = this.getBusinessRuc();
+    const g: any = this.selectedGlobalSupplier;
+    if (!ruc || !g || !g.name) return;
+    const key = (obj: any) => {
+      const r = String(obj?.ruc || '').trim();
+      if (r) return 'R:' + r;
+      const n = String(obj?.name || '').trim().toLowerCase();
+      return 'N:' + n;
+    };
+    const existing = (this.inventorySuppliers || []).find(s => key(s) === key(g));
+    if (existing) {
+      if (existing.active === true) {
+        this.invSupOk = 'Proveedor ya asignado';
+        this.selectedGlobalSupplier = null;
+        return;
+      }
+      this.invSupLoading = true; this.invSupError = null; this.invSupOk = null;
+      const payload: InventorySupplier = {
+        name: existing.name || g.name,
+        ruc: existing.ruc || g.ruc,
+        phone: existing.phone || g.phone,
+        email: existing.email || g.email,
+        address: existing.address || g.address,
+        active: true
+      } as InventorySupplier;
+      this.inventorySupplierService.update(ruc, Number(existing.id), payload).subscribe({
+        next: () => {
+          this.invSupOk = 'Proveedor asignado';
+          this.selectedGlobalSupplier = null;
+          this.loadInventorySuppliers();
+        },
+        error: (err) => {
+          this.invSupLoading = false;
+          this.invSupError = err?.error?.message || 'No se pudo asignar el proveedor';
+        }
+      });
+      return;
+    }
+    this.invSupLoading = true; this.invSupError = null; this.invSupOk = null;
+    const payload: InventorySupplier = {
+      name: g.name,
+      ruc: g.ruc,
+      phone: g.phone,
+      email: g.email,
+      address: g.address,
+      active: true
+    } as InventorySupplier;
+    this.inventorySupplierService.create(ruc, payload).subscribe({
+      next: () => {
+        this.invSupOk = 'Proveedor agregado';
+        this.selectedGlobalSupplier = null;
+        this.loadInventorySuppliers();
+      },
+      error: (err) => {
+        this.invSupLoading = false;
+        this.invSupError = err?.error?.message || 'No se pudo agregar el proveedor';
       }
     });
   }
@@ -841,6 +1003,11 @@ export class DetalleEmpresaAdminComponent implements OnInit {
           console.log('Inicializando array de IESS vacío');
           this.empresa.ieses = [];
         }
+        // Cargar inventario por empresa (RUC) y catálogos globales
+        this.loadInventoryCategories();
+        this.loadInventorySuppliers();
+        this.loadGlobalCategoryCatalog();
+        this.loadGlobalSupplierCatalog();
         if (!this.empresa.users) this.empresa.users = [];
         if (!this.empresa.employees) this.empresa.employees = [];
         if (!this.empresa.obligation_matrices) this.empresa.obligation_matrices = [];
@@ -2585,6 +2752,357 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       error: (err) => {
         console.error('Error al rechazar solicitud:', err);
         alert('No se pudo rechazar la solicitud.');
+      }
+    });
+  }
+
+  // === Inventario por empresa (categorías y proveedores) ===
+  private getBusinessRuc(): string | null {
+    const ruc = this.empresa?.ruc;
+    return (typeof ruc === 'string' && ruc.trim().length > 0) ? String(ruc).trim() : null;
+  }
+
+  loadInventoryCategories(): void {
+    const ruc = this.getBusinessRuc();
+    console.log('[INVENTORY] Cargando categorías para RUC:', ruc);
+    if (!ruc) { this.inventoryCategories = []; return; }
+    this.invCatLoading = true; this.invCatError = null; this.invCatOk = null;
+    this.inventoryCategoryService.list(ruc).subscribe({
+      next: (data) => {
+        this.inventoryCategories = Array.isArray(data) ? data : [];
+        console.log('[INVENTORY] Categorías cargadas:', this.inventoryCategories.length, this.inventoryCategories);
+        console.log('[INVENTORY] Categorías disponibles (active !== true):', this.availableInventoryCategories());
+        console.log('[INVENTORY] Categorías activas (active === true):', this.activeInventoryCategories());
+        this.invCatLoading = false;
+      },
+      error: (err) => {
+        console.error('[INVENTORY] Error cargando categorías:', err);
+        this.inventoryCategories = [];
+        this.invCatLoading = false;
+        this.invCatError = err?.error?.message || 'No se pudieron cargar las categorías';
+      }
+    });
+  }
+
+  loadInventorySuppliers(): void {
+    const ruc = this.getBusinessRuc();
+    console.log('[INVENTORY] Cargando proveedores para RUC:', ruc);
+    if (!ruc) { this.inventorySuppliers = []; return; }
+    this.invSupLoading = true; this.invSupError = null; this.invSupOk = null;
+    this.inventorySupplierService.list(ruc).subscribe({
+      next: (data) => {
+        this.inventorySuppliers = Array.isArray(data) ? data : [];
+        console.log('[INVENTORY] Proveedores cargados:', this.inventorySuppliers.length, this.inventorySuppliers);
+        console.log('[INVENTORY] Proveedores disponibles (active !== true):', this.availableInventorySuppliers());
+        console.log('[INVENTORY] Proveedores activos (active === true):', this.activeInventorySuppliers());
+        this.invSupLoading = false;
+      },
+      error: (err) => {
+        console.error('[INVENTORY] Error cargando proveedores:', err);
+        this.inventorySuppliers = [];
+        this.invSupLoading = false;
+        this.invSupError = err?.error?.message || 'No se pudieron cargar los proveedores';
+      }
+    });
+  }
+
+  createInventoryCategory(): void {
+    const ruc = this.getBusinessRuc();
+    const name = (this.newCategoryName || '').trim();
+    if (!ruc || !name) return;
+    this.invCatOk = null; this.invCatError = null; this.invCatLoading = true;
+    this.inventoryCategoryService.create(ruc, { name, description: (this.newCategoryDescription || '').trim() }).subscribe({
+      next: () => { this.newCategoryName = ''; this.newCategoryDescription = ''; this.invCatOk = 'Categoría creada'; this.loadInventoryCategories(); },
+      error: (err) => { this.invCatLoading = false; this.invCatError = err?.error?.message || 'No se pudo crear la categoría'; }
+    });
+  }
+
+  createInventorySupplier(): void {
+    const ruc = this.getBusinessRuc();
+    const name = (this.newSupplier?.name || '').trim();
+    if (!ruc || !name) return;
+    this.invSupOk = null; this.invSupError = null; this.invSupLoading = true;
+    const payload: InventorySupplier = {
+      name,
+      ruc: (this.newSupplier.ruc || '').trim() || undefined,
+      phone: (this.newSupplier.phone || '').trim() || undefined,
+      email: (this.newSupplier.email || '').trim() || undefined,
+      address: (this.newSupplier.address || '').trim() || undefined
+    };
+    this.inventorySupplierService.create(ruc, payload).subscribe({
+      next: () => { this.newSupplier = { name: '', ruc: '', phone: '', email: '', address: '' }; this.invSupOk = 'Proveedor creado'; this.loadInventorySuppliers(); },
+      error: (err) => { this.invSupLoading = false; this.invSupError = err?.error?.message || 'No se pudo crear el proveedor'; }
+    });
+  }
+
+
+  updateInventoryCategoryActive(c: InventoryCategory, active: boolean): void {
+    const ruc = this.getBusinessRuc();
+    if (!ruc || !c?.id) return;
+    this.invCatLoading = true; this.invCatError = null; this.invCatOk = null;
+    const payload: InventoryCategory = { name: c.name, description: c.description, active } as InventoryCategory;
+    this.inventoryCategoryService.update(ruc, Number(c.id), payload).subscribe({
+      next: () => { this.invCatOk = active ? 'Categoría activada' : 'Categoría desactivada'; this.loadInventoryCategories(); },
+      error: (err) => { this.invCatLoading = false; this.invCatError = err?.error?.message || 'No se pudo actualizar la categoría'; }
+    });
+  }
+
+  deleteInventoryCategory(c: InventoryCategory): void {
+    const ruc = this.getBusinessRuc();
+    if (!ruc || !c?.id) return;
+    if (!confirm('¿Eliminar esta categoría?')) return;
+    this.invCatLoading = true; this.invCatError = null; this.invCatOk = null;
+    this.inventoryCategoryService.delete(ruc, Number(c.id)).subscribe({
+      next: () => { this.loadInventoryCategories(); },
+      error: (err) => { this.invCatLoading = false; this.invCatError = err?.error?.message || 'No se pudo eliminar la categoría'; }
+    });
+  }
+
+  updateInventorySupplierActive(s: InventorySupplier, active: boolean): void {
+    const ruc = this.getBusinessRuc();
+    if (!ruc || !s?.id) return;
+    this.invSupLoading = true; this.invSupError = null; this.invSupOk = null;
+    const payload: InventorySupplier = { name: s.name, ruc: s.ruc, phone: s.phone, email: s.email, address: s.address, active } as InventorySupplier;
+    this.inventorySupplierService.update(ruc, Number(s.id), payload).subscribe({
+      next: () => { this.invSupOk = active ? 'Proveedor activado' : 'Proveedor desactivado'; this.loadInventorySuppliers(); },
+      error: (err) => { this.invSupLoading = false; this.invSupError = err?.error?.message || 'No se pudo actualizar el proveedor'; }
+    });
+  }
+
+  deleteInventorySupplier(s: InventorySupplier): void {
+    const ruc = this.getBusinessRuc();
+    if (!ruc || !s?.id) return;
+    if (!confirm('¿Eliminar este proveedor?')) return;
+    this.invSupLoading = true; this.invSupError = null; this.invSupOk = null;
+    this.inventorySupplierService.delete(ruc, Number(s.id)).subscribe({
+      next: () => { this.loadInventorySuppliers(); },
+      error: (err) => { this.invSupLoading = false; this.invSupError = err?.error?.message || 'No se pudo eliminar el proveedor'; }
+    });
+  }
+
+  // Abrir configuración con la empresa actual como activa
+  openInventoryCategoriesConfig(): void {
+    const id = Number(this.empresa?.id);
+    const ruc = String(this.empresa?.ruc || '');
+    if (id && ruc) this.businessCtx.setActiveBusiness({ id, ruc, name: String(this.empresa?.name || '') });
+    this.router.navigate(['/dashboard','admin','configuracion','inventario-categorias']);
+  }
+
+  openInventorySuppliersConfig(): void {
+    const id = Number(this.empresa?.id);
+    const ruc = String(this.empresa?.ruc || '');
+    if (id && ruc) this.businessCtx.setActiveBusiness({ id, ruc, name: String(this.empresa?.name || '') });
+    this.router.navigate(['/dashboard','admin','configuracion','inventario-proveedores']);
+  }
+
+  // Activar desde lista desplegable (similar a asignar en Cargos)
+  activateSelectedCategory(): void {
+    const ruc = this.getBusinessRuc();
+    if (!ruc || this.selectedCategoryId == null) return;
+    const c = (this.inventoryCategories || []).find(x => Number(x?.id) === Number(this.selectedCategoryId));
+    if (!c) { this.invCatError = 'Categoría no encontrada en la empresa'; return; }
+    if (c.active === true) { this.invCatOk = 'Categoría ya asignada'; return; }
+    this.updateInventoryCategoryActive(c, true);
+    this.selectedCategoryId = null;
+  }
+
+  activateSelectedSupplier(): void {
+    const ruc = this.getBusinessRuc();
+    if (!ruc || this.selectedSupplierId == null) return;
+    const s = (this.inventorySuppliers || []).find(x => Number(x?.id) === Number(this.selectedSupplierId));
+    if (!s) { this.invSupError = 'Proveedor no encontrado en la empresa'; return; }
+    if (s.active === true) { this.invSupOk = 'Proveedor ya asignado'; return; }
+    this.updateInventorySupplierActive(s, true);
+    this.selectedSupplierId = null;
+  }
+
+  // Solo activos para mostrar en listas
+  activeInventoryCategories(): InventoryCategory[] {
+    try {
+      return (this.inventoryCategories || []).filter(c => c && c.active === true);
+    } catch { return []; }
+  }
+
+  activeInventorySuppliers(): InventorySupplier[] {
+    try {
+      return (this.inventorySuppliers || []).filter(s => s && s.active === true);
+    } catch { return []; }
+  }
+
+  // Disponibles para asignar (no activos todavía)
+  availableInventoryCategories(): InventoryCategory[] {
+    try {
+      return (this.inventoryCategories || []).filter(c => !c || c.active !== true);
+    } catch { return []; }
+  }
+
+  availableInventorySuppliers(): InventorySupplier[] {
+    try {
+      return (this.inventorySuppliers || []).filter(s => !s || s.active !== true);
+    } catch { return []; }
+  }
+
+  availableGlobalCategoryCatalog(): Array<{ name: string; description?: string }> {
+    try {
+      const active = new Set(
+        (this.activeInventoryCategories() || [])
+          .map(c => String(c?.name || '').trim().toLowerCase())
+          .filter(v => v && v.length > 0)
+      );
+      return (this.globalCategoryCatalog || []).filter(g => {
+        const nm = String(g?.name || '').trim().toLowerCase();
+        return nm && !active.has(nm);
+      });
+    } catch { return []; }
+  }
+
+  availableGlobalSupplierCatalog(): Array<{ name: string; ruc?: string; phone?: string; email?: string; address?: string }> {
+    try {
+      const keyFn = (o: any) => {
+        const r = String(o?.ruc || '').trim();
+        if (r) return 'R:' + r;
+        const n = String(o?.name || '').trim().toLowerCase();
+        return 'N:' + n;
+      };
+      const activeKeys = new Set((this.activeInventorySuppliers() || []).map(s => keyFn(s)));
+      return (this.globalSupplierCatalog || []).filter(g => !activeKeys.has(keyFn(g)));
+    } catch { return []; }
+  }
+
+  // Editar categoría
+  startEditCategory(c: InventoryCategory): void {
+    if (!c || !c.id) return;
+    this.editingCategoryId = Number(c.id);
+    this.editCategoryForm = {
+      name: c.name || '',
+      description: c.description || ''
+    };
+    this.invCatError = null;
+    this.invCatOk = null;
+  }
+
+  saveEditCategory(): void {
+    const ruc = this.getBusinessRuc();
+    if (!ruc || this.editingCategoryId == null) return;
+    const name = (this.editCategoryForm.name || '').trim();
+    if (!name) {
+      this.invCatError = 'El nombre de la categoría es obligatorio';
+      return;
+    }
+    this.invCatLoading = true;
+    this.invCatError = null;
+    this.invCatOk = null;
+    const payload: InventoryCategory = {
+      name,
+      description: (this.editCategoryForm.description || '').trim()
+    } as InventoryCategory;
+    this.inventoryCategoryService.update(ruc, this.editingCategoryId, payload).subscribe({
+      next: () => {
+        this.invCatOk = 'Categoría actualizada';
+        this.editingCategoryId = null;
+        this.loadInventoryCategories();
+      },
+      error: (err) => {
+        this.invCatLoading = false;
+        this.invCatError = err?.error?.message || 'No se pudo actualizar la categoría';
+      }
+    });
+  }
+
+  cancelEditCategory(): void {
+    this.editingCategoryId = null;
+    this.editCategoryForm = { name: '', description: '' };
+    this.invCatError = null;
+  }
+
+  removeFromActiveCategories(c: InventoryCategory): void {
+    const ruc = this.getBusinessRuc();
+    if (!ruc || !c?.id) return;
+    if (!confirm('¿Desea eliminar esta categoría del listado de esta empresa?')) return;
+    this.invCatLoading = true;
+    this.invCatError = null;
+    this.invCatOk = null;
+    const payload: InventoryCategory = { name: c.name, description: c.description, active: false } as InventoryCategory;
+    this.inventoryCategoryService.update(ruc, Number(c.id), payload).subscribe({
+      next: () => {
+        this.invCatOk = 'Categoría eliminada del listado';
+        this.loadInventoryCategories();
+      },
+      error: (err) => {
+        this.invCatLoading = false;
+        this.invCatError = err?.error?.message || 'No se pudo eliminar la categoría del listado';
+      }
+    });
+  }
+
+  // Editar proveedor
+  startEditSupplier(s: InventorySupplier): void {
+    if (!s || !s.id) return;
+    this.editingSupplierId = Number(s.id);
+    this.editSupplierForm = {
+      name: s.name || '',
+      ruc: s.ruc || '',
+      phone: s.phone || '',
+      email: s.email || '',
+      address: s.address || ''
+    };
+    this.invSupError = null;
+    this.invSupOk = null;
+  }
+
+  saveEditSupplier(): void {
+    const ruc = this.getBusinessRuc();
+    if (!ruc || this.editingSupplierId == null) return;
+    const name = (this.editSupplierForm.name || '').trim();
+    if (!name) {
+      this.invSupError = 'El nombre del proveedor es obligatorio';
+      return;
+    }
+    this.invSupLoading = true;
+    this.invSupError = null;
+    this.invSupOk = null;
+    const payload: InventorySupplier = {
+      name,
+      ruc: (this.editSupplierForm.ruc || '').trim() || undefined,
+      phone: (this.editSupplierForm.phone || '').trim() || undefined,
+      email: (this.editSupplierForm.email || '').trim() || undefined,
+      address: (this.editSupplierForm.address || '').trim() || undefined
+    };
+    this.inventorySupplierService.update(ruc, this.editingSupplierId, payload).subscribe({
+      next: () => {
+        this.invSupOk = 'Proveedor actualizado';
+        this.editingSupplierId = null;
+        this.loadInventorySuppliers();
+      },
+      error: (err) => {
+        this.invSupLoading = false;
+        this.invSupError = err?.error?.message || 'No se pudo actualizar el proveedor';
+      }
+    });
+  }
+
+  cancelEditSupplier(): void {
+    this.editingSupplierId = null;
+    this.editSupplierForm = { name: '', ruc: '', phone: '', email: '', address: '' };
+    this.invSupError = null;
+  }
+
+  removeFromActiveSuppliers(s: InventorySupplier): void {
+    const ruc = this.getBusinessRuc();
+    if (!ruc || !s?.id) return;
+    if (!confirm('¿Desea eliminar este proveedor del listado de esta empresa?')) return;
+    this.invSupLoading = true;
+    this.invSupError = null;
+    this.invSupOk = null;
+    const payload: InventorySupplier = { name: s.name, ruc: s.ruc, phone: s.phone, email: s.email, address: s.address, active: false } as InventorySupplier;
+    this.inventorySupplierService.update(ruc, Number(s.id), payload).subscribe({
+      next: () => {
+        this.invSupOk = 'Proveedor eliminado del listado';
+        this.loadInventorySuppliers();
+      },
+      error: (err) => {
+        this.invSupLoading = false;
+        this.invSupError = err?.error?.message || 'No se pudo eliminar el proveedor del listado';
       }
     });
   }

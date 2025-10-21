@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgxEchartsModule, NGX_ECHARTS_CONFIG } from 'ngx-echarts';
 import { BusinessService } from '../../../../../../services/business.service';
@@ -31,6 +31,12 @@ interface EmployeeStats {
 })
 
 export class DashboardCumplimientoComponent implements OnInit, OnDestroy {
+  @Input() showLegalSection: boolean = true;
+  @Input() showHeader: boolean = true;
+  @Input() showCompanyInfo: boolean = true;
+  @Input() showEmployeeStats: boolean = true;
+  @Input() showGauge: boolean = true;
+  @Input() showAgeBar: boolean = true;
   ruc: string = '';
   business: any = null;
   complianceData: any[] = [];

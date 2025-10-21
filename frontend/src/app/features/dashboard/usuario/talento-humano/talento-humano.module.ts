@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { NgxEchartsModule, NGX_ECHARTS_CONFIG } from 'ngx-echarts';
 
 import { TalentoHumanoRoutingModule } from './talento-humano-routing.module';
 import { TalentoHumanoComponent } from './talento-humano.component';
@@ -40,8 +41,15 @@ import { TalentoHumanoChartsComponent } from './components/talento-humano-charts
     ReactiveFormsModule,
     FormsModule,
     TalentoHumanoRoutingModule,
-    SharedModule
+    SharedModule,
+    NgxEchartsModule
   ],
-  exports: [CompanySelectorComponent]
+  exports: [CompanySelectorComponent],
+  providers: [
+    {
+      provide: NGX_ECHARTS_CONFIG,
+      useValue: { echarts: () => import('echarts') }
+    }
+  ]
 })
 export class TalentoHumanoModule { }

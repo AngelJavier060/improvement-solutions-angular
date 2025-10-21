@@ -1,0 +1,44 @@
+.card-header {
+  font-weight: 600;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.form-label {
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.table {
+  font-size: 0.9rem;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.modal.show {
+  display: block;
+}
+
+.list-group-item.active {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.alert {
+  border-radius: 8px;
+}
+
+input[type="number"].form-control-sm,
+input[type="text"].form-control-sm,
+input[type="date"].form-control-sm,
+select.form-select-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.img-thumbnail {
+  border-radius: 8px;
+}

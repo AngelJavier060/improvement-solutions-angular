@@ -6,6 +6,7 @@ import com.improvementsolutions.dto.BusinessEmployeeResponseDto;
 import com.improvementsolutions.dto.EmployeeStatsDto;
 import com.improvementsolutions.dto.StatsAggregationDto;
 import com.improvementsolutions.dto.AgeRangeStatsDto;
+import com.improvementsolutions.dto.AgeGenderRangeDto;
 import com.improvementsolutions.dto.EmployeeMovementRequestDto;
 import com.improvementsolutions.improvement_solutions_api.dto.ErrorResponseDto;
 import com.improvementsolutions.improvement_solutions_api.service.BusinessEmployeeService;
@@ -291,6 +292,18 @@ public class BusinessEmployeeController {
             return ResponseEntity.ok(stats);
         } catch (Exception e) {
             log.error("Error al obtener rangos de edad para la empresa {}: {}", codigoEmpresa, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/business-employees/company/{codigoEmpresa}/age-gender")
+    public ResponseEntity<java.util.List<AgeGenderRangeDto>> getAgeGenderPyramidByCompany(@PathVariable String codigoEmpresa) {
+        try {
+            log.info("Obteniendo pirámide Edad/Género para la empresa: {}", codigoEmpresa);
+            java.util.List<AgeGenderRangeDto> data = businessEmployeeService.getAgeGenderPyramidByCompany(codigoEmpresa);
+            return ResponseEntity.ok(data);
+        } catch (Exception e) {
+            log.error("Error al obtener pirámide Edad/Género para la empresa {}: {}", codigoEmpresa, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

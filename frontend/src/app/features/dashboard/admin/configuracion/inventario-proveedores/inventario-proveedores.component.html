@@ -1,0 +1,76 @@
+<div class="container py-3">
+  <h3 class="mb-3">Proveedores de Inventario</h3>
+ 
+
+  <div *ngIf="error" class="alert alert-danger py-2">{{ error }}</div>
+  <div *ngIf="ok" class="alert alert-success py-2">{{ ok }}</div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="row g-2 mb-3">
+    <div class="col-12 col-md-4">
+      <label class="form-label">Nombre</label>
+      <input class="form-control" formControlName="name" placeholder="Nombre del proveedor" />
+    </div>
+    <div class="col-12 col-md-2">
+      <label class="form-label">RUC</label>
+      <input class="form-control" formControlName="ruc" />
+    </div>
+    <div class="col-12 col-md-2">
+      <label class="form-label">Teléfono</label>
+      <input class="form-control" formControlName="phone" />
+    </div>
+    <div class="col-12 col-md-2">
+      <label class="form-label">Email</label>
+      <input type="email" class="form-control" formControlName="email" />
+    </div>
+    <div class="col-12 col-md-2">
+      <label class="form-label">Dirección</label>
+      <input class="form-control" formControlName="address" />
+    </div>
+    <div class="col-12 col-md-2 d-flex align-items-end">
+      <button class="btn btn-primary w-100" [disabled]="loading || form.invalid">
+        <i class="fas" [ngClass]="editingId != null ? 'fa-save' : 'fa-plus'"></i>
+        {{ editingId != null ? 'Actualizar' : 'Guardar' }}
+      </button>
+    </div>
+    <div class="col-12 col-md-2 d-flex align-items-end" *ngIf="editingId != null">
+      <button type="button" class="btn btn-secondary w-100" (click)="cancelEdit()" [disabled]="loading">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>RUC</th>
+          <th>Teléfono</th>
+          <th>Email</th>
+          <th>Dirección</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of list">
+          <td class="fw-semibold">{{ s.name }}</td>
+          <td>{{ s.ruc || '-' }}</td>
+          <td>{{ s.phone || '-' }}</td>
+          <td>{{ s.email || '-' }}</td>
+          <td>{{ s.address || '-' }}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-primary me-1" (click)="startEdit(s)" [disabled]="loading">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" (click)="remove(s.id)" [disabled]="loading">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="!list || list.length === 0">
+          <td colspan="6" class="text-center text-muted py-3">Sin proveedores aún</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
