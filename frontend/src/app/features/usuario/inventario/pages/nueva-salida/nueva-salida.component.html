@@ -1,0 +1,314 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="mb-2"><i class="fas fa-box-open me-2 text-danger"></i>Nueva Salida de Inventario</h2>
+      <p class="text-muted">Registra productos que salen físicamente de tu bodega</p>
+    </div>
+  </div>
+
+  <!-- Alertas -->
+  <div class="row" *ngIf="errorMessage">
+    <div class="col-12">
+      <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ errorMessage }}
+        <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" *ngIf="successMessage">
+    <div class="col-12">
+      <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>{{ successMessage }}
+        <button type="button" class="btn-close" (click)="successMessage = ''"></button>
+      </div>
+    </div>
+  </div>
+
+  <form [formGroup]="outputForm" (ngSubmit)="submit()" *ngIf="outputForm">
+    <!-- Datos Generales de la Salida -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Datos Generales</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <!-- Número de Documento -->
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Número de Documento <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <input type="text" class="form-control" formControlName="outputNumber" 
+                         placeholder="Ej: SAL-001-2024">
+                  <button type="button" class="btn btn-outline-secondary" 
+                          (click)="outputForm.patchValue({outputNumber: generateOutputNumber()})"
+                          title="Generar número único">
+                    <i class="fas fa-sync-alt"></i>
+                  </button>
+                </div>
+                <small class="text-muted">Debe ser único. Click en <i class="fas fa-sync-alt"></i> para generar uno automático.</small>
+              </div>
+
+              <!-- Fecha de Salida -->
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Fecha de Salida <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" formControlName="outputDate">
+              </div>
+
+              <!-- Tipo de Salida -->
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Tipo de Salida <span class="text-danger">*</span></label>
+                <select class="form-select" formControlName="outputType">
+                  <option *ngFor="let type of outputTypes" [value]="type.value">{{ type.label }}</option>
+                </select>
+              </div>
+
+              <!-- Autorizado Por -->
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Autorizado Por</label>
+                <input type="text" class="form-control" formControlName="authorizedBy" 
+                       placeholder="Jefe o supervisor">
+              </div>
+
+              <!-- Trabajador (para EPP y préstamos) -->
+              <div class="col-md-6" *ngIf="outputForm.value.outputType === 'EPP_TRABAJADOR' || outputForm.value.outputType === 'PRESTAMO'">
+                <label class="form-label fw-semibold">Trabajador <span class="text-danger">*</span></label>
+                <select class="form-select" formControlName="employeeId">
+                  <option [ngValue]="null">-- Seleccionar --</option>
+                  <option *ngFor="let e of employees" [ngValue]="e.id">
+                    {{ e.nombres }} {{ e.apellidos }} - {{ e.cedula }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Fecha de Devolución (para préstamos) -->
+              <div class="col-md-3" *ngIf="outputForm.value.outputType === 'PRESTAMO'">
+                <label class="form-label fw-semibold">Fecha Devolución <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" formControlName="returnDate">
+              </div>
+
+              <!-- Área (para consumo de área) -->
+              <div class="col-md-4" *ngIf="outputForm.value.outputType === 'CONSUMO_AREA'">
+                <label class="form-label fw-semibold">Área <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" formControlName="area" 
+                       placeholder="Ej: Construcción, Mantenimiento">
+              </div>
+
+              <!-- Proyecto (para consumo de área) -->
+              <div class="col-md-5" *ngIf="outputForm.value.outputType === 'CONSUMO_AREA'">
+                <label class="form-label fw-semibold">Proyecto</label>
+                <input type="text" class="form-control" formControlName="project" 
+                       placeholder="Nombre del proyecto">
+              </div>
+
+              <!-- Documento Adjunto -->
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Documento PDF de Entrega/Firma</label>
+                <input type="file" class="form-control" (change)="onFileSelected($event)" accept="application/pdf,.pdf">
+                <small class="text-muted">Solo archivos PDF (ocupa menos espacio que imágenes)</small>
+                <div *ngIf="documentFileName" class="mt-2 alert alert-success d-flex align-items-center">
+                  <i class="fas fa-file-pdf fa-2x me-3 text-danger"></i>
+                  <div>
+                    <strong>Archivo seleccionado:</strong><br>
+                    {{ documentFileName }} ({{ documentFileSize }})
+                  </div>
+                </div>
+              </div>
+
+              <!-- Observaciones -->
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">Observaciones Generales</label>
+                <textarea class="form-control" formControlName="notes" rows="2" 
+                          placeholder="Ej: Todo entregado en perfecto estado"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detalle de Productos -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Productos que Salen</h5>
+            <button type="button" class="btn btn-primary btn-sm" (click)="openProductModal()">
+              <i class="fas fa-plus me-2"></i>Agregar Producto
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th style="width: 60px">Foto</th>
+                    <th>Producto / Variante</th>
+                    <th style="width: 100px">Cantidad</th>
+                    <th style="width: 120px">Costo Unit.</th>
+                    <th style="width: 120px">Costo Total</th>
+                    <th style="width: 150px">Lote</th>
+                    <th style="width: 150px">Ubicación</th>
+                    <th style="width: 120px">Estado</th>
+                    <th style="width: 60px"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let detail of details; let i = index">
+                    <!-- Foto -->
+                    <td>
+                      <img [src]="getImageUrl(detail.productImage || '')" [alt]="detail.productName" 
+                           class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                    </td>
+                    <!-- Producto/Variante -->
+                    <td>
+                      <div class="fw-semibold">{{ detail.productName }}</div>
+                      <small class="text-muted">{{ detail.variantCode }}</small>
+                    </td>
+                    <!-- Cantidad -->
+                    <td>
+                      <input type="number" class="form-control form-control-sm" [(ngModel)]="detail.quantity" 
+                             [ngModelOptions]="{standalone: true}" min="0.01" step="0.01"
+                             (ngModelChange)="calculateLineCost(detail)">
+                    </td>
+                    <!-- Costo Unitario -->
+                    <td>
+                      <input type="number" class="form-control form-control-sm" [(ngModel)]="detail.unitCost" 
+                             [ngModelOptions]="{standalone: true}" min="0" step="0.01"
+                             (ngModelChange)="calculateLineCost(detail)" placeholder="$">
+                    </td>
+                    <!-- Total -->
+                    <td>
+                      <span class="fw-bold text-danger">${{ detail.totalCost | number:'1.2-2' }}</span>
+                    </td>
+                    <!-- Lote -->
+                    <td>
+                      <input type="text" class="form-control form-control-sm" [(ngModel)]="detail.lotNumber" 
+                             [ngModelOptions]="{standalone: true}" placeholder="2024-10-A">
+                    </td>
+                    <!-- Ubicación -->
+                    <td>
+                      <input type="text" class="form-control form-control-sm" [(ngModel)]="detail.warehouseLocation" 
+                             [ngModelOptions]="{standalone: true}" placeholder="Pasillo A-12">
+                    </td>
+                    <!-- Estado -->
+                    <td>
+                      <select class="form-select form-select-sm" [(ngModel)]="detail.itemCondition" 
+                              [ngModelOptions]="{standalone: true}">
+                        <option *ngFor="let cond of itemConditions" [value]="cond">{{ cond }}</option>
+                      </select>
+                    </td>
+                    <!-- Eliminar -->
+                    <td>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeDetail(i)" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="details.length === 0">
+                    <td colspan="9" class="text-center text-muted py-4">
+                      <i class="fas fa-inbox fa-2x mb-2"></i>
+                      <p>No hay productos agregados. Haz clic en "Agregar Producto"</p>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot *ngIf="details.length > 0">
+                  <tr class="table-light">
+                    <td colspan="4" class="text-end fw-bold">TOTAL SALIDA:</td>
+                    <td colspan="5" class="fw-bold text-danger fs-5">${{ getTotalOutput() | number:'1.2-2' }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="row">
+      <div class="col-12 text-end">
+        <button type="button" class="btn btn-outline-secondary me-2" routerLink="../historial-salidas">
+          <i class="fas fa-times me-2"></i>Cancelar
+        </button>
+        <button type="submit" class="btn btn-danger" [disabled]="loading || !isHeaderValid() || details.length === 0">
+          <i class="fas fa-save me-2"></i>
+          <span *ngIf="!loading">Registrar Salida</span>
+          <span *ngIf="loading"><i class="fas fa-spinner fa-spin me-2"></i>Guardando...</span>
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Modal de Selección de Producto -->
+<div class="modal fade show d-block" *ngIf="showProductModal" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-search me-2"></i>Seleccionar Producto y Variante</h5>
+        <button type="button" class="btn-close" (click)="showProductModal = false"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <!-- Lista de Productos -->
+          <div class="col-md-6">
+            <h6 class="mb-3">1. Selecciona el Producto</h6>
+            <div class="list-group" style="max-height: 400px; overflow-y: auto;">
+              <button type="button" class="list-group-item list-group-item-action d-flex align-items-center"
+                      *ngFor="let product of products" (click)="selectProduct(product)"
+                      [class.active]="selectedProduct?.id === product.id">
+                <img [src]="getImageUrl(product.image || '')" [alt]="product.name" 
+                     class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                <div>
+                  <div class="fw-semibold">{{ product.code }}</div>
+                  <div>{{ product.name }}</div>
+                </div>
+              </button>
+              <div *ngIf="products.length === 0" class="text-center text-muted py-3">
+                Sin productos disponibles
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de Variantes -->
+          <div class="col-md-6">
+            <h6 class="mb-3">2. Selecciona la Variante</h6>
+            <div *ngIf="!selectedProduct" class="alert alert-info">
+              <i class="fas fa-arrow-left me-2"></i>Primero selecciona un producto
+            </div>
+            <div class="list-group" *ngIf="selectedProduct" style="max-height: 400px; overflow-y: auto;">
+              <button type="button" class="list-group-item list-group-item-action"
+                      *ngFor="let variant of variants" (click)="selectVariant(variant)"
+                      [class.active]="selectedVariant?.id === variant.id">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="fw-semibold">{{ variant.code }}</div>
+                    <small class="text-muted">
+                      <span *ngIf="variant.sizeLabel">Talla: {{ variant.sizeLabel }}</span>
+                      <span *ngIf="variant.dimensions"> | {{ variant.dimensions }}</span>
+                    </small>
+                  </div>
+                  <div class="text-end">
+                    <small class="text-muted">Stock: {{ variant.currentQty || 0 }}</small>
+                  </div>
+                </div>
+              </button>
+              <div *ngIf="variants.length === 0" class="text-center text-muted py-3">
+                Este producto no tiene variantes configuradas
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showProductModal = false">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="addDetailLine()" [disabled]="!selectedVariant">
+          <i class="fas fa-plus me-2"></i>Agregar Línea
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

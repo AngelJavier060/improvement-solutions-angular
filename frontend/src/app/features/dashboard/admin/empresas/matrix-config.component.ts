@@ -64,6 +64,70 @@ export class MatrixConfigComponent implements OnInit {
     });
   }
 
+  // === Selección de archivos visibles para usuarios (máx 3 por obligación) ===
+  private PUBLIC_TAG = '[PUBLIC]';
+
+  isPdf(file: any): boolean {
+    const name = (this.displayFileName(file) || '').toLowerCase();
+    return name.endsWith('.pdf');
+  }
+
+  isPublicFile(file: any): boolean {
+    const desc = (file?.description ?? '').toString();
+    return desc.includes(this.PUBLIC_TAG);
+  }
+
+  private baseDescription(desc: any): string {
+    const s = (desc ?? '').toString();
+    return s.replace(this.PUBLIC_TAG, '').trim();
+  }
+
+  countPublicFor(matrixId: number): number {
+    const current = this.filesMap[matrixId] || [];
+    let total = current.filter((f: any) => this.isPdf(f) && this.isPublicFile(f)).length;
+    const versions = this.versionFilesMap[matrixId] || {};
+    Object.values(versions).forEach((arr: any) => {
+      (Array.isArray(arr) ? arr : []).forEach((f: any) => {
+        if (this.isPdf(f) && this.isPublicFile(f)) total++;
+      });
+    });
+    return total;
+  }
+
+  togglePublic(file: any, item: any): void {
+    if (!file?.id || !item?.id) return;
+    if (!this.isPdf(file)) {
+      this.notify.warning('Solo se pueden marcar como visibles los archivos PDF.');
+      return;
+    }
+
+    const matrixId = Number(item.id);
+    const currentlyPublic = this.isPublicFile(file);
+    if (!currentlyPublic) {
+      const count = this.countPublicFor(matrixId);
+      if (count >= 3) {
+        this.notify.warning('Solo puede seleccionar hasta 3 PDFs visibles por obligación.');
+        return;
+      }
+    }
+
+    const currentDesc = (file?.description ?? '').toString();
+    const descBase = this.baseDescription(currentDesc);
+    const newDesc = currentlyPublic ? descBase : `${this.PUBLIC_TAG} ${descBase}`.trim();
+
+    this.bomService.updateFile(Number(file.id), newDesc).subscribe({
+      next: () => {
+        this.notify.success(currentlyPublic ? 'El PDF ya no será mostrado al usuario.' : 'PDF marcado para mostrar al usuario.');
+        // Refrescar lista
+        this.loadFiles(matrixId);
+      },
+      error: (err) => {
+        console.error('Error al actualizar visibilidad de archivo:', err);
+        this.notify.error('No se pudo actualizar la visibilidad del archivo.');
+      }
+    });
+  }
+
   // === Historial ===
   toggleHistory(matrixId: number): void {
     this.historyOpen[matrixId] = !this.historyOpen[matrixId];

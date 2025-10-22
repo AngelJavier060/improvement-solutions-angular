@@ -9,6 +9,11 @@
       </h4>
       <small class="text-muted">Empresa: {{ business?.name || 'Cargando...' }}</small>
     </div>
+    <div>
+      <button class="btn btn-sm btn-outline-secondary" (click)="goToWelcome()" title="Volver a inicio">
+        <i class="fas fa-arrow-left me-1"></i> Salir
+      </button>
+    </div>
   </div>
 
   <!-- Loading -->
@@ -26,6 +31,20 @@
 
   <!-- Contenido principal -->
   <div *ngIf="!loading && !error && business">
+    <div class="row mb-4" *ngIf="showHeader">
+      <div class="col-md-6 mb-3 mb-md-0">
+        <div class="metric-card primary">
+          <div class="metric-title"><i class="fas fa-users me-2"></i>Total de personas</div>
+          <div class="metric-value">{{ employeeStats.total }}</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="metric-card success">
+          <div class="metric-title"><i class="fas fa-check-circle me-2"></i>Cumplimiento matriz legal</div>
+          <div class="metric-value">{{ summaryPercentage | number:'1.0-1' }}%</div>
+        </div>
+      </div>
+    </div>
     <!-- Información de la empresa -->
     <div class="card shadow-sm border-0 mb-4" *ngIf="showCompanyInfo">
       <div class="card-header bg-primary text-white">
@@ -88,29 +107,25 @@
     <div class="row mb-4" *ngIf="showGauge || showAgeBar">
       <!-- Gráfico Gauge -->
       <div class="col-md-6" *ngIf="showGauge">
-        <div class="card shadow-sm border-0 h-100">
-          <div class="card-header bg-info text-white">
-            <div class="d-flex justify-content-between align-items-center">
-              <h5 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>Cumplimiento General</h5>
-              <div class="small fw-semibold">
-                {{ summaryCompleted }}/{{ summaryTotal }} ({{ summaryPercentage | number:'1.0-1' }}%)
-              </div>
-            </div>
+        <div class="chart-card h-100">
+          <div class="chart-header info d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>Cumplimiento de matriz legal</h5>
+            <div class="kpi-pill">{{ summaryCompleted }}/{{ summaryTotal }} • {{ summaryPercentage | number:'1.0-1' }}%</div>
           </div>
-          <div class="card-body d-flex justify-content-center align-items-center">
-            <div echarts [options]="gaugeOptions" class="w-100" style="height: 300px;"></div>
+          <div class="chart-body">
+            <div echarts [options]="gaugeOptions" class="chart-container"></div>
           </div>
         </div>
       </div>
 
       <!-- Gráfico de Barras -->
       <div class="col-md-6" *ngIf="showAgeBar">
-        <div class="card shadow-sm border-0 h-100">
-          <div class="card-header bg-warning text-white">
+        <div class="chart-card h-100">
+          <div class="chart-header warning d-flex align-items-center">
             <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Rango de edades</h5>
           </div>
-          <div class="card-body">
-            <div echarts [options]="barOptions" class="w-100" style="height: 300px;"></div>
+          <div class="chart-body">
+            <div echarts [options]="barOptions" class="chart-container"></div>
           </div>
         </div>
       </div>

@@ -1,16 +1,150 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { InventoryOutputService, InventoryOutput } from '../../../../../services/inventory-output.service';
+import { EmployeeService } from '../../../../dashboard/usuario/talento-humano/services/employee.service';
+import { EmployeeResponse } from '../../../../dashboard/usuario/talento-humano/models/employee.model';
 
 @Component({
   selector: 'app-historial-salidas',
   standalone: true,
-  imports: [CommonModule],
-  template: `<div class="page-container"><div class="page-header"><h1><i class="fas fa-list-alt"></i> Historial de Salidas</h1><p>Consulta todas las salidas realizadas</p></div><div class="page-content"><div class="alert alert-info"><i class="fas fa-info-circle"></i><span>Esta sección está en construcción.</span></div></div></div>`,
-  styles: [`.page-container { max-width: 1400px; margin: 0 auto; padding: 20px; } .page-header { margin-bottom: 30px; } .page-header h1 { font-size: 28px; font-weight: 600; color: #2c3e50; margin: 0 0 8px 0; display: flex; align-items: center; gap: 12px; } .page-header h1 i { color: #e67e22; } .page-header p { font-size: 15px; color: #7f8c8d; margin: 0; } .page-content { background: #fff; border-radius: 12px; padding: 30px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); } .alert { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-radius: 8px; background-color: #d1ecf1; border-left: 4px solid #0c5460; color: #0c5460; } .alert i { font-size: 20px; } .alert span { font-size: 15px; font-weight: 500; }`]
+  imports: [CommonModule, FormsModule, RouterLink],
+  templateUrl: './historial-salidas.component.html',
+  styleUrls: ['./historial-salidas.component.scss']
 })
 export class HistorialSalidasComponent implements OnInit {
   ruc: string = '';
-  constructor(private route: ActivatedRoute) {}
-  ngOnInit(): void { this.ruc = this.route.parent?.snapshot.params['ruc'] || ''; }
+  loading = false;
+  outputs: InventoryOutput[] = [];
+  employees: EmployeeResponse[] = [];
+  selectedOutput: InventoryOutput | null = null;
+  
+  // Filtros
+  startDate: string = '';
+  endDate: string = '';
+  filterEmployeeId: number | null = null;
+  filterOutputType: string = '';
+
+  constructor(
+    private route: ActivatedRoute,
+    private outputService: InventoryOutputService,
+    private employeeService: EmployeeService
+  ) {}
+
+  ngOnInit(): void {
+    this.ruc = this.route.parent?.snapshot.params['ruc'] || '';
+    this.loadEmployees();
+    this.loadOutputs();
+  }
+
+  loadEmployees(): void {
+    this.employeeService.getEmployeesByBusinessRuc(this.ruc).subscribe({
+      next: (data) => this.employees = data,
+      error: () => this.employees = []
+    });
+  }
+
+  loadOutputs(): void {
+    this.loading = true;
+    this.outputService.list(this.ruc).subscribe({
+      next: (data) => {
+        this.outputs = data;
+        this.loading = false;
+      },
+      error: () => {
+        this.outputs = [];
+        this.loading = false;
+      }
+    });
+  }
+
+  applyFilters(): void {
+    if (this.startDate && this.endDate) {
+      this.loading = true;
+      this.outputService.searchByDateRange(this.ruc, this.startDate, this.endDate).subscribe({
+        next: (data) => {
+          let result = data;
+          if (this.filterEmployeeId) {
+            result = result.filter(e => e.employeeId === this.filterEmployeeId);
+          }
+          if (this.filterOutputType) {
+            result = result.filter(e => e.outputType === this.filterOutputType);
+          }
+          this.outputs = result;
+          this.loading = false;
+        },
+        error: () => {
+          this.outputs = [];
+          this.loading = false;
+        }
+      });
+    } else if (this.filterEmployeeId || this.filterOutputType) {
+      this.loading = true;
+      let observable = this.outputService.list(this.ruc);
+      
+      if (this.filterEmployeeId) {
+        observable = this.outputService.findByEmployee(this.ruc, this.filterEmployeeId);
+      } else if (this.filterOutputType) {
+        observable = this.outputService.findByType(this.ruc, this.filterOutputType);
+      }
+      
+      observable.subscribe({
+        next: (data) => {
+          this.outputs = data;
+          this.loading = false;
+        },
+        error: () => {
+          this.outputs = [];
+          this.loading = false;
+        }
+      });
+    } else {
+      this.loadOutputs();
+    }
+  }
+
+  clearFilters(): void {
+    this.startDate = '';
+    this.endDate = '';
+    this.filterEmployeeId = null;
+    this.filterOutputType = '';
+    this.loadOutputs();
+  }
+
+  viewDetails(output: InventoryOutput): void {
+    this.selectedOutput = output;
+  }
+
+  getTotalAmount(): number {
+    return this.outputs.reduce((sum, output) => {
+      const outputTotal = output.details?.reduce((s, d) => s + (d.totalCost || 0), 0) || 0;
+      return sum + outputTotal;
+    }, 0);
+  }
+
+  getOutputTypeBadge(type: string): string {
+    const badges: any = {
+      'EPP_TRABAJADOR': 'bg-primary',
+      'PRESTAMO': 'bg-warning',
+      'CONSUMO_AREA': 'bg-info',
+      'BAJA': 'bg-danger'
+    };
+    return badges[type] || 'bg-secondary';
+  }
+
+  getStatusBadge(status: string): string {
+    const badges: any = {
+      'CONFIRMADO': 'bg-success',
+      'BORRADOR': 'bg-warning',
+      'ANULADO': 'bg-danger'
+    };
+    return badges[status] || 'bg-secondary';
+  }
+
+  getEmployeeName(employeeId?: number): string {
+    if (!employeeId) return '';
+    const employee = this.employees.find(e => e.id === employeeId);
+    return employee ? `${employee.nombres} ${employee.apellidos}` : '';
+  }
 }

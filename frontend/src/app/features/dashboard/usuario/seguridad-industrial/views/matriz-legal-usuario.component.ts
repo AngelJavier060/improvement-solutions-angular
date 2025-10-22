@@ -47,9 +47,14 @@ import { NotificationService } from '../../../../../services/notification.servic
       <div class="ml-content flex-grow-1" [class.full]="isCollapsed">
         <!-- Barra superior con botón de Inicio y mensaje de bienvenida -->
         <div class="d-flex align-items-center justify-content-between mb-3">
-          <a class="btn btn-outline-success btn-sm" [routerLink]="inicioLink">
-            <i class="fas fa-home me-1"></i> Inicio
-          </a>
+          <div class="d-flex align-items-center gap-2">
+            <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/usuario', ruc, 'welcome']">
+              <i class="fas fa-arrow-left me-1"></i> Volver
+            </a>
+            <a class="btn btn-outline-success btn-sm" [routerLink]="inicioLink">
+              <i class="fas fa-home me-1"></i> Inicio
+            </a>
+          </div>
           <div></div>
         </div>
 
@@ -181,9 +186,14 @@ import { NotificationService } from '../../../../../services/notification.servic
                       </span>
                     </td>
                     <td class="text-center">
-                      <button class="btn btn-link btn-sm" (click)="previewMostRecentOrLocal(item?.id)" [disabled]="!canPreview(item?.id)" title="Ver documento">
-                        <i class="fas fa-eye"></i>
-                      </button>
+                      <ng-container *ngIf="getTopPdfFiles(item?.id).length > 0; else noPdf">
+                        <button class="btn btn-link btn-sm" *ngFor="let f of getTopPdfFiles(item?.id); let idx = index" (click)="previewFile(f)" [title]="'Ver PDF ' + (idx+1)">
+                          <i class="fas fa-file-pdf"></i>
+                        </button>
+                      </ng-container>
+                      <ng-template #noPdf>
+                        <span class="text-muted">—</span>
+                      </ng-template>
                     </td>
                   </tr>
                 </tbody>
@@ -240,6 +250,8 @@ export class MatrizLegalUsuarioComponent implements OnInit {
   confirmItemId: number | null = null;
   // Sidebar state
   isCollapsed = false;
+  // Tag definido por admin en descripción del archivo para mostrar al usuario
+  private PUBLIC_TAG = '[PUBLIC]';
 
   constructor(
     private route: ActivatedRoute,
@@ -262,9 +274,9 @@ export class MatrizLegalUsuarioComponent implements OnInit {
       parent = parent.parent;
     }
 
-    // Construir el enlace de Inicio local al módulo Seguridad Industrial (redirige a 'matriz-legal')
+    // Construir el enlace de Inicio local al módulo Seguridad Industrial (redirige a dashboard-cumplimiento)
     if (this.ruc) {
-      this.inicioLink = ['/usuario', this.ruc, 'dashboard', 'seguridad-industrial'];
+      this.inicioLink = ['/usuario', this.ruc, 'seguridad-industrial'];
     }
 
     // Cargar catálogo y obligaciones de la empresa
@@ -514,6 +526,20 @@ export class MatrizLegalUsuarioComponent implements OnInit {
     return Array.isArray(files) ? files.length : 0;
   }
 
+  // Devuelve hasta 3 PDFs más recientes para mostrar al usuario
+  getTopPdfFiles(matrixId?: number): any[] {
+    if (!matrixId) return [];
+    const list = this.filesMap[matrixId];
+    const arr = Array.isArray(list) ? list : [];
+    const pdfs = arr.filter((f: any) => {
+      const name = (f?.name ?? f?.path ?? '').toString().toLowerCase();
+      const desc = (f?.description ?? '').toString();
+      return name.endsWith('.pdf') && desc.includes(this.PUBLIC_TAG);
+    });
+    // La lista ya está ordenada ascendente por fecha/id; tomar los últimos 3
+    return pdfs.slice(-3);
+  }
+
   // Edición inline
   isEditing(item: any): boolean {
     return !!(item?.id && this.editRow[item.id]);
@@ -649,7 +675,7 @@ export class MatrizLegalUsuarioComponent implements OnInit {
 
   private loadFiles(matrixId: number): void {
     this.filesLoading[matrixId] = true;
-    this.bomService.listFiles(matrixId, { currentOnly: true }).subscribe({
+    this.bomService.listFiles(matrixId).subscribe({
       next: (files) => {
         this.filesMap[matrixId] = this.sortFiles(files);
         this.fileCountMap[matrixId] = this.filesMap[matrixId].length;
@@ -669,7 +695,7 @@ export class MatrizLegalUsuarioComponent implements OnInit {
       (this.obligaciones || []).forEach((it: any) => {
         const id = Number(it?.id);
         if (!id || this.fileCountMap[id] != null) return;
-        this.bomService.listFiles(id, { currentOnly: true }).subscribe({
+        this.bomService.listFiles(id).subscribe({
           next: (files) => {
             const list = this.sortFiles(files);
             this.fileCountMap[id] = list.length;
@@ -835,7 +861,7 @@ export class MatrizLegalUsuarioComponent implements OnInit {
     }
     // Si aún no se ha cargado, la cargamos y luego previsualizamos el primero disponible
     this.filesLoading[matrixId] = true;
-    this.bomService.listFiles(matrixId, { currentOnly: true }).subscribe({
+    this.bomService.listFiles(matrixId).subscribe({
       next: (files) => {
         const arr = this.sortFiles(files);
         this.filesMap[matrixId] = arr;

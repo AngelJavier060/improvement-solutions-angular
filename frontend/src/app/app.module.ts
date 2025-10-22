@@ -85,6 +85,16 @@ import { FileService } from './services/file.service';
           { path: 'reportes-financiero', loadComponent: () => import('./features/usuario/inventario/pages/reportes/reportes-financiero.component').then(m => m.ReportesFinancieroComponent) }
         ]
       },
+      {
+        path: 'usuario/:ruc/talento-humano',
+        loadChildren: () => import('./features/dashboard/usuario/talento-humano/talento-humano.module').then(m => m.TalentoHumanoModule),
+        canActivate: [AuthGuard]
+      },
+      {
+        path: 'usuario/:ruc/seguridad-industrial',
+        loadChildren: () => import('./features/dashboard/usuario/seguridad-industrial/seguridad-industrial.module').then(m => m.SeguridadIndustrialModule),
+        canActivate: [AuthGuard]
+      },
       
       // Rutas del dashboard por RUC (para admin)
       {

@@ -31,10 +31,10 @@ interface EmployeeStats {
 })
 
 export class DashboardCumplimientoComponent implements OnInit, OnDestroy {
-  @Input() showLegalSection: boolean = true;
+  @Input() showLegalSection: boolean = false;
   @Input() showHeader: boolean = true;
-  @Input() showCompanyInfo: boolean = true;
-  @Input() showEmployeeStats: boolean = true;
+  @Input() showCompanyInfo: boolean = false;
+  @Input() showEmployeeStats: boolean = false;
   @Input() showGauge: boolean = true;
   @Input() showAgeBar: boolean = true;
   ruc: string = '';

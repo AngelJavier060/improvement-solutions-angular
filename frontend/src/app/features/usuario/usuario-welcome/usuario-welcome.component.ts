@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { FileService } from '../../../services/file.service';
 
 @Component({
   selector: 'app-usuario-welcome',
@@ -15,11 +16,13 @@ export class UsuarioWelcomeComponent implements OnInit {
   empresaNombre: string = '';
   usuario: any = null;
   fechaAcceso: string = '';
+  empresaLogoUrl: string = '';
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private fileService: FileService
   ) {}
 
   ngOnInit(): void {
@@ -49,6 +52,13 @@ export class UsuarioWelcomeComponent implements OnInit {
       if (empresaEncontrada) {
         this.empresaNombre = empresaEncontrada.name || empresaEncontrada.businessName || 'Su Empresa';
         console.log('Nombre de empresa asignado:', this.empresaNombre);
+        // Resolver URL del logo si existe
+        try {
+          const path = empresaEncontrada.logo || '';
+          this.empresaLogoUrl = path ? this.getLogoUrl(path) : '';
+        } catch {
+          this.empresaLogoUrl = '';
+        }
       } else {
         console.warn('No se encontró empresa con RUC:', this.empresaRuc);
         console.warn('RUCs disponibles:', this.usuario.businesses.map((b: any) => b.ruc));
@@ -78,6 +88,8 @@ export class UsuarioWelcomeComponent implements OnInit {
     // Mapeo de nombres de módulos
     const moduleNames: { [key: string]: string } = {
       'inventario': 'Inventario',
+      'talento-humano': 'Talento Humano',
+      'seguridad-industrial': 'Seguridad Industrial',
       'medico': 'Módulo Médico',
       'calidad': 'Control de Calidad',
       'mantenimiento': 'Mantenimiento',
@@ -88,13 +100,45 @@ export class UsuarioWelcomeComponent implements OnInit {
 
     const moduloNombre = moduleNames[moduleName] || moduleName;
     
-    // Ruta implementada: solo inventario
+    // Rutas implementadas: inventario, talento-humano, seguridad-industrial
     if (moduleName === 'inventario') {
       this.router.navigate([`/usuario/${this.empresaRuc}/inventario`]);
+      return;
+    } else if (moduleName === 'talento-humano') {
+      this.router.navigate([`/usuario/${this.empresaRuc}/talento-humano`]);
+      return;
+    } else if (moduleName === 'seguridad-industrial') {
+      this.router.navigate([`/usuario/${this.empresaRuc}/seguridad-industrial`]);
       return;
     }
     
     // Otros módulos: mensaje temporal
     alert(`Accediendo al módulo: ${moduloNombre}\n\nEste módulo está en desarrollo. Pronto estará disponible para la empresa ${this.empresaNombre}.`);
+  }
+
+  /**
+   * Obtiene la URL del logo de empresa con compatibilidad de rutas
+   */
+  private getLogoUrl(logoPath: string): string {
+    if (!logoPath) return '';
+    // URL absoluta
+    if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
+      const token = localStorage.getItem('auth_token');
+      let url = logoPath;
+      if (token) url += (url.includes('?') ? '&' : '?') + 'token=' + token;
+      url += (url.includes('?') ? '&' : '?') + 'v=' + Date.now();
+      return url;
+    }
+    // Ruta que contiene logos/
+    if (logoPath.includes('logos/')) {
+      const filename = logoPath.split('/').pop() || '';
+      return this.fileService.getFileUrlFromDirectory('logos', filename, true);
+    }
+    // Solo nombre de archivo
+    if (!logoPath.includes('/')) {
+      return this.fileService.getFileUrlFromDirectory('logos', logoPath, true);
+    }
+    // Ruta general
+    return this.fileService.getFileUrl(logoPath);
   }
 }

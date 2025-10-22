@@ -1,0 +1,66 @@
+/* Estilos para Historial de Salidas de Inventario */
+.container-fluid {
+  padding: 20px;
+}
+
+.page-header h1 i {
+  color: #e67e22;
+}
+
+.card {
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+  border-radius: 10px 10px 0 0 !important;
+  font-weight: 600;
+}
+
+.form-label {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.form-control, .form-select {
+  font-size: 0.9rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+}
+
+.btn {
+  border-radius: 6px;
+  font-size: 0.9rem;
+  padding: 0.375rem 0.75rem;
+}
+
+.table th {
+  font-weight: 600;
+  color: #444;
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 0.4em 0.6em;
+}
+
+.modal-content {
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.text-warning {
+  color: #e67e22 !important;
+}
+
+.btn-warning {
+  background-color: #e67e22;
+  border-color: #e67e22;
+}
+
+.btn-warning:hover {
+  background-color: #d35400;
+  border-color: #d35400;
+}

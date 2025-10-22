@@ -321,8 +321,8 @@ export class GestionEmpleadosComponent implements OnInit {
   viewEmployeeDetail(employee: EmployeeResponse, tab: string = 'profile'): void {
     console.log('Navegando a empleado:', employee.cedula, 'RUC:', this.businessRuc, 'Tab:', tab);
     if (this.businessRuc) {
-      this.router.navigate(['/usuario', this.businessRuc, 'dashboard', 'talento-humano', 'employee', employee.cedula], {
-        queryParams: { tab: tab }
+      this.router.navigate(['/usuario', this.businessRuc, 'talento-humano', 'employee', employee.cedula], {
+        queryParams: { tab }
       });
     } else {
       console.error('No se encontró RUC de la empresa');
@@ -484,6 +484,12 @@ export class GestionEmpleadosComponent implements OnInit {
   private hideToast(): void {
     this.toastVisible = false;
     this.toastMessage = '';
+  }
+
+  goBackToWelcome(): void {
+    if (this.businessRuc) {
+      this.router.navigate(['/usuario', this.businessRuc, 'welcome']);
+    }
   }
 
   // Contar empleados activos

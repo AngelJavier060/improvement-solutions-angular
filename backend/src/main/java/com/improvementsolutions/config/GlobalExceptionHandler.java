@@ -91,6 +91,15 @@ public class GlobalExceptionHandler {
             "VALIDATION_ERROR");
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> handleIllegalArgument(IllegalArgumentException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("title", "Solicitud inválida");
+        body.put("message", ex.getMessage() != null ? ex.getMessage() : "Datos inválidos");
+        body.put("code", "BAD_REQUEST");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<?> handleMaxUpload(MaxUploadSizeExceededException ex) {
         Map<String, Object> body = new HashMap<>();

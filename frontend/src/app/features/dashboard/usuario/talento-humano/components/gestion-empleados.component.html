@@ -11,12 +11,20 @@
           Administra y gestiona la información de todos los empleados
         </p>
       </div>
-      <button 
-        class="btn btn-primary btn-lg"
-        (click)="openCreateModal()">
-        <i class="fas fa-plus me-2"></i>
-        Nuevo Empleado
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        <button
+          class="btn btn-outline-secondary btn-lg"
+          (click)="goBackToWelcome()">
+          <i class="fas fa-arrow-left me-2"></i>
+          Volver
+        </button>
+        <button 
+          class="btn btn-primary btn-lg"
+          (click)="openCreateModal()">
+          <i class="fas fa-plus me-2"></i>
+          Nuevo Empleado
+        </button>
+      </div>
     </div>
   </div>
 
@@ -198,9 +206,20 @@
         <!-- Table -->
         <div *ngIf="filteredEmployees.length > 0" class="table-responsive">
           <table class="table table-hover mb-0">
+            <colgroup>
+              <col style="width:26%">
+              <col style="width:13%">
+              <col style="width:12%">
+              <col style="width:15%">
+              <col style="width:16%">
+              <col style="width:9%">
+              <col style="width:6%">
+              <col style="width:3%">
+            </colgroup>
             <thead class="table-light">
               <tr>
                 <th>Nombre</th>
+                <th>Cod. Trabajador</th>
                 <th>Cédula</th>
                 <th>Cargo</th>
                 <th>Email</th>
@@ -211,7 +230,7 @@
             </thead>
             <tbody>
               <tr *ngFor="let employee of filteredEmployees; trackBy: trackByEmployee" class="employee-row">
-                <td>
+                <td class="employee-name-cell">
                   <div class="d-flex align-items-center gap-2">
                     <div class="employee-avatar">
                       <ng-container *ngIf="getEmployeeImageUrl(employee) as imgUrl; else avatarPlaceholder">
@@ -223,10 +242,13 @@
                     </div>
                     <div class="employee-info">
                       <a href="#" (click)="openEmployeeModal(employee); $event.preventDefault()" class="text-decoration-none">
-                        <h6 class="mb-0 text-primary">{{ getFullName(employee) }}</h6>
+                        <h6 class="mb-0 text-primary"><span class="name-text">{{ getFullName(employee) }}</span></h6>
                       </a>
                     </div>
                   </div>
+                </td>
+                <td>
+                  <span class="fw-medium">{{ employee.codigoTrabajador || '—' }}</span>
                 </td>
                 <td>
                   <span class="fw-medium">{{ employee.cedula }}</span>

@@ -1,4 +1,14 @@
 <div class="th-dashboard">
+  <div class="module-header">
+    <div class="module-title">MÓDULO DE TALENTO HUMANO</div>
+    <div class="d-flex align-items-center gap-2">
+      <a class="btn btn-sm btn-outline-secondary" [routerLink]="welcomeLink" title="Volver a inicio">
+        <i class="fas fa-arrow-left me-1"></i> Salir
+      </a>
+      <div class="module-user"><i class="fas fa-user-circle"></i></div>
+    </div>
+  </div>
+
   <div class="welcome">
     <div class="icon"><i class="fas fa-user-friends"></i></div>
     <div class="text">
@@ -6,7 +16,9 @@
       <p>Improvement Solution agradece tu confianza. Con este módulo de Talento Humano, podrás gestionar y controlar eficientemente a tu equipo, potenciando el crecimiento y bienestar de tu organización</p>
     </div>
   </div>
-  
-  <!-- Nuevas gráficas con datos reales -->
-  <app-talento-humano-charts></app-talento-humano-charts>
+
+  <div class="content-surface">
+    <!-- Nuevas gráficas con datos reales -->
+    <app-talento-humano-charts></app-talento-humano-charts>
+  </div>
 </div>
