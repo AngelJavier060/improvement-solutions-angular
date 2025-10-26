@@ -349,11 +349,11 @@ export class ListaUsuariosComponent implements OnInit {
     return parts.join(' | ');
   }
   getProfilePictureUrl(user: User): string {
-    if (!user) return '/assets/img/user-placeholder.svg';
+    if (!user) return 'assets/img/user-placeholder.svg';
     
     // Si ya tenemos la URL en caché local, la usamos directamente
     if (user.id && this.profileImageUrls.has(user.id)) {
-      return this.profileImageUrls.get(user.id) || '/assets/img/user-placeholder.svg';
+      return this.profileImageUrls.get(user.id) || 'assets/img/user-placeholder.svg';
     }
     
     // Si el usuario tiene una imagen de perfil
@@ -372,6 +372,6 @@ export class ListaUsuariosComponent implements OnInit {
       return imageUrl;
     }
     
-    return '/assets/img/user-placeholder.svg';
+    return 'assets/img/user-placeholder.svg';
   }
 }
