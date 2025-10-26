@@ -78,9 +78,11 @@ import { FileService } from './services/file.service';
           { path: 'devoluciones', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/devoluciones.component').then(m => m.DevolucionesComponent) },
           { path: 'prestamos', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/prestamos.component').then(m => m.PrestamosComponent) },
           { path: 'ajustes', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/ajustes.component').then(m => m.AjustesComponent) },
+          { path: 'traslados', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/traslados.component').then(m => m.TrasladosComponent) },
           // REPORTES
           { path: 'reportes-general', loadComponent: () => import('./features/usuario/inventario/pages/reportes/reportes-general.component').then(m => m.ReportesGeneralComponent) },
           { path: 'reportes-kardex', loadComponent: () => import('./features/usuario/inventario/pages/reportes/reportes-kardex.component').then(m => m.ReportesKardexComponent) },
+          { path: 'asignaciones-persona', loadComponent: () => import('./features/usuario/inventario/pages/reportes/asignaciones-persona.component').then(m => m.AsignacionesPersonaComponent) },
           { path: 'reportes-alertas', loadComponent: () => import('./features/usuario/inventario/pages/reportes/reportes-alertas.component').then(m => m.ReportesAlertasComponent) },
           { path: 'reportes-financiero', loadComponent: () => import('./features/usuario/inventario/pages/reportes/reportes-financiero.component').then(m => m.ReportesFinancieroComponent) }
         ]

@@ -37,6 +37,7 @@
                 class="form-control" 
                 id="username" 
                 formControlName="username"
+                (blur)="checkUsernameDuplicate()"
                 [ngClass]="{'is-invalid': userForm.get('username')?.invalid && userForm.get('username')?.touched}"
               >              <div class="invalid-feedback" *ngIf="userForm.get('username')?.errors?.['required']">
                 El nombre de usuario es obligatorio
@@ -47,6 +48,9 @@
               <div class="invalid-feedback" *ngIf="userForm.get('username')?.errors?.['pattern']">
                 El nombre de usuario solo puede contener letras, números, guiones, puntos y guiones bajos
               </div>
+              <div class="invalid-feedback" *ngIf="userForm.get('username')?.errors?.['duplicate']">
+                Este nombre de usuario ya existe. Por favor use otro.
+              </div>
             </div>
             
             <div class="mb-3">
@@ -56,6 +60,7 @@
                 class="form-control" 
                 id="email" 
                 formControlName="email"
+                (blur)="checkEmailDuplicate()"
                 [ngClass]="{'is-invalid': userForm.get('email')?.invalid && userForm.get('email')?.touched}"
               >              <div class="invalid-feedback" *ngIf="userForm.get('email')?.errors?.['required']">
                 El correo electrónico es obligatorio
@@ -65,6 +70,9 @@
               </div>
               <div class="invalid-feedback" *ngIf="userForm.get('email')?.errors?.['maxlength']">
                 El correo electrónico no puede exceder los 100 caracteres
+              </div>
+              <div class="invalid-feedback" *ngIf="userForm.get('email')?.errors?.['duplicate']">
+                Este correo ya está registrado. Ingrese uno diferente.
               </div>
             </div>
               <div class="mb-3">
@@ -90,6 +98,7 @@
                 class="form-control" 
                 id="phone" 
                 formControlName="phone"
+                (blur)="checkPhoneDuplicate()"
                 [ngClass]="{'is-invalid': userForm.get('phone')?.invalid && userForm.get('phone')?.touched}"
               >
               <div class="invalid-feedback" *ngIf="userForm.get('phone')?.errors?.['maxlength']">
@@ -97,6 +106,9 @@
               </div>
               <div class="invalid-feedback" *ngIf="userForm.get('phone')?.errors?.['pattern']">
                 El teléfono solo puede contener números, espacios y los símbolos +, -, ( )
+              </div>
+              <div class="invalid-feedback" *ngIf="userForm.get('phone')?.errors?.['duplicate']">
+                Este teléfono ya está registrado. Verifique o use otro número.
               </div>
             </div>
             

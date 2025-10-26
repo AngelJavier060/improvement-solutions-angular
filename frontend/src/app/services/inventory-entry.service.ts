@@ -82,4 +82,9 @@ export class InventoryEntryService {
   getKardex(ruc: string, variantId: number): Observable<any[]> {
     return this.http.get<any[]>(`/api/inventory/${ruc}/entries/kardex/${variantId}`);
   }
+
+  /** Confirma la entrada (afecta stock) */
+  confirm(ruc: string, entryId: number): Observable<any> {
+    return this.http.patch<any>(`/api/inventory/${ruc}/entries/${entryId}/confirm`, {});
+  }
 }

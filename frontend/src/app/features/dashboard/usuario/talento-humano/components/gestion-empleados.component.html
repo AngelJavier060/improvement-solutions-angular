@@ -97,11 +97,11 @@
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card stats-card bg-info text-white">
+        <div class="card stats-card bg-info text-white" (click)="applyNewThisMonthFilter()" style="cursor: pointer;">
           <div class="card-body">
             <div class="d-flex justify-content-between">
               <div>
-                <h3 class="mb-0">0</h3>
+                <h3 class="mb-0">{{ getNewThisMonthCount() }}</h3>
                 <p class="mb-0">Nuevos (Este mes)</p>
               </div>
               <div class="stats-icon">
@@ -109,6 +109,72 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nuevos en este período -->
+    <div class="card mb-3" *ngIf="showNewEmployeesPanel">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+          <i class="fas fa-user-plus text-info"></i>
+          <strong>Nuevos en este período</strong>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <div class="btn-group btn-group-sm me-2" role="group">
+            <button type="button" class="btn btn-outline-secondary" [class.active]="dateFilterMode==='month'" (click)="setDateFilterMode('month')">Mes</button>
+            <button type="button" class="btn btn-outline-secondary" [class.active]="dateFilterMode==='semester'" (click)="setDateFilterMode('semester')">Semestre</button>
+            <button type="button" class="btn btn-outline-secondary" [class.active]="dateFilterMode==='year'" (click)="setDateFilterMode('year')">Año</button>
+          </div>
+          <select class="form-select form-select-sm me-2" [ngModel]="selectedYear" (ngModelChange)="setSelectedYear($event)">
+            <option *ngFor="let y of availableYears" [ngValue]="y">{{ y }}</option>
+          </select>
+          <select class="form-select form-select-sm me-2" *ngIf="dateFilterMode==='month'" [ngModel]="selectedMonth" (ngModelChange)="setSelectedMonth($event)">
+            <option [ngValue]="0">Enero</option>
+            <option [ngValue]="1">Febrero</option>
+            <option [ngValue]="2">Marzo</option>
+            <option [ngValue]="3">Abril</option>
+            <option [ngValue]="4">Mayo</option>
+            <option [ngValue]="5">Junio</option>
+            <option [ngValue]="6">Julio</option>
+            <option [ngValue]="7">Agosto</option>
+            <option [ngValue]="8">Septiembre</option>
+            <option [ngValue]="9">Octubre</option>
+            <option [ngValue]="10">Noviembre</option>
+            <option [ngValue]="11">Diciembre</option>
+          </select>
+          <select class="form-select form-select-sm me-2" *ngIf="dateFilterMode==='semester'" [ngModel]="selectedSemester" (ngModelChange)="setSelectedSemester($event)">
+            <option [ngValue]="1">Semestre 1 (Ene-Jun)</option>
+            <option [ngValue]="2">Semestre 2 (Jul-Dic)</option>
+          </select>
+          <button class="btn btn-sm btn-outline-secondary" (click)="showNewEmployeesPanel=false" title="Cerrar">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Nombre</th>
+                <th>Cédula</th>
+                <th>Fecha de registro</th>
+                <th>Hora de registro</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let employee of newEmployeesFiltered">
+                <td>{{ getFullName(employee) }}</td>
+                <td>{{ employee.cedula }}</td>
+                <td>{{ getRegDateStr(employee) }}</td>
+                <td>{{ getRegTimeStr(employee) }}</td>
+              </tr>
+              <tr *ngIf="newEmployeesFiltered.length === 0">
+                <td colspan="4" class="text-center text-muted py-3">No hay registros en el período seleccionado</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -197,7 +263,7 @@
           <i class="fas fa-search fa-4x text-muted mb-3"></i>
           <h4 class="text-muted">No se encontraron resultados</h4>
           <p class="text-muted">Intenta con otros términos de búsqueda</p>
-          <button class="btn btn-outline-primary" (click)="searchTerm = ''; onSearchChange()">
+          <button class="btn btn-outline-primary" (click)="clearFilters()">
             <i class="fas fa-times me-2"></i>
             Limpiar búsqueda
           </button>
@@ -278,6 +344,12 @@
                 </td>
                 <td>
                   <div class="action-buttons">
+                    <button 
+                      class="btn btn-sm btn-outline-secondary me-1"
+                      (click)="openCredentialsModal(employee)"
+                      title="Credencial">
+                      <i class="fas fa-id-badge"></i>
+                    </button>
                     <button 
                       class="btn btn-sm btn-outline-info me-1"
                       (click)="viewEmployeeDetail(employee, 'documents')"
@@ -432,7 +504,77 @@
 </div>
 
 <!-- Backdrop para los modales -->
-<div class="modal-backdrop fade show" *ngIf="showCoursesModal || showDocumentsModal || showEmployeeModal || showDeactivateModal || showReactivateModal"></div>
+<div class="modal-backdrop fade show" *ngIf="showCoursesModal || showDocumentsModal || showEmployeeModal || showDeactivateModal || showReactivateModal || showCredentialsModal"></div>
+
+<div class="modal fade" [class.show]="showCredentialsModal" [style.display]="showCredentialsModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content credential-modal">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-id-badge me-2"></i>
+          Credencial de {{ selectedEmployee ? getFullName(selectedEmployee) : '' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeCredentialsModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="credential-card credential-print-target">
+          <div class="credential-side">
+            <div class="rotate-text">EXCELENCIA</div>
+          </div>
+
+          <div class="credential-content">
+            <div class="decorative-orbit">
+              <div class="orbit-circle"></div>
+              <div class="orbit-circle dashed"></div>
+              <div class="orbit-circle"></div>
+            </div>
+
+            <div class="photo-wrapper">
+              <div class="photo-ring">
+                <div class="photo">
+                  <ng-container *ngIf="selectedEmployee && getEmployeeImageUrl(selectedEmployee); else photoPlaceholder">
+                    <img [src]="getEmployeeImageUrl(selectedEmployee)" alt="Foto" />
+                  </ng-container>
+                  <ng-template #photoPlaceholder>
+                    <div class="photo-placeholder">
+                      <span>FOTO</span>
+                    </div>
+                  </ng-template>
+                </div>
+              </div>
+            </div>
+
+            <div class="holder-info text-center">
+              <h1 class="holder-name">{{ selectedEmployee ? getFullName(selectedEmployee) : '' }}</h1>
+              <p class="holder-role">{{ selectedEmployee ? (getEmployeePosition(selectedEmployee) || '—') : '' }}</p>
+              <div class="holder-id">
+                <p>Número ID: <span>{{ selectedEmployee ? getEmployeeCode(selectedEmployee) : '' }}</span></p>
+              </div>
+            </div>
+
+            <div class="flex-spacer"></div>
+            <div class="ensign">
+              <span>{{ getBusinessShortUpper() || 'EMPRESA' }}</span>
+            </div>
+            <div class="site-link">www.improvement-solution.com/en-US/</div>
+            <div class="qr-box" *ngIf="selectedEmployee">
+              <img [src]="getEmployeeQrUrl(selectedEmployee)" alt="QR" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="printCredential()">
+          <i class="fas fa-print me-1"></i> Imprimir
+        </button>
+        <button type="button" class="btn btn-primary" (click)="downloadCredentialPdf()">
+          <i class="fas fa-file-download me-1"></i> Descargar PDF
+        </button>
+        <button type="button" class="btn btn-outline-secondary" (click)="closeCredentialsModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Desvinculación -->
 <div class="modal fade" [class.show]="showDeactivateModal" [style.display]="showDeactivateModal ? 'block' : 'none'" tabindex="-1">

@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.improvementsolutions.model.Business;
@@ -205,5 +206,41 @@ public class InventoryOutputService {
     public List<InventoryOutput> findByEmployee(String ruc, Long employeeId) {
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
         return outputRepository.findByBusinessIdAndEmployeeIdOrderByOutputDateDesc(business.getId(), employeeId);
+    }
+    
+    /**
+     * Confirmar una salida existente (procesa stock y kardex)
+     */
+    @Transactional
+    public InventoryOutput confirm(String ruc, Long outputId) {
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        InventoryOutput output = outputRepository.findById(outputId)
+            .orElseThrow(() -> new IllegalArgumentException("Salida de inventario no encontrada"));
+        if (!output.getBusiness().getId().equals(business.getId())) {
+            throw new AccessDeniedException("La salida no pertenece a la empresa seleccionada");
+        }
+        if (output.getStatus() != OutputStatus.CONFIRMADO) {
+            output.setStatus(OutputStatus.CONFIRMADO);
+            // Asegurar que detalles estén cargados en esta transacción
+            output.getDetails().size();
+            processOutputDetails(output);
+            output = outputRepository.save(output);
+        }
+        return output;
+    }
+
+    /**
+     * Actualiza la ruta del documento (PDF/imagen) asociado a la salida
+     */
+    @Transactional
+    public InventoryOutput updateDocumentImage(String ruc, Long outputId, String documentPath) {
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        InventoryOutput output = outputRepository.findById(outputId)
+            .orElseThrow(() -> new IllegalArgumentException("Salida de inventario no encontrada"));
+        if (!output.getBusiness().getId().equals(business.getId())) {
+            throw new AccessDeniedException("La salida no pertenece a la empresa seleccionada");
+        }
+        output.setDocumentImage(documentPath);
+        return outputRepository.save(output);
     }
 }

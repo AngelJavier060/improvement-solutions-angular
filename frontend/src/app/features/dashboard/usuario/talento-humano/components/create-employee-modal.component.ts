@@ -43,10 +43,15 @@ export class CreateEmployeeModalComponent implements OnInit {
   
   selectedFile: File | null = null;
   photoPreviewUrl: string | null = null;
+  // Índices para validación de duplicados
+  private existingEmployees: any[] = [];
+  private cedulaSet: Set<string> = new Set();
+  private codeSet: Set<string> = new Set();
+  private namePairSet: Set<string> = new Set();
   
   @Output() onClose = new EventEmitter<void>();
   @Output() onEmployeeCreated = new EventEmitter<void>();
-  @Input() businessId: number = 1;
+  @Input() businessId!: number;
   @ViewChild('fileInput') fileInput!: ElementRef;
 
   constructor(
@@ -101,11 +106,92 @@ export class CreateEmployeeModalComponent implements OnInit {
     });
   }
 
+  private rebuildDuplicateIndex(): void {
+    this.cedulaSet.clear();
+    this.codeSet.clear();
+    this.namePairSet.clear();
+    for (const e of this.existingEmployees) {
+      const ced = (e?.cedula || '').trim();
+      if (ced) this.cedulaSet.add(ced);
+      const code = (e?.codigoTrabajador || e?.codigo_empresa || e?.codigoEmpresa || '').toString().trim();
+      if (code) this.codeSet.add(code.toLowerCase());
+      const ap = (e?.apellidos || '').toString().trim().toLowerCase();
+      const no = (e?.nombres || '').toString().trim().toLowerCase();
+      if (ap && no) this.namePairSet.add(`${ap}|${no}`);
+    }
+  }
+
+  private applyDuplicateValidation(): void {
+    // Cedula
+    const cedCtrl = this.employeeForm.get('cedula');
+    const cedVal = (cedCtrl?.value || '').toString().trim();
+    if (cedVal && this.cedulaSet.has(cedVal)) {
+      cedCtrl?.setErrors({ ...(cedCtrl.errors || {}), duplicate: true });
+    } else {
+      if (cedCtrl?.hasError('duplicate')) {
+        const { duplicate, ...rest } = cedCtrl.errors || {};
+        cedCtrl.setErrors(Object.keys(rest).length ? rest : null);
+      }
+    }
+
+    // Código Trabajador
+    const codeCtrl = this.employeeForm.get('codigoTrabajador');
+    const codeVal = (codeCtrl?.value || '').toString().trim().toLowerCase();
+    if (codeVal && this.codeSet.has(codeVal)) {
+      codeCtrl?.setErrors({ ...(codeCtrl.errors || {}), duplicate: true });
+    } else {
+      if (codeCtrl?.hasError('duplicate')) {
+        const { duplicate, ...rest } = codeCtrl.errors || {};
+        codeCtrl.setErrors(Object.keys(rest).length ? rest : null);
+      }
+    }
+
+    // Nombres + Apellidos
+    const nCtrl = this.employeeForm.get('nombres');
+    const aCtrl = this.employeeForm.get('apellidos');
+    const nVal = (nCtrl?.value || '').toString().trim().toLowerCase();
+    const aVal = (aCtrl?.value || '').toString().trim().toLowerCase();
+    const pair = nVal && aVal ? `${aVal}|${nVal}` : '';
+    const dupName = pair && this.namePairSet.has(pair);
+    if (dupName) {
+      nCtrl?.setErrors({ ...(nCtrl.errors || {}), duplicate: true });
+      aCtrl?.setErrors({ ...(aCtrl.errors || {}), duplicate: true });
+    } else {
+      if (nCtrl?.hasError('duplicate')) {
+        const { duplicate, ...rest } = nCtrl.errors || {};
+        nCtrl.setErrors(Object.keys(rest).length ? rest : null);
+      }
+      if (aCtrl?.hasError('duplicate')) {
+        const { duplicate, ...rest } = aCtrl.errors || {};
+        aCtrl.setErrors(Object.keys(rest).length ? rest : null);
+      }
+    }
+  }
+
   ngOnInit(): void {
+    if (this.businessId == null) {
+      this.error = 'No se pudo resolver la empresa actual.';
+      return;
+    }
     this.loadBusinessInfo();
     this.loadAllConfigurations();
     // Cargar empresas contratistas para el selector
     this.loadContractorCompanies();
+
+    // Cargar empleados existentes para validación de duplicados
+    this.employeeService.getEmployeesByBusiness(this.businessId).subscribe({
+      next: (emps) => {
+        this.existingEmployees = emps || [];
+        this.rebuildDuplicateIndex();
+      },
+      error: () => {}
+    });
+
+    // Validación reactiva de duplicados
+    this.employeeForm.get('cedula')?.valueChanges.subscribe(() => this.applyDuplicateValidation());
+    this.employeeForm.get('codigoTrabajador')?.valueChanges.subscribe(() => this.applyDuplicateValidation());
+    this.employeeForm.get('nombres')?.valueChanges.subscribe(() => this.applyDuplicateValidation());
+    this.employeeForm.get('apellidos')?.valueChanges.subscribe(() => this.applyDuplicateValidation());
   }
 
   private async loadBusinessInfo(): Promise<void> {
@@ -370,6 +456,16 @@ export class CreateEmployeeModalComponent implements OnInit {
   }
 
   onSubmit() {
+    // Aplicar validación de duplicados antes de enviar
+    this.applyDuplicateValidation();
+    if (this.employeeForm.invalid) {
+      // Mensaje compilado de duplicados si existieran
+      const msgs: string[] = [];
+      if (this.employeeForm.get('cedula')?.hasError('duplicate')) msgs.push('Cédula ya registrada en esta empresa');
+      if (this.employeeForm.get('codigoTrabajador')?.hasError('duplicate')) msgs.push('Código de trabajador duplicado en esta empresa');
+      if (this.employeeForm.get('nombres')?.hasError('duplicate') || this.employeeForm.get('apellidos')?.hasError('duplicate')) msgs.push('Nombre y apellidos ya existen en esta empresa');
+      if (msgs.length) this.error = msgs.join('. ');
+    }
     if (this.employeeForm.valid) {
       console.log('Formulario válido, enviando datos...');
       const formValue = this.employeeForm.value;
@@ -384,6 +480,7 @@ export class CreateEmployeeModalComponent implements OnInit {
         cedula: formValue.cedula,
         apellidos: formValue.apellidos,
         nombres: formValue.nombres,
+        codigoTrabajador: formValue.codigoTrabajador || null,
         phone: formValue.phone,
         email: formValue.email,
         dateBirth: formValue.birthdate ? `${formValue.birthdate} 00:00:00` : null, // Formato LocalDateTime
@@ -439,6 +536,9 @@ export class CreateEmployeeModalComponent implements OnInit {
         next: (response) => {
           console.log('Empleado creado exitosamente:', response);
           this.loading = false;
+          // Actualizar índice local para futuras validaciones
+          this.existingEmployees.push(response as any);
+          this.rebuildDuplicateIndex();
           this.closeModal();
           this.onEmployeeCreated.emit();
         },
@@ -512,6 +612,11 @@ export class CreateEmployeeModalComponent implements OnInit {
   getFieldError(fieldName: string): string {
     const field = this.employeeForm.get(fieldName);
     if (field && field.errors && (field.dirty || field.touched)) {
+      if (field.errors['duplicate']) {
+        if (fieldName === 'cedula') return 'Cédula ya registrada en esta empresa';
+        if (fieldName === 'codigoTrabajador') return 'Código de trabajador duplicado en esta empresa';
+        if (fieldName === 'nombres' || fieldName === 'apellidos') return 'Nombre y apellidos ya existen en esta empresa';
+      }
       if (field.errors['required']) return `${fieldName} es requerido`;
       if (field.errors['email']) return 'Email no válido';
       if (field.errors['pattern']) return `${fieldName} no tiene el formato correcto`;

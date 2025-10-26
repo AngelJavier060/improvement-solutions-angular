@@ -23,6 +23,10 @@ public interface BusinessEmployeeRepository extends JpaRepository<BusinessEmploy
     
     Boolean existsByBusinessIdAndCedula(Long businessId, String cedula);
     
+    Boolean existsByBusinessIdAndCodigoEmpresa(Long businessId, String codigoEmpresa);
+
+    Boolean existsByBusinessIdAndNombresIgnoreCaseAndApellidosIgnoreCase(Long businessId, String nombres, String apellidos);
+    
     // Buscar por cédula sin limitar a una empresa específica
     List<BusinessEmployee> findByCedula(String cedula);
 

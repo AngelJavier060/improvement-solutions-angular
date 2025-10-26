@@ -125,8 +125,131 @@
   padding: 3rem 1rem;
 }
 
-.empty-state i {
-  opacity: 0.5;
+.modal-backdrop.fade.show {
+  opacity: .35;
+}
+.credential-modal {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.credential-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  height: 600px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #0b2a55 0%, #061a36 60%, #041022 100%);
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  overflow: hidden;
+  display: flex;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+@media print {
+  .credential-card,
+  .credential-side,
+  .credential-content,
+  .photo-ring,
+  .photo,
+  .ensign span,
+  .holder-id,
+  .qr-box img {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+.credential-side {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  background: linear-gradient(180deg, #7ea6ff 0%, #3b82f6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rotate-text {
+  transform: rotate(-90deg);
+  white-space: nowrap;
+  color: #0b1c3b;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 4px;
+}
+
+.credential-content {
+  position: relative;
+  margin-left: 80px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 80px);
+}
+
+.decorative-orbit {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 160px; height: 160px;
+}
+
+.orbit-circle {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 50%;
+  border: 2px solid rgba(96, 165, 250, .4);
+  opacity: .4;
+}
+.orbit-circle.dashed { border-style: dashed; width: 130px; height: 130px; top: 15px; }
+.orbit-circle:first-child { width: 160px; height: 160px; }
+.orbit-circle:last-child { width: 100px; height: 100px; top: 30px; }
+
+.photo-wrapper { margin-top: 32px; display: flex; justify-content: center; }
+.photo-ring {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e0e7ff, #dbeafe);
+  padding: 6px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+.photo {
+  width: 100%; height: 100%; border-radius: 50%; overflow: hidden;
+  background: linear-gradient(135deg, #f8fafc, #ffffff);
+  display: flex; align-items: center; justify-content: center;
+}
+.photo img { width: 100%; height: 100%; object-fit: cover; }
+.photo-placeholder { color: #0b2a55; font-weight: 700; opacity: .5; }
+
+.holder-info { margin-top: 18px; }
+.holder-name { color: #fff; font-size: 24px; font-weight: 800; letter-spacing: .5px; margin-bottom: 6px; }
+.holder-role { color: #93c5fd; font-weight: 600; letter-spacing: 2px; margin-bottom: 18px; font-size: 14px; }
+.holder-id { display: inline-block; border: 1px solid rgba(96,165,250,.4); border-radius: 10px; padding: 8px 16px; background: rgba(29,78,216,.25); color: #cfe1ff; font-weight: 600; margin-bottom: 8px; }
+.holder-id span { color: #fff; font-weight: 800; }
+
+.flex-spacer { flex: 1; }
+
+.ensign { margin-bottom: 12px; margin-top: 8px; }
+.ensign span { display: inline-block; padding: 8px 16px; border-radius: 10px; background: linear-gradient(90deg, #7ea6ff, #3b82f6); color: #0b1c3b; font-weight: 900; letter-spacing: 3px; font-size: 20px; }
+
+.site-link { color: #93c5fd; text-align: center; font-weight: 600; margin-bottom: 10px; font-size: 13px; white-space: nowrap; }
+
+.badge-icon { position: absolute; right: 18px; bottom: 18px; width: 44px; height: 44px; border-radius: 50%; background: #3b82f6; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 6px 16px rgba(0,0,0,.35); color: #fff; }
+
+.qr-box { display: flex; justify-content: center; margin: 8px 0 12px; }
+.qr-box img { width: 96px; height: 96px; background: #fff; padding: 6px; border-radius: 10px; box-shadow: 0 6px 16px rgba(0,0,0,.25); }
+
+@media (max-width: 576px) {
+  .credential-card { height: 520px; max-width: 90vw; }
+  .ensign span { font-size: 18px; letter-spacing: 3px; }
+  .holder-name { font-size: 20px; }
 }
 
 /* Loading State */
@@ -141,6 +264,7 @@
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
+
 
 .card-header {
   border-bottom: 1px solid #e9ecef;

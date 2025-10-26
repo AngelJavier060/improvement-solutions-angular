@@ -2,6 +2,8 @@ package com.improvementsolutions.controller.inventory;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -26,9 +28,13 @@ public class InventoryOutputController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public ResponseEntity<InventoryOutput> create(@PathVariable String ruc, @RequestBody InventoryOutput output) {
+    public ResponseEntity<Map<String, Object>> create(@PathVariable String ruc, @RequestBody InventoryOutput output) {
         InventoryOutput created = outputService.create(ruc, output);
-        return ResponseEntity.ok(created);
+        return ResponseEntity.ok(Map.of(
+            "id", created.getId(),
+            "outputNumber", created.getOutputNumber(),
+            "status", created.getStatus() != null ? created.getStatus().name() : null
+        ));
     }
     
     /**
@@ -37,9 +43,28 @@ public class InventoryOutputController {
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public ResponseEntity<List<InventoryOutput>> list(@PathVariable String ruc) {
+    public ResponseEntity<List<Map<String, Object>>> list(@PathVariable String ruc) {
         List<InventoryOutput> outputs = outputService.list(ruc);
-        return ResponseEntity.ok(outputs);
+        List<Map<String, Object>> dto = new java.util.ArrayList<>();
+        for (InventoryOutput o : outputs) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", o.getId());
+            m.put("outputNumber", o.getOutputNumber());
+            m.put("outputDate", o.getOutputDate());
+            m.put("outputType", o.getOutputType() != null ? o.getOutputType().name() : null);
+            m.put("employeeId", o.getEmployeeId());
+            m.put("area", o.getArea());
+            m.put("project", o.getProject());
+            m.put("returnDate", o.getReturnDate());
+            m.put("authorizedBy", o.getAuthorizedBy());
+            m.put("documentImage", o.getDocumentImage());
+            m.put("notes", o.getNotes());
+            m.put("status", o.getStatus() != null ? o.getStatus().name() : null);
+            m.put("createdAt", o.getCreatedAt());
+            m.put("updatedAt", o.getUpdatedAt());
+            dto.add(m);
+        }
+        return ResponseEntity.ok(dto);
     }
     
     /**
@@ -48,13 +73,32 @@ public class InventoryOutputController {
      */
     @GetMapping("/search")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public ResponseEntity<List<InventoryOutput>> searchByDateRange(
+    public ResponseEntity<List<Map<String, Object>>> searchByDateRange(
         @PathVariable String ruc,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
         List<InventoryOutput> outputs = outputService.findByDateRange(ruc, startDate, endDate);
-        return ResponseEntity.ok(outputs);
+        List<Map<String, Object>> dto = new java.util.ArrayList<>();
+        for (InventoryOutput o : outputs) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", o.getId());
+            m.put("outputNumber", o.getOutputNumber());
+            m.put("outputDate", o.getOutputDate());
+            m.put("outputType", o.getOutputType() != null ? o.getOutputType().name() : null);
+            m.put("employeeId", o.getEmployeeId());
+            m.put("area", o.getArea());
+            m.put("project", o.getProject());
+            m.put("returnDate", o.getReturnDate());
+            m.put("authorizedBy", o.getAuthorizedBy());
+            m.put("documentImage", o.getDocumentImage());
+            m.put("notes", o.getNotes());
+            m.put("status", o.getStatus() != null ? o.getStatus().name() : null);
+            m.put("createdAt", o.getCreatedAt());
+            m.put("updatedAt", o.getUpdatedAt());
+            dto.add(m);
+        }
+        return ResponseEntity.ok(dto);
     }
     
     /**
@@ -63,12 +107,31 @@ public class InventoryOutputController {
      */
     @GetMapping("/type/{outputType}")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public ResponseEntity<List<InventoryOutput>> findByType(
+    public ResponseEntity<List<Map<String, Object>>> findByType(
         @PathVariable String ruc,
         @PathVariable String outputType
     ) {
         List<InventoryOutput> outputs = outputService.findByType(ruc, outputType);
-        return ResponseEntity.ok(outputs);
+        List<Map<String, Object>> dto = new java.util.ArrayList<>();
+        for (InventoryOutput o : outputs) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", o.getId());
+            m.put("outputNumber", o.getOutputNumber());
+            m.put("outputDate", o.getOutputDate());
+            m.put("outputType", o.getOutputType() != null ? o.getOutputType().name() : null);
+            m.put("employeeId", o.getEmployeeId());
+            m.put("area", o.getArea());
+            m.put("project", o.getProject());
+            m.put("returnDate", o.getReturnDate());
+            m.put("authorizedBy", o.getAuthorizedBy());
+            m.put("documentImage", o.getDocumentImage());
+            m.put("notes", o.getNotes());
+            m.put("status", o.getStatus() != null ? o.getStatus().name() : null);
+            m.put("createdAt", o.getCreatedAt());
+            m.put("updatedAt", o.getUpdatedAt());
+            dto.add(m);
+        }
+        return ResponseEntity.ok(dto);
     }
     
     /**
@@ -77,11 +140,77 @@ public class InventoryOutputController {
      */
     @GetMapping("/employee/{employeeId}")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public ResponseEntity<List<InventoryOutput>> findByEmployee(
+    public ResponseEntity<List<Map<String, Object>>> findByEmployee(
         @PathVariable String ruc,
         @PathVariable Long employeeId
     ) {
         List<InventoryOutput> outputs = outputService.findByEmployee(ruc, employeeId);
-        return ResponseEntity.ok(outputs);
+        List<Map<String, Object>> dto = new java.util.ArrayList<>();
+        for (InventoryOutput o : outputs) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", o.getId());
+            m.put("outputNumber", o.getOutputNumber());
+            m.put("outputDate", o.getOutputDate());
+            m.put("outputType", o.getOutputType() != null ? o.getOutputType().name() : null);
+            m.put("employeeId", o.getEmployeeId());
+            m.put("area", o.getArea());
+            m.put("project", o.getProject());
+            m.put("returnDate", o.getReturnDate());
+            m.put("authorizedBy", o.getAuthorizedBy());
+            m.put("documentImage", o.getDocumentImage());
+            m.put("notes", o.getNotes());
+            m.put("status", o.getStatus() != null ? o.getStatus().name() : null);
+            m.put("createdAt", o.getCreatedAt());
+            m.put("updatedAt", o.getUpdatedAt());
+            dto.add(m);
+        }
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * Actualizar documento (PDF/imagen) asociado a una salida
+     * PATCH /api/inventory/{ruc}/outputs/{outputId}/document
+     */
+    @PatchMapping("/{outputId}/document")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    public ResponseEntity<Map<String, Object>> updateDocument(
+        @PathVariable String ruc,
+        @PathVariable Long outputId,
+        @RequestBody java.util.Map<String, String> body
+    ) {
+        String path = null;
+        if (body != null) {
+            path = body.get("documentPath");
+            if (path == null || path.isBlank()) {
+                path = body.get("documentImage");
+            }
+        }
+        if (path == null || path.isBlank()) {
+            throw new IllegalArgumentException("documentPath requerido");
+        }
+        InventoryOutput updated = outputService.updateDocumentImage(ruc, outputId, path);
+        return ResponseEntity.ok(Map.of(
+            "id", updated.getId(),
+            "documentImage", updated.getDocumentImage(),
+            "status", updated.getStatus() != null ? updated.getStatus().name() : null
+        ));
+    }
+
+    /**
+     * Confirmar una salida (procesa stock)
+     * PATCH /api/inventory/{ruc}/outputs/{outputId}/confirm
+     */
+    @PatchMapping("/{outputId}/confirm")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    public ResponseEntity<Map<String, Object>> confirm(
+        @PathVariable String ruc,
+        @PathVariable Long outputId
+    ) {
+        InventoryOutput confirmed = outputService.confirm(ruc, outputId);
+        return ResponseEntity.ok(Map.of(
+            "id", confirmed.getId(),
+            "outputNumber", confirmed.getOutputNumber(),
+            "status", confirmed.getStatus() != null ? confirmed.getStatus().name() : null
+        ));
     }
 }

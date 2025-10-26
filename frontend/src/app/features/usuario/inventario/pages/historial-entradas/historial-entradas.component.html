@@ -94,7 +94,7 @@
                   </td>
                   <td>{{ entry.receivedBy }}</td>
                   <td class="text-end">
-                    <span class="badge bg-secondary">{{ entry.details?.length || 0 }}</span>
+                    <span class="badge bg-secondary">{{ entry.details.length || 0 }}</span>
                   </td>
                   <td>
                     <span class="badge" [ngClass]="getStatusBadge(entry.status)">

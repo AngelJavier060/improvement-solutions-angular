@@ -46,6 +46,7 @@ public class CreateBusinessEmployeeDto {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate fechaIngreso;
     private String codigoEmpresa;
+    private String codigoTrabajador; // Código único del trabajador (alias legacy: codigoEmpresa en entidad)
     private Long businessId; // ID directo de la empresa
     private Long positionId;
     private Long departmentId;

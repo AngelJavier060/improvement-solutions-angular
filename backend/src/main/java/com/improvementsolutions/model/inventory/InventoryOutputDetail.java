@@ -47,6 +47,12 @@ public class InventoryOutputDetail {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "issued_size", length = 50)
+    private String issuedSize;
+
+    @Column(name = "department_id")
+    private Long departmentId;
+
     @Column(name = "created_at")
     private java.time.LocalDateTime createdAt;
 

@@ -13,6 +13,58 @@
   --body-color: #f8f9fa;
 }
 
+@media print {
+  @page {
+    size: auto;
+    margin: 0;
+  }
+
+  body.print-credential-only {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  body.print-credential-only * {
+    visibility: hidden !important;
+  }
+
+  /* Mostrar explícitamente el contenedor del modal y su contenido */
+  body.print-credential-only .modal,
+  body.print-credential-only .modal-dialog,
+  body.print-credential-only .modal-content,
+  body.print-credential-only .modal-body {
+    visibility: visible !important;
+    display: block !important;
+    position: static !important;
+    box-shadow: none !important;
+  }
+
+  /* Ocultar elementos de UI no necesarios */
+  body.print-credential-only .modal-backdrop,
+  body.print-credential-only .modal-header,
+  body.print-credential-only .modal-footer {
+    display: none !important;
+  }
+
+  /* Mostrar y centrar la credencial */
+  body.print-credential-only .credential-print-target,
+  body.print-credential-only .credential-print-target * {
+    visibility: visible !important;
+  }
+  body.print-credential-only .credential-print-target {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    page-break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
 /* Estilos generales */
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;

@@ -418,6 +418,10 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     }
   }
 
+  goToUsersAdmin(): void {
+    this.router.navigate(['/dashboard', 'admin', 'usuarios']);
+  }
+
   loadCourseCertifications(): void {
     this.courseCertificationService.getAll().subscribe({
       next: (data: any[]) => {
@@ -1080,7 +1084,11 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     this.userService.getUsersByBusiness(this.empresaId).subscribe({
       next: (users: any) => {
         console.log('Usuarios cargados:', users);
-        this.users = users || [];
+        // Mostrar solo usuarios de la empresa (excluir administradores globales)
+        this.users = (users || []).filter((u: any) => {
+          const roles: string[] = Array.isArray(u?.roles) ? u.roles : [];
+          return !roles.includes('ROLE_ADMIN') && !roles.includes('ROLE_SUPER_ADMIN');
+        });
       },
       error: (error: any) => {
         console.error('Error al cargar usuarios:', error);
@@ -2555,32 +2563,9 @@ export class DetalleEmpresaAdminComponent implements OnInit {
 
   // === GESTIÓN DE USUARIOS ===
   editUser(user: any): void {
-    console.log('Editando usuario:', user);
-    
-    // Rellenar el formulario con los datos del usuario
-    this.newUser = {
-      nombres: user.name.split(' ')[0] || '',
-      apellidos: user.name.split(' ').slice(1).join(' ') || '',
-      cedula: user.cedula || '', // Agregar campo cedula
-      email: user.email,
-      username: user.username || user.email,
-      telefono: user.phone || '',
-      password: '', // No mostrar password actual
-      selectedRoles: user.roles ? user.roles.map((role: string) => {
-        // Mapear nombres de roles a IDs
-        const roleMapping: { [key: string]: number } = {
-          'ADMIN': 1,
-          'SUPER_ADMIN': 2,
-          'USER': 3
-        };
-        return roleMapping[role] || 3;
-      }) : []
-    };
-    
-    // Guardar ID del usuario para la edición
-    this.editingUserId = user.id;
-    this.isEditingUser = true;
-    this.showCreateUserModal = true;
+    // Redirigir a la edición del módulo principal de usuarios
+    if (!user?.id) { return; }
+    this.router.navigate(['/dashboard', 'admin', 'usuarios', 'editar', user.id]);
   }
 
   // Método para actualizar usuario

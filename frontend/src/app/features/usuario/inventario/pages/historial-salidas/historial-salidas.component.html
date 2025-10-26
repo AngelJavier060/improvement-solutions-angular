@@ -104,7 +104,7 @@
                     <span *ngIf="!output.employeeId && !output.area" class="text-muted">--</span>
                   </td>
                   <td class="text-end">
-                    <span class="badge bg-secondary">{{ output.details?.length || 0 }}</span>
+                    <span class="badge bg-secondary">{{ output.details.length || 0 }}</span>
                   </td>
                   <td>
                     <span class="badge" [ngClass]="getStatusBadge(output.status)">
@@ -112,6 +112,9 @@
                     </span>
                   </td>
                   <td class="text-end">
+                    <a *ngIf="output.documentImage" class="btn btn-sm btn-outline-primary me-2" [href]="getDocumentUrl(output.documentImage)" target="_blank" title="Ver PDF">
+                      <i class="fas fa-file-pdf"></i>
+                    </a>
                     <button class="btn btn-sm btn-outline-warning" (click)="viewDetails(output)" title="Ver Detalle">
                       <i class="fas fa-eye"></i>
                     </button>
@@ -202,7 +205,8 @@
                     <th class="text-end">Costo Unit.</th>
                     <th class="text-end">Total</th>
                     <th>Lote</th>
-                    <th>Ubicación</th>
+                    <th>Departamento</th>
+                    <th>Talla</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -212,7 +216,8 @@
                     <td class="text-end">${{ detail.unitCost | number:'1.2-2' }}</td>
                     <td class="text-end fw-bold">${{ detail.totalCost | number:'1.2-2' }}</td>
                     <td>{{ detail.lotNumber || '--' }}</td>
-                    <td>{{ detail.warehouseLocation || '--' }}</td>
+                    <td>{{ getDepartmentName(detail.departmentId) }}</td>
+                    <td>{{ detail.issuedSize || '--' }}</td>
                   </tr>
                 </tbody>
               </table>

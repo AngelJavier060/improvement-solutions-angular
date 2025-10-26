@@ -91,7 +91,7 @@ public class BusinessEmployeeService {
     public java.util.List<AgeGenderRangeDto> getAgeGenderPyramidByCompany(String codigoEmpresa) {
         log.info("Calculando pirámide Edad/Género para la empresa: {}", codigoEmpresa);
         Long businessId = getBusinessIdFromRuc(codigoEmpresa);
-        java.util.List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessOrRucOrCodigo(businessId, codigoEmpresa);
+        java.util.List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessId);
         // Solo activos
         java.util.List<BusinessEmployee> activeEmployees = employees.stream().filter(this::isActive).collect(java.util.stream.Collectors.toList());
 
@@ -148,24 +148,20 @@ public class BusinessEmployeeService {
     @Transactional(readOnly = true)
     public List<BusinessEmployeeResponseDto> getAllEmployeesByCompany(String codigoEmpresa) {
         log.info("Obteniendo todos los empleados para la empresa: {}", codigoEmpresa);
-        try {
-            List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessOrRucOrCodigo(null, codigoEmpresa);
-            return employees.stream()
-                    .map(this::convertToResponseDto)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            // Si no se puede resolver por RUC, intentar interpretar como ID directamente
-            try {
-                Long businessId = Long.parseLong(codigoEmpresa);
-                List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessOrRucOrCodigo(businessId, "");
-                return employees.stream()
-                        .map(this::convertToResponseDto)
-                        .collect(Collectors.toList());
-            } catch (NumberFormatException ex) {
-                log.error("No se pudo convertir {} a ID de empresa", codigoEmpresa);
-                return List.of(); // Retornar lista vacía si no se puede resolver
-            }
-        }
+        Long businessIdResolved = getBusinessIdFromRuc(codigoEmpresa);
+        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessIdResolved);
+        return employees.stream()
+                .map(this::convertToResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<BusinessEmployeeResponseDto> getEmployeesByBusinessId(Long businessId) {
+        log.info("Obteniendo empleados por businessId directo: {}", businessId);
+        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessId);
+        return employees.stream()
+                .map(this::convertToResponseDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -236,6 +232,21 @@ public class BusinessEmployeeService {
                 .findFirst()
                 .map(this::convertToResponseDto);
     }
+
+    @Transactional(readOnly = true)
+    public Optional<BusinessEmployeeResponseDto> getEmployeeByCedulaAndBusinessId(Long businessId, String cedula) {
+        log.info("Obteniendo empleado por cédula {} en businessId {}", cedula, businessId);
+        return businessEmployeeRepository.findByBusinessIdAndCedula(businessId, cedula)
+                .map(this::convertToResponseDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<BusinessEmployeeResponseDto> getEmployeeByCedulaAndRuc(String ruc, String cedula) {
+        log.info("Obteniendo empleado por cédula {} en empresa RUC {}", cedula, ruc);
+        Long businessId = getBusinessIdFromRuc(ruc);
+        return businessEmployeeRepository.findByBusinessIdAndCedula(businessId, cedula)
+                .map(this::convertToResponseDto);
+    }
     
     @Transactional(readOnly = true)
     public List<BusinessEmployeeResponseDto> getActiveEmployeesByCompany(String codigoEmpresa) {
@@ -261,14 +272,24 @@ public class BusinessEmployeeService {
     public BusinessEmployeeResponseDto createEmployee(CreateBusinessEmployeeDto createDto) {
         log.info("Creando nuevo empleado: {} {}", createDto.getNombres(), createDto.getApellidos());
         
-        // Obtener la empresa: usar businessId si está disponible, sino buscar por RUC
-        Long businessId;
-        if (createDto.getBusinessId() != null) {
-            businessId = createDto.getBusinessId();
-            log.info("Usando businessId directo: {}", businessId);
-        } else {
-            businessId = getBusinessIdFromRuc(createDto.getCodigoEmpresa());
-            log.info("Obteniendo businessId desde RUC: {}", createDto.getCodigoEmpresa());
+        // Resolver empresa priorizando RUC y validando consistencia
+        Long businessIdByRuc = null;
+        if (createDto.getCodigoEmpresa() != null && !createDto.getCodigoEmpresa().trim().isEmpty()) {
+            businessIdByRuc = getBusinessIdFromRuc(createDto.getCodigoEmpresa().trim());
+            log.info("Resuelto businessId desde RUC {} => {}", createDto.getCodigoEmpresa(), businessIdByRuc);
+        }
+
+        Long providedBusinessId = createDto.getBusinessId();
+        if (businessIdByRuc != null && providedBusinessId != null && !businessIdByRuc.equals(providedBusinessId)) {
+            String msg = String.format("Inconsistencia entre RUC (%s) -> businessId=%s y businessId proporcionado=%s",
+                    createDto.getCodigoEmpresa(), String.valueOf(businessIdByRuc), String.valueOf(providedBusinessId));
+            log.error(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
+        Long businessId = (businessIdByRuc != null) ? businessIdByRuc : providedBusinessId;
+        if (businessId == null) {
+            throw new IllegalArgumentException("Debe especificar codigoEmpresa (RUC) o businessId para crear el empleado");
         }
         
         Business business = businessRepository.findById(businessId)
@@ -277,6 +298,24 @@ public class BusinessEmployeeService {
         // Validar que no exista empleado con la misma cédula en la empresa
         if (businessEmployeeRepository.existsByBusinessIdAndCedula(businessId, createDto.getCedula())) {
             throw new IllegalArgumentException("Ya existe un empleado con la cédula " + createDto.getCedula() + " en esta empresa");
+        }
+
+        // Validar duplicado por código de trabajador (si viene)
+        if (createDto.getCodigoTrabajador() != null && !createDto.getCodigoTrabajador().trim().isEmpty()) {
+            String code = createDto.getCodigoTrabajador().trim();
+            if (businessEmployeeRepository.existsByBusinessIdAndCodigoEmpresa(businessId, code)) {
+                throw new IllegalArgumentException("Ya existe un empleado con el código " + code + " en esta empresa");
+            }
+        }
+
+        // Validar duplicado por nombres y apellidos exactos (case-insensitive)
+        if (createDto.getNombres() != null && !createDto.getNombres().trim().isEmpty()
+                && createDto.getApellidos() != null && !createDto.getApellidos().trim().isEmpty()) {
+            String n = createDto.getNombres().trim();
+            String a = createDto.getApellidos().trim();
+            if (businessEmployeeRepository.existsByBusinessIdAndNombresIgnoreCaseAndApellidosIgnoreCase(businessId, n, a)) {
+                throw new IllegalArgumentException("Ya existe un empleado llamado " + a + " " + n + " en esta empresa");
+            }
         }
 
         // Crear o encontrar empleado
@@ -289,7 +328,10 @@ public class BusinessEmployeeService {
             employee = new Employee();
             employee.setCedula(createDto.getCedula());
             employee.setName(createDto.getNombres() + " " + createDto.getApellidos());
+            employee.setNombres(createDto.getNombres());
+            employee.setApellidos(createDto.getApellidos());
             employee.setStatus("ACTIVO");
+            employee.setActive(Boolean.TRUE);
             employee.setCreatedAt(LocalDateTime.now());
             employee.setUpdatedAt(LocalDateTime.now());
             employee = employeeRepository.save(employee);
@@ -484,7 +526,8 @@ public class BusinessEmployeeService {
         employee.setSalario(createDto.getSalario());
         employee.setCodigoIess(createDto.getCodigoIess());
         employee.setIess(createDto.getIess());
-        employee.setCodigoEmpresa(createDto.getCodigoEmpresa());
+        // Usamos el campo legado 'codigoEmpresa' como código único del trabajador
+        employee.setCodigoEmpresa(createDto.getCodigoTrabajador());
         employee.setNivelEducacion(createDto.getNivelEducacion());
         employee.setDiscapacidad(createDto.getDiscapacidad());
         employee.setActive(createDto.getActive() != null ? createDto.getActive() : true);
@@ -637,8 +680,7 @@ public class BusinessEmployeeService {
         log.info("Calculando estadísticas de empleados para la empresa: {}", codigoEmpresa);
 
         Long businessId = getBusinessIdFromRuc(codigoEmpresa);
-        // Incluir también empleados legados que solo tienen codigoEmpresa (RUC)
-        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessOrRucOrCodigo(businessId, codigoEmpresa);
+        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessId);
         // Solo personal ACTIVO
         List<BusinessEmployee> activeEmployees = employees.stream().filter(this::isActive).collect(java.util.stream.Collectors.toList());
 
@@ -706,7 +748,7 @@ public class BusinessEmployeeService {
             com.improvementsolutions.model.Business b = businessRepository.findById(businessId).orElse(null);
             ruc = (b != null ? b.getRuc() : null);
         } catch (Exception ignored) {}
-        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessOrRucOrCodigo(businessId, ruc != null ? ruc : "");
+        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessId);
         // Solo personal ACTIVO
         List<BusinessEmployee> activeEmployees = employees.stream().filter(this::isActive).collect(java.util.stream.Collectors.toList());
 
@@ -858,7 +900,8 @@ public class BusinessEmployeeService {
             Path filePath = uploadPath.resolve(uniqueFileName);
             Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
             log.info("Imagen guardada en: {}", filePath.toString());
-            return uploadsDir + uniqueFileName;
+            // Retornar solo profiles/{filename} para que coincida con el endpoint GET /api/files/profiles/{filename}
+            return "profiles/" + uniqueFileName;
         } catch (Exception e) {
             log.error("Error al guardar la imagen del empleado: {}", e.getMessage());
             throw new RuntimeException("Error al guardar la imagen: " + e.getMessage());

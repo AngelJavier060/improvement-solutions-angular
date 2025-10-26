@@ -250,6 +250,20 @@ export class EmployeeService {
     return this.http.get<EmployeeResponse>(url);
   }
 
+  // Obtener empleado por cédula delimitado por empresa (RUC)
+  getEmployeeByCedulaScopedByRuc(businessRuc: string, cedula: string): Observable<EmployeeResponse> {
+    const url = `${this.apiUrl}/business-employees/company/${businessRuc}/cedula/${cedula}`;
+    console.log('EmployeeService.getEmployeeByCedulaScopedByRuc - URL:', url);
+    return this.http.get<EmployeeResponse>(url);
+  }
+
+  // Obtener empleado por cédula delimitado por empresa (businessId)
+  getEmployeeByCedulaScopedByBusinessId(businessId: number, cedula: string): Observable<EmployeeResponse> {
+    const url = `${this.apiUrl}/businesses/${businessId}/employees/cedula/${cedula}`;
+    console.log('EmployeeService.getEmployeeByCedulaScopedByBusinessId - URL:', url);
+    return this.http.get<EmployeeResponse>(url);
+  }
+
   // Subir foto de empleado (método dedicado)
   uploadEmployeePhoto(employeeId: number, file: File): Observable<any> {
     const url = `${this.apiUrl}/files/employee/${employeeId}/photo`;

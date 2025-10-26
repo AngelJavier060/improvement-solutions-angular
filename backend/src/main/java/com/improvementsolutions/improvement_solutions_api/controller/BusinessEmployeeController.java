@@ -222,8 +222,7 @@ public class BusinessEmployeeController {
             @PathVariable Long businessId) {
         try {
             log.info("Obteniendo empleados para business ID: {}", businessId);
-            // Convertir businessId a string para usar con el servicio existente
-            List<BusinessEmployeeResponseDto> employees = businessEmployeeService.getAllEmployeesByCompany(String.valueOf(businessId));
+            List<BusinessEmployeeResponseDto> employees = businessEmployeeService.getEmployeesByBusinessId(businessId);
             return ResponseEntity.ok(employees);
         } catch (Exception e) {
             log.error("Error al obtener empleados para business ID {}: {}", businessId, e.getMessage());
@@ -343,6 +342,36 @@ public class BusinessEmployeeController {
                           .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
             log.error("Error al obtener empleado por cédula {}: {}", cedula, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/businesses/{businessId}/employees/cedula/{cedula}")
+    public ResponseEntity<BusinessEmployeeResponseDto> getEmployeeByCedulaScoped(
+            @PathVariable Long businessId,
+            @PathVariable String cedula) {
+        try {
+            log.info("Obteniendo empleado por cédula {} para businessId {}", cedula, businessId);
+            Optional<BusinessEmployeeResponseDto> employee = businessEmployeeService.getEmployeeByCedulaAndBusinessId(businessId, cedula);
+            return employee.map(ResponseEntity::ok)
+                           .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.error("Error al obtener empleado por cédula {} para businessId {}: {}", cedula, businessId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/business-employees/company/{ruc}/cedula/{cedula}")
+    public ResponseEntity<BusinessEmployeeResponseDto> getEmployeeByCedulaScopedRuc(
+            @PathVariable String ruc,
+            @PathVariable String cedula) {
+        try {
+            log.info("Obteniendo empleado por cédula {} para RUC {}", cedula, ruc);
+            Optional<BusinessEmployeeResponseDto> employee = businessEmployeeService.getEmployeeByCedulaAndRuc(ruc, cedula);
+            return employee.map(ResponseEntity::ok)
+                           .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.error("Error al obtener empleado por cédula {} para RUC {}: {}", cedula, ruc, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

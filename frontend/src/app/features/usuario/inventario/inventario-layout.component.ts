@@ -87,7 +87,8 @@ export class InventarioLayoutComponent implements OnInit {
         { label: 'Cambios/Reemplazos', icon: 'fas fa-exchange-alt', route: 'cambios-reemplazos' },
         { label: 'Devoluciones', icon: 'fas fa-undo', route: 'devoluciones' },
         { label: 'Préstamos', icon: 'fas fa-handshake', route: 'prestamos', badge: 3 },
-        { label: 'Ajustes', icon: 'fas fa-sliders-h', route: 'ajustes' }
+        { label: 'Ajustes', icon: 'fas fa-sliders-h', route: 'ajustes' },
+        { label: 'Traslados', icon: 'fas fa-truck', route: 'traslados' }
       ]
     },
     {
@@ -98,6 +99,7 @@ export class InventarioLayoutComponent implements OnInit {
       items: [
         { label: 'General', icon: 'fas fa-chart-line', route: 'reportes-general' },
         { label: 'Kardex', icon: 'fas fa-file-alt', route: 'reportes-kardex' },
+        { label: 'Asignaciones por Persona', icon: 'fas fa-user-check', route: 'asignaciones-persona' },
         { label: 'Alertas', icon: 'fas fa-exclamation-triangle', route: 'reportes-alertas', badge: 5, badgeColor: 'danger' },
         { label: 'Financiero', icon: 'fas fa-dollar-sign', route: 'reportes-financiero' }
       ]

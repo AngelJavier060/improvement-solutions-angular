@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface InventoryOutputDetail {
   id?: number;
@@ -12,6 +13,8 @@ export interface InventoryOutputDetail {
   warehouseLocation?: string;
   itemCondition?: 'NUEVO' | 'USADO' | 'REACONDICIONADO';
   notes?: string;
+  issuedSize?: string;
+  departmentId?: number;
   // Campos auxiliares para UI
   productName?: string;
   variantCode?: string;
@@ -54,29 +57,70 @@ export class InventoryOutputService {
    * Listar todas las salidas
    */
   list(ruc: string): Observable<InventoryOutput[]> {
-    return this.http.get<InventoryOutput[]>(`/api/inventory/${ruc}/outputs`);
+    return this.http.get<any[]>(`/api/inventory/${ruc}/outputs`).pipe(
+      map(arr => (arr || []).map(x => this.toOutput(x)))
+    );
   }
 
   /**
    * Buscar por rango de fechas
    */
   searchByDateRange(ruc: string, startDate: string, endDate: string): Observable<InventoryOutput[]> {
-    return this.http.get<InventoryOutput[]>(
+    return this.http.get<any[]>(
       `/api/inventory/${ruc}/outputs/search?startDate=${startDate}&endDate=${endDate}`
-    );
+    ).pipe(map(arr => (arr || []).map(x => this.toOutput(x))));
   }
 
   /**
    * Buscar por tipo de salida
    */
   findByType(ruc: string, outputType: string): Observable<InventoryOutput[]> {
-    return this.http.get<InventoryOutput[]>(`/api/inventory/${ruc}/outputs/type/${outputType}`);
+    return this.http.get<any[]>(`/api/inventory/${ruc}/outputs/type/${outputType}`).pipe(
+      map(arr => (arr || []).map(x => this.toOutput(x)))
+    );
   }
 
   /**
    * Buscar por trabajador
    */
   findByEmployee(ruc: string, employeeId: number): Observable<InventoryOutput[]> {
-    return this.http.get<InventoryOutput[]>(`/api/inventory/${ruc}/outputs/employee/${employeeId}`);
+    return this.http.get<any[]>(`/api/inventory/${ruc}/outputs/employee/${employeeId}`).pipe(
+      map(arr => (arr || []).map(x => this.toOutput(x)))
+    );
+  }
+
+  /** Actualiza la ruta del documento asociado a una salida */
+  updateDocument(ruc: string, outputId: number, documentPath: string): Observable<any> {
+    return this.http.patch<any>(`/api/inventory/${ruc}/outputs/${outputId}/document`, { documentPath });
+  }
+
+  /** Confirma la salida (afecta stock) */
+  confirm(ruc: string, outputId: number): Observable<any> {
+    return this.http.patch<any>(`/api/inventory/${ruc}/outputs/${outputId}/confirm`, {});
+  }
+
+  /** Elimina una salida pendiente (BORRADOR) */
+  delete(ruc: string, outputId: number): Observable<any> {
+    return this.http.delete<any>(`/api/inventory/${ruc}/outputs/${outputId}`);
+  }
+
+  private toOutput(x: any): InventoryOutput {
+    return {
+      id: x?.id,
+      outputNumber: x?.outputNumber || '',
+      outputDate: x?.outputDate || '',
+      outputType: x?.outputType,
+      employeeId: x?.employeeId || undefined,
+      area: x?.area || undefined,
+      project: x?.project || undefined,
+      returnDate: x?.returnDate || undefined,
+      authorizedBy: x?.authorizedBy || undefined,
+      documentImage: x?.documentImage || undefined,
+      notes: x?.notes || undefined,
+      status: x?.status || 'BORRADOR',
+      details: Array.isArray(x?.details) ? x.details : [] as any,
+      createdAt: x?.createdAt || undefined,
+      updatedAt: x?.updatedAt || undefined
+    } as InventoryOutput;
   }
 }

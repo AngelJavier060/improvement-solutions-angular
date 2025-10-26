@@ -727,8 +727,8 @@
         </div>
         <div class="card-body p-2">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <button class="btn btn-primary btn-sm w-100" (click)="openCreateUserModal()">
-              <i class="fas fa-user-plus me-1"></i>Crear Usuario
+            <button class="btn btn-primary btn-sm w-100" (click)="goToUsersAdmin()">
+              <i class="fas fa-users me-1"></i>Usuarios
             </button>
           </div>
           
@@ -749,16 +749,10 @@
                 </div>
                 <div class="d-flex gap-1">
                   <button class="btn btn-outline-primary btn-sm p-1" 
-                          title="Editar" 
+                          title="Gestionar"
                           (click)="editUser(user)"
                           style="font-size: 8px;">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button class="btn btn-outline-danger btn-sm p-1" 
-                          title="Eliminar" 
-                          (click)="deleteUser(user)"
-                          style="font-size: 8px;">
-                    <i class="fas fa-times"></i>
+                    <i class="fas fa-external-link-alt"></i>
                   </button>
                 </div>
               </div>
@@ -774,7 +768,7 @@
 
     <!-- Categorías de Inventario -->
     <div class="col-lg-6 col-xl-3">
-      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': (inventoryCategories?.length || 0) > 0}">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': (inventoryCategories.length || 0) > 0}">
         <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #8ec5fc 0%, #e0c3fc 100%);">
           <div class="d-flex align-items-center h-100">
             <div class="me-3">
@@ -858,7 +852,7 @@
 
     <!-- Proveedores de Inventario -->
     <div class="col-lg-6 col-xl-3">
-      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': (inventorySuppliers?.length || 0) > 0}">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': (inventorySuppliers.length || 0) > 0}">
         <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #f6d365 0%, #fda085 100%);">
           <div class="d-flex align-items-center h-100">
             <div class="me-3">

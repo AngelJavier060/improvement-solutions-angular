@@ -39,16 +39,8 @@
               <!-- Número de Documento -->
               <div class="col-md-3">
                 <label class="form-label fw-semibold">Número de Documento <span class="text-danger">*</span></label>
-                <div class="input-group">
-                  <input type="text" class="form-control" formControlName="outputNumber" 
-                         placeholder="Ej: SAL-001-2024">
-                  <button type="button" class="btn btn-outline-secondary" 
-                          (click)="outputForm.patchValue({outputNumber: generateOutputNumber()})"
-                          title="Generar número único">
-                    <i class="fas fa-sync-alt"></i>
-                  </button>
-                </div>
-                <small class="text-muted">Debe ser único. Click en <i class="fas fa-sync-alt"></i> para generar uno automático.</small>
+                <input type="text" class="form-control" formControlName="outputNumber" placeholder="Auto-generado" readonly>
+                <small class="text-muted">Generado automáticamente y no editable.</small>
               </div>
 
               <!-- Fecha de Salida -->
@@ -65,11 +57,10 @@
                 </select>
               </div>
 
-              <!-- Autorizado Por -->
+              <!-- Entregado Por -->
               <div class="col-md-3">
-                <label class="form-label fw-semibold">Autorizado Por</label>
-                <input type="text" class="form-control" formControlName="authorizedBy" 
-                       placeholder="Jefe o supervisor">
+                <label class="form-label fw-semibold">Entregado Por</label>
+                <input type="text" class="form-control" formControlName="authorizedBy" placeholder="Nombre de quien entrega">
               </div>
 
               <!-- Trabajador (para EPP y préstamos) -->
@@ -77,16 +68,42 @@
                 <label class="form-label fw-semibold">Trabajador <span class="text-danger">*</span></label>
                 <select class="form-select" formControlName="employeeId">
                   <option [ngValue]="null">-- Seleccionar --</option>
-                  <option *ngFor="let e of employees" [ngValue]="e.id">
-                    {{ e.nombres }} {{ e.apellidos }} - {{ e.cedula }}
-                  </option>
+                  <option *ngFor="let e of employees" [ngValue]="e.id">{{ e.nombres }} {{ e.apellidos }}</option>
                 </select>
+                <div class="row g-2 mt-2">
+                  <div class="col-md-6">
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                      <input type="text" class="form-control" [(ngModel)]="cedulaSearch" [ngModelOptions]="{standalone: true}" placeholder="Buscar por cédula" (keyup)="onCedulaInput()" (keyup.enter)="searchByCedula()">
+                      <button type="button" class="btn btn-outline-secondary" (click)="searchByCedula()">Buscar</button>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                      <input type="text" class="form-control" [(ngModel)]="codigoSearch" [ngModelOptions]="{standalone: true}" placeholder="Buscar por código" (keyup)="onCodigoInput()" (keyup.enter)="searchByCodigo()">
+                      <button type="button" class="btn btn-outline-secondary" (click)="searchByCodigo()">Buscar</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-3 d-flex align-items-center" *ngIf="employeePhotoDataUrl">
+                  <img [src]="employeePhotoDataUrl" alt="Foto del trabajador" class="rounded border" style="width: 110px; height: 90px; object-fit: cover;">
+                  <div class="ms-3 small text-muted">Vista previa de la foto del trabajador</div>
+                </div>
               </div>
 
               <!-- Fecha de Devolución (para préstamos) -->
               <div class="col-md-3" *ngIf="outputForm.value.outputType === 'PRESTAMO'">
                 <label class="form-label fw-semibold">Fecha Devolución <span class="text-danger">*</span></label>
                 <input type="date" class="form-control" formControlName="returnDate">
+              </div>
+
+              <!-- Aviso de devolución próxima o vencida -->
+              <div class="col-md-12" *ngIf="outputForm.value.outputType === 'PRESTAMO' && getReturnDateWarning()">
+                <div class="alert alert-warning d-flex align-items-center">
+                  <i class="fas fa-exclamation-triangle me-2"></i>
+                  <span>{{ getReturnDateWarning() }}</span>
+                </div>
               </div>
 
               <!-- Área (para consumo de área) -->
@@ -103,11 +120,21 @@
                        placeholder="Nombre del proyecto">
               </div>
 
-              <!-- Documento Adjunto -->
-              <div class="col-md-12">
+              <!-- Motivo de Baja -->
+              <div class="col-md-12" *ngIf="outputForm.value.outputType === 'BAJA'">
+                <label class="form-label fw-semibold">Motivo de Baja <span class="text-danger">*</span></label>
+                <textarea class="form-control" formControlName="bajaReason" rows="2" placeholder="Ej: Vencidos, rotos, obsoletos"></textarea>
+              </div>
+
+              <!-- Documento Adjunto (solo EPP, visible al tener BORRADOR creado) -->
+              <div class="col-md-12" *ngIf="outputForm.value.outputType === 'EPP_TRABAJADOR' && createdOutputId">
                 <label class="form-label fw-semibold">Documento PDF de Entrega/Firma</label>
                 <input type="file" class="form-control" (change)="onFileSelected($event)" accept="application/pdf,.pdf">
-                <small class="text-muted">Solo archivos PDF (ocupa menos espacio que imágenes)</small>
+                <small class="text-muted">Solo archivos PDF. Tamaño máximo 2 MB.</small>
+                <div class="alert alert-warning mt-2" *ngIf="createdOutputId && !documentUploaded">
+                  <i class="fas fa-exclamation-triangle me-2"></i>
+                  Falta la firma del trabajador. Por favor, suba la documentación firmada para legalizar el documento.
+                </div>
                 <div *ngIf="documentFileName" class="mt-2 alert alert-success d-flex align-items-center">
                   <i class="fas fa-file-pdf fa-2x me-3 text-danger"></i>
                   <div>
@@ -115,14 +142,14 @@
                     {{ documentFileName }} ({{ documentFileSize }})
                   </div>
                 </div>
+                <div class="mt-2 d-flex justify-content-end">
+                  <button type="button" class="btn btn-outline-success" (click)="uploadDocument()" [disabled]="loading || !selectedFile">
+                    <i class="fas fa-upload me-2"></i>Subir y Asociar PDF
+                  </button>
+                </div>
               </div>
 
-              <!-- Observaciones -->
-              <div class="col-md-12">
-                <label class="form-label fw-semibold">Observaciones Generales</label>
-                <textarea class="form-control" formControlName="notes" rows="2" 
-                          placeholder="Ej: Todo entregado en perfecto estado"></textarea>
-              </div>
+              
             </div>
           </div>
         </div>
@@ -147,11 +174,10 @@
                     <th style="width: 60px">Foto</th>
                     <th>Producto / Variante</th>
                     <th style="width: 100px">Cantidad</th>
-                    <th style="width: 120px">Costo Unit.</th>
-                    <th style="width: 120px">Costo Total</th>
-                    <th style="width: 150px">Lote</th>
-                    <th style="width: 150px">Ubicación</th>
+                    <th style="width: 160px">Lote</th>
+                    <th style="width: 180px">Departamento</th>
                     <th style="width: 120px">Estado</th>
+                    <th style="width: 120px">Talla</th>
                     <th style="width: 60px"></th>
                   </tr>
                 </thead>
@@ -173,25 +199,26 @@
                              [ngModelOptions]="{standalone: true}" min="0.01" step="0.01"
                              (ngModelChange)="calculateLineCost(detail)">
                     </td>
-                    <!-- Costo Unitario -->
-                    <td>
-                      <input type="number" class="form-control form-control-sm" [(ngModel)]="detail.unitCost" 
-                             [ngModelOptions]="{standalone: true}" min="0" step="0.01"
-                             (ngModelChange)="calculateLineCost(detail)" placeholder="$">
-                    </td>
-                    <!-- Total -->
-                    <td>
-                      <span class="fw-bold text-danger">${{ detail.totalCost | number:'1.2-2' }}</span>
-                    </td>
                     <!-- Lote -->
                     <td>
-                      <input type="text" class="form-control form-control-sm" [(ngModel)]="detail.lotNumber" 
-                             [ngModelOptions]="{standalone: true}" placeholder="2024-10-A">
+                      <ng-container *ngIf="lotOptions[i]?.length; else noLots">
+                        <select class="form-select form-select-sm" [(ngModel)]="detail.lotNumber" [ngModelOptions]="{standalone: true}">
+                          <option [ngValue]="null">-- Seleccionar lote --</option>
+                          <option *ngFor="let lot of lotOptions[i]" [ngValue]="lot.lotNumber">
+                            {{ lot.lotNumber }} ({{ lot.currentQty || 0 }})
+                          </option>
+                        </select>
+                      </ng-container>
+                      <ng-template #noLots>
+                        <input type="text" class="form-control form-control-sm" [(ngModel)]="detail.lotNumber" [ngModelOptions]="{standalone: true}" placeholder="N/A" readonly>
+                      </ng-template>
                     </td>
                     <!-- Ubicación -->
                     <td>
-                      <input type="text" class="form-control form-control-sm" [(ngModel)]="detail.warehouseLocation" 
-                             [ngModelOptions]="{standalone: true}" placeholder="Pasillo A-12">
+                      <select class="form-select form-select-sm" [(ngModel)]="detail.departmentId" [ngModelOptions]="{standalone: true}">
+                        <option [ngValue]="null">-- Seleccionar --</option>
+                        <option *ngFor="let d of departments" [ngValue]="d.id">{{ d.name }}</option>
+                      </select>
                     </td>
                     <!-- Estado -->
                     <td>
@@ -199,6 +226,10 @@
                               [ngModelOptions]="{standalone: true}">
                         <option *ngFor="let cond of itemConditions" [value]="cond">{{ cond }}</option>
                       </select>
+                    </td>
+                    <!-- Talla -->
+                    <td>
+                      <input type="text" class="form-control form-control-sm" [(ngModel)]="detail.issuedSize" [ngModelOptions]="{standalone: true}" placeholder="Ej: S, M, L, 40">
                     </td>
                     <!-- Eliminar -->
                     <td>
@@ -208,18 +239,109 @@
                     </td>
                   </tr>
                   <tr *ngIf="details.length === 0">
-                    <td colspan="9" class="text-center text-muted py-4">
+                    <td colspan="8" class="text-center text-muted py-4">
                       <i class="fas fa-inbox fa-2x mb-2"></i>
                       <p>No hay productos agregados. Haz clic en "Agregar Producto"</p>
                     </td>
                   </tr>
                 </tbody>
-                <tfoot *ngIf="details.length > 0">
-                  <tr class="table-light">
-                    <td colspan="4" class="text-end fw-bold">TOTAL SALIDA:</td>
-                    <td colspan="5" class="fw-bold text-danger fs-5">${{ getTotalOutput() | number:'1.2-2' }}</td>
+              </table>
+            </div>
+            <div class="mt-3">
+              <label class="form-label fw-semibold">Observaciones Generales</label>
+              <textarea class="form-control" formControlName="notes" rows="2" placeholder="Ej: Todo entregado en perfecto estado"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Firmas -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-pen-nib me-2"></i>Firmas</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3 align-items-start">
+              <div class="col-md-4">
+                <div class="mb-1 fw-semibold">Entrega</div>
+                <div class="text-muted small">Responsable</div>
+                <div class="border rounded p-2">{{ (outputForm.value.authorizedBy || deliveredBy) || '—' }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-1 fw-semibold">Recibe</div>
+                <div class="text-muted small">Trabajador</div>
+                <div class="border rounded p-2">{{ getEmployeeFullName() || '—' }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-1 fw-semibold">Firma del Trabajador</div>
+                <div class="signature-pad">
+                  <canvas id="signature-canvas" width="480" height="160"
+                          (mousedown)="startDraw($event)" (mousemove)="draw($event)" (mouseup)="stopDraw()" (mouseleave)="stopDraw()"
+                          (touchstart)="startDraw($event)" (touchmove)="draw($event)" (touchend)="stopDraw()"
+                          class="w-100 border rounded bg-white"></canvas>
+                  <div class="mt-2 d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearSignature()"><i class="fas fa-eraser me-1"></i>Limpiar</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="saveSignature()"><i class="fas fa-save me-1"></i>Guardar Firma</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documentos Generados (listado local para impresión) -->
+    <div class="row" *ngIf="generatedDocs.length > 0">
+      <div class="col-12">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-file-pdf me-2"></i>Documentos Generados</h5>
+            <span class="badge bg-secondary">{{ generatedDocs.length }}</span>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th>Trabajador</th>
+                    <th>Cédula</th>
+                    <th>Estado</th>
+                    <th>Documento</th>
+                    <th class="text-end">Acciones</th>
                   </tr>
-                </tfoot>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let d of generatedDocs">
+                    <td>{{ d.employeeName }}</td>
+                    <td>{{ d.cedula }}</td>
+                    <td>{{ d.description }}</td>
+                    <td>
+                      <div class="d-flex align-items-center justify-content-between">
+                        <span class="me-2">{{ d.name }}</span>
+                      </div>
+                      <div class="mt-2">
+                        <input type="file" class="form-control form-control-sm" accept="application/pdf" (change)="onRowFileSelected(d, $event)">
+                        <div class="small text-muted mt-1" *ngIf="pendingRowFileNames[d.id]">
+                          <i class="fas fa-file-pdf me-1 text-danger"></i>{{ pendingRowFileNames[d.id] }} ({{ pendingRowFileSizes[d.id] }})
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-end">
+                      <a *ngIf="d.url" class="btn btn-outline-primary btn-sm me-2" [href]="d.url" target="_blank"><i class="fas fa-eye me-1"></i>Ver</a>
+                      <a *ngIf="d.url" class="btn btn-outline-secondary btn-sm me-2" [href]="d.url" [attr.download]="d.name"><i class="fas fa-download me-1"></i>Descargar</a>
+                      <button type="button" class="btn btn-success btn-sm me-2" (click)="uploadValidatedPdf(d)" [disabled]="loading || !pendingRowFiles[d.id]">
+                        <i class="fas fa-upload me-1"></i>Subir PDF
+                      </button>
+                      <button type="button" class="btn btn-outline-danger btn-sm" (click)="deleteGeneratedDoc(d)" [disabled]="loading">
+                        <i class="fas fa-trash me-1"></i>Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
               </table>
             </div>
           </div>
@@ -233,14 +355,86 @@
         <button type="button" class="btn btn-outline-secondary me-2" routerLink="../historial-salidas">
           <i class="fas fa-times me-2"></i>Cancelar
         </button>
-        <button type="submit" class="btn btn-danger" [disabled]="loading || !isHeaderValid() || details.length === 0">
+        <button type="button" class="btn btn-outline-primary me-2" *ngIf="!(createdOutputId && outputForm.value.outputType === 'EPP_TRABAJADOR')" (click)="generatePdf()" [disabled]="outputForm.value.outputType === 'EPP_TRABAJADOR' && !createdOutputId">
+          <i class="fas fa-file-pdf me-2"></i>Generar PDF
+        </button>
+        <button type="submit" class="btn btn-danger" *ngIf="!(createdOutputId && outputForm.value.outputType === 'EPP_TRABAJADOR')" [disabled]="loading || !isHeaderValid() || details.length === 0">
           <i class="fas fa-save me-2"></i>
           <span *ngIf="!loading">Registrar Salida</span>
           <span *ngIf="loading"><i class="fas fa-spinner fa-spin me-2"></i>Guardando...</span>
         </button>
+        <button type="button" class="btn btn-success ms-2" *ngIf="createdOutputId && outputForm.value.outputType === 'EPP_TRABAJADOR'"
+                (click)="confirmCreatedOutput()" [disabled]="loading || !documentUploaded">
+          <i class="fas fa-check me-2"></i>Confirmar Salida
+        </button>
+        <button type="button" class="btn btn-outline-secondary ms-2" *ngIf="createdOutputId" (click)="newProcess()">
+          <i class="fas fa-plus me-2"></i>Nueva Salida
+        </button>
       </div>
     </div>
   </form>
+</div>
+
+<!-- Área imprimible -->
+<div id="print-receipt" [class.d-none]="!printing">
+  <div class="receipt">
+    <div class="receipt-header">
+      <div class="title">Comprobante de Entrega / Salida</div>
+      <div class="meta">
+        <div><strong>Número:</strong> {{ outputForm.value.outputNumber }}</div>
+        <div><strong>Fecha:</strong> {{ outputForm.value.outputDate }}</div>
+        <div><strong>Tipo:</strong> {{ outputForm.value.outputType }}</div>
+      </div>
+    </div>
+    <div class="receipt-body">
+      <div class="row mb-2">
+        <div class="col">
+          <div><strong>Trabajador:</strong> {{ getEmployeeFullName() || '—' }}</div>
+          <div><strong>Cédula:</strong> {{ getSelectedEmployee()?.cedula || '—' }}</div>
+        </div>
+        <div class="col">
+          <div><strong>Área:</strong> {{ outputForm.value.area || getSelectedEmployee()?.departmentName || '—' }}</div>
+          <div><strong>Cargo:</strong> {{ getSelectedEmployee()?.positionName || '—' }}</div>
+        </div>
+      </div>
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Producto/Variante</th>
+            <th style="width:120px">Cantidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of details">
+            <td>{{ d.productName }} <small class="text-muted">{{ d.variantCode }}</small></td>
+            <td>{{ d.quantity }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="row mt-4">
+        <div class="col text-center">
+          <div class="fw-semibold">ENTREGA</div>
+          <div class="mt-5">______________________________</div>
+          <div class="small">{{ (outputForm.value.authorizedBy || deliveredBy) || '—' }}</div>
+        </div>
+        <div class="col text-center">
+          <div class="fw-semibold">RECIBE</div>
+          <div class="signature-box mt-2">
+            <img *ngIf="signatureDataUrl" [src]="signatureDataUrl" alt="Firma" style="max-height:90px"/>
+          </div>
+          <div class="mt-2">______________________________</div>
+          <div class="small">{{ getEmployeeFullName() || '—' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #print-receipt, #print-receipt * { visibility: visible; }
+      #print-receipt { position: absolute; left: 0; top: 0; width: 100%; padding: 24px; }
+    }
+  </style>
 </div>
 
 <!-- Modal de Selección de Producto -->

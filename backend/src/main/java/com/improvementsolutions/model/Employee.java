@@ -26,7 +26,16 @@ public class Employee {
     private String name;
 
     @Column(nullable = false)
+    private String apellidos;
+
+    @Column(nullable = false)
+    private String nombres;
+
+    @Column(nullable = false)
     private String status;
+
+    @Column(nullable = false)
+    private Boolean active;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -85,6 +94,15 @@ public class Employee {
         this.updatedAt = LocalDateTime.now();
         if (this.status == null) {
             this.status = "ACTIVO";
+        }
+        if (this.active == null) {
+            this.active = Boolean.TRUE;
+        }
+        if (this.nombres == null) {
+            this.nombres = this.name != null ? this.name : "";
+        }
+        if (this.apellidos == null) {
+            this.apellidos = this.name != null ? this.name : "";
         }
     }
 

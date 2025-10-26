@@ -27,6 +27,7 @@ export class EditarUsuarioComponent implements OnInit {
   allowedFileTypes = ['image/jpeg', 'image/png', 'image/jpg'];
   environment = environment;
   businesses: Business[] = [];
+  allUsers: User[] = [];
   availableRoles = [
     // IMPORTANTE: IDs deben coincidir con la BD (ver V1_0__initial_schema.sql)
     // En migraciones: primero se inserta ROLE_USER (id=1), luego ROLE_ADMIN (id=2)
@@ -106,6 +107,11 @@ export class EditarUsuarioComponent implements OnInit {
       error: () => {
         // Silenciar errores de carga de empresas para no bloquear el formulario
       }
+    });
+    // Precargar usuarios para validación de duplicados en cliente (apoyo visual)
+    this.userService.getUsers().subscribe({
+      next: (users) => { this.allUsers = users || []; },
+      error: () => { this.allUsers = []; }
     });
     // Inicializar validadores de businessId según el userType por defecto
     this.onUserTypeChange();
@@ -302,6 +308,49 @@ export class EditarUsuarioComponent implements OnInit {
       });
     }
   }  
+  // === Validaciones de duplicados (cliente) ===
+  private currentEditingId(): number | null { return this.userId; }
+  private isDuplicate(field: 'username'|'email'|'phone', value: string | null | undefined): boolean {
+    if (!value || !value.toString().trim()) return false;
+    const v = value.toString().trim().toLowerCase();
+    const currentId = this.currentEditingId();
+    return (this.allUsers || []).some(u => {
+      if (!u) return false;
+      if (currentId && u.id === currentId) return false;
+      const f = (u as any)[field];
+      return typeof f === 'string' && f.toLowerCase() === v;
+    });
+  }
+
+  checkUsernameDuplicate(): void {
+    const ctrl = this.userForm.get('username');
+    if (!ctrl) return;
+    const duplicate = this.isDuplicate('username', ctrl.value);
+    const errors = { ...(ctrl.errors || {}) } as any;
+    if (duplicate) { errors['duplicate'] = true; }
+    else { if ('duplicate' in errors) delete errors['duplicate']; }
+    ctrl.setErrors(Object.keys(errors).length ? errors : null);
+  }
+
+  checkEmailDuplicate(): void {
+    const ctrl = this.userForm.get('email');
+    if (!ctrl) return;
+    const duplicate = this.isDuplicate('email', ctrl.value);
+    const errors = { ...(ctrl.errors || {}) } as any;
+    if (duplicate) { errors['duplicate'] = true; }
+    else { if ('duplicate' in errors) delete errors['duplicate']; }
+    ctrl.setErrors(Object.keys(errors).length ? errors : null);
+  }
+
+  checkPhoneDuplicate(): void {
+    const ctrl = this.userForm.get('phone');
+    if (!ctrl) return;
+    const duplicate = this.isDuplicate('phone', ctrl.value);
+    const errors = { ...(ctrl.errors || {}) } as any;
+    if (duplicate) { errors['duplicate'] = true; }
+    else { if ('duplicate' in errors) delete errors['duplicate']; }
+    ctrl.setErrors(Object.keys(errors).length ? errors : null);
+  }
   private finalizeAfterAssociation(userId: number): void {
     const userType = this.userForm.get('userType')?.value;
     const businessId = this.userForm.get('businessId')?.value;
@@ -376,6 +425,20 @@ export class EditarUsuarioComponent implements OnInit {
     console.error('Error al guardar usuario', error);
     this.isSubmitting = false;
     const backendMessage = this.extractBackendMessage(error);
+    // Mapear mensajes del backend a errores de formulario específicos
+    if (typeof backendMessage === 'string') {
+      const msg = backendMessage.toLowerCase();
+      if (msg.includes('email ya está en uso') || msg.includes('email ya esta en uso')) {
+        const ctrl = this.userForm.get('email');
+        const errors = { ...(ctrl?.errors || {}) } as any;
+        errors['duplicate'] = true; ctrl?.setErrors(errors);
+      }
+      if (msg.includes('nombre de usuario ya está en uso') || msg.includes('usuario ya está en uso')) {
+        const ctrl = this.userForm.get('username');
+        const errors = { ...(ctrl?.errors || {}) } as any;
+        errors['duplicate'] = true; ctrl?.setErrors(errors);
+      }
+    }
     this.notificationService.error('Error al guardar el usuario: ' + backendMessage);
   }  onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;

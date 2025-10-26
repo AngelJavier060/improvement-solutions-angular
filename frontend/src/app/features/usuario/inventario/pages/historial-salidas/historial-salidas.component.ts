@@ -2,6 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { FileService } from '../../../../../services/file.service';
+import { DepartmentService } from '../../../../../services/department.service';
+import { Department } from '../../../../../models/department.model';
 import { InventoryOutputService, InventoryOutput } from '../../../../../services/inventory-output.service';
 import { EmployeeService } from '../../../../dashboard/usuario/talento-humano/services/employee.service';
 import { EmployeeResponse } from '../../../../dashboard/usuario/talento-humano/models/employee.model';
@@ -19,6 +22,7 @@ export class HistorialSalidasComponent implements OnInit {
   outputs: InventoryOutput[] = [];
   employees: EmployeeResponse[] = [];
   selectedOutput: InventoryOutput | null = null;
+  departments: Department[] = [];
   
   // Filtros
   startDate: string = '';
@@ -29,13 +33,16 @@ export class HistorialSalidasComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private outputService: InventoryOutputService,
-    private employeeService: EmployeeService
+    private employeeService: EmployeeService,
+    private fileService: FileService,
+    private departmentService: DepartmentService
   ) {}
 
   ngOnInit(): void {
     this.ruc = this.route.parent?.snapshot.params['ruc'] || '';
     this.loadEmployees();
     this.loadOutputs();
+    this.loadDepartments();
   }
 
   loadEmployees(): void {
@@ -146,5 +153,23 @@ export class HistorialSalidasComponent implements OnInit {
     if (!employeeId) return '';
     const employee = this.employees.find(e => e.id === employeeId);
     return employee ? `${employee.nombres} ${employee.apellidos}` : '';
+  }
+
+  getDocumentUrl(path?: string): string {
+    if (!path) return '';
+    return this.fileService.getFileUrl(path);
+  }
+
+  loadDepartments(): void {
+    this.departmentService.getAllDepartments().subscribe({
+      next: (data) => this.departments = data || [],
+      error: () => this.departments = []
+    });
+  }
+
+  getDepartmentName(id?: number): string {
+    if (!id) return '--';
+    const d = this.departments.find(x => x.id === id);
+    return d?.name || String(id);
   }
 }
