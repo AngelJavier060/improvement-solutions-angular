@@ -183,13 +183,23 @@
     <div class="card shadow-sm">
       <div class="card-header bg-white">
         <div class="d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">
-            <i class="fas fa-list me-2"></i>
-            Lista de Empleados
-            <span *ngIf="searchTerm" class="text-muted ms-2">
-              ({{ filteredEmployees.length }} de {{ employees.length }} empleados)
-            </span>
-          </h5>
+          <div class="d-flex align-items-center">
+            <h5 class="mb-0">
+              <i class="fas fa-list me-2"></i>
+              Lista de Empleados
+              <span *ngIf="searchTerm" class="text-muted ms-2">
+                ({{ filteredEmployees.length }} de {{ employees.length }} empleados)
+              </span>
+            </h5>
+            <div class="btn-group btn-group-sm ms-3" role="group" aria-label="Exportar">
+              <button class="btn btn-outline-danger" type="button" (click)="exportEmployeesToPdf()" [disabled]="loading || employees.length === 0" title="Exportar PDF">
+                <i class="fas fa-file-pdf"></i>
+              </button>
+              <button class="btn btn-outline-success" type="button" (click)="exportEmployeesToExcel()" [disabled]="loading || employees.length === 0" title="Exportar Excel">
+                <i class="fas fa-file-excel"></i>
+              </button>
+            </div>
+          </div>
 
           <!-- Search Bar -->
           <div class="search-container">

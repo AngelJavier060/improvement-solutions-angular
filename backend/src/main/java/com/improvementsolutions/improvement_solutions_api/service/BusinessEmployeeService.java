@@ -19,6 +19,10 @@ import com.improvementsolutions.repository.DegreeRepository;
 import com.improvementsolutions.repository.ContractorCompanyRepository;
 import com.improvementsolutions.repository.ContractorBlockRepository;
 import com.improvementsolutions.repository.EmployeeMovementRepository;
+import com.improvementsolutions.repository.BusinessEmployeeDocumentRepository;
+import com.improvementsolutions.repository.BusinessEmployeeCourseRepository;
+import com.improvementsolutions.repository.BusinessEmployeeContractRepository;
+import com.improvementsolutions.repository.BusinessEmployeeCardRepository;
 
 import com.improvementsolutions.model.BusinessEmployee;
 import com.improvementsolutions.model.Business;
@@ -72,6 +76,10 @@ public class BusinessEmployeeService {
     private final ContractorCompanyRepository contractorCompanyRepository;
     private final ContractorBlockRepository contractorBlockRepository;
     private final EmployeeMovementRepository employeeMovementRepository;
+    private final BusinessEmployeeDocumentRepository businessEmployeeDocumentRepository;
+    private final BusinessEmployeeCourseRepository businessEmployeeCourseRepository;
+    private final BusinessEmployeeContractRepository businessEmployeeContractRepository;
+    private final BusinessEmployeeCardRepository businessEmployeeCardRepository;
     
     // Método helper para convertir RUC a Business ID
     private Long getBusinessIdFromRuc(String ruc) {
@@ -360,6 +368,19 @@ public class BusinessEmployeeService {
             throw new IllegalArgumentException("Ya existe un empleado con la cédula " + updateDto.getCedula() + " en esta empresa");
         }
         
+        // Validar código de trabajador (codigoEmpresa) único si ha cambiado
+        if (updateDto.getCodigoEmpresa() != null) {
+            String newCode = updateDto.getCodigoEmpresa().trim();
+            String current = existingEmployee.getCodigoEmpresa();
+            String curTrim = current != null ? current.trim() : "";
+            if (!newCode.equalsIgnoreCase(curTrim)) {
+                Long businessId = existingEmployee.getBusiness() != null ? existingEmployee.getBusiness().getId() : null;
+                if (businessId != null && businessEmployeeRepository.existsByBusinessIdAndCodigoEmpresa(businessId, newCode)) {
+                    throw new IllegalArgumentException("Ya existe un empleado con el código " + newCode + " en esta empresa");
+                }
+            }
+        }
+        
         updateEntityFromUpdateDto(existingEmployee, updateDto);
         
         BusinessEmployee savedEmployee = businessEmployeeRepository.save(existingEmployee);
@@ -372,12 +393,54 @@ public class BusinessEmployeeService {
     public void deleteEmployee(Long id) {
         log.info("Eliminando empleado con ID: {}", id);
         
-        if (!businessEmployeeRepository.existsById(id)) {
-            throw new IllegalArgumentException("Empleado no encontrado con ID: " + id);
+        // Cargar entidad principal
+        BusinessEmployee be = businessEmployeeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Empleado no encontrado con ID: " + id));
+
+        // Eliminar dependencias explícitas para evitar violaciones de FK
+        try {
+            // Documentos
+            var docs = businessEmployeeDocumentRepository.findByBusinessEmployeeId(id);
+            if (docs != null && !docs.isEmpty()) {
+                log.info("Eliminando {} documentos del empleado {}", docs.size(), id);
+                businessEmployeeDocumentRepository.deleteAll(docs);
+            }
+
+            // Cursos
+            var courses = businessEmployeeCourseRepository.findByBusinessEmployeeId(id);
+            if (courses != null && !courses.isEmpty()) {
+                log.info("Eliminando {} cursos del empleado {}", courses.size(), id);
+                businessEmployeeCourseRepository.deleteAll(courses);
+            }
+
+            // Contratos
+            var contracts = businessEmployeeContractRepository.findByBusinessEmployeeId(id);
+            if (contracts != null && !contracts.isEmpty()) {
+                log.info("Eliminando {} contratos del empleado {}", contracts.size(), id);
+                businessEmployeeContractRepository.deleteAll(contracts);
+            }
+
+            // Credenciales/Tarjetas
+            var cards = businessEmployeeCardRepository.findByBusinessEmployeeId(id);
+            if (cards != null && !cards.isEmpty()) {
+                log.info("Eliminando {} credenciales del empleado {}", cards.size(), id);
+                businessEmployeeCardRepository.deleteAll(cards);
+            }
+
+            // Movimientos
+            var movements = employeeMovementRepository.findByBusinessEmployeeOrderByEffectiveDateDescIdDesc(be);
+            if (movements != null && !movements.isEmpty()) {
+                log.info("Eliminando {} movimientos del empleado {}", movements.size(), id);
+                employeeMovementRepository.deleteAll(movements);
+            }
+
+            // Finalmente eliminar el registro principal
+            businessEmployeeRepository.delete(be);
+            log.info("Empleado eliminado exitosamente con ID: {}", id);
+        } catch (Exception e) {
+            log.error("No se pudo eliminar el empleado {} por dependencias activas u otro error: {}", id, e.getMessage());
+            throw e;
         }
-        
-        businessEmployeeRepository.deleteById(id);
-        log.info("Empleado eliminado exitosamente con ID: {}", id);
     }
     
     @Transactional
@@ -602,6 +665,7 @@ public class BusinessEmployeeService {
         if (updateDto.getContactPhone() != null) employee.setContactPhone(updateDto.getContactPhone());
         if (updateDto.getContactKinship() != null) employee.setContactKinship(updateDto.getContactKinship());
         if (updateDto.getFechaIngreso() != null) employee.setFechaIngreso(updateDto.getFechaIngreso());
+        if (updateDto.getCodigoEmpresa() != null) employee.setCodigoEmpresa(updateDto.getCodigoEmpresa());
         if (updateDto.getTipoSangre() != null) employee.setTipoSangre(updateDto.getTipoSangre());
         if (updateDto.getCodigoIess() != null) employee.setCodigoIess(updateDto.getCodigoIess());
         if (updateDto.getNivelEducacion() != null) employee.setNivelEducacion(updateDto.getNivelEducacion());

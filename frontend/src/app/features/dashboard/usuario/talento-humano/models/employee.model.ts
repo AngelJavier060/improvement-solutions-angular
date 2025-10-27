@@ -117,6 +117,7 @@ export interface UpdateEmployeeRequest {
   degreeId?: number;
   contractorCompanyId?: number;
   contractorBlockId?: number;
+  codigoEmpresa?: string;
 }
 
 export interface EmployeeResponse {
@@ -171,6 +172,7 @@ export interface EmployeeResponse {
   etniaName?: string;
   degreeName?: string;
   tipoSangre?: string;
+  salario?: number;
   nivelEducacion?: string;
   discapacidad?: string;
   codigoIess?: string;

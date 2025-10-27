@@ -1036,6 +1036,7 @@
                   <th style="width: 60px;">Foto</th>
                   <th>Nombre</th>
                   <th style="width: 180px;">Cédula</th>
+                  <th style="width: 200px;">Código del trabajador</th>
                   <th style="width: 240px;">Departamento</th>
                   <th style="width: 280px;">Cargo</th>
                 </tr>
@@ -1050,6 +1051,25 @@
                     <div class="text-muted small">{{ e.businessName || '' }}</div>
                   </td>
                   <td>{{ e.cedula }}</td>
+                  <td>
+                    <div *ngIf="editingEmployeeCodeId !== e.id; else editCodeTpl">
+                      <span>{{ getEmployeeCodeAdmin(e) || '—' }}</span>
+                      <button class="btn btn-sm btn-outline-primary ms-2" (click)="startEditEmployeeCode(e)" title="Editar código">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                    </div>
+                    <ng-template #editCodeTpl>
+                      <div class="input-group input-group-sm" style="max-width: 260px;">
+                        <input type="text" class="form-control" [(ngModel)]="editEmployeeCodeValue" [disabled]="savingEmployeeCode" placeholder="Código del trabajador">
+                        <button class="btn btn-success" (click)="saveEmployeeCode(e)" [disabled]="savingEmployeeCode">
+                          <i class="fas" [ngClass]="savingEmployeeCode ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" (click)="cancelEditEmployeeCode()" [disabled]="savingEmployeeCode">
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
+                    </ng-template>
+                  </td>
                   <td>{{ getDepartmentNameByEmployee(e) }}</td>
                   <td>{{ getPositionNameByEmployee(e) }}</td>
                 </tr>

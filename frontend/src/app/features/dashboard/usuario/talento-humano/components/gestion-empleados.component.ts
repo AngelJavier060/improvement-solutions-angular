@@ -884,4 +884,163 @@ export class GestionEmpleadosComponent implements OnInit {
     if (!emp) return '';
     return emp.codigoTrabajador || emp.cedula || String(emp.id || '');
   }
+  async exportEmployeesToExcel(): Promise<void> {
+    try {
+      const list: any[] = Array.isArray(this.employees) ? this.employees : [];
+      if (!list.length) { alert('No hay datos para exportar'); return; }
+      const rows: string[] = [];
+      const headers = [
+        'FOTO','ID','CÉDULA','CÓDIGO','NOMBRES','APELLIDOS','NOMBRE COMPLETO','EMAIL','TELÉFONO',
+        'FECHA NAC.','PROV. NAC.','CIUDAD NAC.','PARROQ. NAC.',
+        'DIRECCIÓN','CONTACTO (NOMBRE)','CONTACTO (PARENTESCO)','CONTACTO (TELÉFONO)',
+        'FECHA INGRESO','DEPARTAMENTO','CARGO','TIPO CONTRATO','GÉNERO','ESTADO CIVIL','ETNIA','NIVEL EDUCACIÓN','DISCAPACIDAD','CÓDIGO IESS','TIPO SANGRE','SUELDO (CONTRATISTA)',
+        'ACTIVO','STATUS','CREADO','ACTUALIZADO'
+      ];
+      const toDataUrl = async (url: string): Promise<string> => {
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          const blob = await resp.blob();
+          return await new Promise<string>((resolve) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result as string);
+            r.readAsDataURL(blob);
+          });
+        } catch {
+          return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==';
+        }
+      };
+      const imageUrlFor = (emp: any): string => {
+        const path = emp?.imagePath || emp?.profile_picture || emp?.photoFileName || '';
+        if (!path) return '';
+        if (path.startsWith('http')) return path;
+        if (path.startsWith('uploads/')) return `/api/files/${path.replace(/^uploads\//,'')}`;
+        if (path.startsWith('profiles/')) return `/api/files/${path}`;
+        if (!path.includes('/')) return `/api/files/profiles/${path}`;
+        return `/api/files/${path}`;
+      };
+      const imageDataUrls = await Promise.all(list.map(async (e) => {
+        const url = imageUrlFor(e);
+        return url ? await toDataUrl(url) : '';
+      }));
+      rows.push('<tr>' + headers.map(h => `<th style="background:#f0f0f0;border:1px solid #ccc;">${h}</th>`).join('') + '</tr>');
+      const fmt = (v: any) => (v === undefined || v === null ? '' : String(v));
+      const fullNameFor = (e: any) => {
+        const n = fmt(e.nombres); const a = fmt(e.apellidos);
+        const fa = `${n} ${a}`.trim();
+        return fa || fmt(e.name);
+      };
+      const departmentFor = (e: any) => fmt(e.departmentName || e.department?.name || '');
+      const positionFor = (e: any) => fmt(e.positionName || e.position?.name || '');
+      const contractFor = (e: any) => fmt(e.contractTypeName || '');
+      list.forEach((e, idx) => {
+        const img = imageDataUrls[idx] ? `<img src="${imageDataUrls[idx]}" width="48" height="48"/>` : '';
+        const rowCells = [
+          img,
+          fmt(e.id), fmt(e.cedula), fmt(e.codigoTrabajador || e.codigoEmpresa || ''), fmt(e.nombres), fmt(e.apellidos), fullNameFor(e),
+          fmt(e.email), fmt(e.phone),
+          fmt(e.dateBirth ? (new Date(e.dateBirth).toLocaleDateString()) : ''),
+          fmt(e.lugarNacimientoProvincia), fmt(e.lugarNacimientoCiudad), fmt(e.lugarNacimientoParroquia),
+          fmt(e.address || e.direccionDomiciliaria), fmt(e.contactName), fmt(e.contactKinship), fmt(e.contactPhone),
+          fmt(e.fechaIngreso ? (new Date(e.fechaIngreso).toLocaleDateString()) : ''),
+          departmentFor(e), positionFor(e), contractFor(e),
+          fmt(e.genderName), fmt(e.civilStatusName), fmt(e.etniaName), fmt(e.nivelEducacion || e.degreeName), fmt(e.discapacidad), fmt(e.codigoIess), fmt(e.tipoSangre), fmt(e.salario),
+          (e.active === true ? 'SI' : 'NO'), fmt(e.status),
+          fmt(e.created_at || e.createdAt || ''), fmt(e.updated_at || e.updatedAt || '')
+        ];
+        rows.push('<tr>' + rowCells.map(c => `<td style="border:1px solid #ddd;vertical-align:middle;">${c}</td>`).join('') + '</tr>');
+      });
+      const title = `Empleados_${this.businessRuc || ''}_${new Date().toISOString().slice(0,10)}`;
+      const html = `<!doctype html><html><head><meta charset="utf-8"></head><body>
+        <table cellspacing="0" cellpadding="4">${rows.join('')}</table>
+      </body></html>`;
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title}.xls`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert('No se pudo exportar a Excel');
+    }
+  }
+  async exportEmployeesToPdf(): Promise<void> {
+    try {
+      const list: any[] = Array.isArray(this.employees) ? this.employees : [];
+      if (!list.length) { alert('No hay datos para exportar'); return; }
+      const pdfMakeImport: any = await import('pdfmake/build/pdfmake');
+      const pdfFontsImport: any = await import('pdfmake/build/vfs_fonts');
+      const pdfMake: any = pdfMakeImport?.default || pdfMakeImport;
+      const vfs = (pdfFontsImport?.default?.vfs) || (pdfFontsImport?.pdfMake?.vfs) || (pdfFontsImport?.vfs);
+      if (vfs) pdfMake.vfs = vfs;
+      const toDataUrl = async (url: string): Promise<string | null> => {
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          const blob = await resp.blob();
+          return await new Promise<string>((resolve) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result as string);
+            r.readAsDataURL(blob);
+          });
+        } catch { return null; }
+      };
+      const imageUrlFor = (emp: any): string => {
+        const path = emp?.imagePath || emp?.profile_picture || emp?.photoFileName || '';
+        if (!path) return '';
+        if (path.startsWith('http')) return path;
+        if (path.startsWith('uploads/')) return `/api/files/${path.replace(/^uploads\//,'')}`;
+        if (path.startsWith('profiles/')) return `/api/files/${path}`;
+        if (!path.includes('/')) return `/api/files/profiles/${path}`;
+        return `/api/files/${path}`;
+      };
+      const imageData = await Promise.all(list.map(async e => {
+        const u = imageUrlFor(e);
+        return u ? (await toDataUrl(u)) : null;
+      }));
+      const header = [
+        { text: 'Foto', bold: true },
+        { text: 'Nombre', bold: true },
+        { text: 'Cédula', bold: true },
+        { text: 'Código', bold: true },
+        { text: 'Departamento', bold: true },
+        { text: 'Cargo', bold: true },
+        { text: 'Estado', bold: true }
+      ];
+      const body: any[] = [header];
+      list.forEach((e, i) => {
+        const photo = imageData[i] ? { image: imageData[i], fit: [32, 32] } : { text: '' };
+        body.push([
+          photo,
+          String(((e.nombres || '') + ' ' + (e.apellidos || '')).trim() || e.name || ''),
+          String(e.cedula || ''),
+          String(e.codigoTrabajador || e.codigoEmpresa || ''),
+          String(e.departmentName || e.department?.name || ''),
+          String(e.positionName || e.position?.name || ''),
+          this.isActive(e) ? 'ACTIVO' : 'INACTIVO'
+        ]);
+      });
+      const docDefinition: any = {
+        pageSize: 'A4',
+        pageOrientation: 'landscape',
+        pageMargins: [15, 20, 15, 20],
+        content: [
+          { text: `Empleados - ${this.businessShortUpper || ''} ${this.businessRuc || ''}`, style: 'title', margin: [0,0,0,10] },
+          {
+            table: { headerRows: 1, widths: [35, '*', 70, 60, '*', '*', 55], body },
+            layout: 'lightHorizontalLines'
+          }
+        ],
+        styles: { title: { fontSize: 12, bold: true } }
+      };
+      const fileName = `Empleados_${this.businessRuc || ''}_${new Date().toISOString().slice(0,10)}.pdf`;
+      const pdf = pdfMake.createPdf(docDefinition);
+      try { pdf.open(); } catch { pdf.download(fileName); }
+    } catch (e) {
+      alert('No se pudo exportar a PDF');
+    }
+  }
 }

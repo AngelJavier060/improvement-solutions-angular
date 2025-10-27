@@ -68,6 +68,10 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   companyEmployees: EmployeeResponse[] = [];
   employeesLoading = false;
   employeesFilter = '';
+  // Edición de código del trabajador (solo admin en este panel)
+  editingEmployeeCodeId: number | null = null;
+  editEmployeeCodeValue: string = '';
+  savingEmployeeCode = false;
 
   // Variables para crear usuarios
   showCreateUserModal = false;
@@ -224,6 +228,46 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.empresaId = +params['id'];
         this.loadData();
         this.loadApprovals();
+      }
+    });
+  }
+
+  // === Gestión de Código del trabajador ===
+  getEmployeeCodeAdmin(emp: any): string {
+    try {
+      return String(emp?.codigoTrabajador || emp?.codigoEmpresa || '').trim();
+    } catch { return ''; }
+  }
+
+  startEditEmployeeCode(emp: EmployeeResponse): void {
+    this.editingEmployeeCodeId = emp?.id ?? null;
+    this.editEmployeeCodeValue = this.getEmployeeCodeAdmin(emp);
+  }
+
+  cancelEditEmployeeCode(): void {
+    this.editingEmployeeCodeId = null;
+    this.editEmployeeCodeValue = '';
+  }
+
+  saveEmployeeCode(emp: EmployeeResponse): void {
+    if (!emp?.id) return;
+    const newCode = (this.editEmployeeCodeValue || '').trim();
+    if (!newCode) {
+      alert('Ingrese el Código del trabajador.');
+      return;
+    }
+    this.savingEmployeeCode = true;
+    this.employeeService.updateEmployee(emp.id, { codigoEmpresa: newCode }).subscribe({
+      next: () => {
+        this.savingEmployeeCode = false;
+        this.cancelEditEmployeeCode();
+        this.loadCompanyEmployees();
+        alert('Código del trabajador actualizado.');
+      },
+      error: (err) => {
+        this.savingEmployeeCode = false;
+        const msg = err?.error?.message || 'No se pudo actualizar el código del trabajador.';
+        alert(msg);
       }
     });
   }
