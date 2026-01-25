@@ -57,6 +57,24 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     this.employeeForm = this.createForm();
   }
 
+  private loadEmployeeDetails(): void {
+    if (!this.employee || !this.employee.id) {
+      return;
+    }
+    this.employeeService.getEmployeeById(this.employee.id).subscribe({
+      next: (full) => {
+        this.employee = full as any;
+        this.populateForm();
+        if ((this.positions?.length || 0) > 0 || (this.departments?.length || 0) > 0 || (this.genders?.length || 0) > 0) {
+          this.reapplyCatalogSelections();
+        }
+      },
+      error: (err) => {
+        console.error('Error al cargar detalles completos del empleado:', err);
+      }
+    });
+  }
+
   // Cambiar pestaña en el modal
   setTab(tab: 'datos' | 'documentos' | 'contratos') {
     this.activeTab = tab;
@@ -64,12 +82,14 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.populateForm();
+    this.loadEmployeeDetails();
     this.loadConfigurations();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['employee'] && this.employee) {
       this.populateForm();
+      this.loadEmployeeDetails();
     }
     if (changes['businessId'] && this.businessId) {
       this.loadConfigurations();
@@ -364,10 +384,10 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
   }
 
   getProfileImageSrc(): string {
-    if (!this.employee) return '/assets/img/user-placeholder.svg';
+    if (!this.employee) return 'assets/img/user-placeholder.svg';
     const emp: any = this.employee;
     const path: string = emp.imagePath || emp.profile_picture || emp.photoFileName || '';
-    if (!path) return '/assets/img/user-placeholder.svg';
+    if (!path) return 'assets/img/user-placeholder.svg';
     if (path.startsWith('http')) return path;
     if (path.startsWith('uploads/')) {
       const rel = path.replace(/^uploads\//, '');

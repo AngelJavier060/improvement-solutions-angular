@@ -68,19 +68,19 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
 
           // Imagen de fondo
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/Imagen3.png',
-              fit: BoxFit.cover,
+            SizedBox.expand(
+              child: Image.asset(
+                'assets/images/Imagen3.png',
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
 
           // Capa de oscurecimiento
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.55),
+            SizedBox.expand(
+              child: Container(
+                color: Colors.black.withOpacity(0.55),
+              ),
             ),
-          ),
 
           // Contenido principal
           SafeArea(
@@ -256,13 +256,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Texto de registro
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    // Texto de registro (sin overflow en pantallas pequeñas)
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 4,
                       children: [
                         Text(
                           '¿No tienes cuenta? ',
                           style: TextStyle(color: Colors.white.withOpacity(0.8)),
+                          softWrap: true,
                         ),
                         TextButton(
                           onPressed: () {},

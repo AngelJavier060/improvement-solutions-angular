@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'welcome_screen.dart';
 import 'login_screen.dart';
 import 'services/auth_service.dart';
 import 'employees_list_screen.dart';
 import 'config/app_config.dart';
 import 'services/business_service.dart';
 import 'security_legal_screen.dart';
+import 'legal_compliance_page.dart';
+import 'pdf_viewer_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -36,12 +39,19 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      initialRoute: '/login',
+      initialRoute: '/welcome',
       routes: {
+        '/welcome': (context) => const WelcomeScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const MyHomePage(title: 'Improvements Solutions'),
         '/employees': (context) => const EmployeesListScreen(),
         '/security-legal': (context) => const SecurityLegalScreen(),
+        '/legal-compliance': (context) => const LegalCompliancePage(),
+        '/pdf-viewer': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          final url = (args ?? '').toString();
+          return PdfViewerPage(url: url);
+        },
       },
     );
   }

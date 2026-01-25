@@ -1,5 +1,44 @@
-<div class="employee-detail-container">
-  <div class="page-header mb-4">
+<div class="employee-detail-container th-modern-detail">
+  <style>
+    .th-modern-detail { background-color: #f8fafc; }
+    .th-modern-detail .glass-header {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(226, 232, 240, 0.6);
+    }
+    .th-modern-detail .modern-card {
+      position: relative;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+    .th-modern-detail .modern-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+      background: linear-gradient(90deg, #6366f1, #4f46e5, #4338ca, #3730a3);
+    }
+    .th-modern-detail .modern-tabs { border-bottom: 1px solid #e2e8f0; }
+    .th-modern-detail .modern-tabs .nav-link { border: none; color: #64748b; font-weight: 600; }
+    .th-modern-detail .modern-tabs .nav-link.active { color: #4338ca; border-bottom: 2px solid #4338ca; }
+    .th-modern-detail .modern-tabs .nav-link:hover { color: #0f172a; }
+    .th-modern-detail .btn-modern-ghost {
+      background: #ffffff; color: #475569; border: 1px solid #e2e8f0; border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    .th-modern-detail .btn-modern-ghost:hover { background: #f8fafc; }
+    .th-modern-detail .btn-modern-primary {
+      color: #ffffff; background-image: linear-gradient(90deg, #4f46e5, #4338ca);
+      border: 0; border-radius: 10px; box-shadow: 0 6px 16px rgba(79, 70, 229, 0.25);
+    }
+    .th-modern-detail .btn-modern-primary:hover { background-image: linear-gradient(90deg, #4338ca, #3730a3); }
+    .th-modern-detail .kpi-grid .kpi-chip {
+      background: #f8fafc; border: 1px solid #e2e8f0; transition: background .2s ease, border-color .2s ease;
+    }
+    .th-modern-detail .kpi-grid .kpi-chip:hover { background: #ffffff; border-color: #e5e7eb; }
+  </style>
+  <div class="page-header glass-header mb-4 px-3 py-3 rounded-3">
     <div class="d-flex justify-content-between align-items-center">
       <div>
         <h2 class="page-title">
@@ -7,7 +46,7 @@
           Detalle del Empleado
         </h2>
       </div>
-      <button class="btn btn-secondary" (click)="goBack()">
+      <button class="btn btn-secondary btn-modern-ghost" (click)="goBack()">
         <i class="fas fa-arrow-left me-2"></i>
         Volver
       </button>
@@ -15,7 +54,7 @@
   </div>
 
   <!-- Tabs -->
-  <ul class="nav nav-tabs mb-4">
+  <ul class="nav nav-tabs modern-tabs mb-4">
     <li class="nav-item">
       <a class="nav-link" [class.active]="activeTab === 'employees'" [routerLink]="[]" [queryParams]="{ tab: 'employees' }" queryParamsHandling="merge">
         <i class="fas fa-users me-2"></i>
@@ -52,7 +91,7 @@
   <div class="tab-content">
     <!-- Employees Tab -->
     <div class="tab-pane fade" [class.show]="activeTab === 'employees'" [class.active]="activeTab === 'employees'">
-      <div class="card">
+      <div class="card modern-card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">
             <i class="fas fa-users me-2"></i>
@@ -123,7 +162,7 @@
                               <img [src]="getImageUrlFor(emp)" alt="Foto" class="mini-avatar" (error)="onImgError($event)" loading="lazy" decoding="async">
                               <div>
                                 <div class="emp-name clickable" (click)="goToEmployeeTab(emp, 'profile')">
-                                  {{ emp.nombres || emp.name }} {{ emp.apellidos || '' }}
+                                  {{ (emp.nombres || emp.name) | capitalize }} {{ (emp.apellidos || '') | capitalize }}
                                 </div>
                                 <div class="emp-meta">{{ emp.positionName || '-' }}</div>
                                 <div class="small"><strong>Código:</strong> {{ emp.codigoTrabajador || '-' }}</div>
@@ -178,7 +217,7 @@
                               <img [src]="getImageUrlFor(emp)" alt="Foto" class="mini-avatar" (error)="onImgError($event)" loading="lazy" decoding="async">
                               <div>
                                 <div class="emp-name clickable" (click)="goToEmployeeTab(emp, 'profile')">
-                                  {{ emp.nombres || emp.name }} {{ emp.apellidos || '' }}
+                                  {{ (emp.nombres || emp.name) | capitalize }} {{ (emp.apellidos || '') | capitalize }}
                                 </div>
                                 <div class="emp-meta">{{ emp.positionName || '-' }}</div>
                                 <div class="small"><strong>Código:</strong> {{ emp.codigoTrabajador || '-' }}</div>
@@ -203,7 +242,7 @@
                             <img [src]="getImageUrlFor(emp)" alt="Foto" class="mini-avatar" (error)="onImgError($event)" loading="lazy" decoding="async">
                             <div>
                               <div class="emp-name clickable" (click)="goToEmployeeTab(emp, 'profile')">
-                                {{ emp.nombres || emp.name }} {{ emp.apellidos || '' }}
+                                {{ (emp.nombres || emp.name) | capitalize }} {{ (emp.apellidos || '') | capitalize }}
                               </div>
                               <div class="emp-meta">{{ emp.positionName || '-' }}</div>
                               <div class="small"><strong>Código:</strong> {{ emp.codigoTrabajador || '-' }}</div>
@@ -255,13 +294,13 @@
     </div>
     <!-- Profile Tab -->
     <div class="tab-pane fade" [class.show]="activeTab === 'profile'" [class.active]="activeTab === 'profile'">
-      <div class="card">
+      <div class="card modern-card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">
             <i class="fas fa-user me-2"></i>
             Perfil del Empleado
           </h5>
-          <button *ngIf="employee" class="btn btn-sm btn-outline-primary" (click)="openEdit()" aria-label="Editar perfil del empleado">
+          <button *ngIf="employee" class="btn btn-sm btn-modern-primary" (click)="openEdit()" aria-label="Editar perfil del empleado">
             <i class="fas fa-edit me-1"></i>
             Editar
           </button>
@@ -276,7 +315,7 @@
               <div class="flex-grow-1">
                 <div class="d-flex flex-wrap align-items-center gap-2">
                   <h4 class="mb-0 me-2 profile-name">
-                    {{ employee.nombres || employee.name }} {{ employee.apellidos || '' }}
+                    {{ (employee.nombres || employee.name) | capitalize }} {{ (employee.apellidos || '') | capitalize }}
                   </h4>
                   <span class="badge" [ngClass]="employee.active ? 'bg-success' : 'bg-secondary'">
                     {{ employee.active ? 'Activo' : 'Inactivo' }}
@@ -454,7 +493,7 @@
 
     <!-- Documents Tab -->
     <div class="tab-pane fade" [class.show]="activeTab === 'documents'" [class.active]="activeTab === 'documents'">
-      <div class="card">
+      <div class="card modern-card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">
             <i class="fas fa-file-alt me-2"></i>
@@ -471,7 +510,7 @@
             <div class="mini-hero d-flex align-items-center gap-3 mb-4">
               <img [src]="getEmployeeImageUrl()" alt="Foto del empleado" class="mini-avatar" (error)="onImgError($event)" />
               <div>
-                <div class="fw-semibold">{{ employee.nombres || employee.name }} {{ employee.apellidos || '' }}</div>
+                <div class="fw-semibold">{{ (employee.nombres || employee.name) | capitalize }} {{ (employee.apellidos || '') | capitalize }}</div>
                 <div class="text-muted small">Cédula: <span class="text-body">{{ employee.cedula }}</span></div>
               </div>
             </div>
@@ -497,7 +536,7 @@
 
     <!-- Courses Tab -->
     <div class="tab-pane fade" [class.show]="activeTab === 'courses'" [class.active]="activeTab === 'courses'">
-      <div class="card">
+      <div class="card modern-card">
         <div class="card-header">
           <h5 class="mb-0">
             <i class="fas fa-graduation-cap me-2"></i>
@@ -509,7 +548,7 @@
             <div class="mini-hero d-flex align-items-center gap-3 mb-4">
               <img [src]="getEmployeeImageUrl()" alt="Foto del empleado" class="mini-avatar" (error)="onImgError($event)" />
               <div>
-                <div class="fw-semibold">{{ employee.nombres || employee.name }} {{ employee.apellidos || '' }}</div>
+                <div class="fw-semibold">{{ (employee.nombres || employee.name) | capitalize }} {{ (employee.apellidos || '') | capitalize }}</div>
                 <div class="text-muted small">Cédula: <span class="text-body">{{ employee.cedula }}</span></div>
               </div>
             </div>
@@ -535,7 +574,7 @@
 
     <!-- Cards Tab -->
     <div class="tab-pane fade" [class.show]="activeTab === 'cards'" [class.active]="activeTab === 'cards'">
-      <div class="card">
+      <div class="card modern-card">
         <div class="card-header">
           <h5 class="mb-0">
             <i class="fas fa-id-card me-2"></i>
@@ -547,7 +586,7 @@
             <div class="mini-hero d-flex align-items-center gap-3 mb-4">
               <img [src]="getEmployeeImageUrl()" alt="Foto del empleado" class="mini-avatar" (error)="onImgError($event)" />
               <div>
-                <div class="fw-semibold">{{ employee.nombres || employee.name }} {{ employee.apellidos || '' }}</div>
+                <div class="fw-semibold">{{ (employee.nombres || employee.name) | capitalize }} {{ (employee.apellidos || '') | capitalize }}</div>
                 <div class="text-muted small">Cédula: <span class="text-body">{{ employee.cedula }}</span></div>
               </div>
             </div>
@@ -604,7 +643,7 @@
               </thead>
               <tbody>
                 <tr *ngFor="let e of filteredPickerEmployees()">
-                  <td>{{ (e.nombres || e.name) + ' ' + (e.apellidos || '') }}</td>
+                  <td>{{ ((e.nombres || e.name) | capitalize) + ' ' + ((e.apellidos || '') | capitalize) }}</td>
                   <td>{{ e.cedula }}</td>
                   <td>{{ e.positionName || e.position?.name || e.position || '-' }}</td>
                   <td class="text-end">

@@ -19,6 +19,7 @@ import { EmployeeContractsComponent } from './components/employee-contracts.comp
 import { EmployeeCoursesComponent } from './components/employee-courses.component';
 import { EmployeeCardsComponent } from './components/employee-cards.component';
 import { TalentoHumanoChartsComponent } from './components/talento-humano-charts.component';
+import { CapitalizePipe } from '../../../../pipes/capitalize.pipe';
 
 @NgModule({
   declarations: [
@@ -34,7 +35,8 @@ import { TalentoHumanoChartsComponent } from './components/talento-humano-charts
     EmployeeContractsComponent,
     EmployeeCoursesComponent,
     EmployeeCardsComponent,
-    TalentoHumanoChartsComponent
+    TalentoHumanoChartsComponent,
+    CapitalizePipe
   ],
   imports: [
     CommonModule,

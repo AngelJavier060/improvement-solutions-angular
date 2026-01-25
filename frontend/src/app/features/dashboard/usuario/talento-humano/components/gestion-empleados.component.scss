@@ -1,8 +1,10 @@
 .gestion-empleados-container {
-  padding: 1.25rem 2rem;
+  padding: 1.25rem 1.5rem;
   background-color: #f8f9fa;
   min-height: 100vh;
   width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .page-header {
@@ -279,6 +281,92 @@
 .employees-section .card {
   width: 100%;
 }
+
+/* Professional Table Styling */
+.table {
+  margin-bottom: 0;
+  font-size: 0.9rem;
+}
+
+.table thead th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #495057;
+  padding: 0.875rem 0.75rem;
+  border-bottom: 2px solid #dee2e6;
+  background-color: #f8f9fa;
+}
+
+.table tbody td {
+  padding: 0.75rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.table tbody tr:hover {
+  background-color: #f1f3f5;
+}
+
+/* Wider table columns */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ===== Modern presentation (no logic changes) ===== */
+.th-modern { background: transparent; }
+
+.btn-modern-ghost {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #475569;
+}
+.btn-modern-ghost:hover {
+  background: #f8fafc;
+  color: #0ea5e9;
+  border-color: #dbeafe;
+}
+
+.btn-modern-primary {
+  background: linear-gradient(90deg, #0ea5e9, #0284c7);
+  border: none;
+}
+.btn-modern-primary:hover {
+  background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+}
+
+/* KPI cards inspired by Tailwind sample */
+.kpi-card {
+  border: none;
+  border-left: 4px solid transparent;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.kpi-card:hover { box-shadow: 0 8px 20px rgba(2,132,199,.18); transform: translateY(-2px); }
+.kpi-card .kpi-value { font-size: 1.75rem; font-weight: 800; margin: 0; }
+.kpi-card .kpi-label { font-size: .9rem; color: #64748b; margin: 0; }
+.kpi-card .kpi-icon {
+  width: 48px; height: 48px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+}
+.kpi-card .kpi-icon i { font-size: 22px; }
+
+.kpi-blue   { border-left-color: #3b82f6; }
+.kpi-green  { border-left-color: #22c55e; }
+.kpi-yellow { border-left-color: #eab308; }
+.kpi-cyan   { border-left-color: #06b6d4; cursor: pointer; }
+
+.kpi-blue  .kpi-icon { background: #dbeafe; color: #3b82f6; }
+.kpi-green .kpi-icon { background: #dcfce7; color: #22c55e; }
+.kpi-yellow .kpi-icon { background: #fef9c3; color: #eab308; }
+.kpi-cyan .kpi-icon { background: #cffafe; color: #06b6d4; }
+
+/* Header tweaks */
+.th-modern .page-title { display: flex; align-items: center; gap: .5rem; }
+.th-modern .page-subtitle { color: #64748b; }
 
 /* Search Bar Styles */
 .search-container {

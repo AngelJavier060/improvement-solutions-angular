@@ -20,6 +20,7 @@ export class EditarUsuarioComponent implements OnInit {
   isLoading = false;
   isSubmitting = false;
   isEditMode = false;
+  loadError = false;
   fileToUpload: File | null = null;  imagePreview: string | ArrayBuffer | null = null;
   imageError: string | null = null;
   isImageLoading = false;
@@ -144,6 +145,8 @@ export class EditarUsuarioComponent implements OnInit {
 
   loadUserData(id: number): void {
     this.isLoading = true;
+    this.loadError = false;
+    this.userForm.disable({ emitEvent: false });
     this.userService.getUserById(id).subscribe({
       next: (user) => {
         this.userForm.patchValue({
@@ -157,6 +160,9 @@ export class EditarUsuarioComponent implements OnInit {
             return foundRole ? foundRole.id : null;
           }).filter((id: number | null) => id !== null) || []
         });
+        // Limpiar estados de validación para evitar errores visuales tras la carga
+        this.userForm.markAsPristine();
+        this.userForm.markAsUntouched();
         // Definir tipo de usuario según roles
         const isAdmin = (user.roles || []).includes('ROLE_ADMIN');
         this.userForm.get('userType')?.setValue(isAdmin ? 'administrador' : 'empresa');
@@ -208,12 +214,15 @@ export class EditarUsuarioComponent implements OnInit {
             }
           });
         }
-        
+        // Rehabilitar el formulario luego de cargar datos
+        this.userForm.enable({ emitEvent: false });
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error al cargar datos del usuario', error);
         this.isLoading = false;
+        this.loadError = true;
+        this.notificationService.error('No se pudo cargar el usuario. Intente nuevamente o regrese a la lista.');
       }
     });
   }

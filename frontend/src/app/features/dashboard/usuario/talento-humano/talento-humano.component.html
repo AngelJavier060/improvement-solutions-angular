@@ -12,8 +12,23 @@
       </div>
       <h4 class="sidebar-title">Talento Humano</h4>
     </div>
-    <nav class="sidebar-nav mt-4">
-      <ul>
+    
+    <!-- Collapsible Business Section -->
+    <div class="sidebar-section" *ngIf="!isCollapsed">
+      <div class="section-header" (click)="toggleMenu()" [class.expanded]="isMenuExpanded">
+        <div class="section-icon">
+          <i class="fas fa-building"></i>
+        </div>
+        <div class="section-info">
+          <span class="section-title">{{ businessName }}</span>
+          <small class="section-subtitle">Especialistas en QHSE</small>
+        </div>
+        <i class="fas section-chevron" [ngClass]="isMenuExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" [class.mt-2]="!isCollapsed" [class.mt-4]="isCollapsed" [class.menu-collapsed]="!isMenuExpanded && !isCollapsed">
+      <ul [class.d-none]="!isMenuExpanded && !isCollapsed">
         <li>
           <a routerLink="inicio" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
             <i class="fas fa-home"></i>
@@ -46,10 +61,11 @@
         </li>
       </ul>
     </nav>
-    <!-- Eliminado campo empresa -->
   </aside>
 
-    <div class="flex-grow-1 d-flex flex-column content-col" [class.full]="isCollapsed">
+    <div class="flex-grow-1 d-flex flex-column content-col" [class.full]="isCollapsed"
+         [style.margin-left.px]="isCollapsed ? 128 : 356"
+         [style.width]="isCollapsed ? 'calc(100% - 128px)' : 'calc(100% - 356px)'">
       <!-- Content Area Mejorada -->
       <div class="module-content flex-grow-1">
         <router-outlet></router-outlet>

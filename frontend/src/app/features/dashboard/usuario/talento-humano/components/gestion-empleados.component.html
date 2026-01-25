@@ -1,4 +1,4 @@
-<div class="gestion-empleados-container">
+<div class="gestion-empleados-container th-modern">
   <!-- Header -->
   <div class="page-header">
     <div class="d-flex justify-content-between align-items-center">
@@ -13,13 +13,13 @@
       </div>
       <div class="d-flex align-items-center gap-2">
         <button
-          class="btn btn-outline-secondary btn-lg"
+          class="btn btn-outline-secondary btn-lg btn-modern-ghost"
           (click)="goBackToWelcome()">
           <i class="fas fa-arrow-left me-2"></i>
           Volver
         </button>
         <button 
-          class="btn btn-primary btn-lg"
+          class="btn btn-primary btn-lg btn-modern-primary shadow-sm"
           (click)="openCreateModal()">
           <i class="fas fa-plus me-2"></i>
           Nuevo Empleado
@@ -52,60 +52,60 @@
     <!-- Stats Cards -->
     <div class="row mb-4">
       <div class="col-md-3">
-        <div class="card stats-card bg-primary text-white">
+        <div class="card kpi-card kpi-blue">
           <div class="card-body">
             <div class="d-flex justify-content-between">
               <div>
-                <h3 class="mb-0">{{ employees.length }}</h3>
-                <p class="mb-0">Total Empleados</p>
+                <h3 class="mb-0 kpi-value">{{ employees.length }}</h3>
+                <p class="mb-0 kpi-label">Total Empleados</p>
               </div>
-              <div class="stats-icon">
-                <i class="fas fa-users fa-2x"></i>
+              <div class="kpi-icon">
+                <i class="fas fa-users"></i>
               </div>
             </div>
           </div>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card stats-card bg-success text-white">
+        <div class="card kpi-card kpi-green">
           <div class="card-body">
             <div class="d-flex justify-content-between">
               <div>
-                <h3 class="mb-0">{{ getActiveEmployeesCount() }}</h3>
-                <p class="mb-0">Activos</p>
+                <h3 class="mb-0 kpi-value">{{ getActiveEmployeesCount() }}</h3>
+                <p class="mb-0 kpi-label">Activos</p>
               </div>
-              <div class="stats-icon">
-                <i class="fas fa-user-check fa-2x"></i>
+              <div class="kpi-icon">
+                <i class="fas fa-user-check"></i>
               </div>
             </div>
           </div>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card stats-card bg-warning text-white">
+        <div class="card kpi-card kpi-yellow">
           <div class="card-body">
             <div class="d-flex justify-content-between">
               <div>
-                <h3 class="mb-0">{{ getInactiveEmployeesCount() }}</h3>
-                <p class="mb-0">Inactivos</p>
+                <h3 class="mb-0 kpi-value">{{ getInactiveEmployeesCount() }}</h3>
+                <p class="mb-0 kpi-label">Inactivos</p>
               </div>
-              <div class="stats-icon">
-                <i class="fas fa-user-times fa-2x"></i>
+              <div class="kpi-icon">
+                <i class="fas fa-user-times"></i>
               </div>
             </div>
           </div>
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card stats-card bg-info text-white" (click)="applyNewThisMonthFilter()" style="cursor: pointer;">
+        <div class="card kpi-card kpi-cyan" (click)="applyNewThisMonthFilter()" style="cursor: pointer;">
           <div class="card-body">
             <div class="d-flex justify-content-between">
               <div>
-                <h3 class="mb-0">{{ getNewThisMonthCount() }}</h3>
-                <p class="mb-0">Nuevos (Este mes)</p>
+                <h3 class="mb-0 kpi-value">{{ getNewThisMonthCount() }}</h3>
+                <p class="mb-0 kpi-label">Nuevos (Este mes)</p>
               </div>
-              <div class="stats-icon">
-                <i class="fas fa-user-plus fa-2x"></i>
+              <div class="kpi-icon">
+                <i class="fas fa-user-plus"></i>
               </div>
             </div>
           </div>
@@ -165,7 +165,7 @@
             </thead>
             <tbody>
               <tr *ngFor="let employee of newEmployeesFiltered">
-                <td>{{ getFullName(employee) }}</td>
+                <td>{{ getFullName(employee) | capitalize }}</td>
                 <td>{{ employee.cedula }}</td>
                 <td>{{ getRegDateStr(employee) }}</td>
                 <td>{{ getRegTimeStr(employee) }}</td>
@@ -318,7 +318,7 @@
                     </div>
                     <div class="employee-info">
                       <a href="#" (click)="openEmployeeModal(employee); $event.preventDefault()" class="text-decoration-none">
-                        <h6 class="mb-0 text-primary"><span class="name-text">{{ getFullName(employee) }}</span></h6>
+                        <h6 class="mb-0 text-primary"><span class="name-text">{{ getFullName(employee) | capitalize }}</span></h6>
                       </a>
                     </div>
                   </div>
@@ -420,7 +420,7 @@
       <div class="modal-header">
         <h5 class="modal-title">
           <i class="fas fa-graduation-cap me-2"></i>
-          Cursos de {{ selectedEmployee ? getFullName(selectedEmployee) : '' }}
+          Cursos de {{ selectedEmployee ? (getFullName(selectedEmployee) | capitalize) : '' }}
         </h5>
         <button type="button" class="btn-close" (click)="closeCoursesModal()"></button>
       </div>
@@ -443,7 +443,7 @@
       <div class="modal-header">
         <h5 class="modal-title">
           <i class="fas fa-file-alt me-2"></i>
-          Documentos Personales de {{ selectedEmployee ? getFullName(selectedEmployee) : '' }}
+          Documentos Personales de {{ selectedEmployee ? (getFullName(selectedEmployee) | capitalize) : '' }}
         </h5>
         <button type="button" class="btn-close" (click)="closeDocumentsModal()"></button>
       </div>
@@ -466,7 +466,7 @@
       <div class="modal-header">
         <h5 class="modal-title">
           <i class="fas fa-user me-2"></i>
-          Gestionar: {{ selectedEmployee ? getFullName(selectedEmployee) : '' }}
+          Gestionar: {{ selectedEmployee ? (getFullName(selectedEmployee) | capitalize) : '' }}
         </h5>
         <button type="button" class="btn-close" (click)="closeEmployeeModal()"></button>
       </div>
@@ -522,7 +522,7 @@
       <div class="modal-header">
         <h5 class="modal-title">
           <i class="fas fa-id-badge me-2"></i>
-          Credencial de {{ selectedEmployee ? getFullName(selectedEmployee) : '' }}
+          Credencial de {{ selectedEmployee ? (getFullName(selectedEmployee) | capitalize) : '' }}
         </h5>
         <button type="button" class="btn-close" (click)="closeCredentialsModal()"></button>
       </div>
@@ -555,7 +555,7 @@
             </div>
 
             <div class="holder-info text-center">
-              <h1 class="holder-name">{{ selectedEmployee ? getFullName(selectedEmployee) : '' }}</h1>
+              <h1 class="holder-name">{{ selectedEmployee ? (getFullName(selectedEmployee) | capitalize) : '' }}</h1>
               <p class="holder-role">{{ selectedEmployee ? (getEmployeePosition(selectedEmployee) || '—') : '' }}</p>
               <div class="holder-id">
                 <p>Número ID: <span>{{ selectedEmployee ? getEmployeeCode(selectedEmployee) : '' }}</span></p>
@@ -598,7 +598,7 @@
         <button type="button" class="btn-close" (click)="closeDeactivateModal()"></button>
       </div>
       <div class="modal-body">
-        <p *ngIf="movementTarget">Empleado: <strong>{{ getFullName(movementTarget) }}</strong></p>
+        <p *ngIf="movementTarget">Empleado: <strong>{{ getFullName(movementTarget) | capitalize }}</strong></p>
         <div class="mb-3">
           <label class="form-label">Fecha de desvinculación</label>
           <input class="form-control" type="date" [(ngModel)]="movementDate" />
@@ -630,7 +630,7 @@
         <button type="button" class="btn-close" (click)="closeReactivateModal()"></button>
       </div>
       <div class="modal-body">
-        <p *ngIf="movementTarget">Empleado: <strong>{{ getFullName(movementTarget) }}</strong></p>
+        <p *ngIf="movementTarget">Empleado: <strong>{{ getFullName(movementTarget) | capitalize }}</strong></p>
         <div class="mb-3">
           <label class="form-label">Fecha de reingreso</label>
           <input class="form-control" type="date" [(ngModel)]="movementDate" />

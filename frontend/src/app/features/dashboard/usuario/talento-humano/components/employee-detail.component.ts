@@ -404,7 +404,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   goToEmployeeTab(emp: EmployeeResponse, tab: 'profile' | 'documents' | 'courses' | 'cards'): void {
     this.openMenuForId = null;
     if (this.businessRuc) {
-      this.router.navigate(['/usuario', this.businessRuc, 'dashboard', 'talento-humano', 'employee', emp.cedula], {
+      this.router.navigate(['/usuario', this.businessRuc, 'talento-humano', 'employee', emp.cedula], {
         queryParams: { tab }
       });
     }
@@ -732,7 +732,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   goToEmployeeDocuments(emp: EmployeeResponse): void {
     this.closeEmployeePicker();
     if (this.businessRuc) {
-      this.router.navigate(['/usuario', this.businessRuc, 'dashboard', 'talento-humano', 'employee', emp.cedula], {
+      this.router.navigate(['/usuario', this.businessRuc, 'talento-humano', 'employee', emp.cedula], {
         queryParams: { tab: 'documents' }
       });
     }
