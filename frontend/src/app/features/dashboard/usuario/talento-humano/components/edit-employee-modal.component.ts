@@ -187,7 +187,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     let degreeId = this.getId(emp, 'degree_id', 'degreeId', 'degree');
     let genderId = this.getId(emp, 'gender_id', 'genderId', 'gender');
     let civilStatusId = this.getId(emp, 'civil_status_id', 'civilStatusId', 'civil_status', 'civilStatus');
-    let ethnicityId = this.getId(emp, 'ethnicity_id', 'ethnia_id', 'ethnicityId', 'ethnicity', 'ethnia');
+    let ethnicityId = this.getId(emp, 'ethnicity_id', 'ethnia_id', 'etnia_id', 'ethnicityId', 'etniaId', 'ethnicity', 'ethnia', 'etnia');
     let contractorCompanyId = this.getId(emp, 'contractor_company_id', 'contractorCompanyId', 'contractorCompany');
     let contractorBlockId = this.getId(emp, 'contractor_block_id', 'contractorBlockId', 'contractorBlock');
 
@@ -198,7 +198,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     if (degreeId === '') degreeId = this.resolveIdByName(this.degrees, emp.degree_name || emp.degreeName || emp.degree?.name || emp.degree);
     if (genderId === '') genderId = this.resolveIdByName(this.genders, emp.gender_name || emp.genderName || emp.gender?.name || emp.gender);
     if (civilStatusId === '') civilStatusId = this.resolveIdByName(this.civilStatuses, emp.civil_status_name || emp.civilStatusName || emp.civil_status?.name || emp.civilStatus?.name || emp.civil_status || emp.civilStatus);
-    if (ethnicityId === '') ethnicityId = this.resolveIdByName(this.etnias, emp.ethnicity_name || emp.ethnia_name || emp.ethnicityName || emp.ethnia?.name || emp.ethnicity?.name || emp.ethnia || emp.ethnicity);
+    if (ethnicityId === '') ethnicityId = this.resolveIdByName(this.etnias, emp.ethnicity_name || emp.ethnia_name || emp.etnia_name || emp.ethnicityName || emp.etniaName || emp.ethnia?.name || emp.ethnicity?.name || emp.etnia?.name || emp.ethnia || emp.ethnicity || emp.etnia);
     if (contractorCompanyId === '') contractorCompanyId = this.resolveIdByName(this.contractorCompanies as any[], emp.contractor_company_name || emp.contractorCompanyName || emp.contractor_company?.name || emp.contractorCompany?.name);
 
     // Si el id existe pero no está en el catálogo cargado (otra empresa), intentar resolver por nombre
@@ -218,7 +218,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     degreeId = ensureInCatalog(degreeId, this.degrees, () => emp.degree_name || emp.degreeName || emp.degree?.name || emp.degree);
     genderId = ensureInCatalog(genderId, this.genders, () => emp.gender_name || emp.genderName || emp.gender?.name || emp.gender);
     civilStatusId = ensureInCatalog(civilStatusId, this.civilStatuses, () => emp.civil_status_name || emp.civilStatusName || emp.civil_status?.name || emp.civilStatus?.name || emp.civil_status || emp.civilStatus);
-    ethnicityId = ensureInCatalog(ethnicityId, this.etnias, () => emp.ethnicity_name || emp.ethnia_name || emp.ethnicityName || emp.ethnia?.name || emp.ethnicity?.name || emp.ethnia || emp.ethnicity);
+    ethnicityId = ensureInCatalog(ethnicityId, this.etnias, () => emp.ethnicity_name || emp.ethnia_name || emp.etnia_name || emp.ethnicityName || emp.etniaName || emp.ethnia?.name || emp.ethnicity?.name || emp.etnia?.name || emp.ethnia || emp.ethnicity || emp.etnia);
     contractorCompanyId = ensureInCatalog(contractorCompanyId, this.contractorCompanies as any[], () => emp.contractor_company_name || emp.contractorCompanyName || emp.contractor_company?.name || emp.contractorCompany?.name);
 
     this.employeeForm.patchValue({
@@ -231,6 +231,23 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       ethnicity_id: toStrId(ethnicityId),
       contractor_company_id: toStrId(contractorCompanyId)
     });
+
+    // Reaplicar Código IESS por code o por iess_id
+    const empCodigoIess = (emp.codigoIess || emp.codigo_iess || emp.iess?.code || emp.iess?.codigo || emp.iess?.codigoSectorial || '').toString();
+    let finalCodigo = '';
+    if (empCodigoIess) {
+      const found = this.iessCodes.find((x: any) => String(x.code) === empCodigoIess);
+      finalCodigo = found ? String(found.code) : empCodigoIess;
+    } else {
+      const iessId = this.getId(emp, 'iess_id', 'iessId', 'iess');
+      if (iessId) {
+        const foundById = this.iessCodes.find((x: any) => String(x.id) === String(iessId));
+        if (foundById) finalCodigo = String(foundById.code);
+      }
+    }
+    if (finalCodigo) {
+      this.employeeForm.patchValue({ codigoIess: finalCodigo });
+    }
 
     // Si tenemos empresa contratista y bloque del empleado, cargar bloques y preseleccionar
     if (contractorCompanyId) {
@@ -294,7 +311,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
         fechaIngreso: (this as any).employee.fechaIngreso || '',
         tipoSangre: (this as any).employee.tipoSangre || '',
         discapacidad: (this as any).employee.discapacidad || '',
-        codigoIess: (this as any).employee.codigoIess || '',
+        codigoIess: ((this as any).employee.codigoIess || (this as any).employee.codigo_iess || '').toString(),
         contact_kinship: contactKinshipVal,
         contact_name: contactNameVal,
         contact_phone: contactPhoneVal,
@@ -305,7 +322,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
         department_id: toStrId(this.getId((this as any).employee, 'department_id', 'departmentId', 'department')),
         type_contract_id: toStrId(this.getId((this as any).employee, 'type_contract_id', 'typeContractId', 'type_contract', 'typeContract')),
         gender_id: toStrId(this.getId((this as any).employee, 'gender_id', 'genderId', 'gender')),
-        ethnicity_id: toStrId(this.getId((this as any).employee, 'ethnicity_id', 'ethnia_id', 'ethnicityId', 'ethnicity', 'ethnia')),
+        ethnicity_id: toStrId(this.getId((this as any).employee, 'ethnicity_id', 'ethnia_id', 'etnia_id', 'ethnicityId', 'etniaId', 'ethnicity', 'ethnia', 'etnia')),
         civil_status_id: toStrId(this.getId((this as any).employee, 'civil_status_id', 'civilStatusId', 'civil_status', 'civilStatus')),
         resident_address_id: toStrId(this.getId((this as any).employee, 'resident_address_id', 'residentAddressId', 'resident_address', 'residentAddress')),
         iess_id: toStrId(this.getId((this as any).employee, 'iess_id', 'iessId', 'iess')),
@@ -507,7 +524,10 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
         this.departments = res.departments || [];
         this.typeContracts = res.typeContracts || [];
         this.degrees = res.degrees || [];
-        this.iessCodes = res.iessCodes || [];
+        this.iessCodes = (res.iessCodes || []).map((it: any) => ({
+          ...it,
+          code: String(it.code || it.codigoSectorial || it.codigo || it.codigo_iess || it.codigoIess || it.id || '')
+        }));
         // Marcar catálogos listos y re-aplicar selecciones
         this.catalogsLoaded = true;
         if (this.employeeLoaded) {
