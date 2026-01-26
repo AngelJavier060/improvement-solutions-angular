@@ -45,6 +45,9 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
   // Foto de perfil (cambio en edición)
   selectedProfilePicture: File | null = null;
   selectedProfilePicturePreview: string | null = null;
+  // Readiness flags para re-aplicar selecciones apenas ambos (empleado y catálogos) estén listos
+  private employeeLoaded = false;
+  private catalogsLoaded = false;
 
   constructor(
     private fb: FormBuilder,
@@ -57,6 +60,13 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     this.employeeForm = this.createForm();
   }
 
+  private tryReapplySelections(): void {
+    if (!this.employee) return;
+    if (!this.catalogsLoaded) return;
+    // Reaplicar siempre que ambos estén listos
+    this.reapplyCatalogSelections();
+  }
+
   private loadEmployeeDetails(): void {
     if (!this.employee || !this.employee.id) {
       return;
@@ -65,8 +75,9 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       next: (full) => {
         this.employee = full as any;
         this.populateForm();
+        this.employeeLoaded = true;
         if ((this.positions?.length || 0) > 0 || (this.departments?.length || 0) > 0 || (this.genders?.length || 0) > 0) {
-          this.reapplyCatalogSelections();
+          this.tryReapplySelections();
         }
       },
       error: (err) => {
@@ -146,7 +157,8 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     // Try nested objects: position, department, etc.
     const nestedKeys = keys
       .map(k => k.replace(/_?id$/i, ''))
-      .map(k => k.replace(/Id$/i, ''));
+      .map(k => k.replace(/Id$/i, ''))
+      .map(k => k.replace(/_+$/,'')); // corregir snake_case: 'position_id' -> 'position'
     for (const nk of nestedKeys) {
       const obj = source?.[nk];
       if (obj && obj.id !== undefined && obj.id !== null) {
@@ -474,9 +486,10 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
         this.typeContracts = res.typeContracts || [];
         this.degrees = res.degrees || [];
         this.iessCodes = res.iessCodes || [];
-        // Reaplicar selecciones de catálogos una vez cargadas las opciones
-        if (this.employee) {
-          this.reapplyCatalogSelections();
+        // Marcar catálogos listos y re-aplicar selecciones
+        this.catalogsLoaded = true;
+        if (this.employeeLoaded) {
+          this.tryReapplySelections();
         }
         // Cargar empresas contratistas disponibles para esta empresa
         this.loadContractorCompanies();

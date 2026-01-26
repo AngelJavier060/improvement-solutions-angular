@@ -2,16 +2,18 @@
   <style>
     .th-modern-detail { background-color: #f8fafc; }
     .th-modern-detail .glass-header {
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(226, 232, 240, 0.6);
+      position: sticky; top: 0; z-index: 3;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(226, 232, 240, 0.7);
+      box-shadow: 0 10px 20px -15px rgba(15, 23, 42, .25);
     }
     .th-modern-detail .modern-card {
       position: relative;
-      border-radius: 16px;
+      border-radius: 14px;
       border: 1px solid #e2e8f0;
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 6px 18px -4px rgba(2, 6, 23, 0.08);
       overflow: hidden;
     }
     .th-modern-detail .modern-card::before {
@@ -19,10 +21,10 @@
       position: absolute; top: 0; left: 0; width: 100%; height: 3px;
       background: linear-gradient(90deg, #6366f1, #4f46e5, #4338ca, #3730a3);
     }
-    .th-modern-detail .modern-tabs { border-bottom: 1px solid #e2e8f0; }
-    .th-modern-detail .modern-tabs .nav-link { border: none; color: #64748b; font-weight: 600; }
-    .th-modern-detail .modern-tabs .nav-link.active { color: #4338ca; border-bottom: 2px solid #4338ca; }
-    .th-modern-detail .modern-tabs .nav-link:hover { color: #0f172a; }
+    .th-modern-detail .modern-tabs { border-bottom: 1px solid #e2e8f0; overflow-x: auto; white-space: nowrap; }
+    .th-modern-detail .modern-tabs .nav-link { border: none; color: #64748b; font-weight: 600; padding: 10px 14px; border-radius: 0; }
+    .th-modern-detail .modern-tabs .nav-link.active { color: #4338ca; border-bottom: 2px solid #4338ca; background: transparent; }
+    .th-modern-detail .modern-tabs .nav-link:hover { color: #0f172a; background: rgba(15, 23, 42, 0.02); }
     .th-modern-detail .btn-modern-ghost {
       background: #ffffff; color: #475569; border: 1px solid #e2e8f0; border-radius: 10px;
       box-shadow: 0 1px 2px rgba(0,0,0,.04);
@@ -33,10 +35,39 @@
       border: 0; border-radius: 10px; box-shadow: 0 6px 16px rgba(79, 70, 229, 0.25);
     }
     .th-modern-detail .btn-modern-primary:hover { background-image: linear-gradient(90deg, #4338ca, #3730a3); }
+    /* KPI chips */
     .th-modern-detail .kpi-grid .kpi-chip {
-      background: #f8fafc; border: 1px solid #e2e8f0; transition: background .2s ease, border-color .2s ease;
+      display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 12px;
+      background: #f9fafb; border: 1px solid #e5e7eb; transition: background .2s ease, border-color .2s ease, transform .1s ease;
     }
-    .th-modern-detail .kpi-grid .kpi-chip:hover { background: #ffffff; border-color: #e5e7eb; }
+    .th-modern-detail .kpi-grid .kpi-chip:hover { background: #ffffff; border-color: #e5e7eb; transform: translateY(-1px); }
+    .th-modern-detail .kpi-grid .kpi-icon { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; background: #eef2ff; color: #4f46e5; }
+    .th-modern-detail .kpi-grid .kpi-label { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; }
+    .th-modern-detail .kpi-grid .kpi-value { font-size: 14px; font-weight: 600; color: #111827; margin-top: 2px; }
+
+    /* Profile hero */
+    .th-modern-detail .profile-hero .avatar-img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+    .th-modern-detail .profile-name { color: #0f172a; font-weight: 800; }
+    .th-modern-detail .badge.bg-success { background-color: #10b981 !important; }
+    .th-modern-detail .badge.bg-secondary { background-color: #94a3b8 !important; }
+
+    /* Profile grid */
+    .th-modern-detail .profile-section-title { font-weight: 800; color: #0f172a; margin: 16px 0; }
+    .th-modern-detail .profile-grid { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; }
+    @media (min-width: 768px) { .th-modern-detail .profile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (min-width: 992px) { .th-modern-detail .profile-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .th-modern-detail .profile-grid label { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    .th-modern-detail .profile-grid .fw-semibold { color: #111827; }
+
+    /* Skeletons */
+    .th-modern-detail .profile-skeleton .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: 8px; }
+    .th-modern-detail .profile-skeleton .skeleton-avatar { width: 96px; height: 96px; border-radius: 12px; }
+    .th-modern-detail .profile-skeleton .skeleton-line { height: 20px; }
+    .th-modern-detail .profile-skeleton .skeleton-kpi { height: 64px; border-radius: 12px; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Mini avatars used in other tabs */
+    .th-modern-detail .mini-avatar { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb; }
   </style>
   <div class="page-header glass-header mb-4 px-3 py-3 rounded-3">
     <div class="d-flex justify-content-between align-items-center">

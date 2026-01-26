@@ -7,6 +7,7 @@ import { BusinessService } from '../../../../../services/business.service';
 import { ContractorCompanyService } from '../../../../../services/contractor-company.service';
 import { ContractorBlockService } from '../../../../../services/contractor-block.service';
 import { ContractorCompany, ContractorBlock } from '../../../../../models/contractor-company.model';
+import { NotificationService } from '../../../../../services/notification.service';
 
 interface ConfigurationOption {
   id: number;
@@ -48,6 +49,8 @@ export class CreateEmployeeModalComponent implements OnInit {
   private cedulaSet: Set<string> = new Set();
   private codeSet: Set<string> = new Set();
   private namePairSet: Set<string> = new Set();
+  private wasCedulaDuplicate = false;
+  private wasCodigoDuplicate = false;
   
   @Output() onClose = new EventEmitter<void>();
   @Output() onEmployeeCreated = new EventEmitter<void>();
@@ -60,7 +63,8 @@ export class CreateEmployeeModalComponent implements OnInit {
     private employeeService: EmployeeService,
     private businessService: BusinessService,
     private contractorCompanyService: ContractorCompanyService,
-    private contractorBlockService: ContractorBlockService
+    private contractorBlockService: ContractorBlockService,
+    private notificationService: NotificationService
   ) {
     this.employeeForm = this.fb.group({
       // Campos básicos requeridos
@@ -125,25 +129,37 @@ export class CreateEmployeeModalComponent implements OnInit {
     // Cedula
     const cedCtrl = this.employeeForm.get('cedula');
     const cedVal = (cedCtrl?.value || '').toString().trim();
-    if (cedVal && this.cedulaSet.has(cedVal)) {
+    const isCedDup = !!(cedVal && this.cedulaSet.has(cedVal));
+    if (isCedDup) {
       cedCtrl?.setErrors({ ...(cedCtrl.errors || {}), duplicate: true });
+      if (!this.wasCedulaDuplicate) {
+        this.notificationService.warning('La cédula ya existe en esta empresa. Ingrese una diferente.');
+        this.wasCedulaDuplicate = true;
+      }
     } else {
       if (cedCtrl?.hasError('duplicate')) {
         const { duplicate, ...rest } = cedCtrl.errors || {};
         cedCtrl.setErrors(Object.keys(rest).length ? rest : null);
       }
+      this.wasCedulaDuplicate = false;
     }
 
     // Código Trabajador
     const codeCtrl = this.employeeForm.get('codigoTrabajador');
     const codeVal = (codeCtrl?.value || '').toString().trim().toLowerCase();
-    if (codeVal && this.codeSet.has(codeVal)) {
+    const isCodeDup = !!(codeVal && this.codeSet.has(codeVal));
+    if (isCodeDup) {
       codeCtrl?.setErrors({ ...(codeCtrl.errors || {}), duplicate: true });
+      if (!this.wasCodigoDuplicate) {
+        this.notificationService.warning('El código del trabajador ya existe. Use un código diferente.');
+        this.wasCodigoDuplicate = true;
+      }
     } else {
       if (codeCtrl?.hasError('duplicate')) {
         const { duplicate, ...rest } = codeCtrl.errors || {};
         codeCtrl.setErrors(Object.keys(rest).length ? rest : null);
       }
+      this.wasCodigoDuplicate = false;
     }
 
     // Nombres + Apellidos
@@ -464,7 +480,10 @@ export class CreateEmployeeModalComponent implements OnInit {
       if (this.employeeForm.get('cedula')?.hasError('duplicate')) msgs.push('Cédula ya registrada en esta empresa');
       if (this.employeeForm.get('codigoTrabajador')?.hasError('duplicate')) msgs.push('Código de trabajador duplicado en esta empresa');
       if (this.employeeForm.get('nombres')?.hasError('duplicate') || this.employeeForm.get('apellidos')?.hasError('duplicate')) msgs.push('Nombre y apellidos ya existen en esta empresa');
-      if (msgs.length) this.error = msgs.join('. ');
+      if (msgs.length) {
+        this.error = msgs.join('. ');
+        this.notificationService.warning(this.error);
+      }
     }
     if (this.employeeForm.valid) {
       console.log('Formulario válido, enviando datos...');
@@ -576,6 +595,13 @@ export class CreateEmployeeModalComponent implements OnInit {
           // Si el error es 400, probablemente sea un error de validación específico
           if (error.status === 400) {
             errorMessage = 'Error de validación: ' + errorMessage;
+          }
+          // Conflictos/duplicados desde el backend
+          if (error.status === 409 || error.status === 422) {
+            // Mensaje estándar para cédula/código duplicado
+            const std = 'Cédula o código de trabajador ya existentes. Ingrese valores diferentes.';
+            errorMessage = errorMessage && errorMessage !== '[object Object]' ? errorMessage : std;
+            this.notificationService.warning(errorMessage);
           }
           
           console.log('Final error message:', errorMessage);
