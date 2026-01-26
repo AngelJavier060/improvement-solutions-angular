@@ -80,7 +80,6 @@
                 formControlName="cedula"
                 [class.error]="isFieldInvalid('cedula')"
                 placeholder="Ingrese la cédula"
-                [disabled]="true"
               />
               <span *ngIf="isFieldInvalid('cedula')" class="error-message">
                 {{ getFieldError('cedula') }}
@@ -163,7 +162,6 @@
                 id="codigo_trabajador"
                 formControlName="codigo_trabajador"
                 placeholder="Código interno"
-                [disabled]="true"
               />
             </div>
 
@@ -175,7 +173,6 @@
                 formControlName="salario"
                 placeholder="Salario"
                 step="0.01"
-                [disabled]="true"
               />
             </div>
           </div>
@@ -335,14 +332,8 @@
                 id="contractor_company_id"
                 formControlName="contractor_company_id"
                 (change)="onContractorCompanyChange()">
-                <option value="">
-                  <span *ngIf="contractorCompanies.length === 0">No hay empresas contratistas configuradas</span>
-                  <span *ngIf="contractorCompanies.length > 0">Seleccione empresa contratista</span>
-                </option>
-                <option *ngFor="let company of contractorCompanies" [value]="'' + company.id">
-                  {{ company.name }}
-                  <span *ngIf="company.code"> - {{ company.code }}</span>
-                </option>
+                <option value="">{{ contractorCompanies.length === 0 ? 'No hay empresas contratistas configuradas' : 'Seleccione empresa contratista' }}</option>
+                <option *ngFor="let company of contractorCompanies" [value]="'' + company.id">{{ company.name }}{{ company.code ? (' - ' + company.code) : '' }}</option>
               </select>
               <small class="form-help-text">
                 <i class="fas fa-info-circle me-1"></i>

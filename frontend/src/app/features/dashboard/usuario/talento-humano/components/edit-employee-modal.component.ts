@@ -65,6 +65,8 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     if (!this.catalogsLoaded) return;
     // Reaplicar siempre que ambos estén listos
     this.reapplyCatalogSelections();
+    // Ejecutar de nuevo en el siguiente tick por si el template aún no terminó de renderizar
+    setTimeout(() => this.reapplyCatalogSelections(), 0);
   }
 
   private loadEmployeeDetails(): void {
@@ -190,14 +192,34 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     let contractorBlockId = this.getId(emp, 'contractor_block_id', 'contractorBlockId', 'contractorBlock');
 
     // Fallback por nombre si no hay id
-    if (positionId === '') positionId = this.resolveIdByName(this.positions, emp.position_name || emp.positionName || emp.position?.name);
-    if (departmentId === '') departmentId = this.resolveIdByName(this.departments, emp.department_name || emp.departmentName || emp.department?.name);
-    if (typeContractId === '') typeContractId = this.resolveIdByName(this.typeContracts, emp.type_contract_name || emp.typeContractName || emp.type_contract?.name || emp.typeContract?.name);
-    if (degreeId === '') degreeId = this.resolveIdByName(this.degrees, emp.degree_name || emp.degreeName || emp.degree?.name);
-    if (genderId === '') genderId = this.resolveIdByName(this.genders, emp.gender_name || emp.genderName || emp.gender?.name);
-    if (civilStatusId === '') civilStatusId = this.resolveIdByName(this.civilStatuses, emp.civil_status_name || emp.civilStatusName || emp.civil_status?.name || emp.civilStatus?.name);
-    if (ethnicityId === '') ethnicityId = this.resolveIdByName(this.etnias, emp.ethnicity_name || emp.ethnia_name || emp.ethnicityName || emp.ethnia?.name || emp.ethnicity?.name);
+    if (positionId === '') positionId = this.resolveIdByName(this.positions, emp.position_name || emp.positionName || emp.position?.name || emp.position);
+    if (departmentId === '') departmentId = this.resolveIdByName(this.departments, emp.department_name || emp.departmentName || emp.department?.name || emp.department);
+    if (typeContractId === '') typeContractId = this.resolveIdByName(this.typeContracts, emp.type_contract_name || emp.typeContractName || emp.type_contract?.name || emp.typeContract?.name || emp.type_contract || emp.typeContract);
+    if (degreeId === '') degreeId = this.resolveIdByName(this.degrees, emp.degree_name || emp.degreeName || emp.degree?.name || emp.degree);
+    if (genderId === '') genderId = this.resolveIdByName(this.genders, emp.gender_name || emp.genderName || emp.gender?.name || emp.gender);
+    if (civilStatusId === '') civilStatusId = this.resolveIdByName(this.civilStatuses, emp.civil_status_name || emp.civilStatusName || emp.civil_status?.name || emp.civilStatus?.name || emp.civil_status || emp.civilStatus);
+    if (ethnicityId === '') ethnicityId = this.resolveIdByName(this.etnias, emp.ethnicity_name || emp.ethnia_name || emp.ethnicityName || emp.ethnia?.name || emp.ethnicity?.name || emp.ethnia || emp.ethnicity);
     if (contractorCompanyId === '') contractorCompanyId = this.resolveIdByName(this.contractorCompanies as any[], emp.contractor_company_name || emp.contractorCompanyName || emp.contractor_company?.name || emp.contractorCompany?.name);
+
+    // Si el id existe pero no está en el catálogo cargado (otra empresa), intentar resolver por nombre
+    const ensureInCatalog = (id: any, catalog: any[], nameProvider: () => string | undefined | null) => {
+      const idStr = toStrId(id);
+      if (!idStr) return id;
+      const exists = Array.isArray(catalog) && catalog.some(opt => toStrId(opt.id) === idStr);
+      if (exists) return id;
+      const name = nameProvider();
+      const resolved = this.resolveIdByName(catalog as any[], name);
+      return resolved || id;
+    };
+
+    positionId = ensureInCatalog(positionId, this.positions, () => emp.position_name || emp.positionName || emp.position?.name || emp.position);
+    departmentId = ensureInCatalog(departmentId, this.departments, () => emp.department_name || emp.departmentName || emp.department?.name || emp.department);
+    typeContractId = ensureInCatalog(typeContractId, this.typeContracts, () => emp.type_contract_name || emp.typeContractName || emp.type_contract?.name || emp.typeContract?.name || emp.type_contract || emp.typeContract);
+    degreeId = ensureInCatalog(degreeId, this.degrees, () => emp.degree_name || emp.degreeName || emp.degree?.name || emp.degree);
+    genderId = ensureInCatalog(genderId, this.genders, () => emp.gender_name || emp.genderName || emp.gender?.name || emp.gender);
+    civilStatusId = ensureInCatalog(civilStatusId, this.civilStatuses, () => emp.civil_status_name || emp.civilStatusName || emp.civil_status?.name || emp.civilStatus?.name || emp.civil_status || emp.civilStatus);
+    ethnicityId = ensureInCatalog(ethnicityId, this.etnias, () => emp.ethnicity_name || emp.ethnia_name || emp.ethnicityName || emp.ethnia?.name || emp.ethnicity?.name || emp.ethnia || emp.ethnicity);
+    contractorCompanyId = ensureInCatalog(contractorCompanyId, this.contractorCompanies as any[], () => emp.contractor_company_name || emp.contractorCompanyName || emp.contractor_company?.name || emp.contractorCompany?.name);
 
     this.employeeForm.patchValue({
       position_id: toStrId(positionId),
@@ -508,7 +530,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
         this.availableContractorBlocks = [];
         return;
       }
-      const business: any = await this.businessService.getById(this.businessId).toPromise();
+      const business: any = await this.businessService.getDetails(this.businessId).toPromise();
       let contractorCompanies = [] as any[];
       if (business?.contractor_companies && Array.isArray(business.contractor_companies)) {
         contractorCompanies = business.contractor_companies;
@@ -523,15 +545,26 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
 
       // Si el empleado ya tenía empresa contratista, disparar carga de bloques y preseleccionar
       const emp: any = this.employee || {};
-      const ccId = this.getId(emp, 'contractor_company_id', 'contractorCompanyId', 'contractorCompany');
+      let ccId: any = this.getId(emp, 'contractor_company_id', 'contractorCompanyId', 'contractorCompany');
+      if (ccId === '' || ccId == null) {
+        // Fallback por nombre si no vino id en el empleado
+        const ccName = emp.contractor_company_name || emp.contractorCompanyName || emp.contractor_company?.name || emp.contractorCompany?.name;
+        ccId = this.resolveIdByName(this.contractorCompanies as any[], ccName);
+      }
       const ccIdNum = Number(ccId);
       if (!isNaN(ccIdNum) && ccIdNum) {
         this.employeeForm.patchValue({ contractor_company_id: String(ccIdNum) });
         this.loadContractorBlocksForBusiness(ccIdNum, () => {
-          const cbId = this.getId(emp, 'contractor_block_id', 'contractorBlockId', 'contractorBlock');
-          const cbIdNum = Number(cbId);
-          if (!isNaN(cbIdNum) && cbIdNum) {
-            this.employeeForm.patchValue({ contractor_block_id: String(cbIdNum) });
+          // Preseleccionar bloque del empleado por id o por nombre
+          const currentBlockVal = this.employeeForm.get('contractor_block_id')?.value;
+          if (!currentBlockVal) {
+            let cbId: any = this.getId(emp, 'contractor_block_id', 'contractorBlockId', 'contractorBlock');
+            let toSet = cbId ? String(cbId) : '';
+            if (!toSet) {
+              const cbName = emp.contractor_block_name || emp.contractorBlockName || emp.contractor_block?.name || emp.contractorBlock?.name;
+              toSet = this.resolveIdByName(this.availableContractorBlocks as any[], cbName);
+            }
+            if (toSet) this.employeeForm.patchValue({ contractor_block_id: toSet });
           }
         });
       }
@@ -548,7 +581,14 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     this.availableContractorBlocks = [];
     const idNum = Number(contractorCompanyId);
     if (!isNaN(idNum) && idNum) {
-      this.loadContractorBlocksForBusiness(idNum);
+      this.loadContractorBlocksForBusiness(idNum, () => {
+        if (this.availableContractorBlocks.length === 1) {
+          const only = this.availableContractorBlocks[0];
+          if (only && only.id != null) {
+            this.employeeForm.patchValue({ contractor_block_id: String(only.id) });
+          }
+        }
+      });
     }
   }
 
@@ -558,24 +598,56 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       if (afterLoad) afterLoad();
       return;
     }
-    // Obtener la empresa y filtrar bloques asociados a la empresa contratista
-    this.businessService.getById(this.businessId).subscribe({
-      next: (business: any) => {
-        const configuredBlocks = business?.contractor_blocks || business?.contractorBlocks || [];
-        const blocksForSelectedCompany = configuredBlocks.filter((block: any) => {
-          let blockContractorId = null;
-          if (block.contractor_company_id) blockContractorId = Number(block.contractor_company_id);
-          else if (block.contractorCompany?.id) blockContractorId = Number(block.contractorCompany.id);
-          else if (block.contractor_company?.id) blockContractorId = Number(block.contractor_company.id);
-          return blockContractorId === Number(contractorCompanyId);
-        });
-        this.availableContractorBlocks = blocksForSelectedCompany;
+    // Preferir API directa de bloques por empresa contratista
+    this.contractorBlockService.getActiveBlocksByCompanyId(contractorCompanyId).subscribe({
+      next: (blocks) => {
+        this.availableContractorBlocks = blocks || [];
         if (afterLoad) afterLoad();
       },
-      error: (err) => {
-        console.error('Error al cargar bloques de contratista:', err);
-        this.availableContractorBlocks = [];
-        if (afterLoad) afterLoad();
+      error: () => {
+        // Fallback a todos los bloques por empresa
+        this.contractorBlockService.getBlocksByCompanyId(contractorCompanyId).subscribe({
+          next: (blocks) => {
+            this.availableContractorBlocks = blocks || [];
+            if (afterLoad) afterLoad();
+          },
+          error: () => {
+            // Último fallback: derivar desde detalles de empresa
+            this.businessService.getDetails(this.businessId).subscribe({
+              next: (business: any) => {
+                let configuredBlocks = business?.contractor_blocks || business?.contractorBlocks || [];
+                if (!configuredBlocks || configuredBlocks.length === 0) {
+                  const companies = business?.contractor_companies || business?.contractorCompanies || [];
+                  const aggregated: any[] = [];
+                  for (const c of companies) {
+                    const cId = c?.id != null ? Number(c.id) : null;
+                    const cBlocks = c?.blocks || c?.contractor_blocks || c?.contractorBlocks || [];
+                    for (const b of cBlocks) {
+                      if (cId != null && (b.contractor_company_id == null) && (!b.contractorCompany || !b.contractor_company)) {
+                        b.contractor_company_id = cId;
+                      }
+                      aggregated.push(b);
+                    }
+                  }
+                  configuredBlocks = aggregated;
+                }
+                const blocksForSelectedCompany = configuredBlocks.filter((block: any) => {
+                  let blockContractorId = null;
+                  if (block.contractor_company_id) blockContractorId = Number(block.contractor_company_id);
+                  else if (block.contractorCompany?.id) blockContractorId = Number(block.contractorCompany.id);
+                  else if (block.contractor_company?.id) blockContractorId = Number(block.contractor_company.id);
+                  return blockContractorId === Number(contractorCompanyId);
+                });
+                this.availableContractorBlocks = blocksForSelectedCompany;
+                if (afterLoad) afterLoad();
+              },
+              error: () => {
+                this.availableContractorBlocks = [];
+                if (afterLoad) afterLoad();
+              }
+            });
+          }
+        });
       }
     });
   }
