@@ -53,6 +53,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   showEditModal = false;
   private queryParamsSubscription: Subscription | null = null;
   private paramsSubscription: Subscription | null = null;
+  private fallbackTimeoutId: any = null;
 
   // Selector de empleados (listado de trabajadores de la empresa)
   showEmployeePicker = false;
@@ -410,6 +411,25 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  private tryNavigateToFirstEmployee(): void {
+    if (!this.businessRuc) return;
+    this.employeeService.getEmployeesByBusinessRuc(this.businessRuc).subscribe({
+      next: (list) => {
+        const first = (list || [])[0];
+        if (first && first.cedula) {
+          this.router.navigate(['/usuario', this.businessRuc, 'talento-humano', 'employee', first.cedula], {
+            queryParams: { tab: this.activeTab }
+          });
+        } else {
+          this.router.navigate(['/usuario', this.businessRuc, 'talento-humano', 'gestion-empleados']);
+        }
+      },
+      error: () => {
+        this.router.navigate(['/usuario', this.businessRuc!, 'talento-humano', 'gestion-empleados']);
+      }
+    });
+  }
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -424,10 +444,20 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     this.cedula = this.route.snapshot.params['cedula'];
     // Intentar extraer businessRuc desde rutas padre
     this.businessRuc = this.findParamUp('businessRuc') || this.findParamUp('ruc');
+    const initTab = this.route.snapshot.queryParams['tab'];
+    if (initTab && ['employees','courses', 'documents', 'profile', 'cards'].includes(initTab)) {
+      this.activeTab = initTab as any;
+    }
     if (this.cedula) {
       this.loadEmployee();
       this.loadDocumentTypes();
     }
+
+    this.fallbackTimeoutId = setTimeout(() => {
+      if (!this.loading && !this.employee) {
+        this.tryNavigateToFirstEmployee();
+      }
+    }, 2500);
 
     // Suscribirse a cambios en query params para cambiar el tab
     this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
@@ -470,6 +500,10 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     if (this.paramsSubscription) {
       this.paramsSubscription.unsubscribe();
     }
+    if (this.fallbackTimeoutId) {
+      clearTimeout(this.fallbackTimeoutId);
+      this.fallbackTimeoutId = null;
+    }
   }
 
   // Fallback cuando falla la carga de la imagen
@@ -497,20 +531,24 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     if (!this.cedula) return;
     this.loading = true;
     if (this.businessRuc) {
-      // Precisión por empresa: obtener lista y filtrar por cédula
-      this.employeeService.getEmployeesByBusinessRuc(this.businessRuc).subscribe({
-        next: (list) => {
-          this.employee = (list || []).find(e => e.cedula === this.cedula) || null;
+      this.employeeService.getEmployeeByCedulaScopedByRuc(this.businessRuc, this.cedula).subscribe({
+        next: (emp) => {
+          this.employee = emp || null;
           if (this.employee && (this.employee as any).id) {
-            // Guardar BusinessEmployee ID seleccionado
             this.businessId = (this.employee as any).id as number;
+          } else if (this.employee && (this.employee as any).businessId) {
+            this.businessId = (this.employee as any).businessId as number;
           }
           this.loading = false;
+          if (!this.employee) {
+            this.tryNavigateToFirstEmployee();
+          }
         },
         error: (error) => {
-          console.error('Error cargando empleados por RUC:', error);
+          console.error('Error cargando empleado por cédula y RUC:', error);
           this.employee = null;
           this.loading = false;
+          this.tryNavigateToFirstEmployee();
         }
       });
     } else {
