@@ -464,7 +464,14 @@ export class GestionEmpleadosComponent implements OnInit {
 
   getEmployeeQrUrl(emp: EmployeeResponse): string {
     try {
-      const base = (environment as any).publicSiteUrl?.trim() || (typeof window !== 'undefined' ? window.location.origin : '');
+      let base = (environment as any).publicSiteUrl?.trim();
+      if (!base && typeof window !== 'undefined') {
+        const origin = window.location.origin;
+        const path = window.location.pathname || '';
+        const seg1 = (path.split('/')[1] || '').trim();
+        const isLocale = /^[a-z]{2}-[A-Z]{2}$/.test(seg1);
+        base = isLocale ? `${origin}/${seg1}` : origin;
+      }
       const ruc = this.businessRuc || '';
       const token = this.qrLegalDocsToken;
       // Preferir ruta pública (sin login) si hay token
@@ -472,7 +479,7 @@ export class GestionEmpleadosComponent implements OnInit {
         ? `${base}/public/qr/${ruc}?token=${encodeURIComponent(token)}`
         : `${base}/usuario/${ruc}/seguridad-industrial/matriz-legal?qr=1`;
       const data = encodeURIComponent(target);
-      return `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${data}`;
+      return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=2&ecc=M&color=000000&bgcolor=ffffff&data=${data}`;
     } catch {
       return '';
     }

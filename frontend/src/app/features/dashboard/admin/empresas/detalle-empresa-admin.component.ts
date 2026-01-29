@@ -18,6 +18,7 @@ import { CourseCertificationService } from '../../../../services/course-certific
 import { CardService } from '../../../../services/card.service';
 import { environment } from '../../../../../environments/environment';
 import { BusinessAdapterService } from '../../../../core/adapters/business-adapter.service';
+import { QrLegalDocsService } from '../../../../core/services/qr-legal-docs.service';
 import { forkJoin } from 'rxjs';
 import { User } from './user-modal/user-modal.component';
 import { EmployeeService } from '../../usuario/talento-humano/services/employee.service';
@@ -160,6 +161,9 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   matrixFilesLoading: { [matrixId: number]: boolean } = {};
   matrixPendingLoading: { [matrixId: number]: boolean } = {};
 
+  // QR público (vista previa)
+  qrPreviewToken: string | null = null;
+
   // Modal para editar empresa
   showEditEmpresaModal = false;
   savingEmpresa = false;
@@ -219,7 +223,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private employeeService: EmployeeService,
     private inventoryCategoryService: InventoryCategoryService,
     private inventorySupplierService: InventorySupplierService,
-    private businessCtx: BusinessContextService
+    private businessCtx: BusinessContextService,
+    private qrLegalDocsService: QrLegalDocsService
   ) {}
 
   ngOnInit(): void {
@@ -230,6 +235,162 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.loadApprovals();
       }
     });
+  }
+
+  // Marcar archivo como visible/no visible para QR público
+  isPdf(file: any): boolean {
+    try {
+      const n = (file?.name ?? file?.path ?? '').toString().toLowerCase();
+      return n.endsWith('.pdf');
+    } catch { return false; }
+  }
+
+  isPublicFile(file: any): boolean {
+    try {
+      const desc = (file?.description ?? '').toString();
+      return desc.includes('[PUBLIC]');
+    } catch { return false; }
+  }
+
+  countPublicFor(matrixId: number): number {
+    const list = this.matrixFiles[matrixId] || [];
+    return (Array.isArray(list) ? list : []).filter(f => this.isPdf(f) && this.isPublicFile(f)).length;
+  }
+
+  togglePublic(file: any, matrixId: number): void {
+    if (!file?.id || !matrixId) return;
+    if (!this.isPdf(file)) { alert('Solo se pueden marcar como visibles los archivos PDF.'); return; }
+    const currentlyPublic = this.isPublicFile(file);
+    if (!currentlyPublic) {
+      const count = this.countPublicFor(matrixId);
+      if (count >= 3) { alert('Solo puede seleccionar hasta 3 PDFs visibles por obligación.'); return; }
+    }
+    const currentDesc = (file?.description ?? '').toString();
+    const descBase = currentDesc.replace('[PUBLIC]', '').trim();
+    const newDesc = currentlyPublic ? descBase : (`[PUBLIC] ${descBase}`).trim();
+    this.matrixFilesLoading[matrixId] = true;
+    this.bomService.updateFile(Number(file.id), newDesc).subscribe({
+      next: () => {
+        this.refreshMatrixFiles(matrixId);
+        this.matrixFilesLoading[matrixId] = false;
+        alert(currentlyPublic ? 'El PDF ya no será mostrado al usuario.' : 'PDF marcado para mostrar al usuario.');
+      },
+      error: (err) => {
+        console.error('Error al actualizar visibilidad de archivo:', err);
+        this.matrixFilesLoading[matrixId] = false;
+        alert('No se pudo actualizar la visibilidad del archivo.');
+      }
+    });
+  }
+
+  // QR público: emitir token y construir URLs de vista previa
+  generateQrPreviewToken(): void {
+    const ruc = this.getBusinessRuc();
+    if (!ruc) { alert('No se pudo determinar el RUC de la empresa.'); return; }
+    this.qrLegalDocsService.issueToken(ruc).subscribe({
+      next: (res) => { this.qrPreviewToken = res?.token || null; },
+      error: () => { this.qrPreviewToken = null; alert('No se pudo generar el token de QR.'); }
+    });
+  }
+
+  getQrPortalUrl(): string {
+    try {
+      const ruc = this.getBusinessRuc() || '';
+      let base = (environment as any).publicSiteUrl?.trim();
+      if (!base && typeof window !== 'undefined') {
+        const origin = window.location.origin;
+        const path = window.location.pathname || '';
+        const seg1 = (path.split('/')[1] || '').trim();
+        const isLocale = /^[a-z]{2}-[A-Z]{2}$/.test(seg1);
+        base = isLocale ? `${origin}/${seg1}` : origin;
+      }
+      const token = this.qrPreviewToken || '';
+      if (!ruc || !token || !base) return '';
+      return `${base}/public/qr/${ruc}?token=${encodeURIComponent(token)}`;
+    } catch { return ''; }
+  }
+
+  getQrImageUrl(): string {
+    try {
+      const target = this.getQrPortalUrl();
+      if (!target) return '';
+      const data = encodeURIComponent(target);
+      return `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${data}`;
+    } catch { return ''; }
+  }
+
+  copyQrUrl(): void {
+    try {
+      const url = this.getQrPortalUrl();
+      if (!url) return;
+      const done = () => alert('Enlace copiado');
+      if (navigator && (navigator as any).clipboard && (navigator as any).clipboard.writeText) {
+        (navigator as any).clipboard.writeText(url).then(done).catch(() => {
+          // fallback below
+          const ta = document.createElement('textarea');
+          ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
+        });
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
+      }
+    } catch {}
+  }
+
+  // === Ojo a nivel de obligación (toggle sobre el PDF actual) ===
+  rowEyeIcon(obligation: any): string {
+    try {
+      const matrixId = this.getMatrixRelationId(obligation);
+      const list = this.matrixFiles[matrixId] || [];
+      const anyPublic = (Array.isArray(list) ? list : []).some(f => this.isPdf(f) && this.isPublicFile(f));
+      return anyPublic ? 'fa-eye' : 'fa-eye-slash';
+    } catch { return 'fa-eye-slash'; }
+  }
+
+  toggleLatestPublicOnRow(obligation: any): void {
+    try {
+      const matrixId = this.getMatrixRelationId(obligation);
+      if (!matrixId) return;
+      // Obtener archivos actuales y alternar el último PDF
+      this.bomService.listFiles(matrixId, { currentOnly: true }).subscribe({
+        next: (files) => {
+          const arr = Array.isArray(files) ? files : [];
+          const pdfs = arr.filter((f: any) => this.isPdf(f));
+          if (pdfs.length === 0) {
+            alert('No hay PDFs actuales para esta obligación. Sube un PDF y luego márcalo como visible.');
+            return;
+          }
+          // Elegir el más reciente (por updatedAt o id)
+          pdfs.sort((a: any, b: any) => {
+            const da = a?.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+            const db = b?.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+            if (db !== da) return db - da;
+            const ia = Number(a?.id) || 0; const ib = Number(b?.id) || 0;
+            return ib - ia;
+          });
+          const target = pdfs[0];
+          const currentlyPublic = this.isPublicFile(target);
+          if (!currentlyPublic && this.countPublicFor(matrixId) >= 3) {
+            alert('Límite de 3 PDFs visibles por obligación alcanzado.');
+            return;
+          }
+          const baseDesc = (target?.description ?? '').toString().replace('[PUBLIC]', '').trim();
+          const newDesc = currentlyPublic ? baseDesc : (`[PUBLIC] ${baseDesc}`).trim();
+          this.matrixFilesLoading[matrixId] = true;
+          this.bomService.updateFile(Number(target.id), newDesc).subscribe({
+            next: () => {
+              this.refreshMatrixFiles(matrixId);
+              this.matrixFilesLoading[matrixId] = false;
+            },
+            error: () => {
+              this.matrixFilesLoading[matrixId] = false;
+              alert('No se pudo actualizar la visibilidad del archivo.');
+            }
+          });
+        },
+        error: () => alert('No se pudo consultar archivos de la obligación.')
+      });
+    } catch {}
   }
 
   // === Gestión de Código del trabajador ===

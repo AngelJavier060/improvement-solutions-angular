@@ -23,23 +23,32 @@ import { QrLegalDocsService } from '../../../core/services/qr-legal-docs.service
 
       <div class="card shadow-sm" *ngIf="!loading && !error && token">
         <div class="card-body">
-          <div class="row g-2">
-            <div class="col-12 col-md-4">
-              <button type="button" class="btn btn-outline-primary w-100" (click)="open('reglamento')">
-                Reglamento Interno
-              </button>
-            </div>
-            <div class="col-12 col-md-4">
-              <button type="button" class="btn btn-outline-primary w-100" (click)="open('riesgos')">
-                Matriz de Riesgos
-              </button>
-            </div>
-            <div class="col-12 col-md-4">
-              <button type="button" class="btn btn-outline-primary w-100" (click)="open('politicaSst')">
-                Política de SST
+          <div *ngIf="hasPublicItems(); else fallbackStatic" class="row g-2">
+            <div class="col-12 col-md-6 col-lg-4" *ngFor="let it of docs.items">
+              <button type="button" class="btn btn-outline-primary w-100 text-truncate" (click)="openItem(it)">
+                <i class="fas fa-file-alt me-1"></i>{{ (it?.title || 'Documento') }}
               </button>
             </div>
           </div>
+          <ng-template #fallbackStatic>
+            <div class="row g-2">
+              <div class="col-12 col-md-4">
+                <button type="button" class="btn btn-outline-primary w-100" (click)="open('reglamento')">
+                  Reglamento Interno
+                </button>
+              </div>
+              <div class="col-12 col-md-4">
+                <button type="button" class="btn btn-outline-primary w-100" (click)="open('riesgos')">
+                  Matriz de Riesgos
+                </button>
+              </div>
+              <div class="col-12 col-md-4">
+                <button type="button" class="btn btn-outline-primary w-100" (click)="open('politicaSst')">
+                  Política de SST
+                </button>
+              </div>
+            </div>
+          </ng-template>
 
           <small class="text-muted d-block mt-3">
             Si un documento no se abre, es porque no hay un PDF público cargado para ese requisito.
@@ -103,5 +112,24 @@ export class QrLegalDocsComponent implements OnInit {
 
     const url = this.qrService.getPublicFileUrl(this.ruc, fileId, this.token);
     window.open(url, '_blank');
+  }
+
+  // Abrir elemento dinámico desde docs.items
+  openItem(item: any): void {
+    if (!this.ruc || !this.token) return;
+    const fileId = Number(item?.fileId);
+    const found = !!item?.found;
+    const hasPdf = !!item?.hasPdf;
+    if (!found) { alert('No se encontró este documento en la matriz legal.'); return; }
+    if (!hasPdf || !fileId) { alert('No hay un PDF público cargado para este documento.'); return; }
+    const url = this.qrService.getPublicFileUrl(this.ruc, fileId, this.token);
+    window.open(url, '_blank');
+  }
+
+  hasPublicItems(): boolean {
+    try {
+      const arr: any[] = this.docs?.items || [];
+      return Array.isArray(arr) && arr.length > 0;
+    } catch { return false; }
   }
 }

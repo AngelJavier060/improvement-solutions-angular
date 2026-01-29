@@ -14,6 +14,10 @@ export class QrLegalDocsService {
     return this.http.post<{ token: string }>(`${this.apiUrl}/qr/legal-docs/token`, { ruc });
   }
 
+  rotateToken(ruc: string): Observable<{ token: string; version: number }> {
+    return this.http.post<{ token: string; version: number }>(`${this.apiUrl}/qr/legal-docs/rotate`, { ruc });
+  }
+
   getPublicDocs(ruc: string, token: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/public/qr/legal-docs/${encodeURIComponent(ruc)}?token=${encodeURIComponent(token)}`);
   }

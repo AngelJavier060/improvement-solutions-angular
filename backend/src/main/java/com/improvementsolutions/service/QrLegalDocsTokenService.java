@@ -26,17 +26,22 @@ public class QrLegalDocsTokenService {
     }
 
     public String generateToken(String ruc) {
-        Date now = new Date();
-        Date exp = new Date(now.getTime() + expirationMs);
+        return generateToken(ruc, null);
+    }
 
-        return Jwts.builder()
+    public String generateToken(String ruc, Integer version) {
+        Date now = new Date();
+        var builder = Jwts.builder()
                 .setId(UUID.randomUUID().toString())
                 .setIssuedAt(now)
-                .setExpiration(exp)
                 .claim("scope", "QR_LEGAL_DOCS")
                 .claim("ruc", ruc)
-                .signWith(signingKey(), SignatureAlgorithm.HS512)
-                .compact();
+                .claim("v", version == null ? 0 : version.intValue())
+                .signWith(signingKey(), SignatureAlgorithm.HS512);
+        if (expirationMs > 0) {
+            builder.setExpiration(new Date(now.getTime() + expirationMs));
+        }
+        return builder.compact();
     }
 
     public Claims validateAndParse(String token) {
@@ -57,6 +62,16 @@ public class QrLegalDocsTokenService {
         }
         if (tokenRuc == null || !tokenRuc.equals(ruc)) {
             throw new RuntimeException("Token inválido (empresa)");
+        }
+    }
+
+    public Integer getTokenVersion(String token) {
+        try {
+            Claims claims = validateAndParse(token);
+            Integer v = claims.get("v", Integer.class);
+            return v == null ? 0 : v;
+        } catch (Exception e) {
+            return 0;
         }
     }
 }

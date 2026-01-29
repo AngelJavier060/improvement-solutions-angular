@@ -169,6 +169,9 @@ public class Business {
     @JsonIgnore
     private List<ContractorBlock> contractorBlocks = new ArrayList<>();
 
+    @Column(name = "qr_legal_docs_token_version")
+    private Integer qrLegalDocsTokenVersion;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

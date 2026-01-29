@@ -462,6 +462,22 @@
               <i class="fas fa-plus me-1"></i>Agregar
             </button>
           </div>
+          <div class="border rounded p-2 mb-2 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <img *ngIf="qrPreviewToken && getQrImageUrl()" [src]="getQrImageUrl()" alt="QR" style="width:200px;height:200px;border:1px solid #eee;border-radius:6px;"/>
+              <a *ngIf="qrPreviewToken && getQrPortalUrl()" [href]="getQrPortalUrl()" target="_blank" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-external-link-alt me-1"></i> Abrir portal QR
+              </a>
+              <button *ngIf="qrPreviewToken && getQrPortalUrl()" type="button" class="btn btn-outline-secondary btn-sm" (click)="copyQrUrl()">
+                <i class="fas fa-copy me-1"></i> Copiar enlace
+              </button>
+            </div>
+            <div>
+              <button class="btn btn-outline-primary btn-sm" (click)="generateQrPreviewToken()">
+                <i class="fas fa-qrcode me-1"></i> Generar vista previa
+              </button>
+            </div>
+          </div>
           
           <div *ngIf="empresa.obligation_matrices?.length > 0" class="expanded-content">
             <div class="mb-1" *ngFor="let obligation of empresa.obligation_matrices; trackBy: trackById">
@@ -477,6 +493,12 @@
                   </div>
                 </div>
                 <div class="d-flex gap-1">
+                  <button class="btn btn-outline-success btn-sm p-1"
+                          (click)="toggleLatestPublicOnRow(obligation)"
+                          title="Mostrar/Ocultar público"
+                          style="font-size: 8px;">
+                    <i class="fas" [ngClass]="rowEyeIcon(obligation)"></i>
+                  </button>
                   <button class="btn btn-outline-primary btn-sm p-1" (click)="replaceObligation(obligation)" title="Editar (reemplazar)" style="font-size: 8px;">
                     <i class="fas fa-edit"></i>
                   </button>
@@ -510,12 +532,21 @@
                     </label>
                   </div>
                 </div>
+                <div class="text-muted small mb-1">Visibles para usuario (PDF): {{ countPublicFor(getMatrixRelationId(obligation)) }}/3</div>
                 
                 <div *ngIf="matrixFilesLoading[getMatrixRelationId(obligation)]" class="text-muted small">Cargando archivos...</div>
                 <div *ngIf="!matrixFilesLoading[getMatrixRelationId(obligation)] && (matrixFiles[getMatrixRelationId(obligation)]?.length || 0) === 0" class="text-muted small">Sin archivos.</div>
                 <div *ngFor="let f of (matrixFiles[getMatrixRelationId(obligation)] || [])" class="d-flex align-items-center justify-content-between py-1">
-                  <div class="small">{{ f.name || ('Archivo #' + f.id) }}</div>
+                  <div class="small">
+                    {{ f.name || ('Archivo #' + f.id) }}
+                    <span class="badge bg-success-subtle text-success ms-1" *ngIf="isPublicFile(f)"><i class="fas fa-eye me-1"></i>Visible</span>
+                  </div>
                   <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-success p-1"
+                            [disabled]="!isPdf(f) || (!isPublicFile(f) && countPublicFor(getMatrixRelationId(obligation)) >= 3)"
+                            (click)="togglePublic(f, getMatrixRelationId(obligation))" title="{{ isPublicFile(f) ? 'Ocultar del usuario' : 'Mostrar al usuario' }}" style="font-size: 8px;">
+                      <i class="fas" [ngClass]="isPublicFile(f) ? 'fa-eye' : 'fa-eye-slash'"></i>
+                    </button>
                     <a class="btn btn-sm btn-outline-secondary p-1" [href]="getMatrixFileUrl(f)" target="_blank" title="Ver/Descargar" style="font-size: 8px;"><i class="fas fa-download"></i></a>
                     <button class="btn btn-sm btn-outline-danger p-1" (click)="deleteMatrixFile(f.id, getMatrixRelationId(obligation))" title="Eliminar" style="font-size: 8px;"><i class="fas fa-trash"></i></button>
                   </div>

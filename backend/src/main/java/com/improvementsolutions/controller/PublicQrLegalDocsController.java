@@ -37,6 +37,12 @@ public class PublicQrLegalDocsController {
         Business business = businessRepository.findByRuc(ruc)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
 
+        int tokenVersion = tokenService.getTokenVersion(token);
+        int currentVersion = business.getQrLegalDocsTokenVersion() != null ? business.getQrLegalDocsTokenVersion() : 0;
+        if (tokenVersion != currentVersion) {
+            return ResponseEntity.status(403).build();
+        }
+
         List<BusinessObligationMatrix> matrices = matrixRepository.findByBusinessId(business.getId());
         Map<String, Object> res = new HashMap<>();
         res.put("ruc", ruc);
@@ -44,6 +50,9 @@ public class PublicQrLegalDocsController {
         res.put("reglamento", resolveDoc("REGLAMENTO", matrices));
         res.put("riesgos", resolveDoc("RIESGOS", matrices));
         res.put("politicaSst", resolveDoc("POLITICA_SST", matrices));
+
+        List<Map<String, Object>> items = buildAllPublicItems(matrices);
+        res.put("items", items);
 
         return ResponseEntity.ok(res);
     }
@@ -54,6 +63,14 @@ public class PublicQrLegalDocsController {
 
         BusinessObligationMatrixFile file = fileRepository.findById(fileId)
                 .orElseThrow(() -> new RuntimeException("Archivo no encontrado"));
+
+        Business business = businessRepository.findByRuc(ruc)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        int tokenVersion = tokenService.getTokenVersion(token);
+        int currentVersion = business.getQrLegalDocsTokenVersion() != null ? business.getQrLegalDocsTokenVersion() : 0;
+        if (tokenVersion != currentVersion) {
+            return ResponseEntity.status(403).build();
+        }
 
         BusinessObligationMatrix bom = file.getBusinessObligationMatrix();
         if (bom == null || bom.getBusiness() == null || bom.getBusiness().getRuc() == null || !bom.getBusiness().getRuc().equals(ruc)) {
@@ -86,6 +103,61 @@ public class PublicQrLegalDocsController {
         if (target == null) {
             return out;
         }
+
+        out.put("matrixId", target.getId());
+        out.put("title", safeText(target.getName()));
+
+        List<BusinessObligationMatrixFile> files = fileRepository.findByBusinessObligationMatrixId(target.getId());
+        List<BusinessObligationMatrixFile> publicPdfs = new ArrayList<>();
+        for (BusinessObligationMatrixFile f : files) {
+            String nameLower = f.getName() == null ? "" : f.getName().toLowerCase();
+            String desc = f.getDescription() == null ? "" : f.getDescription();
+            if (nameLower.endsWith(".pdf") && desc.contains(PUBLIC_TAG)) {
+                publicPdfs.add(f);
+            }
+        }
+
+        publicPdfs.sort((a, b) -> {
+            if (a.getCreatedAt() != null && b.getCreatedAt() != null) {
+                int c = a.getCreatedAt().compareTo(b.getCreatedAt());
+                if (c != 0) return c;
+            }
+            long aId = a.getId() != null ? a.getId() : 0;
+            long bId = b.getId() != null ? b.getId() : 0;
+            return Long.compare(aId, bId);
+        });
+
+        if (publicPdfs.isEmpty()) {
+            out.put("hasPdf", false);
+            return out;
+        }
+
+        BusinessObligationMatrixFile latest = publicPdfs.get(publicPdfs.size() - 1);
+        out.put("hasPdf", true);
+        out.put("fileId", latest.getId());
+        out.put("fileName", safeText(latest.getName()));
+        return out;
+    }
+
+    private List<Map<String, Object>> buildAllPublicItems(List<BusinessObligationMatrix> matrices) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        if (matrices == null || matrices.isEmpty()) return out;
+
+        for (BusinessObligationMatrix m : matrices) {
+            Map<String, Object> doc = resolveDocFromMatrix(m);
+            // Incluir solo matrices que tengan al menos un PDF público autorizado
+            if (Boolean.TRUE.equals(doc.get("hasPdf"))) {
+                out.add(doc);
+            }
+        }
+        return out;
+    }
+
+    private Map<String, Object> resolveDocFromMatrix(BusinessObligationMatrix target) {
+        Map<String, Object> out = new HashMap<>();
+        boolean exists = target != null && target.getId() != null;
+        out.put("found", exists);
+        if (!exists) return out;
 
         out.put("matrixId", target.getId());
         out.put("title", safeText(target.getName()));
