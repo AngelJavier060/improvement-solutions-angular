@@ -58,6 +58,34 @@ import { NotificationService } from '../../../../../services/notification.servic
           <div></div>
         </div>
 
+        <div class="alert alert-info" *ngIf="qrMode">
+          <i class="fas fa-qrcode me-2"></i>
+          Acceso mediante código QR. Selecciona un documento para visualizar.
+        </div>
+
+        <div class="card shadow-sm border-0 mb-3" *ngIf="qrMode">
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-12 col-md-4">
+                <button type="button" class="btn btn-outline-primary w-100" (click)="openQrDoc('REGLAMENTO')" [disabled]="loading">
+                  Reglamento Interno
+                </button>
+              </div>
+              <div class="col-12 col-md-4">
+                <button type="button" class="btn btn-outline-primary w-100" (click)="openQrDoc('RIESGOS')" [disabled]="loading">
+                  Matriz de Riesgos
+                </button>
+              </div>
+              <div class="col-12 col-md-4">
+                <button type="button" class="btn btn-outline-primary w-100" (click)="openQrDoc('POLITICA_SST')" [disabled]="loading">
+                  Política de SST
+                </button>
+              </div>
+            </div>
+            <small class="text-muted d-block mt-2">Si no se abre un documento, es porque no hay un PDF público cargado para ese requisito.</small>
+          </div>
+        </div>
+
         <!-- Título principal de la página -->
         <h4 class="ml-impact-title">Matriz Legal</h4>
 
@@ -74,7 +102,7 @@ import { NotificationService } from '../../../../../services/notification.servic
         </div>
 
         <!-- Contenido: listado real de obligaciones de la empresa -->
-        <div class="card shadow-sm border-0">
+        <div class="card shadow-sm border-0" *ngIf="!qrMode">
           <div class="card-header d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #e0e7ff 0%, #f0fdfa 100%); border-bottom: 1px solid #c7d2fe;">
             <div class="d-flex align-items-center gap-2">
               <div class="rounded-circle" style="background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%); color: #fff; width:36px;height:36px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 8px #6366f133;">
@@ -229,6 +257,9 @@ export class MatrizLegalUsuarioComponent implements OnInit {
   ruc: string | null = null;
   inicioLink: any[] = ['/'];
   obligaciones: any[] = [];
+  qrMode = false;
+  qrEmployeeId: string | null = null;
+  private qrOpening = false;
   loading = false;
   error: string | null = null;
   catalogoMatrices: any[] = [];
@@ -263,6 +294,10 @@ export class MatrizLegalUsuarioComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    const qrRaw = this.route.snapshot.queryParamMap.get('qr');
+    this.qrMode = qrRaw === '1' || qrRaw === 'true';
+    this.qrEmployeeId = this.route.snapshot.queryParamMap.get('emp');
+
     // Buscar el parámetro :ruc en la jerarquía de rutas
     let parent: ActivatedRoute | null = this.route;
     while (parent) {
@@ -281,6 +316,89 @@ export class MatrizLegalUsuarioComponent implements OnInit {
 
     // Cargar catálogo y obligaciones de la empresa
     this.loadData();
+  }
+
+  private normText(v: any): string {
+    try {
+      return (v ?? '')
+        .toString()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    } catch {
+      return (v ?? '').toString().toLowerCase().trim();
+    }
+  }
+
+  private matchQrDoc(kind: 'REGLAMENTO' | 'RIESGOS' | 'POLITICA_SST', item: any): boolean {
+    const name = this.normText(this.resolveName(item));
+    const desc = this.normText(this.resolveDescription(item));
+    const hay = `${name} ${desc}`;
+
+    if (kind === 'REGLAMENTO') {
+      return hay.includes('reglamento');
+    }
+    if (kind === 'RIESGOS') {
+      return hay.includes('matriz') && hay.includes('riesg');
+    }
+    // POLITICA_SST
+    return hay.includes('politic') && (hay.includes('sst') || hay.includes('seguridad') || hay.includes('salud'));
+  }
+
+  openQrDoc(kind: 'REGLAMENTO' | 'RIESGOS' | 'POLITICA_SST'): void {
+    if (this.loading) return;
+    if (this.qrOpening) return;
+    this.qrOpening = true;
+
+    try {
+      const list = Array.isArray(this.obligaciones) ? this.obligaciones : [];
+      const target = list.find(it => this.matchQrDoc(kind, it));
+      if (!target?.id) {
+        this.notify.warning('No se encontró el requisito para este documento en la matriz legal.');
+        this.qrOpening = false;
+        return;
+      }
+
+      const matrixId = Number(target.id);
+      // Siempre cargar archivos desde servidor para asegurar estado actual
+      this.filesLoading[matrixId] = true;
+      this.bomService.listFiles(matrixId).subscribe({
+        next: (files) => {
+          const arr = this.sortFiles(files);
+          this.filesMap[matrixId] = arr;
+          this.fileCountMap[matrixId] = arr.length;
+          this.filesLoading[matrixId] = false;
+
+          const publicPdfs = arr.filter((f: any) => {
+            const nameLower = (f?.name ?? f?.path ?? '').toString().toLowerCase();
+            const fdesc = (f?.description ?? '').toString();
+            return nameLower.endsWith('.pdf') && fdesc.includes(this.PUBLIC_TAG);
+          });
+
+          if (publicPdfs.length === 0) {
+            this.notify.warning('No hay un PDF público cargado para este documento.');
+            this.qrOpening = false;
+            return;
+          }
+
+          const pick = publicPdfs[publicPdfs.length - 1];
+          this.previewFile(pick);
+          this.qrOpening = false;
+        },
+        error: (err) => {
+          console.error('Error al listar archivos en modo QR:', err);
+          this.filesLoading[matrixId] = false;
+          this.notify.error('No se pudo cargar el documento. Intente nuevamente.');
+          this.qrOpening = false;
+        }
+      });
+    } catch (e) {
+      console.error('Error en openQrDoc:', e);
+      this.notify.error('No se pudo abrir el documento.');
+      this.qrOpening = false;
+    }
   }
 
   toggleSidebar(): void {
@@ -317,7 +435,8 @@ export class MatrizLegalUsuarioComponent implements OnInit {
         // Cargar relaciones empresa-matriz desde servicio específico (no admin)
         this.bomService.getByBusiness(Number(id)).subscribe({
           next: (relaciones: any[]) => {
-            this.obligaciones = Array.isArray(relaciones) ? relaciones : [];
+            const all = Array.isArray(relaciones) ? relaciones : [];
+            this.obligaciones = all;
             // Precargar conteo de archivos para mostrar badge por fila
             this.preloadFileCounts();
             this.loading = false;

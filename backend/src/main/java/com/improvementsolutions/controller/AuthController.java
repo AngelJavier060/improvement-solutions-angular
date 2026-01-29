@@ -68,6 +68,26 @@ public class AuthController {
             logger.error("Error al listar usuarios: {}", e.getMessage());
             return ResponseEntity.badRequest().body(new ErrorResponse("Error al listar usuarios: " + e.getMessage()));
         }
+
+    }
+
+    /**
+     * Refresca el access token usando un refresh token válido
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody RefreshTokenRequestDto body) {
+        try {
+            if (body == null || body.getRefreshToken() == null || body.getRefreshToken().trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Refresh token requerido"));
+            }
+            return ResponseEntity.ok(authService.refreshAccessToken(body.getRefreshToken()));
+        } catch (BadCredentialsException e) {
+            logger.error("Refresh token inválido: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse("Refresh token inválido o expirado", "UNAUTHORIZED", 401));
+        } catch (Exception e) {
+            logger.error("Error al refrescar token: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse("Error al refrescar token", "INTERNAL_SERVER_ERROR", 500));
+        }
     }
 
     /**

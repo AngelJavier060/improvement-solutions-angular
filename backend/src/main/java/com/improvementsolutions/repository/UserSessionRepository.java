@@ -14,6 +14,7 @@ import java.util.Optional;
 public interface UserSessionRepository extends JpaRepository<UserSession, Long> {
     
     Optional<UserSession> findByToken(String token);
+    Optional<UserSession> findByRefreshToken(String refreshToken);
     
     List<UserSession> findByUserId(Long userId);
     

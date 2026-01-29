@@ -43,6 +43,12 @@ public class UserSession {
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
+    @Column(name = "refresh_token", unique = true)
+    private String refreshToken;
+
+    @Column(name = "refresh_expires_at")
+    private LocalDateTime refreshExpiresAt;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

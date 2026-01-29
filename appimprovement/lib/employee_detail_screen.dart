@@ -93,6 +93,7 @@ class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
   Map<String, dynamic>? _detail; // datos de producción si faltan
   Map<String, dynamic>? _emergency;
   bool _loadingDetail = true;
+  bool _loadingEmergency = true;
 
   @override
   void initState() {
@@ -109,17 +110,36 @@ class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
     final id = e['id'] ?? e['employeeId'] ?? e['employee_id'] ?? e['businessEmployeeId'] ?? e['personaId'] ?? e['personId'] ?? e['person_id'] ?? (e['employee'] is Map ? (e['employee']['id'] ?? e['employee']['employeeId']) : null);
     final cedula = (e['cedula'] ?? e['dni'] ?? e['document'])?.toString();
     try {
-      final detail = await EmployeesService().getEmployeeDetail(id: id, cedula: cedula);
-      final emergency = await EmployeesService().getEmergencyContact(id: id, cedula: cedula);
+      final detailFuture = EmployeesService().getEmployeeDetail(id: id, cedula: cedula);
+      final emergencyFuture = EmployeesService().getEmergencyContact(id: id, cedula: cedula);
+
+      Map<String, dynamic>? detail;
+      try {
+        detail = await detailFuture;
+      } catch (_) {}
+
       if (!mounted) return;
       setState(() {
         _detail = detail;
-        _emergency = emergency;
         _loadingDetail = false;
+      });
+
+      Map<String, dynamic>? emergency;
+      try {
+        emergency = await emergencyFuture;
+      } catch (_) {}
+
+      if (!mounted) return;
+      setState(() {
+        _emergency = emergency;
+        _loadingEmergency = false;
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() { _loadingDetail = false; });
+      setState(() {
+        _loadingDetail = false;
+        _loadingEmergency = false;
+      });
     }
   }
 
@@ -390,6 +410,7 @@ class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
     final name = em['name'] ?? '';
     final relation = em['relation'] ?? '';
     final phone = em['phone'] ?? '';
+    final hasAny = name.isNotEmpty || relation.isNotEmpty || phone.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Container(
@@ -409,9 +430,20 @@ class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
           Container(
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
             child: Column(children: [
-              _tileInfo(icon: Icons.person_outline, label: 'Nombre del Contacto', value: name.isNotEmpty ? name : '—', extra: relation.isNotEmpty ? '($relation)' : ''),
+              _tileInfo(
+                icon: Icons.person_outline,
+                label: 'Nombre del Contacto',
+                value: _loadingEmergency && !hasAny ? 'Cargando...' : (name.isNotEmpty ? name : '—'),
+                extra: relation.isNotEmpty ? '($relation)' : '',
+              ),
               Row(children: [
-                Expanded(child: _tileInfo(icon: Icons.phone_outlined, label: 'Teléfono de Emergencia', value: phone.isNotEmpty ? phone : '—')),
+                Expanded(
+                  child: _tileInfo(
+                    icon: Icons.phone_outlined,
+                    label: 'Teléfono de Emergencia',
+                    value: _loadingEmergency && !hasAny ? 'Cargando...' : (phone.isNotEmpty ? phone : '—'),
+                  ),
+                ),
                 if (phone.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),

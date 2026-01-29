@@ -37,6 +37,8 @@ import java.util.UUID;
 @Service
 public class AuthService {
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+    @Value("${jwt.refresh-token.expiration:604800000}")
+    private long refreshExpirationMs;
     @Autowired
     private UserRepository userRepository;
     
@@ -99,17 +101,35 @@ public class AuthService {
         validateUserStatus(user);
         Authentication authentication = authenticate(user.getUsername(), password);
         String jwt = jwtTokenProvider.generateToken(authentication);
-        
-        // Crear sesión en la base de datos
-        createUserSession(user, jwt);
-        
-        return buildLoginResponse(authentication, jwt);
+
+        // Crear sesión en la base de datos con refresh token
+        UserSession session = createUserSession(user, jwt);
+
+        LoginResponseDto response = buildLoginResponse(authentication, jwt);
+        // Adjuntar refresh token y expiración
+        response.setRefreshToken(session.getRefreshToken());
+        long refreshSeconds = Math.max(0, java.time.Duration.between(java.time.LocalDateTime.now(), session.getRefreshExpiresAt()).getSeconds());
+        response.setRefreshExpiresIn(refreshSeconds);
+        return response;
     }
 
     @Transactional
     public LoginResponseDto authenticateUser(LoginRequestDto loginRequest, String deviceInfo, String ipAddress) {
-        // Implementación básica para compilar
-        return authenticateUser(loginRequest); // Puedes adaptar la lógica según tu necesidad
+        // Por simplicidad, reutilizamos authenticateUser y luego actualizamos deviceInfo/ip
+        LoginResponseDto res = authenticateUser(loginRequest);
+        try {
+            // Actualizar deviceInfo/ip en la sesión más reciente del usuario
+            String username = loginRequest.getUsername() != null ? loginRequest.getUsername() : loginRequest.getEmail();
+            User user = findUserByEmailOrUsername(loginRequest.getEmail(), loginRequest.getUsername());
+            List<UserSession> sessions = userSessionRepository.findActiveSessionsByUserId(user.getId());
+            java.util.Optional<UserSession> latest = sessions.stream().max(java.util.Comparator.comparing(UserSession::getCreatedAt));
+            latest.ifPresent(s -> {
+                s.setDeviceInfo(deviceInfo);
+                s.setIpAddress(ipAddress);
+                userSessionRepository.save(s);
+            });
+        } catch (Exception ignored) {}
+        return res;
     }
 
     private void validateUserStatus(User user) {
@@ -163,6 +183,63 @@ public class AuthService {
         }
         
         response.setUserDetail(userInfo);
+        return response;
+    }
+
+    private LoginResponseDto.UserInfoDto buildUserInfo(User user) {
+        LoginResponseDto.UserInfoDto userInfo = new LoginResponseDto.UserInfoDto();
+        userInfo.setId(user.getId());
+        userInfo.setUsername(user.getUsername());
+        userInfo.setEmail(user.getEmail());
+        userInfo.setName(user.getName());
+        if (user.getRoles() != null) {
+            List<String> roles = user.getRoles().stream().map(r -> r.getName()).collect(java.util.stream.Collectors.toList());
+            userInfo.setRoles(roles);
+        }
+        if (user.getBusinesses() != null && !user.getBusinesses().isEmpty()) {
+            List<LoginResponseDto.BusinessInfoDto> businesses = user.getBusinesses().stream()
+                .map(business -> new LoginResponseDto.BusinessInfoDto(
+                    business.getId(), business.getName(), business.getRuc(), business.getEmail(), business.getPhone()
+                ))
+                .collect(java.util.stream.Collectors.toList());
+            userInfo.setBusinesses(businesses);
+        }
+        return userInfo;
+    }
+
+    @Transactional
+    public LoginResponseDto refreshAccessToken(String refreshToken) {
+        if (refreshToken == null || refreshToken.trim().isEmpty()) {
+            throw new BadCredentialsException("Refresh token requerido");
+        }
+        UserSession session = userSessionRepository.findByRefreshToken(refreshToken)
+                .orElseThrow(() -> new BadCredentialsException("Refresh token inválido"));
+        if (!session.isActive()) {
+            throw new BadCredentialsException("Sesión inactiva");
+        }
+        if (session.getRefreshExpiresAt() == null || session.getRefreshExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            throw new BadCredentialsException("Refresh token expirado");
+        }
+
+        User user = session.getUser();
+        // Generar nuevo access token (sin requerir password)
+        String jwt = jwtTokenProvider.generateTokenFromUsername(user.getUsername());
+
+        // Rotar refresh token
+        String newRefresh = java.util.UUID.randomUUID().toString();
+        session.setToken(jwt);
+        session.setLastActivity(java.time.LocalDateTime.now());
+        session.setRefreshToken(newRefresh);
+        session.setRefreshExpiresAt(java.time.LocalDateTime.now().plus(java.time.Duration.ofMillis(refreshExpirationMs)));
+        userSessionRepository.save(session);
+
+        LoginResponseDto response = new LoginResponseDto();
+        response.setToken(jwt);
+        response.setTokenType("Bearer");
+        response.setExpiresIn(86400L);
+        response.setUserDetail(buildUserInfo(user));
+        response.setRefreshToken(newRefresh);
+        response.setRefreshExpiresIn(refreshExpirationMs / 1000);
         return response;
     }
 
@@ -316,7 +393,7 @@ public class AuthService {
         return userSessionRepository.findActiveSessionsByUserId(userId);
     }
     
-    private void createUserSession(User user, String token) {
+    private UserSession createUserSession(User user, String token) {
         try {
             UserSession session = new UserSession();
             session.setUser(user);
@@ -327,11 +404,15 @@ public class AuthService {
             session.setExpiresAt(java.time.LocalDateTime.now().plusDays(1)); // Token válido por 1 día
             session.setIpAddress("127.0.0.1"); // IP por defecto
             session.setDeviceInfo("Web Browser"); // Dispositivo por defecto
+            session.setRefreshToken(java.util.UUID.randomUUID().toString());
+            session.setRefreshExpiresAt(java.time.LocalDateTime.now().plus(java.time.Duration.ofMillis(refreshExpirationMs)));
             
             userSessionRepository.save(session);
             logger.debug("Sesión creada para usuario: {}", user.getUsername());
+            return session;
         } catch (Exception e) {
             logger.error("Error creando sesión para usuario {}: {}", user.getUsername(), e.getMessage());
+            throw e;
         }
     }
 

@@ -6,6 +6,7 @@ import { Employee, EmployeeResponse } from '../models/employee.model';
 import { environment } from '../../../../../../environments/environment';
 import { BusinessService } from '../../../../../services/business.service';
 import { BusinessContextService } from '../../../../../core/services/business-context.service';
+import { QrLegalDocsService } from '../../../../../core/services/qr-legal-docs.service';
 
 @Component({
   selector: 'app-gestion-empleados',
@@ -34,6 +35,10 @@ export class GestionEmpleadosComponent implements OnInit {
   showCredentialsModal = false;
   employeeToEdit: EmployeeResponse | null = null;
   selectedEmployee: EmployeeResponse | null = null;
+  qrLegalDocsToken: string | null = null;
+  sortColumn: 'name' | 'code' | null = null;
+  sortDir: 'asc' | 'desc' = 'asc';
+  nameSortMode: 'initial' | 'final' = 'initial';
   // Desvinculación / Reingreso
   showDeactivateModal = false;
   showReactivateModal = false;
@@ -62,7 +67,8 @@ export class GestionEmpleadosComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private businessService: BusinessService,
-    private businessContext: BusinessContextService
+    private businessContext: BusinessContextService,
+    private qrLegalDocsService: QrLegalDocsService
   ) {}
 
   ngOnInit(): void {
@@ -239,7 +245,86 @@ export class GestionEmpleadosComponent implements OnInit {
       });
     }
 
+    filtered = this.applySorting(filtered);
     this.filteredEmployees = filtered;
+  }
+
+  private applySorting(list: EmployeeResponse[]): EmployeeResponse[] {
+    if (!Array.isArray(list) || list.length === 0) return list;
+    if (this.sortColumn === 'code') {
+      const getNum = (e: EmployeeResponse): number => {
+        const code = this.getEmployeeCode(e) || '';
+        const m = code.match(/\d+/g);
+        const s = m ? m.join('') : '';
+        const n = s ? parseInt(s, 10) : NaN;
+        return isNaN(n) ? Number.MAX_SAFE_INTEGER : n;
+      };
+      return [...list].sort((a, b) => {
+        const va = getNum(a);
+        const vb = getNum(b);
+        return this.sortDir === 'asc' ? va - vb : vb - va;
+      });
+    }
+    if (this.sortColumn === 'name') {
+      const getName = (e: EmployeeResponse) => (this.getFullName(e) || '').trim();
+      const getInitial = (s: string): string => (s ? s.trim().charAt(0) : '');
+      const getFinal = (s: string): string => {
+        const t = (s || '').trim();
+        for (let i = t.length - 1; i >= 0; i--) {
+          const ch = t[i];
+          if ((/\p{L}/u).test(ch)) return ch;
+        }
+        return t.slice(-1) || '';
+      };
+      return [...list].sort((a, b) => {
+        const an = getName(a); const bn = getName(b);
+        const ac = this.nameSortMode === 'initial' ? getInitial(an) : getFinal(an);
+        const bc = this.nameSortMode === 'initial' ? getInitial(bn) : getFinal(bn);
+        let cmp = ac.localeCompare(bc, 'es', { sensitivity: 'base' });
+        if (cmp === 0) cmp = an.localeCompare(bn, 'es', { sensitivity: 'base' });
+        return this.sortDir === 'asc' ? cmp : -cmp;
+      });
+    }
+    return list;
+  }
+
+  onSortByCode(): void {
+    if (this.sortColumn !== 'code') {
+      this.sortColumn = 'code';
+      this.sortDir = 'asc';
+    } else {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+    }
+    this.filterEmployees();
+  }
+
+  onSortByName(): void {
+    if (this.sortColumn !== 'name') {
+      this.sortColumn = 'name';
+      this.sortDir = 'asc';
+      this.nameSortMode = 'initial';
+    } else {
+      if (this.nameSortMode === 'initial' && this.sortDir === 'asc') {
+        this.sortDir = 'desc';
+      } else if (this.nameSortMode === 'initial' && this.sortDir === 'desc') {
+        this.nameSortMode = 'final';
+        this.sortDir = 'asc';
+      } else if (this.nameSortMode === 'final' && this.sortDir === 'asc') {
+        this.sortDir = 'desc';
+      } else {
+        this.nameSortMode = 'initial';
+        this.sortDir = 'asc';
+      }
+    }
+    this.filterEmployees();
+  }
+
+  getSortIcon(column: 'name' | 'code'): string {
+    if (this.sortColumn !== column) return 'fas fa-sort';
+    if (column === 'code') {
+      return this.sortDir === 'asc' ? 'fas fa-sort-numeric-down' : 'fas fa-sort-numeric-up';
+    }
+    return this.sortDir === 'asc' ? 'fas fa-sort-alpha-down' : 'fas fa-sort-alpha-up';
   }
 
   // Método para manejar cambios en el input de búsqueda
@@ -357,6 +442,19 @@ export class GestionEmpleadosComponent implements OnInit {
   openCredentialsModal(employee: EmployeeResponse): void {
     this.selectedEmployee = employee;
     this.showCredentialsModal = true;
+
+    // Solicitar token público para QR (sin login al escanear)
+    if (this.businessRuc && !this.qrLegalDocsToken) {
+      this.qrLegalDocsService.issueToken(this.businessRuc).subscribe({
+        next: (res) => {
+          this.qrLegalDocsToken = res?.token || null;
+        },
+        error: () => {
+          // Fallback silencioso: si falla, el QR seguirá apuntando al flujo interno
+          this.qrLegalDocsToken = null;
+        }
+      });
+    }
   }
 
   closeCredentialsModal(): void {
@@ -368,8 +466,11 @@ export class GestionEmpleadosComponent implements OnInit {
     try {
       const base = (environment as any).publicSiteUrl?.trim() || (typeof window !== 'undefined' ? window.location.origin : '');
       const ruc = this.businessRuc || '';
-      const ced = emp?.cedula || '';
-      const target = `${base}/usuario/${ruc}/talento-humano/employee/${ced}`;
+      const token = this.qrLegalDocsToken;
+      // Preferir ruta pública (sin login) si hay token
+      const target = token
+        ? `${base}/public/qr/${ruc}?token=${encodeURIComponent(token)}`
+        : `${base}/usuario/${ruc}/seguridad-industrial/matriz-legal?qr=1`;
       const data = encodeURIComponent(target);
       return `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${data}`;
     } catch {

@@ -11,9 +11,11 @@ class AuthService {
 
   String? _token;
   Map<String, dynamic>? _userDetail;
+  String? _refreshToken;
 
   String? get token => _token;
   Map<String, dynamic>? get userDetail => _userDetail;
+  String? get refreshToken => _refreshToken;
 
   Future<Map<String, dynamic>> login({required String username, required String password}) async {
     final String url = '${AppConfig.baseUrl}/api/auth/login';
@@ -43,7 +45,8 @@ class AuthService {
       }
 
       _token = payload['token'] as String?;
-      _userDetail = payload['userDetail'] as Map<String, dynamic>?;
+      _userDetail = (payload['userDetail'] as Map?)?.cast<String, dynamic>();
+      _refreshToken = payload['refreshToken']?.toString();
       return payload;
     }
 
@@ -55,6 +58,35 @@ class AuthService {
     }
 
     throw Exception('Error al autenticar (${response.statusCode})');
+  }
+
+  Future<Map<String, dynamic>> refreshLogin({required String refreshToken}) async {
+    final String url = '${AppConfig.baseUrl}/api/auth/refresh';
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({'refreshToken': refreshToken}),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
+      final Map<String, dynamic> payload = data.containsKey('token') ? data : (data['data'] as Map<String, dynamic>? ?? {});
+      if (payload.isEmpty || !payload.containsKey('token')) {
+        throw Exception('Respuesta de refresh inesperada');
+      }
+      _token = payload['token'] as String?;
+      _userDetail = (payload['userDetail'] as Map?)?.cast<String, dynamic>();
+      _refreshToken = payload['refreshToken']?.toString() ?? refreshToken;
+      return payload;
+    }
+
+    if (response.statusCode == 401) {
+      throw Exception('Refresh token inválido o expirado');
+    }
+    throw Exception('Error al refrescar token (${response.statusCode})');
   }
 
   String? getPrimaryBusinessName() {

@@ -7,6 +7,39 @@ import '../config/app_config.dart';
 import 'auth_service.dart';
 
 class EmployeesService {
+  static final Map<String, Map<String, dynamic>?> _detailCache = <String, Map<String, dynamic>?>{};
+  static final Map<String, Map<String, dynamic>?> _emergencyCache = <String, Map<String, dynamic>?>{};
+
+  String _cacheKey({dynamic id, String? cedula}) {
+    final idPart = id != null ? id.toString() : '';
+    final cedPart = (cedula ?? '').trim();
+    return '$idPart|$cedPart';
+  }
+
+  Future<dynamic> _getJson(String url, String token) async {
+    final resp = await http
+        .get(
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        )
+        .timeout(const Duration(seconds: 6));
+    if (resp.statusCode != 200) return null;
+    return jsonDecode(resp.body);
+  }
+
+  Map<String, dynamic>? _extractDataMap(dynamic decoded) {
+    if (decoded is Map<String, dynamic>) {
+      if (decoded['data'] is Map<String, dynamic>) {
+        return decoded['data'] as Map<String, dynamic>;
+      }
+      return decoded;
+    }
+    return null;
+  }
+
   Future<List<Map<String, dynamic>>> getEmployeesByBusinessRuc(String businessRuc) async {
     final String url = '${AppConfig.baseUrl}/api/business-employees/company/$businessRuc';
     final token = AuthService().token;
@@ -105,93 +138,67 @@ class EmployeesService {
   Future<Map<String, dynamic>?> getEmployeeDetail({dynamic id, String? cedula}) async {
     final token = AuthService().token;
     if (token == null) return null;
+    final key = _cacheKey(id: id, cedula: cedula);
+    if (_detailCache.containsKey(key)) return _detailCache[key];
+
+    final ced = (cedula ?? '').trim();
     final List<String> urls = [
       if (id != null) '${AppConfig.baseUrl}/api/employees/$id',
-      if (id != null) '${AppConfig.baseUrl}/api/employees/$id/detail',
-      if (id != null) '${AppConfig.baseUrl}/api/employees/$id/details',
       if (id != null) '${AppConfig.baseUrl}/api/business-employees/$id',
-      if (id != null) '${AppConfig.baseUrl}/api/business-employees/$id/detail',
-      if (id != null) '${AppConfig.baseUrl}/api/business-employees/$id/details',
-      if (cedula != null) '${AppConfig.baseUrl}/api/employees/cedula/$cedula',
-      if (cedula != null) '${AppConfig.baseUrl}/api/employees/cedula/$cedula/detail',
-      if (cedula != null) '${AppConfig.baseUrl}/api/business-employees/cedula/$cedula',
-      if (cedula != null) '${AppConfig.baseUrl}/api/business-employees/cedula/$cedula/detail',
+      if (ced.isNotEmpty) '${AppConfig.baseUrl}/api/employees/cedula/$ced',
+      if (ced.isNotEmpty) '${AppConfig.baseUrl}/api/business-employees/cedula/$ced',
     ];
+
+    Map<String, dynamic>? result;
     for (final url in urls) {
       try {
-        final resp = await http.get(
-          Uri.parse(url),
-          headers: {
-            'Authorization': 'Bearer ${AuthService().token}',
-            'Accept': 'application/json',
-          },
-        );
-        if (resp.statusCode == 200) {
-          final decoded = jsonDecode(resp.body);
-          if (decoded is Map<String, dynamic>) {
-            if (decoded.containsKey('data') && decoded['data'] is Map<String, dynamic>) {
-              return decoded['data'] as Map<String, dynamic>;
-            }
-            return decoded;
-          }
-        }
+        final decoded = await _getJson(url, token);
+        result = _extractDataMap(decoded);
+        if (result != null) break;
       } catch (_) {}
     }
-    return null;
+
+    _detailCache[key] = result;
+    return result;
   }
 
   Future<Map<String, dynamic>?> getEmergencyContact({dynamic id, String? cedula}) async {
     final token = AuthService().token;
     if (token == null) return null;
+    final key = _cacheKey(id: id, cedula: cedula);
+    if (_emergencyCache.containsKey(key)) return _emergencyCache[key];
+
+    final ced = (cedula ?? '').trim();
     final List<String> urls = [
       if (id != null) '${AppConfig.baseUrl}/api/employees/$id/emergency-contact',
       if (id != null) '${AppConfig.baseUrl}/api/employee-contacts/emergency/$id',
-      if (id != null) '${AppConfig.baseUrl}/api/employees/$id/contacts',
-      if (id != null) '${AppConfig.baseUrl}/api/employee-contacts/employee/$id',
+      if (ced.isNotEmpty) '${AppConfig.baseUrl}/api/employees/cedula/$ced/emergency-contact',
       if (id != null) '${AppConfig.baseUrl}/api/employee-contacts?employeeId=$id',
-      if (cedula != null) '${AppConfig.baseUrl}/api/employees/cedula/$cedula/emergency-contact',
+      if (id != null) '${AppConfig.baseUrl}/api/employee-contacts/employee/$id',
+      if (id != null) '${AppConfig.baseUrl}/api/employees/$id/contacts',
     ];
+
+    Map<String, dynamic>? result;
     for (final url in urls) {
       try {
-        final resp = await http.get(
-          Uri.parse(url),
-          headers: {
-            'Authorization': 'Bearer ${AuthService().token}',
-            'Accept': 'application/json',
-          },
-        );
-        if (resp.statusCode == 200) {
-          final decoded = jsonDecode(resp.body);
-          if (decoded is Map<String, dynamic>) {
-            if (decoded['data'] is Map<String, dynamic>) {
-              final res = decoded['data'] as Map<String, dynamic>;
-              if (kDebugMode) debugPrint('✅ emergency-contact from $url (data map)');
-              return res;
-            }
-            if (decoded['data'] is List) {
-              final picked = _pickEmergencyFromList((decoded['data'] as List).cast());
-              if (picked != null) {
-                if (kDebugMode) debugPrint('✅ emergency-contact from $url (data list)');
-                return picked;
-              }
-            }
-            // Algunas APIs devuelven el contacto directo en el root
-            if (decoded.containsKey('name') || decoded.containsKey('telefono') || decoded.containsKey('phone')) {
-              if (kDebugMode) debugPrint('✅ emergency-contact from $url (root map)');
-              return decoded;
-            }
+        final decoded = await _getJson(url, token);
+        if (decoded is Map<String, dynamic>) {
+          if (decoded['data'] is Map<String, dynamic>) {
+            result = decoded['data'] as Map<String, dynamic>;
+          } else if (decoded['data'] is List) {
+            result = _pickEmergencyFromList((decoded['data'] as List).cast());
+          } else if (decoded.containsKey('name') || decoded.containsKey('telefono') || decoded.containsKey('phone')) {
+            result = decoded;
           }
-          if (decoded is List) {
-            final picked = _pickEmergencyFromList(decoded.cast());
-            if (picked != null) {
-              if (kDebugMode) debugPrint('✅ emergency-contact from $url (root list)');
-              return picked;
-            }
-          }
+        } else if (decoded is List) {
+          result = _pickEmergencyFromList(decoded.cast());
         }
+        if (result != null) break;
       } catch (_) {}
     }
-    return null;
+
+    _emergencyCache[key] = result;
+    return result;
   }
 
   Map<String, dynamic>? _pickEmergencyFromList(List<dynamic> items) {

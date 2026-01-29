@@ -52,6 +52,21 @@ public class JwtTokenProvider {
     }
 
     /**
+     * Genera un token JWT directamente desde el username (útil para refresh tokens)
+     */
+    public String generateTokenFromUsername(String username) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
+
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .compact();
+    }
+
+    /**
      * Extrae el nombre de usuario de un token JWT
      */
     public String getUsernameFromJWT(String token) {

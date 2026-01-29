@@ -37,6 +37,11 @@ import { FileService } from './services/file.service';
     SharedModule,
     RouterModule.forRoot([
       { path: '', component: HomeComponent },
+
+      {
+        path: 'public/qr/:ruc',
+        loadComponent: () => import('./pages/public/qr-legal-docs/qr-legal-docs.component').then(m => m.QrLegalDocsComponent)
+      },
       
       // Nueva ruta para login de usuarios empresariales
       {

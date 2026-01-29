@@ -19,6 +19,7 @@ export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas pú
     '/api/auth/forgot-password',
     '/api/auth/validate-reset-token',
     '/api/auth/reset-password',
+    '/api/public/qr/legal-docs',
     '/api/v1/public',
     '/api/v1/master-data',
     '/api/v1/public/test',

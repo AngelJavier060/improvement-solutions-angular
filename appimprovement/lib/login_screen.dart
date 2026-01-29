@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'services/auth_service.dart';
+import 'services/biometric_auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +14,32 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _bioAvailable = false;
+  bool _bioEnabled = false;
+  bool _bioBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initBiometricAvailability();
+  }
+
+  Future<void> _initBiometricAvailability() async {
+    final bio = BiometricAuthService();
+    final supported = await bio.isDeviceSupported();
+    final canCheck = await bio.canCheckBiometrics();
+    final enabled = await bio.isBiometricEnabled();
+    if (!mounted) return;
+    setState(() {
+      _bioAvailable = supported && canCheck;
+      _bioEnabled = enabled;
+    });
+    // Auto-prompt biometrics if already enabled (banking-like UX)
+    if (_bioAvailable && _bioEnabled) {
+      // slight delay to let UI build
+      Future.microtask(() => _tryBiometricLogin());
+    }
+  }
 
   void _login() async {
     final username = _usernameController.text.trim();
@@ -32,6 +59,11 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await AuthService().login(username: username, password: password);
       if (!mounted) return;
+
+      // Ofrecer activar huella tras login exitoso
+      await _maybeOfferEnableBiometric(username, password);
+
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
@@ -47,6 +79,84 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+
+  Future<void> _maybeOfferEnableBiometric(String username, String password) async {
+    try {
+      final bio = BiometricAuthService();
+      if (!_bioAvailable) return;
+      final already = await bio.isBiometricEnabled();
+      if (already) return;
+
+      final want = await showDialog<bool>(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            title: const Text('Activar ingreso con huella'),
+            content: const Text('¿Deseas habilitar el ingreso con huella dactilar para futuros accesos en este dispositivo?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+              ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sí, activar')),
+            ],
+          );
+        },
+      );
+      if (want != true) return;
+
+      final ok = await bio.authenticate(reason: 'Confirma tu huella para activar el acceso');
+      if (!ok) return;
+
+      final rt = AuthService().refreshToken;
+      if (rt == null || rt.isEmpty) {
+        // Si no hay refresh en respuesta, no habilitar
+        return;
+      }
+      await bio.saveRefreshToken(username, rt);
+      if (!mounted) return;
+      setState(() {
+        _bioEnabled = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingreso con huella activado'), backgroundColor: Colors.green),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _tryBiometricLogin() async {
+    if (!_bioAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Biometría no soportada en este dispositivo'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+    setState(() => _bioBusy = true);
+    try {
+      final bio = BiometricAuthService();
+      final ok = await bio.authenticate(reason: 'Autentícate con tu huella');
+      if (!ok) return;
+
+      final creds = await bio.readRefreshToken();
+      if (creds == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Primero activa el acceso con huella iniciando sesión una vez'), backgroundColor: Colors.orange),
+        );
+        return;
+      }
+
+      await AuthService().refreshLogin(refreshToken: creds['refreshToken']!);
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      if (!mounted) return;
+      // Si falla con 401/credenciales, limpiar credenciales biométricas guardadas
+      try { await BiometricAuthService().clear(); } catch (_) {}
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo iniciar sesión con huella: ${e.toString().replaceFirst('Exception: ', '')}'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _bioBusy = false);
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -247,6 +357,45 @@ class _LoginScreenState extends State<LoginScreen> {
                                     style: TextStyle(color: Color(0xFF9FA6FF)),
                                   ),
                                 ),
+
+                                const SizedBox(height: 8),
+
+                                if (_bioAvailable)
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton.icon(
+                                      onPressed: _bioBusy ? null : (_bioEnabled ? _tryBiometricLogin : () {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Para activar la huella, inicia sesión una vez con tus credenciales'), backgroundColor: Colors.blue),
+                                        );
+                                      }),
+                                      icon: Icon(Icons.fingerprint, color: _bioEnabled ? Colors.white : Colors.white70),
+                                      label: Text(
+                                        _bioEnabled ? 'Ingresar con huella' : 'Configurar huella',
+                                        style: const TextStyle(color: Colors.white),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                        backgroundColor: Colors.white.withOpacity(0.08),
+                                      ),
+                                    ),
+                                  ),
+
+                                if (_bioAvailable && _bioEnabled)
+                                  TextButton(
+                                    onPressed: () async {
+                                      try {
+                                        await BiometricAuthService().clear();
+                                        if (!mounted) return;
+                                        setState(() => _bioEnabled = false);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Ingreso con huella desactivado'), backgroundColor: Colors.green),
+                                        );
+                                      } catch (_) {}
+                                    },
+                                    child: const Text('Desactivar huella'),
+                                  ),
                               ],
                             ),
                           ),

@@ -157,7 +157,7 @@
           <table class="table table-hover mb-0">
             <thead class="table-light">
               <tr>
-                <th>Nombre</th>
+                <th>Nombres y Apellidos</th>
                 <th>Cédula</th>
                 <th>Fecha de registro</th>
                 <th>Hora de registro</th>
@@ -294,8 +294,15 @@
             </colgroup>
             <thead class="table-light">
               <tr>
-                <th>Nombre</th>
-                <th>Cod. Trabajador</th>
+                <th (click)="onSortByName()" style="cursor:pointer" title="Ordenar por nombre (clic para alternar: inicial asc, inicial desc, final asc, final desc)">
+                  <span class="me-1">Nombres y Apellidos</span>
+                  <i [class]="getSortIcon('name')" aria-hidden="true"></i>
+                  <small *ngIf="sortColumn === 'name'" class="text-muted ms-1">({{ nameSortMode === 'initial' ? 'Inicial' : 'Final' }})</small>
+                </th>
+                <th (click)="onSortByCode()" style="cursor:pointer" title="Ordenar por código numérico">
+                  <span class="me-1">Cod. Trabajador</span>
+                  <i [class]="getSortIcon('code')" aria-hidden="true"></i>
+                </th>
                 <th>Cédula</th>
                 <th>Cargo</th>
                 <th>Email</th>

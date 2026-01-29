@@ -14,6 +14,8 @@ public class LoginResponseDto {
     private String tokenType = "Bearer";
     private Long expiresIn;
     private UserInfoDto userDetail;
+    private String refreshToken;
+    private Long refreshExpiresIn;
     
     public LoginResponseDto() {
     }
