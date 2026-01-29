@@ -10,8 +10,8 @@ export class QrLegalDocsService {
 
   constructor(private http: HttpClient) {}
 
-  issueToken(ruc: string): Observable<{ token: string }> {
-    return this.http.post<{ token: string }>(`${this.apiUrl}/qr/legal-docs/token`, { ruc });
+  issueToken(ruc: string): Observable<{ token: string; version?: number }> {
+    return this.http.post<{ token: string; version?: number }>(`${this.apiUrl}/qr/legal-docs/token`, { ruc });
   }
 
   rotateToken(ruc: string): Observable<{ token: string; version: number }> {

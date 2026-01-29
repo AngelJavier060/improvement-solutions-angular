@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { QrLegalDocsService } from '../../../core/services/qr-legal-docs.service';
 
@@ -23,7 +24,7 @@ import { QrLegalDocsService } from '../../../core/services/qr-legal-docs.service
 
       <div class="card shadow-sm" *ngIf="!loading && !error && token">
         <div class="card-body">
-          <div *ngIf="hasPublicItems(); else fallbackStatic" class="row g-2">
+          <div *ngIf="!viewUrl && hasPublicItems(); else fallbackStatic" class="row g-2">
             <div class="col-12 col-md-6 col-lg-4" *ngFor="let it of docs.items">
               <button type="button" class="btn btn-outline-primary w-100 text-truncate" (click)="openItem(it)">
                 <i class="fas fa-file-alt me-1"></i>{{ (it?.title || 'Documento') }}
@@ -31,7 +32,7 @@ import { QrLegalDocsService } from '../../../core/services/qr-legal-docs.service
             </div>
           </div>
           <ng-template #fallbackStatic>
-            <div class="row g-2">
+            <div class="row g-2" *ngIf="!viewUrl; else viewerBlock">
               <div class="col-12 col-md-4">
                 <button type="button" class="btn btn-outline-primary w-100" (click)="open('reglamento')">
                   Reglamento Interno
@@ -48,6 +49,17 @@ import { QrLegalDocsService } from '../../../core/services/qr-legal-docs.service
                 </button>
               </div>
             </div>
+            <ng-template #viewerBlock>
+              <div class="mb-2 d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-outline-secondary btn-sm" (click)="closeViewer()">
+                  ← Volver a la lista
+                </button>
+              </div>
+              <div class="ratio ratio-4x3" style="min-height: 70vh;">
+                <iframe [src]="viewUrl" style="width:100%;height:100%;border:0;" allow="encrypted-media"></iframe>
+              </div>
+              <small class="text-muted d-block mt-2">Vista solo lectura. La descarga está deshabilitada desde la interfaz del visor.</small>
+            </ng-template>
           </ng-template>
 
           <small class="text-muted d-block mt-3">
@@ -65,10 +77,12 @@ export class QrLegalDocsComponent implements OnInit {
   error: string | null = null;
 
   docs: any = null;
+  viewUrl: SafeResourceUrl | null = null;
 
   constructor(
     private route: ActivatedRoute,
-    private qrService: QrLegalDocsService
+    private qrService: QrLegalDocsService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -110,8 +124,8 @@ export class QrLegalDocsComponent implements OnInit {
       return;
     }
 
-    const url = this.qrService.getPublicFileUrl(this.ruc, fileId, this.token);
-    window.open(url, '_blank');
+    const url = this.qrService.getPublicFileUrl(this.ruc, fileId, this.token) + '#toolbar=0&navpanes=0&scrollbar=0&view=fitH';
+    this.viewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
   }
 
   // Abrir elemento dinámico desde docs.items
@@ -122,8 +136,8 @@ export class QrLegalDocsComponent implements OnInit {
     const hasPdf = !!item?.hasPdf;
     if (!found) { alert('No se encontró este documento en la matriz legal.'); return; }
     if (!hasPdf || !fileId) { alert('No hay un PDF público cargado para este documento.'); return; }
-    const url = this.qrService.getPublicFileUrl(this.ruc, fileId, this.token);
-    window.open(url, '_blank');
+    const url = this.qrService.getPublicFileUrl(this.ruc, fileId, this.token) + '#toolbar=0&navpanes=0&scrollbar=0&view=fitH';
+    this.viewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
   }
 
   hasPublicItems(): boolean {
@@ -131,5 +145,9 @@ export class QrLegalDocsComponent implements OnInit {
       const arr: any[] = this.docs?.items || [];
       return Array.isArray(arr) && arr.length > 0;
     } catch { return false; }
+  }
+
+  closeViewer(): void {
+    this.viewUrl = null;
   }
 }

@@ -40,6 +40,7 @@ public class QrLegalDocsController {
         String token = tokenService.generateToken(ruc, version);
         Map<String, Object> res = new HashMap<>();
         res.put("token", token);
+        res.put("version", version);
         return ResponseEntity.ok(res);
     }
 

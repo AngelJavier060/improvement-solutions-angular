@@ -532,7 +532,7 @@
                     </label>
                   </div>
                 </div>
-                <div class="text-muted small mb-1">Visibles para usuario (PDF): {{ countPublicFor(getMatrixRelationId(obligation)) }}/3</div>
+                <div class="text-muted small mb-1">Visibles para usuario (PDF): {{ countPublicFor(getMatrixRelationId(obligation)) }}/5</div>
                 
                 <div *ngIf="matrixFilesLoading[getMatrixRelationId(obligation)]" class="text-muted small">Cargando archivos...</div>
                 <div *ngIf="!matrixFilesLoading[getMatrixRelationId(obligation)] && (matrixFiles[getMatrixRelationId(obligation)]?.length || 0) === 0" class="text-muted small">Sin archivos.</div>

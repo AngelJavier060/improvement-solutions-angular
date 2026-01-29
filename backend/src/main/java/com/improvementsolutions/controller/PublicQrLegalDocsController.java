@@ -54,7 +54,11 @@ public class PublicQrLegalDocsController {
         List<Map<String, Object>> items = buildAllPublicItems(matrices);
         res.put("items", items);
 
-        return ResponseEntity.ok(res);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(res);
     }
 
     @GetMapping("/{ruc}/files/{fileId}")
@@ -89,6 +93,11 @@ public class PublicQrLegalDocsController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .header("X-Content-Type-Options", "nosniff")
+                .header("Content-Security-Policy", "default-src 'self'; frame-ancestors 'self'; object-src 'none'")
                 .body(resource);
     }
 

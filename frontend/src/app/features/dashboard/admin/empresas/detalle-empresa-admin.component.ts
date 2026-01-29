@@ -263,7 +263,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     const currentlyPublic = this.isPublicFile(file);
     if (!currentlyPublic) {
       const count = this.countPublicFor(matrixId);
-      if (count >= 3) { alert('Solo puede seleccionar hasta 3 PDFs visibles por obligación.'); return; }
+      if (count >= 5) { alert('Solo puede seleccionar hasta 5 PDFs visibles por obligación.'); return; }
     }
     const currentDesc = (file?.description ?? '').toString();
     const descBase = currentDesc.replace('[PUBLIC]', '').trim();
@@ -290,6 +290,19 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     this.qrLegalDocsService.issueToken(ruc).subscribe({
       next: (res) => { this.qrPreviewToken = res?.token || null; },
       error: () => { this.qrPreviewToken = null; alert('No se pudo generar el token de QR.'); }
+    });
+  }
+
+  rotateQrToken(): void {
+    const ruc = this.getBusinessRuc();
+    if (!ruc) { alert('No se pudo determinar el RUC de la empresa.'); return; }
+    if (!confirm('Esto invalidará todos los QR anteriores. ¿Desea continuar?')) return;
+    this.qrLegalDocsService.rotateToken(ruc).subscribe({
+      next: (res) => {
+        this.qrPreviewToken = res?.token || null;
+        alert('Token rotado correctamente. Actualice las credenciales impresas con el nuevo QR.');
+      },
+      error: () => { alert('No se pudo rotar el token.'); }
     });
   }
 
@@ -370,8 +383,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
           });
           const target = pdfs[0];
           const currentlyPublic = this.isPublicFile(target);
-          if (!currentlyPublic && this.countPublicFor(matrixId) >= 3) {
-            alert('Límite de 3 PDFs visibles por obligación alcanzado.');
+          if (!currentlyPublic && this.countPublicFor(matrixId) >= 5) {
+            alert('Límite de 5 PDFs visibles por obligación alcanzado.');
             return;
           }
           const baseDesc = (target?.description ?? '').toString().replace('[PUBLIC]', '').trim();
