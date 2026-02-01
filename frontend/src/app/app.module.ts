@@ -54,6 +54,12 @@ import { FileService } from './services/file.service';
           });
         }
       },
+
+      // Ruta puente para aceptar token como segmento de ruta y redirigir a query param
+      {
+        path: 'auth/reset-password/:token',
+        loadComponent: () => import('./features/auth/reset-password/reset-password-redirect.component').then(m => m.ResetPasswordRedirectComponent)
+      },
       
       // Nueva ruta para bienvenida de usuarios
       {

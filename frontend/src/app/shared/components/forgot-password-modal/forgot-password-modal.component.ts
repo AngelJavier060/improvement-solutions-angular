@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService, PasswordResetRequestResult } from '../../../core/services/auth.service';
@@ -14,6 +14,8 @@ export class ForgotPasswordModalComponent implements OnInit {
   loading = false;
   error = '';
   successMessage = '';
+  resetLink: string | null = null;
+  copied = false;
 
   constructor(
     private fb: FormBuilder,
@@ -40,7 +42,7 @@ export class ForgotPasswordModalComponent implements OnInit {
 
     const email = this.emailControl?.value;
     if (!email) {
-      this.error = 'El correo electrónico es requerido';
+      this.error = 'El correo electrÃ³nico es requerido';
       this.loading = false;
       return;
     }
@@ -50,14 +52,12 @@ export class ForgotPasswordModalComponent implements OnInit {
         (result: PasswordResetRequestResult) => {
           this.loading = false;
           if (result && result.success) {
-            this.successMessage = 'Se ha enviado un correo con las instrucciones para restablecer tu contraseña.';
-            if (result.link) {
+            this.successMessage = 'Se ha enviado un correo con las instrucciones para restablecer tu contraseÃ±a.';
+            this.resetLink = result.link ? String(result.link) : null;
+            if (this.resetLink) {
               // En entornos de desarrollo, el backend puede retornar el enlace para pruebas manuales
-              console.log('[DEV] Enlace de restablecimiento de contraseña:', result.link);
+              console.log('[DEV] Enlace de restablecimiento de contraseÃ±a:', this.resetLink);
             }
-            setTimeout(() => {
-              this.activeModal.close('success');
-            }, 3000);
           } else {
             this.error = 'No se pudo procesar la solicitud';
           }
@@ -75,5 +75,20 @@ export class ForgotPasswordModalComponent implements OnInit {
 
   backToLogin(): void {
     this.activeModal.dismiss('login');
+  }
+  copyResetLink(): void {
+    if (!this.resetLink) { return; }
+    const clip: any = (navigator as any).clipboard;
+    if (clip && typeof clip.writeText === "function") {
+      clip.writeText(this.resetLink).then(() => {
+        this.copied = true;
+        setTimeout(() => this.copied = false, 2000);
+      }).catch(() => {});
+    }
+  }
+
+  openResetLink(): void {
+    if (!this.resetLink) { return; }
+    window.location.href = this.resetLink;
   }
 }

@@ -36,7 +36,8 @@ export class ResetPasswordComponent implements OnInit {
   get confirmPasswordControl() { return this.resetPasswordForm.get('confirmPassword'); }
 
   ngOnInit(): void {
-    this.token = this.route.snapshot.queryParamMap.get('token');
+    // Token puede venir como query param (?token=) o como segmento de ruta (/reset-password/:token)
+    this.token = this.route.snapshot.queryParamMap.get('token') || this.route.snapshot.paramMap.get('token');
     
     if (!this.token) {
       this.error = 'Token no proporcionado';
