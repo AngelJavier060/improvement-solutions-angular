@@ -8,6 +8,7 @@ import com.improvementsolutions.model.Role;
 import com.improvementsolutions.model.User;
 import com.improvementsolutions.repository.RoleRepository;
 import com.improvementsolutions.service.FileStorageService;
+import com.improvementsolutions.repository.UserRepository;
 import com.improvementsolutions.service.UserService;
 import jakarta.validation.Valid;
 
@@ -44,6 +45,9 @@ public class UserAdminController {
     @Autowired
     private RoleRepository roleRepository;
     
+    @Autowired
+    private UserRepository userRepository;
+    
     /**
      * Obtiene una lista de todos los usuarios
      */
@@ -63,7 +67,7 @@ public class UserAdminController {
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         logger.info("Obteniendo usuario con ID: {}", id);
-        return userService.findById(id)
+        return userRepository.findByIdWithRoles(id)
                 .map(this::convertToDto)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
