@@ -1,11 +1,38 @@
 <div class="th-dashboard">
   <div class="module-header">
-    <div class="module-title">MÓDULO DE TALENTO HUMANO</div>
-    <div class="d-flex align-items-center gap-2">
-      <a class="btn btn-sm btn-outline-secondary" [routerLink]="welcomeLink" title="Volver a inicio">
+    <div class="topbar-left">
+      <nav class="breadcrumb mb-1">
+        <a [routerLink]="welcomeLink" class="crumb-home"><i class="fas fa-home me-1"></i> Home</a>
+        <span class="sep">/</span>
+        <span class="current">Talento Humano</span>
+      </nav>
+      <div class="module-title d-flex align-items-center gap-2">
+        <span class="title-dot"></span>
+        <span>Módulo de Talento Humano</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <a class="text-muted small me-3 d-none d-sm-inline" [routerLink]="welcomeLink" title="Volver a inicio">
         <i class="fas fa-arrow-left me-1"></i> Salir
       </a>
-      <div class="module-user"><i class="fas fa-user-circle"></i></div>
+      <i class="far fa-bell text-muted me-3"></i>
+      <span class="divider mx-2"></span>
+      <div class="identity d-flex align-items-center">
+        <div class="text-end me-2">
+          <div class="name fw-semibold">{{ currentUserName || businessName || 'Usuario' }}</div>
+          <div class="email text-muted small">{{ currentUserEmail || businessEmail }}</div>
+        </div>
+        <ng-container *ngIf="userPhotoUrl; else iconUser">
+          <img [src]="userPhotoUrl" alt="Foto de usuario" class="rounded-circle" style="width:36px;height:36px;object-fit:cover;border:2px solid #e5e7eb;">
+        </ng-container>
+        <ng-template #iconUser>
+          <div class="avatar">
+            <ng-container *ngIf="initials; else defaultUserIcon">{{ initials }}</ng-container>
+          </div>
+        </ng-template>
+        <ng-template #defaultUserIcon><i class="fas fa-user"></i></ng-template>
+        <i class="fas fa-chevron-down ms-2 text-muted small"></i>
+      </div>
     </div>
   </div>
 

@@ -398,10 +398,12 @@ export class MatrixConfigComponent implements OnInit {
   }
 
   resolveName(it: any): string {
-    const direct = (it?.name ?? '').toString().trim();
-    if (direct) return direct;
+    // Preferir siempre el catálogo (configuración) para que los cambios se reflejen automáticamente
     const nested = (it?.obligationMatrix?.legalCompliance ?? '').toString().trim();
-    return nested || '—';
+    if (nested) return nested;
+    // Si no hay catálogo disponible, usar el valor directo (override) como respaldo
+    const direct = (it?.name ?? '').toString().trim();
+    return direct || '—';
   }
 
   resolveRegulation(it: any): string {

@@ -7,6 +7,7 @@ import { environment } from '../../../../../../environments/environment';
 import { BusinessService } from '../../../../../services/business.service';
 import { BusinessContextService } from '../../../../../core/services/business-context.service';
 import { QrLegalDocsService } from '../../../../../core/services/qr-legal-docs.service';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-gestion-empleados',
@@ -25,6 +26,12 @@ export class GestionEmpleadosComponent implements OnInit {
   businessId: number | null = null;
   businessRuc: string | null = null;
   businessShortUpper: string = '';
+  businessName: string | null = null;
+  businessEmail: string | null = null;
+  currentUserName: string | null = null;
+  currentUserEmail: string | null = null;
+  userPhotoUrl: string | null = null;
+  initials: string | null = null;
 
   // Modal
   showCreateModal = false;
@@ -68,7 +75,8 @@ export class GestionEmpleadosComponent implements OnInit {
     private router: Router,
     private businessService: BusinessService,
     private businessContext: BusinessContextService,
-    private qrLegalDocsService: QrLegalDocsService
+    private qrLegalDocsService: QrLegalDocsService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -79,6 +87,17 @@ export class GestionEmpleadosComponent implements OnInit {
     this.fetchBusinessShortName();
     this.loadEmployees();
 
+    // Identidad de usuario para el encabezado
+    const u = this.authService.getCurrentUser();
+    if (u) {
+      const name = (u.name || '').toString().trim();
+      const username = (u.username || '').toString().trim();
+      const email = (u.email || '').toString().trim();
+      this.currentUserName = name || username || email || null;
+      this.currentUserEmail = email || null;
+      this.userPhotoUrl = this.buildUserPhotoUrl((u.profilePicture || u.photo || '').toString());
+      this.initials = this.buildInitials(this.currentUserName || this.businessName);
+    }
     // Suscribirse a cambios de parámetros para recargar si cambian
     this.route.params.subscribe(() => {
       this.extractRouteParams();
@@ -389,6 +408,31 @@ export class GestionEmpleadosComponent implements OnInit {
   onImageError(event: any): void {
     console.log('Error cargando imagen:', event);
     event.target.style.display = 'none';
+  }
+
+  // === Helpers de identidad (foto/iniciales) ===
+  private buildUserPhotoUrl(raw: string): string | null {
+    try {
+      let rel = (raw || '').trim().replace(/\\/g, '/');
+      if (!rel) return null;
+      if (/^https?:\/\//i.test(rel)) return rel;
+      if (rel.startsWith('uploads/')) rel = rel.substring('uploads/'.length);
+      if (!rel.includes('/')) rel = `profiles/${rel}`;
+      // usar ruta relativa para respetar proxy/i18n
+      return `/api/files/${rel}`;
+    } catch {
+      return null;
+    }
+  }
+
+  private buildInitials(source?: string | null): string | null {
+    const s = (source || '').trim();
+    if (!s) return null;
+    const parts = s.split(/\s+/).filter(Boolean);
+    const a = parts[0]?.charAt(0) || '';
+    const b = parts.length > 1 ? parts[1].charAt(0) : '';
+    const init = `${a}${b}`.toUpperCase();
+    return init || null;
   }
 
   openCreateModal(): void {
@@ -965,9 +1009,13 @@ export class GestionEmpleadosComponent implements OnInit {
       this.businessService.getByRuc(this.businessRuc).subscribe({
         next: (b) => {
           this.businessShortUpper = ((b?.nameShort || b?.name) || '').toUpperCase();
+          this.businessName = (b?.nameShort || b?.name) || null;
+          this.businessEmail = b?.email || null;
         },
         error: () => {
           this.businessShortUpper = '';
+          this.businessName = null;
+          this.businessEmail = null;
         }
       });
       return;
@@ -976,9 +1024,13 @@ export class GestionEmpleadosComponent implements OnInit {
       this.businessService.getById(this.businessId).subscribe({
         next: (b) => {
           this.businessShortUpper = ((b?.nameShort || b?.name) || '').toUpperCase();
+          this.businessName = (b?.nameShort || b?.name) || null;
+          this.businessEmail = b?.email || null;
         },
         error: () => {
           this.businessShortUpper = '';
+          this.businessName = null;
+          this.businessEmail = null;
         }
       });
     }
