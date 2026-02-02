@@ -17,6 +17,7 @@ export class ResetPasswordComponent implements OnInit {
   error: string = '';
   successMessage: string = '';
   tokenInvalid = false;
+  currentYear: number = new Date().getFullYear();
 
   constructor(
     private fb: FormBuilder,
