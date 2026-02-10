@@ -500,7 +500,7 @@ public class BusinessController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> createBusiness(@RequestBody Business business) {
         try {
             Business createdBusiness = businessService.create(business);
@@ -532,7 +532,7 @@ public class BusinessController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> updateBusiness(@PathVariable Long id, @RequestBody Business business) {
         try {
             Business updatedBusiness = businessService.update(id, business);
@@ -563,14 +563,14 @@ public class BusinessController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> deleteBusiness(@PathVariable Long id) {
         businessService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/ruc/{ruc}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> deleteBusinessByRuc(@PathVariable String ruc) {
         Business business = businessService.findByRuc(ruc)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada con RUC: " + ruc));

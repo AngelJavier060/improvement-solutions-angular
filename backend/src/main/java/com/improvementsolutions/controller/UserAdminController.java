@@ -89,13 +89,44 @@ public class UserAdminController {
     
     /**
      * Crea un nuevo usuario
+     * Solo SUPER_ADMIN puede crear administradores (ROLE_ADMIN, ROLE_SUPER_ADMIN)
+     * ADMIN puede crear usuarios finales (ROLE_USER)
      */
     @PostMapping
-    public ResponseEntity<?> createUser(@Valid @RequestBody UserUpdateDto userCreateDto) {
+    public ResponseEntity<?> createUser(@Valid @RequestBody UserUpdateDto userCreateDto,
+                                        org.springframework.security.core.Authentication authentication) {
         logger.info("Creando nuevo usuario");
         try {
             if (userCreateDto.getPassword() == null || userCreateDto.getPassword().isEmpty()) {
                 return ResponseEntity.badRequest().body("La contraseña es obligatoria para crear un usuario");
+            }
+            
+            // Verificar permisos: solo SUPER_ADMIN puede crear administradores
+            if (userCreateDto.getRoleIds() != null && !userCreateDto.getRoleIds().isEmpty()) {
+                Set<Role> rolesToAssign = userCreateDto.getRoleIds().stream()
+                        .map(roleId -> roleRepository.findById(roleId)
+                                .orElseThrow(() -> new RuntimeException("Rol no encontrado con ID: " + roleId)))
+                        .collect(java.util.stream.Collectors.toSet());
+                
+                // Verificar si se intenta asignar rol de administrador
+                boolean isAssigningAdminRole = rolesToAssign.stream()
+                        .anyMatch(role -> role.getName().equals("ROLE_ADMIN") || role.getName().equals("ROLE_SUPER_ADMIN"));
+                
+                if (isAssigningAdminRole) {
+                    // Verificar si el usuario autenticado es SUPER_ADMIN
+                    boolean isSuperAdmin = authentication.getAuthorities().stream()
+                            .anyMatch(auth -> auth.getAuthority().equals("ROLE_SUPER_ADMIN"));
+                    
+                    if (!isSuperAdmin) {
+                        logger.warn("Usuario {} intentó crear un administrador sin permisos de SUPER_ADMIN", 
+                                authentication.getName());
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                                .body(new ErrorResponse(
+                                        "Solo los Super Administradores pueden crear otros administradores",
+                                        "FORBIDDEN",
+                                        403));
+                    }
+                }
             }
             
             User newUser = new User();
@@ -125,12 +156,38 @@ public class UserAdminController {
     
     /**
      * Elimina un usuario
+     * Solo SUPER_ADMIN puede eliminar administradores (ROLE_ADMIN, ROLE_SUPER_ADMIN)
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id,
-                                        @RequestParam(name = "force", required = false, defaultValue = "false") boolean force) {
+                                        @RequestParam(name = "force", required = false, defaultValue = "false") boolean force,
+                                        org.springframework.security.core.Authentication authentication) {
         logger.info("Eliminando usuario con ID: {} (force={})", id, force);
         try {
+            // Obtener el usuario a eliminar para verificar sus roles
+            User userToDelete = userRepository.findByIdWithRoles(id)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            // Verificar si el usuario a eliminar tiene rol de administrador
+            boolean isAdminUser = userToDelete.getRoles().stream()
+                    .anyMatch(role -> role.getName().equals("ROLE_ADMIN") || role.getName().equals("ROLE_SUPER_ADMIN"));
+            
+            if (isAdminUser) {
+                // Verificar si el usuario autenticado es SUPER_ADMIN
+                boolean isSuperAdmin = authentication.getAuthorities().stream()
+                        .anyMatch(auth -> auth.getAuthority().equals("ROLE_SUPER_ADMIN"));
+                
+                if (!isSuperAdmin) {
+                    logger.warn("Usuario {} intentó eliminar un administrador sin permisos de SUPER_ADMIN", 
+                            authentication.getName());
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(new ErrorResponse(
+                                    "Solo los Super Administradores pueden eliminar otros administradores",
+                                    "FORBIDDEN",
+                                    403));
+                }
+            }
+            
             java.util.Map<String, Object> report = userService.deleteWithReport(id, force);
             String msg = force ? "Usuario eliminado con limpieza forzada" : "Usuario eliminado correctamente";
             return ResponseEntity.ok(new SuccessResponse(msg, report));
