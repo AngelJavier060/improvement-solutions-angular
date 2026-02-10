@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'services/biometric_auth_service.dart';
+import 'services/auth_service.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -230,14 +232,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         child: _AccessButton(
                           icon: Icons.fingerprint,
                           label: 'Huella',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Autenticación biométrica: próximamente'),
-                                backgroundColor: Color(0xFF6E7E89),
-                              ),
-                            );
-                          },
+                          onTap: _onFingerprintTap,
                         ),
                       ),
                     ],
@@ -250,6 +245,64 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _onFingerprintTap() async {
+    try {
+      final bio = BiometricAuthService();
+      final supported = await bio.isDeviceSupported();
+      final can = await bio.canCheckBiometrics();
+      if (!supported || !can) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Biometría no soportada en este dispositivo'), backgroundColor: Colors.orange),
+        );
+        return;
+      }
+
+      final enabled = await bio.isBiometricEnabled();
+      if (!enabled) {
+        if (!mounted) return;
+        final goLogin = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Activar ingreso con huella'),
+            content: const Text('Para usar la huella, inicia sesión con tus credenciales y elige "Sí, activar".'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+              ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Ir a login')),
+            ],
+          ),
+        );
+        if (goLogin == true) {
+          if (!mounted) return;
+          Navigator.pushReplacementNamed(context, '/login');
+        }
+        return;
+      }
+
+      final ok = await bio.authenticate(reason: 'Autentícate con tu huella');
+      if (!ok) return;
+
+      final creds = await bio.readRefreshToken();
+      if (creds == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Primero activa la huella iniciando sesión una vez'), backgroundColor: Colors.orange),
+        );
+        return;
+      }
+
+      await AuthService().refreshLogin(refreshToken: creds['refreshToken']!);
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      try { await BiometricAuthService().clear(); } catch (_) {}
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo iniciar sesión con huella: ${e.toString().replaceFirst('Exception: ', '')}'), backgroundColor: Colors.red),
+      );
+    }
   }
 }
 

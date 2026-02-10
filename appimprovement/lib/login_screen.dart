@@ -17,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _bioAvailable = false;
   bool _bioEnabled = false;
   bool _bioBusy = false;
+  bool _rememberMe = true;
 
   @override
   void initState() {
@@ -29,10 +30,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final supported = await bio.isDeviceSupported();
     final canCheck = await bio.canCheckBiometrics();
     final enabled = await bio.isBiometricEnabled();
+    final remember = await bio.getRememberMe();
     if (!mounted) return;
     setState(() {
       _bioAvailable = supported && canCheck;
       _bioEnabled = enabled;
+      _rememberMe = remember;
     });
     // Auto-prompt biometrics if already enabled (banking-like UX)
     if (_bioAvailable && _bioEnabled) {
@@ -102,12 +105,27 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (want != true) return;
 
+      final enrolled = await bio.isEnrolled();
+      if (!enrolled) {
+        await bio.openEnrollSettings();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Configura tu huella en Ajustes y vuelve a intentarlo'), backgroundColor: Colors.orange),
+        );
+        return;
+      }
       final ok = await bio.authenticate(reason: 'Confirma tu huella para activar el acceso');
       if (!ok) return;
 
       final rt = AuthService().refreshToken;
       if (rt == null || rt.isEmpty) {
-        // Si no hay refresh en respuesta, no habilitar
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo activar la huella: el servidor no envió refresh token'),
+            backgroundColor: Colors.orange,
+          ),
+        );
         return;
       }
       await bio.saveRefreshToken(username, rt);
@@ -349,13 +367,36 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                 const SizedBox(height: 16),
 
-                                // Enlace de recuperación
-                                TextButton(
-                                  onPressed: () {},
-                                  child: const Text(
-                                    '¿Olvidaste tu contraseña?',
-                                    style: TextStyle(color: Color(0xFF9FA6FF)),
-                                  ),
+                                // Recordarme + Enlace de recuperación
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Switch(
+                                          value: _rememberMe,
+                                          onChanged: (v) async {
+                                            setState(() => _rememberMe = v);
+                                            await BiometricAuthService().setRememberMe(v);
+                                            if (!v) {
+                                              await BiometricAuthService().clear();
+                                              if (mounted) setState(() => _bioEnabled = false);
+                                            }
+                                          },
+                                          activeColor: Color(0xFF5B67F1),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Text('Recordarme', style: TextStyle(color: Colors.white70)),
+                                      ],
+                                    ),
+                                    TextButton(
+                                      onPressed: () {},
+                                      child: const Text(
+                                        '¿Olvidaste tu contraseña?',
+                                        style: TextStyle(color: Color(0xFF9FA6FF)),
+                                      ),
+                                    ),
+                                  ],
                                 ),
 
                                 const SizedBox(height: 8),

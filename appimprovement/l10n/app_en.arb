@@ -1,0 +1,38 @@
+{
+  "appTitle": "Improvements Solutions",
+
+  "welcomeBack": "Welcome back",
+  "swipeForMore": "Swipe to see more",
+
+  "loginUserLabel": "Username",
+  "loginPasswordLabel": "Password",
+  "loginHintUser": "Enter your username",
+  "loginHintPassword": "Enter your password",
+  "loginButton": "Sign In",
+  "forgotPassword": "Forgot your password?",
+  "rememberMe": "Remember me",
+
+  "accessUserPassword": "User\nPassword",
+  "accessFingerprint": "Fingerprint",
+
+  "biometricActivateTitle": "Enable fingerprint login",
+  "biometricActivateContent": "Do you want to enable fingerprint login for future access on this device?",
+  "biometricActivateYes": "Yes, enable",
+  "biometricNotSupported": "Biometrics not supported on this device",
+  "biometricEnrollPrompt": "Set up your fingerprint in Settings and try again",
+  "biometricActivateSuccess": "Fingerprint login enabled",
+  "biometricActivateNoRefresh": "Could not enable fingerprint: server did not return a refresh token",
+  "biometricLoginPrompt": "Authenticate with your fingerprint",
+  "biometricActivateConfirm": "Confirm your fingerprint to enable access",
+  "biometricLoginFirst": "First, enable fingerprint login by signing in once",
+  "biometricLoginFailed": "Couldn't sign in with fingerprint: {error}",
+
+  "goToLogin": "Go to login",
+  "cancel": "Cancel",
+
+  "homeWelcome": "Welcome",
+  "homeWelcomeTo": "Welcome to {business}",
+  "homeSignedIn": "You have signed in successfully.",
+  "featureTalent": "Human Talent",
+  "featureSafety": "Industrial Safety"
+}

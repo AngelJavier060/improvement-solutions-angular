@@ -38,15 +38,38 @@ class AuthService {
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
       // El backend puede envolver en { data, message, success } o devolver directo.
-      final Map<String, dynamic> payload = data.containsKey('token') ? data : (data['data'] as Map<String, dynamic>? ?? {});
+      final Map<String, dynamic> root = data;
+      final Map<String, dynamic> payload = root.containsKey('token') || root.containsKey('accessToken') || root.containsKey('access_token')
+          ? root
+          : (root['data'] as Map<String, dynamic>? ?? {});
 
-      if (payload.isEmpty || !payload.containsKey('token')) {
+      String? _pickStr(Map<String, dynamic> m, List<String> keys) {
+        for (final k in keys) {
+          if (m.containsKey(k) && m[k] != null && m[k].toString().isNotEmpty) {
+            return m[k].toString();
+          }
+        }
+        return null;
+      }
+
+      if (payload.isEmpty) {
         throw Exception('Respuesta de login inesperada');
       }
 
-      _token = payload['token'] as String?;
-      _userDetail = (payload['userDetail'] as Map?)?.cast<String, dynamic>();
-      _refreshToken = payload['refreshToken']?.toString();
+      _token = _pickStr(payload, ['token', 'accessToken', 'access_token']);
+      if (_token == null || _token!.isEmpty) {
+        throw Exception('Token de acceso no presente en la respuesta');
+      }
+
+      // userDetail puede venir en diferentes claves
+      _userDetail = (payload['userDetail'] as Map?)?.cast<String, dynamic>()
+          ?? (payload['user'] as Map?)?.cast<String, dynamic>();
+
+      // refreshToken con tolerancia a diferentes nombres/ubicaciones
+      _refreshToken = _pickStr(payload, ['refreshToken', 'refresh_token', 'refresh'])
+          ?? _pickStr(root, ['refreshToken', 'refresh_token', 'refresh'])
+          ?? (_pickStr(payload['tokens'] is Map<String, dynamic> ? payload['tokens'] as Map<String, dynamic> : {}, ['refreshToken', 'refresh_token']));
+
       return payload;
     }
 
@@ -73,13 +96,32 @@ class AuthService {
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
-      final Map<String, dynamic> payload = data.containsKey('token') ? data : (data['data'] as Map<String, dynamic>? ?? {});
-      if (payload.isEmpty || !payload.containsKey('token')) {
+      final Map<String, dynamic> root = data;
+      final Map<String, dynamic> payload = root.containsKey('token') || root.containsKey('accessToken') || root.containsKey('access_token')
+          ? root
+          : (root['data'] as Map<String, dynamic>? ?? {});
+
+      String? _pickStr(Map<String, dynamic> m, List<String> keys) {
+        for (final k in keys) {
+          if (m.containsKey(k) && m[k] != null && m[k].toString().isNotEmpty) {
+            return m[k].toString();
+          }
+        }
+        return null;
+      }
+
+      if (payload.isEmpty) {
         throw Exception('Respuesta de refresh inesperada');
       }
-      _token = payload['token'] as String?;
-      _userDetail = (payload['userDetail'] as Map?)?.cast<String, dynamic>();
-      _refreshToken = payload['refreshToken']?.toString() ?? refreshToken;
+      _token = _pickStr(payload, ['token', 'accessToken', 'access_token']);
+      if (_token == null || _token!.isEmpty) {
+        throw Exception('Token de acceso faltante en refresh');
+      }
+      _userDetail = (payload['userDetail'] as Map?)?.cast<String, dynamic>()
+          ?? (payload['user'] as Map?)?.cast<String, dynamic>();
+      _refreshToken = _pickStr(payload, ['refreshToken', 'refresh_token', 'refresh'])
+          ?? _pickStr(root, ['refreshToken', 'refresh_token', 'refresh'])
+          ?? refreshToken;
       return payload;
     }
 

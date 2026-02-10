@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'dart:io' show Platform;
+import 'package:android_intent_plus/android_intent.dart';
 
 class BiometricAuthService {
   static final BiometricAuthService _instance = BiometricAuthService._internal();
@@ -13,6 +15,7 @@ class BiometricAuthService {
   static const _kBioEnabled = 'bio_enabled';
   static const _kBioUsername = 'bio_username';
   static const _kBioRefresh = 'bio_refresh_token';
+  static const _kRememberMe = 'remember_me';
 
   Future<bool> isDeviceSupported() async {
     try {
@@ -27,6 +30,15 @@ class BiometricAuthService {
       final can = await _auth.canCheckBiometrics;
       final enrolled = await _auth.getAvailableBiometrics();
       return can && enrolled.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> isEnrolled() async {
+    try {
+      final list = await _auth.getAvailableBiometrics();
+      return list.isNotEmpty;
     } catch (_) {
       return false;
     }
@@ -76,5 +88,28 @@ class BiometricAuthService {
     await _storage.delete(key: _kBioUsername);
     await _storage.delete(key: _kBioRefresh);
     await _storage.delete(key: 'bio_password');
+  }
+
+  Future<bool> getRememberMe() async {
+    final v = await _storage.read(key: _kRememberMe);
+    if (v == null) return true; // por defecto activado
+    return v == '1';
+  }
+
+  Future<void> setRememberMe(bool value) async {
+    await _storage.write(key: _kRememberMe, value: value ? '1' : '0');
+  }
+
+  Future<void> openEnrollSettings() async {
+    if (!Platform.isAndroid) return;
+    try {
+      const intent = AndroidIntent(action: 'android.settings.BIOMETRIC_ENROLL');
+      await intent.launch();
+    } catch (_) {
+      try {
+        const intent = AndroidIntent(action: 'android.settings.SECURITY_SETTINGS');
+        await intent.launch();
+      } catch (_) {}
+    }
   }
 }

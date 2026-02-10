@@ -1,0 +1,43 @@
+{
+  "appTitle": "Improvements Solutions",
+
+  "welcomeBack": "Bienvenido de vuelta",
+  "swipeForMore": "Desliza para ver más",
+
+  "loginUserLabel": "Usuario",
+  "loginPasswordLabel": "Contraseña",
+  "loginHintUser": "Ingresa tu usuario",
+  "loginHintPassword": "Ingresa tu contraseña",
+  "loginButton": "Iniciar Sesión",
+  "forgotPassword": "¿Olvidaste tu contraseña?",
+  "rememberMe": "Recordarme",
+
+  "accessUserPassword": "Usuario\nContraseña",
+  "accessFingerprint": "Huella",
+
+  "biometricActivateTitle": "Activar ingreso con huella",
+  "biometricActivateContent": "¿Deseas habilitar el ingreso con huella dactilar para futuros accesos en este dispositivo?",
+  "biometricActivateYes": "Sí, activar",
+  "biometricNotSupported": "Biometría no soportada en este dispositivo",
+  "biometricEnrollPrompt": "Configura tu huella en Ajustes y vuelve a intentarlo",
+  "biometricActivateSuccess": "Ingreso con huella activado",
+  "biometricActivateNoRefresh": "No se pudo activar la huella: el servidor no envió refresh token",
+  "biometricLoginPrompt": "Autentícate con tu huella",
+  "biometricActivateConfirm": "Confirma tu huella para activar el acceso",
+  "biometricLoginFirst": "Primero activa el acceso con huella iniciando sesión una vez",
+  "biometricLoginFailed": "No se pudo iniciar sesión con huella: {error}",
+
+  "goToLogin": "Ir a login",
+  "cancel": "Cancelar",
+
+  "homeWelcome": "Bienvenido",
+  "homeWelcomeTo": "Bienvenido a {business}",
+  "homeSignedIn": "Has iniciado sesión correctamente.",
+  "featureTalent": "Talento Humano",
+  "featureSafety": "Seguridad Industrial",
+
+  "loginBiometricButtonEnabled": "Ingresar con huella",
+  "loginBiometricButtonSetup": "Configurar huella",
+  "biometricDeactivate": "Desactivar huella",
+  "biometricDeactivateSuccess": "Ingreso con huella desactivado"
+}
