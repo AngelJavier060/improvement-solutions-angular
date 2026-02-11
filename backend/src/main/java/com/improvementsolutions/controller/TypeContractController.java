@@ -32,7 +32,7 @@ public class TypeContractController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<TypeContract> createTypeContract(@RequestBody TypeContract typeContract) {
         try {
             TypeContract createdTypeContract = typeContractService.create(typeContract);
@@ -43,7 +43,7 @@ public class TypeContractController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<TypeContract> updateTypeContract(@PathVariable Long id, @RequestBody TypeContract typeContract) {
         try {
             TypeContract updatedTypeContract = typeContractService.update(id, typeContract);
@@ -58,7 +58,7 @@ public class TypeContractController {
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteTypeContract(@PathVariable Long id) {
         try {
             typeContractService.delete(id);

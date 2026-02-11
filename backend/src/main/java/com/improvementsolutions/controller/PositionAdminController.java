@@ -34,7 +34,7 @@ public class PositionAdminController {
     private final BusinessEmployeeContractRepository contractRepository;
 
     @PostMapping("/{id}/detach-and-delete")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Transactional
     public ResponseEntity<?> detachAndDelete(@PathVariable Long id) {
         Optional<Position> posOpt = positionRepository.findById(id);
@@ -90,7 +90,7 @@ public class PositionAdminController {
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Transactional
     public ResponseEntity<?> patchPosition(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         Optional<Position> posOpt = positionRepository.findById(id);

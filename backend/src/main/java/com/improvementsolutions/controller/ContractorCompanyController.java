@@ -18,21 +18,21 @@ public class ContractorCompanyController {
     private final ContractorCompanyService contractorCompanyService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<List<ContractorCompanyDto>> getAllCompanies() {
         List<ContractorCompanyDto> companies = contractorCompanyService.getAllCompanies();
         return ResponseEntity.ok(companies);
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<List<ContractorCompanyDto>> getAllActiveCompanies() {
         List<ContractorCompanyDto> companies = contractorCompanyService.getAllActiveCompanies();
         return ResponseEntity.ok(companies);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<ContractorCompanyDto> getCompanyById(@PathVariable Long id) {
         return contractorCompanyService.getCompanyById(id)
                 .map(ResponseEntity::ok)
@@ -40,14 +40,14 @@ public class ContractorCompanyController {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<List<ContractorCompanyDto>> searchCompaniesByName(@RequestParam String name) {
         List<ContractorCompanyDto> companies = contractorCompanyService.searchCompaniesByName(name);
         return ResponseEntity.ok(companies);
     }
 
     @GetMapping("/by-name/{name}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<ContractorCompanyDto> getCompanyByName(@PathVariable String name) {
         return contractorCompanyService.getCompanyByName(name)
                 .map(ResponseEntity::ok)
@@ -55,7 +55,7 @@ public class ContractorCompanyController {
     }
 
     @GetMapping("/by-code/{code}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<ContractorCompanyDto> getCompanyByCode(@PathVariable String code) {
         return contractorCompanyService.getCompanyByCode(code)
                 .map(ResponseEntity::ok)
@@ -63,7 +63,7 @@ public class ContractorCompanyController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<?> createCompany(@RequestBody ContractorCompanyDto companyDto) {
         try {
             ContractorCompanyDto createdCompany = contractorCompanyService.createCompany(companyDto);
@@ -74,7 +74,7 @@ public class ContractorCompanyController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<?> updateCompany(@PathVariable Long id, @RequestBody ContractorCompanyDto companyDto) {
         try {
             return contractorCompanyService.updateCompany(id, companyDto)
@@ -86,7 +86,7 @@ public class ContractorCompanyController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<?> deleteCompany(@PathVariable Long id) {
         try {
             if (contractorCompanyService.deleteCompany(id)) {
@@ -99,7 +99,7 @@ public class ContractorCompanyController {
     }
 
     @PatchMapping("/{id}/toggle-status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<String> toggleCompanyStatus(@PathVariable Long id) {
         if (contractorCompanyService.toggleCompanyStatus(id)) {
             return ResponseEntity.ok("Estado actualizado correctamente");

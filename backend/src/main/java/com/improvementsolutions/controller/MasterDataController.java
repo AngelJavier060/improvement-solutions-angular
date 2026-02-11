@@ -64,7 +64,7 @@ public class MasterDataController {
     }
 
     @PostMapping("/genders")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Gender> createGender(@RequestBody Gender gender) {
         if (genderRepository.findByName(gender.getName()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -74,7 +74,7 @@ public class MasterDataController {
     }
 
     @PutMapping("/genders/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Gender> updateGender(@PathVariable Long id, @RequestBody Gender gender) {
         Optional<Gender> existingGenderOpt = genderRepository.findById(id);
         if (existingGenderOpt.isEmpty()) {
@@ -93,7 +93,7 @@ public class MasterDataController {
     }
 
     @DeleteMapping("/genders/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteGender(@PathVariable Long id) {
         if (!genderRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -116,7 +116,7 @@ public class MasterDataController {
     }
 
     @PostMapping("/course-certifications")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<CourseCertification> createCourseCertification(@RequestBody CourseCertification cc) {
         if (courseCertificationRepository.findByName(cc.getName()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -126,7 +126,7 @@ public class MasterDataController {
     }
 
     @PutMapping("/course-certifications/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<CourseCertification> updateCourseCertification(@PathVariable Long id, @RequestBody CourseCertification cc) {
         var existingOpt = courseCertificationRepository.findById(id);
         if (existingOpt.isEmpty()) {
@@ -144,7 +144,7 @@ public class MasterDataController {
     }
 
     @DeleteMapping("/course-certifications/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteCourseCertification(@PathVariable Long id) {
         if (!courseCertificationRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -167,7 +167,7 @@ public class MasterDataController {
     }
 
     @PostMapping("/cards")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<CardCatalog> createCard(@RequestBody CardCatalog card) {
         if (cardCatalogRepository.findByName(card.getName()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -177,7 +177,7 @@ public class MasterDataController {
     }
 
     @PutMapping("/cards/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<CardCatalog> updateCard(@PathVariable Long id, @RequestBody CardCatalog card) {
         var existingOpt = cardCatalogRepository.findById(id);
         if (existingOpt.isEmpty()) {
@@ -195,7 +195,7 @@ public class MasterDataController {
     }
 
     @DeleteMapping("/cards/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteCard(@PathVariable Long id) {
         if (!cardCatalogRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -218,7 +218,7 @@ public class MasterDataController {
     }
 
     @PostMapping("/education-levels")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Degree> createEducationLevel(@RequestBody Degree educationLevel) {
         if (educationLevelRepository.findByName(educationLevel.getName()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -228,7 +228,7 @@ public class MasterDataController {
     }
 
     @PutMapping("/education-levels/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Degree> updateEducationLevel(@PathVariable Long id, @RequestBody Degree educationLevel) {
         Optional<Degree> existingEducationLevelOpt = educationLevelRepository.findById(id);
         if (existingEducationLevelOpt.isEmpty()) {
@@ -247,7 +247,7 @@ public class MasterDataController {
     }
 
     @DeleteMapping("/education-levels/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteEducationLevel(@PathVariable Long id) {
         if (!educationLevelRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -270,7 +270,7 @@ public class MasterDataController {
     }
 
     @PostMapping("/departments")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Department> createDepartment(@RequestBody Department department) {
         if (departmentRepository.findByName(department.getName()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -280,7 +280,7 @@ public class MasterDataController {
     }
 
     @PutMapping("/departments/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Department> updateDepartment(@PathVariable Long id, @RequestBody Department department) {
         Optional<Department> existingDepartmentOpt = departmentRepository.findById(id);
         if (existingDepartmentOpt.isEmpty()) {
@@ -299,7 +299,7 @@ public class MasterDataController {
     }
 
     @DeleteMapping("/departments/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteDepartment(@PathVariable Long id) {
         if (!departmentRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -322,7 +322,7 @@ public class MasterDataController {
     }
 
     @PostMapping("/positions")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Position> createPosition(@RequestBody Position position) {
         if (positionRepository.findByName(position.getName()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -332,7 +332,7 @@ public class MasterDataController {
     }
 
     @PutMapping("/positions/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Position> updatePosition(@PathVariable Long id, @RequestBody Position position) {
         Optional<Position> existingPositionOpt = positionRepository.findById(id);
         if (existingPositionOpt.isEmpty()) {
@@ -352,7 +352,7 @@ public class MasterDataController {
     }
 
     @DeleteMapping("/positions/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Transactional
     public ResponseEntity<?> deletePosition(@PathVariable Long id) {
         if (!positionRepository.existsById(id)) {
@@ -392,7 +392,7 @@ public class MasterDataController {
     }
 
     @PostMapping("/marital-status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<CivilStatus> createMaritalStatus(@RequestBody CivilStatus maritalStatus) {
         if (maritalStatusRepository.findByName(maritalStatus.getName()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -402,7 +402,7 @@ public class MasterDataController {
     }
 
     @PutMapping("/marital-status/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<CivilStatus> updateMaritalStatus(@PathVariable Long id, @RequestBody CivilStatus maritalStatus) {
         Optional<CivilStatus> existingMaritalStatusOpt = maritalStatusRepository.findById(id);
         if (existingMaritalStatusOpt.isEmpty()) {
@@ -421,7 +421,7 @@ public class MasterDataController {
     }
 
     @DeleteMapping("/marital-status/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteMaritalStatus(@PathVariable Long id) {
         if (!maritalStatusRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -444,7 +444,7 @@ public class MasterDataController {
     }
 
     @PostMapping("/residence-types")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<ResidentAddress> createResidenceType(@RequestBody ResidentAddress residenceType) {
         if (residenceTypeRepository.findByName(residenceType.getName()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -454,7 +454,7 @@ public class MasterDataController {
     }
 
     @PutMapping("/residence-types/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<ResidentAddress> updateResidenceType(@PathVariable Long id, @RequestBody ResidentAddress residenceType) {
         Optional<ResidentAddress> existingResidenceTypeOpt = residenceTypeRepository.findById(id);
         if (existingResidenceTypeOpt.isEmpty()) {
@@ -473,7 +473,7 @@ public class MasterDataController {
     }
 
     @DeleteMapping("/residence-types/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteResidenceType(@PathVariable Long id) {
         if (!residenceTypeRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -496,7 +496,7 @@ public class MasterDataController {
     }
 
     @PostMapping("/ethnic-groups")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Etnia> createEthnicGroup(@RequestBody Etnia ethnicGroup) {
         if (ethnicGroupRepository.findByName(ethnicGroup.getName()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -506,7 +506,7 @@ public class MasterDataController {
     }
 
     @PutMapping("/ethnic-groups/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Etnia> updateEthnicGroup(@PathVariable Long id, @RequestBody Etnia ethnicGroup) {
         Optional<Etnia> existingEthnicGroupOpt = ethnicGroupRepository.findById(id);
         if (existingEthnicGroupOpt.isEmpty()) {
@@ -525,7 +525,7 @@ public class MasterDataController {
     }
 
     @DeleteMapping("/ethnic-groups/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteEthnicGroup(@PathVariable Long id) {
         if (!ethnicGroupRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -548,7 +548,7 @@ public class MasterDataController {
     }
 
     @PostMapping("/document-types")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<TypeDocument> createDocumentType(@RequestBody TypeDocument documentType) {
         if (documentTypeRepository.findByName(documentType.getName()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -558,7 +558,7 @@ public class MasterDataController {
     }
 
     @PutMapping("/document-types/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<TypeDocument> updateDocumentType(@PathVariable Long id, @RequestBody TypeDocument documentType) {
         Optional<TypeDocument> existingDocumentTypeOpt = documentTypeRepository.findById(id);
         if (existingDocumentTypeOpt.isEmpty()) {
@@ -577,7 +577,7 @@ public class MasterDataController {
     }
 
     @DeleteMapping("/document-types/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteDocumentType(@PathVariable Long id) {
         if (!documentTypeRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -600,7 +600,7 @@ public class MasterDataController {
     }
     
     @PostMapping("/obligation-matrices")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<ObligationMatrix> createObligationMatrix(@RequestBody ObligationMatrix obligationMatrix) {
         // Validar que el departamento no sea nulo
         if (obligationMatrix.getDepartmentId() == null) {
@@ -612,7 +612,7 @@ public class MasterDataController {
     }
 
     @PutMapping("/obligation-matrices/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<ObligationMatrix> updateObligationMatrix(@PathVariable Long id, @RequestBody ObligationMatrix obligationMatrix) {
         Optional<ObligationMatrix> existingObligationMatrixOpt = obligationMatrixRepository.findById(id);
         if (existingObligationMatrixOpt.isEmpty()) {
@@ -630,7 +630,7 @@ public class MasterDataController {
     }
 
     @DeleteMapping("/obligation-matrices/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteObligationMatrix(@PathVariable Long id) {
         if (!obligationMatrixRepository.existsById(id)) {
             return ResponseEntity.notFound().build();

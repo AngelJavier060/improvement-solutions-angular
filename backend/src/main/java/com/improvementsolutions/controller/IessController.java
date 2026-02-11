@@ -30,7 +30,7 @@ public class IessController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Iess> createIess(@RequestBody Iess iess) {
         if (iessRepository.findByCode(iess.getCode()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -39,7 +39,7 @@ public class IessController {
         iess.setUpdatedAt(LocalDateTime.now());
         return ResponseEntity.status(HttpStatus.CREATED).body(iessRepository.save(iess));
     }    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Iess> updateIess(@PathVariable Long id, @RequestBody Iess iess) {
         return iessRepository.findById(id)
                 .map(existingIess -> {                    Optional<Iess> iessWithSameCode = iessRepository.findByCode(iess.getCode());
@@ -55,7 +55,7 @@ public class IessController {
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteIess(@PathVariable Long id) {
         if (!iessRepository.existsById(id)) {
             return ResponseEntity.notFound().build();

@@ -23,7 +23,7 @@ public class StagingFileController {
 
     // Subida temporal para Matriz Legal (PDF y Word)
     @PostMapping(value = "/obligation-matrix", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<Map<String, Object>> uploadToStaging(
             @RequestParam("file") MultipartFile file) {
         Map<String, Object> resp = new HashMap<>();

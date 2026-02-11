@@ -40,7 +40,7 @@ public class BusinessController {
     
     // Endpoints para el administrador
     @GetMapping("/admin/dashboard")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> getDashboardData() {
         Map<String, Object> dashboard = new HashMap<>();
         dashboard.put("totalBusinesses", businessService.countActiveBusinesses());
@@ -51,20 +51,20 @@ public class BusinessController {
     }
     
     @GetMapping("/admin/search")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<List<Business>> searchBusinesses(@RequestParam String term) {
         return ResponseEntity.ok(businessService.searchBusinesses(term));
     }
     
     @PutMapping("/admin/{businessId}/toggle-status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> toggleBusinessStatus(@PathVariable Long businessId) {
         businessService.toggleBusinessStatus(businessId);
         return ResponseEntity.ok().build();
     }
     
     @PutMapping("/admin/{businessId}/configurations")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Business> updateBusinessConfigurations(
             @PathVariable Long businessId,
             @RequestBody Map<String, Object> configurations) {
@@ -130,7 +130,7 @@ public class BusinessController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<List<BusinessListDto>> getAllBusinesses() {
         List<Business> businesses = businessService.findAll();
         List<BusinessListDto> dtos = businesses.stream()
@@ -140,7 +140,7 @@ public class BusinessController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<Business> getBusinessById(@PathVariable Long id) {
         return businessService.findByIdWithAllRelations(id)
                 .map(ResponseEntity::ok)
@@ -148,7 +148,7 @@ public class BusinessController {
     }
 
     @GetMapping("/{id}/admin")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> getBusinessAdminDetails(@PathVariable Long id) {
         Business business = businessService.findByIdWithAllRelations(id)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
@@ -209,7 +209,7 @@ public class BusinessController {
 
     // Detalles accesibles para ADMIN y USER: incluye contratistas y bloques
     @GetMapping("/{id}/details")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<Map<String, Object>> getBusinessDetails(@PathVariable Long id) {
         Business business = businessService.findByIdWithAllRelations(id)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
@@ -287,7 +287,7 @@ public class BusinessController {
 
     // === ENDPOINTS PARA CURSOS Y CERTIFICACIONES ===
     @PostMapping("/{businessId}/course-certifications/{courseCertificationId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> addCourseCertificationToBusiness(
             @PathVariable Long businessId,
             @PathVariable Long courseCertificationId) {
@@ -299,7 +299,7 @@ public class BusinessController {
     }
 
     @DeleteMapping("/{businessId}/course-certifications/{courseCertificationId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> removeCourseCertificationFromBusiness(
             @PathVariable Long businessId,
             @PathVariable Long courseCertificationId) {
@@ -312,7 +312,7 @@ public class BusinessController {
 
     // === ENDPOINTS PARA TARJETAS ===
     @PostMapping("/{businessId}/cards/{cardId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> addCardToBusiness(
             @PathVariable Long businessId,
             @PathVariable Long cardId) {
@@ -324,7 +324,7 @@ public class BusinessController {
     }
 
     @DeleteMapping("/{businessId}/cards/{cardId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> removeCardFromBusiness(
             @PathVariable Long businessId,
             @PathVariable Long cardId) {
@@ -336,7 +336,7 @@ public class BusinessController {
     }
 
     @PutMapping("/{id}/admin/configurations")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     @Transactional
     public ResponseEntity<Business> updateBusinessAdminConfigurations(
             @PathVariable Long id,
@@ -493,7 +493,7 @@ public class BusinessController {
     }
 
     @GetMapping("/byUser/{userId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<List<Business>> getBusinessesByUserId(@PathVariable Long userId) {
         List<Business> businesses = businessService.findByUserId(userId);
         return ResponseEntity.ok(businesses);
@@ -579,7 +579,7 @@ public class BusinessController {
     }
 
     @PostMapping("/{businessId}/users/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> addUserToBusiness(
             @PathVariable Long businessId,
             @PathVariable Long userId) {
@@ -588,7 +588,7 @@ public class BusinessController {
     }
 
     @PostMapping("/ruc/{ruc}/users/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> addUserToBusinessByRuc(
             @PathVariable String ruc,
             @PathVariable Long userId) {
@@ -599,7 +599,7 @@ public class BusinessController {
     }
 
     @GetMapping("/{businessId}/users")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<List<UserResponseDto>> getUsersByBusiness(@PathVariable Long businessId) {
         // En producción spring.jpa.open-in-view está deshabilitado, por lo que
         // acceder a colecciones LAZY fuera de una transacción causa LazyInitializationException.
@@ -610,13 +610,13 @@ public class BusinessController {
     }
 
     @GetMapping("/available-users")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<List<User>> getAvailableUsers() {
         return ResponseEntity.ok(businessService.getAllUsers());
     }
 
     @DeleteMapping("/{businessId}/users/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> removeUserFromBusiness(
             @PathVariable Long businessId,
             @PathVariable Long userId) {
@@ -640,7 +640,7 @@ public class BusinessController {
 
     // === ENDPOINTS PARA DEPARTAMENTOS ===
     @PostMapping("/{businessId}/departments/{departmentId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> addDepartmentToBusiness(
             @PathVariable Long businessId, 
             @PathVariable Long departmentId) {
@@ -652,7 +652,7 @@ public class BusinessController {
     }
 
     @DeleteMapping("/{businessId}/departments/{departmentId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> removeDepartmentFromBusiness(
             @PathVariable Long businessId, 
             @PathVariable Long departmentId) {
@@ -665,7 +665,7 @@ public class BusinessController {
 
     // === ENDPOINTS PARA CARGOS ===
     @PostMapping("/{businessId}/positions/{positionId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> addPositionToBusiness(
             @PathVariable Long businessId, 
             @PathVariable Long positionId) {
@@ -677,7 +677,7 @@ public class BusinessController {
     }
 
     @DeleteMapping("/{businessId}/positions/{positionId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> removePositionFromBusiness(
             @PathVariable Long businessId, 
             @PathVariable Long positionId) {
@@ -690,7 +690,7 @@ public class BusinessController {
 
     // === ENDPOINTS PARA TIPOS DE DOCUMENTO ===
     @PostMapping("/{businessId}/type-documents/{typeDocumentId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> addTypeDocumentToBusiness(
             @PathVariable Long businessId, 
             @PathVariable Long typeDocumentId) {
@@ -702,7 +702,7 @@ public class BusinessController {
     }
 
     @DeleteMapping("/{businessId}/type-documents/{typeDocumentId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> removeTypeDocumentFromBusiness(
             @PathVariable Long businessId, 
             @PathVariable Long typeDocumentId) {
@@ -715,7 +715,7 @@ public class BusinessController {
 
     // === ENDPOINTS PARA TIPOS DE CONTRATO ===
     @PostMapping("/{businessId}/type-contracts/{typeContractId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> addTypeContractToBusiness(
             @PathVariable Long businessId, 
             @PathVariable Long typeContractId) {
@@ -727,7 +727,7 @@ public class BusinessController {
     }
 
     @DeleteMapping("/{businessId}/type-contracts/{typeContractId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> removeTypeContractFromBusiness(
             @PathVariable Long businessId, 
             @PathVariable Long typeContractId) {
@@ -740,7 +740,7 @@ public class BusinessController {
 
     // === ENDPOINTS PARA MATRICES DE OBLIGACIONES ===
     @PostMapping("/{businessId}/obligation-matrices/{obligationMatrixId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> addObligationMatrixToBusiness(
             @PathVariable Long businessId, 
             @PathVariable Long obligationMatrixId) {
@@ -752,7 +752,7 @@ public class BusinessController {
     }
 
     @DeleteMapping("/{businessId}/obligation-matrices/{obligationMatrixId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> removeObligationMatrixFromBusiness(
             @PathVariable Long businessId, 
             @PathVariable Long obligationMatrixId) {
@@ -765,7 +765,7 @@ public class BusinessController {
 
     // Replicar matrices de obligaciones desde una empresa origen a múltiples empresas destino
     @PostMapping("/{sourceBusinessId}/obligation-matrices/replicate")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> replicateObligationMatrices(
             @PathVariable Long sourceBusinessId,
             @RequestBody Map<String, Object> body) {
@@ -789,7 +789,7 @@ public class BusinessController {
 
     // Agregar en bloque matrices de catálogo a una empresa
     @PostMapping("/{businessId}/obligation-matrices/bulk")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Business> addObligationMatricesBulk(
             @PathVariable Long businessId,
             @RequestBody Map<String, Object> body) {

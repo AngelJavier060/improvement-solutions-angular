@@ -24,7 +24,7 @@ public class DbDiagnosticsController {
     private String datasourceUrl;
 
     @GetMapping("/diagnostics")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, Object>> diagnostics() {
         Map<String, Object> out = new HashMap<>();
 

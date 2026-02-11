@@ -34,7 +34,7 @@ public class BusinessObligationMatrixFileController {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping("/{matrixId}/files")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<List<BusinessObligationMatrixFile>> listFiles(
             @PathVariable Long matrixId,
             @RequestParam(required = false) Integer version,
@@ -52,7 +52,7 @@ public class BusinessObligationMatrixFileController {
     // Lista las subidas PENDIENTES (staging) para una matriz legal.
     // ADMIN ve todas; USER ve solo las suyas.
     @GetMapping("/{matrixId}/pending-uploads")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<List<PendingMatrixFileDto>> listPendingUploads(
             @PathVariable Long matrixId,
             Authentication auth
@@ -88,7 +88,7 @@ public class BusinessObligationMatrixFileController {
     }
 
     @PostMapping(value = "/{matrixId}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<BusinessObligationMatrixFile> uploadFile(
             @PathVariable Long matrixId,
             @RequestPart("file") MultipartFile file,
@@ -99,7 +99,7 @@ public class BusinessObligationMatrixFileController {
     }
 
     @GetMapping("/files/{fileId}/download")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<Resource> download(@PathVariable Long fileId) {
         BusinessObligationMatrixFile file = fileService.findById(fileId)
                 .orElseThrow(() -> new RuntimeException("Archivo no encontrado"));
@@ -144,7 +144,7 @@ public class BusinessObligationMatrixFileController {
     }
 
     @PutMapping("/files/{fileId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<BusinessObligationMatrixFile> updateDescription(
             @PathVariable Long fileId,
             @RequestBody Map<String, String> body
@@ -155,7 +155,7 @@ public class BusinessObligationMatrixFileController {
     }
 
     @DeleteMapping("/files/{fileId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long fileId) {
         fileService.delete(fileId);
         return ResponseEntity.noContent().build();
