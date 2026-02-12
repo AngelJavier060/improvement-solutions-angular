@@ -39,7 +39,8 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/google61f7891088ebf822.html"
             ],
             "styles": [
               "src/styles.scss",
@@ -110,7 +111,8 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/google61f7891088ebf822.html"
             ],
             "styles": [
               "src/styles.scss"
