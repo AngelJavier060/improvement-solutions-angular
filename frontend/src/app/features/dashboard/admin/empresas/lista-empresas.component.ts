@@ -86,8 +86,15 @@ export class ListaEmpresasComponent implements OnInit {
       this.router.navigate(['/auth/login']);
       return;
     }    
-    
-    this.businessService.getAll().subscribe({
+    const currentUser: any = this.authService.getCurrentUser();
+    const roles: string[] = currentUser?.roles || [];
+    const isSuper = roles.includes('ROLE_SUPER_ADMIN');
+
+    const source$ = isSuper || !currentUser?.id
+      ? this.businessService.getAll()
+      : this.businessService.getByUserId(currentUser.id);
+
+    source$.subscribe({
       next: (data) => {
         console.log('Empresas cargadas exitosamente:', data.length);
         this.empresas = data;
@@ -258,6 +265,53 @@ export class ListaEmpresasComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result === 'refresh') {
         this.cargarEmpresas();
+      }
+    });
+  }
+
+  isSuperAdmin(): boolean {
+    return this.authService.hasRole('ROLE_SUPER_ADMIN');
+  }
+
+  onCreateAdmin(empresa: Business): void {
+    if (!empresa?.id) {
+      alert('Empresa inválida');
+      return;
+    }
+
+    if (!this.isSuperAdmin()) {
+      alert('Solo el Super Usuario puede crear administradores de empresa.');
+      return;
+    }
+
+    const name = prompt(`Nombre completo del administrador para ${empresa.name}:`);
+    if (!name) { return; }
+
+    const email = prompt('Email del administrador:');
+    if (!email) { return; }
+
+    const username = prompt('Nombre de usuario para el administrador:');
+    if (!username) { return; }
+
+    const password = prompt('Contraseña inicial del administrador:');
+    if (!password) { return; }
+
+    const phone = prompt('Teléfono del administrador (opcional):') || undefined;
+
+    this.businessService.createBusinessAdmin(empresa.id, {
+      name,
+      email,
+      username,
+      password,
+      phone
+    }).subscribe({
+      next: (resp) => {
+        console.log('Administrador de empresa creado:', resp);
+        alert('Administrador de empresa creado correctamente.');
+      },
+      error: (err) => {
+        console.error('Error al crear administrador de empresa:', err);
+        alert('Error al crear el administrador de empresa: ' + (err.error?.message || err.message || 'Error desconocido'));
       }
     });
   }

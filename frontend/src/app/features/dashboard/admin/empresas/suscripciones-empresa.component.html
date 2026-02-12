@@ -1,0 +1,210 @@
+<div class="container-fluid pt-3">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col">
+      <h2 class="mb-1">
+        <i class="fas fa-cube me-2"></i>Módulos y Suscripciones
+      </h2>
+      <p class="text-muted mb-0">{{ businessName }} <span *ngIf="businessRuc">· RUC: {{ businessRuc }}</span></p>
+    </div>
+    <div class="col-auto d-flex align-items-center">
+      <button class="btn btn-outline-primary btn-sm" (click)="loadModules()">
+        <i class="fas fa-sync-alt me-1"></i> Actualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="text-muted mt-2">Cargando módulos...</p>
+  </div>
+
+  <!-- Module Cards -->
+  <div class="row" *ngIf="!isLoading">
+    <div class="col-md-6 col-xl-4 mb-4" *ngFor="let mod of modules">
+      <div class="card h-100 shadow-sm module-card" 
+           [class.border-success]="mod.effectivelyActive"
+           [class.border-danger]="mod.active && !mod.effectivelyActive"
+           [class.border-secondary]="!mod.active">
+        
+        <!-- Card Header with icon -->
+        <div class="card-header d-flex align-items-center gap-3 border-0 pb-0 pt-3 px-3 bg-transparent">
+          <div class="module-icon-circle" 
+               [style.backgroundColor]="(mod.moduleColor || '#6c757d') + '20'"
+               [style.color]="mod.moduleColor || '#6c757d'">
+            <i [class]="mod.moduleIcon || 'fas fa-cube'"></i>
+          </div>
+          <div class="flex-grow-1">
+            <h5 class="mb-0 fw-bold">{{ mod.moduleName }}</h5>
+            <small class="text-muted">{{ mod.moduleDescription }}</small>
+          </div>
+          <span class="badge" [ngClass]="getStatusBadge(mod).class">
+            <i class="fas me-1" [ngClass]="getStatusBadge(mod).icon"></i>
+            {{ getStatusBadge(mod).label }}
+          </span>
+        </div>
+
+        <div class="card-body px-3">
+          <!-- Plan actual -->
+          <div class="mb-3" *ngIf="mod.planName">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted small">Plan actual:</span>
+              <span class="fw-semibold">{{ mod.planName }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="text-muted small">Precio:</span>
+              <span class="fw-bold text-primary">${{ mod.planPrice }} {{ mod.planCurrency || 'USD' }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center" *ngIf="mod.planDurationMonths !== null">
+              <span class="text-muted small">Duración:</span>
+              <span>{{ getDurationLabel(mod.planDurationMonths) }}</span>
+            </div>
+          </div>
+
+          <div class="mb-3" *ngIf="!mod.planName && mod.active">
+            <div class="alert alert-info py-2 px-3 mb-0 small">
+              <i class="fas fa-info-circle me-1"></i> Sin plan asignado
+            </div>
+          </div>
+
+          <!-- Dates -->
+          <div class="row g-2 mb-3" *ngIf="mod.active">
+            <div class="col-6">
+              <div class="date-box">
+                <small class="text-muted d-block">Inicio</small>
+                <span class="fw-semibold small">{{ mod.startDate || '—' }}</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="date-box" [class.date-danger]="mod.active && !mod.effectivelyActive" 
+                   [class.date-warning]="isExpiringSoon(mod)">
+                <small class="text-muted d-block">Vencimiento</small>
+                <span class="fw-semibold small">{{ mod.expirationDate || 'Ilimitado' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Days remaining alert -->
+          <div *ngIf="isExpiringSoon(mod)" class="alert alert-warning py-2 px-3 mb-3 small">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            Vence en <strong>{{ getDaysRemaining(mod) }} días</strong>. Renueva ahora.
+          </div>
+          <div *ngIf="mod.active && !mod.effectivelyActive && mod.expirationDate" class="alert alert-danger py-2 px-3 mb-3 small">
+            <i class="fas fa-times-circle me-1"></i>
+            <strong>Módulo vencido.</strong> Renueva para continuar usando este módulo.
+          </div>
+        </div>
+
+        <!-- Card Footer: Actions -->
+        <div class="card-footer bg-white border-top-0 px-3 pb-3 pt-0">
+          <div *ngIf="!mod.active || !mod.effectivelyActive || isExpiringSoon(mod)">
+            <button class="btn btn-primary btn-sm w-100" (click)="openPaymentModal(mod)">
+              <i class="fas fa-credit-card me-1"></i>
+              {{ !mod.active ? 'Contratar Módulo' : 'Renovar Suscripción' }}
+            </button>
+          </div>
+          <div *ngIf="mod.effectivelyActive && !isExpiringSoon(mod)" class="text-center">
+            <span class="text-success small fw-semibold">
+              <i class="fas fa-check-circle me-1"></i> Módulo activo
+              <span *ngIf="!mod.expirationDate"> · Ilimitado</span>
+              <span *ngIf="mod.expirationDate"> · {{ getDaysRemaining(mod) }}d restantes</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="!isLoading && modules.length === 0" class="text-center py-5">
+    <i class="fas fa-puzzle-piece fa-3x text-muted mb-3"></i>
+    <p class="text-muted">No hay módulos disponibles.</p>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-backdrop fade show" *ngIf="showPaymentModal" (click)="closePaymentModal()"></div>
+<div class="modal d-block fade show" tabindex="-1" *ngIf="showPaymentModal">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-credit-card me-2"></i>
+          {{ selectedModule?.active ? 'Renovar' : 'Contratar' }} — {{ selectedModule?.moduleName }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closePaymentModal()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Plan selection -->
+        <h6 class="fw-bold mb-3"><i class="fas fa-box me-1"></i> Selecciona un Plan</h6>
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-md-3" *ngFor="let plan of plans">
+            <div class="plan-card p-3 text-center rounded-3 border-2"
+                 [class.selected]="selectedPlanId === plan.id"
+                 (click)="selectedPlanId = plan.id!">
+              <div class="fw-bold text-primary mb-1">{{ plan.name }}</div>
+              <div class="display-6 fw-bold">${{ plan.price }}</div>
+              <small class="text-muted">{{ getDurationLabel(plan.durationMonths) }}</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment details -->
+        <div *ngIf="selectedPlanId">
+          <h6 class="fw-bold mb-3"><i class="fas fa-money-bill me-1"></i> Datos del Pago</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Método de Pago</label>
+              <select class="form-select" [(ngModel)]="paymentMethod">
+                <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+                <option value="TARJETA">Tarjeta de Crédito/Débito</option>
+                <option value="EFECTIVO">Efectivo</option>
+                <option value="OTRO">Otro</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Nro. Comprobante / Referencia</label>
+              <input type="text" class="form-control" [(ngModel)]="referenceNumber" placeholder="Ej: TRX-00123">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Notas (opcional)</label>
+              <textarea class="form-control" [(ngModel)]="paymentNotes" rows="2" placeholder="Observaciones adicionales..."></textarea>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="bg-light rounded-3 p-3 mt-3">
+            <div class="d-flex justify-content-between">
+              <span>Módulo:</span><strong>{{ selectedModule?.moduleName }}</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>Plan:</span><strong>{{ getSelectedPlan()?.name }}</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>Duración:</span><strong>{{ getDurationLabel(getSelectedPlan()?.durationMonths ?? 0) }}</strong>
+            </div>
+            <hr class="my-2">
+            <div class="d-flex justify-content-between">
+              <span class="fw-bold fs-5">Total:</span>
+              <span class="fw-bold fs-5 text-primary">${{ getSelectedPlan()?.price }} USD</span>
+            </div>
+          </div>
+
+          <div class="alert alert-info mt-3 small mb-0">
+            <i class="fas fa-info-circle me-1"></i>
+            Al registrar el pago, el Super Administrador lo revisará y confirmará la activación del módulo.
+            Para pagos con tarjeta, la activación puede ser automática.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="closePaymentModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="submitPayment()"
+                [disabled]="!selectedPlanId">
+          <i class="fas fa-paper-plane me-1"></i> Registrar Pago
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

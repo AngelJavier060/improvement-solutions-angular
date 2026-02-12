@@ -62,6 +62,19 @@ public class UserAdminController {
     }
     
     /**
+     * Obtiene usuarios filtrados por empresa
+     */
+    @GetMapping("/business/{businessId}")
+    public ResponseEntity<List<UserDto>> getUsersByBusiness(@PathVariable Long businessId) {
+        logger.info("Obteniendo usuarios de la empresa con ID: {}", businessId);
+        List<User> users = userService.findByBusinessIdWithRoles(businessId);
+        List<UserDto> usersDto = users.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(usersDto);
+    }
+
+    /**
      * Obtiene un usuario por su ID
      */
     @GetMapping("/{id}")

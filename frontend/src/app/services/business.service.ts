@@ -124,6 +124,21 @@ export class BusinessService {
     return this.http.get<Business>(`${this.apiUrl}/public/ruc/${ruc}`);
   }
 
+  // === ADMINISTRADORES DE EMPRESA ===
+  createBusinessAdmin(businessId: number, payload: {
+    name: string;
+    email: string;
+    phone?: string;
+    username: string;
+    password: string;
+  }): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/admin/${businessId}/admins`, payload);
+  }
+
+  promoteUserToBusinessAdmin(businessId: number, userId: number): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/admin/${businessId}/admins/${userId}`, {});
+  }
+
   // === MÉTODOS PARA CURSOS Y CERTIFICACIONES ===
   addCourseCertificationToBusiness(businessId: number, courseCertificationId: number): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/${businessId}/course-certifications/${courseCertificationId}`, {});

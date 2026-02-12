@@ -10,7 +10,9 @@
             <i class="fas fa-bars"></i>
           </button>
           <h1 class="mb-0">
-            <i class="fas fa-tachometer-alt me-2"></i> Panel de Administrador
+            <i class="fas fa-tachometer-alt me-2"></i>
+            <span *ngIf="isSuperAdmin">Panel de Administrador</span>
+            <span *ngIf="isCompanyAdmin">Administrar: {{ companyName }}</span>
           </h1>
         </div>
         <div class="col-auto">
@@ -31,10 +33,12 @@
     <!-- Sidebar Menu -->
     <aside class="sidebar" [class.open]="isSidebarOpen" [class.collapsed]="!isSidebarOpen">
       <div class="sidebar-header">
-        <h4>Menú de Administración</h4>
+        <h4 *ngIf="isSuperAdmin">Menú de Administración</h4>
+        <h4 *ngIf="isCompanyAdmin">{{ companyName }}</h4>
       </div>
       <nav class="sidebar-nav">
-        <ul>
+        <!-- Menú completo para Super Admin -->
+        <ul *ngIf="isSuperAdmin">
           <li>
             <a routerLink="/dashboard/admin" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
               <i class="fas fa-home"></i> Inicio
@@ -51,6 +55,11 @@
             </a>
           </li>
           <li>
+            <a routerLink="/dashboard/admin/planes" routerLinkActive="active">
+              <i class="fas fa-tags"></i> Planes y Precios
+            </a>
+          </li>
+          <li>
             <a routerLink="/dashboard/admin/configuracion" routerLinkActive="active">
               <i class="fas fa-cog"></i> Configuración
             </a>
@@ -58,6 +67,24 @@
           <li>
             <a routerLink="/dashboard/admin/reportes" routerLinkActive="active">
               <i class="fas fa-chart-bar"></i> Reportes
+            </a>
+          </li>
+        </ul>
+        <!-- Menú limitado para Admin de Empresa -->
+        <ul *ngIf="isCompanyAdmin && companyId">
+          <li>
+            <a [routerLink]="['/dashboard/admin/empresas/admin', companyId]" routerLinkActive="active">
+              <i class="fas fa-building"></i> Mi Empresa
+            </a>
+          </li>
+          <li>
+            <a [routerLink]="['/dashboard/admin/empresas', companyId, 'suscripciones']" routerLinkActive="active">
+              <i class="fas fa-cube"></i> Módulos
+            </a>
+          </li>
+          <li>
+            <a [routerLink]="['/dashboard/admin/empresas', companyId, 'empleados']" routerLinkActive="active">
+              <i class="fas fa-id-badge"></i> Empleados
             </a>
           </li>
         </ul>

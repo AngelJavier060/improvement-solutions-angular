@@ -4,7 +4,11 @@
       <h2 class="mb-0">
         <i class="fas fa-users me-2"></i>Gestión de Usuarios
       </h2>
-      <p class="text-muted">Administra los usuarios del sistema</p>
+      <p class="text-muted mb-1">Administra los usuarios del sistema</p>
+      <p class="text-muted small mb-0">
+        <strong>Empresa actual:</strong>
+        {{ getCurrentBusinessLabel() }}
+      </p>
     </div>
     <div class="col-auto">
       <button type="button" class="btn btn-primary" [routerLink]="['/dashboard/admin/usuarios/nuevo']" [queryParams]="selectedBusinessId==='all' ? { type: 'empresa' } : { type: 'empresa', businessId: selectedBusinessId }">
@@ -77,8 +81,11 @@
         <div class="col-md-6 text-end">
           <div class="d-inline-flex align-items-center gap-2">
             <label class="me-1 text-muted">Empresa:</label>
-            <select class="form-select form-select-sm w-auto" [(ngModel)]="selectedBusinessId" (change)="applyFilter()">
-              <option [ngValue]="'all'">Todas</option>
+            <select class="form-select form-select-sm w-auto" 
+                    [(ngModel)]="selectedBusinessId" 
+                    (change)="onBusinessChange()"
+                    [disabled]="isCompanyAdmin">
+              <option *ngIf="isSuperAdmin" [ngValue]="'all'">Todas</option>
               <option *ngFor="let b of businesses" [ngValue]="b.id">{{ b.ruc }} - {{ b.name }}</option>
             </select>
             <button class="btn btn-outline-primary" (click)="loadUsers()">

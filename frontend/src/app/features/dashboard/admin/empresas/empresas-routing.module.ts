@@ -9,6 +9,9 @@ import { DashboardEmpresasComponent } from './dashboard-empresas.component';
 import { ApprovalsListComponent } from './approvals-list.component';
 import { MatrixConfigComponent } from './matrix-config.component';
 import { DiagnosticoBdComponent } from './diagnostico-bd.component';
+import { ModulosEmpresaComponent } from './modulos-empresa.component';
+import { SuscripcionesEmpresaComponent } from './suscripciones-empresa.component';
+import { EmpleadosEmpresaComponent } from './empleados-empresa.component';
 
 const routes: Routes = [
   { path: '', component: ListaEmpresasComponent },
@@ -16,10 +19,13 @@ const routes: Routes = [
   { path: 'editar/:id', component: EditarEmpresaComponent },
   { path: 'detalle/:id', component: DetalleEmpresaComponent },
   { path: 'admin/:id', component: DetalleEmpresaAdminComponent },
+  { path: 'modulos/:id', component: ModulosEmpresaComponent },
   { path: 'dashboard', component: DashboardEmpresasComponent },
   { path: 'aprobaciones/:id', component: ApprovalsListComponent },
   { path: 'configuracion-matriz/:id', component: MatrixConfigComponent },
-  { path: 'diagnostico', component: DiagnosticoBdComponent }
+  { path: 'diagnostico', component: DiagnosticoBdComponent },
+  { path: ':id/suscripciones', component: SuscripcionesEmpresaComponent },
+  { path: ':id/empleados', component: EmpleadosEmpresaComponent }
 ];
 
 @NgModule({

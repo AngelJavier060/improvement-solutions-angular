@@ -741,7 +741,51 @@
       </div>
     </div>
 
-    <!-- 5. Sección Gestionar usuarios del sistema Empresa -->
+    <!-- 5a. Sección Administradores de esta empresa -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': businessAdmins.length > 0}">
+        <div class="card-header bg-gradient p-2" style="background: linear-gradient(90deg, #f59e0b 0%, #ef4444 100%);">
+          <div class="d-flex align-items-center">
+            <div class="me-2">
+              <div class="bg-white bg-opacity-20 rounded-circle p-1" style="width: 28px; height: 28px;">
+                <i class="fas fa-user-shield text-white" style="font-size: 12px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Administradores</h6>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="isSuperAdmin" class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-warning btn-sm w-100" (click)="openAssignAdminModal()">
+              <i class="fas fa-user-plus me-1"></i>Asignar Admin
+            </button>
+          </div>
+
+          <div *ngIf="businessAdmins.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let admin of businessAdmins">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-user-shield text-warning me-2" style="font-size: 10px;"></i>
+                  <div>
+                    <div class="small fw-semibold text-dark" style="font-size: 11px;">{{ admin.name || admin.username }}</div>
+                    <div class="text-muted" style="font-size: 9px;">{{ admin.email }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="businessAdmins.length === 0" class="text-center py-2">
+            <i class="fas fa-user-shield fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin administradores asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5b. Sección Gestionar usuarios del sistema Empresa -->
     <div class="col-lg-6 col-xl-3">
       <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': users.length > 0}">
         <div class="card-header bg-gradient p-2" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);">
@@ -2085,6 +2129,49 @@
                 (click)="asignContractor()" 
                 [disabled]="selectedContractorCompanies.length === 0">
           <i class="fas fa-save me-1"></i>Agregar Empresas Contratistas
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Administrador a esta empresa -->
+<div class="modal-backdrop fade show" *ngIf="showAssignAdminModal" (click)="closeAssignAdminModal()"></div>
+<div class="modal d-block fade show" tabindex="-1" *ngIf="showAssignAdminModal">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title">
+          <i class="fas fa-user-shield me-2"></i>Asignar Administrador
+        </h5>
+        <button type="button" class="btn-close" (click)="closeAssignAdminModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">
+          Seleccione un usuario del sistema para promoverlo como administrador de <strong>{{ empresa?.name }}</strong>.
+          El usuario recibirá el rol ADMIN y acceso exclusivo a esta empresa.
+        </p>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Usuario:</label>
+          <select class="form-select" [(ngModel)]="selectedUserIdForAdmin">
+            <option [ngValue]="null" disabled>-- Seleccione un usuario --</option>
+            <option *ngFor="let u of allSystemUsers" [ngValue]="u.id">
+              {{ u.name || u.username }} - {{ u.email }}
+            </option>
+          </select>
+        </div>
+        <div *ngIf="allSystemUsers.length === 0" class="alert alert-info small py-2">
+          <i class="fas fa-info-circle me-1"></i>No hay usuarios disponibles para asignar.
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeAssignAdminModal()">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-warning" 
+                (click)="confirmAssignAdmin()" 
+                [disabled]="!selectedUserIdForAdmin">
+          <i class="fas fa-user-shield me-1"></i>Asignar como Admin
         </button>
       </div>
     </div>

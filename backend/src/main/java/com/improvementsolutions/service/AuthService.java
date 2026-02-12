@@ -133,8 +133,20 @@ public class AuthService {
     }
 
     private void validateUserStatus(User user) {
-        if (user.getActive() != null && !user.getActive()) {
-            throw new UserInactiveException("Usuario inactivo. Por favor, contacte al administrador.");
+        if (user.getActive() == null || !user.getActive()) {
+            // Check if user has SUPER_ADMIN or ADMIN role — auto-fix and allow login
+            boolean hasAdminRole = user.getRoles() != null && user.getRoles().stream()
+                    .anyMatch(r -> "ROLE_SUPER_ADMIN".equals(r.getName()) || "ROLE_ADMIN".equals(r.getName()));
+            if (hasAdminRole) {
+                logger.warn("[validateUserStatus] Usuario '{}' (id={}) tenía is_active={}. Auto-corrigiendo a TRUE (tiene rol admin).",
+                        user.getUsername(), user.getId(), user.getActive());
+                user.setActive(true);
+                userRepository.save(user);
+                return; // allow login
+            }
+            if (user.getActive() != null && !user.getActive()) {
+                throw new UserInactiveException("Usuario inactivo. Por favor, contacte al administrador.");
+            }
         }
     }
 

@@ -17,6 +17,9 @@ import { SharedModule } from '../../../../shared/shared.module';
 import { ApprovalsListComponent } from './approvals-list.component';
 import { MatrixConfigComponent } from './matrix-config.component';
 import { DiagnosticoBdComponent } from './diagnostico-bd.component';
+import { ModulosEmpresaComponent } from './modulos-empresa.component';
+import { SuscripcionesEmpresaComponent } from './suscripciones-empresa.component';
+import { EmpleadosEmpresaComponent } from './empleados-empresa.component';
 
 @NgModule({
   declarations: [
@@ -29,7 +32,10 @@ import { DiagnosticoBdComponent } from './diagnostico-bd.component';
     UserModalComponent,
     ApprovalsListComponent,
     MatrixConfigComponent,
-    DiagnosticoBdComponent
+    DiagnosticoBdComponent,
+    ModulosEmpresaComponent,
+    SuscripcionesEmpresaComponent,
+    EmpleadosEmpresaComponent
   ],
   imports: [
     CommonModule,

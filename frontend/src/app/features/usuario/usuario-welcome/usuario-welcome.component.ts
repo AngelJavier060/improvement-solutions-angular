@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { FileService } from '../../../services/file.service';
+import { BusinessModuleService, BusinessModuleDto } from '../../../services/business-module.service';
 
 @Component({
   selector: 'app-usuario-welcome',
@@ -17,12 +18,22 @@ export class UsuarioWelcomeComponent implements OnInit {
   usuario: any = null;
   fechaAcceso: string = '';
   empresaLogoUrl: string = '';
+  activeModules: BusinessModuleDto[] = [];
+  modulesLoaded = false;
+  // Códigos de módulo del backend → ruta del frontend
+  private moduleRouteMap: { [code: string]: string } = {
+    'TALENTO_HUMANO': 'talento-humano',
+    'SEGURIDAD_INDUSTRIAL': 'seguridad-industrial',
+    'CALIDAD': 'calidad',
+    'INVENTARIO': 'inventario'
+  };
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private authService: AuthService,
-    private fileService: FileService
+    private fileService: FileService,
+    private businessModuleService: BusinessModuleService
   ) {}
 
   ngOnInit(): void {
@@ -43,6 +54,9 @@ export class UsuarioWelcomeComponent implements OnInit {
     console.log('Usuario obtenido en welcome:', this.usuario);
     console.log('RUC buscado desde URL:', this.empresaRuc);
     
+    // Cargar módulos activos para esta empresa
+    this.loadActiveModules();
+
     // Buscar la empresa con el RUC correspondiente
     if (this.usuario?.businesses && this.usuario.businesses.length > 0) {
       console.log('Empresas disponibles:', this.usuario.businesses);
@@ -83,6 +97,58 @@ export class UsuarioWelcomeComponent implements OnInit {
     alert('Dashboard en desarrollo. Por el momento solo tienes acceso a esta página de bienvenida.');
   }
 
+  // Cargar módulos activos desde el backend
+  loadActiveModules(): void {
+    if (!this.empresaRuc) return;
+    this.businessModuleService.getActiveModulesByRuc(this.empresaRuc).subscribe({
+      next: (modules) => {
+        this.activeModules = modules;
+        this.modulesLoaded = true;
+        console.log('[Welcome] Módulos activos para', this.empresaRuc, ':', modules.map(m => m.moduleCode));
+      },
+      error: (err) => {
+        console.warn('[Welcome] Error cargando módulos activos:', err);
+        this.modulesLoaded = true;
+      }
+    });
+  }
+
+  // Verificar si un módulo está activo para la empresa
+  isModuleActive(routeName: string): boolean {
+    if (!this.modulesLoaded) return false; // Mientras carga, ocultar todos
+    // Buscar el código del módulo que corresponde a esta ruta
+    const code = Object.entries(this.moduleRouteMap)
+      .find(([_, route]) => route === routeName)?.[0];
+    if (!code) return false; // Si no está en el mapa de módulos del sistema, no mostrar
+    return this.activeModules.some(m => m.moduleCode === code && m.effectivelyActive);
+  }
+
+  // Verificar si hay al menos un módulo visible (controlado o no)
+  hasAnyVisibleModule(): boolean {
+    if (!this.modulesLoaded) return false;
+    return this.activeModules.length > 0;
+  }
+
+  // Obtener info de tiempo para un módulo por su ruta
+  getModuleTimeInfo(routeName: string): { isUnlimited: boolean; daysRemaining: number } {
+    const code = Object.entries(this.moduleRouteMap)
+      .find(([_, route]) => route === routeName)?.[0];
+    if (!code) return { isUnlimited: true, daysRemaining: 0 };
+    const mod = this.activeModules.find(m => m.moduleCode === code);
+    if (!mod) return { isUnlimited: true, daysRemaining: 0 };
+    if (!mod.expirationDate) return { isUnlimited: true, daysRemaining: 0 };
+    const remaining = Math.max(0, Math.ceil((new Date(mod.expirationDate).getTime() - Date.now()) / 86400000));
+    return { isUnlimited: false, daysRemaining: remaining };
+  }
+
+  isModuleUnlimited(routeName: string): boolean {
+    return this.getModuleTimeInfo(routeName).isUnlimited;
+  }
+
+  getModuleDaysRemaining(routeName: string): number {
+    return this.getModuleTimeInfo(routeName).daysRemaining;
+  }
+
   // Método para navegar a los módulos específicos
   goToModule(moduleName: string): void {
     // Mapeo de nombres de módulos
@@ -99,6 +165,12 @@ export class UsuarioWelcomeComponent implements OnInit {
     };
 
     const moduloNombre = moduleNames[moduleName] || moduleName;
+
+    // Verificar si el módulo está activo
+    if (!this.isModuleActive(moduleName)) {
+      alert(`El módulo ${moduloNombre} no está habilitado para ${this.empresaNombre}.\n\nContacte al administrador del sistema para activar este módulo.`);
+      return;
+    }
     
     // Rutas implementadas: inventario, talento-humano, seguridad-industrial
     if (moduleName === 'inventario') {

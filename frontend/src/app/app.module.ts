@@ -10,6 +10,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AppComponent } from './app.component';
 import { HomeComponent } from './features/home/home.component';
 import { DashboardAdminComponent } from './features/dashboard/admin/dashboard-admin.component';
+import { DashboardEmpleadoComponent } from './features/dashboard/empleado/dashboard-empleado.component';
 import { SharedModule } from './shared/shared.module';
 // import { ApiUrlInterceptor } from './core/interceptors/api-url.interceptor'; // Temporalmente deshabilitado
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
@@ -20,7 +21,8 @@ import { FileService } from './services/file.service';
   declarations: [
     AppComponent,
     HomeComponent,
-    DashboardAdminComponent
+    DashboardAdminComponent,
+    DashboardEmpleadoComponent
   ],
   schemas: [
     CUSTOM_ELEMENTS_SCHEMA
@@ -129,6 +131,14 @@ import { FileService } from './services/file.service';
         canActivate: [AuthGuard]
       },
       
+      // Ruta del panel de empleado (acceso restringido)
+      {
+        path: 'dashboard/empleado',
+        component: DashboardEmpleadoComponent,
+        canActivate: [AuthGuard],
+        data: { role: 'ROLE_EMPLOYEE' }
+      },
+
       // Rutas existentes del admin
       {
         path: 'dashboard/admin', 
@@ -147,6 +157,10 @@ import { FileService } from './services/file.service';
           {
             path: 'usuarios',
             loadChildren: () => import('./features/dashboard/admin/usuarios/usuarios.module').then(m => m.UsuariosModule)
+          },
+          {
+            path: 'planes',
+            loadChildren: () => import('./features/dashboard/admin/planes/planes.module').then(m => m.PlanesModule)
           }
         ]
       },

@@ -26,6 +26,8 @@ import { EmployeeResponse } from '../../usuario/talento-humano/models/employee.m
 import { InventoryCategoryService, InventoryCategory } from '../../../../services/inventory-category.service';
 import { InventorySupplierService, InventorySupplier } from '../../../../services/inventory-supplier.service';
 import { BusinessContextService } from '../../../../core/services/business-context.service';
+import { AuthService } from '../../../../core/services/auth.service';
+import { UserAdminService } from '../usuarios/user-admin.service';
 
 @Component({
   selector: 'app-detalle-empresa-admin',
@@ -164,6 +166,13 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   // QR público (vista previa)
   qrPreviewToken: string | null = null;
 
+  // Administradores de esta empresa
+  isSuperAdmin = false;
+  businessAdmins: User[] = [];
+  allSystemUsers: User[] = [];
+  showAssignAdminModal = false;
+  selectedUserIdForAdmin: number | null = null;
+
   // Modal para editar empresa
   showEditEmpresaModal = false;
   savingEmpresa = false;
@@ -224,15 +233,19 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private inventoryCategoryService: InventoryCategoryService,
     private inventorySupplierService: InventorySupplierService,
     private businessCtx: BusinessContextService,
-    private qrLegalDocsService: QrLegalDocsService
+    private qrLegalDocsService: QrLegalDocsService,
+    private authService: AuthService,
+    private userAdminService: UserAdminService
   ) {}
 
   ngOnInit(): void {
+    this.isSuperAdmin = this.authService.hasRole('ROLE_SUPER_ADMIN');
     this.route.params.subscribe(params => {
       if (params['id']) {
         this.empresaId = +params['id'];
         this.loadData();
         this.loadApprovals();
+        this.loadBusinessAdmins();
       }
     });
   }
@@ -1311,6 +1324,57 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       error: (error: any) => {
         console.error('Error al cargar usuarios:', error);
         this.users = [];
+      }
+    });
+  }
+
+  loadBusinessAdmins(): void {
+    this.userService.getUsersByBusiness(this.empresaId).subscribe({
+      next: (users: any) => {
+        this.businessAdmins = (users || []).filter((u: any) => {
+          const roles: string[] = Array.isArray(u?.roles) ? u.roles : [];
+          return roles.includes('ROLE_ADMIN');
+        });
+      },
+      error: () => { this.businessAdmins = []; }
+    });
+  }
+
+  openAssignAdminModal(): void {
+    this.showAssignAdminModal = true;
+    this.selectedUserIdForAdmin = null;
+    // Cargar todos los usuarios del sistema para seleccionar
+    this.userAdminService.getUsers().subscribe({
+      next: (users: any) => {
+        // Filtrar: no mostrar usuarios que ya son admin de esta empresa
+        const adminIds = new Set(this.businessAdmins.map((a: any) => a.id));
+        this.allSystemUsers = (users || []).filter((u: any) => {
+          const roles: string[] = Array.isArray(u?.roles) ? u.roles : [];
+          return !roles.includes('ROLE_SUPER_ADMIN') && !adminIds.has(u.id);
+        });
+      },
+      error: () => { this.allSystemUsers = []; }
+    });
+  }
+
+  closeAssignAdminModal(): void {
+    this.showAssignAdminModal = false;
+    this.selectedUserIdForAdmin = null;
+    this.allSystemUsers = [];
+  }
+
+  confirmAssignAdmin(): void {
+    if (!this.selectedUserIdForAdmin || !this.empresaId) return;
+    this.businessService.promoteUserToBusinessAdmin(this.empresaId, this.selectedUserIdForAdmin).subscribe({
+      next: () => {
+        alert('Usuario promovido a administrador de esta empresa exitosamente.');
+        this.closeAssignAdminModal();
+        this.loadBusinessAdmins();
+        this.loadUsers();
+      },
+      error: (err: any) => {
+        console.error('Error al promover usuario:', err);
+        alert('Error al asignar administrador: ' + (err.error?.message || err.message || 'Error desconocido'));
       }
     });
   }

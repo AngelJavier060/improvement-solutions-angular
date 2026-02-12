@@ -14,6 +14,12 @@ export class DashboardAdminComponent implements OnInit {
   // Estado de la barra lateral (true = visible)
   isSidebarOpen = true;
 
+  // Rol del usuario
+  isSuperAdmin = false;
+  isCompanyAdmin = false;
+  companyId: number | null = null;
+  companyName: string = '';
+
   constructor(public router: Router, private authService: AuthService) { }
 
   ngOnInit(): void {
@@ -43,6 +49,19 @@ export class DashboardAdminComponent implements OnInit {
     const user = this.authService.getCurrentUser();
     if (user) {
       this.username = user.name || user.username || 'Javier';
+      const roles: string[] = user.roles || [];
+      this.isSuperAdmin = roles.includes('ROLE_SUPER_ADMIN');
+      this.isCompanyAdmin = roles.includes('ROLE_ADMIN') && !this.isSuperAdmin;
+
+      // Si es admin de empresa, obtener su empresa
+      if (this.isCompanyAdmin && user.businesses && user.businesses.length > 0) {
+        this.companyId = user.businesses[0].id;
+        this.companyName = user.businesses[0].name || '';
+        // Si está en la ruta raíz del admin, redirigir a su empresa
+        if (this.router.url === '/dashboard/admin') {
+          this.router.navigate([`/dashboard/admin/empresas/admin/${this.companyId}`], { replaceUrl: true });
+        }
+      }
     }
   }
 

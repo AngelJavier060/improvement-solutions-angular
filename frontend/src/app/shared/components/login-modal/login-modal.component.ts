@@ -66,8 +66,20 @@ export class LoginModalComponent implements OnInit {
           const roles = response.userDetail.roles || [];
           let userPath = '/dashboard/usuario';
           
-          if (roles.includes('ROLE_ADMIN')) {
+          if (roles.includes('ROLE_SUPER_ADMIN')) {
+            // Super Admin: panel general de administración
             userPath = '/dashboard/admin';
+          } else if (roles.includes('ROLE_ADMIN')) {
+            // Admin de empresa: directo a su empresa
+            const businesses = response.userDetail.businesses;
+            if (businesses && businesses.length > 0) {
+              userPath = `/dashboard/admin/empresas/admin/${businesses[0].id}`;
+            } else {
+              userPath = '/dashboard/admin';
+            }
+          } else if (roles.includes('ROLE_EMPLOYEE')) {
+            // Empleado: panel restringido de empleado
+            userPath = '/dashboard/empleado';
           }
           
           this.activeModal.close('success');

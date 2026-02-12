@@ -150,12 +150,18 @@
               </div>
             </div>
             <div class="card-footer bg-white border-0 p-3">
-              <div class="d-flex justify-content-between gap-2">
+              <div class="d-flex justify-content-between gap-2 flex-wrap">
                 <button class="btn btn-light flex-grow-1" [routerLink]="['detalle', empresa.id]">
                   <i class="fas fa-eye me-2"></i>Ver
                 </button>
                 <button class="btn btn-primary flex-grow-1" [routerLink]="['admin', empresa.id]">
                   <i class="fas fa-cogs me-2"></i>Administrar
+                </button>
+                <button class="btn btn-info text-white flex-grow-1" [routerLink]="['modulos', empresa.id]" title="Gestión de módulos">
+                  <i class="fas fa-cubes me-2"></i>Módulos
+                </button>
+                <button *ngIf="isSuperAdmin()" class="btn btn-warning text-white flex-grow-1" (click)="onCreateAdmin(empresa)" title="Crear administrador de esta empresa">
+                  <i class="fas fa-user-shield me-2"></i>Crear Admin
                 </button>
                 <button class="btn btn-light flex-grow-1" [routerLink]="['editar', empresa.id]">
                   <i class="fas fa-edit me-2"></i>Editar
@@ -235,6 +241,12 @@
                     </button>
                     <button class="btn btn-primary btn-sm" [routerLink]="['admin', empresa.id]" title="Administrar empresa">
                       <i class="fas fa-cogs"></i>
+                    </button>
+                    <button class="btn btn-info btn-sm text-white" [routerLink]="['modulos', empresa.id]" title="Gestión de módulos">
+                      <i class="fas fa-cubes"></i>
+                    </button>
+                    <button *ngIf="isSuperAdmin()" class="btn btn-warning btn-sm text-white" (click)="onCreateAdmin(empresa)" title="Crear administrador de esta empresa">
+                      <i class="fas fa-user-shield"></i>
                     </button>
                     <button class="btn btn-light btn-sm" [routerLink]="['editar', empresa.id]" title="Editar empresa">
                       <i class="fas fa-edit"></i>

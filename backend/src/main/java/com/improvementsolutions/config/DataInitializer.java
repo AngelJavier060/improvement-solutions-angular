@@ -77,6 +77,15 @@ public class DataInitializer implements CommandLineRunner {
             roleRepository.save(adminRole);
             log.info("Rol ROLE_ADMIN actualizado");
         }
+
+        // Crear rol MANAGER si no existe (nivel intermedio para usuarios con más privilegios que ROLE_USER)
+        if (!roleRepository.existsByName("ROLE_MANAGER")) {
+            Role managerRole = new Role();
+            managerRole.setName("ROLE_MANAGER");
+            managerRole.setDescription("Responsable de área / usuario avanzado");
+            roleRepository.save(managerRole);
+            log.info("Rol ROLE_MANAGER creado");
+        }
     }
 
     /**
@@ -88,6 +97,12 @@ public class DataInitializer implements CommandLineRunner {
         try {
             User user = userRepository.findByUsername("javier").orElse(null);
             Role adminRole = roleRepository.findByName("ROLE_ADMIN").orElse(null);
+            Role superAdminRole = roleRepository.findByName("ROLE_SUPER_ADMIN").orElseGet(() -> {
+                Role r = new Role();
+                r.setName("ROLE_SUPER_ADMIN");
+                r.setDescription("Super usuario del sistema");
+                return roleRepository.save(r);
+            });
 
             if (user == null) {
                 user = new User();
@@ -98,23 +113,22 @@ public class DataInitializer implements CommandLineRunner {
                 user.setPassword(passwordEncoder.encode("12345"));
                 Set<Role> roles = new HashSet<>();
                 if (adminRole != null) roles.add(adminRole);
-                // Asignar roles al usuario recién creado
+                roles.add(superAdminRole);
                 user.setRoles(roles);
                 user.setCreatedAt(LocalDateTime.now());
                 user.setUpdatedAt(LocalDateTime.now());
                 userRepository.save(user);
-                log.info("Usuario DEV 'javier' creado con contraseña 12345 y rol ADMIN");
+                log.info("Usuario DEV 'javier' creado con contraseña 12345 y roles ADMIN + SUPER_ADMIN");
             } else {
-                // Asegurar activo y rol admin SIN tocar la contraseña existente
+                // Asegurar activo y roles admin+super_admin SIN tocar la contraseña existente
                 user.setActive(true);
-                if (adminRole != null) {
-                    Set<Role> roles = user.getRoles() != null ? new HashSet<>(user.getRoles()) : new HashSet<>();
-                    roles.add(adminRole);
-                    user.setRoles(roles);
-                }
+                Set<Role> roles = user.getRoles() != null ? new HashSet<>(user.getRoles()) : new HashSet<>();
+                if (adminRole != null) roles.add(adminRole);
+                roles.add(superAdminRole);
+                user.setRoles(roles);
                 user.setUpdatedAt(LocalDateTime.now());
                 userRepository.save(user);
-                log.info("Usuario DEV 'javier' actualizado (roles/activo) sin modificar la contraseña");
+                log.info("Usuario DEV 'javier' actualizado (roles ADMIN+SUPER_ADMIN/activo) sin modificar la contraseña");
             }
         } catch (Exception e) {
             log.warn("No se pudo garantizar el usuario DEV 'javier': {}", e.getMessage());

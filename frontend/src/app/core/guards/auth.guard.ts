@@ -34,8 +34,19 @@ export class AuthGuard implements CanActivate {
       if (!this.authService.hasRole(requiredRole)) {
         console.log('Usuario no tiene el rol requerido');
         // Redirigir según el rol del usuario
-        if (this.authService.hasRole('ROLE_ADMIN')) {
-          this.router.navigate(['/dashboard/admin/configuracion'], { replaceUrl: true });
+        if (this.authService.hasRole('ROLE_SUPER_ADMIN')) {
+          this.router.navigate(['/dashboard/admin'], { replaceUrl: true });
+        } else if (this.authService.hasRole('ROLE_ADMIN')) {
+          // Admin de empresa: redirigir a su empresa
+          const user = this.authService.getCurrentUser();
+          const businesses = user?.businesses;
+          if (businesses && businesses.length > 0) {
+            this.router.navigate([`/dashboard/admin/empresas/admin/${businesses[0].id}`], { replaceUrl: true });
+          } else {
+            this.router.navigate(['/dashboard/admin'], { replaceUrl: true });
+          }
+        } else if (this.authService.hasRole('ROLE_EMPLOYEE')) {
+          this.router.navigate(['/dashboard/empleado'], { replaceUrl: true });
         } else {
           this.router.navigate(['/dashboard/usuario'], { replaceUrl: true });
         }

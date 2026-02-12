@@ -21,6 +21,13 @@ export class UserAdminService {
   }
 
   /**
+   * Obtiene usuarios filtrados por empresa
+   */
+  getUsersByBusiness(businessId: number): Observable<User[]> {
+    return this.http.get<User[]>(`${this.baseUrl}/business/${businessId}`);
+  }
+
+  /**
    * Obtiene un usuario por su ID
    */
   getUserById(id: number): Observable<User> {

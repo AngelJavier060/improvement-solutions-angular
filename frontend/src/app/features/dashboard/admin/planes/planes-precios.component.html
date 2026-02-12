@@ -1,0 +1,233 @@
+<div class="container-fluid pt-3">
+  <div class="row mb-4">
+    <div class="col">
+      <h2 class="mb-0">
+        <i class="fas fa-tags me-2"></i>Configuración de Planes y Precios
+      </h2>
+      <p class="text-muted mb-0">Gestiona los planes de suscripción y pagos del sistema</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab==='planes'" (click)="setTab('planes')">
+        <i class="fas fa-box me-1"></i> Planes
+        <span class="badge bg-primary ms-1">{{ plans.length }}</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab==='pagos-pendientes'" (click)="setTab('pagos-pendientes')">
+        <i class="fas fa-clock me-1"></i> Pagos Pendientes
+        <span class="badge bg-warning text-dark ms-1">{{ pendingPayments.length }}</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab==='historial'" (click)="setTab('historial')">
+        <i class="fas fa-history me-1"></i> Historial de Pagos
+      </a>
+    </li>
+  </ul>
+
+  <!-- Tab: Planes -->
+  <div *ngIf="activeTab==='planes'">
+    <div class="d-flex justify-content-end mb-3">
+      <button class="btn btn-primary" (click)="openNewPlanModal()">
+        <i class="fas fa-plus me-1"></i> Nuevo Plan
+      </button>
+    </div>
+
+    <div *ngIf="isLoading" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+    </div>
+
+    <div class="row" *ngIf="!isLoading">
+      <div class="col-md-6 col-lg-3 mb-4" *ngFor="let plan of plans">
+        <div class="card h-100 shadow-sm" [class.border-success]="plan.active" [class.border-secondary]="!plan.active">
+          <div class="card-header text-center" 
+               [style.background]="plan.active ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#6c757d'"
+               style="color: white;">
+            <h5 class="mb-0 fw-bold">{{ plan.name }}</h5>
+            <small *ngIf="!plan.active" class="badge bg-dark mt-1">Inactivo</small>
+          </div>
+          <div class="card-body text-center">
+            <div class="display-5 fw-bold text-primary mb-2">${{ plan.price }}</div>
+            <p class="text-muted mb-2">{{ plan.currency }}</p>
+            <span class="badge bg-info text-dark mb-3">{{ getDurationLabel(plan.durationMonths) }}</span>
+            <p class="small text-muted">{{ plan.description }}</p>
+          </div>
+          <div class="card-footer bg-white d-flex justify-content-between">
+            <button class="btn btn-outline-primary btn-sm" (click)="openEditPlanModal(plan)">
+              <i class="fas fa-edit"></i> Editar
+            </button>
+            <button class="btn btn-sm" 
+                    [class.btn-outline-success]="!plan.active"
+                    [class.btn-outline-warning]="plan.active"
+                    (click)="togglePlanActive(plan)">
+              <i class="fas" [class.fa-check]="!plan.active" [class.fa-pause]="plan.active"></i>
+              {{ plan.active ? 'Desactivar' : 'Activar' }}
+            </button>
+            <button class="btn btn-outline-danger btn-sm" (click)="deletePlan(plan)">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoading && plans.length === 0" class="text-center py-5">
+      <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+      <p class="text-muted">No hay planes configurados. Crea el primer plan.</p>
+    </div>
+  </div>
+
+  <!-- Tab: Pagos Pendientes -->
+  <div *ngIf="activeTab==='pagos-pendientes'">
+    <div class="table-responsive" *ngIf="pendingPayments.length > 0">
+      <table class="table table-hover">
+        <thead class="table-warning">
+          <tr>
+            <th>ID</th>
+            <th>Empresa</th>
+            <th>Módulo</th>
+            <th>Plan</th>
+            <th>Monto</th>
+            <th>Método</th>
+            <th>Referencia</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of pendingPayments">
+            <td>{{ p.id }}</td>
+            <td>{{ p.business?.name || '—' }}</td>
+            <td>{{ p.businessModule?.module?.name || '—' }}</td>
+            <td>{{ p.plan?.name || '—' }}</td>
+            <td class="fw-bold">${{ p.amount }}</td>
+            <td>{{ p.paymentMethod }}</td>
+            <td>{{ p.referenceNumber || '—' }}</td>
+            <td>{{ p.paymentDate | date:'short' }}</td>
+            <td>
+              <button class="btn btn-success btn-sm me-1" (click)="confirmPayment(p)" title="Confirmar pago">
+                <i class="fas fa-check"></i> Confirmar
+              </button>
+              <button class="btn btn-danger btn-sm" (click)="rejectPayment(p)" title="Rechazar pago">
+                <i class="fas fa-times"></i> Rechazar
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div *ngIf="pendingPayments.length === 0" class="text-center py-5">
+      <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+      <p class="text-muted">No hay pagos pendientes de confirmación.</p>
+    </div>
+  </div>
+
+  <!-- Tab: Historial de Pagos -->
+  <div *ngIf="activeTab==='historial'">
+    <div class="table-responsive" *ngIf="allPayments.length > 0">
+      <table class="table table-hover table-striped">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Empresa</th>
+            <th>Módulo</th>
+            <th>Plan</th>
+            <th>Monto</th>
+            <th>Método</th>
+            <th>Estado</th>
+            <th>Referencia</th>
+            <th>Fecha</th>
+            <th>Confirmado por</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of allPayments">
+            <td>{{ p.id }}</td>
+            <td>{{ p.business?.name || '—' }}</td>
+            <td>{{ p.businessModule?.module?.name || '—' }}</td>
+            <td>{{ p.plan?.name || '—' }}</td>
+            <td class="fw-bold">${{ p.amount }}</td>
+            <td>{{ p.paymentMethod }}</td>
+            <td><span class="badge" [ngClass]="getStatusBadgeClass(p.paymentStatus)">{{ p.paymentStatus }}</span></td>
+            <td>{{ p.referenceNumber || '—' }}</td>
+            <td>{{ p.paymentDate | date:'short' }}</td>
+            <td>{{ p.confirmedBy?.name || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div *ngIf="allPayments.length === 0" class="text-center py-5">
+      <i class="fas fa-history fa-3x text-muted mb-3"></i>
+      <p class="text-muted">No hay historial de pagos.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Crear/Editar Plan -->
+<div class="modal-backdrop fade show" *ngIf="showPlanModal" (click)="closePlanModal()"></div>
+<div class="modal d-block fade show" tabindex="-1" *ngIf="showPlanModal">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-box me-2"></i>{{ editingPlan ? 'Editar Plan' : 'Nuevo Plan' }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closePlanModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Código</label>
+          <input type="text" class="form-control" [(ngModel)]="planForm.code" 
+                 placeholder="Ej: MENSUAL" [disabled]="!!editingPlan">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nombre</label>
+          <input type="text" class="form-control" [(ngModel)]="planForm.name" placeholder="Ej: Plan Mensual">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Descripción</label>
+          <textarea class="form-control" [(ngModel)]="planForm.description" rows="2"></textarea>
+        </div>
+        <div class="row">
+          <div class="col-6 mb-3">
+            <label class="form-label fw-semibold">Duración (meses)</label>
+            <input type="number" class="form-control" [(ngModel)]="planForm.durationMonths" min="0">
+            <small class="text-muted">0 = Ilimitado</small>
+          </div>
+          <div class="col-6 mb-3">
+            <label class="form-label fw-semibold">Precio (USD)</label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input type="number" class="form-control" [(ngModel)]="planForm.price" step="0.01" min="0">
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-6 mb-3">
+            <label class="form-label fw-semibold">Orden</label>
+            <input type="number" class="form-control" [(ngModel)]="planForm.displayOrder" min="0">
+          </div>
+          <div class="col-6 mb-3 d-flex align-items-end">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" [(ngModel)]="planForm.active" id="planActive">
+              <label class="form-check-label" for="planActive">Activo</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="closePlanModal()">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="savePlan()"
+                [disabled]="!planForm.code || !planForm.name">
+          <i class="fas fa-save me-1"></i>{{ editingPlan ? 'Actualizar' : 'Crear' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

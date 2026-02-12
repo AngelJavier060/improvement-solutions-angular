@@ -137,6 +137,11 @@ public class BusinessEmployee {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id")
     private Employee employee;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"roles", "businesses", "password"})
+    private User user;
     
     // Nuevos campos para empresa contratista y bloque
     @ManyToOne(fetch = FetchType.LAZY)

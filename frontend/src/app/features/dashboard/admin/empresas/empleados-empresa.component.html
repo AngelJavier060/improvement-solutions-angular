@@ -1,0 +1,175 @@
+<div class="container-fluid pt-3">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col">
+      <h2 class="mb-1">
+        <i class="fas fa-id-badge me-2"></i>Gestión de Empleados
+      </h2>
+      <p class="text-muted mb-0">{{ businessName }} — Cuentas de acceso para trabajadores</p>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-outline-primary btn-sm" (click)="loadEmployees()">
+        <i class="fas fa-sync-alt me-1"></i> Actualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-3">
+          <div class="fw-bold fs-3 text-primary">{{ employees.length }}</div>
+          <small class="text-muted">Total Empleados</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-3">
+          <div class="fw-bold fs-3 text-success">{{ countWithAccount }}</div>
+          <small class="text-muted">Con Cuenta</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-3">
+          <div class="fw-bold fs-3 text-warning">{{ countWithoutAccount }}</div>
+          <small class="text-muted">Sin Cuenta</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="row mb-3 g-2">
+    <div class="col-md-6">
+      <div class="input-group">
+        <span class="input-group-text"><i class="fas fa-search"></i></span>
+        <input type="text" class="form-control" placeholder="Buscar por nombre, cédula o email..."
+               [(ngModel)]="searchText" (input)="applyFilter()">
+        <button class="btn btn-outline-secondary" *ngIf="searchText" (click)="searchText=''; applyFilter()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <select class="form-select" [(ngModel)]="filterAccount" (change)="applyFilter()">
+        <option value="all">Todos</option>
+        <option value="with">Con cuenta</option>
+        <option value="without">Sin cuenta</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status"></div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-responsive" *ngIf="!isLoading && filteredEmployees.length > 0">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Cédula</th>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Cargo</th>
+          <th>Estado</th>
+          <th>Cuenta</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let emp of filteredEmployees">
+          <td class="fw-semibold">{{ emp.cedula }}</td>
+          <td>{{ emp.fullName }}</td>
+          <td>{{ emp.email || '—' }}</td>
+          <td>{{ emp.position || '—' }}</td>
+          <td>
+            <span class="badge" [ngClass]="emp.active ? 'bg-success' : 'bg-secondary'">
+              {{ emp.status || (emp.active ? 'ACTIVO' : 'INACTIVO') }}
+            </span>
+          </td>
+          <td>
+            <span *ngIf="emp.hasAccount" class="text-success small fw-semibold">
+              <i class="fas fa-check-circle me-1"></i>{{ emp.username }}
+            </span>
+            <span *ngIf="!emp.hasAccount" class="text-muted small">
+              <i class="fas fa-minus-circle me-1"></i>Sin cuenta
+            </span>
+          </td>
+          <td class="text-end">
+            <button *ngIf="!emp.hasAccount" class="btn btn-primary btn-sm"
+                    (click)="openCreateAccountModal(emp)">
+              <i class="fas fa-user-plus me-1"></i> Crear Cuenta
+            </button>
+            <span *ngIf="emp.hasAccount" class="badge bg-light text-success border">
+              <i class="fas fa-check"></i> Activa
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty -->
+  <div *ngIf="!isLoading && filteredEmployees.length === 0" class="text-center py-5">
+    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+    <p class="text-muted">
+      {{ employees.length === 0 ? 'No hay empleados registrados en esta empresa.' : 'No se encontraron resultados.' }}
+    </p>
+  </div>
+</div>
+
+<!-- Create Account Modal -->
+<div class="modal-backdrop fade show" *ngIf="showCreateModal" (click)="closeCreateModal()"></div>
+<div class="modal d-block fade show" tabindex="-1" *ngIf="showCreateModal">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-user-plus me-2"></i>Crear Cuenta de Empleado
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeCreateModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info py-2 small mb-3">
+          <i class="fas fa-info-circle me-1"></i>
+          Creando cuenta para: <strong>{{ selectedEmployee?.fullName }}</strong>
+          (Cédula: {{ selectedEmployee?.cedula }})
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Usuario</label>
+          <input type="text" class="form-control" [(ngModel)]="accountForm.username"
+                 placeholder="Número de cédula">
+          <small class="text-muted">Por defecto se usa la cédula del empleado</small>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Contraseña <span class="text-danger">*</span></label>
+          <input type="password" class="form-control" [(ngModel)]="accountForm.password"
+                 placeholder="Contraseña para el empleado">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+          <input type="email" class="form-control" [(ngModel)]="accountForm.email"
+                 placeholder="correo@ejemplo.com">
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeCreateModal()">Cancelar</button>
+        <button class="btn btn-primary" (click)="createAccount()"
+                [disabled]="isCreating || !accountForm.password || !accountForm.email">
+          <i class="fas fa-save me-1" *ngIf="!isCreating"></i>
+          <i class="fas fa-spinner fa-spin me-1" *ngIf="isCreating"></i>
+          {{ isCreating ? 'Creando...' : 'Crear Cuenta' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

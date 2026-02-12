@@ -50,6 +50,10 @@ public class UserService {
         return userRepository.findAllWithRoles();
     }
 
+    public List<User> findByBusinessIdWithRoles(Long businessId) {
+        return userRepository.findByBusinessIdWithRoles(businessId);
+    }
+
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);
     }

@@ -42,6 +42,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("select distinct u from User u left join fetch u.roles")
     List<User> findAllWithRoles();
 
+    @Query("select distinct u from User u left join fetch u.roles join u.businesses b where b.id = :businessId")
+    List<User> findByBusinessIdWithRoles(@Param("businessId") Long businessId);
+
     /**
      * Obtiene un usuario por ID incluyendo sus roles para evitar LazyInitializationException
      */

@@ -3,11 +3,14 @@ package com.improvementsolutions.controller;
 import com.improvementsolutions.model.*;
 import com.improvementsolutions.dto.UserResponseDto;
 import com.improvementsolutions.dto.business.BusinessListDto;
+import com.improvementsolutions.dto.user.CreateUserDto;
 import com.improvementsolutions.service.BusinessService;
+import com.improvementsolutions.service.UserService;
 import com.improvementsolutions.repository.IessRepository;
 import com.improvementsolutions.repository.BusinessRepository;
 import com.improvementsolutions.repository.ContractorBlockRepository;
 import com.improvementsolutions.repository.ContractorCompanyRepository;
+import com.improvementsolutions.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -33,10 +36,12 @@ import org.springframework.web.bind.annotation.*;
 public class BusinessController {
 
     private final BusinessService businessService;
+    private final UserService userService;
     private final IessRepository iessRepository;
     private final BusinessRepository businessRepository;
     private final ContractorCompanyRepository contractorCompanyRepository;
     private final ContractorBlockRepository contractorBlockRepository;
+    private final RoleRepository roleRepository;
     
     // Endpoints para el administrador
     @GetMapping("/admin/dashboard")
@@ -48,6 +53,78 @@ public class BusinessController {
             LocalDateTime.now().minusDays(30), LocalDateTime.now()));
         dashboard.put("activeBusinesses", businessService.findAllActiveBusinesses());
         return ResponseEntity.ok(dashboard);
+    }
+
+    /**
+     * Crea un administrador de empresa (usuario con ROLE_ADMIN asociado a una empresa específica).
+     * Solo el SUPER_ADMIN puede usar este endpoint.
+     */
+    @PostMapping("/admin/{businessId}/admins")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<UserResponseDto> createBusinessAdmin(
+            @PathVariable Long businessId,
+            @RequestBody @jakarta.validation.Valid CreateUserDto createUserDto) {
+
+        // 1) Verificar que la empresa exista
+        Business business = businessService.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        // 2) Construir usuario base
+        User user = new User();
+        user.setName(createUserDto.getName());
+        user.setEmail(createUserDto.getEmail());
+        user.setPhone(createUserDto.getPhone());
+        user.setUsername(createUserDto.getUsername());
+        user.setPassword(createUserDto.getPassword());
+        user.setActive(true);
+
+        // 3) Asignar rol ROLE_ADMIN únicamente
+        java.util.Set<Role> roles = new java.util.HashSet<>();
+        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                .orElseThrow(() -> new RuntimeException("Rol ROLE_ADMIN no encontrado"));
+        roles.add(adminRole);
+        user.setRoles(roles);
+
+        // 4) Asociar usuario a la empresa
+        user.addBusiness(business);
+
+        // 5) Persistir usando el servicio estándar (encripta contraseña, setea timestamps, etc.)
+        User saved = userService.create(user);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(new UserResponseDto(saved));
+    }
+
+    /**
+     * Promueve un usuario existente a ROLE_ADMIN y lo asocia a una empresa específica.
+     * Solo el SUPER_ADMIN puede usar este endpoint.
+     */
+    @PutMapping("/admin/{businessId}/admins/{userId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @Transactional
+    public ResponseEntity<UserResponseDto> promoteUserToBusinessAdmin(
+            @PathVariable Long businessId,
+            @PathVariable Long userId) {
+
+        Business business = businessService.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        User user = userService.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Agregar ROLE_ADMIN si no lo tiene
+        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                .orElseThrow(() -> new RuntimeException("Rol ROLE_ADMIN no encontrado"));
+        if (!user.getRoles().contains(adminRole)) {
+            user.addRole(adminRole);
+        }
+
+        // Asociar a la empresa si no está ya asociado
+        if (!user.getBusinesses().contains(business)) {
+            user.addBusiness(business);
+        }
+
+        // Los cambios se persisten automáticamente al final de la transacción (dirty checking)
+        return ResponseEntity.ok(new UserResponseDto(user));
     }
     
     @GetMapping("/admin/search")

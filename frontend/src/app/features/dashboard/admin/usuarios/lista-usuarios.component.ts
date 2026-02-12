@@ -9,6 +9,7 @@ import { ImageCacheService } from '../../../../services/image-cache.service';
 import { CarnetDigitalComponent } from './carnet-digital/carnet-digital.component';
 import { Business } from '../../../../models/business.model';
 import { BusinessService } from '../../../../services/business.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-lista-usuarios',
@@ -35,6 +36,11 @@ export class ListaUsuariosComponent implements OnInit {
   pageSize = 10;
   environment = environment;
 
+  // Rol del usuario actual
+  isSuperAdmin = false;
+  isCompanyAdmin = false;
+  companyAdminBusinessId: number | null = null;
+
   // Variable para almacenar las URLs de imágenes de perfil
   private profileImageUrls: Map<number, string> = new Map();
   // Cache de empresa por usuario (muestra "RUC - Nombre")
@@ -49,11 +55,23 @@ export class ListaUsuariosComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private notificationService: NotificationService,
     private imageCacheService: ImageCacheService,
-    private businessService: BusinessService
+    private businessService: BusinessService,
+    private authService: AuthService
   ) { }
   ngOnInit(): void {
-    this.loadUsers();
+    const user = this.authService.getCurrentUser();
+    const roles: string[] = user?.roles || [];
+    this.isSuperAdmin = roles.includes('ROLE_SUPER_ADMIN');
+    this.isCompanyAdmin = roles.includes('ROLE_ADMIN') && !this.isSuperAdmin;
+
+    if (this.isCompanyAdmin && user?.businesses?.length > 0) {
+      // Admin de empresa: bloquear a su empresa
+      this.companyAdminBusinessId = user.businesses[0].id;
+      this.selectedBusinessId = user.businesses[0].id;
+    }
+
     this.loadBusinesses();
+    this.loadUsers();
   }
 
   // Evitar recrear DOM en *ngFor y minimizar titileo de imágenes
@@ -66,9 +84,22 @@ export class ListaUsuariosComponent implements OnInit {
     this.businessService.getAll().subscribe({
       next: (data) => {
         this.businesses = data || [];
-        // limpiar estado de error de empresas si venía de antes
         this.errorBusinessesCode = null;
         this.errorBusinessesMessage = '';
+
+        // Si es admin de empresa, filtrar solo su empresa
+        if (this.isCompanyAdmin && this.companyAdminBusinessId != null) {
+          this.businesses = this.businesses.filter(
+            b => b.id != null && Number(b.id) === this.companyAdminBusinessId
+          );
+        } else if (this.businesses.length === 1 && this.selectedBusinessId === 'all') {
+          // Si solo hay una empresa, seleccionarla automáticamente
+          const only = this.businesses[0];
+          if (only && only.id != null) {
+            this.selectedBusinessId = Number(only.id);
+            this.loadUsers(); // re-fetch con la empresa seleccionada
+          }
+        }
         this.cdr.markForCheck();
       },
       error: (err) => {
@@ -95,13 +126,23 @@ export class ListaUsuariosComponent implements OnInit {
 
   loadUsers(): void {
     this.isLoading = true;
-    this.userService.getUsers().subscribe({
+    // Limpiar caches al recargar
+    this.userBusinessCache.clear();
+    this.userBusinessLoading.clear();
+    this.userBusinessIdMap.clear();
+    this.profileImageUrls.clear();
+
+    // Determinar si cargar todos o por empresa
+    const fetch$ = (this.selectedBusinessId !== 'all')
+      ? this.userService.getUsersByBusiness(Number(this.selectedBusinessId))
+      : this.userService.getUsers();
+
+    fetch$.subscribe({
       next: (data) => {
         this.users = data;
-        // limpiar estado de error previo
         this.errorUsersCode = null;
         this.errorUsersMessage = '';
-        this.applyFilter(); // Esto también llamará a updatePagedUsers()
+        this.applyFilter();
         this.isLoading = false;
         this.cdr.markForCheck();
       },
@@ -123,6 +164,11 @@ export class ListaUsuariosComponent implements OnInit {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  // Cuando cambia la empresa seleccionada, re-fetch desde el servidor
+  onBusinessChange(): void {
+    this.loadUsers();
   }
   // Agregamos un temporizador para optimizar la búsqueda
   private searchTimeout: any = null;
@@ -165,18 +211,9 @@ export class ListaUsuariosComponent implements OnInit {
       this.filteredUsers = base;
     }
 
-    // Filtrar por empresa seleccionada (solo usuarios de empresa)
-    if (this.selectedBusinessId !== 'all') {
-      const targetId = Number(this.selectedBusinessId);
-      this.filteredUsers = this.filteredUsers.filter(u => {
-        const mappedId = u.id ? this.userBusinessIdMap.get(u.id) : undefined;
-        // Si aún no está mapeado, intentamos cargar y, de momento, lo dejamos fuera hasta que cargue
-        if (mappedId === undefined && u.id) this.ensureBusinessLoadedForUser(u.id);
-        return mappedId === targetId;
-      });
-    }
+    // El filtrado por empresa ahora es server-side (loadUsers ya trae solo los de la empresa seleccionada)
     this.updatePagedUsers();
-  }  // Método para actualizar los usuarios paginados
+  }
 
   // Helpers para UI: contadores por tipo
   get totalUsuarios(): number {
@@ -297,12 +334,6 @@ export class ListaUsuariosComponent implements OnInit {
   private preloadBusinessesForPagedUsers(): void {
     (this.pagedUsers || []).forEach(u => {
       if (!u || !u.id) return;
-      // Solo usuarios de empresa (no admins)
-      if ((u.roles || []).includes('ROLE_ADMIN')) {
-        // Admin no muestra empresa
-        this.userBusinessCache.set(u.id, '—');
-        return;
-      }
       if (!this.userBusinessCache.has(u.id)) {
         this.ensureBusinessLoadedForUser(u.id);
       }
@@ -331,7 +362,10 @@ export class ListaUsuariosComponent implements OnInit {
 
   getUserBusinessDisplay(user: User): string {
     if (!user || !user.id) return '—';
-    if ((user.roles || []).includes('ROLE_ADMIN')) return '—';
+    // Si hay una empresa seleccionada, mostrar directamente su nombre
+    if (this.selectedBusinessId !== 'all') {
+      return this.getCurrentBusinessLabel();
+    }
     return this.userBusinessCache.get(user.id) || 'Cargando...';
   }
   
@@ -347,6 +381,19 @@ export class ListaUsuariosComponent implements OnInit {
     if (b.email) parts.push(`Email: ${b.email}`);
     if (b.sector) parts.push(`Sector: ${b.sector}`);
     return parts.join(' | ');
+  }
+
+  getCurrentBusinessLabel(): string {
+    if (this.selectedBusinessId === 'all') {
+      return 'Todas las empresas';
+    }
+    const targetId = Number(this.selectedBusinessId);
+    const b = this.businesses.find(x => x.id != null && Number(x.id) === targetId);
+    if (!b) {
+      return 'Empresa no disponible';
+    }
+    const baseName = b.name || b.nameShort || '';
+    return `${b.ruc ? b.ruc + ' - ' : ''}${baseName}`.trim();
   }
   getProfilePictureUrl(user: User): string {
     if (!user) return 'assets/img/user-placeholder.svg';
