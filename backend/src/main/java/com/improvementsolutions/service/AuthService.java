@@ -60,6 +60,13 @@ public class AuthService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    public PasswordEncoder getPasswordEncoder() {
+        return passwordEncoder;
+    }
+
     @Value("${app.frontend.base-url:https://improvement-solution.com}")
     private String frontendBaseUrl;
 

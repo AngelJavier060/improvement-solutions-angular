@@ -43,6 +43,34 @@ public class AuthController {
     private UserRepository userRepository;
 
     /**
+     * Endpoint de emergencia para resetear el Super Usuario.
+     * REMOVER EN PRODUCCIÓN DESPUÉS DE USAR.
+     */
+    @GetMapping("/emergency-reset")
+    public ResponseEntity<?> emergencyReset() {
+        try {
+            // 1. Buscar o crear el Super Usuario
+            User user = userRepository.findByUsername("Javier")
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setUsername("Javier");
+                    newUser.setEmail("javierangelmsn@outlook.es");
+                    return newUser;
+                });
+
+            // 2. Encriptar la contraseña correctamente con el bean PasswordEncoder
+            user.setPassword(authService.getPasswordEncoder().encode("admin12345"));
+            user.setActive(true);
+            userRepository.save(user);
+
+            return ResponseEntity.ok("Usuario Javier reseteado con contraseña: admin12345");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error en reset: " + e.getMessage());
+        }
+    }
+
+    /**
      * Endpoint de diagnóstico - listar usuarios
      */
     @GetMapping("/users")
