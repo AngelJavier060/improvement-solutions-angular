@@ -68,11 +68,14 @@ public class FileSystemStorageService implements StorageService {
                 // En Windows, intentar establecer los permisos básicos
                 rootLocation.toFile().setWritable(true, false);
                 logosDir.toFile().setWritable(true, false);
-                
-                // Verificar permisos
-                if (!Files.isWritable(rootLocation) || !Files.isWritable(logosDir)) {
-                    throw new StorageException("Permisos insuficientes en los directorios de almacenamiento");
-                }
+            } catch (Exception e) {
+                // En contenedores/volúmenes puede fallar por permisos/owner. No debe tumbar la app.
+                logger.warn("No se pudieron establecer permisos POSIX en almacenamiento (se continuará): {}", e.getMessage());
+            }
+
+            // Verificar permisos (aplica a Linux/Windows/volúmenes)
+            if (!Files.isWritable(rootLocation) || !Files.isWritable(logosDir)) {
+                throw new StorageException("Permisos insuficientes en los directorios de almacenamiento: " + rootLocation);
             }
             
             logger.info("Sistema de almacenamiento inicializado correctamente en: {}", rootLocation);

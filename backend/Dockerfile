@@ -21,9 +21,6 @@ RUN groupadd -g 1001 appgroup \
 # Copiar el JAR construido
 COPY --from=build --chown=appuser:appgroup /app/target/*.jar app.jar
 
-# Cambiar al usuario no root
-USER appuser
-
 # Exponer puerto
 EXPOSE 8081
 
