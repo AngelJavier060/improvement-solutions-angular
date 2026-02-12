@@ -1,0 +1,20 @@
+# Dependencies - npm ci will install fresh
+node_modules/
+
+# Build output
+dist/
+
+# IDE
+.idea/
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Angular cache
+.angular/

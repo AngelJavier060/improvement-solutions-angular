@@ -1,0 +1,20 @@
+# Runtime data - never send to Docker build context
+uploads/
+logs/
+test-uploads/
+
+# Build artifacts
+target/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Git
+.git/
+.gitignore
+
+# OS
+Thumbs.db
+.DS_Store

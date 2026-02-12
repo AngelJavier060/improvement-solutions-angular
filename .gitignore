@@ -41,11 +41,15 @@ Thumbs.db
 # Package manager files - keep only important ones
 frontend/package-lock.json
 
-# Uploaded files (keep directory, ignore contents)
-backend/uploads/**
-!backend/uploads/.gitkeep
-backend/test-uploads/**
-!backend/test-uploads/.gitkeep
+# Uploaded files (runtime data, NOT code)
+backend/uploads/
+backend/test-uploads/
+
+# MySQL data directory (production)
+mysql/
+
+# Docker override (production-specific)
+docker-compose.override.yml
 
 # Secrets/keys - never commit private keys
 *.pem

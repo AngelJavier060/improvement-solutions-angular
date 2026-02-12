@@ -3,10 +3,10 @@ services:
   mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: db_improvement_solutions
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-db_improvement_solutions}
+      MYSQL_USER: ${DB_USER:-admin}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
     ports:
       - "3307:3306"
     volumes:
@@ -24,17 +24,17 @@ services:
       SERVER_PORT: 8081
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_NAME: db_improvement_solutions
-      DB_USER: admin
-      DB_PASSWORD: root
-      JWT_SECRET: ${JWT_SECRET}
+      DB_NAME: ${DB_NAME:-db_improvement_solutions}
+      DB_USER: ${DB_USER:-admin}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
     depends_on:
       - mysql
     networks:
       - improvement_network
     restart: unless-stopped
     volumes:
-      - /opt/improvement-solutions-angular/backend/uploads:/app/uploads
+      - uploads_data:/app/uploads
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8081/health"]
       interval: 30s
@@ -44,8 +44,8 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "8001:80"
-      - "8443:443"
+      - "${FRONTEND_HTTP_PORT:-8001}:80"
+      - "${FRONTEND_HTTPS_PORT:-8443}:443"
     depends_on:
       - backend
     networks:
@@ -56,6 +56,7 @@ services:
 
 volumes:
   mysql_data:
+  uploads_data:
 
 networks:
   improvement_network:
