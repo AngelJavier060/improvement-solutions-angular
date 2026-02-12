@@ -42,9 +42,6 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private com.improvementsolutions.repository.RoleRepository roleRepository;
-
     /**
      * Endpoint de emergencia para resetear el Super Usuario.
      * REMOVER EN PRODUCCIÓN DESPUÉS DE USAR.
@@ -52,37 +49,8 @@ public class AuthController {
     @GetMapping("/emergency-reset")
     public ResponseEntity<?> emergencyReset() {
         try {
-            // 1. Asegurar que los roles existan
-            Role superAdminRole = roleRepository.findByName("ROLE_SUPER_ADMIN")
-                .orElseGet(() -> {
-                    Role newRole = new Role();
-                    newRole.setName("ROLE_SUPER_ADMIN");
-                    return roleRepository.save(newRole);
-                });
-
-            // 2. Buscar o crear el Super Usuario
-            User user = userRepository.findByUsername("Javier")
-                .orElseGet(() -> {
-                    User newUser = new User();
-                    newUser.setUsername("Javier");
-                    newUser.setEmail("javierangelmsn@outlook.es");
-                    newUser.setName("Javier");
-                    return newUser;
-                });
-
-            // 3. Encriptar la contraseña correctamente (Alexandra123@)
-            user.setPassword(authService.getPasswordEncoder().encode("Alexandra123@"));
-            user.setActive(true);
-            
-            // 4. Asignar el rol de Super Admin si no lo tiene
-            if (user.getRoles() == null) {
-                user.setRoles(new HashSet<>());
-            }
-            user.getRoles().add(superAdminRole);
-            
-            userRepository.save(user);
-
-            return ResponseEntity.ok("Usuario Javier reseteado con contraseña: Alexandra123@ y rol ROLE_SUPER_ADMIN");
+            String result = authService.executeEmergencyReset();
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             logger.error("Error en emergency reset: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

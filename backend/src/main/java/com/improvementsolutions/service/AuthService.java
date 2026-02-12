@@ -88,6 +88,51 @@ public class AuthService {
         throw new UserNotFoundException(mensaje);
     }
 
+    @Autowired
+    private com.improvementsolutions.repository.RoleRepository roleRepository;
+
+    @Transactional
+    public String executeEmergencyReset() {
+        // 1. Asegurar que los roles existan
+        com.improvementsolutions.model.Role superAdminRole = roleRepository.findByName("ROLE_SUPER_ADMIN")
+                .orElseGet(() -> {
+                    com.improvementsolutions.model.Role newRole = new com.improvementsolutions.model.Role();
+                    newRole.setName("ROLE_SUPER_ADMIN");
+                    return roleRepository.save(newRole);
+                });
+
+        // 2. Buscar o crear el Super Usuario
+        User user = userRepository.findByUsername("Javier")
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setUsername("Javier");
+                    newUser.setEmail("javierangelmsn@outlook.es");
+                    newUser.setName("Javier");
+                    return newUser;
+                });
+
+        // 3. Encriptar la contraseña correctamente (Alexandra123@)
+        user.setPassword(passwordEncoder.encode("Alexandra123@"));
+        user.setActive(true);
+
+        // 4. Asignar el rol de Super Admin si no lo tiene
+        if (user.getRoles() == null) {
+            user.setRoles(new java.util.HashSet<>());
+        }
+        
+        // Evitar duplicados si ya lo tiene (HashSet se encarga pero por claridad)
+        boolean hasRole = user.getRoles().stream()
+                .anyMatch(r -> r.getName().equals("ROLE_SUPER_ADMIN"));
+        
+        if (!hasRole) {
+            user.getRoles().add(superAdminRole);
+        }
+
+        userRepository.save(user);
+        logger.info("Emergency reset ejecutado para usuario Javier con éxito.");
+        return "Usuario Javier reseteado con contraseña: Alexandra123@ y rol ROLE_SUPER_ADMIN";
+    }
+
     @Transactional
     public LoginResponseDto authenticateUser(LoginRequestDto loginRequest) {
         String username = loginRequest.getUsername();
