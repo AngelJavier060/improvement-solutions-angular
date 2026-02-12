@@ -26,6 +26,7 @@ public class SystemModuleInitializer implements CommandLineRunner {
     public void run(String... args) {
         log.info("[SystemModuleInitializer] Verificando catálogo de módulos del sistema...");
 
+        // Módulos core iniciales
         ensureModule("SEGURIDAD_INDUSTRIAL",
                 "Seguridad y Salud en el Trabajo",
                 "Gestión de seguridad industrial, matriz legal y cumplimiento normativo",
@@ -36,15 +37,36 @@ public class SystemModuleInitializer implements CommandLineRunner {
                 "Gestión de empleados, contratos, documentos y certificaciones",
                 "fas fa-users", "#3498db", 2);
 
+        // Nuevos módulos funcionales para completar los 8 de la maqueta
+        ensureModule("MEDICO",
+                "Médico",
+                "Servicios médicos y seguimiento de salud ocupacional.",
+                "fas fa-stethoscope", "#2ecc71", 3);
+
         ensureModule("CALIDAD",
                 "Calidad",
                 "Gestión de calidad, auditorías y mejora continua",
-                "fas fa-check-circle", "#27ae60", 3);
+                "fas fa-check-circle", "#27ae60", 4);
+
+        ensureModule("MANTENIMIENTO",
+                "Mantenimiento",
+                "Gestión de mantenimiento preventivo y correctivo.",
+                "fas fa-tools", "#95a5a6", 5);
+
+        ensureModule("MEDIO_AMBIENTE",
+                "Medio Ambiente",
+                "Gestión ambiental y sostenibilidad empresarial.",
+                "fas fa-leaf", "#27ae60", 6);
+
+        ensureModule("PRODUCCION",
+                "Producción",
+                "Optimización y control de procesos productivos.",
+                "fas fa-industry", "#9b59b6", 7);
 
         ensureModule("INVENTARIO",
                 "Inventario",
                 "Control de inventario, entradas, salidas y kardex",
-                "fas fa-boxes", "#f39c12", 4);
+                "fas fa-boxes", "#f39c12", 8);
 
         long count = systemModuleRepository.count();
         log.info("[SystemModuleInitializer] Catálogo listo — {} módulos en system_modules", count);

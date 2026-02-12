@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { FileService } from '../../../services/file.service';
@@ -8,7 +9,7 @@ import { BusinessModuleService, BusinessModuleDto } from '../../../services/busi
 @Component({
   selector: 'app-usuario-welcome',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './usuario-welcome.component.html',
   styleUrls: ['./usuario-welcome.component.scss']
 })
@@ -19,12 +20,20 @@ export class UsuarioWelcomeComponent implements OnInit {
   fechaAcceso: string = '';
   empresaLogoUrl: string = '';
   activeModules: BusinessModuleDto[] = [];
+  allModules: BusinessModuleDto[] = [];
   modulesLoaded = false;
+  isAdmin = false;
+  isSuperAdmin = false;
+  togglingModule: string | null = null;
   // Códigos de módulo del backend → ruta del frontend
   private moduleRouteMap: { [code: string]: string } = {
     'TALENTO_HUMANO': 'talento-humano',
     'SEGURIDAD_INDUSTRIAL': 'seguridad-industrial',
+    'MEDICO': 'medico',
     'CALIDAD': 'calidad',
+    'MANTENIMIENTO': 'mantenimiento',
+    'MEDIO_AMBIENTE': 'medio-ambiente',
+    'PRODUCCION': 'produccion',
     'INVENTARIO': 'inventario'
   };
 
@@ -97,14 +106,40 @@ export class UsuarioWelcomeComponent implements OnInit {
     alert('Dashboard en desarrollo. Por el momento solo tienes acceso a esta página de bienvenida.');
   }
 
-  // Cargar módulos activos desde el backend
+  // Cargar módulos desde el backend
   loadActiveModules(): void {
     if (!this.empresaRuc) return;
+
+    // Detectar rol
+    const roles = this.usuario?.roles || [];
+    this.isSuperAdmin = roles.includes('ROLE_SUPER_ADMIN');
+    this.isAdmin = roles.includes('ROLE_ADMIN') || this.isSuperAdmin;
+
+    if (this.isAdmin) {
+      // Admin/SuperAdmin: cargar TODOS los módulos (activos + inactivos)
+      this.businessModuleService.getAllModulesByRuc(this.empresaRuc).subscribe({
+        next: (modules) => {
+          this.allModules = modules;
+          this.activeModules = modules.filter(m => m.effectivelyActive);
+          this.modulesLoaded = true;
+          console.log('[Welcome] Todos los módulos para', this.empresaRuc, ':', modules.map(m => m.moduleCode + ':' + m.active));
+        },
+        error: (err) => {
+          console.warn('[Welcome] Error cargando todos los módulos, intentando solo activos:', err);
+          this.loadActiveModulesOnly();
+        }
+      });
+    } else {
+      this.loadActiveModulesOnly();
+    }
+  }
+
+  private loadActiveModulesOnly(): void {
     this.businessModuleService.getActiveModulesByRuc(this.empresaRuc).subscribe({
       next: (modules) => {
         this.activeModules = modules;
+        this.allModules = modules;
         this.modulesLoaded = true;
-        console.log('[Welcome] Módulos activos para', this.empresaRuc, ':', modules.map(m => m.moduleCode));
       },
       error: (err) => {
         console.warn('[Welcome] Error cargando módulos activos:', err);
@@ -113,19 +148,64 @@ export class UsuarioWelcomeComponent implements OnInit {
     });
   }
 
+  // Toggle activar/desactivar módulo
+  onToggleModule(mod: BusinessModuleDto): void {
+    if (!mod.businessId || !mod.moduleId) return;
+    this.togglingModule = mod.moduleCode;
+    const newActive = !mod.active;
+    const body: any = {
+      active: newActive,
+      startDate: newActive ? new Date().toISOString().split('T')[0] : null,
+      expirationDate: null,
+      notes: null
+    };
+    this.businessModuleService.toggleModule(mod.businessId, mod.moduleId, body).subscribe({
+      next: (updated) => {
+        // Actualizar en la lista
+        const idx = this.allModules.findIndex(m => m.moduleId === mod.moduleId);
+        if (idx >= 0) {
+          this.allModules[idx] = updated;
+        }
+        this.activeModules = this.allModules.filter(m => m.effectivelyActive);
+        this.togglingModule = null;
+        console.log(`[Welcome] Módulo ${mod.moduleCode} ${newActive ? 'ACTIVADO' : 'DESACTIVADO'}`);
+      },
+      error: (err) => {
+        console.error('[Welcome] Error al togglear módulo:', err);
+        this.togglingModule = null;
+        alert('Error al cambiar estado del módulo. Verifique permisos.');
+      }
+    });
+  }
+
   // Verificar si un módulo está activo para la empresa
   isModuleActive(routeName: string): boolean {
-    if (!this.modulesLoaded) return false; // Mientras carga, ocultar todos
-    // Buscar el código del módulo que corresponde a esta ruta
+    if (!this.modulesLoaded) return false;
     const code = Object.entries(this.moduleRouteMap)
       .find(([_, route]) => route === routeName)?.[0];
-    if (!code) return false; // Si no está en el mapa de módulos del sistema, no mostrar
+    if (!code) return false;
     return this.activeModules.some(m => m.moduleCode === code && m.effectivelyActive);
   }
 
-  // Verificar si hay al menos un módulo visible (controlado o no)
+  // Para admin: verificar si existe en allModules (mostrar todos)
+  isModuleVisible(routeName: string): boolean {
+    if (!this.modulesLoaded) return false;
+    if (this.isAdmin) return true; // Admin ve todos
+    return this.isModuleActive(routeName);
+  }
+
+  // Obtener el módulo DTO por routeName
+  getModuleDto(routeName: string): BusinessModuleDto | null {
+    const code = Object.entries(this.moduleRouteMap)
+      .find(([_, route]) => route === routeName)?.[0];
+    if (!code) return null;
+    return this.allModules.find(m => m.moduleCode === code) || null;
+  }
+
+  // Verificar si hay al menos un módulo visible
   hasAnyVisibleModule(): boolean {
     if (!this.modulesLoaded) return false;
+    if (this.isAdmin) return this.allModules.length > 0;
     return this.activeModules.length > 0;
   }
 

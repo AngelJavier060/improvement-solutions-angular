@@ -68,6 +68,10 @@ export class BusinessModuleService {
     return this.http.put<BusinessModuleDto>(`${this.baseUrl}/${id}`, body);
   }
 
+  getAllModulesByRuc(ruc: string): Observable<BusinessModuleDto[]> {
+    return this.http.get<BusinessModuleDto[]>(`${this.baseUrl}/all/${ruc}`);
+  }
+
   getActiveModulesByRuc(ruc: string): Observable<BusinessModuleDto[]> {
     return this.http.get<BusinessModuleDto[]>(`${this.baseUrl}/active/${ruc}`);
   }

@@ -108,6 +108,7 @@ public class BusinessModuleService {
                         .build());
 
         bm.setActive(active);
+        bm.setStatus(active ? "ACTIVO" : "INACTIVO");
         bm.setStartDate(startDate);
         bm.setExpirationDate(expirationDate);
         bm.setNotes(notes);
@@ -134,6 +135,15 @@ public class BusinessModuleService {
 
         bm = businessModuleRepository.save(bm);
         return toDto(bm);
+    }
+
+    // ─── Todos los módulos por RUC (activos + inactivos) ─────────────
+
+    @Transactional(readOnly = true)
+    public List<BusinessModuleDto> getAllModulesByRuc(String ruc) {
+        Business business = businessRepository.findByRuc(ruc)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada con RUC: " + ruc));
+        return getModulesByBusinessId(business.getId());
     }
 
     // ─── Consulta para usuarios normales (módulos efectivos) ─────────

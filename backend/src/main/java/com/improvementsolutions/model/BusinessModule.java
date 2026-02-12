@@ -36,9 +36,11 @@ public class BusinessModule {
     @JoinColumn(name = "plan_id")
     private SubscriptionPlan plan;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Builder.Default
     @Column(length = 20, nullable = false)
     private String status = "ACTIVO";
 

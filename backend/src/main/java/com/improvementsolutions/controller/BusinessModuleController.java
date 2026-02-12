@@ -22,7 +22,7 @@ public class BusinessModuleController {
     // ─── Catálogo de módulos del sistema ─────────────────────────────
 
     @GetMapping("/system-modules")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<List<SystemModule>> getAllSystemModules() {
         return ResponseEntity.ok(businessModuleService.getAllSystemModules());
     }
@@ -30,7 +30,7 @@ public class BusinessModuleController {
     // ─── Módulos por empresa (SUPER_ADMIN ve todos, con estado) ─────
 
     @GetMapping("/business/{businessId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<List<BusinessModuleDto>> getModulesByBusiness(@PathVariable Long businessId) {
         return ResponseEntity.ok(businessModuleService.getModulesByBusinessId(businessId));
     }
@@ -38,7 +38,7 @@ public class BusinessModuleController {
     // ─── Activar / Desactivar módulo (toggle) ───────────────────────
 
     @PostMapping("/business/{businessId}/module/{moduleId}")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<BusinessModuleDto> toggleModule(
             @PathVariable Long businessId,
             @PathVariable Long moduleId,
@@ -57,7 +57,7 @@ public class BusinessModuleController {
     // ─── Actualizar un registro existente ────────────────────────────
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<BusinessModuleDto> updateModule(
             @PathVariable Long id,
             @RequestBody Map<String, Object> body) {
@@ -71,10 +71,18 @@ public class BusinessModuleController {
         return ResponseEntity.ok(dto);
     }
 
+    // ─── Todos los módulos por RUC (activos + inactivos, para admin) ─
+
+    @GetMapping("/all/{ruc}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    public ResponseEntity<List<BusinessModuleDto>> getAllModulesByRuc(@PathVariable String ruc) {
+        return ResponseEntity.ok(businessModuleService.getAllModulesByRuc(ruc));
+    }
+
     // ─── Endpoint para usuarios normales: módulos activos por RUC ───
 
     @GetMapping("/active/{ruc}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
     public ResponseEntity<List<BusinessModuleDto>> getActiveModulesByRuc(@PathVariable String ruc) {
         return ResponseEntity.ok(businessModuleService.getEffectiveModulesByRuc(ruc));
     }
@@ -82,7 +90,7 @@ public class BusinessModuleController {
     // ─── Verificar si un módulo específico está activo ───────────────
 
     @GetMapping("/check/{ruc}/{moduleCode}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
     public ResponseEntity<Map<String, Boolean>> checkModuleActive(
             @PathVariable String ruc, @PathVariable String moduleCode) {
         boolean isActive = businessModuleService.isModuleActiveForBusiness(ruc, moduleCode);

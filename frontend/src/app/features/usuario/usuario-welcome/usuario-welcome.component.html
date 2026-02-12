@@ -89,16 +89,29 @@
         <div class="row g-4">
           
           <!-- Talento Humano -->
-          <div class="col-lg-3 col-md-6" *ngIf="isModuleActive('talento-humano')">
+          <div class="col-lg-3 col-md-6" *ngIf="isModuleVisible('talento-humano')">
             <div class="service-card h-100">
-              <div class="card border-0 shadow-sm h-100 hover-card">
+              <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('talento-humano')">
                 <div class="card-body text-center p-4">
+                  <!-- Toggle switch para admin -->
+                  <div class="module-toggle-row" *ngIf="isAdmin">
+                    <label class="module-switch">
+                      <input type="checkbox" [checked]="isModuleActive('talento-humano')"
+                             [disabled]="togglingModule === 'TALENTO_HUMANO'"
+                             (change)="onToggleModule(getModuleDto('talento-humano')!)">
+                      <span class="module-slider"></span>
+                    </label>
+                    <small class="module-toggle-label" [class.text-success]="isModuleActive('talento-humano')" [class.text-muted]="!isModuleActive('talento-humano')">
+                      {{ isModuleActive('talento-humano') ? 'Activo' : 'Inactivo' }}
+                    </small>
+                    <div *ngIf="togglingModule === 'TALENTO_HUMANO'" class="spinner-border spinner-border-sm text-primary ms-1" role="status"></div>
+                  </div>
                   <div class="service-icon mb-3">
-                    <i class="fas fa-users fa-3x text-primary"></i>
+                    <i class="fas fa-users fa-3x" [class.text-primary]="isModuleActive('talento-humano')" [class.text-muted]="!isModuleActive('talento-humano')"></i>
                   </div>
                   <h5 class="card-title fw-bold mb-3">Talento Humano</h5>
                   <p class="card-text text-muted small">Gestión completa de recursos humanos y desarrollo del talento.</p>
-                  <div class="mb-2">
+                  <div class="mb-2" *ngIf="isModuleActive('talento-humano')">
                     <span *ngIf="isModuleUnlimited('talento-humano')" class="badge bg-primary bg-opacity-10 text-primary fw-bold" style="font-size:10px">
                       <i class="fas fa-infinity me-1"></i> Ilimitado
                     </span>
@@ -106,7 +119,12 @@
                       <i class="fas fa-clock me-1"></i> {{ getModuleDaysRemaining('talento-humano') }} días restantes
                     </span>
                   </div>
-                  <button class="btn btn-outline-primary btn-sm mt-auto" (click)="goToModule('talento-humano')">
+                  <div *ngIf="!isModuleActive('talento-humano')" class="mb-2">
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary fw-bold" style="font-size:10px">
+                      <i class="fas fa-ban me-1"></i> Desactivado
+                    </span>
+                  </div>
+                  <button class="btn btn-sm mt-auto" [class.btn-outline-primary]="isModuleActive('talento-humano')" [class.btn-outline-secondary]="!isModuleActive('talento-humano')" [disabled]="!isModuleActive('talento-humano')" (click)="goToModule('talento-humano')">
                     <i class="fas fa-arrow-right me-1"></i>
                     Acceder
                   </button>
@@ -116,16 +134,28 @@
           </div>
 
           <!-- Seguridad Industrial -->
-          <div class="col-lg-3 col-md-6" *ngIf="isModuleActive('seguridad-industrial')">
+          <div class="col-lg-3 col-md-6" *ngIf="isModuleVisible('seguridad-industrial')">
             <div class="service-card h-100">
-              <div class="card border-0 shadow-sm h-100 hover-card">
+              <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('seguridad-industrial')">
                 <div class="card-body text-center p-4">
+                  <div class="module-toggle-row" *ngIf="isAdmin">
+                    <label class="module-switch">
+                      <input type="checkbox" [checked]="isModuleActive('seguridad-industrial')"
+                             [disabled]="togglingModule === 'SEGURIDAD_INDUSTRIAL'"
+                             (change)="onToggleModule(getModuleDto('seguridad-industrial')!)">
+                      <span class="module-slider"></span>
+                    </label>
+                    <small class="module-toggle-label" [class.text-success]="isModuleActive('seguridad-industrial')" [class.text-muted]="!isModuleActive('seguridad-industrial')">
+                      {{ isModuleActive('seguridad-industrial') ? 'Activo' : 'Inactivo' }}
+                    </small>
+                    <div *ngIf="togglingModule === 'SEGURIDAD_INDUSTRIAL'" class="spinner-border spinner-border-sm text-warning ms-1" role="status"></div>
+                  </div>
                   <div class="service-icon mb-3">
-                    <i class="fas fa-hard-hat fa-3x text-warning"></i>
+                    <i class="fas fa-hard-hat fa-3x" [class.text-warning]="isModuleActive('seguridad-industrial')" [class.text-muted]="!isModuleActive('seguridad-industrial')"></i>
                   </div>
                   <h5 class="card-title fw-bold mb-3">Seguridad Industrial</h5>
                   <p class="card-text text-muted small">Protocolos y medidas de seguridad para el entorno laboral.</p>
-                  <div class="mb-2">
+                  <div class="mb-2" *ngIf="isModuleActive('seguridad-industrial')">
                     <span *ngIf="isModuleUnlimited('seguridad-industrial')" class="badge bg-primary bg-opacity-10 text-primary fw-bold" style="font-size:10px">
                       <i class="fas fa-infinity me-1"></i> Ilimitado
                     </span>
@@ -133,7 +163,12 @@
                       <i class="fas fa-clock me-1"></i> {{ getModuleDaysRemaining('seguridad-industrial') }} días restantes
                     </span>
                   </div>
-                  <button class="btn btn-outline-warning btn-sm mt-auto" (click)="goToModule('seguridad-industrial')">
+                  <div *ngIf="!isModuleActive('seguridad-industrial')" class="mb-2">
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary fw-bold" style="font-size:10px">
+                      <i class="fas fa-ban me-1"></i> Desactivado
+                    </span>
+                  </div>
+                  <button class="btn btn-sm mt-auto" [class.btn-outline-warning]="isModuleActive('seguridad-industrial')" [class.btn-outline-secondary]="!isModuleActive('seguridad-industrial')" [disabled]="!isModuleActive('seguridad-industrial')" (click)="goToModule('seguridad-industrial')">
                     <i class="fas fa-arrow-right me-1"></i>
                     Acceder
                   </button>
@@ -143,16 +178,41 @@
           </div>
 
           <!-- Médico -->
-          <div class="col-lg-3 col-md-6" *ngIf="isModuleActive('medico')">
+          <div class="col-lg-3 col-md-6" *ngIf="isModuleVisible('medico')">
             <div class="service-card h-100">
-              <div class="card border-0 shadow-sm h-100 hover-card">
+              <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('medico')">
                 <div class="card-body text-center p-4">
+                  <div class="module-toggle-row" *ngIf="isAdmin">
+                    <label class="module-switch">
+                      <input type="checkbox" [checked]="isModuleActive('medico')"
+                             [disabled]="togglingModule === 'MEDICO'"
+                             (change)="onToggleModule(getModuleDto('medico')!)">
+                      <span class="module-slider"></span>
+                    </label>
+                    <small class="module-toggle-label" [class.text-success]="isModuleActive('medico')" [class.text-muted]="!isModuleActive('medico')">
+                      {{ isModuleActive('medico') ? 'Activo' : 'Inactivo' }}
+                    </small>
+                    <div *ngIf="togglingModule === 'MEDICO'" class="spinner-border spinner-border-sm text-success ms-1" role="status"></div>
+                  </div>
                   <div class="service-icon mb-3">
-                    <i class="fas fa-stethoscope fa-3x text-success"></i>
+                    <i class="fas fa-stethoscope fa-3x" [class.text-success]="isModuleActive('medico')" [class.text-muted]="!isModuleActive('medico')"></i>
                   </div>
                   <h5 class="card-title fw-bold mb-3">Médico</h5>
                   <p class="card-text text-muted small">Servicios médicos y seguimiento de salud ocupacional.</p>
-                  <button class="btn btn-outline-success btn-sm mt-auto" (click)="goToModule('medico')">
+                  <div class="mb-2" *ngIf="isModuleActive('medico')">
+                    <span *ngIf="isModuleUnlimited('medico')" class="badge bg-primary bg-opacity-10 text-primary fw-bold" style="font-size:10px">
+                      <i class="fas fa-infinity me-1"></i> Ilimitado
+                    </span>
+                    <span *ngIf="!isModuleUnlimited('medico')" class="badge bg-success bg-opacity-10 text-success fw-bold" style="font-size:10px">
+                      <i class="fas fa-clock me-1"></i> {{ getModuleDaysRemaining('medico') }} días restantes
+                    </span>
+                  </div>
+                  <div *ngIf="!isModuleActive('medico')" class="mb-2">
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary fw-bold" style="font-size:10px">
+                      <i class="fas fa-ban me-1"></i> Desactivado
+                    </span>
+                  </div>
+                  <button class="btn btn-sm mt-auto" [class.btn-outline-success]="isModuleActive('medico')" [class.btn-outline-secondary]="!isModuleActive('medico')" [disabled]="!isModuleActive('medico')" (click)="goToModule('medico')">
                     <i class="fas fa-arrow-right me-1"></i>
                     Acceder
                   </button>
@@ -162,16 +222,28 @@
           </div>
 
           <!-- Calidad -->
-          <div class="col-lg-3 col-md-6" *ngIf="isModuleActive('calidad')">
+          <div class="col-lg-3 col-md-6" *ngIf="isModuleVisible('calidad')">
             <div class="service-card h-100">
-              <div class="card border-0 shadow-sm h-100 hover-card">
+              <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('calidad')">
                 <div class="card-body text-center p-4">
+                  <div class="module-toggle-row" *ngIf="isAdmin">
+                    <label class="module-switch">
+                      <input type="checkbox" [checked]="isModuleActive('calidad')"
+                             [disabled]="togglingModule === 'CALIDAD'"
+                             (change)="onToggleModule(getModuleDto('calidad')!)">
+                      <span class="module-slider"></span>
+                    </label>
+                    <small class="module-toggle-label" [class.text-success]="isModuleActive('calidad')" [class.text-muted]="!isModuleActive('calidad')">
+                      {{ isModuleActive('calidad') ? 'Activo' : 'Inactivo' }}
+                    </small>
+                    <div *ngIf="togglingModule === 'CALIDAD'" class="spinner-border spinner-border-sm text-info ms-1" role="status"></div>
+                  </div>
                   <div class="service-icon mb-3">
-                    <i class="fas fa-certificate fa-3x text-info"></i>
+                    <i class="fas fa-certificate fa-3x" [class.text-info]="isModuleActive('calidad')" [class.text-muted]="!isModuleActive('calidad')"></i>
                   </div>
                   <h5 class="card-title fw-bold mb-3">Calidad</h5>
                   <p class="card-text text-muted small">Control y aseguramiento de la calidad en procesos.</p>
-                  <div class="mb-2">
+                  <div class="mb-2" *ngIf="isModuleActive('calidad')">
                     <span *ngIf="isModuleUnlimited('calidad')" class="badge bg-primary bg-opacity-10 text-primary fw-bold" style="font-size:10px">
                       <i class="fas fa-infinity me-1"></i> Ilimitado
                     </span>
@@ -179,7 +251,12 @@
                       <i class="fas fa-clock me-1"></i> {{ getModuleDaysRemaining('calidad') }} días restantes
                     </span>
                   </div>
-                  <button class="btn btn-outline-info btn-sm mt-auto" (click)="goToModule('calidad')">
+                  <div *ngIf="!isModuleActive('calidad')" class="mb-2">
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary fw-bold" style="font-size:10px">
+                      <i class="fas fa-ban me-1"></i> Desactivado
+                    </span>
+                  </div>
+                  <button class="btn btn-sm mt-auto" [class.btn-outline-info]="isModuleActive('calidad')" [class.btn-outline-secondary]="!isModuleActive('calidad')" [disabled]="!isModuleActive('calidad')" (click)="goToModule('calidad')">
                     <i class="fas fa-arrow-right me-1"></i>
                     Acceder
                   </button>
@@ -189,16 +266,41 @@
           </div>
 
           <!-- Mantenimiento -->
-          <div class="col-lg-3 col-md-6" *ngIf="isModuleActive('mantenimiento')">
+          <div class="col-lg-3 col-md-6" *ngIf="isModuleVisible('mantenimiento')">
             <div class="service-card h-100">
-              <div class="card border-0 shadow-sm h-100 hover-card">
+              <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('mantenimiento')">
                 <div class="card-body text-center p-4">
+                  <div class="module-toggle-row" *ngIf="isAdmin">
+                    <label class="module-switch">
+                      <input type="checkbox" [checked]="isModuleActive('mantenimiento')"
+                             [disabled]="togglingModule === 'MANTENIMIENTO'"
+                             (change)="onToggleModule(getModuleDto('mantenimiento')!)">
+                      <span class="module-slider"></span>
+                    </label>
+                    <small class="module-toggle-label" [class.text-success]="isModuleActive('mantenimiento')" [class.text-muted]="!isModuleActive('mantenimiento')">
+                      {{ isModuleActive('mantenimiento') ? 'Activo' : 'Inactivo' }}
+                    </small>
+                    <div *ngIf="togglingModule === 'MANTENIMIENTO'" class="spinner-border spinner-border-sm text-secondary ms-1" role="status"></div>
+                  </div>
                   <div class="service-icon mb-3">
-                    <i class="fas fa-tools fa-3x text-secondary"></i>
+                    <i class="fas fa-tools fa-3x" [class.text-secondary]="!isModuleActive('mantenimiento')" [style.color]="isModuleActive('mantenimiento') ? '#6c757d' : ''"></i>
                   </div>
                   <h5 class="card-title fw-bold mb-3">Mantenimiento</h5>
                   <p class="card-text text-muted small">Gestión de mantenimiento preventivo y correctivo.</p>
-                  <button class="btn btn-outline-secondary btn-sm mt-auto" (click)="goToModule('mantenimiento')">
+                  <div class="mb-2" *ngIf="isModuleActive('mantenimiento')">
+                    <span *ngIf="isModuleUnlimited('mantenimiento')" class="badge bg-primary bg-opacity-10 text-primary fw-bold" style="font-size:10px">
+                      <i class="fas fa-infinity me-1"></i> Ilimitado
+                    </span>
+                    <span *ngIf="!isModuleUnlimited('mantenimiento')" class="badge bg-success bg-opacity-10 text-success fw-bold" style="font-size:10px">
+                      <i class="fas fa-clock me-1"></i> {{ getModuleDaysRemaining('mantenimiento') }} días restantes
+                    </span>
+                  </div>
+                  <div *ngIf="!isModuleActive('mantenimiento')" class="mb-2">
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary fw-bold" style="font-size:10px">
+                      <i class="fas fa-ban me-1"></i> Desactivado
+                    </span>
+                  </div>
+                  <button class="btn btn-sm mt-auto" [class.btn-outline-secondary]="true" [disabled]="!isModuleActive('mantenimiento')" (click)="goToModule('mantenimiento')">
                     <i class="fas fa-arrow-right me-1"></i>
                     Acceder
                   </button>
@@ -208,16 +310,41 @@
           </div>
 
           <!-- Medio Ambiente -->
-          <div class="col-lg-3 col-md-6" *ngIf="isModuleActive('medio-ambiente')">
+          <div class="col-lg-3 col-md-6" *ngIf="isModuleVisible('medio-ambiente')">
             <div class="service-card h-100">
-              <div class="card border-0 shadow-sm h-100 hover-card">
+              <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('medio-ambiente')">
                 <div class="card-body text-center p-4">
+                  <div class="module-toggle-row" *ngIf="isAdmin">
+                    <label class="module-switch">
+                      <input type="checkbox" [checked]="isModuleActive('medio-ambiente')"
+                             [disabled]="togglingModule === 'MEDIO_AMBIENTE'"
+                             (change)="onToggleModule(getModuleDto('medio-ambiente')!)">
+                      <span class="module-slider"></span>
+                    </label>
+                    <small class="module-toggle-label" [class.text-success]="isModuleActive('medio-ambiente')" [class.text-muted]="!isModuleActive('medio-ambiente')">
+                      {{ isModuleActive('medio-ambiente') ? 'Activo' : 'Inactivo' }}
+                    </small>
+                    <div *ngIf="togglingModule === 'MEDIO_AMBIENTE'" class="spinner-border spinner-border-sm text-success ms-1" role="status"></div>
+                  </div>
                   <div class="service-icon mb-3">
-                    <i class="fas fa-leaf fa-3x text-success"></i>
+                    <i class="fas fa-leaf fa-3x" [class.text-success]="isModuleActive('medio-ambiente')" [class.text-muted]="!isModuleActive('medio-ambiente')"></i>
                   </div>
                   <h5 class="card-title fw-bold mb-3">Medio Ambiente</h5>
                   <p class="card-text text-muted small">Gestión ambiental y sostenibilidad empresarial.</p>
-                  <button class="btn btn-outline-success btn-sm mt-auto" (click)="goToModule('medio-ambiente')">
+                  <div class="mb-2" *ngIf="isModuleActive('medio-ambiente')">
+                    <span *ngIf="isModuleUnlimited('medio-ambiente')" class="badge bg-primary bg-opacity-10 text-primary fw-bold" style="font-size:10px">
+                      <i class="fas fa-infinity me-1"></i> Ilimitado
+                    </span>
+                    <span *ngIf="!isModuleUnlimited('medio-ambiente')" class="badge bg-success bg-opacity-10 text-success fw-bold" style="font-size:10px">
+                      <i class="fas fa-clock me-1"></i> {{ getModuleDaysRemaining('medio-ambiente') }} días restantes
+                    </span>
+                  </div>
+                  <div *ngIf="!isModuleActive('medio-ambiente')" class="mb-2">
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary fw-bold" style="font-size:10px">
+                      <i class="fas fa-ban me-1"></i> Desactivado
+                    </span>
+                  </div>
+                  <button class="btn btn-sm mt-auto" [class.btn-outline-success]="isModuleActive('medio-ambiente')" [class.btn-outline-secondary]="!isModuleActive('medio-ambiente')" [disabled]="!isModuleActive('medio-ambiente')" (click)="goToModule('medio-ambiente')">
                     <i class="fas fa-arrow-right me-1"></i>
                     Acceder
                   </button>
@@ -227,16 +354,41 @@
           </div>
 
           <!-- Producción -->
-          <div class="col-lg-3 col-md-6" *ngIf="isModuleActive('produccion')">
+          <div class="col-lg-3 col-md-6" *ngIf="isModuleVisible('produccion')">
             <div class="service-card h-100">
-              <div class="card border-0 shadow-sm h-100 hover-card">
+              <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('produccion')">
                 <div class="card-body text-center p-4">
+                  <div class="module-toggle-row" *ngIf="isAdmin">
+                    <label class="module-switch">
+                      <input type="checkbox" [checked]="isModuleActive('produccion')"
+                             [disabled]="togglingModule === 'PRODUCCION'"
+                             (change)="onToggleModule(getModuleDto('produccion')!)">
+                      <span class="module-slider"></span>
+                    </label>
+                    <small class="module-toggle-label" [class.text-success]="isModuleActive('produccion')" [class.text-muted]="!isModuleActive('produccion')">
+                      {{ isModuleActive('produccion') ? 'Activo' : 'Inactivo' }}
+                    </small>
+                    <div *ngIf="togglingModule === 'PRODUCCION'" class="spinner-border spinner-border-sm text-primary ms-1" role="status"></div>
+                  </div>
                   <div class="service-icon mb-3">
-                    <i class="fas fa-industry fa-3x text-primary"></i>
+                    <i class="fas fa-industry fa-3x" [class.text-primary]="isModuleActive('produccion')" [class.text-muted]="!isModuleActive('produccion')"></i>
                   </div>
                   <h5 class="card-title fw-bold mb-3">Producción</h5>
                   <p class="card-text text-muted small">Optimización y control de procesos productivos.</p>
-                  <button class="btn btn-outline-primary btn-sm mt-auto" (click)="goToModule('produccion')">
+                  <div class="mb-2" *ngIf="isModuleActive('produccion')">
+                    <span *ngIf="isModuleUnlimited('produccion')" class="badge bg-primary bg-opacity-10 text-primary fw-bold" style="font-size:10px">
+                      <i class="fas fa-infinity me-1"></i> Ilimitado
+                    </span>
+                    <span *ngIf="!isModuleUnlimited('produccion')" class="badge bg-success bg-opacity-10 text-success fw-bold" style="font-size:10px">
+                      <i class="fas fa-clock me-1"></i> {{ getModuleDaysRemaining('produccion') }} días restantes
+                    </span>
+                  </div>
+                  <div *ngIf="!isModuleActive('produccion')" class="mb-2">
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary fw-bold" style="font-size:10px">
+                      <i class="fas fa-ban me-1"></i> Desactivado
+                    </span>
+                  </div>
+                  <button class="btn btn-sm mt-auto" [class.btn-outline-primary]="isModuleActive('produccion')" [class.btn-outline-secondary]="!isModuleActive('produccion')" [disabled]="!isModuleActive('produccion')" (click)="goToModule('produccion')">
                     <i class="fas fa-arrow-right me-1"></i>
                     Acceder
                   </button>
@@ -246,16 +398,28 @@
           </div>
 
           <!-- Inventario -->
-          <div class="col-lg-3 col-md-6" *ngIf="isModuleActive('inventario')">
+          <div class="col-lg-3 col-md-6" *ngIf="isModuleVisible('inventario')">
             <div class="service-card h-100">
-              <div class="card border-0 shadow-sm h-100 hover-card">
+              <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('inventario')">
                 <div class="card-body text-center p-4">
+                  <div class="module-toggle-row" *ngIf="isAdmin">
+                    <label class="module-switch">
+                      <input type="checkbox" [checked]="isModuleActive('inventario')"
+                             [disabled]="togglingModule === 'INVENTARIO'"
+                             (change)="onToggleModule(getModuleDto('inventario')!)">
+                      <span class="module-slider"></span>
+                    </label>
+                    <small class="module-toggle-label" [class.text-success]="isModuleActive('inventario')" [class.text-muted]="!isModuleActive('inventario')">
+                      {{ isModuleActive('inventario') ? 'Activo' : 'Inactivo' }}
+                    </small>
+                    <div *ngIf="togglingModule === 'INVENTARIO'" class="spinner-border spinner-border-sm text-info ms-1" role="status"></div>
+                  </div>
                   <div class="service-icon mb-3">
-                    <i class="fas fa-boxes fa-3x text-info"></i>
+                    <i class="fas fa-boxes fa-3x" [class.text-info]="isModuleActive('inventario')" [class.text-muted]="!isModuleActive('inventario')"></i>
                   </div>
                   <h5 class="card-title fw-bold mb-3">Inventario</h5>
                   <p class="card-text text-muted small">Control y gestión de inventarios y almacenes.</p>
-                  <div class="mb-2">
+                  <div class="mb-2" *ngIf="isModuleActive('inventario')">
                     <span *ngIf="isModuleUnlimited('inventario')" class="badge bg-primary bg-opacity-10 text-primary fw-bold" style="font-size:10px">
                       <i class="fas fa-infinity me-1"></i> Ilimitado
                     </span>
@@ -263,7 +427,12 @@
                       <i class="fas fa-clock me-1"></i> {{ getModuleDaysRemaining('inventario') }} días restantes
                     </span>
                   </div>
-                  <button class="btn btn-outline-info btn-sm mt-auto" (click)="goToModule('inventario')">
+                  <div *ngIf="!isModuleActive('inventario')" class="mb-2">
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary fw-bold" style="font-size:10px">
+                      <i class="fas fa-ban me-1"></i> Desactivado
+                    </span>
+                  </div>
+                  <button class="btn btn-sm mt-auto" [class.btn-outline-info]="isModuleActive('inventario')" [class.btn-outline-secondary]="!isModuleActive('inventario')" [disabled]="!isModuleActive('inventario')" (click)="goToModule('inventario')">
                     <i class="fas fa-arrow-right me-1"></i>
                     Acceder
                   </button>
