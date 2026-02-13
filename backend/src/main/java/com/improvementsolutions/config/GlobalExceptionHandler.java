@@ -1,5 +1,7 @@
 package com.improvementsolutions.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -10,6 +12,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +26,8 @@ import java.io.IOException;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private ResponseEntity<Map<String, Object>> conflict(String title, String message, String code) {
         Map<String, Object> body = new HashMap<>();
@@ -124,6 +130,24 @@ public class GlobalExceptionHandler {
         body.put("message", "No se pudo procesar el contenido enviado. Verifique que sea un archivo válido.");
         body.put("code", "MULTIPART_ERROR");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleAny(Exception ex) {
+        StringWriter sw = new StringWriter();
+        ex.printStackTrace(new PrintWriter(sw));
+        log.error("Unhandled exception\n{}", sw.toString());
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("title", "Error interno");
+        body.put("message", "Ocurrió un error interno en el servidor.");
+        body.put("code", "INTERNAL_SERVER_ERROR");
+        body.put("exception", ex.getClass().getName());
+        Throwable root = getRootCause(ex);
+        if (root != null && root.getMessage() != null) {
+            body.put("rootMessage", root.getMessage());
+        }
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
 
     // @ExceptionHandler(IOException.class)
