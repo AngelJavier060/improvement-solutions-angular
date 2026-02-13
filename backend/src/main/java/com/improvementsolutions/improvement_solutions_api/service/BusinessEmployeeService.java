@@ -99,7 +99,7 @@ public class BusinessEmployeeService {
     public java.util.List<AgeGenderRangeDto> getAgeGenderPyramidByCompany(String codigoEmpresa) {
         log.info("Calculando pirámide Edad/Género para la empresa: {}", codigoEmpresa);
         Long businessId = getBusinessIdFromRuc(codigoEmpresa);
-        java.util.List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessId);
+        java.util.List<BusinessEmployee> employees = businessEmployeeRepository.findWithRelationsByBusinessId(businessId);
         // Solo activos
         java.util.List<BusinessEmployee> activeEmployees = employees.stream().filter(this::isActive).collect(java.util.stream.Collectors.toList());
 
@@ -176,7 +176,7 @@ public class BusinessEmployeeService {
     public Page<BusinessEmployeeResponseDto> getAllEmployeesByCompanyPaginated(String codigoEmpresa, Pageable pageable) {
         log.info("Obteniendo empleados paginados para la empresa: {}, página: {}", codigoEmpresa, pageable.getPageNumber());
         Long businessId = getBusinessIdFromRuc(codigoEmpresa);
-        List<BusinessEmployee> allEmployees = businessEmployeeRepository.findByBusinessId(businessId);
+        List<BusinessEmployee> allEmployees = businessEmployeeRepository.findWithRelationsByBusinessId(businessId);
         
         // Convertir a DTOs
         List<BusinessEmployeeResponseDto> employeeDtos = allEmployees.stream()
@@ -744,7 +744,7 @@ public class BusinessEmployeeService {
         log.info("Calculando estadísticas de empleados para la empresa: {}", codigoEmpresa);
 
         Long businessId = getBusinessIdFromRuc(codigoEmpresa);
-        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessId);
+        List<BusinessEmployee> employees = businessEmployeeRepository.findWithRelationsByBusinessId(businessId);
         // Solo personal ACTIVO
         List<BusinessEmployee> activeEmployees = employees.stream().filter(this::isActive).collect(java.util.stream.Collectors.toList());
 
@@ -812,7 +812,7 @@ public class BusinessEmployeeService {
             com.improvementsolutions.model.Business b = businessRepository.findById(businessId).orElse(null);
             ruc = (b != null ? b.getRuc() : null);
         } catch (Exception ignored) {}
-        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessId);
+        List<BusinessEmployee> employees = businessEmployeeRepository.findWithRelationsByBusinessId(businessId);
         // Solo personal ACTIVO
         List<BusinessEmployee> activeEmployees = employees.stream().filter(this::isActive).collect(java.util.stream.Collectors.toList());
 
@@ -911,7 +911,7 @@ public class BusinessEmployeeService {
     public AgeRangeStatsDto getAgeRangesByCompany(String codigoEmpresa) {
         log.info("Calculando rangos de edad para la empresa: {}", codigoEmpresa);
         Long businessId = getBusinessIdFromRuc(codigoEmpresa);
-        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessId);
+        List<BusinessEmployee> employees = businessEmployeeRepository.findWithRelationsByBusinessId(businessId);
 
         int under18 = 0;
         int from19To30 = 0;

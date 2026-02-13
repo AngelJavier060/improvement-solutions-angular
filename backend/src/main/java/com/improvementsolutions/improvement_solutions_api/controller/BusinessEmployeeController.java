@@ -62,7 +62,7 @@ public class BusinessEmployeeController {
             EmployeeStatsDto stats = businessEmployeeService.getEmployeeStatsByBusinessId(businessId);
             return ResponseEntity.ok(stats);
         } catch (Exception e) {
-            log.error("Error al obtener estadísticas por businessId {}: {}", businessId, e.getMessage());
+            log.error("Error al obtener estadísticas por businessId {}: ", businessId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -85,7 +85,7 @@ public class BusinessEmployeeController {
             }
             return ResponseEntity.ok(dto);
         } catch (Exception e) {
-            log.error("Error al agregar estadísticas: {}", e.getMessage());
+            log.error("Error al agregar estadísticas: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -279,7 +279,7 @@ public class BusinessEmployeeController {
             EmployeeStatsDto stats = businessEmployeeService.getEmployeeStatsByCompany(codigoEmpresa);
             return ResponseEntity.ok(stats);
         } catch (Exception e) {
-            log.error("Error al obtener estadísticas de empleados para la empresa {}: {}", codigoEmpresa, e.getMessage());
+            log.error("Error al obtener estadísticas de empleados para la empresa {}: ", codigoEmpresa, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -291,7 +291,7 @@ public class BusinessEmployeeController {
             AgeRangeStatsDto stats = businessEmployeeService.getAgeRangesByCompany(codigoEmpresa);
             return ResponseEntity.ok(stats);
         } catch (Exception e) {
-            log.error("Error al obtener rangos de edad para la empresa {}: {}", codigoEmpresa, e.getMessage());
+            log.error("Error al obtener rangos de edad para la empresa {}: ", codigoEmpresa, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
