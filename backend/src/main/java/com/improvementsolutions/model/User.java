@@ -32,7 +32,10 @@ public class User {
     private String password;
 
     @Column(nullable = false)
-    private String email;    private String name;
+    private String email;
+
+    private String name;
+
     private String phone;
     @Column(name = "is_active", nullable = false, columnDefinition = "BIT(1) DEFAULT 1")
     private Boolean active = true;

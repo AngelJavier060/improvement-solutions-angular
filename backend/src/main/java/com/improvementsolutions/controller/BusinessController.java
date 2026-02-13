@@ -61,6 +61,7 @@ public class BusinessController {
      */
     @PostMapping("/admin/{businessId}/admins")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @Transactional
     public ResponseEntity<UserResponseDto> createBusinessAdmin(
             @PathVariable Long businessId,
             @RequestBody @jakarta.validation.Valid CreateUserDto createUserDto) {
