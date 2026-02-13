@@ -187,10 +187,9 @@ export class UsuarioWelcomeComponent implements OnInit {
     return this.activeModules.some(m => m.moduleCode === code && m.effectivelyActive);
   }
 
-  // Para admin: verificar si existe en allModules (mostrar todos)
+  // Solo mostrar módulos activos en la página de bienvenida (la gestión se hace desde el panel admin)
   isModuleVisible(routeName: string): boolean {
     if (!this.modulesLoaded) return false;
-    if (this.isAdmin) return true; // Admin ve todos
     return this.isModuleActive(routeName);
   }
 
@@ -205,7 +204,6 @@ export class UsuarioWelcomeComponent implements OnInit {
   // Verificar si hay al menos un módulo visible
   hasAnyVisibleModule(): boolean {
     if (!this.modulesLoaded) return false;
-    if (this.isAdmin) return this.allModules.length > 0;
     return this.activeModules.length > 0;
   }
 

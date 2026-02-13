@@ -93,19 +93,6 @@
             <div class="service-card h-100">
               <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('talento-humano')">
                 <div class="card-body text-center p-4">
-                  <!-- Toggle switch para admin -->
-                  <div class="module-toggle-row" *ngIf="isAdmin">
-                    <label class="module-switch">
-                      <input type="checkbox" [checked]="isModuleActive('talento-humano')"
-                             [disabled]="togglingModule === 'TALENTO_HUMANO'"
-                             (change)="onToggleModule(getModuleDto('talento-humano')!)">
-                      <span class="module-slider"></span>
-                    </label>
-                    <small class="module-toggle-label" [class.text-success]="isModuleActive('talento-humano')" [class.text-muted]="!isModuleActive('talento-humano')">
-                      {{ isModuleActive('talento-humano') ? 'Activo' : 'Inactivo' }}
-                    </small>
-                    <div *ngIf="togglingModule === 'TALENTO_HUMANO'" class="spinner-border spinner-border-sm text-primary ms-1" role="status"></div>
-                  </div>
                   <div class="service-icon mb-3">
                     <i class="fas fa-users fa-3x" [class.text-primary]="isModuleActive('talento-humano')" [class.text-muted]="!isModuleActive('talento-humano')"></i>
                   </div>
@@ -138,18 +125,6 @@
             <div class="service-card h-100">
               <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('seguridad-industrial')">
                 <div class="card-body text-center p-4">
-                  <div class="module-toggle-row" *ngIf="isAdmin">
-                    <label class="module-switch">
-                      <input type="checkbox" [checked]="isModuleActive('seguridad-industrial')"
-                             [disabled]="togglingModule === 'SEGURIDAD_INDUSTRIAL'"
-                             (change)="onToggleModule(getModuleDto('seguridad-industrial')!)">
-                      <span class="module-slider"></span>
-                    </label>
-                    <small class="module-toggle-label" [class.text-success]="isModuleActive('seguridad-industrial')" [class.text-muted]="!isModuleActive('seguridad-industrial')">
-                      {{ isModuleActive('seguridad-industrial') ? 'Activo' : 'Inactivo' }}
-                    </small>
-                    <div *ngIf="togglingModule === 'SEGURIDAD_INDUSTRIAL'" class="spinner-border spinner-border-sm text-warning ms-1" role="status"></div>
-                  </div>
                   <div class="service-icon mb-3">
                     <i class="fas fa-hard-hat fa-3x" [class.text-warning]="isModuleActive('seguridad-industrial')" [class.text-muted]="!isModuleActive('seguridad-industrial')"></i>
                   </div>
@@ -182,18 +157,6 @@
             <div class="service-card h-100">
               <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('medico')">
                 <div class="card-body text-center p-4">
-                  <div class="module-toggle-row" *ngIf="isAdmin">
-                    <label class="module-switch">
-                      <input type="checkbox" [checked]="isModuleActive('medico')"
-                             [disabled]="togglingModule === 'MEDICO'"
-                             (change)="onToggleModule(getModuleDto('medico')!)">
-                      <span class="module-slider"></span>
-                    </label>
-                    <small class="module-toggle-label" [class.text-success]="isModuleActive('medico')" [class.text-muted]="!isModuleActive('medico')">
-                      {{ isModuleActive('medico') ? 'Activo' : 'Inactivo' }}
-                    </small>
-                    <div *ngIf="togglingModule === 'MEDICO'" class="spinner-border spinner-border-sm text-success ms-1" role="status"></div>
-                  </div>
                   <div class="service-icon mb-3">
                     <i class="fas fa-stethoscope fa-3x" [class.text-success]="isModuleActive('medico')" [class.text-muted]="!isModuleActive('medico')"></i>
                   </div>
@@ -226,18 +189,6 @@
             <div class="service-card h-100">
               <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('calidad')">
                 <div class="card-body text-center p-4">
-                  <div class="module-toggle-row" *ngIf="isAdmin">
-                    <label class="module-switch">
-                      <input type="checkbox" [checked]="isModuleActive('calidad')"
-                             [disabled]="togglingModule === 'CALIDAD'"
-                             (change)="onToggleModule(getModuleDto('calidad')!)">
-                      <span class="module-slider"></span>
-                    </label>
-                    <small class="module-toggle-label" [class.text-success]="isModuleActive('calidad')" [class.text-muted]="!isModuleActive('calidad')">
-                      {{ isModuleActive('calidad') ? 'Activo' : 'Inactivo' }}
-                    </small>
-                    <div *ngIf="togglingModule === 'CALIDAD'" class="spinner-border spinner-border-sm text-info ms-1" role="status"></div>
-                  </div>
                   <div class="service-icon mb-3">
                     <i class="fas fa-certificate fa-3x" [class.text-info]="isModuleActive('calidad')" [class.text-muted]="!isModuleActive('calidad')"></i>
                   </div>
@@ -270,18 +221,6 @@
             <div class="service-card h-100">
               <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('mantenimiento')">
                 <div class="card-body text-center p-4">
-                  <div class="module-toggle-row" *ngIf="isAdmin">
-                    <label class="module-switch">
-                      <input type="checkbox" [checked]="isModuleActive('mantenimiento')"
-                             [disabled]="togglingModule === 'MANTENIMIENTO'"
-                             (change)="onToggleModule(getModuleDto('mantenimiento')!)">
-                      <span class="module-slider"></span>
-                    </label>
-                    <small class="module-toggle-label" [class.text-success]="isModuleActive('mantenimiento')" [class.text-muted]="!isModuleActive('mantenimiento')">
-                      {{ isModuleActive('mantenimiento') ? 'Activo' : 'Inactivo' }}
-                    </small>
-                    <div *ngIf="togglingModule === 'MANTENIMIENTO'" class="spinner-border spinner-border-sm text-secondary ms-1" role="status"></div>
-                  </div>
                   <div class="service-icon mb-3">
                     <i class="fas fa-tools fa-3x" [class.text-secondary]="!isModuleActive('mantenimiento')" [style.color]="isModuleActive('mantenimiento') ? '#6c757d' : ''"></i>
                   </div>
@@ -314,18 +253,6 @@
             <div class="service-card h-100">
               <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('medio-ambiente')">
                 <div class="card-body text-center p-4">
-                  <div class="module-toggle-row" *ngIf="isAdmin">
-                    <label class="module-switch">
-                      <input type="checkbox" [checked]="isModuleActive('medio-ambiente')"
-                             [disabled]="togglingModule === 'MEDIO_AMBIENTE'"
-                             (change)="onToggleModule(getModuleDto('medio-ambiente')!)">
-                      <span class="module-slider"></span>
-                    </label>
-                    <small class="module-toggle-label" [class.text-success]="isModuleActive('medio-ambiente')" [class.text-muted]="!isModuleActive('medio-ambiente')">
-                      {{ isModuleActive('medio-ambiente') ? 'Activo' : 'Inactivo' }}
-                    </small>
-                    <div *ngIf="togglingModule === 'MEDIO_AMBIENTE'" class="spinner-border spinner-border-sm text-success ms-1" role="status"></div>
-                  </div>
                   <div class="service-icon mb-3">
                     <i class="fas fa-leaf fa-3x" [class.text-success]="isModuleActive('medio-ambiente')" [class.text-muted]="!isModuleActive('medio-ambiente')"></i>
                   </div>
@@ -358,18 +285,6 @@
             <div class="service-card h-100">
               <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('produccion')">
                 <div class="card-body text-center p-4">
-                  <div class="module-toggle-row" *ngIf="isAdmin">
-                    <label class="module-switch">
-                      <input type="checkbox" [checked]="isModuleActive('produccion')"
-                             [disabled]="togglingModule === 'PRODUCCION'"
-                             (change)="onToggleModule(getModuleDto('produccion')!)">
-                      <span class="module-slider"></span>
-                    </label>
-                    <small class="module-toggle-label" [class.text-success]="isModuleActive('produccion')" [class.text-muted]="!isModuleActive('produccion')">
-                      {{ isModuleActive('produccion') ? 'Activo' : 'Inactivo' }}
-                    </small>
-                    <div *ngIf="togglingModule === 'PRODUCCION'" class="spinner-border spinner-border-sm text-primary ms-1" role="status"></div>
-                  </div>
                   <div class="service-icon mb-3">
                     <i class="fas fa-industry fa-3x" [class.text-primary]="isModuleActive('produccion')" [class.text-muted]="!isModuleActive('produccion')"></i>
                   </div>
@@ -402,18 +317,6 @@
             <div class="service-card h-100">
               <div class="card border-0 shadow-sm h-100 hover-card" [class.module-inactive]="!isModuleActive('inventario')">
                 <div class="card-body text-center p-4">
-                  <div class="module-toggle-row" *ngIf="isAdmin">
-                    <label class="module-switch">
-                      <input type="checkbox" [checked]="isModuleActive('inventario')"
-                             [disabled]="togglingModule === 'INVENTARIO'"
-                             (change)="onToggleModule(getModuleDto('inventario')!)">
-                      <span class="module-slider"></span>
-                    </label>
-                    <small class="module-toggle-label" [class.text-success]="isModuleActive('inventario')" [class.text-muted]="!isModuleActive('inventario')">
-                      {{ isModuleActive('inventario') ? 'Activo' : 'Inactivo' }}
-                    </small>
-                    <div *ngIf="togglingModule === 'INVENTARIO'" class="spinner-border spinner-border-sm text-info ms-1" role="status"></div>
-                  </div>
                   <div class="service-icon mb-3">
                     <i class="fas fa-boxes fa-3x" [class.text-info]="isModuleActive('inventario')" [class.text-muted]="!isModuleActive('inventario')"></i>
                   </div>
