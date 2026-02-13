@@ -157,7 +157,7 @@ public class BusinessEmployeeService {
     public List<BusinessEmployeeResponseDto> getAllEmployeesByCompany(String codigoEmpresa) {
         log.info("Obteniendo todos los empleados para la empresa: {}", codigoEmpresa);
         Long businessIdResolved = getBusinessIdFromRuc(codigoEmpresa);
-        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessIdResolved);
+        List<BusinessEmployee> employees = businessEmployeeRepository.findWithRelationsByBusinessId(businessIdResolved);
         return employees.stream()
                 .map(this::convertToResponseDto)
                 .collect(Collectors.toList());
@@ -166,7 +166,7 @@ public class BusinessEmployeeService {
     @Transactional(readOnly = true)
     public List<BusinessEmployeeResponseDto> getEmployeesByBusinessId(Long businessId) {
         log.info("Obteniendo empleados por businessId directo: {}", businessId);
-        List<BusinessEmployee> employees = businessEmployeeRepository.findByBusinessId(businessId);
+        List<BusinessEmployee> employees = businessEmployeeRepository.findWithRelationsByBusinessId(businessId);
         return employees.stream()
                 .map(this::convertToResponseDto)
                 .collect(Collectors.toList());

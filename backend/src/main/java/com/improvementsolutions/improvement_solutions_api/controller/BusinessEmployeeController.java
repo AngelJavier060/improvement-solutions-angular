@@ -212,8 +212,9 @@ public class BusinessEmployeeController {
             List<BusinessEmployeeResponseDto> employees = businessEmployeeService.getAllEmployeesByCompany(codigoEmpresa);
             return ResponseEntity.ok(employees);
         } catch (Exception e) {
-            log.error("Error al obtener empleados para la empresa {}: {}", codigoEmpresa, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            log.error("Error al obtener empleados para la empresa {}: ", codigoEmpresa, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
         }
     }
     

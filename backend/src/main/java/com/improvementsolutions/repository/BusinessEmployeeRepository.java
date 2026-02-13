@@ -3,6 +3,7 @@ package com.improvementsolutions.repository;
 import com.improvementsolutions.model.BusinessEmployee;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -14,6 +15,13 @@ import java.util.Optional;
 public interface BusinessEmployeeRepository extends JpaRepository<BusinessEmployee, Long> {
     
     List<BusinessEmployee> findByBusinessId(Long businessId);
+
+    @EntityGraph(attributePaths = {
+        "business", "gender", "civilStatus", "etnia", "degree",
+        "positionEntity", "department", "typeContract",
+        "contractorCompany", "contractorBlock"
+    })
+    List<BusinessEmployee> findWithRelationsByBusinessId(Long businessId);
     
     Optional<BusinessEmployee> findByBusinessIdAndEmployeeId(Long businessId, Long employeeId);
     
