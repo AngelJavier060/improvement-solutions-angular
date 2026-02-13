@@ -1545,7 +1545,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   getLogoUrl(): string {
     const logo = this.empresa?.logo;
     if (!logo) {
-      return '/assets/img/company-placeholder.svg';
+      return 'assets/img/company-placeholder.svg';
     }
 
     // Normalizar: quitar backslashes, barras iniciales y extraer solo el nombre de archivo
@@ -1553,10 +1553,10 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       let normalized = String(logo).replace(/\\/g, '/').replace(/^\/+/, '');
       try { normalized = decodeURIComponent(normalized); } catch {}
       const filename = normalized.split('/').pop() || '';
-      if (!filename) return '/assets/img/company-placeholder.svg';
+      if (!filename) return 'assets/img/company-placeholder.svg';
       return `${environment.apiUrl}/api/files/logos/${filename}`;
     } catch {
-      return '/assets/img/company-placeholder.svg';
+      return 'assets/img/company-placeholder.svg';
     }
   }
   // === USUARIOS ===

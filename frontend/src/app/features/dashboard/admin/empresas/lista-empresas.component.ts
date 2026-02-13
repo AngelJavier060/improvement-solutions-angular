@@ -233,8 +233,8 @@ export class ListaEmpresasComponent implements OnInit {
   // Handlers de carga/errores de imagen para mostrar indicador visual
   onLogoError(event: Event, empresa: Business): void {
     const img = event.target as HTMLImageElement;
-    if (img && img.src && !img.src.includes('/assets/img/company-placeholder.svg')) {
-      img.src = '/assets/img/company-placeholder.svg';
+    if (img && img.src && !img.src.includes('assets/img/company-placeholder.svg')) {
+      img.src = 'assets/img/company-placeholder.svg';
     }
     if (empresa?.id != null) {
       this.logoErrors.add(empresa.id);

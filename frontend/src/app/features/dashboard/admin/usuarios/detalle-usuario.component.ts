@@ -122,6 +122,6 @@ export class DetalleUsuarioComponent implements OnInit {
       // Agrega timestamp para evitar caché y titileo
       return `${environment.apiUrl}/files/${user.profilePicture}?v=${new Date().getTime()}`;
     }
-    return '/assets/img/user-placeholder.svg';
+    return 'assets/img/user-placeholder.svg';
   }
 }

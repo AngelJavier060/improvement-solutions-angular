@@ -100,7 +100,7 @@
           <div class="card h-100 border-0 shadow-sm hover-shadow animate__animated animate__fadeIn">
             <div class="card-header bg-white text-center p-4 border-0">
               <div class="logo-container mb-3">
-                <img [src]="empresa.logo ? getLogoUrl(empresa.logo) : '/assets/img/company-placeholder.svg'"
+                <img [src]="empresa.logo ? getLogoUrl(empresa.logo) : 'assets/img/company-placeholder.svg'"
                      [alt]="empresa.name"
                      [title]="empresa.logo ? getLogoUrl(empresa.logo) : ''"
                      (load)="onLogoLoad(empresa)"
@@ -195,7 +195,7 @@
               <tr *ngFor="let empresa of empresasFiltradas" class="align-middle animate__animated animate__fadeIn">
                 <td>
                   <div class="logo-container">
-                    <img [src]="empresa.logo ? getLogoUrl(empresa.logo) : '/assets/img/company-placeholder.svg'"
+                    <img [src]="empresa.logo ? getLogoUrl(empresa.logo) : 'assets/img/company-placeholder.svg'"
                          [alt]="empresa.name"
                          [title]="empresa.logo ? getLogoUrl(empresa.logo) : ''"
                          (load)="onLogoLoad(empresa)"
