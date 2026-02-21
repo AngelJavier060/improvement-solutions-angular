@@ -31,12 +31,13 @@ public class DatabaseInfoUtil implements CommandLineRunner {
         if (!isTestProfile()) {
             System.out.println("\n==== INFORMACIÓN DE LA BASE DE DATOS ====");
             
-            // Consulta específica para H2
+            // Consultas específicas para H2 o PostgreSQL
             if (isH2Database()) {
                 showH2Tables();
+            } else if (isPostgresDatabase()) {
+                showPostgresTables();
             } else {
-                // Consulta para MySQL
-                showMySQLTables();
+                System.out.println("Base de datos no soportada por DatabaseInfoUtil");
             }
         }
     }
@@ -54,6 +55,11 @@ public class DatabaseInfoUtil implements CommandLineRunner {
     private boolean isH2Database() {
         String url = environment.getProperty("spring.datasource.url", "");
         return url.contains("h2");
+    }
+
+    private boolean isPostgresDatabase() {
+        String url = environment.getProperty("spring.datasource.url", "");
+        return url.contains("postgresql");
     }
 
     private void showH2Tables() {
@@ -84,24 +90,34 @@ public class DatabaseInfoUtil implements CommandLineRunner {
         });
     }
 
-    private void showMySQLTables() {
-        List<Map<String, Object>> tables = jdbcTemplate.queryForList("SHOW TABLES");
-        
+    private void showPostgresTables() {
+        List<Map<String, Object>> tables = jdbcTemplate.queryForList(
+                "SELECT table_name " +
+                "FROM information_schema.tables " +
+                "WHERE table_schema = 'public' AND table_type = 'BASE TABLE' " +
+                "ORDER BY table_name");
+
         System.out.println("\n=== TABLAS DISPONIBLES ===");
         tables.forEach(table -> {
-            String tableName = table.values().iterator().next().toString();
+            String tableName = table.get("table_name").toString();
             System.out.println("- " + tableName);
-            
+
             List<Map<String, Object>> columns = jdbcTemplate.queryForList(
-                    "DESCRIBE " + tableName);
-            
+                    "SELECT column_name, data_type, is_nullable, column_default " +
+                    "FROM information_schema.columns " +
+                    "WHERE table_schema = 'public' AND table_name = ? " +
+                    "ORDER BY ordinal_position",
+                    tableName);
+
             System.out.println("  Columnas:");
             columns.forEach(column -> {
-                String columnName = column.get("Field").toString();
-                String columnType = column.get("Type").toString();
-                String columnKey = column.get("Key").toString();
+                String columnName = column.get("column_name").toString();
+                String columnType = column.get("data_type").toString();
+                Object defaultValue = column.get("column_default");
+                String nullable = column.get("is_nullable").toString();
                 System.out.println("    - " + columnName + " (" + columnType + ")" +
-                        (columnKey.equals("PRI") ? " [PK]" : ""));
+                        ("NO".equalsIgnoreCase(nullable) ? " NOT NULL" : "") +
+                        (defaultValue != null ? " DEFAULT " + defaultValue : ""));
             });
             System.out.println();
         });

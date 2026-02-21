@@ -39,11 +39,8 @@ public class DataInitializer implements CommandLineRunner {
         // Inicializar roles si no existen
         initializeRoles();
         
-        // Inicializar usuario administrador global si no existe
-        initializeAdminUser();
-        
-        // Asegurar usuario de desarrollo 'javier' con contraseña 12345 y rol ADMIN
-        ensureDevJavierUser();
+        // Desactivar usuarios legacy de desarrollo que no deben usarse en producción
+        deactivateLegacyDefaultUsers();
         
         // Asegurar que los usuarios existentes tengan las asociaciones correctas con empresas
         ensureUserBusinessAssociations();
@@ -132,6 +129,38 @@ public class DataInitializer implements CommandLineRunner {
             }
         } catch (Exception e) {
             log.warn("No se pudo garantizar el usuario DEV 'javier': {}", e.getMessage());
+        }
+    }
+
+    @Transactional
+    private void deactivateLegacyDefaultUsers() {
+        try {
+            User adminUser = userRepository.findByUsername("admin").orElse(null);
+            if (adminUser != null && Boolean.TRUE.equals(adminUser.getActive())) {
+                adminUser.setActive(false);
+                // Remover privilegios de administrador para evitar reactivación automática
+                if (adminUser.getRoles() != null) {
+                    adminUser.getRoles().removeIf(r ->
+                            "ROLE_ADMIN".equals(r.getName()) || "ROLE_SUPER_ADMIN".equals(r.getName()));
+                }
+                adminUser.setUpdatedAt(LocalDateTime.now());
+                userRepository.save(adminUser);
+                log.info("Usuario 'admin' detectado; marcado como inactivo y sin roles ADMIN/SUPER_ADMIN.");
+            }
+
+            User devUser = userRepository.findByUsername("javier").orElse(null);
+            if (devUser != null && Boolean.TRUE.equals(devUser.getActive())) {
+                devUser.setActive(false);
+                if (devUser.getRoles() != null) {
+                    devUser.getRoles().removeIf(r ->
+                            "ROLE_ADMIN".equals(r.getName()) || "ROLE_SUPER_ADMIN".equals(r.getName()));
+                }
+                devUser.setUpdatedAt(LocalDateTime.now());
+                userRepository.save(devUser);
+                log.info("Usuario de desarrollo 'javier' detectado; marcado como inactivo y sin roles ADMIN/SUPER_ADMIN.");
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo desactivar usuarios legacy admin/javier: {}", e.getMessage());
         }
     }
 

@@ -28,7 +28,10 @@ public class DbDiagnosticsController {
     public ResponseEntity<Map<String, Object>> diagnostics() {
         Map<String, Object> out = new HashMap<>();
 
-        Object dbName = em.createNativeQuery("SELECT DATABASE()").getSingleResult();
+        String dbNameSql = datasourceUrl != null && datasourceUrl.contains("postgresql")
+                ? "SELECT current_database()"
+                : "SELECT DATABASE()";
+        Object dbName = em.createNativeQuery(dbNameSql).getSingleResult();
         Object businessCount = em.createNativeQuery("SELECT COUNT(*) FROM businesses").getSingleResult();
         @SuppressWarnings("unchecked")
         List<Object[]> sample = em.createNativeQuery("SELECT id, name FROM businesses ORDER BY id LIMIT 50").getResultList();

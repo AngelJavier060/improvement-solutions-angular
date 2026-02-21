@@ -37,7 +37,7 @@ public class User {
     private String name;
 
     private String phone;
-    @Column(name = "is_active", nullable = false, columnDefinition = "BIT(1) DEFAULT 1")
+    @Column(name = "is_active", nullable = false)
     private Boolean active = true;
     
     @Column(name = "profile_picture")

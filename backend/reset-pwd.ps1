@@ -1,0 +1,11 @@
+$env:SPRING_PROFILES_ACTIVE = 'postgres'
+$env:DB_HOST = 'localhost'
+$env:DB_PORT = '5433'
+$env:DB_NAME = 'db_improvement_solutions'
+$env:DB_USER = 'postgres'
+$env:DB_PASSWORD = 'Alexandra1'
+$env:SERVER_PORT = '8081'
+$env:SUPER_ADMIN_USERNAME = 'Javier'
+$env:SUPER_ADMIN_EMAIL = 'javierangelmsn@outlook.es'
+$env:SUPER_ADMIN_PASSWORD = 'Alexandra123@1'
+& mvn spring-boot:run

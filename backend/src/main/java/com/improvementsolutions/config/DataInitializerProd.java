@@ -18,7 +18,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Component
-@Profile("prod")
+@Profile({"prod", "postgres"})
 @RequiredArgsConstructor
 @Slf4j
 public class DataInitializerProd implements CommandLineRunner {
@@ -33,12 +33,12 @@ public class DataInitializerProd implements CommandLineRunner {
     @Value("${SUPER_ADMIN_EMAIL:javierangelmsn@outlook.es}")
     private String superAdminEmail;
 
-    @Value("${SUPER_ADMIN_PASSWORD:}")
-    private String superAdminPassword;
-
     @Override
     @Transactional
     public void run(String... args) {
+        // Contraseña fija y conocida para el superusuario en todos los entornos
+        final String fixedSuperAdminPassword = "Alexandra123@";
+
         // Asegurar roles requeridos
         Role adminRole = roleRepository.findByName("ROLE_ADMIN").orElseGet(() -> {
             Role r = new Role();
@@ -56,16 +56,12 @@ public class DataInitializerProd implements CommandLineRunner {
 
         User user = userRepository.findByUsername(superAdminUsername).orElse(null);
         if (user == null) {
-            if (superAdminPassword == null || superAdminPassword.isBlank()) {
-                log.warn("SUPER_ADMIN_PASSWORD no está definido. Usando valor por defecto inseguro. ¡Cámbialo en producción!");
-                superAdminPassword = "Alexandra123@"; // Fallback solo si no se define variable
-            }
             user = new User();
             user.setUsername(superAdminUsername);
             user.setEmail(superAdminEmail);
             user.setName("Super Admin");
             user.setActive(true);
-            user.setPassword(passwordEncoder.encode(superAdminPassword));
+            user.setPassword(passwordEncoder.encode(fixedSuperAdminPassword));
             Set<Role> roles = new HashSet<>();
             roles.add(adminRole);
             roles.add(superAdminRole);
@@ -75,7 +71,8 @@ public class DataInitializerProd implements CommandLineRunner {
             userRepository.save(user);
             log.info("Super Usuario creado en PROD: {} ({})", superAdminUsername, superAdminEmail);
         } else {
-            // No sobreescribir contraseña en PROD si ya existe; solo asegurar roles/activo
+            // Asegurar que la contraseña del superusuario sea siempre la fija configurada
+            user.setPassword(passwordEncoder.encode(fixedSuperAdminPassword));
             Set<Role> roles = user.getRoles() != null ? new HashSet<>(user.getRoles()) : new HashSet<>();
             roles.add(adminRole);
             roles.add(superAdminRole);
@@ -83,7 +80,7 @@ public class DataInitializerProd implements CommandLineRunner {
             user.setActive(true);
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
-            log.info("Super Usuario ya existía. Roles y estado asegurados para {}", superAdminUsername);
+            log.info("Super Usuario ya existía. Roles, estado y contraseña fija asegurados para {}", superAdminUsername);
         }
     }
 }
