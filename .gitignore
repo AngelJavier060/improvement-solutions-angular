@@ -38,8 +38,8 @@ Thumbs.db
 *.tmp
 *.temp
 
-# Package manager files - keep only important ones
-frontend/package-lock.json
+# Package manager lock files should be committed
+# Do NOT ignore package-lock.json
 
 # Uploaded files (runtime data, NOT code)
 backend/uploads/
