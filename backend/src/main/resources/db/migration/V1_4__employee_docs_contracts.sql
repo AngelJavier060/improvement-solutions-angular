@@ -2,7 +2,7 @@
 
 -- Documents
 CREATE TABLE IF NOT EXISTS business_employee_documents (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   business_employee_id BIGINT NOT NULL,
   type_document_id BIGINT NOT NULL,
   start_date DATE NULL,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS business_employee_documents (
 );
 
 CREATE TABLE IF NOT EXISTS business_employee_document_files (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   document_id BIGINT NOT NULL,
   file_path VARCHAR(512) NOT NULL,
   file_name VARCHAR(255) NULL,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS business_employee_document_files (
 
 -- Contracts
 CREATE TABLE IF NOT EXISTS business_employee_contracts (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   business_employee_id BIGINT NOT NULL,
   type_contract_id BIGINT NOT NULL,
   position_id BIGINT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS business_employee_contracts (
 );
 
 CREATE TABLE IF NOT EXISTS business_employee_contract_files (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   contract_id BIGINT NOT NULL,
   file_path VARCHAR(512) NOT NULL,
   file_name VARCHAR(255) NULL,

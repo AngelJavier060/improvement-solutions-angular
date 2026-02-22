@@ -2,7 +2,7 @@
 
 -- Suppliers
 CREATE TABLE IF NOT EXISTS inventory_suppliers (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   business_id BIGINT NOT NULL,
   name VARCHAR(200) NOT NULL,
   ruc VARCHAR(20),
@@ -19,7 +19,7 @@ CREATE INDEX idx_inventory_suppliers_business ON inventory_suppliers(business_id
 
 -- Products (Padre)
 CREATE TABLE IF NOT EXISTS inventory_products (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   business_id BIGINT NOT NULL,
   code VARCHAR(100) NOT NULL,
   category VARCHAR(30) NOT NULL,
@@ -41,7 +41,7 @@ CREATE INDEX idx_inventory_products_category ON inventory_products(category);
 
 -- Variants (Hijo)
 CREATE TABLE IF NOT EXISTS inventory_variants (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   product_id BIGINT NOT NULL,
   code VARCHAR(100) NOT NULL,
   description VARCHAR(200),
@@ -61,7 +61,7 @@ CREATE INDEX idx_inventory_variants_product ON inventory_variants(product_id);
 
 -- Subdetails (Nieto / Lotes)
 CREATE TABLE IF NOT EXISTS inventory_subdetails (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   variant_id BIGINT NOT NULL,
   lot VARCHAR(100),
   detail_location VARCHAR(150),
@@ -83,7 +83,7 @@ CREATE INDEX idx_inventory_subdetails_expiry ON inventory_subdetails(expiry_date
 
 -- Movements
 CREATE TABLE IF NOT EXISTS inventory_movements (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   business_id BIGINT NOT NULL,
   type VARCHAR(30) NOT NULL,
   date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -107,7 +107,7 @@ CREATE INDEX idx_inventory_mov_type ON inventory_movements(type);
 
 -- Maintenances
 CREATE TABLE IF NOT EXISTS inventory_maintenances (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   business_id BIGINT NOT NULL,
   date DATE NOT NULL,
   variant_id BIGINT NOT NULL,

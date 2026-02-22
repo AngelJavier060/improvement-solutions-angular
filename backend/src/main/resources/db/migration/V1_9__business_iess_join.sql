@@ -1,6 +1,6 @@
 -- Ensure IESS catalog table exists (matches JPA: table `iess`, column `name` stores the code)
 CREATE TABLE IF NOT EXISTS iess (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL UNIQUE,
   description VARCHAR(1024),
   created_at TIMESTAMP NULL,

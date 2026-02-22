@@ -2,7 +2,7 @@
 
 -- Tabla de salidas de inventario
 CREATE TABLE IF NOT EXISTS inventory_outputs (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     business_id BIGINT NOT NULL,
     output_number VARCHAR(50) NOT NULL UNIQUE,
     output_date DATE NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS inventory_outputs (
 
 -- Tabla de detalles de salidas de inventario
 CREATE TABLE IF NOT EXISTS inventory_output_details (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     output_id BIGINT NOT NULL,
     variant_id BIGINT NOT NULL,
     quantity DECIMAL(10,2) NOT NULL,

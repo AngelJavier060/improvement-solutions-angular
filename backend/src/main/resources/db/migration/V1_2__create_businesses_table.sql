@@ -1,6 +1,6 @@
 -- Crear tabla de empresas
 CREATE TABLE businesses (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     name_short VARCHAR(50),
     ruc VARCHAR(13) NOT NULL UNIQUE,

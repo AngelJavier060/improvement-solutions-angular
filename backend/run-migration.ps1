@@ -7,33 +7,7 @@ Write-Host "===========================================" -ForegroundColor Cyan
 
 # Check if mysql is available
 $mysqlPath = Get-Command mysql -ErrorAction SilentlyContinue
-if ($null -eq $mysqlPath) {
-    Write-Host "MySQL no está disponible en el PATH. Buscando en ubicaciones comunes..." -ForegroundColor Yellow
-    
-    $commonPaths = @(
-        "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe",
-        "C:\Program Files\MySQL\MySQL Server 5.7\bin\mysql.exe",
-        "C:\MySQL\bin\mysql.exe",
-        "C:\xampp\mysql\bin\mysql.exe",
-        "C:\wamp64\bin\mysql\mysql8.0.31\bin\mysql.exe"
-    )
-    
-    foreach ($path in $commonPaths) {
-        if (Test-Path $path) {
-            $mysqlPath = $path
-            Write-Host "MySQL encontrado en: $path" -ForegroundColor Green
-            break
-        }
-    }
-    
-    if ($null -eq $mysqlPath) {
-        Write-Host "Error: No se puede encontrar MySQL. Por favor instale MySQL o agregue el directorio bin al PATH." -ForegroundColor Red
-        exit 1
-    }
-} else {
-    $mysqlPath = $mysqlPath.Source
-    Write-Host "MySQL encontrado en PATH: $mysqlPath" -ForegroundColor Green
-}
+## Script de migración actualizado: solo PostgreSQL soportado. Eliminado soporte MySQL.
 
 # Database connection parameters
 $dbHost = "localhost"
@@ -54,7 +28,7 @@ try {
     Write-Host "Nota: Se solicitará la contraseña de MySQL para el usuario root" -ForegroundColor Cyan
     
     # Execute MySQL script
-    & "$mysqlPath" -h $dbHost -u $dbUser -p < $scriptPath
+    # Aquí se debe implementar la ejecución del script para PostgreSQL.
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "===========================================" -ForegroundColor Green

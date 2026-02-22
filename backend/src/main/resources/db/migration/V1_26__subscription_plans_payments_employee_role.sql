@@ -5,7 +5,7 @@
 
 -- 1. Catálogo de planes de suscripción (configurable por Super Admin)
 CREATE TABLE IF NOT EXISTS subscription_plans (
-    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id              BIGSERIAL PRIMARY KEY,
     code            VARCHAR(50)    NOT NULL UNIQUE COMMENT 'MENSUAL, SEMESTRAL, ANUAL, ILIMITADO',
     name            VARCHAR(120)   NOT NULL,
     description     VARCHAR(500)   NULL,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
     display_order   INT            NOT NULL DEFAULT 0,
     created_at      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- Planes iniciales
 INSERT INTO subscription_plans (code, name, description, duration_months, price, display_order) VALUES
@@ -33,7 +33,7 @@ ALTER TABLE business_modules
 
 -- 3. Tabla de pagos
 CREATE TABLE IF NOT EXISTS payments (
-    id                  BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id                  BIGSERIAL PRIMARY KEY,
     business_id         BIGINT         NOT NULL,
     business_module_id  BIGINT         NULL COMMENT 'Suscripción asociada (puede ser NULL para pagos generales)',
     plan_id             BIGINT         NULL,
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS payments (
     CONSTRAINT fk_pay_business_module FOREIGN KEY (business_module_id) REFERENCES business_modules (id) ON DELETE SET NULL,
     CONSTRAINT fk_pay_plan            FOREIGN KEY (plan_id)            REFERENCES subscription_plans (id) ON DELETE SET NULL,
     CONSTRAINT fk_pay_confirmed_by    FOREIGN KEY (confirmed_by)       REFERENCES users (id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- 4. Rol de empleado
 INSERT IGNORE INTO roles (name, description, created_at, updated_at) VALUES

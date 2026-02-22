@@ -6,7 +6,7 @@
 -- Tabla: inventory_entries (Cabecera de Entrada)
 -- Representa el acta de recepción general
 CREATE TABLE IF NOT EXISTS inventory_entries (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     business_id BIGINT NOT NULL,
     entry_number VARCHAR(50) NOT NULL COMMENT 'Número de documento: factura, guía de remisión, etc.',
     entry_date DATE NOT NULL COMMENT 'Fecha exacta de cuándo llegaron físicamente',
@@ -29,12 +29,12 @@ CREATE TABLE IF NOT EXISTS inventory_entries (
     INDEX idx_entry_number (entry_number),
     INDEX idx_entry_supplier (supplier_id),
     UNIQUE KEY uk_entry_number_business (business_id, entry_number)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- Tabla: inventory_entry_details (Detalle línea por línea)
 -- Cada producto específico que llega en la entrada
 CREATE TABLE IF NOT EXISTS inventory_entry_details (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     entry_id BIGINT NOT NULL COMMENT 'Cabecera de entrada',
     variant_id BIGINT NOT NULL COMMENT 'Qué producto-variante específico llegó',
     quantity DECIMAL(10,2) NOT NULL COMMENT 'Cuántos llegaron',
@@ -56,12 +56,12 @@ CREATE TABLE IF NOT EXISTS inventory_entry_details (
     INDEX idx_detail_entry (entry_id),
     INDEX idx_detail_variant (variant_id),
     INDEX idx_detail_lot (lot_number)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- Tabla: inventory_movements (Kardex - Movimientos de Inventario)
 -- Registra TODOS los movimientos (entradas, salidas) para auditoría y costeo
 CREATE TABLE IF NOT EXISTS inventory_movements (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     business_id BIGINT NOT NULL,
     variant_id BIGINT NOT NULL COMMENT 'Variante afectada',
     movement_date DATETIME NOT NULL COMMENT 'Fecha y hora del movimiento',
@@ -84,12 +84,12 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     INDEX idx_movement_variant (variant_id),
     INDEX idx_movement_date (movement_date),
     INDEX idx_movement_type (movement_type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- Tabla: inventory_lots (Trazabilidad por Lote)
 -- Para rastrear lotes específicos (útil para devoluciones, vencimientos, recalls)
 CREATE TABLE IF NOT EXISTS inventory_lots (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     business_id BIGINT NOT NULL,
     variant_id BIGINT NOT NULL,
     lot_number VARCHAR(100) NOT NULL COMMENT 'Número de lote',
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS inventory_lots (
     INDEX idx_lot_number (lot_number),
     INDEX idx_lot_expiration (expiration_date),
     UNIQUE KEY uk_lot_variant_number (business_id, variant_id, lot_number)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- Comentarios sobre el esquema
 -- =====================================================

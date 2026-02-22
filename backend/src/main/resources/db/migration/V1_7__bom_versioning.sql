@@ -10,7 +10,7 @@ ALTER TABLE business_obligation_matrix_files
 
 -- Create versions table to keep immutable history snapshots
 CREATE TABLE IF NOT EXISTS business_obligation_matrix_versions (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     business_obligation_matrix_id BIGINT NOT NULL,
     version INT NOT NULL,
     name VARCHAR(255),

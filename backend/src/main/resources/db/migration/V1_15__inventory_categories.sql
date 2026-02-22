@@ -1,6 +1,6 @@
 -- Dynamic categories per business
 CREATE TABLE IF NOT EXISTS inventory_categories (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   business_id BIGINT NOT NULL,
   name VARCHAR(50) NOT NULL,
   description VARCHAR(200),

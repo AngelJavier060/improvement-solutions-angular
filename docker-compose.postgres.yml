@@ -26,6 +26,9 @@ services:
       DB_NAME: ${DB_NAME:-db_improvement_solutions}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      SUPER_ADMIN_USERNAME: ${SUPER_ADMIN_USERNAME:-Javier}
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-javierangelmsn@outlook.es}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
     depends_on:
       - postgres
@@ -34,24 +37,6 @@ services:
     restart: unless-stopped
     volumes:
       - uploads_data:/app/uploads
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8081/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "${FRONTEND_HTTP_PORT:-8001}:80"
-      - "${FRONTEND_HTTPS_PORT:-8443}:443"
-    depends_on:
-      - backend
-    networks:
-      - improvement_network
-    restart: unless-stopped
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
 
 volumes:
   postgres_data:

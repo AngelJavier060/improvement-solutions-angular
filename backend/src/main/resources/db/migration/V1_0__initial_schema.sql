@@ -1,12 +1,12 @@
 -- Crear tabla de roles
 CREATE TABLE roles (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE
 );
 
 -- Crear tabla de usuarios
 CREATE TABLE users (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(120) NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE user_roles (
 
 -- Crear tabla de tokens de restablecimiento de contraseña
 CREATE TABLE password_reset_tokens (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     token VARCHAR(100) NOT NULL UNIQUE,
     expiry_date TIMESTAMP NOT NULL,

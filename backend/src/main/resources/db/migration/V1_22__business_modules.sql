@@ -2,7 +2,7 @@
 -- Catálogo de módulos del sistema
 -- ============================================================
 CREATE TABLE IF NOT EXISTS system_modules (
-    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id          BIGSERIAL PRIMARY KEY,
     code        VARCHAR(50)  NOT NULL UNIQUE COMMENT 'Código interno: TALENTO_HUMANO, SEGURIDAD_INDUSTRIAL, CALIDAD, INVENTARIO, etc.',
     name        VARCHAR(120) NOT NULL COMMENT 'Nombre visible',
     description VARCHAR(500) NULL,
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS system_modules (
     active      BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 -- Módulos iniciales
 INSERT INTO system_modules (code, name, description, icon, color, display_order) VALUES
@@ -25,7 +25,7 @@ INSERT INTO system_modules (code, name, description, icon, color, display_order)
 -- Relación empresa ↔ módulo (con fechas y estado)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS business_modules (
-    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id              BIGSERIAL PRIMARY KEY,
     business_id     BIGINT   NOT NULL,
     module_id       BIGINT   NOT NULL,
     active          BOOLEAN  NOT NULL DEFAULT TRUE,
@@ -39,4 +39,4 @@ CREATE TABLE IF NOT EXISTS business_modules (
 
     CONSTRAINT fk_bm_business FOREIGN KEY (business_id) REFERENCES businesses (id) ON DELETE CASCADE,
     CONSTRAINT fk_bm_module   FOREIGN KEY (module_id)   REFERENCES system_modules (id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
