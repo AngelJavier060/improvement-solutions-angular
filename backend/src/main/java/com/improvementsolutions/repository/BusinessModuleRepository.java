@@ -12,9 +12,12 @@ import java.util.Optional;
 @Repository
 public interface BusinessModuleRepository extends JpaRepository<BusinessModule, Long> {
 
-    List<BusinessModule> findByBusinessIdOrderByModuleDisplayOrderAsc(Long businessId);
+    @Query("SELECT bm FROM BusinessModule bm LEFT JOIN bm.module m WHERE bm.business.id = :businessId ORDER BY m.displayOrder ASC")
+    List<BusinessModule> findByBusinessIdOrderByModuleDisplayOrderAsc(@Param("businessId") Long businessId);
 
     Optional<BusinessModule> findByBusinessIdAndModuleId(Long businessId, Long moduleId);
+
+    List<BusinessModule> findAllByBusinessIdAndModuleIdOrderById(Long businessId, Long moduleId);
 
     Optional<BusinessModule> findByBusinessIdAndModuleCode(Long businessId, String moduleCode);
 
