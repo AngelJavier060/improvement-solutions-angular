@@ -39,6 +39,71 @@ public class AttendanceController {
         }
     }
 
+    @GetMapping("/employees/{employeeId}/day-type")
+    public ResponseEntity<?> getEmployeeDayType(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestParam("date") String dateStr) {
+        try {
+            java.time.LocalDate date = java.time.LocalDate.parse(dateStr);
+            String type = attendanceService.computeDayType(businessId, employeeId, date);
+            return ResponseEntity.ok(java.util.Map.of(
+                    "employeeId", employeeId,
+                    "date", date.toString(),
+                    "dayType", type
+            ));
+        } catch (java.time.format.DateTimeParseException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", "Fecha inválida"));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ─────────────────── HOLIDAYS ───────────────────
+
+    @GetMapping("/holidays")
+    public ResponseEntity<?> getHolidays(
+            @PathVariable Long businessId,
+            @RequestParam int year,
+            @RequestParam int month) {
+        try {
+            return ResponseEntity.ok(attendanceService.getHolidays(businessId, year, month)
+                    .stream().map(this::holidayToMap).toList());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/holidays")
+    public ResponseEntity<?> addHoliday(
+            @PathVariable Long businessId,
+            @RequestBody Map<String, String> body) {
+        try {
+            LocalDate date = LocalDate.parse(body.get("date"));
+            String name    = body.get("name");
+            return ResponseEntity.ok(holidayToMap(
+                    attendanceService.addBusinessHoliday(businessId, date, name)));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/holidays/{id}")
+    public ResponseEntity<?> deleteHoliday(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        try {
+            attendanceService.deleteHoliday(businessId, id);
+            return ResponseEntity.ok(Map.of("deleted", id));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PutMapping("/employees/{employeeId}/work-schedule-start")
     public ResponseEntity<?> setWorkScheduleStartDate(
             @PathVariable Long businessId,
@@ -491,6 +556,17 @@ public class AttendanceController {
         m.put("reason",       o.getReason());
         m.put("notes",        o.getNotes());
         m.put("createdAt",    o.getCreatedAt() != null ? o.getCreatedAt().toString() : null);
+        return m;
+    }
+
+    private Map<String, Object> holidayToMap(Holiday h) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("id",      h.getId());
+        m.put("date",    h.getDate() != null ? h.getDate().toString() : null);
+        m.put("name",    h.getName());
+        m.put("active",  h.getActive());
+        m.put("scope",   h.getBusiness() == null ? "NATIONAL" : "BUSINESS");
+        m.put("businessId", h.getBusiness() != null ? h.getBusiness().getId() : null);
         return m;
     }
 

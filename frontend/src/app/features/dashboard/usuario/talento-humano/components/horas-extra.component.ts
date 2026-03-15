@@ -11,6 +11,7 @@ import { BusinessService } from '../../../../../services/business.service';
 import { EmployeeResponse } from '../models/employee.model';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-horas-extra',
@@ -23,6 +24,8 @@ export class HorasExtraComponent implements OnInit {
   businessRuc: string | null = null;
   businessName: string = '';
   businessRucDisplay: string = '';
+  businessLogoUrl: string | null = null;
+  businessLogoBase64: string | null = null;
 
   employees: EmployeeResponse[] = [];
   requests: OvertimeRequest[] = [];
@@ -97,6 +100,7 @@ export class HorasExtraComponent implements OnInit {
       this.businessName     = active.name ?? '';
       this.businessRucDisplay = active.ruc ?? '';
       if (!this.businessRuc) this.businessRuc = active.ruc;
+      this.loadBusinessInfo();
       this.loadData();
     } else if (this.businessRuc) {
       this.businessService.getAll().subscribe({
@@ -106,12 +110,43 @@ export class HorasExtraComponent implements OnInit {
             this.businessId = found.id;
             this.businessName = found.name ?? '';
             this.businessRucDisplay = found.ruc ?? '';
+            this.loadBusinessInfo();
           }
           this.loadData();
         },
         error: () => this.loadData()
       });
     }
+  }
+
+  private loadBusinessInfo(): void {
+    if (!this.businessId) return;
+    this.businessService.getById(this.businessId).subscribe({
+      next: (b: any) => {
+        const raw = (b.logo || '').trim();
+        const base = '';
+        if (!raw) { this.businessLogoUrl = null; return; }
+        if (/^https?:\/\//i.test(raw)) {
+          this.businessLogoUrl = raw;
+        } else if (raw.startsWith('logos/')) {
+          this.businessLogoUrl = `${base}/api/files/${raw}`;
+        } else {
+          this.businessLogoUrl = `${base}/api/files/logos/${raw}`;
+        }
+      },
+      error: () => { this.businessLogoUrl = null; }
+    });
+  }
+
+  private async toDataUrl(url: string): Promise<string> {
+    const res = await fetch(url, { credentials: 'include' });
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
 
   private loadData(): void {
@@ -205,6 +240,11 @@ export class HorasExtraComponent implements OnInit {
   selectEmployee(emp: EmployeeResponse): void {
     this.selectedEmployee = emp;
     this.searchEmp = '';
+    // Autocompletar Departamento y Cargo desde la ficha
+    const dept = (emp as any).departmentName || (emp as any).department?.name || '';
+    const cargo = (emp as any).positionName || (emp as any).position?.name || (emp as any).position || '';
+    this.formDraft.department = dept;
+    this.formDraft.area = cargo; // el backend espera 'area', la UI mostrará 'Cargo'
   }
 
   private emptyActivity(): OvertimeActivity {
@@ -231,7 +271,7 @@ export class HorasExtraComponent implements OnInit {
     return this.activities.reduce((s, a) => s + this.calcHours(a), 0);
   }
 
-  submitForm(): void {
+  async submitForm(): Promise<void> {
     if (!this.businessId || !this.selectedEmployee) {
       this.error = 'Seleccione un empleado.';
       return;
@@ -240,6 +280,20 @@ export class HorasExtraComponent implements OnInit {
     if (!validActivities.length) {
       this.error = 'Agregue al menos una actividad con fecha, hora y descripción.';
       return;
+    }
+
+    // Validación previa en cliente: no permitir registrar en día de jornada normal (T)
+    try {
+      const dates = Array.from(new Set(validActivities.map(a => a.activityDate)));
+      for (const d of dates) {
+        const resp = await firstValueFrom(this.attendanceService.getEmployeeDayType(this.businessId, this.selectedEmployee.id, d));
+        if ((resp.dayType || '').toUpperCase() === 'T') {
+          this.error = `No es posible registrar horas/días extra el ${d}: es un día de jornada laboral normal.`;
+          return;
+        }
+      }
+    } catch {
+      // Si falla la validación previa, continuar y que el backend aplique la validación definitiva
     }
     this.saving = true;
     this.error = null;
@@ -261,7 +315,7 @@ export class HorasExtraComponent implements OnInit {
   }
 
   // ── PDF ─────────────────────────────────────────────────────────────────
-  generatePdf(req: OvertimeRequest): void {
+  async generatePdf(req: OvertimeRequest): Promise<void> {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW  = doc.internal.pageSize.getWidth();
     const pageH  = doc.internal.pageSize.getHeight();
@@ -288,19 +342,46 @@ export class HorasExtraComponent implements OnInit {
     // Borde exterior
     doc.rect(m, y, usable, hdrH);
 
-    // Col 1 — Logo / empresa
+    // Col 1 — Logo / empresa (con fallback a texto)
     doc.setFillColor(248, 250, 252);
     doc.rect(m, y, col1W, hdrH, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...DARK);
-    const bizLines = doc.splitTextToSize(this.businessName.toUpperCase(), col1W - 4);
-    doc.text(bizLines, m + col1W / 2, y + hdrH / 2, { align: 'center', baseline: 'middle' });
-    if (this.businessRucDisplay) {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6.5);
-      doc.setTextColor(...GRAY_TXT);
-      doc.text(`RUC: ${this.businessRucDisplay}`, m + col1W / 2, y + hdrH / 2 + 5, { align: 'center' });
+    // Preparar logo base64 si hay URL y aún no está cargado
+    if (!this.businessLogoBase64 && this.businessLogoUrl) {
+      try { this.businessLogoBase64 = await this.toDataUrl(this.businessLogoUrl); } catch { /* ignore */ }
+    }
+    if (this.businessLogoBase64) {
+      try {
+        const fmt = this.businessLogoBase64.startsWith('data:image/png') ? 'PNG'
+                  : (this.businessLogoBase64.startsWith('data:image/jpeg') || this.businessLogoBase64.startsWith('data:image/jpg')) ? 'JPEG'
+                  : 'JPEG';
+        // dejar un pequeño padding
+        doc.addImage(this.businessLogoBase64, fmt as any, m + 2, y + 2, col1W - 4, hdrH - 4);
+      } catch {
+        // Fallback a texto
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...DARK);
+        const bizLines = doc.splitTextToSize(this.businessName.toUpperCase(), col1W - 4);
+        doc.text(bizLines, m + col1W / 2, y + hdrH / 2, { align: 'center', baseline: 'middle' });
+        if (this.businessRucDisplay) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(6.5);
+          doc.setTextColor(...GRAY_TXT);
+          doc.text(`RUC: ${this.businessRucDisplay}`, m + col1W / 2, y + hdrH / 2 + 5, { align: 'center' });
+        }
+      }
+    } else {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(...DARK);
+      const bizLines = doc.splitTextToSize(this.businessName.toUpperCase(), col1W - 4);
+      doc.text(bizLines, m + col1W / 2, y + hdrH / 2, { align: 'center', baseline: 'middle' });
+      if (this.businessRucDisplay) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.setTextColor(...GRAY_TXT);
+        doc.text(`RUC: ${this.businessRucDisplay}`, m + col1W / 2, y + hdrH / 2 + 5, { align: 'center' });
+      }
     }
     doc.line(m + col1W, y, m + col1W, y + hdrH);
 

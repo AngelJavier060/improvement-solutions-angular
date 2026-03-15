@@ -95,7 +95,10 @@ export class PlanillaPdfService {
 
     if (logoBase64) {
       try {
-        doc.addImage(logoBase64, 'JPEG', margin + 2, margin + 2, logoW - 4, hH - 4);
+        const fmt = logoBase64.startsWith('data:image/png') ? 'PNG'
+                   : (logoBase64.startsWith('data:image/jpeg') || logoBase64.startsWith('data:image/jpg')) ? 'JPEG'
+                   : 'JPEG';
+        doc.addImage(logoBase64, fmt as any, margin + 2, margin + 2, logoW - 4, hH - 4);
       } catch {
         this.drawLogoFallback(doc, businessName, margin, margin + hH / 2, logoW);
       }
@@ -254,7 +257,7 @@ export class PlanillaPdfService {
       head,
       body,
       startY,
-      margin: { left: margin, right: margin },
+      margin: { left: margin, right: margin, bottom: 42 },
       tableWidth: 'auto',
       styles: {
         fontSize: 5.5,
@@ -354,6 +357,46 @@ export class PlanillaPdfService {
       doc.setDrawColor(226, 232, 240);
       doc.setLineWidth(0.2);
       doc.line(5, y - 2, pageW - 5, y - 2);
+
+      // ── Firma(s) en última página ─────────────────────────────────────
+      if (i === pageCount) {
+        const blockTop = pageH - 38; // zona de firmas encima del pie
+        const blockHeight = 22;
+        const padding = 4;
+        const colW = (pageW - 10 - 2 * padding) / 3; // tres columnas, respetando márgenes
+        const startX = 5 + padding;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+
+        const labels = [
+          { title: 'Elaborado por:', hint: 'Firma Digital' },
+          { title: 'Recibido y Revisado por:', hint: 'Firma Digital' },
+          { title: 'Aprobado por:', hint: 'Firma Digital' },
+        ];
+
+        labels.forEach((lb, idx) => {
+          const x = startX + idx * colW;
+          // línea de firma
+          const lineY = blockTop + blockHeight - 8;
+          doc.setDrawColor(148, 163, 184);
+          doc.setLineWidth(0.3);
+          doc.line(x + 6, lineY, x + colW - 6, lineY);
+
+          // hint superior (gris)
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(6);
+          doc.setTextColor(148, 163, 184);
+          doc.text(lb.hint, x + colW / 2, lineY - 5, { align: 'center' });
+
+          // etiqueta en negrita
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(15, 23, 42);
+          doc.text(lb.title, x + colW / 2, lineY + 4, { align: 'center' });
+        });
+      }
     }
   }
 }

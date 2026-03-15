@@ -9,6 +9,8 @@ import 'services/business_service.dart';
 import 'security_legal_screen.dart';
 import 'legal_compliance_page.dart';
 import 'pdf_viewer_page.dart';
+import 'services/biometric_auth_service.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MyApp());
@@ -141,6 +143,35 @@ class _MyHomePageState extends State<MyHomePage> {
     return '${AppConfig.baseUrl}/api/files/$encoded';
   }
 
+  Future<void> _logout({bool clearBiometrics = true}) async {
+    try {
+      await AuthService().logout();
+      if (clearBiometrics) {
+        try { await BiometricAuthService().clear(); } catch (_) {}
+      }
+    } finally {
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
+    }
+  }
+
+  Future<void> _confirmLogout() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Deseas cerrar sesión?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Cerrar')),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await _logout(clearBiometrics: true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final greeting = _businessName != null && _businessName!.isNotEmpty
@@ -148,6 +179,27 @@ class _MyHomePageState extends State<MyHomePage> {
         : 'Bienvenido';
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Cerrar sesión',
+            onPressed: _confirmLogout,
+          ),
+          IconButton(
+            icon: const Icon(Icons.exit_to_app, color: Colors.white),
+            tooltip: 'Salir de la app',
+            onPressed: () => SystemNavigator.pop(),
+          ),
+        ],
+      ),
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           // Imagen de fondo
@@ -230,6 +282,12 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 16),
+                TextButton.icon(
+                  onPressed: _confirmLogout,
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: const Text('Cerrar sesión', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                 ),
               ],
             ),

@@ -8,10 +8,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.DayOfWeek;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.text.Normalizer;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +30,7 @@ public class AttendanceService {
     private final EmployeeWorkScheduleHistoryRepository scheduleHistoryRepository;
     private final MonthlySheetClosureRepository closureRepository;
     private final WorkScheduleRepository workScheduleRepository;
+    private final HolidayRepository holidayRepository;
 
     // ─────────────────── helpers ───────────────────
 
@@ -73,6 +76,80 @@ public class AttendanceService {
         }
     }
 
+    private Optional<Set<DayOfWeek>> parseWeeklyPatternFromName(String name) {
+        if (name == null) return Optional.empty();
+        String s = Normalizer.normalize(name, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(Locale.ROOT);
+
+        // Map de tokens a DayOfWeek (ES + EN, abreviados)
+        Map<String, DayOfWeek> map = new HashMap<>();
+        map.put("lu", DayOfWeek.MONDAY);   map.put("lun", DayOfWeek.MONDAY);  map.put("lunes", DayOfWeek.MONDAY);  map.put("mon", DayOfWeek.MONDAY);
+        map.put("ma", DayOfWeek.TUESDAY);  map.put("mar", DayOfWeek.TUESDAY); map.put("martes", DayOfWeek.TUESDAY); map.put("tue", DayOfWeek.TUESDAY);
+        map.put("mi", DayOfWeek.WEDNESDAY);map.put("mie", DayOfWeek.WEDNESDAY); map.put("miercoles", DayOfWeek.WEDNESDAY); map.put("wed", DayOfWeek.WEDNESDAY);
+        map.put("ju", DayOfWeek.THURSDAY); map.put("jue", DayOfWeek.THURSDAY); map.put("jueves", DayOfWeek.THURSDAY); map.put("thu", DayOfWeek.THURSDAY);
+        map.put("vi", DayOfWeek.FRIDAY);  map.put("vie", DayOfWeek.FRIDAY);  map.put("viernes", DayOfWeek.FRIDAY); map.put("fri", DayOfWeek.FRIDAY);
+        map.put("sa", DayOfWeek.SATURDAY);map.put("sab", DayOfWeek.SATURDAY); map.put("sabado", DayOfWeek.SATURDAY); map.put("sat", DayOfWeek.SATURDAY);
+        map.put("do", DayOfWeek.SUNDAY);  map.put("dom", DayOfWeek.SUNDAY);  map.put("domingo", DayOfWeek.SUNDAY); map.put("sun", DayOfWeek.SUNDAY);
+
+        // 1) '5x2' se interpreta comúnmente como Lun-Vie
+        if (s.contains("5x2")) {
+            return Optional.of(EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
+                    DayOfWeek.THURSDAY, DayOfWeek.FRIDAY));
+        }
+
+        // 2) Intentar detectar rango tipo "lu-vi", "mar-sab", "mon-fri", "ma a sa"
+        java.util.regex.Pattern tokenPat = java.util.regex.Pattern.compile(
+                "(lu(?:n|nes)?|ma(?:r|rtes)?|mi(?:e|ercoles)?|ju(?:e|eves)?|vi(?:e|ernes)?|sa(?:b|bado)?|do(?:m|mingo)?|mon|tue|wed|thu|fri|sat|sun)"
+        );
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("(lu(?:n|nes)?|ma(?:r|rtes)?|mi(?:e|ercoles)?|ju(?:e|eves)?|vi(?:e|ernes)?|sa(?:b|bado)?|do(?:m|mingo)?|mon|tue|wed|thu|fri|sat|sun)\\s*[-/ ato]+\\s*(lu(?:n|nes)?|ma(?:r|rtes)?|mi(?:e|ercoles)?|ju(?:e|eves)?|vi(?:e|ernes)?|sa(?:b|bado)?|do(?:m|mingo)?|mon|tue|wed|thu|fri|sat|sun)")
+                .matcher(s);
+        if (m.find()) {
+            DayOfWeek start = tokenToDay(map, m.group(1));
+            DayOfWeek end   = tokenToDay(map, m.group(2));
+            if (start != null && end != null) {
+                return Optional.of(daysRange(start, end));
+            }
+        }
+
+        // 3) Lista de tokens sueltos (lu,ma,mi,ju,vi)
+        java.util.Set<DayOfWeek> set = EnumSet.noneOf(DayOfWeek.class);
+        java.util.regex.Matcher m2 = tokenPat.matcher(s);
+        while (m2.find()) {
+            DayOfWeek d = tokenToDay(map, m2.group(1));
+            if (d != null) set.add(d);
+        }
+        if (!set.isEmpty()) return Optional.of(set);
+
+        return Optional.empty();
+    }
+
+    private DayOfWeek tokenToDay(Map<String, DayOfWeek> map, String token) {
+        if (token == null) return null;
+        String t = token.toLowerCase(Locale.ROOT);
+        // normalizar ya viene sin tildes
+        if (map.containsKey(t)) return map.get(t);
+        // probar prefijos de 2-3 letras
+        for (String k : map.keySet()) {
+            if (t.startsWith(k)) return map.get(k);
+        }
+        return null;
+    }
+
+    private EnumSet<DayOfWeek> daysRange(DayOfWeek start, DayOfWeek end) {
+        EnumSet<DayOfWeek> out = EnumSet.noneOf(DayOfWeek.class);
+        int s = start.getValue();
+        int e = end.getValue();
+        int i = s;
+        while (true) {
+            out.add(DayOfWeek.of(i));
+            if (i == e) break;
+            i = i % 7 + 1;
+        }
+        return out;
+    }
+
     private String getAutoDayType(BusinessEmployee emp, LocalDate date) {
         if (emp == null || date == null) return null;
         // 1) Buscar en histórico de jornadas para esa fecha
@@ -80,8 +157,12 @@ public class AttendanceService {
                 scheduleHistoryRepository.findActiveForDate(emp.getId(), date);
         if (histOpt.isPresent()) {
             EmployeeWorkScheduleHistory hist = histOpt.get();
-            Optional<SchedulePattern> p = parseSchedulePatternFromName(
-                    hist.getWorkSchedule() != null ? hist.getWorkSchedule().getName() : null);
+            String wsName = hist.getWorkSchedule() != null ? hist.getWorkSchedule().getName() : null;
+            Optional<Set<DayOfWeek>> weekly = parseWeeklyPatternFromName(wsName);
+            if (weekly.isPresent()) {
+                return weekly.get().contains(date.getDayOfWeek()) ? "T" : "D";
+            }
+            Optional<SchedulePattern> p = parseSchedulePatternFromName(wsName);
             if (p.isEmpty()) return null;
             LocalDate cycleOrigin = hist.getCycleStartDate() != null ? hist.getCycleStartDate() : hist.getStartDate();
             long diff = ChronoUnit.DAYS.between(cycleOrigin, date);
@@ -91,15 +172,32 @@ public class AttendanceService {
             return idx < p.get().workDays ? "T" : "D";
         }
         // 2) Fallback al campo directo del empleado
+        String empSchedName = emp.getWorkSchedule() != null ? emp.getWorkSchedule().getName() : null;
+        Optional<Set<DayOfWeek>> weekly = parseWeeklyPatternFromName(empSchedName);
+        if (weekly.isPresent()) {
+            return weekly.get().contains(date.getDayOfWeek()) ? "T" : "D";
+        }
         Optional<SchedulePattern> p = parseSchedulePattern(emp);
         LocalDate start = emp.getWorkScheduleStartDate();
-        if (p.isEmpty() || start == null) return null;
+        if (p.isEmpty() || start == null) {
+            // Fallback por defecto: lunes-viernes = Trabajo (T), sábado-domingo = Descanso (D)
+            DayOfWeek dow = date.getDayOfWeek();
+            return (dow != DayOfWeek.SATURDAY && dow != DayOfWeek.SUNDAY) ? "T" : "D";
+        }
         if (date.isBefore(start)) return null;
         long diff = ChronoUnit.DAYS.between(start, date);
         int len = p.get().cycleLength();
         if (len <= 0) return null;
         int idx = (int) Math.floorMod(diff, len);
         return idx < p.get().workDays ? "T" : "D";
+    }
+
+    // Exponer cálculo para otros servicios (p. ej., validación de horas extra)
+    @Transactional(readOnly = true)
+    public String computeDayType(Long businessId, Long employeeId, LocalDate date) {
+        requireBusiness(businessId);
+        BusinessEmployee emp = requireEmployee(businessId, employeeId);
+        return getAutoDayType(emp, date);
     }
 
     /**
@@ -114,6 +212,17 @@ public class AttendanceService {
         YearMonth ym = YearMonth.of(year, month);
         LocalDate from = ym.atDay(1);
         LocalDate to   = ym.atEndOfMonth();
+
+        // Cargar feriados nacionales y propios de la empresa en el rango
+        Map<LocalDate, String> holidayMap = new HashMap<>();
+        try {
+            List<Holiday> nationals = holidayRepository.findNationalBetween(from, to);
+            for (Holiday h : nationals) holidayMap.put(h.getDate(), h.getName());
+        } catch (Exception ignore) {}
+        try {
+            List<Holiday> locals = holidayRepository.findByBusinessBetween(businessId, from, to);
+            for (Holiday h : locals) holidayMap.put(h.getDate(), h.getName()); // override national with company-specific if collides
+        } catch (Exception ignore) {}
 
         List<BusinessEmployee> employees = employeeRepository.findWithRelationsByBusinessId(businessId)
                 .stream()
@@ -165,6 +274,10 @@ public class AttendanceService {
                 dayInfo.put("date", date.toString());
                 dayInfo.put("dayType", type); // null = sin asignación (antes de startDate)
                 if (notes != null) dayInfo.put("notes", notes);
+                if (holidayMap.containsKey(date)) {
+                    dayInfo.put("holiday", true);
+                    dayInfo.put("holidayName", holidayMap.get(date));
+                }
 
                 days.add(dayInfo);
                 if (type != null) totals.merge(type, 1, Integer::sum);
@@ -415,6 +528,45 @@ public class AttendanceService {
         kpis.put("year",  year);
         kpis.put("month", month);
         return kpis;
+    }
+
+    // ─────────────────── HOLIDAYS ───────────────────
+
+    @Transactional(readOnly = true)
+    public List<Holiday> getHolidays(Long businessId, int year, int month) {
+        requireBusiness(businessId);
+        YearMonth ym = YearMonth.of(year, month);
+        LocalDate from = ym.atDay(1);
+        LocalDate to   = ym.atEndOfMonth();
+        List<Holiday> list = new ArrayList<>();
+        try { list.addAll(holidayRepository.findNationalBetween(from, to)); } catch (Exception ignore) {}
+        try { list.addAll(holidayRepository.findByBusinessBetween(businessId, from, to)); } catch (Exception ignore) {}
+        return list;
+    }
+
+    @Transactional
+    public Holiday addBusinessHoliday(Long businessId, LocalDate date, String name) {
+        Business biz = requireBusiness(businessId);
+        Holiday h = Holiday.builder()
+                .business(biz)
+                .date(date)
+                .name(name)
+                .active(true)
+                .build();
+        return holidayRepository.save(h);
+    }
+
+    @Transactional
+    public void deleteHoliday(Long businessId, Long holidayId) {
+        Holiday h = holidayRepository.findById(holidayId)
+                .orElseThrow(() -> new NoSuchElementException("Feriado no encontrado: " + holidayId));
+        if (h.getBusiness() == null) {
+            throw new SecurityException("No se puede eliminar un feriado nacional desde este endpoint");
+        }
+        if (!h.getBusiness().getId().equals(businessId)) {
+            throw new SecurityException("El feriado no pertenece a esta empresa");
+        }
+        holidayRepository.delete(h);
     }
 
     // ─────────────────── HISTÓRICO DE JORNADAS ───────────────────

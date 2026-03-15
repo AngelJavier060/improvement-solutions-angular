@@ -13,7 +13,9 @@ import {
 } from '../services/attendance.service';
 import { BusinessContextService } from '../../../../../core/services/business-context.service';
 import { BusinessService } from '../../../../../services/business.service';
+import { Business } from '../../../../../models/business.model';
 import { ConfigurationService, WorkSchedule } from '../services/configuration.service';
+import { AttendanceHolidayService, HolidayDto } from '../services/attendance.service';
 import { PlanillaPdfService } from '../services/planilla-pdf.service';
 
 @Component({
@@ -26,6 +28,8 @@ export class PlanillaMensualComponent implements OnInit {
   businessId: number | null = null;
   businessRuc: string | null = null;
   businessName: string = '';
+  businessLogoUrl: string | null = null;
+  businessLogoBase64: string | null = null;
 
   year: number = new Date().getFullYear();
   month: number = new Date().getMonth() + 1;
@@ -68,6 +72,12 @@ export class PlanillaMensualComponent implements OnInit {
   daysInMonth: number[] = [];
   monthDates: string[] = [];
 
+  // Feriados
+  holidays: HolidayDto[] = [];
+  holidaysLoading = false;
+  holidaysError: string | null = null;
+  holidayDraft = { date: '', name: '' };
+
   readonly dayTypes = DAY_TYPES;
   readonly dayTypeKeys: DayType[] = ['T', 'D', 'EX', 'V', 'P', 'E'];
 
@@ -91,7 +101,8 @@ export class PlanillaMensualComponent implements OnInit {
     private businessContext: BusinessContextService,
     private businessService: BusinessService,
     private configService: ConfigurationService,
-    private pdfService: PlanillaPdfService
+    private pdfService: PlanillaPdfService,
+    private holidayService: AttendanceHolidayService
   ) {}
 
   ngOnInit(): void {
@@ -127,6 +138,7 @@ export class PlanillaMensualComponent implements OnInit {
       this.businessId   = active.id;
       this.businessName = active.name ?? '';
       if (!this.businessRuc) this.businessRuc = active.ruc;
+      this.loadBusinessInfo();
     }
     // 4. Si tenemos RUC pero no ID, buscar en el listado de empresas
     if (this.businessRuc && !this.businessId) {
@@ -136,12 +148,47 @@ export class PlanillaMensualComponent implements OnInit {
           if (found) {
             this.businessId   = found.id;
             this.businessName = found.name ?? '';
+            this.loadBusinessInfo();
           }
           if (this.businessId) this.loadData();
         },
         error: () => { this.loadData(); }
       });
     }
+  }
+
+  private loadBusinessInfo(): void {
+    if (!this.businessId) return;
+    this.businessService.getById(this.businessId).subscribe({
+      next: (b: Business) => {
+        // nombre en caso de que venga vacío desde el contexto
+        if (!this.businessName) this.businessName = b.name ?? '';
+        const raw = (b.logo || '').trim();
+        const base = '';
+        if (!raw) { this.businessLogoUrl = null; return; }
+        if (/^https?:\/\//i.test(raw)) {
+          this.businessLogoUrl = raw;
+        } else if (raw.startsWith('logos/')) {
+          // Servido por FileController /api/files/{filename}
+          this.businessLogoUrl = `${base}/api/files/${raw}`;
+        } else {
+          // Asumir nombre de archivo dentro de /api/files/logos/{file}
+          this.businessLogoUrl = `${base}/api/files/logos/${raw}`;
+        }
+      },
+      error: () => { this.businessLogoUrl = null; }
+    });
+  }
+
+  private async toDataUrl(url: string): Promise<string> {
+    const res = await fetch(url, { credentials: 'include' });
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
 
   private buildCalendar(): void {
@@ -188,6 +235,38 @@ export class PlanillaMensualComponent implements OnInit {
     });
 
     this.loadClosure();
+    this.loadHolidays();
+  }
+
+  loadHolidays(): void {
+    if (!this.businessId) return;
+    this.holidaysLoading = true;
+    this.holidaysError = null;
+    this.holidayService.getHolidays(this.businessId, this.year, this.month).subscribe({
+      next: list => { this.holidays = list; this.holidaysLoading = false; },
+      error: () => { this.holidaysLoading = false; this.holidaysError = 'No se pudieron cargar los feriados.'; }
+    });
+  }
+
+  addHoliday(): void {
+    if (!this.businessId) return;
+    const d = (this.holidayDraft.date || '').trim();
+    const n = (this.holidayDraft.name || '').trim();
+    if (!d || !n) { this.holidaysError = 'Fecha y nombre son obligatorios.'; return; }
+    this.holidaysError = null;
+    this.holidayService.addHoliday(this.businessId, { date: d, name: n }).subscribe({
+      next: () => { this.holidayDraft = { date: '', name: '' }; this.loadHolidays(); this.loadData(); },
+      error: err => { this.holidaysError = err?.error?.error || 'No se pudo agregar el feriado.'; }
+    });
+  }
+
+  deleteHoliday(h: HolidayDto): void {
+    if (!this.businessId || h.scope === 'NATIONAL') return;
+    if (!confirm('¿Eliminar este feriado de empresa?')) return;
+    this.holidayService.deleteHoliday(this.businessId, h.id).subscribe({
+      next: () => { this.loadHolidays(); this.loadData(); },
+      error: () => {}
+    });
   }
 
   applyFilters(): void {
@@ -324,7 +403,11 @@ export class PlanillaMensualComponent implements OnInit {
   }
 
   /** Genera y descarga el PDF de la planilla */
-  downloadPdf(): void {
+  async downloadPdf(): Promise<void> {
+    // Resolver logo a Base64 si hay URL y aún no está convertido
+    if (!this.businessLogoBase64 && this.businessLogoUrl) {
+      try { this.businessLogoBase64 = await this.toDataUrl(this.businessLogoUrl); } catch { /* ignore */ }
+    }
     this.pdfService.generate({
       businessName : this.businessName || 'Empresa',
       businessRuc  : this.businessRuc  ?? undefined,
@@ -333,6 +416,7 @@ export class PlanillaMensualComponent implements OnInit {
       monthLabel   : this.getMonthLabel(),
       sheet        : this.filteredSheet.length ? this.filteredSheet : this.sheet,
       dayTypeKeys  : this.dayTypeKeys,
+      logoBase64   : this.businessLogoBase64 || undefined,
     });
   }
 

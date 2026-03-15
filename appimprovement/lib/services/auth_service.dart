@@ -17,6 +17,12 @@ class AuthService {
   Map<String, dynamic>? get userDetail => _userDetail;
   String? get refreshToken => _refreshToken;
 
+  Future<void> logout() async {
+    _token = null;
+    _userDetail = null;
+    _refreshToken = null;
+  }
+
   Future<Map<String, dynamic>> login({required String username, required String password}) async {
     final String url = '${AppConfig.baseUrl}/api/auth/login';
 

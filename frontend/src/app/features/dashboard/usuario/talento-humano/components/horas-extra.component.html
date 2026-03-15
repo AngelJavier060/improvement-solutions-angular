@@ -279,11 +279,11 @@
           </div>
           <div class="he-field">
             <label>Departamento</label>
-            <input type="text" [(ngModel)]="formDraft.department" placeholder="Ej: Operaciones" />
+            <input type="text" [(ngModel)]="formDraft.department" [readOnly]="true" placeholder="—" />
           </div>
           <div class="he-field">
-            <label>Área / Proceso</label>
-            <input type="text" [(ngModel)]="formDraft.area" placeholder="Ej: Logística" />
+            <label>Cargo</label>
+            <input type="text" [(ngModel)]="formDraft.area" [readOnly]="true" placeholder="—" />
           </div>
           <div class="he-field">
             <label>Tipo de Reconocimiento</label>

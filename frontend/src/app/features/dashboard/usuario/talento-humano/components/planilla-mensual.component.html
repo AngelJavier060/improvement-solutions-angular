@@ -167,6 +167,35 @@
           <span class="pm-legend-dot" [style.background]="dayTypes[key].dotColor"></span>
           {{ key }} — {{ dayTypes[key].label }}
         </span>
+        <span class="pm-legend-chip" style="background:#e0f2fe;border-color:#bae6fd;color:#0369a1;">
+          <span class="pm-legend-dot" style="background:#0284c7"></span>
+          Feriado
+        </span>
+      </div>
+
+      <div class="pm-filters-row" style="margin-top:16px; align-items:end;">
+        <div class="pm-fgroup">
+          <label>FECHA FERIADO</label>
+          <input type="date" [(ngModel)]="holidayDraft.date" />
+        </div>
+        <div class="pm-fgroup">
+          <label>NOMBRE</label>
+          <input type="text" [(ngModel)]="holidayDraft.name" placeholder="Descripción (p.ej. Feriado Nacional)" />
+        </div>
+        <div class="pm-fgroup">
+          <label>&nbsp;</label>
+          <button class="pm-btn pm-btn--primary" (click)="addHoliday()">Agregar feriado</button>
+        </div>
+      </div>
+      <div class="pm-alert pm-alert--error" *ngIf="holidaysError">{{ holidaysError }}</div>
+      <div class="pm-legend" *ngIf="holidays.length">
+        <span *ngFor="let h of holidays" class="pm-legend-chip" [style.background]="h.scope==='NATIONAL' ? '#f1f5f9' : '#ecfeff'" [style.borderColor]="h.scope==='NATIONAL' ? '#e2e8f0' : '#a5f3fc'" [style.color]="h.scope==='NATIONAL' ? '#475569' : '#0e7490'">
+          <span class="pm-legend-dot" [style.background]="h.scope==='NATIONAL' ? '#64748b' : '#0891b2'"></span>
+          {{ h.date }} — {{ h.name }}
+          <button *ngIf="h.scope==='BUSINESS'" class="pm-btn pm-btn--sm pm-btn--danger" style="margin-left:8px" (click)="deleteHoliday(h)">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </span>
       </div>
     </div>
 
@@ -214,9 +243,10 @@
                 </div>
                 <!-- Celda -->
                 <div class="pm-day-cell {{ getDayClass(entry.dayType) }}"
-                     [title]="entry.dayType ? (dayTypes[entry.dayType].label || entry.dayType) : ''"
+                     [title]="(entry.holiday ? (entry.holidayName + ' — ') : '') + (entry.dayType ? (dayTypes[entry.dayType].label || entry.dayType) : '')"
                      (click)="startEdit(row.employeeId, i, $event)">
                   {{ entry.dayType || '' }}
+                  <span class="pm-hday-dot" *ngIf="entry.holiday" [title]="entry.holidayName"></span>
                 </div>
               </td>
               <td class="pm-td-total" *ngFor="let k of dayTypeKeys">{{ row.totals[k] || 0 }}</td>

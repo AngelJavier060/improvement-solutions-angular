@@ -21,6 +21,7 @@ public class OvertimeRequestService {
     private final OvertimeRequestRepository requestRepo;
     private final BusinessRepository businessRepo;
     private final BusinessEmployeeRepository employeeRepo;
+    private final AttendanceService attendanceService;
 
     private static final String UPLOAD_DIR = "uploads/overtime-pdfs/";
 
@@ -57,11 +58,17 @@ public class OvertimeRequestService {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> activities = (List<Map<String, Object>>) body.get("activities");
         if (activities != null) {
+            // Validación: no permitir registrar día extra u horas extra en jornada normal (T)
+            Set<LocalDate> datesToValidate = new HashSet<>();
             for (Map<String, Object> a : activities) {
                 OvertimeActivity act = new OvertimeActivity();
                 act.setRequest(req);
                 String dateStr = (String) a.get("activityDate");
-                if (dateStr != null && !dateStr.isBlank()) act.setActivityDate(LocalDate.parse(dateStr));
+                if (dateStr != null && !dateStr.isBlank()) {
+                    LocalDate d = LocalDate.parse(dateStr);
+                    act.setActivityDate(d);
+                    datesToValidate.add(d);
+                }
                 String startStr = (String) a.get("startTime");
                 if (startStr != null && !startStr.isBlank()) act.setStartTime(LocalTime.parse(startStr));
                 String endStr = (String) a.get("endTime");
@@ -69,6 +76,14 @@ public class OvertimeRequestService {
                 act.setDescription((String) a.getOrDefault("description", ""));
                 act.setSupportDoc((String) a.getOrDefault("supportDoc", ""));
                 req.getActivities().add(act);
+            }
+
+            // Ejecutar validación contra jornada
+            for (LocalDate d : datesToValidate) {
+                String type = attendanceService.computeDayType(businessId, employeeId, d);
+                if ("T".equalsIgnoreCase(type)) {
+                    throw new IllegalArgumentException("No es posible registrar horas/días extra el " + d + ": es un día de jornada laboral normal.");
+                }
             }
         }
 

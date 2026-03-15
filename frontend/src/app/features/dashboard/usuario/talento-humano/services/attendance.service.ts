@@ -27,6 +27,8 @@ export interface WorkDayEntry {
   date: string;
   dayType: DayType;
   notes?: string;
+  holiday?: boolean;
+  holidayName?: string;
 }
 
 export interface DayTotals {
@@ -177,6 +179,12 @@ export class AttendanceService {
 
   setWorkScheduleStartDate(businessId: number, employeeId: number, startDate: string | null): Observable<any> {
     return this.http.put(`${this.apiUrl(businessId)}/employees/${employeeId}/work-schedule-start`, { startDate });
+  }
+
+  // Day type computation for a given employee and date
+  getEmployeeDayType(businessId: number, employeeId: number, date: string): Observable<{ employeeId: number; date: string; dayType: string | null }>{
+    const params = new HttpParams().set('date', date);
+    return this.http.get<{ employeeId: number; date: string; dayType: string | null }>(`${this.apiUrl(businessId)}/employees/${employeeId}/day-type`, { params });
   }
 
   // ── Overtime Requests (nueva solicitud con múltiples actividades) ──────────
@@ -334,6 +342,39 @@ export class AttendanceService {
     const formData = new FormData();
     formData.append('file', file, file.name);
     return this.http.post<MonthlyClosureEntry>(`${this.apiUrl(businessId)}/closures/${year}/${month}/upload-signed`, formData);
+  }
+
+  // ─────────────── Holidays ───────────────
+}
+
+export interface HolidayDto {
+  id: number;
+  date: string;
+  name: string;
+  active: boolean;
+  scope: 'NATIONAL' | 'BUSINESS';
+  businessId?: number | null;
+}
+
+@Injectable({ providedIn: 'root' })
+export class AttendanceHolidayService {
+  constructor(private http: HttpClient) {}
+
+  private apiUrl(businessId: number | string): string {
+    return `${environment.apiUrl}/api/attendance/${businessId}`;
+  }
+
+  getHolidays(businessId: number, year: number, month: number): Observable<HolidayDto[]> {
+    const params = new HttpParams().set('year', year).set('month', month);
+    return this.http.get<HolidayDto[]>(`${this.apiUrl(businessId)}/holidays`, { params });
+  }
+
+  addHoliday(businessId: number, payload: { date: string; name: string }): Observable<HolidayDto> {
+    return this.http.post<HolidayDto>(`${this.apiUrl(businessId)}/holidays`, payload);
+  }
+
+  deleteHoliday(businessId: number, id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl(businessId)}/holidays/${id}`);
   }
 }
 
