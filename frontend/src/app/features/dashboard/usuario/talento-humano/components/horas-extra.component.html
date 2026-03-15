@@ -1,0 +1,375 @@
+<div class="he-root">
+
+  <!-- ── Toast notifications ──────────────────────────────────────────── -->
+  <div class="he-toast he-toast-success" *ngIf="successMsg">
+    <span class="material-symbols-outlined">check_circle</span> {{ successMsg }}
+  </div>
+  <div class="he-toast he-toast-error" *ngIf="error">
+    <span class="material-symbols-outlined">error</span> {{ error }}
+    <button class="he-toast-close" (click)="error=null">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+
+  <!-- ── Page header ───────────────────────────────────────────────────── -->
+  <div class="he-page-header">
+    <div class="he-page-header-left">
+      <h1 class="he-page-title">Reporte de Días &amp; Horas Extras</h1>
+      <p class="he-page-sub">Seguimiento detallado de jornadas adicionales — {{ businessName }}</p>
+    </div>
+    <div class="he-page-actions">
+      <button class="he-btn-secondary" (click)="loadRequests()">
+        <span class="material-symbols-outlined">refresh</span> Actualizar
+      </button>
+      <button class="he-btn-primary" (click)="openForm()">
+        <span class="material-symbols-outlined">add_circle</span> Registrar solicitud
+      </button>
+    </div>
+  </div>
+
+  <!-- ── KPI cards ─────────────────────────────────────────────────────── -->
+  <div class="he-kpi-grid">
+    <div class="he-kpi-card">
+      <div class="he-kpi-icon" style="background:#eff6ff;color:#2563eb">
+        <span class="material-symbols-outlined">event_available</span>
+      </div>
+      <div>
+        <p class="he-kpi-label">Total Días Extras</p>
+        <p class="he-kpi-value">{{ totalDays }} días</p>
+      </div>
+    </div>
+    <div class="he-kpi-card">
+      <div class="he-kpi-icon" style="background:#eef2ff;color:#4f46e5">
+        <span class="material-symbols-outlined">schedule</span>
+      </div>
+      <div>
+        <p class="he-kpi-label">Total Horas Extras</p>
+        <p class="he-kpi-value">{{ totalHours | number:'1.1-1' }} hrs</p>
+      </div>
+    </div>
+    <div class="he-kpi-card">
+      <div class="he-kpi-icon" style="background:#f5f3ff;color:#7c3aed">
+        <span class="material-symbols-outlined">group</span>
+      </div>
+      <div>
+        <p class="he-kpi-label">Promedio por Solicitud</p>
+        <p class="he-kpi-value">{{ avgHours | number:'1.1-1' }} hrs</p>
+      </div>
+    </div>
+    <div class="he-kpi-card">
+      <div class="he-kpi-icon" style="background:#fffbeb;color:#d97706">
+        <span class="material-symbols-outlined">pending_actions</span>
+      </div>
+      <div>
+        <p class="he-kpi-label">Pendientes Revisión</p>
+        <p class="he-kpi-value">{{ pendingCount }} solicitudes</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main table container ──────────────────────────────────────────── -->
+  <div class="he-table-card">
+
+    <!-- Search & filter bar -->
+    <div class="he-filter-bar">
+      <div class="he-search-box">
+        <span class="material-symbols-outlined">search</span>
+        <input [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"
+               placeholder="Buscar por empleado o cédula…" />
+      </div>
+      <div class="he-filter-controls">
+        <div class="he-select-box">
+          <span class="material-symbols-outlined">calendar_month</span>
+          <input type="month" [(ngModel)]="filterPeriod" (change)="loadRequests()" />
+        </div>
+        <div class="he-status-filters">
+          <button class="he-sf-btn" [class.active]="filterStatus===''"
+                  (click)="filterStatus=''; applyFilters()">Todos</button>
+          <button class="he-sf-btn he-sf-approved" [class.active]="filterStatus==='APROBADO'"
+                  (click)="filterStatus='APROBADO'; applyFilters()">Aprobado</button>
+          <button class="he-sf-btn he-sf-pending" [class.active]="filterStatus==='PENDIENTE'"
+                  (click)="filterStatus='PENDIENTE'; applyFilters()">Pendiente</button>
+          <button class="he-sf-btn he-sf-paid" [class.active]="filterStatus==='PAGADO'"
+                  (click)="filterStatus='PAGADO'; applyFilters()">Pagado</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="he-loading" *ngIf="loading">
+      <span class="material-symbols-outlined he-spin">progress_activity</span> Cargando registros…
+    </div>
+
+    <!-- Empty state -->
+    <div class="he-empty" *ngIf="!loading && filteredRequests.length === 0">
+      <span class="material-symbols-outlined">schedule</span>
+      <p>No hay solicitudes de horas extras en este período</p>
+      <button class="he-btn-primary" (click)="openForm()">
+        <span class="material-symbols-outlined">add_circle</span> Registrar primera solicitud
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="he-table-wrap" *ngIf="!loading && filteredRequests.length > 0">
+      <table class="he-table">
+        <thead>
+          <tr>
+            <th>Período</th>
+            <th>Empleado</th>
+            <th>Actividades</th>
+            <th class="text-center">Días</th>
+            <th class="text-center">Horas</th>
+            <th>Estado</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let req of filteredRequests; trackBy: trackById" class="he-row">
+            <td class="he-cell-period">{{ periodLabel(req.reportPeriod) }}</td>
+            <td>
+              <div class="he-emp-cell">
+                <div class="he-emp-avatar">{{ (req.employeeName || 'X').charAt(0).toUpperCase() }}</div>
+                <div>
+                  <div class="he-emp-name">{{ req.employeeName }}</div>
+                  <div class="he-emp-sub">{{ req.employeePosition || 'Sin cargo' }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="he-cell-activity">
+              <span *ngIf="req.activities && req.activities.length > 0" class="he-act-preview">
+                {{ req.activities[0].description | slice:0:50 }}<ng-container *ngIf="(req.activities[0].description || '').length > 50">…</ng-container>
+              </span>
+              <span *ngIf="!req.activities || req.activities.length === 0" class="he-cell-muted">—</span>
+            </td>
+            <td class="text-center">
+              <span class="he-badge-days" *ngIf="req.totalDays">{{ req.totalDays }} día{{ req.totalDays !== 1 ? 's' : '' }}</span>
+              <span *ngIf="!req.totalDays" class="he-cell-muted">0</span>
+            </td>
+            <td class="text-center">
+              <span class="he-badge-hours">{{ req.totalHours | number:'1.1-1' }} hrs</span>
+            </td>
+            <td>
+              <span class="he-status-badge" [ngClass]="statusClass(req.status || '')">
+                <span class="he-status-dot"></span>
+                {{ req.status || 'PENDIENTE' }}
+              </span>
+            </td>
+            <td class="text-right">
+              <div class="he-actions">
+                <!-- Descargar PDF generado -->
+                <button class="he-action-btn" title="Descargar PDF" (click)="downloadPdf(req)">
+                  <span class="material-symbols-outlined">picture_as_pdf</span>
+                </button>
+                <!-- Ver PDF firmado (si existe) -->
+                <button class="he-action-btn he-action-view" title="Ver PDF firmado"
+                        *ngIf="req.signedPdfPath" (click)="viewSignedPdf(req)">
+                  <span class="material-symbols-outlined">visibility</span>
+                </button>
+                <!-- Upload PDF firmado -->
+                <label class="he-action-btn he-action-upload" title="Cargar PDF firmado"
+                       *ngIf="req.status !== 'APROBADO'"
+                       [class.uploading]="uploadingId === req.id">
+                  <span class="material-symbols-outlined" *ngIf="uploadingId !== req.id">upload_file</span>
+                  <span class="material-symbols-outlined he-spin" *ngIf="uploadingId === req.id">progress_activity</span>
+                  <input type="file" accept=".pdf" style="display:none"
+                         (change)="onSignedPdfSelected($event, req)">
+                </label>
+                <!-- Eliminar -->
+                <button class="he-action-btn he-action-delete" title="Eliminar"
+                        *ngIf="req.status !== 'APROBADO'"
+                        (click)="deleteRequest(req)">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer count -->
+    <div class="he-table-footer" *ngIf="filteredRequests.length > 0">
+      <p>Mostrando {{ filteredRequests.length }} de {{ requests.length }} solicitudes</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     MODAL: Nueva solicitud de horas extras
+══════════════════════════════════════════════════════════════════════ -->
+<div class="he-modal-overlay" *ngIf="showForm" (click)="cancelForm()">
+  <div class="he-modal" (click)="$event.stopPropagation()">
+
+    <!-- Modal header -->
+    <div class="he-modal-header">
+      <div>
+        <h2 class="he-modal-title">
+          <span class="material-symbols-outlined">more_time</span>
+          Control de Días &amp; Horas Extras
+        </h2>
+        <p class="he-modal-sub">Registro oficial de jornada suplementaria</p>
+      </div>
+      <button class="he-modal-close" (click)="cancelForm()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="he-modal-body">
+
+      <!-- Error inside form -->
+      <div class="he-form-error" *ngIf="error">
+        <span class="material-symbols-outlined">error</span> {{ error }}
+      </div>
+
+      <!-- ── Sección 1: Datos del empleado ──────────────────────────── -->
+      <div class="he-section-title">
+        <span class="material-symbols-outlined">person</span> Datos del Empleado
+      </div>
+
+      <!-- Selector de empleado -->
+      <div class="he-emp-selector" *ngIf="!selectedEmployee">
+        <div class="he-search-box he-search-emp">
+          <span class="material-symbols-outlined">search</span>
+          <input [(ngModel)]="searchEmp" placeholder="Buscar empleado por nombre o cédula…" />
+        </div>
+        <div class="he-emp-list">
+          <div class="he-loading" *ngIf="loadingEmps">
+            <span class="material-symbols-outlined he-spin">progress_activity</span> Cargando…
+          </div>
+          <button *ngFor="let emp of filteredEmployees" class="he-emp-row"
+                  (click)="selectEmployee(emp)">
+            <div class="he-emp-avatar">{{ (emp.nombres || emp.name || 'X').charAt(0).toUpperCase() }}</div>
+            <div>
+              <div class="he-emp-name">{{ getFullName(emp) }}</div>
+              <div class="he-emp-sub">{{ emp.position || 'Sin cargo' }} · {{ emp.cedula }}</div>
+            </div>
+            <span class="material-symbols-outlined" style="margin-left:auto;color:#94a3b8">chevron_right</span>
+          </button>
+          <p *ngIf="!loadingEmps && filteredEmployees.length === 0" class="he-empty-sm">
+            Sin empleados encontrados
+          </p>
+        </div>
+      </div>
+
+      <!-- Empleado seleccionado -->
+      <div *ngIf="selectedEmployee" class="he-selected-emp">
+        <div class="he-emp-avatar he-emp-avatar-lg">
+          {{ (selectedEmployee.nombres || selectedEmployee.name || 'X').charAt(0).toUpperCase() }}
+        </div>
+        <div style="flex:1">
+          <div class="he-emp-name" style="font-size:1rem">{{ getFullName(selectedEmployee) }}</div>
+          <div class="he-emp-sub">{{ selectedEmployee.position || 'Sin cargo' }} · {{ selectedEmployee.cedula }}</div>
+        </div>
+        <button class="he-btn-ghost" (click)="selectedEmployee = null; searchEmp = ''">
+          <span class="material-symbols-outlined">edit</span> Cambiar
+        </button>
+      </div>
+
+      <!-- Datos del formulario (solo si hay empleado) -->
+      <ng-container *ngIf="selectedEmployee">
+        <div class="he-form-grid">
+          <div class="he-field">
+            <label>Período de Reporte</label>
+            <input type="month" [(ngModel)]="formDraft.reportPeriod" />
+          </div>
+          <div class="he-field">
+            <label>Jefe Inmediato</label>
+            <input type="text" [(ngModel)]="formDraft.supervisorName" placeholder="Nombre del supervisor" />
+          </div>
+          <div class="he-field">
+            <label>Departamento</label>
+            <input type="text" [(ngModel)]="formDraft.department" placeholder="Ej: Operaciones" />
+          </div>
+          <div class="he-field">
+            <label>Área / Proceso</label>
+            <input type="text" [(ngModel)]="formDraft.area" placeholder="Ej: Logística" />
+          </div>
+          <div class="he-field">
+            <label>Tipo de Reconocimiento</label>
+            <select [(ngModel)]="formDraft.recognitionType">
+              <option *ngFor="let t of recognitionTypes" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+          <div class="he-field">
+            <label>Observaciones</label>
+            <input type="text" [(ngModel)]="formDraft.notes" placeholder="Notas adicionales…" />
+          </div>
+        </div>
+
+        <!-- ── Sección 2: Tabla de actividades ───────────────────────── -->
+        <div class="he-section-title" style="margin-top:1.5rem">
+          <span class="material-symbols-outlined">calendar_month</span> Registro de Actividades y Horas
+        </div>
+
+        <div class="he-activities-table-wrap">
+          <table class="he-activities-table">
+            <thead>
+              <tr>
+                <th style="width:36px">N°</th>
+                <th style="width:130px">Fecha</th>
+                <th style="width:180px">Horas (Desde / Hasta)</th>
+                <th>Descripción de Actividades</th>
+                <th style="width:130px">Sustento</th>
+                <th style="width:60px">Hrs</th>
+                <th style="width:36px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let act of activities; let i = index">
+                <td class="text-center he-cell-muted">{{ i + 1 }}</td>
+                <td><input type="date" [(ngModel)]="act.activityDate" /></td>
+                <td>
+                  <div class="he-time-range">
+                    <input type="time" [(ngModel)]="act.startTime" />
+                    <span>–</span>
+                    <input type="time" [(ngModel)]="act.endTime" />
+                  </div>
+                </td>
+                <td><textarea rows="2" [(ngModel)]="act.description" placeholder="Describa la tarea…"></textarea></td>
+                <td><input type="text" [(ngModel)]="act.supportDoc" placeholder="ID ticket/Doc" /></td>
+                <td class="text-center">
+                  <span class="he-hrs-calc">{{ calcHours(act) | number:'1.1-1' }}h</span>
+                </td>
+                <td class="text-center">
+                  <button class="he-remove-row" (click)="removeActivity(i)"
+                          [disabled]="activities.length === 1" title="Eliminar fila">
+                    <span class="material-symbols-outlined">remove_circle</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="he-activities-footer">
+          <button class="he-btn-ghost" (click)="addActivity()">
+            <span class="material-symbols-outlined">add_circle</span> Añadir fila
+          </button>
+          <span class="he-total-hours">
+            Total: <strong>{{ formTotalHours | number:'1.1-1' }} horas</strong>
+          </span>
+        </div>
+
+        <!-- ── Declaración ───────────────────────────────────────────── -->
+        <div class="he-declaration">
+          Declaro bajo gravedad de juramento que la información aquí consignada es veraz y corresponde fielmente a las actividades extraordinarias. El reconocimiento está sujeto a la previa autorización del jefe inmediato y validación por Talento Humano.
+        </div>
+
+      </ng-container>
+    </div><!-- /modal-body -->
+
+    <!-- Modal footer -->
+    <div class="he-modal-footer">
+      <button class="he-btn-ghost" (click)="cancelForm()">
+        <span class="material-symbols-outlined">close</span> Cancelar
+      </button>
+      <button class="he-btn-primary" (click)="submitForm()"
+              [disabled]="saving || !selectedEmployee">
+        <span class="material-symbols-outlined">picture_as_pdf</span>
+        {{ saving ? 'Guardando…' : 'Guardar y Generar PDF' }}
+      </button>
+    </div>
+
+  </div><!-- /he-modal -->
+</div>

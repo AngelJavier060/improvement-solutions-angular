@@ -156,4 +156,22 @@ export class BusinessService {
   removeCardFromBusiness(businessId: number, cardId: number): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/${businessId}/cards/${cardId}`);
   }
+
+  // === MÉTODOS PARA JORNADAS DE TRABAJO ===
+  addWorkScheduleToBusiness(businessId: number, workScheduleId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/work-schedules/${workScheduleId}`, {});
+  }
+
+  removeWorkScheduleFromBusiness(businessId: number, workScheduleId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${businessId}/work-schedules/${workScheduleId}`);
+  }
+
+  // === MÉTODOS PARA HORARIOS DE TRABAJO ===
+  addWorkShiftToBusiness(businessId: number, workShiftId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/work-shifts/${workShiftId}`, {});
+  }
+
+  removeWorkShiftFromBusiness(businessId: number, workShiftId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${businessId}/work-shifts/${workShiftId}`);
+  }
 }

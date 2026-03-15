@@ -1,0 +1,57 @@
+<div class="container-fluid py-4" style="max-width: 700px;">
+  <div class="mb-4">
+    <button class="btn btn-outline-secondary btn-sm me-2" (click)="goBack()">
+      <i class="fas fa-arrow-left me-1"></i>Volver
+    </button>
+    <h4 class="d-inline-block mb-0 fw-bold">Nuevo Horario de Trabajo</h4>
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success">
+    <i class="fas fa-check-circle me-2"></i>{{ successMessage }}
+  </div>
+  <div *ngIf="error" class="alert alert-danger">
+    <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-4">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" formControlName="name"
+            placeholder="Ej: Diurno, Nocturno, Rotativo..."
+            [class.is-invalid]="isFieldInvalid('name')" />
+          <div *ngIf="isFieldInvalid('name')" class="invalid-feedback">
+            El nombre es obligatorio (máx. 100 caracteres).
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Descripción</label>
+          <textarea class="form-control" formControlName="description" rows="3"
+            placeholder="Ej: 08:00 a 17:00, lunes a viernes"
+            [class.is-invalid]="isFieldInvalid('description')"></textarea>
+          <div *ngIf="isFieldInvalid('description')" class="invalid-feedback">
+            Máximo 500 caracteres.
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" formControlName="active" id="activeCheck" />
+            <label class="form-check-label" for="activeCheck">Activo</label>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary" [disabled]="loading">
+            <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+            <i *ngIf="!loading" class="fas fa-save me-1"></i>
+            Guardar
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="goBack()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

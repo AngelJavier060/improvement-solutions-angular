@@ -6,6 +6,11 @@ import { EmployeeDetailComponent } from './components/employee-detail.component'
 import { DocumentsCertificationsComponent } from './components/documents-certifications.component';
 
 import { TalentoHumanoDashboardComponent } from './talento-humano-dashboard.component';
+import { PlanillaMensualComponent } from './components/planilla-mensual.component';
+import { HorasExtraComponent } from './components/horas-extra.component';
+import { VacacionesComponent } from './components/vacaciones.component';
+import { PermisosComponent } from './components/permisos.component';
+import { AccidentesComponent } from './components/accidentes.component';
 
 const routes: Routes = [
   {
@@ -30,11 +35,6 @@ const routes: Routes = [
         path: 'gestion-empleados',
         component: GestionEmpleadosComponent
       },
-      // Ruta para cargar empleados por RUC de la empresa (multi-empresa)
-      {
-        path: ':businessRuc',
-        component: GestionEmpleadosComponent
-      },
       // Ruta alternativa para cargar por ID de empresa
       {
         path: 'by-id/:businessId',
@@ -49,6 +49,32 @@ const routes: Routes = [
       {
         path: 'documentos-certificaciones',
         component: DocumentsCertificationsComponent
+      },
+      // ── Módulos de Control de Asistencia ──
+      {
+        path: 'planilla-mensual',
+        component: PlanillaMensualComponent
+      },
+      {
+        path: 'horas-extra',
+        component: HorasExtraComponent
+      },
+      {
+        path: 'vacaciones',
+        component: VacacionesComponent
+      },
+      {
+        path: 'permisos',
+        component: PermisosComponent
+      },
+      {
+        path: 'accidentes',
+        component: AccidentesComponent
+      },
+      // Ruta wildcard al final: cargar empleados por RUC de empresa (debe ir ÚLTIMA)
+      {
+        path: ':businessRuc',
+        component: GestionEmpleadosComponent
       }
     ]
   }

@@ -1,0 +1,133 @@
+<div class="attendance-module">
+  <div class="module-header">
+    <div>
+      <nav class="breadcrumb-nav">
+        <button class="btn-link" (click)="goBack()"><i class="fas fa-arrow-left me-1"></i> Planilla</button>
+        <span class="sep">/</span><span>Vacaciones</span>
+      </nav>
+      <h2 class="module-title"><i class="fas fa-umbrella-beach me-2 text-blue"></i>Control de Vacaciones</h2>
+      <p class="module-subtitle">Registra y gestiona los períodos de vacaciones — {{ businessName }}</p>
+    </div>
+  </div>
+
+  <div class="alert-success" *ngIf="successMsg">
+    <i class="fas fa-check-circle me-2"></i>{{ successMsg }}
+  </div>
+
+  <div class="two-col-layout">
+
+    <!-- Lista empleados -->
+    <div class="employees-panel">
+      <div class="panel-head">
+        <span class="panel-title">Personal activo</span>
+        <div class="search-small">
+          <i class="fas fa-search"></i>
+          <input [(ngModel)]="searchEmp" placeholder="Buscar…" />
+        </div>
+      </div>
+      <div class="emp-list">
+        <div *ngIf="loadingEmps" class="mini-loader">Cargando…</div>
+        <button *ngFor="let emp of filteredEmployees"
+                class="emp-btn"
+                [class.selected]="selectedEmployee?.id === emp.id"
+                (click)="selectEmployee(emp)">
+          <div class="emp-avatar">{{ (emp.nombres || emp.name || 'X').charAt(0).toUpperCase() }}</div>
+          <div class="emp-info">
+            <div class="emp-name">{{ getFullName(emp) }}</div>
+            <div class="emp-sub">{{ emp.position || 'Sin cargo' }} · {{ emp.cedula }}</div>
+          </div>
+          <i class="fas fa-chevron-right emp-arrow"></i>
+        </button>
+        <p *ngIf="!loadingEmps && filteredEmployees.length === 0" class="no-data-sm">Sin personal encontrado</p>
+      </div>
+    </div>
+
+    <!-- Panel derecho -->
+    <div class="right-panel">
+
+      <!-- Formulario -->
+      <div class="form-card" *ngIf="showForm && selectedEmployee">
+        <div class="form-card-head">
+          <span>Registrar vacaciones — <strong>{{ getFullName(selectedEmployee) }}</strong></span>
+          <button class="btn-icon" (click)="cancelForm()"><i class="fas fa-times"></i></button>
+        </div>
+        <form [formGroup]="form" (ngSubmit)="submitForm()" class="form-grid">
+          <div class="field-group">
+            <label>Fecha inicio <span class="required">*</span></label>
+            <input type="date" formControlName="startDate" />
+          </div>
+          <div class="field-group">
+            <label>Fecha fin <span class="required">*</span></label>
+            <input type="date" formControlName="endDate" />
+          </div>
+          <div class="field-group">
+            <label>Días acumulados</label>
+            <input type="number" formControlName="daysAccumulated" min="0" />
+          </div>
+          <div class="field-group">
+            <label>Estado</label>
+            <select formControlName="status">
+              <option value="APROBADO">Aprobado</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="RECHAZADO">Rechazado</option>
+            </select>
+          </div>
+          <div class="field-group full">
+            <label>Observaciones</label>
+            <textarea formControlName="notes" rows="2" placeholder="Notas adicionales…"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-cancel" (click)="cancelForm()">Cancelar</button>
+            <button type="submit" class="btn-save" [disabled]="form.invalid || saving">
+              <i class="fas fa-save me-1"></i>{{ saving ? 'Guardando…' : 'Guardar registro' }}
+            </button>
+          </div>
+        </form>
+        <div class="alert-error" *ngIf="error">{{ error }}</div>
+      </div>
+
+      <!-- Registros -->
+      <div class="records-card">
+        <div class="records-head">
+          <span class="panel-title">Registros del período</span>
+          <div class="period-filters">
+            <select [(ngModel)]="filterYear"  (change)="loadRecords()">
+              <option *ngFor="let y of availableYears" [value]="y">{{ y }}</option>
+            </select>
+            <select [(ngModel)]="filterMonth" (change)="loadRecords()">
+              <option *ngFor="let m of months" [value]="m.v">{{ m.l }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="mini-loader" *ngIf="loading">Cargando registros…</div>
+        <div class="no-data" *ngIf="!loading && records.length === 0">
+          <i class="fas fa-umbrella-beach fa-2x text-muted mb-2"></i>
+          <p>No hay registros de vacaciones en este período</p>
+        </div>
+        <table class="records-table" *ngIf="!loading && records.length > 0">
+          <thead>
+            <tr>
+              <th>Empleado</th><th>Inicio</th><th>Fin</th>
+              <th>Días</th><th>Estado</th><th>Notas</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of records">
+              <td><span class="emp-pill">{{ r.employeeName }}</span></td>
+              <td>{{ r.startDate }}</td>
+              <td>{{ r.endDate }}</td>
+              <td><span class="badge-days">{{ r.daysTaken }}d</span></td>
+              <td><span class="badge-status {{ getStatusClass(r.status || '') }}">{{ r.status }}</span></td>
+              <td class="reason-cell">{{ r.notes || '—' }}</td>
+              <td>
+                <button class="btn-delete" (click)="deleteRecord(r.id!)" title="Eliminar">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

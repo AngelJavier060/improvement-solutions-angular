@@ -77,6 +77,12 @@ public class BusinessEmployeeResponseDto {
     private String etniaName;
     private String degreeName;
     
+    // Jornada y horario de trabajo
+    private Long workScheduleId;
+    private String workScheduleName;
+    private Long workShiftId;
+    private String workShiftName;
+
     // Empresa contratista y bloque asociados
     private Long contractorCompanyId;
     private String contractorCompanyName;

@@ -8,13 +8,13 @@ import { BusinessContextService } from '../../../../core/services/business-conte
   styleUrls: ['./talento-humano.component.scss']
 })
 export class TalentoHumanoComponent implements OnInit {
-  isCollapsed = true;
-  isMenuExpanded = false;
+  isCollapsed = false;
+  isAttendanceExpanded = false;
   businessName = 'Improvement Solutions';
   businessRuc = '';
 
   private readonly SIDEBAR_COLLAPSED_KEY = 'talentoHumano_sidebarCollapsed';
-  private readonly MENU_EXPANDED_KEY = 'talentoHumano_menuExpanded';
+  private readonly ATTENDANCE_EXPANDED_KEY = 'talentoHumano_attendanceExpanded';
 
   constructor(
     private route: ActivatedRoute,
@@ -30,32 +30,22 @@ export class TalentoHumanoComponent implements OnInit {
     this.saveSidebarState();
   }
 
-  toggleMenu(): void {
-    this.isMenuExpanded = !this.isMenuExpanded;
-    this.saveMenuState();
+  toggleAttendance(): void {
+    this.isAttendanceExpanded = !this.isAttendanceExpanded;
+    try { localStorage.setItem(this.ATTENDANCE_EXPANDED_KEY, JSON.stringify(this.isAttendanceExpanded)); } catch { }
   }
 
   private saveSidebarState(): void {
-    try {
-      localStorage.setItem(this.SIDEBAR_COLLAPSED_KEY, JSON.stringify(this.isCollapsed));
-    } catch (e) { /* ignore */ }
-  }
-
-  private saveMenuState(): void {
-    try {
-      localStorage.setItem(this.MENU_EXPANDED_KEY, JSON.stringify(this.isMenuExpanded));
-    } catch (e) { /* ignore */ }
+    try { localStorage.setItem(this.SIDEBAR_COLLAPSED_KEY, JSON.stringify(this.isCollapsed)); } catch (e) { }
   }
 
   private loadSavedState(): void {
-    // Requisito: el menú lateral debe permanecer recogido por defecto
-    // Forzar estado inicial (y persistirlo) a colapsado/recogido
-    this.isCollapsed = true;
-    this.isMenuExpanded = false;
     try {
-      localStorage.setItem(this.SIDEBAR_COLLAPSED_KEY, JSON.stringify(this.isCollapsed));
-      localStorage.setItem(this.MENU_EXPANDED_KEY, JSON.stringify(this.isMenuExpanded));
-    } catch { /* ignore */ }
+      const collapsed = localStorage.getItem(this.SIDEBAR_COLLAPSED_KEY);
+      this.isCollapsed = collapsed !== null ? JSON.parse(collapsed) : false;
+      const att = localStorage.getItem(this.ATTENDANCE_EXPANDED_KEY);
+      this.isAttendanceExpanded = att !== null ? JSON.parse(att) : false;
+    } catch { this.isCollapsed = false; this.isAttendanceExpanded = false; }
   }
 
   private loadBusinessInfo(): void {

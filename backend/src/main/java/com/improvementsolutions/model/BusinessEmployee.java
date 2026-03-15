@@ -13,8 +13,8 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"business", "gender", "civilStatus", "etnia", "degree", "positionEntity", "department", "typeContract", "employee", "contractorCompany", "contractorBlock"})
-@EqualsAndHashCode(exclude = {"business", "gender", "civilStatus", "etnia", "degree", "positionEntity", "department", "typeContract", "employee", "contractorCompany", "contractorBlock"})
+@ToString(exclude = {"business", "gender", "civilStatus", "etnia", "degree", "positionEntity", "department", "typeContract", "employee", "contractorCompany", "contractorBlock", "workSchedule", "workShift"})
+@EqualsAndHashCode(exclude = {"business", "gender", "civilStatus", "etnia", "degree", "positionEntity", "department", "typeContract", "employee", "contractorCompany", "contractorBlock", "workSchedule", "workShift"})
 public class BusinessEmployee {
     
     @Id
@@ -151,6 +151,17 @@ public class BusinessEmployee {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contractor_block_id")
     private ContractorBlock contractorBlock;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "work_schedule_id")
+    private WorkSchedule workSchedule;
+
+    @Column(name = "work_schedule_start_date")
+    private LocalDate workScheduleStartDate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "work_shift_id")
+    private WorkShift workShift;
 
     @PrePersist
     protected void onCreate() {

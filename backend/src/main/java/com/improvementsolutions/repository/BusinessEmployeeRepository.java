@@ -19,7 +19,8 @@ public interface BusinessEmployeeRepository extends JpaRepository<BusinessEmploy
     @EntityGraph(attributePaths = {
         "business", "gender", "civilStatus", "etnia", "degree",
         "positionEntity", "department", "typeContract",
-        "contractorCompany", "contractorBlock"
+        "contractorCompany", "contractorBlock",
+        "workSchedule", "workShift"
     })
     List<BusinessEmployee> findWithRelationsByBusinessId(Long businessId);
     

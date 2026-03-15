@@ -51,6 +51,8 @@ public class CreateBusinessEmployeeDto {
     private Long positionId;
     private Long departmentId;
     private Long typeContractId;
+    private Long workScheduleId;
+    private Long workShiftId;
     private Double salario; // Agregado campo salario
     
     // Información de empresas contratistas y bloques (opcional)

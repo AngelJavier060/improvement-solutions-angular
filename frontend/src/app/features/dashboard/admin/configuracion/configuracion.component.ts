@@ -129,16 +129,30 @@ export class ConfiguracionComponent implements OnInit {
     },
     {
       nombre: 'Inventario - Categorías',
-      descripcion: 'Gestionar categorías de productos de inventario por empresa',
+      descripcion: 'Gestionar el catálogo general de categorías de productos de inventario',
       ruta: 'inventario-categorias',
       icono: 'fas fa-tags',
       proximamente: false
     },
     {
       nombre: 'Inventario - Proveedores',
-      descripcion: 'Gestionar proveedores del inventario por empresa',
+      descripcion: 'Gestionar el catálogo general de proveedores de inventario',
       ruta: 'inventario-proveedores',
       icono: 'fas fa-truck',
+      proximamente: false
+    },
+    {
+      nombre: 'Jornadas de Trabajo',
+      descripcion: 'Gestionar las jornadas de trabajo del personal (Ej: 14x7, 5x2)',
+      ruta: 'jornadas-trabajo',
+      icono: 'fas fa-calendar-alt',
+      proximamente: false
+    },
+    {
+      nombre: 'Horarios de Trabajo',
+      descripcion: 'Gestionar los horarios de trabajo del personal (Ej: Diurno, Nocturno, Rotativo)',
+      ruta: 'horarios-trabajo',
+      icono: 'fas fa-clock',
       proximamente: false
     },
   ];

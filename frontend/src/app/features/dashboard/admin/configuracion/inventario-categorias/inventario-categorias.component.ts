@@ -32,7 +32,9 @@ export class InventarioCategoriasComponent implements OnInit {
       name: ['', [Validators.required, Validators.maxLength(50)]],
       description: ['']
     });
-    if (this.ruc) this.load(); else this.error = 'Seleccione una empresa activa para continuar.';
+    if (this.ruc) {
+      this.load();
+    }
   }
 
   load(): void {

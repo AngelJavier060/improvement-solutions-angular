@@ -1,10 +1,21 @@
 <div class="container py-3">
   <h3 class="mb-3">Proveedores de Inventario</h3>
- 
+
 
   <div *ngIf="error" class="alert alert-danger py-2">{{ error }}</div>
   <div *ngIf="ok" class="alert alert-success py-2">{{ ok }}</div>
 
+  <!-- Mensaje informativo cuando no hay un contexto de empresa activo -->
+  <div *ngIf="!ruc" class="alert alert-info py-2 mb-3">
+    <i class="fas fa-info-circle me-1"></i>
+    Este módulo define el catálogo general de proveedores de inventario.
+    Para asociarlos a una empresa en particular, utilice el panel de <strong>Mi Empresa</strong>
+    en <code>/dashboard/admin/empresas/admin/&lt;id&gt;</code> y la sección
+    <strong>Inventario - Proveedores</strong>.
+  </div>
+
+  <!-- Formulario y tabla solo cuando hay una empresa seleccionada -->
+  <ng-container *ngIf="ruc">
   <form [formGroup]="form" (ngSubmit)="submit()" class="row g-2 mb-3">
     <div class="col-12 col-md-4">
       <label class="form-label">Nombre</label>
@@ -73,4 +84,5 @@
       </tbody>
     </table>
   </div>
+  </ng-container>
 </div>

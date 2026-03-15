@@ -51,6 +51,8 @@ public class UpdateBusinessEmployeeDto {
     private Long positionId;
     private Long departmentId;
     private Long typeContractId;
+    private Long workScheduleId;
+    private Long workShiftId;
     // Empresa contratista y bloque
     private Long contractorCompanyId;
     private Long contractorBlockId;

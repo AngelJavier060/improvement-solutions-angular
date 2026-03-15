@@ -20,6 +20,11 @@ import { EmployeeCoursesComponent } from './components/employee-courses.componen
 import { EmployeeCardsComponent } from './components/employee-cards.component';
 import { TalentoHumanoChartsComponent } from './components/talento-humano-charts.component';
 import { CapitalizePipe } from '../../../../pipes/capitalize.pipe';
+import { PlanillaMensualComponent } from './components/planilla-mensual.component';
+import { HorasExtraComponent } from './components/horas-extra.component';
+import { VacacionesComponent } from './components/vacaciones.component';
+import { PermisosComponent } from './components/permisos.component';
+import { AccidentesComponent } from './components/accidentes.component';
 
 @NgModule({
   declarations: [
@@ -36,7 +41,12 @@ import { CapitalizePipe } from '../../../../pipes/capitalize.pipe';
     EmployeeCoursesComponent,
     EmployeeCardsComponent,
     TalentoHumanoChartsComponent,
-    CapitalizePipe
+    CapitalizePipe,
+    PlanillaMensualComponent,
+    HorasExtraComponent,
+    VacacionesComponent,
+    PermisosComponent,
+    AccidentesComponent
   ],
   imports: [
     CommonModule,

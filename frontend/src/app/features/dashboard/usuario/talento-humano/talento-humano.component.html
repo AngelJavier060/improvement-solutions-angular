@@ -1,75 +1,147 @@
 <div class="talento-humano-container">
   <div class="d-flex layout-row">
+
     <!-- Toggle button -->
-    <button class="sidebar-toggle btn btn-light shadow-sm" [class.collapsed]="isCollapsed" type="button" (click)="toggleSidebar()">
+    <button class="sidebar-toggle btn btn-light shadow-sm"
+            [class.collapsed]="isCollapsed"
+            type="button"
+            (click)="toggleSidebar()">
       <i class="fas" [ngClass]="isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
     </button>
-    <!-- Sidebar Lateral Mejorado -->
-  <aside class="sidebar-talento shadow-lg" [class.collapsed]="isCollapsed">
-  <div class="sidebar-header pt-4 pb-2">
-      <div class="sidebar-icon mb-2">
-        <i class="fas fa-users"></i>
-      </div>
-      <h4 class="sidebar-title">Talento Humano</h4>
-    </div>
-    
-    <!-- Collapsible Business Section -->
-    <div class="sidebar-section" *ngIf="!isCollapsed">
-      <div class="section-header" (click)="toggleMenu()" [class.expanded]="isMenuExpanded">
-        <div class="section-icon">
-          <i class="fas fa-building"></i>
-        </div>
-        <div class="section-info">
-          <span class="section-title">{{ businessName }}</span>
-          <small class="section-subtitle">Especialistas en QHSE</small>
-        </div>
-        <i class="fas section-chevron" [ngClass]="isMenuExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-      </div>
-    </div>
 
-    <nav class="sidebar-nav" [class.mt-2]="!isCollapsed" [class.mt-4]="isCollapsed" [class.menu-collapsed]="!isMenuExpanded && !isCollapsed">
-      <ul [class.d-none]="!isMenuExpanded && !isCollapsed">
-        <li>
-          <a routerLink="inicio" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">
-            <i class="fas fa-home"></i>
-            <span>Inicio</span>
-          </a>
-        </li>
-        <li>
-          <a routerLink="gestion-empleados" routerLinkActive="active" class="nav-link">
-            <i class="fas fa-user-friends"></i>
-            <span>Gestión de Empleados</span>
-          </a>
-        </li>
-        <li>
-          <a [routerLink]="['employee', '0603965187']" [queryParams]="{ tab: 'employees' }" routerLinkActive="active" class="nav-link">
-            <i class="fas fa-file-alt"></i>
-            <span>Documentos y Certificaciones</span>
-          </a>
-        </li>
-        <li>
-          <a href="#" class="nav-link disabled">
-            <i class="fas fa-chart-bar"></i>
-            <span>Reportes (Próximamente)</span>
-          </a>
-        </li>
-        <li>
-          <a href="#" class="nav-link disabled">
-            <i class="fas fa-cog"></i>
-            <span>Configuración (Próximamente)</span>
-          </a>
-        </li>
-      </ul>
-    </nav>
-  </aside>
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar-talento shadow-lg" [class.collapsed]="isCollapsed">
 
-    <div class="flex-grow-1 d-flex flex-column content-col" [class.full]="isCollapsed"
-         [style.margin-left.px]="isCollapsed ? 128 : 356"
-         [style.width]="isCollapsed ? 'calc(100% - 128px)' : 'calc(100% - 356px)'">
-      <!-- Content Area Mejorada -->
+      <!-- Cabecera -->
+      <div class="sidebar-header pt-4 pb-2">
+        <div class="sidebar-icon mb-2">
+          <i class="fas fa-users"></i>
+        </div>
+        <h4 class="sidebar-title" *ngIf="!isCollapsed">Talento Humano</h4>
+      </div>
+
+      <!-- Empresa activa (solo informativo, sin colapso) -->
+      <div class="sidebar-business-info" *ngIf="!isCollapsed">
+        <i class="fas fa-building me-2"></i>
+        <span class="biz-name">{{ businessName }}</span>
+      </div>
+
+      <!-- Navegación principal -->
+      <nav class="sidebar-nav mt-2">
+        <ul>
+
+          <!-- Inicio -->
+          <li>
+            <a routerLink="inicio"
+               routerLinkActive="active"
+               [routerLinkActiveOptions]="{ exact: true }"
+               class="nav-link"
+               title="Inicio">
+              <i class="fas fa-home"></i>
+              <span *ngIf="!isCollapsed">Inicio</span>
+            </a>
+          </li>
+
+          <!-- Gestión de Empleados -->
+          <li>
+            <a routerLink="gestion-empleados"
+               routerLinkActive="active"
+               class="nav-link"
+               title="Gestión de Empleados">
+              <i class="fas fa-user-friends"></i>
+              <span *ngIf="!isCollapsed">Gestión de Empleados</span>
+            </a>
+          </li>
+
+          <!-- Documentos y Certificaciones -->
+          <li>
+            <a routerLink="documentos-certificaciones"
+               routerLinkActive="active"
+               class="nav-link"
+               title="Documentos y Certificaciones">
+              <i class="fas fa-file-certificate"></i>
+              <span *ngIf="!isCollapsed">Documentos y<br>Certificaciones</span>
+            </a>
+          </li>
+
+          <!-- ── Control de Asistencia (con submenú) ── -->
+          <li class="nav-group" [class.open]="isAttendanceExpanded">
+
+            <!-- Cabecera del grupo -->
+            <button class="nav-link nav-group-toggle w-100 text-start"
+                    (click)="toggleAttendance()"
+                    title="Control de Asistencia"
+                    type="button">
+              <i class="fas fa-calendar-check"></i>
+              <span *ngIf="!isCollapsed">Control de Asistencia</span>
+              <i *ngIf="!isCollapsed"
+                 class="fas ms-auto nav-chevron"
+                 [ngClass]="isAttendanceExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+            </button>
+
+            <!-- Sub-items -->
+            <ul class="nav-submenu" *ngIf="isAttendanceExpanded && !isCollapsed">
+              <li>
+                <a routerLink="planilla-mensual"
+                   routerLinkActive="active"
+                   class="nav-link nav-sublink"
+                   title="Planilla Mensual">
+                  <i class="fas fa-table"></i>
+                  <span>Planilla Mensual</span>
+                </a>
+              </li>
+              <li>
+                <a routerLink="horas-extra"
+                   routerLinkActive="active"
+                   class="nav-link nav-sublink"
+                   title="Horas Extras">
+                  <i class="fas fa-clock"></i>
+                  <span>Horas Extras</span>
+                </a>
+              </li>
+              <li>
+                <a routerLink="vacaciones"
+                   routerLinkActive="active"
+                   class="nav-link nav-sublink"
+                   title="Vacaciones Anuales">
+                  <i class="fas fa-umbrella-beach"></i>
+                  <span>Vacaciones Anuales</span>
+                </a>
+              </li>
+              <li>
+                <a routerLink="permisos"
+                   routerLinkActive="active"
+                   class="nav-link nav-sublink"
+                   title="Permisos">
+                  <i class="fas fa-file-signature"></i>
+                  <span>Permisos</span>
+                </a>
+              </li>
+              <li>
+                <a routerLink="accidentes"
+                   routerLinkActive="active"
+                   class="nav-link nav-sublink"
+                   title="Accidentes">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  <span>Accidentes</span>
+                </a>
+              </li>
+            </ul>
+          </li>
+
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- ── Contenido principal ── -->
+    <div class="flex-grow-1 d-flex flex-column content-col"
+         [class.full]="isCollapsed"
+         [style.margin-left.px]="isCollapsed ? 64 : 260"
+         [style.width]="isCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 260px)'">
       <div class="module-content flex-grow-1">
         <router-outlet></router-outlet>
       </div>
     </div>
+
   </div>
 </div>

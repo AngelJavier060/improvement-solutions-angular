@@ -16,6 +16,10 @@ import { ContractorBlockService } from '../../../../services/contractor-block.se
 import { ApprovalService } from '../../../../services/approval.service';
 import { CourseCertificationService } from '../../../../services/course-certification.service';
 import { CardService } from '../../../../services/card.service';
+import { WorkScheduleService } from '../../../../services/work-schedule.service';
+import { WorkShiftService } from '../../../../services/work-shift.service';
+import { WorkSchedule } from '../../../../models/work-schedule.model';
+import { WorkShift } from '../../../../models/work-shift.model';
 import { environment } from '../../../../../environments/environment';
 import { BusinessAdapterService } from '../../../../core/adapters/business-adapter.service';
 import { QrLegalDocsService } from '../../../../core/services/qr-legal-docs.service';
@@ -102,6 +106,14 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   showAsignContractorModal = false;
   showAsignCourseCertModal = false;
   showAsignCardModal = false;
+  showAsignWorkScheduleModal = false;
+  showAsignWorkShiftModal = false;
+
+  // Catálogos globales de jornadas y horarios
+  workSchedules: WorkSchedule[] = [];
+  workShifts: WorkShift[] = [];
+  selectedWorkSchedules: number[] = [];
+  selectedWorkShifts: number[] = [];
 
   // Variables para selección de elementos (permitir múltiples selecciones)
   selectedDepartamentos: number[] = [];
@@ -146,7 +158,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   editSupplierForm: { name: string; ruc: string; phone: string; email: string; address: string } = { name: '', ruc: '', phone: '', email: '', address: '' };
 
   // Contexto de edición inline por sección
-  editingContext: { section: 'department' | 'position' | 'type_document' | 'course_cert' | 'card' | 'iess' | 'obligation' | 'type_contract' | 'contractor_company', originalId: number } | null = null;
+  editingContext: { section: 'department' | 'position' | 'type_document' | 'course_cert' | 'card' | 'iess' | 'obligation' | 'type_contract' | 'contractor_company' | 'work_schedule' | 'work_shift', originalId: number } | null = null;
 
   // Estado de eliminación en curso para matrices de obligación
   private deletingObligationIds: Set<number> = new Set<number>();
@@ -229,6 +241,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private approvalService: ApprovalService,
     private courseCertificationService: CourseCertificationService,
     private cardService: CardService,
+    private workScheduleService: WorkScheduleService,
+    private workShiftService: WorkShiftService,
     private employeeService: EmployeeService,
     private inventoryCategoryService: InventoryCategoryService,
     private inventorySupplierService: InventorySupplierService,
@@ -677,6 +691,178 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.tarjetas = [];
       }
     });
+  }
+
+  loadWorkSchedules(): void {
+    this.workScheduleService.getAll().subscribe({
+      next: (data) => { this.workSchedules = data || []; },
+      error: () => { this.workSchedules = []; }
+    });
+  }
+
+  loadWorkShifts(): void {
+    this.workShiftService.getAll().subscribe({
+      next: (data) => { this.workShifts = data || []; },
+      error: () => { this.workShifts = []; }
+    });
+  }
+
+  // === JORNADAS DE TRABAJO ===
+  openAsignWorkScheduleModal(): void {
+    this.selectedWorkSchedules = [];
+    this.showAsignWorkScheduleModal = true;
+  }
+
+  editWorkSchedule(ws: any): void {
+    this.selectedWorkSchedules = [Number(ws?.id)];
+    this.editingContext = { section: 'work_schedule', originalId: Number(ws?.id) };
+    this.showAsignWorkScheduleModal = true;
+  }
+
+  asignWorkSchedule(): void {
+    if (!this.selectedWorkSchedules.length || !this.empresa?.id) return;
+    const performAdd = async () => {
+      if (this.editingContext?.section === 'work_schedule' && this.editingContext.originalId != null) {
+        const newId = Number(this.selectedWorkSchedules[0]);
+        if (newId !== Number(this.editingContext.originalId)) {
+          await this.businessService.removeWorkScheduleFromBusiness(this.empresa.id, Number(this.editingContext.originalId)).toPromise();
+        }
+      }
+      const ids = Array.from(new Set(this.selectedWorkSchedules.map((n: number) => Number(n)).filter((n: number) => !isNaN(n) && n > 0)));
+      const assignedIds = new Set<number>((this.empresa?.work_schedules || []).map((w: any) => Number(w?.id)).filter((n: number) => !isNaN(n)));
+      const idsToAdd = ids.filter((id: number) => {
+        if (this.editingContext?.section === 'work_schedule' && Number(this.editingContext.originalId) === id) return false;
+        return !assignedIds.has(id);
+      });
+      for (const wsId of idsToAdd) {
+        try {
+          await this.businessService.addWorkScheduleToBusiness(this.empresa.id, Number(wsId)).toPromise();
+        } catch (e: any) {
+          const status = e?.status;
+          if (status !== 409) throw e;
+        }
+      }
+      idsToAdd.forEach(selectedId => {
+        const item = this.workSchedules.find((w: any) => Number(w.id) === Number(selectedId));
+        if (item && !(this.empresa.work_schedules || []).some((w: any) => Number(w.id) === Number(selectedId))) {
+          if (!this.empresa.work_schedules) this.empresa.work_schedules = [];
+          this.empresa.work_schedules.push({ id: item.id, name: item.name });
+        }
+      });
+    };
+    performAdd().then(() => {
+      this.selectedWorkSchedules = [];
+      this.showAsignWorkScheduleModal = false;
+      this.editingContext = null;
+      this.loadData();
+      alert('Jornadas de trabajo asignadas exitosamente');
+    }).catch((error: any) => {
+      console.error('Error al asignar jornadas de trabajo:', error);
+      this.loadData();
+      alert('Error al asignar jornadas de trabajo.');
+    });
+  }
+
+  removeWorkSchedule(wsId: number): void {
+    if (!this.empresa?.id) return;
+    if (confirm('¿Está seguro de eliminar esta jornada de la empresa?')) {
+      this.businessService.removeWorkScheduleFromBusiness(this.empresa.id, Number(wsId)).subscribe({
+        next: () => {
+          this.empresa.work_schedules = (this.empresa.work_schedules || []).filter((w: any) => Number(w.id) !== Number(wsId));
+          alert('Jornada de trabajo eliminada exitosamente');
+        },
+        error: () => { alert('Error al eliminar la jornada de trabajo.'); }
+      });
+    }
+  }
+
+  getAvailableWorkSchedules(): WorkSchedule[] {
+    if (!Array.isArray(this.workSchedules)) return [];
+    const assignedIds = new Set<number>((this.empresa?.work_schedules || []).map((w: any) => Number(w?.id)).filter((n: number) => !isNaN(n)));
+    const selectedIds = new Set<number>((this.selectedWorkSchedules || []).map((n: number) => Number(n)).filter((n: number) => !isNaN(n)));
+    if (this.editingContext?.section === 'work_schedule') {
+      return this.workSchedules.filter((w: any) => !assignedIds.has(Number(w.id)) || Number(this.editingContext?.originalId) === Number(w.id));
+    }
+    return this.workSchedules.filter((w: any) => !assignedIds.has(Number(w.id)) || selectedIds.has(Number(w.id)));
+  }
+
+  // === HORARIOS DE TRABAJO ===
+  openAsignWorkShiftModal(): void {
+    this.selectedWorkShifts = [];
+    this.showAsignWorkShiftModal = true;
+  }
+
+  editWorkShift(ws: any): void {
+    this.selectedWorkShifts = [Number(ws?.id)];
+    this.editingContext = { section: 'work_shift', originalId: Number(ws?.id) };
+    this.showAsignWorkShiftModal = true;
+  }
+
+  asignWorkShift(): void {
+    if (!this.selectedWorkShifts.length || !this.empresa?.id) return;
+    const performAdd = async () => {
+      if (this.editingContext?.section === 'work_shift' && this.editingContext.originalId != null) {
+        const newId = Number(this.selectedWorkShifts[0]);
+        if (newId !== Number(this.editingContext.originalId)) {
+          await this.businessService.removeWorkShiftFromBusiness(this.empresa.id, Number(this.editingContext.originalId)).toPromise();
+        }
+      }
+      const ids = Array.from(new Set(this.selectedWorkShifts.map((n: number) => Number(n)).filter((n: number) => !isNaN(n) && n > 0)));
+      const assignedIds = new Set<number>((this.empresa?.work_shifts || []).map((w: any) => Number(w?.id)).filter((n: number) => !isNaN(n)));
+      const idsToAdd = ids.filter((id: number) => {
+        if (this.editingContext?.section === 'work_shift' && Number(this.editingContext.originalId) === id) return false;
+        return !assignedIds.has(id);
+      });
+      for (const wshId of idsToAdd) {
+        try {
+          await this.businessService.addWorkShiftToBusiness(this.empresa.id, Number(wshId)).toPromise();
+        } catch (e: any) {
+          const status = e?.status;
+          if (status !== 409) throw e;
+        }
+      }
+      idsToAdd.forEach(selectedId => {
+        const item = this.workShifts.find((w: any) => Number(w.id) === Number(selectedId));
+        if (item && !(this.empresa.work_shifts || []).some((w: any) => Number(w.id) === Number(selectedId))) {
+          if (!this.empresa.work_shifts) this.empresa.work_shifts = [];
+          this.empresa.work_shifts.push({ id: item.id, name: item.name });
+        }
+      });
+    };
+    performAdd().then(() => {
+      this.selectedWorkShifts = [];
+      this.showAsignWorkShiftModal = false;
+      this.editingContext = null;
+      this.loadData();
+      alert('Horarios de trabajo asignados exitosamente');
+    }).catch((error: any) => {
+      console.error('Error al asignar horarios de trabajo:', error);
+      this.loadData();
+      alert('Error al asignar horarios de trabajo.');
+    });
+  }
+
+  removeWorkShift(wshId: number): void {
+    if (!this.empresa?.id) return;
+    if (confirm('¿Está seguro de eliminar este horario de la empresa?')) {
+      this.businessService.removeWorkShiftFromBusiness(this.empresa.id, Number(wshId)).subscribe({
+        next: () => {
+          this.empresa.work_shifts = (this.empresa.work_shifts || []).filter((w: any) => Number(w.id) !== Number(wshId));
+          alert('Horario de trabajo eliminado exitosamente');
+        },
+        error: () => { alert('Error al eliminar el horario de trabajo.'); }
+      });
+    }
+  }
+
+  getAvailableWorkShifts(): WorkShift[] {
+    if (!Array.isArray(this.workShifts)) return [];
+    const assignedIds = new Set<number>((this.empresa?.work_shifts || []).map((w: any) => Number(w?.id)).filter((n: number) => !isNaN(n)));
+    const selectedIds = new Set<number>((this.selectedWorkShifts || []).map((n: number) => Number(n)).filter((n: number) => !isNaN(n)));
+    if (this.editingContext?.section === 'work_shift') {
+      return this.workShifts.filter((w: any) => !assignedIds.has(Number(w.id)) || Number(this.editingContext?.originalId) === Number(w.id));
+    }
+    return this.workShifts.filter((w: any) => !assignedIds.has(Number(w.id)) || selectedIds.has(Number(w.id)));
   }
 
   private getStatus(req: any): string {
@@ -1227,6 +1413,23 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         if (!this.empresa.type_contracts) this.empresa.type_contracts = [];
         if (!this.empresa.course_certifications) this.empresa.course_certifications = [];
         if (!this.empresa.cards) this.empresa.cards = [];
+
+        // Normalizar jornadas/horarios (backend suele devolver camelCase: workSchedules/workShifts)
+        if (!this.empresa.work_schedules && (this.empresa as any).workSchedules) {
+          this.empresa.work_schedules = (this.empresa as any).workSchedules;
+        }
+        if (!this.empresa.work_shifts && (this.empresa as any).workShifts) {
+          this.empresa.work_shifts = (this.empresa as any).workShifts;
+        }
+        if (!this.empresa.work_schedules && (this.empresa as any).work_schedules) {
+          this.empresa.work_schedules = (this.empresa as any).work_schedules;
+        }
+        if (!this.empresa.work_shifts && (this.empresa as any).work_shifts) {
+          this.empresa.work_shifts = (this.empresa as any).work_shifts;
+        }
+        if (!this.empresa.work_schedules) this.empresa.work_schedules = [];
+        if (!this.empresa.work_shifts) this.empresa.work_shifts = [];
+
         // Normalizar nombre de propiedad de IESS desde backend
         if (!this.empresa.ieses && (this.empresa as any).iessItems) {
           this.empresa.ieses = (this.empresa as any).iessItems;
@@ -1394,6 +1597,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     this.loadContractorCompanies();
     this.loadCourseCertifications();
     this.loadCards();
+    this.loadWorkSchedules();
+    this.loadWorkShifts();
   }
 
   loadDepartamentos(): void {

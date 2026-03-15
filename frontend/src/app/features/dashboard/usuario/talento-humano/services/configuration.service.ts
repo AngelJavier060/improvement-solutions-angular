@@ -38,6 +38,14 @@ export interface TypeContract extends ConfigurationOption {
   description?: string;
 }
 
+export interface WorkSchedule extends ConfigurationOption {
+  description?: string;
+}
+
+export interface WorkShift extends ConfigurationOption {
+  description?: string;
+}
+
 export interface IessCode {
   id: number;
   code: string;  // Cambié de codigoSectorial a code para ser más consistente
@@ -52,6 +60,8 @@ export interface AllConfigurations {
   degrees: Degree[];
   departments: Department[];
   typeContracts: TypeContract[];
+  workSchedules: WorkSchedule[];
+  workShifts: WorkShift[];
 }
 
 @Injectable({
@@ -117,5 +127,15 @@ export class ConfigurationService {
   // Obtener tipos de contrato por empresa
   getTypeContractsByCompany(businessId: number): Observable<TypeContract[]> {
     return this.http.get<TypeContract[]>(`${this.apiUrl}/type-contracts/${businessId}`);
+  }
+
+  // Obtener jornadas de trabajo por empresa
+  getWorkSchedulesByCompany(businessId: number): Observable<WorkSchedule[]> {
+    return this.http.get<WorkSchedule[]>(`${this.apiUrl}/work-schedules/${businessId}`);
+  }
+
+  // Obtener horarios de trabajo por empresa
+  getWorkShiftsByCompany(businessId: number): Observable<WorkShift[]> {
+    return this.http.get<WorkShift[]>(`${this.apiUrl}/work-shifts/${businessId}`);
   }
 }

@@ -730,4 +730,46 @@ public class BusinessService {
         business.setUpdatedAt(LocalDateTime.now());
         businessRepository.save(business);
     }
+
+    // === MÉTODOS PARA JORNADAS DE TRABAJO ===
+    @Transactional
+    public Business addWorkScheduleToBusiness(Long businessId, Long workScheduleId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        WorkSchedule ws = new WorkSchedule();
+        ws.setId(workScheduleId);
+        business.getWorkSchedules().add(ws);
+        business.setUpdatedAt(LocalDateTime.now());
+        return businessRepository.save(business);
+    }
+
+    @Transactional
+    public void removeWorkScheduleFromBusiness(Long businessId, Long workScheduleId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        business.getWorkSchedules().removeIf(ws -> ws.getId().equals(workScheduleId));
+        business.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(business);
+    }
+
+    // === MÉTODOS PARA HORARIOS DE TRABAJO ===
+    @Transactional
+    public Business addWorkShiftToBusiness(Long businessId, Long workShiftId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        WorkShift wsh = new WorkShift();
+        wsh.setId(workShiftId);
+        business.getWorkShifts().add(wsh);
+        business.setUpdatedAt(LocalDateTime.now());
+        return businessRepository.save(business);
+    }
+
+    @Transactional
+    public void removeWorkShiftFromBusiness(Long businessId, Long workShiftId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        business.getWorkShifts().removeIf(wsh -> wsh.getId().equals(workShiftId));
+        business.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(business);
+    }
 }

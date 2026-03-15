@@ -5,7 +5,6 @@ import com.improvementsolutions.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +25,8 @@ public class ConfigurationController {
     private final TypeContractRepository typeContractRepository;
     private final BusinessRepository businessRepository;
     private final IessRepository iessRepository;
+    private final WorkScheduleRepository workScheduleRepository;
+    private final WorkShiftRepository workShiftRepository;
 
     @GetMapping("/genders")
     public ResponseEntity<List<Gender>> getAllGenders() {
@@ -97,6 +98,24 @@ public class ConfigurationController {
         }
     }
 
+    @GetMapping("/work-schedules/{businessId}")
+    public ResponseEntity<List<WorkSchedule>> getWorkSchedulesByCompany(@PathVariable Long businessId) {
+        try {
+            return ResponseEntity.ok(workScheduleRepository.findByBusinessId(businessId));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/work-shifts/{businessId}")
+    public ResponseEntity<List<WorkShift>> getWorkShiftsByCompany(@PathVariable Long businessId) {
+        try {
+            return ResponseEntity.ok(workShiftRepository.findByBusinessId(businessId));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     // Endpoint para obtener todas las configuraciones de una vez para el formulario de empleados
     @GetMapping("/all/{businessId}")
     public ResponseEntity<Map<String, Object>> getAllConfigurations(@PathVariable Long businessId) {
@@ -110,6 +129,8 @@ public class ConfigurationController {
             configurations.put("positions", positionRepository.findByBusinessId(businessId));
             configurations.put("departments", departmentRepository.findByBusinessId(businessId));
             configurations.put("typeContracts", typeContractRepository.findByBusinessId(businessId));
+            configurations.put("workSchedules", workScheduleRepository.findByBusinessId(businessId));
+            configurations.put("workShifts", workShiftRepository.findByBusinessId(businessId));
             
             return ResponseEntity.ok(configurations);
         } catch (Exception e) {
@@ -125,7 +146,6 @@ public class ConfigurationController {
             if (business == null) {
                 return ResponseEntity.notFound().build();
             }
-            
             List<Position> positions = positionRepository.findByBusinessId(business.getId());
             return ResponseEntity.ok(positions);
         } catch (Exception e) {
@@ -140,7 +160,6 @@ public class ConfigurationController {
             if (business == null) {
                 return ResponseEntity.notFound().build();
             }
-            
             List<Department> departments = departmentRepository.findByBusinessId(business.getId());
             return ResponseEntity.ok(departments);
         } catch (Exception e) {
@@ -155,9 +174,7 @@ public class ConfigurationController {
             if (business == null) {
                 return ResponseEntity.notFound().build();
             }
-            
             Map<String, Object> configurations = new HashMap<>();
-            
             configurations.put("genders", genderRepository.findAll());
             configurations.put("civilStatuses", civilStatusRepository.findAll());
             configurations.put("etnias", etniaRepository.findAll());
@@ -165,7 +182,8 @@ public class ConfigurationController {
             configurations.put("positions", positionRepository.findByBusinessId(business.getId()));
             configurations.put("departments", departmentRepository.findByBusinessId(business.getId()));
             configurations.put("typeContracts", typeContractRepository.findByBusinessId(business.getId()));
-            
+            configurations.put("workSchedules", workScheduleRepository.findByBusinessId(business.getId()));
+            configurations.put("workShifts", workShiftRepository.findByBusinessId(business.getId()));
             return ResponseEntity.ok(configurations);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
@@ -180,23 +198,18 @@ public class ConfigurationController {
             if (business == null) {
                 return ResponseEntity.notFound().build();
             }
-            
-            // Obtener el primer código IESS asociado a la empresa
             List<Iess> iessItems = iessRepository.findByBusinessId(businessId);
             Map<String, Object> response = new HashMap<>();
-            
             if (!iessItems.isEmpty()) {
-                Iess firstIess = iessItems.get(0); // Tomar el primer código
+                Iess firstIess = iessItems.get(0);
                 response.put("id", firstIess.getId());
                 response.put("codigoSectorial", firstIess.getCode());
                 response.put("descripcion", firstIess.getDescription());
             } else {
-                // Si no hay código IESS asociado, devolver valores por defecto o vacíos
                 response.put("id", null);
                 response.put("codigoSectorial", "");
                 response.put("descripcion", "No configurado");
             }
-            
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();

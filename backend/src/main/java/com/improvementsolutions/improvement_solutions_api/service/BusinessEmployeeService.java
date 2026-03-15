@@ -18,6 +18,8 @@ import com.improvementsolutions.repository.EtniaRepository;
 import com.improvementsolutions.repository.DegreeRepository;
 import com.improvementsolutions.repository.ContractorCompanyRepository;
 import com.improvementsolutions.repository.ContractorBlockRepository;
+import com.improvementsolutions.repository.WorkScheduleRepository;
+import com.improvementsolutions.repository.WorkShiftRepository;
 import com.improvementsolutions.repository.EmployeeMovementRepository;
 import com.improvementsolutions.repository.BusinessEmployeeDocumentRepository;
 import com.improvementsolutions.repository.BusinessEmployeeCourseRepository;
@@ -36,6 +38,8 @@ import com.improvementsolutions.model.Etnia;
 import com.improvementsolutions.model.Degree;
 import com.improvementsolutions.model.ContractorCompany;
 import com.improvementsolutions.model.ContractorBlock;
+import com.improvementsolutions.model.WorkSchedule;
+import com.improvementsolutions.model.WorkShift;
 import com.improvementsolutions.model.EmployeeMovement;
 import com.improvementsolutions.model.MovementType;
 
@@ -75,6 +79,8 @@ public class BusinessEmployeeService {
     private final DegreeRepository degreeRepository;
     private final ContractorCompanyRepository contractorCompanyRepository;
     private final ContractorBlockRepository contractorBlockRepository;
+    private final WorkScheduleRepository workScheduleRepository;
+    private final WorkShiftRepository workShiftRepository;
     private final EmployeeMovementRepository employeeMovementRepository;
     private final BusinessEmployeeDocumentRepository businessEmployeeDocumentRepository;
     private final BusinessEmployeeCourseRepository businessEmployeeCourseRepository;
@@ -553,6 +559,11 @@ public class BusinessEmployeeService {
         dto.setCivilStatusName(employee.getCivilStatus() != null ? employee.getCivilStatus().getName() : null);
         dto.setEtniaName(employee.getEtnia() != null ? employee.getEtnia().getName() : null);
         dto.setDegreeName(employee.getDegree() != null ? employee.getDegree().getName() : null);
+        // Jornada y horario de trabajo
+        dto.setWorkScheduleId(employee.getWorkSchedule() != null ? employee.getWorkSchedule().getId() : null);
+        dto.setWorkScheduleName(employee.getWorkSchedule() != null ? employee.getWorkSchedule().getName() : null);
+        dto.setWorkShiftId(employee.getWorkShift() != null ? employee.getWorkShift().getId() : null);
+        dto.setWorkShiftName(employee.getWorkShift() != null ? employee.getWorkShift().getName() : null);
         // Empresa contratista y bloque
         if (employee.getContractorCompany() != null) {
             dto.setContractorCompanyId(employee.getContractorCompany().getId());
@@ -643,6 +654,16 @@ public class BusinessEmployeeService {
                 .orElseThrow(() -> new IllegalArgumentException("Bloque contratista no encontrado con ID: " + createDto.getContractorBlockId()));
             employee.setContractorBlock(contractorBlock);
         }
+        if (createDto.getWorkScheduleId() != null) {
+            WorkSchedule workSchedule = workScheduleRepository.findById(createDto.getWorkScheduleId())
+                .orElseThrow(() -> new IllegalArgumentException("Jornada de trabajo no encontrada con ID: " + createDto.getWorkScheduleId()));
+            employee.setWorkSchedule(workSchedule);
+        }
+        if (createDto.getWorkShiftId() != null) {
+            WorkShift workShift = workShiftRepository.findById(createDto.getWorkShiftId())
+                .orElseThrow(() -> new IllegalArgumentException("Horario de trabajo no encontrado con ID: " + createDto.getWorkShiftId()));
+            employee.setWorkShift(workShift);
+        }
 
         employee.setCreatedAt(LocalDateTime.now());
         employee.setUpdatedAt(LocalDateTime.now());
@@ -716,6 +737,16 @@ public class BusinessEmployeeService {
             ContractorBlock contractorBlock = contractorBlockRepository.findById(updateDto.getContractorBlockId())
                     .orElseThrow(() -> new IllegalArgumentException("Bloque contratista no encontrado con ID: " + updateDto.getContractorBlockId()));
             employee.setContractorBlock(contractorBlock);
+        }
+        if (updateDto.getWorkScheduleId() != null) {
+            WorkSchedule workSchedule = workScheduleRepository.findById(updateDto.getWorkScheduleId())
+                    .orElseThrow(() -> new IllegalArgumentException("Jornada de trabajo no encontrada con ID: " + updateDto.getWorkScheduleId()));
+            employee.setWorkSchedule(workSchedule);
+        }
+        if (updateDto.getWorkShiftId() != null) {
+            WorkShift workShift = workShiftRepository.findById(updateDto.getWorkShiftId())
+                    .orElseThrow(() -> new IllegalArgumentException("Horario de trabajo no encontrado con ID: " + updateDto.getWorkShiftId()));
+            employee.setWorkShift(workShift);
         }
         if (updateDto.getActive() != null) {
             employee.setActive(updateDto.getActive());

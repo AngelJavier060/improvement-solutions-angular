@@ -365,6 +365,28 @@
               />
             </div>
 
+            <!-- Jornada de Trabajo -->
+            <div class="form-group">
+              <label for="work_schedule_id">Jornada de Trabajo</label>
+              <select id="work_schedule_id" formControlName="work_schedule_id">
+                <option value="">Seleccione jornada de trabajo</option>
+                <option *ngFor="let ws of workSchedules" [value]="ws.id">
+                  {{ ws.name }}<span *ngIf="ws.description"> — {{ ws.description }}</span>
+                </option>
+              </select>
+            </div>
+
+            <!-- Horario de Trabajo -->
+            <div class="form-group">
+              <label for="work_shift_id">Horario de Trabajo</label>
+              <select id="work_shift_id" formControlName="work_shift_id">
+                <option value="">Seleccione horario de trabajo</option>
+                <option *ngFor="let wsh of workShifts" [value]="wsh.id">
+                  {{ wsh.name }}<span *ngIf="wsh.description"> — {{ wsh.description }}</span>
+                </option>
+              </select>
+            </div>
+
             <!-- Información médica y educativa -->
             <div class="form-group">
               <label for="tipoSangre">Tipo de Sangre</label>

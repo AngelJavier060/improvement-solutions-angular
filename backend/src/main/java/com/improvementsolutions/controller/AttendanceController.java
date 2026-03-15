@@ -1,0 +1,578 @@
+package com.improvementsolutions.controller;
+
+import com.improvementsolutions.model.*;
+import com.improvementsolutions.service.AttendanceService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+
+/**
+ * REST API para Control de Asistencia - Módulo Talento Humano.
+ * Todos los endpoints requieren businessId para garantizar aislamiento multiempresa.
+ * Base: /api/attendance/{businessId}
+ */
+@RestController
+@RequestMapping("/api/attendance/{businessId}")
+@RequiredArgsConstructor
+@Slf4j
+public class AttendanceController {
+
+    private final AttendanceService attendanceService;
+
+    // ─────────────────── KPIs ───────────────────
+
+    @GetMapping("/kpis")
+    public ResponseEntity<?> getKpis(
+            @PathVariable Long businessId,
+            @RequestParam int year,
+            @RequestParam int month) {
+        try {
+            return ResponseEntity.ok(attendanceService.getMonthlyKpis(businessId, year, month));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/employees/{employeeId}/work-schedule-start")
+    public ResponseEntity<?> setWorkScheduleStartDate(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestBody Map<String, String> body) {
+        try {
+            String start = body.get("startDate");
+            LocalDate date = (start == null || start.isBlank()) ? null : LocalDate.parse(start);
+            attendanceService.setWorkScheduleStartDate(businessId, employeeId, date);
+            return ResponseEntity.ok(Map.of(
+                    "employeeId", employeeId,
+                    "workScheduleStartDate", date != null ? date.toString() : null
+            ));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ─────────────────── PLANILLA MENSUAL ───────────────────
+
+    @GetMapping("/sheet")
+    public ResponseEntity<?> getMonthlySheet(
+            @PathVariable Long businessId,
+            @RequestParam int year,
+            @RequestParam int month) {
+        try {
+            List<Map<String, Object>> sheet = attendanceService.getMonthlySheet(businessId, year, month);
+            return ResponseEntity.ok(sheet);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/sheet/{employeeId}/day")
+    public ResponseEntity<?> saveWorkDay(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestBody Map<String, String> body) {
+        try {
+            LocalDate date = LocalDate.parse(body.get("date"));
+            String dayType = body.get("dayType");
+            String notes   = body.get("notes");
+            EmployeeWorkDay saved = attendanceService.saveWorkDay(businessId, employeeId, date, dayType, notes);
+            return ResponseEntity.ok(Map.of(
+                    "id",      saved.getId(),
+                    "date",    saved.getWorkDate().toString(),
+                    "dayType", saved.getDayType()
+            ));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/sheet/{employeeId}/batch")
+    public ResponseEntity<?> saveWorkDaysBatch(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestBody List<Map<String, String>> days) {
+        try {
+            int count = attendanceService.saveWorkDaysBatch(businessId, employeeId, days);
+            return ResponseEntity.ok(Map.of("saved", count));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ─────────────────── HORAS EXTRA ───────────────────
+
+    @GetMapping("/overtime")
+    public ResponseEntity<?> getOvertime(
+            @PathVariable Long businessId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month) {
+        try {
+            return ResponseEntity.ok(attendanceService.getOvertimeByBusiness(businessId, year, month)
+                    .stream().map(this::overtimeToMap).toList());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/overtime/{employeeId}")
+    public ResponseEntity<?> saveOvertime(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestBody EmployeeOvertime dto) {
+        try {
+            EmployeeOvertime saved = attendanceService.saveOvertime(businessId, employeeId, dto);
+            return ResponseEntity.ok(overtimeToMap(saved));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/overtime/{id}")
+    public ResponseEntity<?> deleteOvertime(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        try {
+            attendanceService.deleteOvertime(businessId, id);
+            return ResponseEntity.ok(Map.of("deleted", id));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ─────────────────── VACACIONES ───────────────────
+
+    @GetMapping("/vacations")
+    public ResponseEntity<?> getVacations(
+            @PathVariable Long businessId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month) {
+        try {
+            return ResponseEntity.ok(attendanceService.getVacationsByBusiness(businessId, year, month)
+                    .stream().map(this::vacationToMap).toList());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/vacations/{employeeId}")
+    public ResponseEntity<?> saveVacation(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestBody EmployeeVacation dto) {
+        try {
+            EmployeeVacation saved = attendanceService.saveVacation(businessId, employeeId, dto);
+            return ResponseEntity.ok(vacationToMap(saved));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/vacations/{id}")
+    public ResponseEntity<?> deleteVacation(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        try {
+            attendanceService.deleteVacation(businessId, id);
+            return ResponseEntity.ok(Map.of("deleted", id));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ─────────────────── PERMISOS ───────────────────
+
+    @GetMapping("/permissions")
+    public ResponseEntity<?> getPermissions(
+            @PathVariable Long businessId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month) {
+        try {
+            return ResponseEntity.ok(attendanceService.getPermissionsByBusiness(businessId, year, month)
+                    .stream().map(this::permissionToMap).toList());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/permissions/{employeeId}")
+    public ResponseEntity<?> savePermission(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestBody EmployeePermission dto) {
+        try {
+            EmployeePermission saved = attendanceService.savePermission(businessId, employeeId, dto);
+            return ResponseEntity.ok(permissionToMap(saved));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/permissions/{id}")
+    public ResponseEntity<?> deletePermission(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        try {
+            attendanceService.deletePermission(businessId, id);
+            return ResponseEntity.ok(Map.of("deleted", id));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ─────────────────── INCIDENTES ───────────────────
+
+    @GetMapping("/incidents")
+    public ResponseEntity<?> getIncidents(
+            @PathVariable Long businessId,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month) {
+        try {
+            return ResponseEntity.ok(attendanceService.getIncidentsByBusiness(businessId, year, month)
+                    .stream().map(this::incidentToMap).toList());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/incidents/{employeeId}")
+    public ResponseEntity<?> saveIncident(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestBody EmployeeIncident dto) {
+        try {
+            EmployeeIncident saved = attendanceService.saveIncident(businessId, employeeId, dto);
+            return ResponseEntity.ok(incidentToMap(saved));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/incidents/{id}")
+    public ResponseEntity<?> deleteIncident(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        try {
+            attendanceService.deleteIncident(businessId, id);
+            return ResponseEntity.ok(Map.of("deleted", id));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ─────────────────── HISTÓRICO DE JORNADAS ───────────────────
+
+    @GetMapping("/employees/{employeeId}/schedule-history")
+    public ResponseEntity<?> getScheduleHistory(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId) {
+        try {
+            List<EmployeeWorkScheduleHistory> list = attendanceService.getScheduleHistory(businessId, employeeId);
+            return ResponseEntity.ok(list.stream().map(this::historyToMap).toList());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/employees/{employeeId}/schedule-history")
+    public ResponseEntity<?> addScheduleHistory(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestBody Map<String, String> body) {
+        try {
+            Long workScheduleId = Long.parseLong(body.get("workScheduleId"));
+            LocalDate startDate = LocalDate.parse(body.get("startDate"));
+            LocalDate endDate = body.get("endDate") != null && !body.get("endDate").isBlank()
+                    ? LocalDate.parse(body.get("endDate")) : null;
+            LocalDate cycleStartDate = body.get("cycleStartDate") != null && !body.get("cycleStartDate").isBlank()
+                    ? LocalDate.parse(body.get("cycleStartDate")) : null;
+            String notes = body.get("notes");
+            EmployeeWorkScheduleHistory saved = attendanceService.addScheduleHistory(
+                    businessId, employeeId, workScheduleId, startDate, endDate, cycleStartDate, notes);
+            return ResponseEntity.ok(historyToMap(saved));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/schedule-history/{historyId}")
+    public ResponseEntity<?> updateScheduleHistory(
+            @PathVariable Long businessId,
+            @PathVariable Long historyId,
+            @RequestBody Map<String, String> body) {
+        try {
+            LocalDate endDate = body.get("endDate") != null && !body.get("endDate").isBlank()
+                    ? LocalDate.parse(body.get("endDate")) : null;
+            LocalDate cycleStartDate = body.get("cycleStartDate") != null && !body.get("cycleStartDate").isBlank()
+                    ? LocalDate.parse(body.get("cycleStartDate")) : null;
+            EmployeeWorkScheduleHistory updated = attendanceService.updateScheduleHistory(
+                    businessId, historyId, endDate, cycleStartDate, body.get("notes"));
+            return ResponseEntity.ok(historyToMap(updated));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/schedule-history/{historyId}")
+    public ResponseEntity<?> deleteScheduleHistory(
+            @PathVariable Long businessId,
+            @PathVariable Long historyId) {
+        try {
+            attendanceService.deleteScheduleHistory(businessId, historyId);
+            return ResponseEntity.ok(Map.of("deleted", historyId));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ─────────────────── CIERRE MENSUAL ───────────────────
+
+    @GetMapping("/closures")
+    public ResponseEntity<?> getClosures(@PathVariable Long businessId) {
+        try {
+            return ResponseEntity.ok(attendanceService.getClosures(businessId)
+                    .stream().map(this::closureToMap).toList());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/closures/{year}/{month}")
+    public ResponseEntity<?> getClosure(
+            @PathVariable Long businessId,
+            @PathVariable int year,
+            @PathVariable int month) {
+        return attendanceService.getClosure(businessId, year, month)
+                .<ResponseEntity<?>>map(c -> ResponseEntity.ok(closureToMap(c)))
+                .orElse(ResponseEntity.ok(Map.of("status", "OPEN", "year", year, "month", month)));
+    }
+
+    @PostMapping("/closures/{year}/{month}/close")
+    public ResponseEntity<?> closeMonth(
+            @PathVariable Long businessId,
+            @PathVariable int year,
+            @PathVariable int month,
+            @RequestBody(required = false) Map<String, String> body) {
+        try {
+            String closedBy = body != null ? body.getOrDefault("closedBy", "sistema") : "sistema";
+            String notes    = body != null ? body.get("notes") : null;
+            return ResponseEntity.ok(closureToMap(
+                    attendanceService.closureMonth(businessId, year, month, closedBy, notes)));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/closures/{year}/{month}/approve")
+    public ResponseEntity<?> approveMonth(
+            @PathVariable Long businessId,
+            @PathVariable int year,
+            @PathVariable int month,
+            @RequestBody(required = false) Map<String, String> body) {
+        try {
+            String approvedBy     = body != null ? body.getOrDefault("approvedBy", "sistema") : "sistema";
+            String signedPdfPath  = body != null ? body.get("signedPdfPath") : null;
+            return ResponseEntity.ok(closureToMap(
+                    attendanceService.approveMonth(businessId, year, month, approvedBy, signedPdfPath)));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/closures/{year}/{month}/reopen")
+    public ResponseEntity<?> reopenMonth(
+            @PathVariable Long businessId,
+            @PathVariable int year,
+            @PathVariable int month) {
+        try {
+            return ResponseEntity.ok(closureToMap(
+                    attendanceService.reopenMonth(businessId, year, month)));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/closures/{year}/{month}/upload-signed")
+    public ResponseEntity<?> uploadSignedPdf(
+            @PathVariable Long businessId,
+            @PathVariable int year,
+            @PathVariable int month,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        // 1) Guardar el archivo primero (siempre)
+        String relativePath;
+        try {
+            java.nio.file.Path uploadDir = java.nio.file.Paths.get("uploads", "signed-pdfs");
+            java.nio.file.Files.createDirectories(uploadDir);
+            String filename = businessId + "_" + year + "_" + String.format("%02d", month)
+                    + "_signed_" + System.currentTimeMillis() + ".pdf";
+            file.transferTo(uploadDir.resolve(filename).toFile());
+            relativePath = "uploads/signed-pdfs/" + filename;
+        } catch (java.io.IOException e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Error al guardar el archivo: " + e.getMessage()));
+        }
+
+        // 2) Cerrar el mes si no está cerrado aún, luego aprobar
+        try {
+            // Obtener estado actual
+            java.util.Optional<MonthlySheetClosure> existing =
+                    attendanceService.getClosure(businessId, year, month);
+            String currentStatus = existing.map(MonthlySheetClosure::getStatus).orElse("OPEN");
+
+            if ("APPROVED".equals(currentStatus)) {
+                return ResponseEntity.status(409).body(Map.of("error", "Este mes ya está aprobado."));
+            }
+            if (!"CLOSED".equals(currentStatus)) {
+                // Cerrar primero
+                attendanceService.closureMonth(businessId, year, month, "sistema", null);
+            }
+            MonthlySheetClosure approved =
+                    attendanceService.approveMonth(businessId, year, month, "sistema", relativePath);
+            return ResponseEntity.ok(closureToMap(approved));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // ─────────────────── mappers ───────────────────
+
+    private Map<String, Object> overtimeToMap(EmployeeOvertime o) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("id",           o.getId());
+        m.put("employeeId",   o.getEmployee().getId());
+        m.put("employeeName", o.getEmployee().getFullName());
+        m.put("cedula",       o.getEmployee().getCedula());
+        m.put("overtimeDate", o.getOvertimeDate() != null ? o.getOvertimeDate().toString() : null);
+        m.put("startTime",    o.getStartTime() != null ? o.getStartTime().toString() : null);
+        m.put("endTime",      o.getEndTime() != null ? o.getEndTime().toString() : null);
+        m.put("hoursTotal",   o.getHoursTotal());
+        m.put("reason",       o.getReason());
+        m.put("notes",        o.getNotes());
+        m.put("createdAt",    o.getCreatedAt() != null ? o.getCreatedAt().toString() : null);
+        return m;
+    }
+
+    private Map<String, Object> vacationToMap(EmployeeVacation v) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("id",             v.getId());
+        m.put("employeeId",     v.getEmployee().getId());
+        m.put("employeeName",   v.getEmployee().getFullName());
+        m.put("cedula",         v.getEmployee().getCedula());
+        m.put("startDate",      v.getStartDate() != null ? v.getStartDate().toString() : null);
+        m.put("endDate",        v.getEndDate() != null ? v.getEndDate().toString() : null);
+        m.put("daysTaken",      v.getDaysTaken());
+        m.put("daysAccumulated",v.getDaysAccumulated());
+        m.put("status",         v.getStatus());
+        m.put("notes",          v.getNotes());
+        m.put("createdAt",      v.getCreatedAt() != null ? v.getCreatedAt().toString() : null);
+        return m;
+    }
+
+    private Map<String, Object> permissionToMap(EmployeePermission p) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("id",             p.getId());
+        m.put("employeeId",     p.getEmployee().getId());
+        m.put("employeeName",   p.getEmployee().getFullName());
+        m.put("cedula",         p.getEmployee().getCedula());
+        m.put("permissionDate", p.getPermissionDate() != null ? p.getPermissionDate().toString() : null);
+        m.put("permissionType", p.getPermissionType());
+        m.put("hoursRequested", p.getHoursRequested());
+        m.put("reason",         p.getReason());
+        m.put("status",         p.getStatus());
+        m.put("notes",          p.getNotes());
+        m.put("createdAt",      p.getCreatedAt() != null ? p.getCreatedAt().toString() : null);
+        return m;
+    }
+
+    private Map<String, Object> incidentToMap(EmployeeIncident i) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("id",           i.getId());
+        m.put("employeeId",   i.getEmployee().getId());
+        m.put("employeeName", i.getEmployee().getFullName());
+        m.put("cedula",       i.getEmployee().getCedula());
+        m.put("incidentDate", i.getIncidentDate() != null ? i.getIncidentDate().toString() : null);
+        m.put("incidentTime", i.getIncidentTime() != null ? i.getIncidentTime().toString() : null);
+        m.put("incidentType", i.getIncidentType());
+        m.put("description",  i.getDescription());
+        m.put("location",     i.getLocation());
+        m.put("severity",     i.getSeverity());
+        m.put("notes",        i.getNotes());
+        m.put("createdAt",    i.getCreatedAt() != null ? i.getCreatedAt().toString() : null);
+        return m;
+    }
+
+    private Map<String, Object> historyToMap(EmployeeWorkScheduleHistory h) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("id",                 h.getId());
+        m.put("employeeId",         h.getEmployee().getId());
+        m.put("employeeName",       h.getEmployee().getFullName());
+        m.put("workScheduleId",     h.getWorkSchedule() != null ? h.getWorkSchedule().getId() : null);
+        m.put("workScheduleName",   h.getWorkSchedule() != null ? h.getWorkSchedule().getName() : null);
+        m.put("startDate",          h.getStartDate() != null ? h.getStartDate().toString() : null);
+        m.put("endDate",            h.getEndDate() != null ? h.getEndDate().toString() : null);
+        m.put("cycleStartDate",     h.getCycleStartDate() != null ? h.getCycleStartDate().toString() : null);
+        m.put("notes",              h.getNotes());
+        m.put("createdAt",          h.getCreatedAt() != null ? h.getCreatedAt().toString() : null);
+        return m;
+    }
+
+    private Map<String, Object> closureToMap(MonthlySheetClosure c) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("id",             c.getId());
+        m.put("businessId",     c.getBusiness().getId());
+        m.put("year",           c.getYear());
+        m.put("month",          c.getMonth());
+        m.put("status",         c.getStatus());
+        m.put("closedAt",       c.getClosedAt() != null ? c.getClosedAt().toString() : null);
+        m.put("closedBy",       c.getClosedBy());
+        m.put("approvedAt",     c.getApprovedAt() != null ? c.getApprovedAt().toString() : null);
+        m.put("approvedBy",     c.getApprovedBy());
+        m.put("pdfPath",        c.getPdfPath());
+        m.put("signedPdfPath",  c.getSignedPdfPath());
+        m.put("notes",          c.getNotes());
+        m.put("createdAt",      c.getCreatedAt() != null ? c.getCreatedAt().toString() : null);
+        return m;
+    }
+}

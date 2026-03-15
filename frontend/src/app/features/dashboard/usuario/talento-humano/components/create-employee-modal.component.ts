@@ -1,6 +1,6 @@
 import { Component, EventEmitter, OnInit, Output, ViewChild, ElementRef, Input } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ConfigurationService, Position, Degree, IessCode, Gender, CivilStatus, Ethnicity, Department, TypeContract } from '../services/configuration.service';
+import { ConfigurationService, Position, Degree, IessCode, Gender, CivilStatus, Ethnicity, Department, TypeContract, WorkSchedule, WorkShift } from '../services/configuration.service';
 import { EmployeeService } from '../services/employee.service';
 import { CreateEmployeeRequest } from '../models/employee.model';
 import { BusinessService } from '../../../../../services/business.service';
@@ -33,6 +33,8 @@ export class CreateEmployeeModalComponent implements OnInit {
   positions: Position[] = [];
   departments: Department[] = [];
   typeContracts: TypeContract[] = [];
+  workSchedules: WorkSchedule[] = [];
+  workShifts: WorkShift[] = [];
   degrees: Degree[] = [];
   iessCode: string = '';
   iessCodes: IessCode[] = []; // Nueva propiedad para almacenar todos los códigos IESS
@@ -100,6 +102,8 @@ export class CreateEmployeeModalComponent implements OnInit {
       position_id: [''],
       department_id: [''],
       type_contract_id: [''],
+      work_schedule_id: [''],
+      work_shift_id: [''],
       degree_id: [''],
       
       // Campos de empresa contratista
@@ -237,7 +241,9 @@ export class CreateEmployeeModalComponent implements OnInit {
         departmentsResponse,
         typeContractsResponse,
         degreesResponse,
-        iessCodesResponse
+        iessCodesResponse,
+        workSchedulesResponse,
+        workShiftsResponse
       ] = await Promise.all([
         this.configurationService.getGenders().toPromise(),
         this.configurationService.getCivilStatuses().toPromise(),
@@ -246,7 +252,9 @@ export class CreateEmployeeModalComponent implements OnInit {
         this.configurationService.getDepartmentsByCompany(this.businessId).toPromise(),
         this.configurationService.getTypeContractsByCompany(this.businessId).toPromise(),
         this.configurationService.getDegrees().toPromise(),
-        this.configurationService.getIessCodesByBusiness(this.businessId).toPromise()
+        this.configurationService.getIessCodesByBusiness(this.businessId).toPromise(),
+        this.configurationService.getWorkSchedulesByCompany(this.businessId).toPromise(),
+        this.configurationService.getWorkShiftsByCompany(this.businessId).toPromise()
       ]);
 
       this.genders = gendersResponse || [];
@@ -256,6 +264,8 @@ export class CreateEmployeeModalComponent implements OnInit {
       this.departments = departmentsResponse || [];
       this.typeContracts = typeContractsResponse || [];
       this.degrees = degreesResponse || [];
+      this.workSchedules = workSchedulesResponse || [];
+      this.workShifts = workShiftsResponse || [];
       
       // Cargar empresas contratistas configuradas para esta empresa
       await this.loadContractorCompanies();

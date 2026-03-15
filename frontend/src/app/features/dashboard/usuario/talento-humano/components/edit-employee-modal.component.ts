@@ -6,7 +6,7 @@ import { ContractorCompanyService } from '../../../../../services/contractor-com
 import { ContractorBlockService } from '../../../../../services/contractor-block.service';
 import { BusinessService } from '../../../../../services/business.service';
 import { ContractorCompany, ContractorBlock } from '../../../../../models/contractor-company.model';
-import { ConfigurationService, Position, Degree, Gender, CivilStatus, Ethnicity, Department, TypeContract, IessCode } from '../services/configuration.service';
+import { ConfigurationService, Position, Degree, Gender, CivilStatus, Ethnicity, Department, TypeContract, IessCode, WorkSchedule, WorkShift } from '../services/configuration.service';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -36,6 +36,8 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
   positions: Position[] = [];
   departments: Department[] = [];
   typeContracts: TypeContract[] = [];
+  workSchedules: WorkSchedule[] = [];
+  workShifts: WorkShift[] = [];
   degrees: Degree[] = [];
   iessCodes: IessCode[] = [];
 
@@ -136,6 +138,8 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       position_id: [''],
       department_id: [''],
       type_contract_id: [''],
+      work_schedule_id: [''],
+      work_shift_id: [''],
       gender_id: [''],
       ethnicity_id: [''],
       civil_status_id: [''],
@@ -184,6 +188,8 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     let positionId = this.getId(emp, 'position_id', 'positionId', 'position');
     let departmentId = this.getId(emp, 'department_id', 'departmentId', 'department');
     let typeContractId = this.getId(emp, 'type_contract_id', 'typeContractId', 'type_contract', 'typeContract');
+    let workScheduleId = this.getId(emp, 'work_schedule_id', 'workScheduleId', 'work_schedule', 'workSchedule');
+    let workShiftId = this.getId(emp, 'work_shift_id', 'workShiftId', 'work_shift', 'workShift');
     let degreeId = this.getId(emp, 'degree_id', 'degreeId', 'degree');
     let genderId = this.getId(emp, 'gender_id', 'genderId', 'gender');
     let civilStatusId = this.getId(emp, 'civil_status_id', 'civilStatusId', 'civil_status', 'civilStatus');
@@ -225,6 +231,8 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       position_id: toStrId(positionId),
       department_id: toStrId(departmentId),
       type_contract_id: toStrId(typeContractId),
+      work_schedule_id: toStrId(workScheduleId),
+      work_shift_id: toStrId(workShiftId),
       degree_id: toStrId(degreeId),
       gender_id: toStrId(genderId),
       civil_status_id: toStrId(civilStatusId),
@@ -321,6 +329,8 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
         position_id: toStrId(this.getId((this as any).employee, 'position_id', 'positionId', 'position')),
         department_id: toStrId(this.getId((this as any).employee, 'department_id', 'departmentId', 'department')),
         type_contract_id: toStrId(this.getId((this as any).employee, 'type_contract_id', 'typeContractId', 'type_contract', 'typeContract')),
+        work_schedule_id: toStrId(this.getId((this as any).employee, 'work_schedule_id', 'workScheduleId', 'work_schedule', 'workSchedule')),
+        work_shift_id: toStrId(this.getId((this as any).employee, 'work_shift_id', 'workShiftId', 'work_shift', 'workShift')),
         gender_id: toStrId(this.getId((this as any).employee, 'gender_id', 'genderId', 'gender')),
         ethnicity_id: toStrId(this.getId((this as any).employee, 'ethnicity_id', 'ethnia_id', 'etnia_id', 'ethnicityId', 'etniaId', 'ethnicity', 'ethnia', 'etnia')),
         civil_status_id: toStrId(this.getId((this as any).employee, 'civil_status_id', 'civilStatusId', 'civil_status', 'civilStatus')),
@@ -367,6 +377,8 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
         positionId: fv.position_id ? Number(fv.position_id) : undefined,
         departmentId: fv.department_id ? Number(fv.department_id) : undefined,
         typeContractId: fv.type_contract_id ? Number(fv.type_contract_id) : undefined,
+        workScheduleId: fv.work_schedule_id ? Number(fv.work_schedule_id) : undefined,
+        workShiftId: fv.work_shift_id ? Number(fv.work_shift_id) : undefined,
         degreeId: fv.degree_id ? Number(fv.degree_id) : undefined,
         genderId: fv.gender_id ? Number(fv.gender_id) : undefined,
         civilStatusId: fv.civil_status_id ? Number(fv.civil_status_id) : undefined,
@@ -514,7 +526,9 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       departments: this.configurationService.getDepartmentsByCompany(this.businessId),
       typeContracts: this.configurationService.getTypeContractsByCompany(this.businessId),
       degrees: this.configurationService.getDegrees(),
-      iessCodes: this.configurationService.getIessCodesByBusiness(this.businessId)
+      iessCodes: this.configurationService.getIessCodesByBusiness(this.businessId),
+      workSchedules: this.configurationService.getWorkSchedulesByCompany(this.businessId),
+      workShifts: this.configurationService.getWorkShiftsByCompany(this.businessId)
     }).subscribe({
       next: (res) => {
         this.genders = res.genders || [];
@@ -524,6 +538,8 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
         this.departments = res.departments || [];
         this.typeContracts = res.typeContracts || [];
         this.degrees = res.degrees || [];
+        this.workSchedules = res.workSchedules || [];
+        this.workShifts = res.workShifts || [];
         this.iessCodes = (res.iessCodes || []).map((it: any) => ({
           ...it,
           code: String(it.code || it.codigoSectorial || it.codigo || it.codigo_iess || it.codigoIess || it.id || '')

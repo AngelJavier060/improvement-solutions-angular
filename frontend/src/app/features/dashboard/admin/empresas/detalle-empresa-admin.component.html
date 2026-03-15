@@ -326,6 +326,112 @@
       </div>
     </div>
 
+    <!-- 2d. Sección Jornadas de Trabajo -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.work_schedules?.length > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-calendar-alt text-white" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Jornadas de Trabajo</h6>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="mb-2">
+            <i class="fas fa-calendar-alt me-1" style="font-size: 12px; color: #667eea;"></i>
+            <span class="small fw-bold text-dark">Jornadas de Trabajo</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-sm w-100" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); color: white;" (click)="openAsignWorkScheduleModal()">
+              <i class="fas fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+
+          <div *ngIf="empresa.work_schedules?.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let ws of empresa.work_schedules">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-calendar-alt me-2" style="font-size: 10px; color: #667eea;"></i>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ ws.name || ('#' + ws.id) }}</span>
+                </div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1" title="Editar" (click)="editWorkSchedule(ws)" style="font-size: 8px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm p-1" title="Eliminar" (click)="removeWorkSchedule(ws.id)" style="font-size: 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!empresa.work_schedules?.length" class="text-center py-2">
+            <i class="fas fa-calendar-alt fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin jornadas de trabajo</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2e. Sección Horarios de Trabajo -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.work_shifts?.length > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-clock text-white" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-white mb-0 fw-bold" style="font-size: 18px;">Horarios de Trabajo</h6>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="mb-2">
+            <i class="fas fa-clock me-1" style="font-size: 12px; color: #f5576c;"></i>
+            <span class="small fw-bold text-dark">Horarios de Trabajo</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-sm w-100" style="background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%); color: white;" (click)="openAsignWorkShiftModal()">
+              <i class="fas fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+
+          <div *ngIf="empresa.work_shifts?.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let wsh of empresa.work_shifts">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-clock me-2" style="font-size: 10px; color: #f5576c;"></i>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ wsh.name || ('#' + wsh.id) }}</span>
+                </div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-outline-primary btn-sm p-1" title="Editar" (click)="editWorkShift(wsh)" style="font-size: 8px;">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm p-1" title="Eliminar" (click)="removeWorkShift(wsh.id)" style="font-size: 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!empresa.work_shifts?.length" class="text-center py-2">
+            <i class="fas fa-clock fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin horarios de trabajo</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 3. Sección Cargos -->
     <div class="col-lg-6 col-xl-3">
       <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.positions?.length > 0}">
@@ -1705,6 +1811,80 @@
           <i class="fas fa-times me-1"></i>Cancelar
         </button>
         <button type="button" class="btn btn-warning" (click)="asignCard()" [disabled]="!selectedCards.length">
+          <i class="fas fa-plus me-1"></i>Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para asignar Jornadas de Trabajo -->
+<div *ngIf="showAsignWorkScheduleModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 text-white" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-calendar-alt me-2"></i>
+          <h5 class="modal-title mb-0">Asignar Jornadas de Trabajo</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" (click)="showAsignWorkScheduleModal = false"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-4">
+          <label for="selectWorkSchedule" class="form-label fw-semibold">
+            <i class="fas fa-list me-2"></i>Seleccionar Jornadas
+          </label>
+          <select class="form-select form-select-lg" id="selectWorkSchedule" [(ngModel)]="selectedWorkSchedules" multiple size="6">
+            <option *ngFor="let ws of getAvailableWorkSchedules()" [ngValue]="ws.id">{{ ws.name }}</option>
+          </select>
+          <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples jornadas
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="showAsignWorkScheduleModal = false">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn text-white" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);" (click)="asignWorkSchedule()" [disabled]="!selectedWorkSchedules.length">
+          <i class="fas fa-plus me-1"></i>Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para asignar Horarios de Trabajo -->
+<div *ngIf="showAsignWorkShiftModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 text-white" style="background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-clock me-2"></i>
+          <h5 class="modal-title mb-0">Asignar Horarios de Trabajo</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" (click)="showAsignWorkShiftModal = false"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-4">
+          <label for="selectWorkShift" class="form-label fw-semibold">
+            <i class="fas fa-list me-2"></i>Seleccionar Horarios
+          </label>
+          <select class="form-select form-select-lg" id="selectWorkShift" [(ngModel)]="selectedWorkShifts" multiple size="6">
+            <option *ngFor="let wsh of getAvailableWorkShifts()" [ngValue]="wsh.id">{{ wsh.name }}</option>
+          </select>
+          <div class="form-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples horarios
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="showAsignWorkShiftModal = false">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn text-white" style="background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);" (click)="asignWorkShift()" [disabled]="!selectedWorkShifts.length">
           <i class="fas fa-plus me-1"></i>Asignar
         </button>
       </div>

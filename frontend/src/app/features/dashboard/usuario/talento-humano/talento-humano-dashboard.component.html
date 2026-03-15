@@ -47,5 +47,69 @@
   <div class="content-surface">
     <!-- Nuevas gráficas con datos reales -->
     <app-talento-humano-charts></app-talento-humano-charts>
+
+    <!-- Acceso rápido: Control de Asistencia -->
+    <div class="attendance-quickaccess" *ngIf="ruc">
+      <div class="qa-header">
+        <span class="qa-dot"></span>
+        <span class="qa-title">Control de Asistencia y Personal</span>
+      </div>
+      <div class="qa-grid">
+        <a class="qa-card qa-planilla"
+           [routerLink]="['/usuario', ruc, 'talento-humano', 'planilla-mensual']">
+          <div class="qa-icon"><i class="fas fa-calendar-check"></i></div>
+          <div class="qa-info">
+            <div class="qa-name">Planilla Mensual</div>
+            <div class="qa-desc">Control diario de asistencia por empleado</div>
+          </div>
+          <i class="fas fa-arrow-right qa-arrow"></i>
+        </a>
+        <a class="qa-card qa-overtime"
+           [routerLink]="['/usuario', ruc, 'talento-humano', 'horas-extra']">
+          <div class="qa-icon"><i class="fas fa-clock"></i></div>
+          <div class="qa-info">
+            <div class="qa-name">Horas Extraordinarias</div>
+            <div class="qa-desc">Registro y control de horas extra</div>
+          </div>
+          <i class="fas fa-arrow-right qa-arrow"></i>
+        </a>
+        <a class="qa-card qa-vacations"
+           [routerLink]="['/usuario', ruc, 'talento-humano', 'vacaciones']">
+          <div class="qa-icon"><i class="fas fa-umbrella-beach"></i></div>
+          <div class="qa-info">
+            <div class="qa-name">Vacaciones</div>
+            <div class="qa-desc">Gestión de períodos vacacionales</div>
+          </div>
+          <i class="fas fa-arrow-right qa-arrow"></i>
+        </a>
+        <a class="qa-card qa-permissions"
+           [routerLink]="['/usuario', ruc, 'talento-humano', 'permisos']">
+          <div class="qa-icon"><i class="fas fa-file-signature"></i></div>
+          <div class="qa-info">
+            <div class="qa-name">Permisos</div>
+            <div class="qa-desc">Permisos laborales por tipo y empleado</div>
+          </div>
+          <i class="fas fa-arrow-right qa-arrow"></i>
+        </a>
+        <a class="qa-card qa-incidents"
+           [routerLink]="['/usuario', ruc, 'talento-humano', 'accidentes']">
+          <div class="qa-icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="qa-info">
+            <div class="qa-name">Accidentes / Incidentes</div>
+            <div class="qa-desc">Registro de accidentes ocupacionales</div>
+          </div>
+          <i class="fas fa-arrow-right qa-arrow"></i>
+        </a>
+        <a class="qa-card qa-employees"
+           [routerLink]="['/usuario', ruc, 'talento-humano', 'gestion-empleados']">
+          <div class="qa-icon"><i class="fas fa-users"></i></div>
+          <div class="qa-info">
+            <div class="qa-name">Gestión de Empleados</div>
+            <div class="qa-desc">Expedientes y datos del personal</div>
+          </div>
+          <i class="fas fa-arrow-right qa-arrow"></i>
+        </a>
+      </div>
+    </div>
   </div>
 </div>

@@ -1,0 +1,369 @@
+<div class="pm-root">
+
+  <!-- ═══════════════ BODY ═══════════════ -->
+  <div class="pm-body">
+
+    <!-- PAGE HEADING -->
+    <div class="pm-heading">
+      <div>
+        <p class="pm-breadcrumb">GESTIÓN DE PERSONAL <span>/</span> PLANILLA MENSUAL</p>
+        <h1>Planilla Mensual Automatizada</h1>
+        <p class="pm-sub">{{ businessName || 'Empresa' }} — <span>Control de Asistencia</span></p>
+      </div>
+      <div class="pm-heading-actions">
+
+        <!-- Badge estado mes -->
+        <div class="pm-status-badge pm-status-open"
+             *ngIf="!monthClosure || monthClosure.status === 'OPEN'">
+          <span class="material-symbols-outlined">lock_open</span> Mes ABIERTO
+        </div>
+        <div class="pm-status-badge pm-status-closed"
+             *ngIf="monthClosure?.status === 'CLOSED'">
+          <span class="material-symbols-outlined">lock</span> Mes CERRADO
+        </div>
+        <div class="pm-status-badge pm-status-approved"
+             *ngIf="monthClosure?.status === 'APPROVED'">
+          <span class="material-symbols-outlined">verified</span> Mes APROBADO
+        </div>
+
+        <!-- Reabrir (solo si cerrado) -->
+        <button class="pm-btn pm-btn--outline"
+                *ngIf="monthClosure?.status === 'CLOSED'"
+                (click)="reopenCurrentMonth()">
+          <span class="material-symbols-outlined">lock_open</span> Reabrir
+        </button>
+
+        <!-- Descargar PDF (siempre disponible) -->
+        <button class="pm-btn pm-btn--outline" (click)="downloadPdf()">
+          <span class="material-symbols-outlined">download</span> Descargar PDF
+        </button>
+
+        <!-- Subir PDF firmado → cierra y aprueba automáticamente -->
+        <label class="pm-btn pm-btn--upload"
+               [class.pm-btn--loading]="uploadingPdf"
+               *ngIf="monthClosure?.status !== 'APPROVED'"
+               title="Al subir el PDF firmado, el mes se cerrará y aprobará automáticamente">
+          <span *ngIf="!uploadingPdf" class="material-symbols-outlined">upload_file</span>
+          <span *ngIf="uploadingPdf" class="pm-spinner-sm"></span>
+          <span *ngIf="!uploadingPdf">Subir PDF Firmado</span>
+          <span *ngIf="uploadingPdf">Subiendo…</span>
+          <input type="file" accept="application/pdf" style="display:none"
+                 (change)="onSignedPdfSelected($event)" [disabled]="uploadingPdf" />
+        </label>
+
+        <button class="pm-btn pm-btn--primary" (click)="loadData()">
+          <span class="material-symbols-outlined">check_circle</span> Actualizar
+        </button>
+      </div>
+    </div>
+
+    <!-- Error upload PDF -->
+    <div class="pm-alert pm-alert--error" *ngIf="uploadPdfError">
+      <span class="material-symbols-outlined">error</span> {{ uploadPdfError }}
+      <button (click)="uploadPdfError=null">✕</button>
+    </div>
+
+    <!-- PDF aprobado: info -->
+    <div class="pm-alert pm-alert--success" *ngIf="monthClosure?.status === 'APPROVED' && monthClosure?.signedPdfPath">
+      <span class="material-symbols-outlined">verified</span>
+      Planilla aprobada — PDF firmado registrado el {{ monthClosure?.approvedAt | date:'dd/MM/yyyy HH:mm' }}.
+    </div>
+
+    <!-- ── KPI CARDS ── -->
+    <div class="pm-kpi-grid" *ngIf="kpis">
+      <div class="pm-kpi">
+        <div class="pm-kpi-icon" style="background:#10b981;">
+          <span class="material-symbols-outlined">work</span>
+        </div>
+        <div class="pm-kpi-data">
+          <div class="pm-kpi-val">{{ kpis.T }}</div>
+          <div class="pm-kpi-lbl">DÍAS TRABAJO</div>
+        </div>
+      </div>
+      <div class="pm-kpi">
+        <div class="pm-kpi-icon" style="background:#94a3b8;">
+          <span class="material-symbols-outlined">night_shelter</span>
+        </div>
+        <div class="pm-kpi-data">
+          <div class="pm-kpi-val">{{ kpis.D }}</div>
+          <div class="pm-kpi-lbl">DESCANSOS</div>
+        </div>
+      </div>
+      <div class="pm-kpi">
+        <div class="pm-kpi-icon" style="background:#f97316;">
+          <span class="material-symbols-outlined">more_time</span>
+        </div>
+        <div class="pm-kpi-data">
+          <div class="pm-kpi-val">{{ kpis.EX }}</div>
+          <div class="pm-kpi-lbl">DÍAS EXTRA</div>
+        </div>
+      </div>
+      <div class="pm-kpi">
+        <div class="pm-kpi-icon" style="background:#3b82f6;">
+          <span class="material-symbols-outlined">beach_access</span>
+        </div>
+        <div class="pm-kpi-data">
+          <div class="pm-kpi-val">{{ kpis.V }}</div>
+          <div class="pm-kpi-lbl">VACACIONES</div>
+        </div>
+      </div>
+      <div class="pm-kpi">
+        <div class="pm-kpi-icon" style="background:#f59e0b;">
+          <span class="material-symbols-outlined">edit_note</span>
+        </div>
+        <div class="pm-kpi-data">
+          <div class="pm-kpi-val">{{ kpis.P }}</div>
+          <div class="pm-kpi-lbl">PERMISOS</div>
+        </div>
+      </div>
+      <div class="pm-kpi">
+        <div class="pm-kpi-icon" style="background:#e11d48;">
+          <span class="material-symbols-outlined">healing</span>
+        </div>
+        <div class="pm-kpi-data">
+          <div class="pm-kpi-val">{{ kpis.E }}</div>
+          <div class="pm-kpi-lbl">ENFERMEDAD</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FILTROS + LEYENDA ── -->
+    <div class="pm-filters-card">
+      <div class="pm-filters-row pm-filters-row--4">
+        <div class="pm-fgroup pm-fgroup--search">
+          <label>BUSCAR PERSONAL</label>
+          <div class="pm-search-wrap">
+            <span class="material-symbols-outlined">search</span>
+            <input type="text" placeholder="Nombre, cédula, cargo…"
+                   [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()" />
+          </div>
+        </div>
+        <div class="pm-fgroup">
+          <label>AÑO</label>
+          <select [(ngModel)]="year" (change)="onMonthChange()">
+            <option *ngFor="let y of availableYears" [value]="y">{{ y }}</option>
+          </select>
+        </div>
+        <div class="pm-fgroup">
+          <label>MES DE GESTIÓN</label>
+          <select [(ngModel)]="month" (change)="onMonthChange()">
+            <option *ngFor="let m of months" [value]="m.v">{{ m.l }}</option>
+          </select>
+        </div>
+        <div class="pm-fgroup">
+          <label>TIPO DE DÍA</label>
+          <select [(ngModel)]="filterDayType" (change)="applyFilters()">
+            <option value="">Todos</option>
+            <option value="EX">Con días extra</option>
+            <option value="V">Con vacaciones</option>
+            <option value="P">Con permisos</option>
+            <option value="E">Con enfermedad</option>
+          </select>
+        </div>
+      </div>
+      <div class="pm-legend">
+        <span *ngFor="let key of dayTypeKeys"
+              class="pm-legend-chip {{ dayTypes[key].cls }}">
+          <span class="pm-legend-dot" [style.background]="dayTypes[key].dotColor"></span>
+          {{ key }} — {{ dayTypes[key].label }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ── ESTADO CARGA / ERROR ── -->
+    <div class="pm-state-center" *ngIf="loading">
+      <div class="pm-spinner"></div>
+      <span>Cargando planilla…</span>
+    </div>
+
+    <div class="pm-state-center pm-state-error" *ngIf="error && !loading">
+      <span class="material-symbols-outlined">error_outline</span>
+      <span>{{ error }}</span>
+      <button class="pm-btn pm-btn--outline" (click)="loadData()">Reintentar</button>
+    </div>
+
+    <!-- ── TABLA PLANILLA ── -->
+    <div class="pm-table-card" *ngIf="!loading && !error">
+      <div class="pm-table-scroll">
+        <table class="pm-table" (click)="cancelEdit()">
+          <thead>
+            <tr>
+              <th class="pm-th-name">Personal</th>
+              <th *ngFor="let d of daysInMonth" class="pm-th-day">{{ d }}</th>
+              <th *ngFor="let k of dayTypeKeys" class="pm-th-total">{{ k }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredSheet; trackBy: trackByEmployee"
+                [class.pm-row-selected]="selectedRow?.employeeId === row.employeeId"
+                (click)="selectRow(row)">
+              <td class="pm-td-name">
+                <div class="pm-emp-name">{{ row.fullName }}</div>
+                <div class="pm-emp-cargo">{{ row.position || 'Sin cargo' }}</div>
+              </td>
+              <td class="pm-td-day"
+                  *ngFor="let entry of row.days; let i = index; trackBy: trackByDay"
+                  style="position:relative;">
+                <!-- Picker -->
+                <div class="pm-picker"
+                     *ngIf="isEditing(row.employeeId, i)"
+                     (click)="$event.stopPropagation()">
+                  <button *ngFor="let k of dayTypeKeys"
+                          class="pm-picker-btn {{ dayTypes[k].cls }}"
+                          (click)="saveDay(row, i, k)">{{ k }}</button>
+                </div>
+                <!-- Celda -->
+                <div class="pm-day-cell {{ getDayClass(entry.dayType) }}"
+                     [title]="entry.dayType ? (dayTypes[entry.dayType].label || entry.dayType) : ''"
+                     (click)="startEdit(row.employeeId, i, $event)">
+                  {{ entry.dayType || '' }}
+                </div>
+              </td>
+              <td class="pm-td-total" *ngFor="let k of dayTypeKeys">{{ row.totals[k] || 0 }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="pm-tfoot-row">
+              <td class="pm-tf-label">TOTALES — {{ filteredSheet.length }} empleado(s)</td>
+              <td *ngFor="let d of daysInMonth" class="pm-tf-spacer"></td>
+              <td class="pm-tf-val" *ngFor="let k of dayTypeKeys">{{ getTotalForKey(k) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════════ PANEL DETALLE ═══════════════ -->
+    <div class="pm-detail" *ngIf="selectedRow">
+
+      <!-- Header detalle -->
+      <div class="pm-detail-header">
+        <div class="pm-detail-avatar">
+          {{ selectedRow.fullName.charAt(0) }}
+        </div>
+        <div class="pm-detail-info">
+          <div class="pm-detail-name">{{ selectedRow.fullName }}</div>
+          <div class="pm-detail-sub">{{ selectedRow.position || 'Sin cargo' }} · Cédula: {{ selectedRow.cedula }}</div>
+        </div>
+        <button class="pm-btn pm-btn--outline pm-btn--sm" (click)="closeDetail()">
+          <span class="material-symbols-outlined">close</span> Cerrar
+        </button>
+      </div>
+
+      <!-- Stat badges -->
+      <div class="pm-stat-row">
+        <div *ngFor="let k of dayTypeKeys"
+             class="pm-stat-chip {{ dayTypes[k].cls }}"
+             [style.display]="selectedRow.totals[k] ? '' : 'none'">
+          <div class="pm-stat-val">{{ selectedRow.totals[k] }}</div>
+          <div class="pm-stat-lbl">{{ dayTypes[k].label }}</div>
+        </div>
+      </div>
+
+      <!-- Historial de jornadas -->
+      <div class="pm-history-card">
+        <div class="pm-history-header">
+          <div class="pm-history-title">
+            <span class="material-symbols-outlined">history</span>
+            <span>Historial de Jornadas</span>
+            <span class="pm-sched-badge" *ngIf="selectedRow.workScheduleName">
+              Activa: {{ selectedRow.workScheduleName }}
+            </span>
+          </div>
+          <div class="pm-history-actions">
+            <button class="pm-btn pm-btn--outline pm-btn--sm"
+                    (click)="loadScheduleHistory()" [disabled]="loadingHistory">
+              <span class="material-symbols-outlined">refresh</span>
+            </button>
+            <button class="pm-btn pm-btn--outline pm-btn--sm"
+                    (click)="openHistoryForm()" [disabled]="showHistoryForm">
+              <span class="material-symbols-outlined">add</span> Nueva jornada
+            </button>
+          </div>
+        </div>
+
+        <!-- Formulario nuevo periodo -->
+        <div class="pm-history-form" *ngIf="showHistoryForm">
+          <div class="pm-history-form-title">Registrar cambio de jornada</div>
+          <div class="pm-history-form-row">
+            <div class="pm-field">
+              <label>JORNADA *</label>
+              <select [(ngModel)]="historyDraft.workScheduleId">
+                <option value="">— Seleccionar —</option>
+                <option *ngFor="let s of availableSchedules" [value]="s.id">{{ s.name }}</option>
+              </select>
+            </div>
+            <div class="pm-field">
+              <label>INICIO VIGENCIA *</label>
+              <input type="date" [(ngModel)]="historyDraft.startDate" />
+            </div>
+            <div class="pm-field">
+              <label>FIN VIGENCIA</label>
+              <input type="date" [(ngModel)]="historyDraft.endDate" />
+            </div>
+            <div class="pm-field">
+              <label>INICIO CICLO</label>
+              <input type="date" [(ngModel)]="historyDraft.cycleStartDate" />
+            </div>
+            <div class="pm-field-actions">
+              <button class="pm-btn pm-btn--primary pm-btn--sm"
+                      (click)="saveHistoryEntry()" [disabled]="savingHistory">
+                <span *ngIf="savingHistory" class="pm-spinner-sm"></span>
+                Guardar
+              </button>
+              <button class="pm-btn pm-btn--outline pm-btn--sm"
+                      (click)="showHistoryForm=false">Cancelar</button>
+            </div>
+          </div>
+          <div class="pm-form-error" *ngIf="historyFormError">{{ historyFormError }}</div>
+          <div class="pm-form-hint">
+            <strong>Inicio Ciclo:</strong> fecha desde la que comienza el conteo T/D. Si se omite, se usa el inicio de vigencia.
+          </div>
+        </div>
+
+        <!-- Lista periodos -->
+        <div class="pm-history-list">
+          <div class="pm-history-empty" *ngIf="!loadingHistory && scheduleHistory.length === 0">
+            Sin historial registrado.
+            <a (click)="openHistoryForm()">Registrar primera jornada</a>
+          </div>
+          <div class="pm-history-item" *ngFor="let h of scheduleHistory">
+            <span class="pm-hist-badge" [class.pm-hist-badge--active]="!h.endDate">
+              {{ !h.endDate ? 'VIGENTE' : 'HISTÓRICO' }}
+            </span>
+            <span class="pm-hist-name">{{ h.workScheduleName || '—' }}</span>
+            <span class="pm-hist-range">
+              {{ h.startDate }} → {{ h.endDate || 'actualidad' }}
+            </span>
+            <span class="pm-hist-cycle" *ngIf="h.cycleStartDate && h.cycleStartDate !== h.startDate">
+              (ciclo desde {{ h.cycleStartDate }})
+            </span>
+            <button class="pm-btn pm-btn--danger pm-btn--sm" (click)="deleteHistoryEntry(h.id)">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini calendario distribución -->
+      <div class="pm-detail-section-title">Distribución del mes</div>
+      <div class="pm-cal-mini">
+        <div *ngFor="let entry of selectedRow.days"
+             class="pm-cal-cell {{ getDayClass(entry.dayType) }}">
+          <span class="pm-cal-num">{{ entry.day }}</span>
+          <span class="pm-cal-type">{{ entry.dayType || '' }}</span>
+        </div>
+      </div>
+
+      <!-- Resumen -->
+      <div class="pm-summary-bar">
+        Trabajados: <strong>{{ selectedRow.totals['T'] || 0 }}</strong> ·
+        Extra: <strong>{{ selectedRow.totals['EX'] || 0 }}</strong> ·
+        Vacaciones: <strong>{{ selectedRow.totals['V'] || 0 }}</strong> ·
+        Permisos: <strong>{{ selectedRow.totals['P'] || 0 }}</strong>
+      </div>
+
+    </div><!-- /pm-detail -->
+
+  </div><!-- /pm-body -->
+</div><!-- /pm-root -->

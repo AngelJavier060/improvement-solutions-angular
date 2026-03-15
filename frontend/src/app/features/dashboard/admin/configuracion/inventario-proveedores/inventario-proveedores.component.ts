@@ -35,7 +35,9 @@ export class InventarioProveedoresComponent implements OnInit {
       email: [''],
       address: ['']
     });
-    if (this.ruc) this.load(); else this.error = 'Seleccione una empresa activa para continuar.';
+    if (this.ruc) {
+      this.load();
+    }
   }
 
   load(): void {

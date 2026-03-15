@@ -17,8 +17,8 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards"})
-@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards"})
+@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts"})
+@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts"})
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Business {
     @Id
@@ -135,6 +135,24 @@ public class Business {
     )
     @JsonIgnore
     private Set<CardCatalog> cards = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_work_schedule",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "work_schedule_id")
+    )
+    @JsonIgnore
+    private Set<WorkSchedule> workSchedules = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_work_shift",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "work_shift_id")
+    )
+    @JsonIgnore
+    private Set<WorkShift> workShifts = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -334,5 +352,23 @@ public class Business {
 
     public void removeCard(CardCatalog card) {
         cards.remove(card);
+    }
+
+    // Métodos para jornadas de trabajo
+    public void addWorkSchedule(WorkSchedule ws) {
+        workSchedules.add(ws);
+    }
+
+    public void removeWorkSchedule(WorkSchedule ws) {
+        workSchedules.remove(ws);
+    }
+
+    // Métodos para horarios de trabajo
+    public void addWorkShift(WorkShift wsh) {
+        workShifts.add(wsh);
+    }
+
+    public void removeWorkShift(WorkShift wsh) {
+        workShifts.remove(wsh);
     }
 }

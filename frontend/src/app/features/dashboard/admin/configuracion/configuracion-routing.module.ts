@@ -72,6 +72,14 @@ const routes: Routes = [
       {
         path: 'inventario-proveedores',
         loadChildren: () => import('./inventario-proveedores/inventario-proveedores.module').then(m => m.InventarioProveedoresModule)
+      },
+      {
+        path: 'jornadas-trabajo',
+        loadChildren: () => import('./jornada-trabajo/jornada-trabajo.module').then(m => m.JornadaTrabajoModule)
+      },
+      {
+        path: 'horarios-trabajo',
+        loadChildren: () => import('./horario-trabajo/horario-trabajo.module').then(m => m.HorarioTrabajoModule)
       }
     ]
   }

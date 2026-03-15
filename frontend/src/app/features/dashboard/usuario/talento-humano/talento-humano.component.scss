@@ -76,7 +76,7 @@
 }
 
 .sidebar-talento {
-  width: var(--sidebar-w, 260px);
+  width: 260px;
   position: fixed;
   top: calc(var(--topbar-h) + var(--sidebar-gap));
   left: 0;
@@ -84,17 +84,22 @@
   background: #fff;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   border-right: 1px solid #e5e7eb;
   box-shadow: 2px 0 16px rgba(44, 62, 80, 0.08);
-  z-index: 20; /* below global navbar but above content */
+  z-index: 20;
   border-radius: 0 18px 18px 0;
-  transition: width .2s ease, transform .2s ease;
+  transition: width .2s ease;
 
   &.collapsed {
     width: 64px;
-    .sidebar-title { display: none; }
+    overflow-x: hidden;
+    .sidebar-title        { display: none; }
+    .sidebar-business-info{ display: none; }
     .sidebar-nav .nav-link span { display: none; }
     .sidebar-nav .nav-link { justify-content: center; padding: 0.85rem 0; }
+    .nav-submenu          { display: none; }
+    .nav-group-toggle .nav-chevron { display: none; }
   }
 }
 
@@ -172,6 +177,92 @@
   cursor: not-allowed;
   background: #f3f4f6;
   color: #b0b7c3;
+}
+
+/* ── Empresa info (solo informativo) ── */
+.sidebar-business-info {
+  display: flex;
+  align-items: center;
+  padding: 6px 1.5rem 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #764ba2;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  .biz-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* ── Grupo con submenú ── */
+.nav-group-toggle {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.85rem 1.25rem;
+  border-radius: 10px;
+  color: #4a5a6a;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background 0.18s, color 0.18s;
+
+  &:hover {
+    background: linear-gradient(90deg, #667eea 0%, #2fd8d8 100%);
+    color: #fff;
+  }
+
+  i:first-child { font-size: 1.2rem; flex: 0 0 auto; }
+}
+
+.nav-chevron {
+  font-size: 0.7rem;
+  margin-left: auto;
+  transition: transform .2s;
+}
+
+.nav-group.open > .nav-group-toggle {
+  background: linear-gradient(90deg, #667eea 0%, #2fd8d8 100%);
+  color: #fff;
+  border-radius: 10px 10px 0 0;
+}
+
+/* ── Submenú ── */
+.nav-submenu {
+  list-style: none;
+  padding: 4px 0 4px 8px;
+  margin: 0;
+  background: #f8f9fc;
+  border-radius: 0 0 10px 10px;
+  border-left: 3px solid #667eea;
+  margin-left: 8px;
+  margin-bottom: 4px;
+
+  li { margin-bottom: 2px; }
+}
+
+.nav-sublink {
+  padding: 0.6rem 1rem 0.6rem 0.75rem !important;
+  font-size: 0.88rem !important;
+  border-radius: 8px !important;
+  color: #4a5a6a !important;
+
+  i { font-size: 0.9rem !important; color: #667eea; }
+
+  &.active, &:hover {
+    background: linear-gradient(90deg, #667eea 0%, #2fd8d8 100%) !important;
+    color: #fff !important;
+    i { color: #fff !important; }
+  }
 }
 
 .sidebar-company-selector {
@@ -279,8 +370,8 @@
 }
 
 .content-col {
-  margin-left: calc(var(--sidebar-w, 260px) + 96px);
-  width: calc(100% - (var(--sidebar-w, 260px) + 96px));
+  margin-left: 276px;   /* 260px sidebar + 16px gap */
+  width: calc(100% - 276px);
   padding-top: 16px;
   min-height: 100vh;
   position: relative;
@@ -288,26 +379,26 @@
   transition: margin-left .2s ease, width .2s ease;
 
   &.full {
-    margin-left: 128px; /* collapsed sidebar width (64) + 64px gap */
-    width: calc(100% - 128px);
+    margin-left: 80px;  /* 64px collapsed + 16px gap */
+    width: calc(100% - 80px);
   }
 }
 
-/* Toggle button to collapse/expand sidebar */
+/* Toggle button */
 .sidebar-toggle {
   position: fixed;
   top: calc(var(--topbar-h) + var(--sidebar-gap) + 8px);
-  left: calc(var(--sidebar-w, 260px) + 104px);
+  left: 244px;    /* 260px - 16px so it sits at the edge */
   width: 32px;
   height: 32px;
   border-radius: 999px;
   display: grid;
   place-items: center;
   z-index: 25;
-  transition: left .2s ease, transform .2s ease;
+  transition: left .2s ease;
 }
 
-.sidebar-toggle.collapsed { left: 128px; }
+.sidebar-toggle.collapsed { left: 48px; }
 
 
 // Module header

@@ -259,6 +259,8 @@ public class BusinessController {
         response.put("type_contracts", business.getTypeContracts());
         response.put("course_certifications", business.getCourseCertifications());
         response.put("cards", business.getCards());
+        response.put("workSchedules", business.getWorkSchedules());
+        response.put("workShifts", business.getWorkShifts());
         response.put("ieses", business.getIessItems());
         // Filtrar duplicados: solo una relación activa por matriz de obligación (por catalog id)
         java.util.Map<Long, com.improvementsolutions.model.BusinessObligationMatrix> obligationMap = new java.util.LinkedHashMap<>();
@@ -884,5 +886,51 @@ public class BusinessController {
 
         Business updated = businessService.addObligationMatricesToBusinessBulk(businessId, catalogIds);
         return ResponseEntity.ok(updated);
+    }
+
+    // === ENDPOINTS PARA JORNADAS DE TRABAJO ===
+    @PostMapping("/{businessId}/work-schedules/{workScheduleId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addWorkScheduleToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long workScheduleId) {
+        businessService.addWorkScheduleToBusiness(businessId, workScheduleId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Jornada de trabajo agregada exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{businessId}/work-schedules/{workScheduleId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeWorkScheduleFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long workScheduleId) {
+        businessService.removeWorkScheduleFromBusiness(businessId, workScheduleId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Jornada de trabajo eliminada exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    // === ENDPOINTS PARA HORARIOS DE TRABAJO ===
+    @PostMapping("/{businessId}/work-shifts/{workShiftId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addWorkShiftToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long workShiftId) {
+        businessService.addWorkShiftToBusiness(businessId, workShiftId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Horario de trabajo agregado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{businessId}/work-shifts/{workShiftId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeWorkShiftFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long workShiftId) {
+        businessService.removeWorkShiftFromBusiness(businessId, workShiftId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Horario de trabajo eliminado exitosamente");
+        return ResponseEntity.ok(response);
     }
 }
