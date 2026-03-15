@@ -11,7 +11,6 @@ import { BusinessContextService } from '../../../../../core/services/business-co
   imports: [CommonModule, FormsModule, ReactiveFormsModule]
 })
 export class InventarioProveedoresComponent implements OnInit {
-  ruc: string = '';
   list: InventorySupplier[] = [];
   form!: FormGroup;
   loading = false;
@@ -26,8 +25,6 @@ export class InventarioProveedoresComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const active = this.businessCtx.getActiveBusiness();
-    this.ruc = active?.ruc || '';
     this.form = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(200)]],
       ruc: [''],
@@ -35,14 +32,12 @@ export class InventarioProveedoresComponent implements OnInit {
       email: [''],
       address: ['']
     });
-    if (this.ruc) {
-      this.load();
-    }
+    this.load();
   }
 
   load(): void {
     this.loading = true;
-    this.supplierService.list(this.ruc).subscribe({
+    this.supplierService.listGlobal().subscribe({
       next: (data: any) => { this.list = (data || []) as InventorySupplier[]; this.loading = false; },
       error: (_err: any) => { this.loading = false; this.error = 'No se pudieron cargar los proveedores'; }
     });
@@ -50,7 +45,7 @@ export class InventarioProveedoresComponent implements OnInit {
 
   submit(): void {
     this.error = ''; this.ok = '';
-    if (!this.ruc || this.form.invalid) return;
+    if (this.form.invalid) return;
     const base: InventorySupplier = {
       name: this.form.value.name,
       ruc: this.form.value.ruc,
@@ -60,7 +55,7 @@ export class InventarioProveedoresComponent implements OnInit {
     };
     this.loading = true;
     if (this.editingId != null) {
-      this.supplierService.update(this.ruc, this.editingId, base).subscribe({
+      this.supplierService.updateGlobal(this.editingId, base).subscribe({
         next: () => {
           this.ok = 'Proveedor actualizado';
           this.editingId = null;
@@ -73,8 +68,8 @@ export class InventarioProveedoresComponent implements OnInit {
         }
       });
     } else {
-      const createPayload: InventorySupplier = { ...base, active: false };
-      this.supplierService.create(this.ruc, createPayload).subscribe({
+      const createPayload: InventorySupplier = { ...base };
+      this.supplierService.createGlobal(createPayload as any).subscribe({
         next: () => {
           this.ok = 'Proveedor creado';
           this.form.reset();
@@ -108,9 +103,9 @@ export class InventarioProveedoresComponent implements OnInit {
 
   remove(id?: number): void {
     this.error = ''; this.ok = '';
-    if (!id || !this.ruc) return;
+    if (!id) return;
     this.loading = true;
-    this.supplierService.delete(this.ruc, Number(id)).subscribe({
+    this.supplierService.deleteGlobal(Number(id)).subscribe({
       next: () => {
         if (this.editingId === Number(id)) this.cancelEdit();
         this.load();

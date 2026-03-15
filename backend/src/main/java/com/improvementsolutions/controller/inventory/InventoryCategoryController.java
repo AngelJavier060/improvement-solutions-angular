@@ -11,7 +11,7 @@ import com.improvementsolutions.model.inventory.InventoryCategory;
 import com.improvementsolutions.service.inventory.InventoryCategoryService;
 
 @RestController
-@RequestMapping("/api/inventory/{ruc}")
+@RequestMapping("/api/inventory/{ruc:\\d+}")
 public class InventoryCategoryController {
 
     private final InventoryCategoryService categoryService;

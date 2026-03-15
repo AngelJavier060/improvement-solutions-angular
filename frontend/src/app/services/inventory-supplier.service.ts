@@ -40,4 +40,21 @@ export class InventorySupplierService {
   listCatalog(): Observable<Array<{ name: string; ruc?: string; phone?: string; email?: string; address?: string }>> {
     return this.http.get<Array<{ name: string; ruc?: string; phone?: string; email?: string; address?: string }>>(`/api/inventory/catalog/suppliers`);
   }
+
+  // Global supplier CRUD (independiente de empresa)
+  listGlobal(): Observable<Array<{ id: number; name: string; ruc?: string; phone?: string; email?: string; address?: string }>> {
+    return this.http.get<Array<{ id: number; name: string; ruc?: string; phone?: string; email?: string; address?: string }>>(`/api/inventory/catalog/suppliers/global`);
+  }
+
+  createGlobal(payload: { name: string; ruc?: string; phone?: string; email?: string; address?: string }): Observable<{ id: number; name: string; ruc?: string; phone?: string; email?: string; address?: string }> {
+    return this.http.post<{ id: number; name: string; ruc?: string; phone?: string; email?: string; address?: string }>(`/api/inventory/catalog/suppliers`, payload);
+  }
+
+  updateGlobal(id: number, payload: { name: string; ruc?: string; phone?: string; email?: string; address?: string }): Observable<{ id: number; name: string; ruc?: string; phone?: string; email?: string; address?: string }> {
+    return this.http.put<{ id: number; name: string; ruc?: string; phone?: string; email?: string; address?: string }>(`/api/inventory/catalog/suppliers/${id}`, payload);
+  }
+
+  deleteGlobal(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/inventory/catalog/suppliers/${id}`);
+  }
 }

@@ -11,7 +11,7 @@ import com.improvementsolutions.model.inventory.InventorySupplier;
 import com.improvementsolutions.service.inventory.InventorySupplierService;
 
 @RestController
-@RequestMapping("/api/inventory/{ruc}")
+@RequestMapping("/api/inventory/{ruc:\\d+}")
 public class InventorySupplierController {
 
     private final InventorySupplierService supplierService;

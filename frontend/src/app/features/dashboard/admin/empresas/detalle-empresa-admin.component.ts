@@ -475,9 +475,15 @@ export class DetalleEmpresaAdminComponent implements OnInit {
 
   // === Catálogo global de inventario (sin RUC) ===
   loadGlobalCategoryCatalog(): void {
-    this.inventoryCategoryService.listCatalog().subscribe({
+    // Usar SOLO el catálogo global (sin mezclar categorías por empresa)
+    this.inventoryCategoryService.listGlobal().subscribe({
       next: (data) => {
-        this.globalCategoryCatalog = Array.isArray(data) ? data : [];
+        const arr = Array.isArray(data) ? data : [];
+        // Mapear a estructura usada por el componente (name/description)
+        this.globalCategoryCatalog = arr.map((g: any) => ({
+          name: (g?.name ?? '').toString(),
+          description: (g?.description ?? undefined)
+        }));
       },
       error: (err) => {
         console.error('[INVENTORY] Error cargando catálogo global de categorías:', err);
@@ -487,9 +493,17 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   }
 
   loadGlobalSupplierCatalog(): void {
-    this.inventorySupplierService.listCatalog().subscribe({
+    // Usar SOLO el catálogo global (sin mezclar proveedores por empresa)
+    this.inventorySupplierService.listGlobal().subscribe({
       next: (data) => {
-        this.globalSupplierCatalog = Array.isArray(data) ? data : [];
+        const arr = Array.isArray(data) ? data : [];
+        this.globalSupplierCatalog = arr.map((g: any) => ({
+          name: (g?.name ?? '').toString(),
+          ruc: g?.ruc ?? undefined,
+          phone: g?.phone ?? undefined,
+          email: g?.email ?? undefined,
+          address: g?.address ?? undefined
+        }));
       },
       error: (err) => {
         console.error('[INVENTORY] Error cargando catálogo global de proveedores:', err);

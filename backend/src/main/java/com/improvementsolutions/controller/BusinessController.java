@@ -252,16 +252,74 @@ public class BusinessController {
         response.put("createdAt", business.getCreatedAt());
         response.put("updatedAt", business.getUpdatedAt());
         
-        // Incluir todas las relaciones específicas de esta empresa
-        response.put("departments", business.getDepartments());
-        response.put("positions", business.getPositions());
-        response.put("type_documents", business.getTypeDocuments());
-        response.put("type_contracts", business.getTypeContracts());
-        response.put("course_certifications", business.getCourseCertifications());
-        response.put("cards", business.getCards());
-        response.put("workSchedules", business.getWorkSchedules());
-        response.put("workShifts", business.getWorkShifts());
-        response.put("ieses", business.getIessItems());
+        // Incluir relaciones mapeadas a DTOs ligeros para evitar proxys/lazy en JSON
+        java.util.function.Function<com.improvementsolutions.model.Department, Map<String, Object>> deptDto = d -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", d.getId());
+            m.put("name", d.getName());
+            return m;
+        };
+        java.util.function.Function<com.improvementsolutions.model.Position, Map<String, Object>> posDto = p -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", p.getId());
+            m.put("name", p.getName());
+            if (p.getDepartment() != null) m.put("departmentId", p.getDepartment().getId());
+            return m;
+        };
+        java.util.function.Function<com.improvementsolutions.model.TypeDocument, Map<String, Object>> tdDto = t -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", t.getId());
+            m.put("name", t.getName());
+            return m;
+        };
+        java.util.function.Function<com.improvementsolutions.model.TypeContract, Map<String, Object>> tcDto = t -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", t.getId());
+            m.put("name", t.getName());
+            return m;
+        };
+        java.util.function.Function<com.improvementsolutions.model.CourseCertification, Map<String, Object>> ccDto = c -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", c.getId());
+            m.put("name", c.getName());
+            return m;
+        };
+        java.util.function.Function<com.improvementsolutions.model.CardCatalog, Map<String, Object>> cardDto = c -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", c.getId());
+            m.put("name", c.getName());
+            return m;
+        };
+        java.util.function.Function<com.improvementsolutions.model.WorkSchedule, Map<String, Object>> wsDto = w -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", w.getId());
+            m.put("name", w.getName());
+            return m;
+        };
+        java.util.function.Function<com.improvementsolutions.model.WorkShift, Map<String, Object>> wshDto = w -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", w.getId());
+            m.put("name", w.getName());
+            return m;
+        };
+        java.util.function.Function<com.improvementsolutions.model.Iess, Map<String, Object>> iessDto = i -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", i.getId());
+            // Mantener compatibilidad: frontend puede usar 'code' o 'name'
+            m.put("code", i.getCode());
+            m.put("name", i.getCode());
+            return m;
+        };
+
+        response.put("departments", business.getDepartments().stream().map(deptDto).collect(Collectors.toList()));
+        response.put("positions", business.getPositions().stream().map(posDto).collect(Collectors.toList()));
+        response.put("type_documents", business.getTypeDocuments().stream().map(tdDto).collect(Collectors.toList()));
+        response.put("type_contracts", business.getTypeContracts().stream().map(tcDto).collect(Collectors.toList()));
+        response.put("course_certifications", business.getCourseCertifications().stream().map(ccDto).collect(Collectors.toList()));
+        response.put("cards", business.getCards().stream().map(cardDto).collect(Collectors.toList()));
+        response.put("workSchedules", business.getWorkSchedules().stream().map(wsDto).collect(Collectors.toList()));
+        response.put("workShifts", business.getWorkShifts().stream().map(wshDto).collect(Collectors.toList()));
+        response.put("ieses", business.getIessItems().stream().map(iessDto).collect(Collectors.toList()));
         // Filtrar duplicados: solo una relación activa por matriz de obligación (por catalog id)
         java.util.Map<Long, com.improvementsolutions.model.BusinessObligationMatrix> obligationMap = new java.util.LinkedHashMap<>();
         for (com.improvementsolutions.model.BusinessObligationMatrix bom : business.getBusinessObligationMatrices()) {
@@ -272,14 +330,78 @@ public class BusinessController {
                 obligationMap.put(catId, bom);
             }
         }
-        response.put("obligation_matrices", new java.util.ArrayList<>(obligationMap.values()));
-        response.put("users", business.getUsers());
-        response.put("contractor_companies", business.getContractorCompanies());
-        response.put("contractor_blocks", business.getContractorBlocks());
+        // Mapear obligación por empresa a estructura ligera
+        List<Map<String, Object>> bomDtos = new ArrayList<>();
+        for (com.improvementsolutions.model.BusinessObligationMatrix bom : obligationMap.values()) {
+            if (bom == null) continue;
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", bom.getId());
+            if (bom.getObligationMatrix() != null) {
+                Map<String, Object> cat = new HashMap<>();
+                cat.put("id", bom.getObligationMatrix().getId());
+                cat.put("name", bom.getObligationMatrix().getName());
+                m.put("obligationMatrix", cat);
+            }
+            bomDtos.add(m);
+        }
+        response.put("obligation_matrices", bomDtos);
+
+        // Usuarios (solo info básica + roles por nombre)
+        List<Map<String, Object>> userDtos = new ArrayList<>();
+        for (com.improvementsolutions.model.User u : business.getUsers()) {
+            if (u == null) continue;
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", u.getId());
+            m.put("username", u.getUsername());
+            m.put("name", u.getName());
+            m.put("email", u.getEmail());
+            m.put("active", u.getActive());
+            // Roles por nombre si están inicializados
+            List<String> roleNames = new ArrayList<>();
+            try {
+                for (com.improvementsolutions.model.Role r : u.getRoles()) {
+                    if (r != null && r.getName() != null) roleNames.add(r.getName());
+                }
+            } catch (Exception ignored) {}
+            m.put("roles", roleNames);
+            userDtos.add(m);
+        }
+        response.put("users", userDtos);
+
+        // Empresas contratistas y bloques (ligeros)
+        List<Map<String, Object>> ccDtos = new ArrayList<>();
+        for (com.improvementsolutions.model.ContractorCompany c : business.getContractorCompanies()) {
+            if (c == null) continue;
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", c.getId());
+            m.put("name", c.getName());
+            ccDtos.add(m);
+        }
+        response.put("contractor_companies", ccDtos);
+
+        List<Map<String, Object>> cbDtos = new ArrayList<>();
+        for (com.improvementsolutions.model.ContractorBlock b : business.getContractorBlocks()) {
+            if (b == null) continue;
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", b.getId());
+            try { m.put("name", b.getName()); } catch (Exception ignored) {}
+            if (b.getContractorCompany() != null) {
+                Map<String, Object> cc = new HashMap<>();
+                cc.put("id", b.getContractorCompany().getId());
+                cc.put("name", b.getContractorCompany().getName());
+                m.put("contractorCompany", cc);
+            }
+            cbDtos.add(m);
+        }
+        response.put("contractor_blocks", cbDtos);
         
         // Mantener compatibilidad hacia atrás
         if (!business.getContractorCompanies().isEmpty()) {
-            response.put("contractor_company", business.getContractorCompanies().get(0));
+            com.improvementsolutions.model.ContractorCompany c = business.getContractorCompanies().get(0);
+            Map<String, Object> cc = new HashMap<>();
+            cc.put("id", c.getId());
+            cc.put("name", c.getName());
+            response.put("contractor_company", cc);
         } else {
             response.put("contractor_company", null);
         }

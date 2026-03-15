@@ -5,17 +5,7 @@
   <div *ngIf="error" class="alert alert-danger py-2">{{ error }}</div>
   <div *ngIf="ok" class="alert alert-success py-2">{{ ok }}</div>
 
-  <!-- Mensaje informativo cuando no hay un contexto de empresa activo -->
-  <div *ngIf="!ruc" class="alert alert-info py-2 mb-3">
-    <i class="fas fa-info-circle me-1"></i>
-    Este módulo define el catálogo general de proveedores de inventario.
-    Para asociarlos a una empresa en particular, utilice el panel de <strong>Mi Empresa</strong>
-    en <code>/dashboard/admin/empresas/admin/&lt;id&gt;</code> y la sección
-    <strong>Inventario - Proveedores</strong>.
-  </div>
-
-  <!-- Formulario y tabla solo cuando hay una empresa seleccionada -->
-  <ng-container *ngIf="ruc">
+  <!-- Formulario global -->
   <form [formGroup]="form" (ngSubmit)="submit()" class="row g-2 mb-3">
     <div class="col-12 col-md-4">
       <label class="form-label">Nombre</label>
@@ -37,16 +27,11 @@
       <label class="form-label">Dirección</label>
       <input class="form-control" formControlName="address" />
     </div>
-    <div class="col-12 col-md-2 d-flex align-items-end">
+    <div class="col-12 col-md-2 d-flex align-items-end gap-2">
       <button class="btn btn-primary w-100" [disabled]="loading || form.invalid">
-        <i class="fas" [ngClass]="editingId != null ? 'fa-save' : 'fa-plus'"></i>
-        {{ editingId != null ? 'Actualizar' : 'Guardar' }}
+        {{ editingId === null ? 'Agregar' : 'Guardar' }}
       </button>
-    </div>
-    <div class="col-12 col-md-2 d-flex align-items-end" *ngIf="editingId != null">
-      <button type="button" class="btn btn-secondary w-100" (click)="cancelEdit()" [disabled]="loading">
-        <i class="fas fa-times"></i> Cancelar
-      </button>
+      <button type="button" class="btn btn-secondary" *ngIf="editingId !== null" (click)="cancelEdit()" [disabled]="loading">Cancelar</button>
     </div>
   </form>
 
@@ -59,7 +44,7 @@
           <th>Teléfono</th>
           <th>Email</th>
           <th>Dirección</th>
-          <th class="text-end">Acciones</th>
+          <th style="width: 160px;" class="text-end">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -84,5 +69,4 @@
       </tbody>
     </table>
   </div>
-  </ng-container>
 </div>

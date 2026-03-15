@@ -32,15 +32,13 @@ export class InventarioCategoriasComponent implements OnInit {
       name: ['', [Validators.required, Validators.maxLength(50)]],
       description: ['']
     });
-    if (this.ruc) {
-      this.load();
-    }
+    this.load();
   }
 
   load(): void {
     this.loading = true;
-    this.categoryService.list(this.ruc).subscribe({
-      next: (data: any) => { this.list = (data || []) as InventoryCategory[]; this.loading = false; },
+    this.categoryService.listGlobal().subscribe({
+      next: (data: any) => { this.list = (data || []) as any[]; this.loading = false; },
       error: (_err: any) => { this.loading = false; this.error = 'No se pudieron cargar las categorías'; }
     });
   }
@@ -49,25 +47,11 @@ export class InventarioCategoriasComponent implements OnInit {
 
   submit(): void {
     this.error = ''; this.ok = '';
-    if (!this.ruc || this.form.invalid) return;
+    if (this.form.invalid) return;
     this.loading = true;
-    if (this.editingId != null) {
-      const payload: InventoryCategory = { name: this.form.value.name, description: this.form.value.description };
-      this.categoryService.update(this.ruc, this.editingId, payload).subscribe({
-        next: () => {
-          this.ok = 'Categoría actualizada';
-          this.editingId = null;
-          this.form.reset();
-          this.load();
-        },
-        error: (err: any) => {
-          this.loading = false;
-          this.error = err?.error?.message || err?.message || 'No se pudo actualizar la categoría';
-        }
-      });
-    } else {
-      const payload: InventoryCategory = { name: this.form.value.name, description: this.form.value.description, active: false };
-      this.categoryService.create(this.ruc, payload).subscribe({
+    const payload: any = { name: this.form.value.name, description: this.form.value.description };
+    if (this.editingId == null) {
+      this.categoryService.createGlobal(payload).subscribe({
         next: () => {
           this.ok = 'Categoría creada';
           this.form.reset();
@@ -76,6 +60,18 @@ export class InventarioCategoriasComponent implements OnInit {
         error: (err: any) => {
           this.loading = false;
           this.error = err?.error?.message || err?.message || 'No se pudo crear la categoría';
+        }
+      });
+    } else {
+      this.categoryService.updateGlobal(this.editingId, payload).subscribe({
+        next: () => {
+          this.ok = 'Categoría actualizada';
+          this.cancelEdit();
+          this.load();
+        },
+        error: (err: any) => {
+          this.loading = false;
+          this.error = err?.error?.message || err?.message || 'No se pudo actualizar la categoría';
         }
       });
     }
@@ -95,9 +91,9 @@ export class InventarioCategoriasComponent implements OnInit {
 
   remove(id?: number): void {
     this.error = ''; this.ok = '';
-    if (!id || !this.ruc) return;
+    if (!id) return;
     this.loading = true;
-    this.categoryService.delete(this.ruc, Number(id)).subscribe({
+    this.categoryService.deleteGlobal(Number(id)).subscribe({
       next: () => {
         if (this.editingId === Number(id)) this.cancelEdit();
         this.load();

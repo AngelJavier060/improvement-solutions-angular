@@ -37,4 +37,21 @@ export class InventoryCategoryService {
   listCatalog(): Observable<Array<{ name: string; description?: string }>> {
     return this.http.get<Array<{ name: string; description?: string }>>(`/api/inventory/catalog/categories`);
   }
+
+  createGlobal(payload: { name: string; description?: string }): Observable<{ name: string; description?: string }> {
+    return this.http.post<{ name: string; description?: string }>(`/api/inventory/catalog/categories`, payload);
+  }
+
+  // Global CRUD with IDs
+  listGlobal(): Observable<Array<{ id: number; name: string; description?: string }>> {
+    return this.http.get<Array<{ id: number; name: string; description?: string }>>(`/api/inventory/catalog/categories/global`);
+  }
+
+  updateGlobal(id: number, payload: { name: string; description?: string }): Observable<{ id: number; name: string; description?: string }> {
+    return this.http.put<{ id: number; name: string; description?: string }>(`/api/inventory/catalog/categories/${id}`, payload);
+  }
+
+  deleteGlobal(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/inventory/catalog/categories/${id}`);
+  }
 }
