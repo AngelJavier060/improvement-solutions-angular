@@ -227,6 +227,7 @@ public class BusinessController {
 
     @GetMapping("/{id}/admin")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @Transactional(readOnly = true)
     public ResponseEntity<Map<String, Object>> getBusinessAdminDetails(@PathVariable Long id) {
         Business business = businessService.findByIdWithAllRelations(id)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
