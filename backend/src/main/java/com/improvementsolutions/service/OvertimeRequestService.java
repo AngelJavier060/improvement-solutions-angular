@@ -3,6 +3,7 @@ package com.improvementsolutions.service;
 import com.improvementsolutions.model.*;
 import com.improvementsolutions.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,7 +24,8 @@ public class OvertimeRequestService {
     private final BusinessEmployeeRepository employeeRepo;
     private final AttendanceService attendanceService;
 
-    private static final String UPLOAD_DIR = "uploads/overtime-pdfs/";
+    @Value("${app.storage.location:uploads}")
+    private String storageRoot;
 
     public List<OvertimeRequest> getByBusiness(Long businessId, String period) {
         if (period != null && !period.isBlank()) {
@@ -112,13 +114,13 @@ public class OvertimeRequestService {
                 .filter(r -> r.getBusiness().getId().equals(businessId))
                 .orElseThrow(() -> new NoSuchElementException("Request not found"));
 
-        Path dir = Paths.get(UPLOAD_DIR);
+        Path dir = Paths.get(storageRoot, "overtime-pdfs").toAbsolutePath().normalize();
         Files.createDirectories(dir);
         String filename = "overtime_" + businessId + "_" + requestId + "_" + System.currentTimeMillis() + ".pdf";
         Path dest = dir.resolve(filename);
         Files.copy(file.getInputStream(), dest, StandardCopyOption.REPLACE_EXISTING);
 
-        req.setSignedPdfPath(UPLOAD_DIR + filename);
+        req.setSignedPdfPath(dest.toString());
         req.setStatus("APROBADO");
         req.setApprovedAt(LocalDateTime.now());
 
