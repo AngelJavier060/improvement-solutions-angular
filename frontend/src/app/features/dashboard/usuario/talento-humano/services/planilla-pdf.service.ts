@@ -210,7 +210,7 @@ export class PlanillaPdfService {
     const body = sheet.map((row, idx) => {
       const fixed = [
         String(idx + 1),
-        row.fullName,
+        row.cedula ? `${row.fullName}\n${row.cedula}` : row.fullName,
         row.position ?? '',
       ];
       const days = Array.from({ length: daysCount }, (_, i) => row.days[i]?.dayType ?? '');

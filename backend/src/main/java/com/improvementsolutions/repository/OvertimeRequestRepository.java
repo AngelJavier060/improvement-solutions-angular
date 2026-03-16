@@ -8,11 +8,16 @@ import java.util.List;
 
 public interface OvertimeRequestRepository extends JpaRepository<OvertimeRequest, Long> {
 
-    @Query("SELECT r FROM OvertimeRequest r WHERE r.business.id = :businessId ORDER BY r.createdAt DESC")
+    @Query("SELECT DISTINCT r FROM OvertimeRequest r " +
+           "LEFT JOIN FETCH r.employee " +
+           "LEFT JOIN FETCH r.activities " +
+           "WHERE r.business.id = :businessId ORDER BY r.createdAt DESC")
     List<OvertimeRequest> findByBusinessId(@Param("businessId") Long businessId);
 
-    @Query("SELECT r FROM OvertimeRequest r WHERE r.business.id = :businessId " +
-           "AND r.reportPeriod = :period ORDER BY r.createdAt DESC")
+    @Query("SELECT DISTINCT r FROM OvertimeRequest r " +
+           "LEFT JOIN FETCH r.employee " +
+           "LEFT JOIN FETCH r.activities " +
+           "WHERE r.business.id = :businessId AND r.reportPeriod = :period ORDER BY r.createdAt DESC")
     List<OvertimeRequest> findByBusinessIdAndPeriod(@Param("businessId") Long businessId,
                                                      @Param("period") String period);
 

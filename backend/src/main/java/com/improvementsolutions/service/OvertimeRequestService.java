@@ -60,6 +60,7 @@ public class OvertimeRequestService {
         if (activities != null) {
             // Validación: no permitir registrar día extra u horas extra en jornada normal (T)
             Set<LocalDate> datesToValidate = new HashSet<>();
+            Map<LocalDate, List<String>> descByDate = new HashMap<>();
             for (Map<String, Object> a : activities) {
                 OvertimeActivity act = new OvertimeActivity();
                 act.setRequest(req);
@@ -68,6 +69,8 @@ public class OvertimeRequestService {
                     LocalDate d = LocalDate.parse(dateStr);
                     act.setActivityDate(d);
                     datesToValidate.add(d);
+                    descByDate.computeIfAbsent(d, k -> new ArrayList<>())
+                            .add(((String) a.getOrDefault("description", "")).trim());
                 }
                 String startStr = (String) a.get("startTime");
                 if (startStr != null && !startStr.isBlank()) act.setStartTime(LocalTime.parse(startStr));
@@ -84,6 +87,19 @@ public class OvertimeRequestService {
                 if ("T".equalsIgnoreCase(type)) {
                     throw new IllegalArgumentException("No es posible registrar horas/días extra el " + d + ": es un día de jornada laboral normal.");
                 }
+            }
+
+            // Reflejar automáticamente en planilla: marcar EX y guardar motivo/descripcion
+            for (Map.Entry<LocalDate, List<String>> e : descByDate.entrySet()) {
+                LocalDate d = e.getKey();
+                String joined = e.getValue().stream()
+                        .filter(s -> s != null && !s.isBlank())
+                        .distinct()
+                        .reduce((a, b) -> a + "; " + b)
+                        .orElse("Registro de horas/días extra");
+                String notes = ("HE: " + joined);
+                if (notes.length() > 500) notes = notes.substring(0, 497) + "...";
+                attendanceService.saveWorkDay(businessId, employeeId, d, "EX", notes);
             }
         }
 

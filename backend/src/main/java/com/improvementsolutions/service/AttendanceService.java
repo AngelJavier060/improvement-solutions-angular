@@ -301,6 +301,16 @@ public class AttendanceService {
         BusinessEmployee emp = requireEmployee(businessId, employeeId);
 
         Optional<EmployeeWorkDay> existing = workDayRepository.findByEmployee_IdAndWorkDate(employeeId, date);
+        if (existing.isPresent()) {
+            EmployeeWorkDay cur = existing.get();
+            String curNotes = cur.getNotes() != null ? cur.getNotes().trim() : null;
+            if ("EX".equalsIgnoreCase(cur.getDayType()) && curNotes != null && curNotes.toUpperCase().startsWith("HE:")) {
+                boolean incomingIsHeEx = "EX".equalsIgnoreCase(dayType) && (notes != null && notes.trim().toUpperCase().startsWith("HE:"));
+                if (!incomingIsHeEx) {
+                    throw new IllegalStateException("El día " + date + " está bloqueado por registro de horas extra y no puede modificarse manualmente.");
+                }
+            }
+        }
         EmployeeWorkDay wd = existing.orElseGet(EmployeeWorkDay::new);
         wd.setBusiness(biz);
         wd.setEmployee(emp);
@@ -332,6 +342,16 @@ public class AttendanceService {
             String type = entry.getOrDefault("dayType", "D");
             String notes = entry.get("notes");
             Optional<EmployeeWorkDay> existing = workDayRepository.findByEmployee_IdAndWorkDate(employeeId, date);
+            if (existing.isPresent()) {
+                EmployeeWorkDay cur = existing.get();
+                String curNotes = cur.getNotes() != null ? cur.getNotes().trim() : null;
+                if ("EX".equalsIgnoreCase(cur.getDayType()) && curNotes != null && curNotes.toUpperCase().startsWith("HE:")) {
+                    boolean incomingIsHeEx = "EX".equalsIgnoreCase(type) && (notes != null && notes.trim().toUpperCase().startsWith("HE:"));
+                    if (!incomingIsHeEx) {
+                        throw new IllegalStateException("El día " + date + " está bloqueado por registro de horas extra y no puede modificarse manualmente.");
+                    }
+                }
+            }
             EmployeeWorkDay wd = existing.orElseGet(EmployeeWorkDay::new);
             wd.setBusiness(biz);
             wd.setEmployee(emp);
@@ -366,7 +386,7 @@ public class AttendanceService {
         dto.setId(null);
         EmployeeOvertime saved = overtimeRepository.save(dto);
         // Marcar el día como EX en la planilla
-        saveWorkDay(businessId, employeeId, saved.getOvertimeDate(), "EX", "Hora extra registrada");
+        saveWorkDay(businessId, employeeId, saved.getOvertimeDate(), "EX", "HE: Hora extra registrada");
         return saved;
     }
 

@@ -212,7 +212,7 @@
     </div>
 
     <!-- ── TABLA PLANILLA ── -->
-    <div class="pm-table-card" *ngIf="!loading && !error">
+    <div class="pm-table-card" *ngIf="!loading && !error" (click)="closeNotePopover()">
       <div class="pm-table-scroll">
         <table class="pm-table" (click)="cancelEdit()">
           <thead>
@@ -243,10 +243,23 @@
                 </div>
                 <!-- Celda -->
                 <div class="pm-day-cell {{ getDayClass(entry.dayType) }}"
-                     [title]="(entry.holiday ? (entry.holidayName + ' — ') : '') + (entry.dayType ? (dayTypes[entry.dayType].label || entry.dayType) : '')"
+                     [title]="(entry.holiday ? (entry.holidayName + ' — ') : '') + (entry.dayType ? (dayTypes[entry.dayType].label || entry.dayType) : '') + (entry.notes ? (' — ' + entry.notes) : '')"
                      (click)="startEdit(row.employeeId, i, $event)">
                   {{ entry.dayType || '' }}
                   <span class="pm-hday-dot" *ngIf="entry.holiday" [title]="entry.holidayName"></span>
+                  <button class="pm-exicon material-symbols-outlined"
+                          *ngIf="entry.dayType==='EX' && entry.notes?.startsWith('HE:')"
+                          (click)="toggleNotePopover(row.employeeId, i, $event)"
+                          [title]="entry.notes">info</button>
+                </div>
+                <!-- Popover motivo HE -->
+                <div class="pm-note-pop" *ngIf="isNoteOpen(row.employeeId, i)" (click)="$event.stopPropagation()">
+                  <div class="pm-note-pop-hd">
+                    <span class="material-symbols-outlined">more_time</span>
+                    Motivo de hora extra
+                    <button type="button" class="pm-note-close" (click)="closeNotePopover(); $event.stopPropagation()" title="Cerrar">✕</button>
+                  </div>
+                  <div class="pm-note-pop-txt">{{ entry.notes }}</div>
                 </div>
               </td>
               <td class="pm-td-total" *ngFor="let k of dayTypeKeys">{{ row.totals[k] || 0 }}</td>

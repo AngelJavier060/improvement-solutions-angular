@@ -93,6 +93,7 @@ export class PlanillaMensualComponent implements OnInit {
   );
 
   editingCell: { empId: number; dayIdx: number } | null = null;
+  notePopover: { empId: number; dayIdx: number } | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -503,6 +504,17 @@ export class PlanillaMensualComponent implements OnInit {
 
   startEdit(empId: number, dayIdx: number, event: Event): void {
     event.stopPropagation();
+    // Si el popover de nota está abierto, cerrar y NO abrir el editor
+    if (this.notePopover) {
+      this.closeNotePopover();
+      return;
+    }
+    const row = this.filteredSheet.find(r => r.employeeId === empId) || this.sheet.find(r => r.employeeId === empId);
+    if (row && this.isLocked(row, dayIdx)) {
+      this.notePopover = { empId, dayIdx };
+      return;
+    }
+    this.notePopover = null;
     this.editingCell = { empId, dayIdx };
   }
 
@@ -511,6 +523,28 @@ export class PlanillaMensualComponent implements OnInit {
   }
 
   cancelEdit(): void { this.editingCell = null; }
+
+  isLocked(row: EmployeeSheetRow, dayIdx: number): boolean {
+    const entry = row.days[dayIdx];
+    if (!entry) return false;
+    return entry.dayType === 'EX' && typeof entry.notes === 'string' && entry.notes.trim().toUpperCase().startsWith('HE:');
+  }
+
+  isNoteOpen(empId: number, dayIdx: number): boolean {
+    return !!this.notePopover && this.notePopover.empId === empId && this.notePopover.dayIdx === dayIdx;
+  }
+
+  toggleNotePopover(empId: number, dayIdx: number, event: Event): void {
+    event.stopPropagation();
+    if (this.isNoteOpen(empId, dayIdx)) {
+      this.notePopover = null;
+    } else {
+      this.notePopover = { empId, dayIdx };
+      this.editingCell = null;
+    }
+  }
+
+  closeNotePopover(): void { this.notePopover = null; }
 
   getMonthLabel(): string {
     return this.months.find(m => m.v === this.month)?.l ?? '';
