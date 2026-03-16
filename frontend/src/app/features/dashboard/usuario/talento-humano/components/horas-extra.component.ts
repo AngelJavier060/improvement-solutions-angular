@@ -34,6 +34,7 @@ export class HorasExtraComponent implements OnInit {
   searchTerm: string = '';
   filterPeriod: string = this.currentPeriod();
   filterStatus: string = '';
+  filterWithExtra: boolean = false;
 
   loading = false;
   loadingEmps = false;
@@ -41,6 +42,9 @@ export class HorasExtraComponent implements OnInit {
   uploadingId: number | null = null;
   error: string | null = null;
   successMsg: string | null = null;
+
+  // Modal de detalle de solicitud
+  detailReq: OvertimeRequest | null = null;
 
   showForm = false;
   selectedEmployee: EmployeeResponse | null = null;
@@ -187,6 +191,9 @@ export class HorasExtraComponent implements OnInit {
     }
     if (this.filterStatus) {
       list = list.filter(r => r.status === this.filterStatus);
+    }
+    if (this.filterWithExtra) {
+      list = list.filter(r => (r.totalDays || 0) > 0);
     }
     this.filteredRequests = list;
   }
@@ -637,8 +644,24 @@ export class HorasExtraComponent implements OnInit {
 
   viewSignedPdf(req: OvertimeRequest): void {
     if (!this.businessId || !req.id) return;
-    const url = this.attendanceService.getOvertimePdfUrl(this.businessId, req.id);
-    window.open(url, '_blank');
+    this.attendanceService.getOvertimeSignedPdf(this.businessId, req.id).subscribe({
+      next: (blob: Blob) => {
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+      },
+      error: err => {
+        this.error = err?.error?.error || 'No se pudo abrir el PDF firmado.';
+      }
+    });
+  }
+
+  // ── Detalle de solicitud ─────────────────────────────────────────────────
+  openDetails(req: OvertimeRequest): void {
+    this.detailReq = req;
+  }
+
+  closeDetails(): void {
+    this.detailReq = null;
   }
 
   deleteRequest(req: OvertimeRequest): void {

@@ -239,6 +239,12 @@ $white:     #ffffff;
 .he-cell-activity { max-width: 220px; }
 .he-act-preview { font-size: .8rem; color: $slate-600; }
 .he-cell-muted { color: $slate-400; font-size: .8rem; }
+.he-act-dates { margin-top: .25rem; display:flex; flex-wrap: wrap; gap: .25rem; }
+.he-chip {
+  background: #fff7ed; color: #c2410c;
+  border: 1px solid #fed7aa; border-radius: .35rem;
+  font-size: .72rem; font-weight: 700; padding: .1rem .4rem; line-height: 1.2;
+}
 
 // ── Emp cell ──────────────────────────────────────────────────────────────────
 .he-emp-cell { display: flex; align-items: center; gap: .75rem; }

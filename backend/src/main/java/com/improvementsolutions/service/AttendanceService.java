@@ -265,9 +265,14 @@ public class AttendanceService {
                 // Días anteriores al inicio de jornada: siempre en blanco (ignorar lo guardado en BD)
                 LocalDate schedStart = emp.getWorkScheduleStartDate();
                 boolean beforeStart = schedStart != null && date.isBefore(schedStart);
-                String type = beforeStart ? null
-                        : (savedMap.containsKey(key) ? savedMap.get(key) : getAutoDayType(emp, date));
+                boolean hasSaved = savedMap.containsKey(key);
+                String savedType = hasSaved ? savedMap.get(key) : null;
                 String notes = notesMap.get(key);
+                boolean isOvertimeSaved = (savedType != null && "EX".equalsIgnoreCase(savedType))
+                        || (notes != null && notes.trim().toUpperCase().startsWith("HE:"));
+                String type = (beforeStart && !isOvertimeSaved)
+                        ? null
+                        : (hasSaved ? savedType : getAutoDayType(emp, date));
 
                 Map<String, Object> dayInfo = new LinkedHashMap<>();
                 dayInfo.put("day",  d);

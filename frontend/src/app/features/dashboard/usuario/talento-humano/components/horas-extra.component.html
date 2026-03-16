@@ -4,6 +4,68 @@
   <div class="he-toast he-toast-success" *ngIf="successMsg">
     <span class="material-symbols-outlined">check_circle</span> {{ successMsg }}
   </div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     MODAL: Detalle de solicitud (solo lectura)
+══════════════════════════════════════════════════════════════════════ -->
+<div class="he-modal-overlay" *ngIf="detailReq" (click)="closeDetails()">
+  <div class="he-modal" (click)="$event.stopPropagation()">
+    <div class="he-modal-header">
+      <div>
+        <h2 class="he-modal-title">
+          <span class="material-symbols-outlined">visibility</span>
+          Detalle de Solicitud
+        </h2>
+        <p class="he-modal-sub">{{ detailReq.employeeName }} · {{ periodLabel(detailReq.reportPeriod) }}</p>
+      </div>
+      <button class="he-modal-close" (click)="closeDetails()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="he-modal-body">
+      <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-bottom: .75rem;">
+        <span class="he-status-badge" [ngClass]="statusClass(detailReq.status || '')">
+          <span class="he-status-dot"></span>
+          {{ detailReq.status || 'PENDIENTE' }}
+        </span>
+        <span class="he-badge-days" *ngIf="detailReq.totalDays">{{ detailReq.totalDays }} día{{ detailReq.totalDays !== 1 ? 's' : '' }}</span>
+        <span class="he-badge-hours">{{ (detailReq.totalHours || 0) | number:'1.1-1' }} hrs</span>
+      </div>
+
+      <div class="he-activities-table-wrap">
+        <table class="he-activities-table">
+          <thead>
+            <tr>
+              <th style="width:36px">#</th>
+              <th style="width:90px">Fecha</th>
+              <th style="width:140px">Horario</th>
+              <th>Descripción</th>
+              <th style="width:130px">Sustento</th>
+              <th style="width:60px">Hrs</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let a of detailReq.activities; let i = index">
+              <td class="text-center he-cell-muted">{{ i + 1 }}</td>
+              <td>{{ a.activityDate }}</td>
+              <td class="text-center">{{ a.startTime }} – {{ a.endTime }}</td>
+              <td>{{ a.description }}</td>
+              <td>{{ a.supportDoc || '—' }}</td>
+              <td class="text-center">{{ a.hoursTotal || 0 | number:'1.1-1' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="he-modal-footer">
+      <button class="he-btn-primary" (click)="closeDetails()">
+        <span class="material-symbols-outlined">check</span> Cerrar
+      </button>
+    </div>
+  </div>
+</div>
   <div class="he-toast he-toast-error" *ngIf="error">
     <span class="material-symbols-outlined">error</span> {{ error }}
     <button class="he-toast-close" (click)="error=null">
@@ -92,6 +154,13 @@
           <button class="he-sf-btn he-sf-paid" [class.active]="filterStatus==='PAGADO'"
                   (click)="filterStatus='PAGADO'; applyFilters()">Pagado</button>
         </div>
+        <div class="he-select-box">
+          <span class="material-symbols-outlined">filter_alt</span>
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+            <input type="checkbox" [(ngModel)]="filterWithExtra" (change)="applyFilters()" />
+            Con días extra
+          </label>
+        </div>
       </div>
     </div>
 
@@ -140,6 +209,11 @@
                 {{ req.activities[0].description | slice:0:50 }}<ng-container *ngIf="(req.activities[0].description || '').length > 50">…</ng-container>
               </span>
               <span *ngIf="!req.activities || req.activities.length === 0" class="he-cell-muted">—</span>
+              <div class="he-act-dates" *ngIf="req.activities && req.activities.length > 0">
+                <span class="he-chip" *ngFor="let a of req.activities">
+                  {{ a.activityDate.slice(8,10) }}/{{ a.activityDate.slice(5,7) }}
+                </span>
+              </div>
             </td>
             <td class="text-center">
               <span class="he-badge-days" *ngIf="req.totalDays">{{ req.totalDays }} día{{ req.totalDays !== 1 ? 's' : '' }}</span>
@@ -156,6 +230,10 @@
             </td>
             <td class="text-right">
               <div class="he-actions">
+                <!-- Ver detalle de la solicitud -->
+                <button class="he-action-btn" title="Ver detalle" (click)="openDetails(req)">
+                  <span class="material-symbols-outlined">info</span>
+                </button>
                 <!-- Descargar PDF generado -->
                 <button class="he-action-btn" title="Descargar PDF" (click)="downloadPdf(req)">
                   <span class="material-symbols-outlined">picture_as_pdf</span>

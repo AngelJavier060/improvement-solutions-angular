@@ -216,6 +216,11 @@ export class AttendanceService {
     return `${this.apiUrl(businessId)}/overtime-requests/${requestId}/pdf`;
   }
 
+  getOvertimeSignedPdf(businessId: number, requestId: number): Observable<Blob> {
+    const url = `${this.apiUrl(businessId)}/overtime-requests/${requestId}/pdf`;
+    return this.http.get(url, { responseType: 'blob' as 'json' }) as Observable<Blob>;
+  }
+
   // Horas extra
   getOvertime(businessId: number, year?: number, month?: number): Observable<OvertimeRecord[]> {
     let params = new HttpParams();

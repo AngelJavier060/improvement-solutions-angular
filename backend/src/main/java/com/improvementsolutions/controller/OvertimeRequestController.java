@@ -65,12 +65,17 @@ public class OvertimeRequestController {
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) {
         try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Archivo PDF vacío o no enviado"));
+            }
             OvertimeRequest updated = service.uploadSignedPdf(businessId, id, file);
             return ResponseEntity.ok(toMap(updated));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         } catch (IOException e) {
             return ResponseEntity.internalServerError().body(Map.of("error", "Error al guardar el PDF: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Error inesperado al subir el PDF"));
         }
     }
 
