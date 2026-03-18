@@ -42,6 +42,9 @@ public class EmployeeVacation {
     @Column(length = 20)
     private String status = "APROBADO";
 
+    @Column(name = "signed_pdf_path", length = 500)
+    private String signedPdfPath;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

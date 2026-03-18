@@ -1,0 +1,397 @@
+// ── Overlay ────────────────────────────────────────────
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+// ── Solo para PDF: centrar contenido dentro del bloque capturado ──
+.pdf-center {
+  .field-input { text-align: center; }
+  select.field-input { text-align-last: center; }
+  .field-textarea { text-align: center; }
+}
+
+// ── Modal shell ────────────────────────────────────────
+.modal-shell {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
+  width: min(860px, 96vw);
+  max-height: 92vh;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// ── Top bar ────────────────────────────────────────────
+.modal-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #002d72;
+  color: #fff;
+  flex-shrink: 0;
+}
+.modal-topbar-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.modal-close-btn {
+  background: rgba(255,255,255,.15);
+  border: none;
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background .15s;
+  &:hover { background: rgba(255,255,255,.3); }
+}
+
+// ── Scrollable body ────────────────────────────────────
+.modal-body-scroll {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0;
+}
+
+// ── PDF content wrapper ────────────────────────────────
+.pdf-content {
+  background: #fff;
+}
+
+// ── Document header ────────────────────────────────────
+.form-doc-header {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 2px solid #002d72;
+}
+.form-doc-logo {
+  width: 140px;
+  min-width: 140px;
+  border-right: 1px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 10px;
+  background: #f8fafc;
+}
+.form-logo-img {
+  max-width: 120px;
+  max-height: 48px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+.form-logo-text {
+  font-size: 12px;
+  font-weight: 900;
+  color: #002d72;
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: .03em;
+  line-height: 1.3;
+}
+.form-doc-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border-right: 1px solid #d1d5db;
+}
+.form-doc-title {
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #002d72;
+  margin: 0 0 2px;
+  text-align: center;
+}
+.form-doc-subtitle {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin: 0;
+}
+.form-doc-meta {
+  width: 160px;
+  min-width: 160px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+.form-meta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 2px;
+  &:last-child { border-bottom: none; }
+}
+.fm-key { font-weight: 700; color: #374151; }
+.fm-val { color: #374151; }
+
+// ── Form ──────────────────────────────────────────────
+.sol-form {
+  padding: 20px 24px 16px;
+}
+
+// ── Sections ──────────────────────────────────────────
+.form-section {
+  margin-bottom: 22px;
+}
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #002d72;
+  border-bottom: 1px solid #bfdbfe;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+.section-icon {
+  font-size: 13px;
+  color: #3b82f6;
+}
+
+// ── Grid ──────────────────────────────────────────────
+.form-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px 14px;
+}
+
+// ── Fields ────────────────────────────────────────────
+.field-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  &.field-wrap-full {
+    grid-column: 1 / -1;
+  }
+}
+.field-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #374151;
+}
+.req { color: #dc2626; }
+
+.field-input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-family: inherit;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color .15s, box-shadow .15s;
+  text-align: left; // alineación normal en UI
+
+  &:focus {
+    border-color: #002d72;
+    box-shadow: 0 0 0 2px rgba(0,45,114,.12);
+  }
+  &.field-error {
+    border-color: #dc2626;
+    background: #fff5f5;
+  }
+  &::placeholder { color: #9ca3af; }
+}
+
+select.field-input { cursor: pointer; }
+
+.field-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+// ── Addon ─────────────────────────────────────────────
+.field-addon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.field-input-addon { padding-right: 42px; }
+.field-addon {
+  position: absolute;
+  right: 10px;
+  font-size: 11px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+// ── Declaration ───────────────────────────────────────
+.form-declaration {
+  font-size: 11px;
+  color: #6b7280;
+  border-top: 1px dashed #e5e7eb;
+  padding-top: 14px;
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+
+// ── Signatures footer ─────────────────────────────────
+.sig-footer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: #f9fafb;
+}
+.sig-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 10px 10px;
+  border-right: 1px solid #d1d5db;
+  &:last-child { border-right: none; }
+}
+.sig-line {
+  height: 60px;
+  width: 100%;
+  border-bottom: 1px solid #9ca3af;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+  font-size: 10px;
+  color: #d1d5db;
+  font-style: italic;
+  text-align: center;
+}
+.sig-name {
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 6px;
+}
+.sig-label {
+  margin: 8px 0 0;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #6b7280;
+  text-align: center;
+}
+
+// ── Actions bar (no-pdf) ──────────────────────────────
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0 0;
+  border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+.form-actions-left { flex: 1; }
+.form-actions-right {
+  display: flex;
+  gap: 10px;
+}
+
+.alert-error-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+.alert-success-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.btn-cancel-form {
+  padding: 9px 22px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  transition: background .15s;
+  &:hover { background: #f9fafb; }
+}
+
+.btn-submit-form {
+  padding: 9px 24px;
+  border: none;
+  border-radius: 4px;
+  background: #002d72;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background .15s, transform .1s;
+  &:hover:not(:disabled) { background: #001a4e; }
+  &:active:not(:disabled) { transform: scale(.97); }
+  &:disabled { opacity: .6; cursor: not-allowed; }
+}
+
+// ── Responsive ────────────────────────────────────────
+@media (max-width: 720px) {
+  .form-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .form-doc-meta { display: none; }
+}
+@media (max-width: 480px) {
+  .form-grid-4 { grid-template-columns: 1fr; }
+  .modal-shell { width: 98vw; }
+}

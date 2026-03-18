@@ -249,6 +249,26 @@ export class AttendanceService {
     return this.http.post<VacationRecord>(`${this.apiUrl(businessId)}/vacations/${employeeId}`, dto);
   }
 
+  // Subir PDF firmado de vacaciones y actualizar estado
+  uploadVacationSignedPdf(businessId: number, vacationId: number, file: File): Observable<VacationRecord> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    return this.http.post<VacationRecord>(`${this.apiUrl(businessId)}/vacations/${vacationId}/upload-signed`, formData);
+  }
+
+  updateVacationStatus(businessId: number, vacationId: number, status: string): Observable<VacationRecord> {
+    return this.http.patch<VacationRecord>(`${this.apiUrl(businessId)}/vacations/${vacationId}/status`, { status });
+  }
+
+  getVacationPdfUrl(businessId: number, vacationId: number): string {
+    return `${this.apiUrl(businessId)}/vacations/${vacationId}/pdf`;
+  }
+
+  getVacationPdfBlob(businessId: number, vacationId: number) {
+    const url = `${this.apiUrl(businessId)}/vacations/${vacationId}/pdf`;
+    return this.http.get(url, { responseType: 'blob' });
+  }
+
   deleteVacation(businessId: number, id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl(businessId)}/vacations/${id}`);
   }

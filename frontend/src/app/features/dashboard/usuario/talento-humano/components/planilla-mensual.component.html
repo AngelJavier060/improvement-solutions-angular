@@ -251,12 +251,16 @@
                           *ngIf="entry.dayType==='EX' && entry.notes?.startsWith('HE:')"
                           (click)="toggleNotePopover(row.employeeId, i, $event)"
                           [title]="entry.notes">info</button>
+                  <button class="pm-vicon material-symbols-outlined"
+                          *ngIf="entry.dayType==='V'"
+                          (click)="toggleNotePopover(row.employeeId, i, $event)"
+                          title="Vacaciones anuales">umbrella</button>
                 </div>
                 <!-- Popover motivo HE -->
                 <div class="pm-note-pop" *ngIf="isNoteOpen(row.employeeId, i)" (click)="$event.stopPropagation()">
-                  <div class="pm-note-pop-hd">
-                    <span class="material-symbols-outlined">more_time</span>
-                    Motivo de hora extra
+                  <div class="pm-note-pop-hd" [ngClass]="{'pm-note-pop-hd--vac': entry.dayType==='V'}">
+                    <span class="material-symbols-outlined">{{ entry.dayType==='V' ? 'umbrella' : 'more_time' }}</span>
+                    {{ entry.dayType==='V' ? 'Vacaciones anuales' : 'Motivo de hora extra' }}
                     <button type="button" class="pm-note-close" (click)="closeNotePopover(); $event.stopPropagation()" title="Cerrar">✕</button>
                   </div>
                   <div class="pm-note-pop-txt">{{ entry.notes }}</div>

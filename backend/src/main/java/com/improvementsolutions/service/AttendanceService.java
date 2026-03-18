@@ -445,6 +445,34 @@ public class AttendanceService {
         vacationRepository.delete(v);
     }
 
+    @Transactional
+    public EmployeeVacation setVacationSignedPdf(Long businessId, Long vacationId, String relativePath) {
+        EmployeeVacation v = vacationRepository.findById(vacationId)
+                .orElseThrow(() -> new NoSuchElementException("Registro no encontrado: " + vacationId));
+        if (!v.getBusiness().getId().equals(businessId)) {
+            throw new SecurityException("Acceso denegado");
+        }
+        v.setSignedPdfPath(relativePath);
+        return vacationRepository.save(v);
+    }
+
+    @Transactional
+    public EmployeeVacation updateVacationStatus(Long businessId, Long vacationId, String status) {
+        EmployeeVacation v = vacationRepository.findById(vacationId)
+                .orElseThrow(() -> new NoSuchElementException("Registro no encontrado: " + vacationId));
+        if (!v.getBusiness().getId().equals(businessId)) {
+            throw new SecurityException("Acceso denegado");
+        }
+        String up = status != null ? status.trim().toUpperCase(Locale.ROOT) : null;
+        if (up == null || up.isBlank()) return v;
+        // Aceptar sólo estados válidos
+        if (!up.equals("EN_CURSO") && !up.equals("PENDIENTE") && !up.equals("APROBADO") && !up.equals("RECHAZADO")) {
+            throw new IllegalArgumentException("Estado inválido: " + status);
+        }
+        v.setStatus(up);
+        return vacationRepository.save(v);
+    }
+
     // ─────────────────── PERMISOS ───────────────────
 
     @Transactional(readOnly = true)

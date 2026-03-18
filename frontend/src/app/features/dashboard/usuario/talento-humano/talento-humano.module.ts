@@ -23,6 +23,7 @@ import { CapitalizePipe } from '../../../../pipes/capitalize.pipe';
 import { PlanillaMensualComponent } from './components/planilla-mensual.component';
 import { HorasExtraComponent } from './components/horas-extra.component';
 import { VacacionesComponent } from './components/vacaciones.component';
+import { VacacionSolicitudModalComponent } from './components/vacacion-solicitud-modal.component';
 import { PermisosComponent } from './components/permisos.component';
 import { AccidentesComponent } from './components/accidentes.component';
 
@@ -45,6 +46,7 @@ import { AccidentesComponent } from './components/accidentes.component';
     PlanillaMensualComponent,
     HorasExtraComponent,
     VacacionesComponent,
+    VacacionSolicitudModalComponent,
     PermisosComponent,
     AccidentesComponent
   ],

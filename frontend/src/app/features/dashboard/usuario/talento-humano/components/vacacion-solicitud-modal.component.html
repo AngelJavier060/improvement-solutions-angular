@@ -1,0 +1,238 @@
+<!-- ── Overlay ── -->
+<div class="modal-overlay" (click)="close()"></div>
+
+<!-- ── Modal ── -->
+<div class="modal-shell" role="dialog" aria-modal="true">
+
+  <!-- ── Modal Header bar ── -->
+  <div class="modal-topbar">
+    <span class="modal-topbar-title">
+      <i class="fas fa-umbrella-beach me-2"></i>Nueva Solicitud de Vacaciones
+    </span>
+    <button class="modal-close-btn" (click)="close()" title="Cerrar">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- ── Scrollable body ── -->
+  <div class="modal-body-scroll">
+
+    <!-- ══ BLOQUE IMPRIMIBLE / PDF ══ -->
+    <div class="pdf-content" #pdfContent>
+
+      <!-- Encabezado corporativo (igual al diseño principal) -->
+      <header class="form-doc-header">
+        <div class="form-doc-logo">
+          <ng-container *ngIf="businessLogoUrl; else logoText">
+            <img [src]="businessLogoUrl" alt="Logo" class="form-logo-img" />
+          </ng-container>
+          <ng-template #logoText>
+            <span class="form-logo-text">{{ businessName || 'EMPRESA' }}</span>
+          </ng-template>
+        </div>
+        <div class="form-doc-center">
+          <h1 class="form-doc-title">Solicitud de Vacaciones</h1>
+          <p class="form-doc-subtitle">GESTIÓN DE TALENTO HUMANO</p>
+        </div>
+        <div class="form-doc-meta">
+          <div class="form-meta-row"><span class="fm-key">Código:</span><span class="fm-val">ORT-GTH-PRO-01-F4</span></div>
+          <div class="form-meta-row"><span class="fm-key">Revisión:</span><span class="fm-val">00</span></div>
+          <div class="form-meta-row"><span class="fm-key">Fecha:</span><span class="fm-val">01/04/2025</span></div>
+          <div class="form-meta-row"><span class="fm-key">Página:</span><span class="fm-val">1 de 1</span></div>
+        </div>
+      </header>
+
+      <!-- ── Formulario ── -->
+      <form [formGroup]="form" (ngSubmit)="submit()" class="sol-form" autocomplete="off">
+
+        <!-- ── Sección 1: Información del Empleado ── -->
+        <section class="form-section">
+          <div class="section-title">
+            <i class="fas fa-user section-icon"></i>
+            <span>Información del Empleado</span>
+          </div>
+          <div class="form-grid-4">
+
+            <div class="field-wrap field-wrap-full" *ngIf="!employee">
+              <label class="field-label">Empleado <span class="req">*</span></label>
+              <select formControlName="employeeId" class="field-input" (change)="onSelectEmployeeId($event)">
+                <option value="" disabled selected>Seleccione empleado</option>
+                <option *ngFor="let e of employees" [value]="e.id">{{ formatEmpName(e) }}</option>
+              </select>
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">Nombre y Apellido <span class="req">*</span></label>
+              <input type="text" formControlName="fullName" placeholder="Ej. Juan Pérez"
+                     class="field-input" [ngClass]="{'field-error': form.get('fullName')?.invalid && form.get('fullName')?.touched}" />
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">Número de Cédula <span class="req">*</span></label>
+              <input type="text" formControlName="cedula" placeholder="Ej. 1712345678"
+                     class="field-input" [ngClass]="{'field-error': form.get('cedula')?.invalid && form.get('cedula')?.touched}" />
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">Cargo <span class="req">*</span></label>
+              <input type="text" formControlName="jobTitle" placeholder="Ej. Técnico de Operaciones"
+                     class="field-input" [ngClass]="{'field-error': form.get('jobTitle')?.invalid && form.get('jobTitle')?.touched}" />
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">Departamento <span class="req">*</span></label>
+              <input type="text" formControlName="department" placeholder="Ej. Operaciones"
+                     class="field-input" [readonly]="true" [ngClass]="{'field-error': form.get('department')?.invalid && form.get('department')?.touched}" />
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">Fecha de Ingreso a la Empresa <span class="req">*</span></label>
+              <input type="date" formControlName="hireDate"
+                     class="field-input" [ngClass]="{'field-error': form.get('hireDate')?.invalid && form.get('hireDate')?.touched}" />
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">Fecha de salida <span class="req">*</span></label>
+              <input type="date" formControlName="startDate"
+                     class="field-input" [ngClass]="{'field-error': form.get('startDate')?.invalid && form.get('startDate')?.touched}" />
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">Fecha de ingreso <span class="req">*</span></label>
+              <input type="date" formControlName="endDate"
+                     class="field-input" [ngClass]="{'field-error': form.get('endDate')?.invalid && form.get('endDate')?.touched}" />
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">Saldo de días</label>
+              <div class="field-addon-wrap">
+                <input type="number" formControlName="daysBalance" placeholder="0" min="0" [readonly]="true"
+                       class="field-input field-input-addon" />
+                <span class="field-addon">días</span>
+              </div>
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">Jefe Inmediato (Aprobador) <span class="req">*</span></label>
+              <select formControlName="approver" class="field-input"
+                      [ngClass]="{'field-error': form.get('approver')?.invalid && form.get('approver')?.touched}">
+                <option value="" disabled>Seleccione aprobador</option>
+                <option *ngFor="let a of approvers" [value]="a.value">{{ a.label }}</option>
+              </select>
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">Estado</label>
+              <input type="text" value="PENDIENTE" class="field-input" readonly />
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">Nombre del Jefe Inmediato</label>
+              <input type="text" formControlName="supervisorName" placeholder="Nombre y apellido del jefe inmediato"
+                     class="field-input" />
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">Responsable de Talento Humano</label>
+              <input type="text" formControlName="hrResponsible" placeholder="Nombre del responsable de TH"
+                     class="field-input" />
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ── Sección 2: Planificación ── -->
+        <section class="form-section">
+          <div class="section-title">
+            <i class="fas fa-calendar-check section-icon"></i>
+            <span>Detalles de Planificación</span>
+          </div>
+          <div class="form-grid-4">
+
+            <!-- Se removieron fechas aquí, ya están definidas en la parte superior -->
+
+            <div class="field-wrap">
+              <label class="field-label">Reemplazo (Colaborador) <span class="req">*</span></label>
+              <input type="text" formControlName="replacement" placeholder="Quien cubrirá las funciones"
+                     class="field-input" [ngClass]="{'field-error': form.get('replacement')?.invalid && form.get('replacement')?.touched}" />
+            </div>
+
+            <div class="field-wrap">
+              <label class="field-label">¿Es Replanificación? <span class="req">*</span></label>
+              <select formControlName="replanning" class="field-input">
+                <option value="no">No</option>
+                <option value="si">Sí</option>
+              </select>
+            </div>
+
+            <div class="field-wrap field-wrap-full">
+              <label class="field-label">Observaciones</label>
+              <textarea formControlName="observations" rows="3"
+                        placeholder="Información adicional relevante para su solicitud..."
+                        class="field-input field-textarea"></textarea>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ── Declaración ── -->
+        <p class="form-declaration">
+          Al enviar este formulario, el solicitante confirma que la información es verídica y que la solicitud
+          está sujeta a aprobación del jefe inmediato.
+        </p>
+
+        <!-- ── Footer firmas ── -->
+        <div class="sig-footer">
+          <div class="sig-box">
+            <div class="sig-name">{{ form.get('fullName')?.value || '—' }}</div>
+            <div class="sig-line">Firma del Trabajador</div>
+            <p class="sig-label">Nombre y firma del trabajador</p>
+          </div>
+          <div class="sig-box">
+            <div class="sig-name">{{ form.get('supervisorName')?.value || '—' }}</div>
+            <div class="sig-line">Firma del Jefe Inmediato</div>
+            <p class="sig-label">Jefe Inmediato</p>
+          </div>
+          <div class="sig-box">
+            <div class="sig-name">{{ form.get('hrResponsible')?.value || '—' }}</div>
+            <div class="sig-line">Firma de Talento Humano</div>
+            <p class="sig-label">Aprobado por</p>
+          </div>
+        </div>
+
+        <!-- ── Acciones (no se imprimen) ── -->
+        <div class="form-actions no-pdf" data-html2canvas-ignore="true">
+          <div class="form-actions-left">
+            <div class="alert-error-inline" *ngIf="error">
+              <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+            </div>
+            <div class="alert-success-inline" *ngIf="showSuccess">
+              <i class="fas fa-check-circle me-1"></i>Solicitud guardada. Abriendo vista previa…
+            </div>
+          </div>
+          <div class="form-actions-right">
+            <button type="button" class="btn-cancel-form" (click)="close()">
+              Cancelar
+            </button>
+            <button type="button" class="btn-submit-form" [disabled]="form.invalid || saving || generatingPdf" (click)="submit()">
+              <ng-container *ngIf="!saving && !generatingPdf">
+                <i class="fas fa-save me-1"></i>Guardar y Visualizar PDF
+              </ng-container>
+              <ng-container *ngIf="saving">
+                <i class="fas fa-spinner fa-spin me-1"></i>Guardando…
+              </ng-container>
+              <ng-container *ngIf="generatingPdf">
+                <i class="fas fa-spinner fa-spin me-1"></i>Generando vista previa…
+              </ng-container>
+            </button>
+            <button type="button" class="btn-submit-form" *ngIf="pdfBlobUrl && !saving && !generatingPdf" (click)="printPdf()" title="Imprimir PDF">
+              <i class="fas fa-print me-1"></i>Imprimir
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div><!-- /pdf-content -->
+
+  </div><!-- /modal-body-scroll -->
+</div><!-- /modal-shell -->

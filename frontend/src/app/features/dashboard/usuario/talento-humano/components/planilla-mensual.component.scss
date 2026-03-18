@@ -525,6 +525,27 @@
   padding: 0;
 }
 
+/* Indicador e info de vacaciones anuales (V) — simple y sobrio */
+.pm-vicon {
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px !important;
+  line-height: 1;
+  color: #2563eb;          /* azul principal */
+  background: #eff6ff;     /* bg suave V */
+  border: 1px solid #dbeafe;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  cursor: pointer;
+  padding: 0;
+}
+
 .pm-note-pop {
   position: absolute;
   z-index: 250;
@@ -550,6 +571,14 @@
   border-bottom: 1px solid #ffedd5;
   .material-symbols-outlined { font-size: 16px; color: #ea580c; }
 }
+
+/* Variante para Vacaciones (V): tema azul discreto */
+.pm-note-pop-hd--vac {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-bottom-color: #bfdbfe;
+}
+.pm-note-pop-hd--vac .material-symbols-outlined { color: #2563eb; }
 
 .pm-note-close {
   margin-left: auto;

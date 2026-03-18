@@ -1,133 +1,478 @@
 <div class="attendance-module">
-  <div class="module-header">
-    <div>
-      <nav class="breadcrumb-nav">
-        <button class="btn-link" (click)="goBack()"><i class="fas fa-arrow-left me-1"></i> Planilla</button>
-        <span class="sep">/</span><span>Vacaciones</span>
-      </nav>
-      <h2 class="module-title"><i class="fas fa-umbrella-beach me-2 text-blue"></i>Control de Vacaciones</h2>
-      <p class="module-subtitle">Registra y gestiona los períodos de vacaciones — {{ businessName }}</p>
-    </div>
-  </div>
 
-  <div class="alert-success" *ngIf="successMsg">
+  <!-- ── Modal Nueva Solicitud ── -->
+  <app-vacacion-solicitud-modal
+    *ngIf="showNewForm"
+    [employee]="selectedEmployee"
+    [employees]="employees"
+    [businessId]="businessId"
+    [businessName]="businessName"
+    [businessLogoUrl]="businessLogoUrl"
+    (closed)="onModalClosed()"
+    (saved)="onModalSaved()">
+  </app-vacacion-solicitud-modal>
+
+  <div class="alert-success no-print" *ngIf="successMsg">
     <i class="fas fa-check-circle me-2"></i>{{ successMsg }}
   </div>
 
-  <div class="two-col-layout">
+  <!-- ── Tabs ── -->
+  <div class="vac-tabs no-print">
+    <button class="vac-tab" [class.active]="activeTab === 'solicitudes'" (click)="activateTab('solicitudes')">
+      <i class="fas fa-umbrella-beach me-1"></i>Vacaciones Anuales
+    </button>
+    <button class="vac-tab" [class.active]="activeTab === 'planificacion'" (click)="activateTab('planificacion')">
+      <i class="fas fa-calendar-alt me-1"></i>Planificación Matriz
+    </button>
+  </div>
 
-    <!-- Lista empleados -->
-    <div class="employees-panel">
-      <div class="panel-head">
-        <span class="panel-title">Personal activo</span>
-        <div class="search-small">
-          <i class="fas fa-search"></i>
-          <input [(ngModel)]="searchEmp" placeholder="Buscar…" />
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- TAB PRINCIPAL: VACACIONES ANUALES (tabla estilo ORT-GTH-PRO)  -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div class="vac-main-container" *ngIf="activeTab === 'solicitudes'">
+
+    <!-- ── Document wrapper (imprimible) ── -->
+    <div class="vac-document">
+
+      <!-- ── Encabezado de cronograma ── -->
+      <section class="schedule-header no-print">
+        <div class="sh-left">
+          <h1 class="sh-title">Cronograma Anual de Vacaciones</h1>
+          <p class="sh-subtitle">Planificación y seguimiento del período de descanso del personal.</p>
         </div>
+        <div class="sh-actions">
+          <button class="btn-outline" (click)="printPlan()"><i class="fas fa-download me-2"></i>Exportar PDF</button>
+          <button class="btn-primary" (click)="openNewForm()"><i class="fas fa-plus me-2"></i>Nueva Solicitud</button>
+        </div>
+      </section>
+
+      <!-- ── Widgets resumen ── -->
+      <section class="summary-grid no-print">
+        <div class="summary-card">
+          <div class="sum-icon sum-primary"><i class="fas fa-users"></i></div>
+          <div class="sum-body"><div class="sum-k">{{ employees.length }}</div><div class="sum-l">Total Empleados</div></div>
+        </div>
+        <div class="summary-card">
+          <div class="sum-icon sum-ok"><i class="fas fa-calendar-check"></i></div>
+          <div class="sum-body"><div class="sum-k">{{ statusCountApproved }}</div><div class="sum-l">Aprobados</div></div>
+        </div>
+        <div class="summary-card">
+          <div class="sum-icon sum-warn"><i class="fas fa-hourglass-half"></i></div>
+          <div class="sum-body"><div class="sum-k">{{ statusCountPending }}</div><div class="sum-l">Pendientes</div></div>
+        </div>
+        <div class="summary-card">
+          <div class="sum-icon sum-gray"><i class="fas fa-calendar-day"></i></div>
+          <div class="sum-body"><div class="sum-k">{{ currentMonthCount }}</div><div class="sum-l">Este Mes</div></div>
+        </div>
+      </section>
+
+      <!-- ── Filtros ── -->
+      <section class="filters-bar no-print">
+        <div class="fb-col">
+          <label class="ctrl-label">Buscar Empleado</label>
+          <div class="ctrl-search-box">
+            <i class="fas fa-search ctrl-search-icon"></i>
+            <input [(ngModel)]="qRecords" placeholder="Nombre, ID o Nómina…" class="ctrl-search-input" />
+          </div>
+        </div>
+        <div class="fb-col fb-col-sm">
+          <label class="ctrl-label">Mes</label>
+          <select [(ngModel)]="filterMonth" (change)="loadRecords()" class="ctrl-select">
+            <option value="">Todos</option>
+            <option *ngFor="let m of months" [value]="m.v">{{ m.l }}</option>
+          </select>
+        </div>
+        <div class="fb-col fb-col-sm">
+          <label class="ctrl-label">Departamento</label>
+          <select [(ngModel)]="searchDept" class="ctrl-select">
+            <option value="">Todos</option>
+            <option *ngFor="let d of uniqueDepartments" [value]="d">{{ d }}</option>
+          </select>
+        </div>
+        <div class="fb-col fb-col-xs">
+          <label class="ctrl-label">Año</label>
+          <select [(ngModel)]="filterYear" (change)="loadRecords()" class="ctrl-select">
+            <option *ngFor="let y of availableYears" [value]="y">{{ y }}</option>
+          </select>
+        </div>
+        <div class="fb-actions">
+          <button class="btn-outline" (click)="loadRecords()"><i class="fas fa-filter me-2"></i>Filtrar</button>
+        </div>
+      </section>
+
+      <!-- ── Tabs de estado ── -->
+      <div class="status-tabs no-print">
+        <button class="status-chip" [class.active]="activeStatus==='ALL'" (click)="activeStatus='ALL'">Todos ({{ decoratedRecords.length }})</button>
+        <button class="status-chip" [class.active]="activeStatus==='PENDIENTE'" (click)="activeStatus='PENDIENTE'">Pendientes ({{ statusCountPending }})</button>
+        <button class="status-chip" [class.active]="activeStatus==='APROBADO'" (click)="activeStatus='APROBADO'">Aprobados ({{ statusCountApproved }})</button>
+        <button class="status-chip" [class.active]="activeStatus==='RECHAZADO'" (click)="activeStatus='RECHAZADO'">Rechazados ({{ statusCountRejected }})</button>
+        <button class="status-chip" [class.active]="activeStatus==='EN_CURSO'" (click)="activeStatus='EN_CURSO'">En Curso ({{ statusCountEnCurso }})</button>
       </div>
-      <div class="emp-list">
-        <div *ngIf="loadingEmps" class="mini-loader">Cargando…</div>
-        <button *ngFor="let emp of filteredEmployees"
-                class="emp-btn"
-                [class.selected]="selectedEmployee?.id === emp.id"
-                (click)="selectEmployee(emp)">
-          <div class="emp-avatar">{{ (emp.nombres || emp.name || 'X').charAt(0).toUpperCase() }}</div>
-          <div class="emp-info">
-            <div class="emp-name">{{ getFullName(emp) }}</div>
-            <div class="emp-sub">{{ emp.position || 'Sin cargo' }} · {{ emp.cedula }}</div>
-          </div>
-          <i class="fas fa-chevron-right emp-arrow"></i>
-        </button>
-        <p *ngIf="!loadingEmps && filteredEmployees.length === 0" class="no-data-sm">Sin personal encontrado</p>
-      </div>
-    </div>
 
-    <!-- Panel derecho -->
-    <div class="right-panel">
-
-      <!-- Formulario -->
-      <div class="form-card" *ngIf="showForm && selectedEmployee">
-        <div class="form-card-head">
-          <span>Registrar vacaciones — <strong>{{ getFullName(selectedEmployee) }}</strong></span>
-          <button class="btn-icon" (click)="cancelForm()"><i class="fas fa-times"></i></button>
-        </div>
-        <form [formGroup]="form" (ngSubmit)="submitForm()" class="form-grid">
-          <div class="field-group">
-            <label>Fecha inicio <span class="required">*</span></label>
-            <input type="date" formControlName="startDate" />
-          </div>
-          <div class="field-group">
-            <label>Fecha fin <span class="required">*</span></label>
-            <input type="date" formControlName="endDate" />
-          </div>
-          <div class="field-group">
-            <label>Días acumulados</label>
-            <input type="number" formControlName="daysAccumulated" min="0" />
-          </div>
-          <div class="field-group">
-            <label>Estado</label>
-            <select formControlName="status">
-              <option value="APROBADO">Aprobado</option>
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="RECHAZADO">Rechazado</option>
-            </select>
-          </div>
-          <div class="field-group full">
-            <label>Observaciones</label>
-            <textarea formControlName="notes" rows="2" placeholder="Notas adicionales…"></textarea>
-          </div>
-          <div class="form-actions">
-            <button type="button" class="btn-cancel" (click)="cancelForm()">Cancelar</button>
-            <button type="submit" class="btn-save" [disabled]="form.invalid || saving">
-              <i class="fas fa-save me-1"></i>{{ saving ? 'Guardando…' : 'Guardar registro' }}
-            </button>
-          </div>
-        </form>
-        <div class="alert-error" *ngIf="error">{{ error }}</div>
+      <!-- ── Loading ── -->
+      <div class="vac-loading" *ngIf="loadingEmps">
+        <i class="fas fa-spinner fa-spin me-2"></i>Cargando empleados…
       </div>
 
-      <!-- Registros -->
-      <div class="records-card">
-        <div class="records-head">
-          <span class="panel-title">Registros del período</span>
-          <div class="period-filters">
-            <select [(ngModel)]="filterYear"  (change)="loadRecords()">
-              <option *ngFor="let y of availableYears" [value]="y">{{ y }}</option>
-            </select>
-            <select [(ngModel)]="filterMonth" (change)="loadRecords()">
-              <option *ngFor="let m of months" [value]="m.v">{{ m.l }}</option>
-            </select>
-          </div>
-        </div>
-        <div class="mini-loader" *ngIf="loading">Cargando registros…</div>
-        <div class="no-data" *ngIf="!loading && records.length === 0">
-          <i class="fas fa-umbrella-beach fa-2x text-muted mb-2"></i>
-          <p>No hay registros de vacaciones en este período</p>
-        </div>
-        <table class="records-table" *ngIf="!loading && records.length > 0">
+      <!-- ── Tabla principal ── -->
+      <div class="vac-table-wrapper" *ngIf="!loadingEmps">
+        <table class="vac-table">
           <thead>
             <tr>
-              <th>Empleado</th><th>Inicio</th><th>Fin</th>
-              <th>Días</th><th>Estado</th><th>Notas</th><th></th>
+              <th class="vcol-num">N°</th>
+              <th class="vcol-name">Nómina (Nombre)</th>
+              <th class="vcol-cedula">Cédula</th>
+              <th class="vcol-position">Cargo</th>
+              <th class="vcol-dept">Departamento</th>
+              <th class="vcol-date">Fecha Ingreso</th>
+              <th class="vcol-days">Días de permiso</th>
+              <th class="vcol-status">Estado</th>
+              <th class="vcol-actions no-print">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let r of records">
-              <td><span class="emp-pill">{{ r.employeeName }}</span></td>
-              <td>{{ r.startDate }}</td>
-              <td>{{ r.endDate }}</td>
-              <td><span class="badge-days">{{ r.daysTaken }}d</span></td>
-              <td><span class="badge-status {{ getStatusClass(r.status || '') }}">{{ r.status }}</span></td>
-              <td class="reason-cell">{{ r.notes || '—' }}</td>
-              <td>
-                <button class="btn-delete" (click)="deleteRecord(r.id!)" title="Eliminar">
-                  <i class="fas fa-trash"></i>
+            <tr *ngFor="let r of viewRecords; let i = index" class="vac-row">
+              <td class="vcol-num">{{ i + 1 }}</td>
+              <td class="vcol-name">
+                <span class="emp-name-text">{{ (r.employeeName || ('ID ' + r.employeeId)) | uppercase }}</span>
+              </td>
+              <td class="vcol-cedula">{{ r.cedula || '—' }}</td>
+              <td class="vcol-position">{{ r.position || '—' }}</td>
+              <td class="vcol-dept">{{ (r.department || getEmployeeDeptById(r.employeeId)) | uppercase }}</td>
+              <td class="vcol-date">{{ r.hireDate || getEmployeeHireDateById(r.employeeId) }}</td>
+              <td class="vcol-days">{{ r.permissionDays || 0 }}</td>
+              <td class="vcol-status">
+                <span class="vac-badge {{ getStatusBadgeClass(r.enCurso ? 'EN_CURSO' : (r.status || '')) }}">
+                  {{ r.enCurso ? 'EN CURSO' : (r.status || '—') }}
+                </span>
+              </td>
+              <td class="vcol-actions no-print">
+                <button class="tbl-btn tbl-btn-view" *ngIf="!r.signedPdfPath" (click)="openNewForm(getEmployeeById(r.employeeId))" title="Ver / Editar">
+                  <i class="fas fa-eye me-1"></i>Ver/Editar
                 </button>
+                <ng-container *ngIf="!r.signedPdfPath; else viewPdfBtn">
+                  <label class="tbl-btn tbl-btn-upload" [class.disabled]="uploadingPdfId===r.id" [attr.title]="uploadingPdfId===r.id ? 'Cargando…' : 'Cargar PDF firmado'">
+                    <i class="fas fa-file-upload me-1"></i>Subir PDF
+                    <input type="file" accept="application/pdf" (change)="onUploadVacationPdf(r, $event)" style="display:none" />
+                  </label>
+                </ng-container>
+                <ng-template #viewPdfBtn>
+                  <button class="tbl-btn tbl-btn-view" (click)="viewVacationPdf(r)" title="Ver PDF firmado">
+                    <i class="fas fa-eye me-1"></i>Ver PDF
+                  </button>
+                  <ng-container *ngIf="(r.status || '').toUpperCase() === 'PENDIENTE'">
+                    <button class="tbl-btn tbl-btn-approve" (click)="approveVacation(r)" title="Aprobar">
+                      <i class="fas fa-check me-1"></i>Aprobar
+                    </button>
+                    <button class="tbl-btn tbl-btn-reject" (click)="rejectVacation(r)" title="Rechazar">
+                      <i class="fas fa-times me-1"></i>Rechazar
+                    </button>
+                  </ng-container>
+                </ng-template>
               </td>
             </tr>
           </tbody>
         </table>
+
+        <!-- Sin resultados -->
+        <div class="vac-no-data" *ngIf="viewRecords.length === 0">
+          <i class="fas fa-umbrella-beach fa-2x mb-2"></i>
+          <p>No hay solicitudes registradas aún. Usa "Nueva Solicitud" para registrar la primera.</p>
+        </div>
       </div>
+
+      <!-- Sin sección de firmas en la vista de cronograma -->
+
+    </div><!-- /vac-document -->
+  </div><!-- /vac-main-container -->
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- TAB SECUNDARIO: PLANIFICACIÓN MATRIZ              -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="plan-container" *ngIf="activeTab === 'planificacion'">
+
+    <!-- Controls bar -->
+    <div class="plan-controls no-print">
+      <div class="plan-period-badge">
+        <span class="period-label">PERIODO</span>
+        <select [(ngModel)]="planYear" (change)="onPlanYearChange()" class="period-select">
+          <option *ngFor="let y of availableYears" [value]="y">{{ y }}</option>
+        </select>
+      </div>
+      <div class="plan-dept-filter" style="display:flex;flex-direction:column;gap:4px;">
+        <label class="ctrl-label">Departamento</label>
+        <select class="ctrl-select" [(ngModel)]="planDeptFilter" (change)="onPlanDeptChange()">
+          <option value="">Todos</option>
+          <option *ngFor="let d of uniqueDepartments" [value]="d">{{ d }}</option>
+        </select>
+      </div>
+      <button class="btn-print" (click)="printPlan()">
+        <i class="fas fa-print me-1"></i>Imprimir Reporte
+      </button>
     </div>
-  </div>
+
+    <!-- ── Resumen consolidado (Planificación Matriz) ── -->
+    <section class="mgmt-summary">
+      <div class="ms-header">
+        <h2>Resumen de Planificación — {{ planYear }}</h2>
+        <div class="ms-meta-box">
+          <div class="ms-meta-row"><span class="ms-meta-k">Código:</span><span class="ms-meta-v">{{ docCode }}</span></div>
+          <div class="ms-meta-row"><span class="ms-meta-k">Fecha de Revisión:</span><span class="ms-meta-v">{{ docRevisionDate }}</span></div>
+          <div class="ms-meta-row"><span class="ms-meta-k">Revisión:</span><span class="ms-meta-v">{{ docRevision }}</span></div>
+          <div class="ms-meta-row"><span class="ms-meta-k">Página:</span><span class="ms-meta-v">1 de 1</span></div>
+        </div>
+        <button class="btn-print no-print" (click)="printPlan()">
+          <i class="fas fa-print me-1"></i>Imprimir
+        </button>
+      </div>
+      <div class="ms-filters">
+        <span class="ms-filter-badge"><strong>Empresa:</strong> {{ businessName || 'Empresa' }}</span>
+        <span class="ms-filter-badge"><strong>Periodo:</strong> {{ planYear }}</span>
+      </div>
+      <div class="ms-cards">
+        <div class="ms-card">
+          <div class="ms-kpi">{{ planSummaryEmployeesTotal }}</div>
+          <div class="ms-label">Empleados</div>
+        </div>
+        <div class="ms-card ms-info">
+          <div class="ms-kpi">{{ planSummaryEmployeesWithPlan }}</div>
+          <div class="ms-label">Con planificación</div>
+        </div>
+        <div class="ms-card">
+          <div class="ms-kpi">{{ planSummaryMonthsPlanned }}</div>
+          <div class="ms-label">Meses planificados</div>
+        </div>
+        <div class="ms-card">
+          <div class="ms-kpi">{{ planSummarySaldoTotal }}</div>
+          <div class="ms-label">Saldo total días</div>
+        </div>
+        <div class="ms-card ms-warn">
+          <div class="ms-kpi">{{ planSummaryReplanCount }}</div>
+          <div class="ms-label">Replanificaciones</div>
+        </div>
+      </div>
+      <div class="ms-months">
+        <div class="ms-dept-title">Distribución por mes (empleados planificados)</div>
+        <div class="ms-months-grid">
+          <div class="ms-month" *ngFor="let m of MONTHS_SHORT; let i = index" [class.top]="isTopMonth(i)">
+            <span class="ms-month-l">{{ m }}</span>
+            <span class="ms-month-v">{{ planMonthlyCounts[i] }}</span>
+            <span class="ms-month-sub">{{ planMonthlyDaysCounts[i] }} días</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficas profesionales -->
+      <div class="ms-charts no-print">
+        <div class="chart-card">
+          <div class="chart-title">Empleados planificados por mes</div>
+          <canvas id="chartEmpPerMonth" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Días planificados por mes</div>
+          <canvas id="chartDaysPerMonth" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-card chart-card--wide">
+          <div class="chart-title">Distribución por departamento (meses planificados)</div>
+          <canvas id="chartDeptBars" class="chart-canvas chart-canvas--h"></canvas>
+        </div>
+      </div>
+      <div class="ms-topdepts">
+        <div class="ms-dept-title">Top 5 departamentos por meses planificados</div>
+        <ul>
+          <li *ngFor="let d of planSummaryTopDepts">{{ d.department }} — {{ d.months }} meses ({{ d.employees }} emp.)</li>
+          <li *ngIf="planSummaryTopDepts.length===0" class="text-muted">Sin datos</li>
+        </ul>
+      </div>
+      <div class="ms-dept-box">
+        <div class="ms-dept-title">Totales por Departamento</div>
+        <table class="ms-dept-table">
+          <thead>
+            <tr>
+              <th>Departamento</th>
+              <th>Empleados (con plan)</th>
+              <th>Meses planificados</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of planSummaryByDept">
+              <td>{{ d.department }}</td>
+              <td class="cell-center">{{ d.employees }}</td>
+              <td class="cell-center">{{ d.months }}</td>
+            </tr>
+            <tr *ngIf="planSummaryByDept.length===0">
+              <td colspan="3" class="cell-center text-muted">No hay datos de planificación para {{ planYear }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="plan-tfoot-row">
+              <td class="col-num cell-center cell-gray">Σ</td>
+              <td class="col-name cell-center">Totales</td>
+              <td class="col-dept"></td>
+              <td class="col-date"></td>
+              <td class="col-days"></td>
+              <td class="col-repl"></td>
+              <td class="col-month cell-center" *ngFor="let m of MONTHS_SHORT; let i = index">{{ planMonthlyCounts[i] }}</td>
+              <td class="col-replan"></td>
+              <td class="col-obs"></td>
+            </tr>
+            <tr class="plan-tfoot-row">
+              <td class="col-num cell-center cell-gray">Σ</td>
+              <td class="col-name cell-center">Días</td>
+              <td class="col-dept"></td>
+              <td class="col-date"></td>
+              <td class="col-days"></td>
+              <td class="col-repl"></td>
+              <td class="col-month cell-center" *ngFor="let m of MONTHS_SHORT; let i = index">{{ planMonthlyDaysCounts[i] }}</td>
+              <td class="col-replan"></td>
+              <td class="col-obs"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="ms-prepared">
+        <span>Preparado: {{ businessName || 'Empresa' }}</span>
+        <span>Fecha y hora: {{ printPreparedAt }}</span>
+      </div>
+    </section>
+
+    <!-- Printable form -->
+    <div class="plan-document">
+
+      <!-- Document header -->
+      <header class="doc-header">
+        <div class="doc-header-logo">
+          <span class="company-logo-text">{{ businessName || 'EMPRESA' }}</span>
+        </div>
+        <div class="doc-header-title">
+          <h1>Planificación Anual de Vacaciones</h1>
+        </div>
+        <div class="doc-header-meta">
+          <div class="meta-row"><span class="meta-key">Código:</span><span class="meta-val">{{ docCode }}</span></div>
+          <div class="meta-row"><span class="meta-key">Fecha de Revisión:</span><span class="meta-val">{{ docRevisionDate }}</span></div>
+          <div class="meta-row"><span class="meta-key">Revisión:</span><span class="meta-val">{{ docRevision }}</span></div>
+          <div class="meta-row"><span class="meta-key">Página:</span><span class="meta-val">1 de 1</span></div>
+        </div>
+      </header>
+
+      <!-- Loading state -->
+      <div class="plan-loading" *ngIf="loadingEmps || loadingPlan">
+        <i class="fas fa-spinner fa-spin me-2"></i>Cargando datos de empleados…
+      </div>
+
+      <!-- Main planning grid -->
+      <div class="plan-grid-wrapper" *ngIf="!loadingEmps">
+        <table class="plan-table">
+          <thead>
+            <tr class="plan-thead-row">
+              <th class="col-num">N°</th>
+              <th class="col-name">NÓMINA</th>
+              <th class="col-dept">DEPARTAMENTO</th>
+              <th class="col-date">FECHA DE INGRESO</th>
+              <th class="col-days">SALDO DÍAS</th>
+              <th class="col-repl">REEMPLAZO</th>
+              <th *ngFor="let m of MONTHS_SHORT" class="col-month">{{ m }}</th>
+              <th class="col-replan">REPLANIFICACIÓN</th>
+              <th class="col-obs">OBSERVACIONES</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of planRows; let i = index" class="plan-body-row">
+              <td class="col-num cell-center cell-gray">{{ i + 1 }}</td>
+              <td class="col-name">
+                <input type="text" class="plan-input plan-input-left no-print" [(ngModel)]="row.employeeName" />
+                <span class="only-print">{{ row.employeeName }}</span>
+              </td>
+              <td class="col-dept">
+                <input type="text" class="plan-input plan-input-left no-print" [(ngModel)]="row.department" />
+                <span class="only-print">{{ row.department }}</span>
+              </td>
+              <td class="col-date">
+                <input type="date" class="plan-input plan-input-xs no-print" [(ngModel)]="row.hireDate" />
+                <span class="only-print">{{ row.hireDate }}</span>
+              </td>
+              <td class="col-days">
+                <input type="number" class="plan-input plan-input-center no-print" [(ngModel)]="row.balanceDays" min="0" />
+                <span class="only-print">{{ row.balanceDays }}</span>
+              </td>
+              <td class="col-repl">
+                <input type="text" class="plan-input no-print" [(ngModel)]="row.replacement" />
+                <span class="only-print">{{ row.replacement }}</span>
+              </td>
+              <td *ngFor="let m of row.months; let mi = index" class="col-month cell-center">
+                <input type="checkbox" class="month-check"
+                       [checked]="row.months[mi]"
+                       (change)="toggleMonth(row, mi)" />
+              </td>
+              <td class="col-replan">
+                <input type="text" class="plan-input no-print" [(ngModel)]="row.replanification" />
+                <span class="only-print">{{ row.replanification }}</span>
+              </td>
+              <td class="col-obs">
+                <input type="text" class="plan-input plan-input-left no-print" [(ngModel)]="row.observations" />
+                <span class="only-print">{{ row.observations }}</span>
+              </td>
+            </tr>
+            <tr *ngFor="let x of getEmptyRows()" class="plan-body-row plan-empty-row">
+              <td class="col-num cell-center cell-gray">{{ planRows.length + x }}</td>
+              <td class="col-name"><span class="empty-cell"></span></td>
+              <td class="col-dept"><span class="empty-cell"></span></td>
+              <td class="col-date"><span class="empty-cell"></span></td>
+              <td class="col-days"><span class="empty-cell"></span></td>
+              <td class="col-repl"><span class="empty-cell"></span></td>
+              <td *ngFor="let m of MONTHS_SHORT" class="col-month cell-center"><span class="empty-cell"></span></td>
+              <td class="col-replan"><span class="empty-cell"></span></td>
+              <td class="col-obs"><span class="empty-cell"></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="no-data" *ngIf="!loadingEmps && planRows.length === 0">
+        <i class="fas fa-users fa-2x text-muted mb-2"></i>
+        <p>No hay empleados activos para mostrar</p>
+      </div>
+
+      <footer class="approval-footer" *ngIf="!loadingEmps">
+        <div class="approval-card">
+          <div class="approval-card-title">Elaborado Por:</div>
+          <div class="approval-signature-area"><span class="sig-label">Firma</span></div>
+          <div class="approval-field-row">
+            <span class="approval-field-label">Nombre Y Apellido</span>
+            <input type="text" class="approval-input" [(ngModel)]="elaboradoNombre" />
+          </div>
+          <div class="approval-field-row">
+            <span class="approval-field-label">Cargo</span>
+            <input type="text" class="approval-input" [(ngModel)]="elaboradoCargo" />
+          </div>
+        </div>
+        <div class="approval-card">
+          <div class="approval-card-title">Revisado Por:</div>
+          <div class="approval-signature-area"><span class="sig-label">Firma</span></div>
+          <div class="approval-field-row">
+            <span class="approval-field-label">Nombre Y Apellido</span>
+            <input type="text" class="approval-input" [(ngModel)]="revisadoNombre" />
+          </div>
+          <div class="approval-field-row">
+            <span class="approval-field-label">Cargo</span>
+            <input type="text" class="approval-input" [(ngModel)]="revisadoCargo" />
+          </div>
+        </div>
+        <div class="approval-card">
+          <div class="approval-card-title">Aprobado Por:</div>
+          <div class="approval-signature-area"><span class="sig-label">Firma</span></div>
+          <div class="approval-field-row">
+            <span class="approval-field-label">Nombre Y Apellido</span>
+            <input type="text" class="approval-input" [(ngModel)]="aprobadoNombre" />
+          </div>
+          <div class="approval-field-row">
+            <span class="approval-field-label">Cargo</span>
+            <input type="text" class="approval-input" [(ngModel)]="aprobadoCargo" />
+          </div>
+        </div>
+      </footer>
+
+    </div><!-- /plan-document -->
+  </div><!-- /plan-container -->
+
 </div>

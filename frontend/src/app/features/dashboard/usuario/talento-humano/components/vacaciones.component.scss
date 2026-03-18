@@ -1,1 +1,923 @@
 @import 'attendance-shared';
+
+// ── Vacaciones Main Container ─────────────────────────
+.vac-main-container {
+  flex: 1;
+  padding: 20px 28px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+// ── Schedule header (title + actions) ─────────────────
+.schedule-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 16px 20px 8px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+.sh-left { display: flex; flex-direction: column; gap: 6px; }
+.sh-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0;
+}
+.sh-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+.sh-actions { display: flex; gap: 10px; }
+.btn-outline {
+  background: #fff;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  &:hover { background: #f9fafb; }
+}
+.btn-primary {
+  background: #ec5b13;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  box-shadow: 0 6px 16px rgba(236,91,19,.25);
+  &:hover { opacity: .95; }
+}
+
+// ── Summary widgets ───────────────────────────────────
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 14px 20px;
+}
+.summary-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex; gap: 12px; align-items: center;
+}
+.sum-icon {
+  width: 44px; height: 44px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  &.sum-primary { background: #fdeee6; color: #ec5b13; }
+  &.sum-ok      { background: #e6f9f0; color: #10b981; }
+  &.sum-warn    { background: #fef5e7; color: #d97706; }
+  &.sum-gray    { background: #f1f5f9; color: #4b5563; }
+}
+.sum-body { display: flex; flex-direction: column; }
+.sum-k { font-size: 22px; font-weight: 900; color: #0f172a; line-height: 1; }
+.sum-l { font-size: 10px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: .12em; }
+
+// ── Consolidated summary (management) ─────────────────
+.mgmt-summary {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  margin: 12px 20px;
+  padding: 14px 16px 18px;
+}
+.ms-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  h2 { margin: 0; font-size: 16px; font-weight: 800; color: #0f172a; }
+}
+.ms-cards {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+@media (max-width: 1200px) { .ms-cards { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px)  { .ms-cards { grid-template-columns: repeat(2, 1fr); } }
+.ms-card {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+}
+.ms-card.ms-ok     { background: #f0fdf4; border-color: #bbf7d0; }
+.ms-card.ms-warn   { background: #fffbeb; border-color: #fde68a; }
+.ms-card.ms-info   { background: #eff6ff; border-color: #bfdbfe; }
+.ms-card.ms-danger { background: #fef2f2; border-color: #fecaca; }
+.ms-kpi   { font-size: 22px; font-weight: 900; color: #0f172a; line-height: 1; }
+.ms-label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .1em; }
+
+.ms-dept-box { margin-top: 14px; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+.ms-dept-title { font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+.ms-dept-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ms-dept-table th, .ms-dept-table td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; }
+.ms-dept-table th { background: #f8fafc; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #64748b; }
+.text-muted { color: #94a3b8; }
+
+// ── Summary meta box (código, revisión) ───────────────
+.ms-meta-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.ms-meta-row { display: flex; justify-content: space-between; font-size: 10px; gap: 8px; }
+.ms-meta-k { font-weight: 700; color: #334155; }
+.ms-meta-v { color: #475569; }
+
+// ── Monthly distribution chips ────────────────────────
+.ms-months { margin-top: 10px; }
+.ms-months-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; }
+.ms-month {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.ms-month-l { font-size: 11px; color: #475569; font-weight: 800; }
+.ms-month-v { font-size: 18px; color: #0f172a; font-weight: 900; line-height: 1; }
+.ms-month-sub { font-size: 10px; color: #64748b; }
+
+.ms-month.top {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgba(147,197,253,.35) inset;
+}
+
+// ── Charts area ───────────────────────────────────────
+.ms-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.chart-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; }
+.chart-card--wide { grid-column: 1 / -1; }
+.chart-title { font-size: 12px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+.chart-canvas { width: 100%; height: 220px; display: block; }
+.chart-canvas--h { height: 240px; }
+
+// ── Filters bar ───────────────────────────────────────
+.filters-bar {
+  display: grid;
+  grid-template-columns: 1fr 180px 200px 120px auto;
+  gap: 12px;
+  padding: 0 20px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+}
+.fb-col { display: flex; flex-direction: column; }
+.fb-col-sm { min-width: 160px; }
+.fb-col-xs { min-width: 120px; }
+.fb-actions { display: flex; align-items: flex-end; }
+
+// ── Status chips ──────────────────────────────────────
+.status-tabs { display: flex; gap: 8px; padding: 14px 20px; background: #fff; border-bottom: 1px solid #f1f5f9; }
+.status-chip {
+  padding: 8px 12px; border-radius: 999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; cursor: pointer;
+  background: #f1f5f9; color: #475569; border: 1px solid #e5e7eb;
+}
+.status-chip.active { background: #ec5b13; color: #fff; border-color: #ec5b13; box-shadow: 0 4px 12px rgba(236,91,19,.25); }
+
+// ── Document shell (imprimible) ───────────────────────
+.vac-document {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+// ── Watermark ─────────────────────────────────────────
+.vac-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 7rem;
+  color: rgba(0,0,0,.04);
+  pointer-events: none;
+  z-index: 0;
+  white-space: nowrap;
+  font-weight: 900;
+  user-select: none;
+}
+
+// ── Control Panel ─────────────────────────────────────
+.vac-control-panel {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.ctrl-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #374151;
+  letter-spacing: .05em;
+  margin-bottom: 5px;
+}
+
+.vac-search-wrap { flex: 1; min-width: 200px; }
+.ctrl-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ctrl-search-icon {
+  position: absolute;
+  left: 10px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+.ctrl-search-input {
+  width: 100%;
+  padding: 7px 10px 7px 32px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  font-size: 13px;
+  outline: none;
+  &:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
+}
+
+.vac-dept-wrap { width: 220px; }
+.ctrl-select {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  font-size: 13px;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  &:focus { border-color: #3b82f6; }
+}
+
+.vac-period-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+.period-badge-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  background: #bfdbfe;
+  color: #1e3a8a;
+  padding: 3px 10px;
+  border-radius: 3px 3px 0 0;
+}
+.period-badge-val {
+  border: 1px solid #d1d5db;
+  border-top: none;
+  border-radius: 0 0 3px 3px;
+  background: #f9fafb;
+}
+.period-select-inline {
+  border: none;
+  background: transparent;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+}
+
+.vac-actions-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.btn-new-solicitud {
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  &:hover { background: #1e40af; }
+}
+.btn-print-doc {
+  background: #002d72;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  &:hover { background: #001a4e; }
+}
+
+// ── Nueva solicitud panel ─────────────────────────────
+.new-solicitud-panel {
+  background: #f0f9ff;
+  border-bottom: 1px solid #bae6fd;
+  position: relative;
+  z-index: 1;
+}
+.new-solicitud-inner {
+  padding: 16px 20px;
+  max-width: 900px;
+}
+.new-solicitud-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0369a1;
+  margin-bottom: 12px;
+}
+.new-solicitud-hint {
+  font-size: 12px;
+  color: #374151;
+  margin-bottom: 10px;
+}
+.btn-link-sm {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0 4px;
+}
+.emp-mini-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.emp-mini-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  &:hover { background: #eff6ff; border-color: #93c5fd; }
+}
+.emp-mini-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.emp-mini-name { font-weight: 600; color: #111827; }
+
+// ── Loading ───────────────────────────────────────────
+.vac-loading {
+  padding: 30px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: #6b7280;
+  position: relative;
+  z-index: 1;
+}
+
+// ── Main Table ────────────────────────────────────────
+.vac-table-wrapper {
+  overflow-x: auto;
+  position: relative;
+  z-index: 1;
+}
+.vac-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  thead tr {
+    background: #002d72;
+    th {
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      padding: 11px 14px;
+      text-align: left;
+      border: 1px solid rgba(255,255,255,.15);
+      white-space: nowrap;
+      &.vcol-num { text-align: center; }
+      &.vcol-status { text-align: center; }
+      &.vcol-actions { text-align: center; }
+    }
+  }
+  tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background .12s;
+    &:hover { background: #eff6ff; }
+    &.vac-row-empty td { height: 36px; background: #fafafa; }
+  }
+  td {
+    padding: 12px 14px;
+    color: #111827;
+    border-right: 1px solid #f1f5f9;
+    &:last-child { border-right: none; }
+  }
+}
+
+.vcol-num    { width: 48px; text-align: center; color: #6b7280; font-weight: 600; font-size: 12px; }
+.vcol-name   { min-width: 220px; }
+.vcol-dept   { min-width: 150px; color: #374151; font-size: 12px; }
+.vcol-date   { width: 130px; text-align: center; font-size: 12px; color: #6b7280; }
+.vcol-status { width: 130px; text-align: center; }
+.vcol-actions{ width: 160px; text-align: center; }
+
+.emp-name-text { font-weight: 600; color: #111827; }
+
+// ── Status badges ─────────────────────────────────────
+.vac-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  &.badge-approved {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+  }
+  &.badge-pending {
+    background: #fef9c3;
+    color: #854d0e;
+    border: 1px solid #fef08a;
+  }
+  &.badge-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+  &.badge-progress {
+    background: #e0f2fe;
+    color: #075985;
+    border: 1px solid #bae6fd;
+  }
+}
+
+// ── Table action buttons ──────────────────────────────
+.tbl-btn {
+  padding: 4px 10px;
+  border-radius: 3px;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  &.tbl-btn-view {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    &:hover { background: #dbeafe; }
+  }
+  &.tbl-btn-edit {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    &:hover { background: #dcfce7; }
+  }
+}
+
+// ── No data ───────────────────────────────────────────
+.vac-no-data {
+  padding: 40px 20px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+  position: relative;
+  z-index: 1;
+  i { display: block; margin-bottom: 8px; }
+}
+
+// ── Signatures section ────────────────────────────────
+.vac-signatures {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 2px solid #d1d5db;
+  position: relative;
+  z-index: 1;
+}
+.sig-card {
+  border-right: 1px solid #d1d5db;
+  &:last-child { border-right: none; }
+}
+.sig-card-title {
+  background: #f3f4f6;
+  border-bottom: 1px solid #d1d5db;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: .04em;
+  color: #374151;
+}
+.sig-area {
+  height: 80px;
+  border-bottom: 1px solid #d1d5db;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+}
+.sig-placeholder {
+  font-size: 11px;
+  color: #d1d5db;
+  font-style: italic;
+}
+.sig-role {
+  text-align: center;
+  font-size: 11px;
+  color: #6b7280;
+  margin: 8px 0;
+  padding: 0 8px;
+}
+
+// ── Tabs ──────────────────────────────────────────────
+.vac-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 28px;
+  background: #fff;
+  border-bottom: 2px solid #e2e8f0;
+  flex-shrink: 0;
+}
+.vac-tab {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  margin-bottom: -2px;
+  transition: color .15s, border-color .15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  &:hover { color: #1d4ed8; }
+  &.active {
+    color: #1d4ed8;
+    border-bottom-color: #1d4ed8;
+  }
+}
+
+// ── Annual plan container ─────────────────────────────
+.plan-container {
+  flex: 1;
+  padding: 20px 28px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+// Controls bar (no-print)
+.plan-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.plan-period-badge {
+  display: flex;
+  align-items: center;
+  border: 1px solid #000;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.period-label {
+  background: #bfdbfe;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e3a5f;
+}
+.period-select {
+  border: none;
+  padding: 4px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  outline: none;
+  background: #fff;
+  cursor: pointer;
+}
+.btn-print {
+  background: #002d72;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  &:hover { background: #001a4e; }
+}
+
+// ── Document shell ────────────────────────────────────
+.plan-document {
+  background: #fff;
+  border: 1px solid #94a3b8;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+// Document header (matches HTML reference)
+.doc-header {
+  display: flex;
+  border-bottom: 2px solid #000;
+}
+.doc-header-logo {
+  width: 22%;
+  border-right: 1px solid #000;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+}
+.company-logo-text {
+  font-size: 14px;
+  font-weight: 900;
+  color: #002d72;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  line-height: 1.3;
+}
+.doc-header-title {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-right: 1px solid #000;
+  h1 {
+    font-size: 15px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #000;
+    margin: 0;
+    text-align: center;
+  }
+}
+.doc-header-meta {
+  width: 22%;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  border-bottom: 1px solid #d1d5db;
+  padding-bottom: 2px;
+  &:last-child { border-bottom: none; }
+}
+.meta-key {
+  font-weight: 700;
+  color: #374151;
+}
+.meta-val {
+  color: #374151;
+}
+
+// Loading state
+.plan-loading {
+  padding: 30px 24px;
+  font-size: 13px;
+  color: #64748b;
+  text-align: center;
+}
+
+// ── Grid wrapper + table ──────────────────────────────
+.plan-grid-wrapper {
+  overflow-x: auto;
+  padding: 0;
+}
+
+.plan-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+  border: 1px solid #000;
+
+  th, td {
+    border: 1px solid #94a3b8;
+    padding: 0;
+    vertical-align: middle;
+  }
+}
+
+// Header row
+.plan-thead-row th {
+  background: #002d72;
+  color: #fff;
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: 8px 6px;
+  text-align: center;
+  border-color: rgba(255,255,255,.2);
+  white-space: nowrap;
+}
+
+// Column widths
+.col-num   { width: 34px; min-width: 34px; }
+.col-name  { min-width: 150px; }
+.col-dept  { min-width: 120px; }
+.col-date  { min-width: 120px; }
+.col-days  { width: 70px; min-width: 70px; }
+.col-repl  { min-width: 120px; }
+.col-month { width: 36px; min-width: 36px; }
+.col-replan{ min-width: 110px; }
+.col-obs   { min-width: 150px; }
+
+// Body row cells
+.plan-body-row td {
+  padding: 2px 4px;
+  background: #fff;
+  border-color: #d1d5db;
+}
+.plan-empty-row td {
+  background: #f9fafb;
+  height: 28px;
+}
+.cell-center { text-align: center; }
+.cell-gray   { background: #f3f4f6 !important; font-weight: 700; color: #374151; }
+
+// Inputs inside table
+.plan-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 11.5px;
+  font-family: inherit;
+  padding: 4px 3px;
+  box-sizing: border-box;
+  color: #111827;
+  &:focus {
+    background: #eff6ff;
+    border-radius: 2px;
+  }
+}
+.plan-input-left  { text-align: left; }
+.plan-input-center{ text-align: center; }
+.plan-input-xs    { font-size: 10.5px; }
+
+.month-check {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: #002d72;
+}
+
+.empty-cell {
+  display: block;
+  height: 22px;
+}
+
+// ── Approval footer ───────────────────────────────────
+.approval-footer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 2px solid #000;
+}
+.approval-card {
+  border-right: 1px solid #000;
+  &:last-child { border-right: none; }
+}
+.approval-card-title {
+  background: #f3f4f6;
+  border-bottom: 1px solid #000;
+  padding: 7px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: center;
+  letter-spacing: .04em;
+}
+.approval-signature-area {
+  height: 72px;
+  border-bottom: 1px solid #000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+}
+.sig-label {
+  font-size: 10px;
+  color: #9ca3af;
+}
+.approval-field-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  border-bottom: 1px solid #d1d5db;
+  min-height: 30px;
+  &:last-child { border-bottom: none; }
+}
+.approval-field-label {
+  padding: 6px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  background: #f9fafb;
+  border-right: 1px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: #374151;
+}
+.approval-input {
+  border: none;
+  outline: none;
+  padding: 6px 8px;
+  font-size: 11.5px;
+  font-family: inherit;
+  background: transparent;
+  width: 100%;
+  box-sizing: border-box;
+  &:focus { background: #eff6ff; }
+}
+
+// ── Print styles ──────────────────────────────────────
+@media print {
+  .no-print { display: none !important; }
+  .schedule-header, .filters-bar, .status-tabs, .summary-grid, .vac-table-wrapper { display: none !important; }
+  .mgmt-summary { display: none !important; }
+  .vac-tabs  { display: none !important; }
+  .module-header { display: none !important; }
+  .plan-container { padding: 0; }
+  .plan-document {
+    border: 1px solid #000;
+    box-shadow: none;
+  }
+  .plan-table th, .plan-table td {
+    border-color: #000 !important;
+  }
+  .only-print { display: inline !important; }
+}
+
+// Hidden by default, visible on print
+.only-print { display: none; }

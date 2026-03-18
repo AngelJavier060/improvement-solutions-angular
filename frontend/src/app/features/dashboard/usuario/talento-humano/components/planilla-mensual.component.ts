@@ -527,6 +527,8 @@ export class PlanillaMensualComponent implements OnInit {
   isLocked(row: EmployeeSheetRow, dayIdx: number): boolean {
     const entry = row.days[dayIdx];
     if (!entry) return false;
+    // Bloquear días de Vacaciones (V) y Horas Extra con motivo HE
+    if (entry.dayType === 'V') return true;
     return entry.dayType === 'EX' && typeof entry.notes === 'string' && entry.notes.trim().toUpperCase().startsWith('HE:');
   }
 

@@ -5,7 +5,12 @@ import com.improvementsolutions.service.AttendanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -24,6 +29,9 @@ import java.util.NoSuchElementException;
 public class AttendanceController {
 
     private final AttendanceService attendanceService;
+
+    @Value("${app.storage.location:uploads}")
+    private String storageBaseDir;
 
     // ─────────────────── KPIs ───────────────────
 
@@ -251,6 +259,85 @@ public class AttendanceController {
             return ResponseEntity.notFound().build();
         } catch (SecurityException e) {
             return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/vacations/{id}/upload-signed")
+    public ResponseEntity<?> uploadVacationSignedPdf(
+            @PathVariable Long businessId,
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        String relativePath;
+        try {
+            java.nio.file.Path base = java.nio.file.Paths.get(storageBaseDir);
+            java.nio.file.Path uploadDir = base.resolve(java.nio.file.Paths.get("signed-pdfs", "vacations"));
+            java.nio.file.Files.createDirectories(uploadDir);
+            String filename = businessId + "_vac_" + id + "_" + System.currentTimeMillis() + ".pdf";
+            java.nio.file.Path target = uploadDir.resolve(filename);
+            try (java.io.InputStream in = file.getInputStream()) {
+                java.nio.file.Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+            // Guardar ruta relativa basada en 'app.storage.location'
+            relativePath = (storageBaseDir + "/signed-pdfs/vacations/" + filename).replace('\\','/');
+            log.debug("[upload-signed] Saved file to {} (absolute: {})", relativePath, target.toAbsolutePath());
+        } catch (java.io.IOException e) {
+            log.error("[upload-signed] IO error: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of("error", "Error al guardar el archivo: " + e.getMessage()));
+        }
+        try {
+            EmployeeVacation updated = attendanceService.setVacationSignedPdf(businessId, id, relativePath);
+            // Al subir PDF, estado = PENDIENTE (a revisión)
+            updated = attendanceService.updateVacationStatus(businessId, id, "PENDIENTE");
+            return ResponseEntity.ok(vacationToMap(updated));
+        } catch (NoSuchElementException e) {
+            log.error("[upload-signed] Vacacion no encontrada: {}", id, e);
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            log.error("[upload-signed] Seguridad: {}", e.getMessage(), e);
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[upload-signed] Error inesperado: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/vacations/{id}/status")
+    public ResponseEntity<?> updateVacationStatus(
+            @PathVariable Long businessId,
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        try {
+            String status = body.get("status");
+            EmployeeVacation updated = attendanceService.updateVacationStatus(businessId, id, status);
+            return ResponseEntity.ok(vacationToMap(updated));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/vacations/{id}/pdf")
+    public ResponseEntity<?> getVacationSignedPdf(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        try {
+            // Buscar registro para obtener la ruta
+            java.util.Optional<EmployeeVacation> opt = attendanceService.getVacationsByBusiness(businessId, null, null)
+                    .stream().filter(v -> v.getId().equals(id)).findFirst();
+            if (opt.isEmpty()) return ResponseEntity.notFound().build();
+            String path = opt.get().getSignedPdfPath();
+            if (path == null || path.isBlank()) return ResponseEntity.notFound().build();
+            java.nio.file.Path p = java.nio.file.Paths.get(path);
+            if (!java.nio.file.Files.exists(p)) return ResponseEntity.notFound().build();
+            Resource res = new FileSystemResource(p.toFile());
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(res);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -586,6 +673,7 @@ public class AttendanceController {
         m.put("daysAccumulated",v.getDaysAccumulated());
         m.put("status",         v.getStatus());
         m.put("notes",          v.getNotes());
+        m.put("signedPdfPath",  v.getSignedPdfPath());
         m.put("createdAt",      v.getCreatedAt() != null ? v.getCreatedAt().toString() : null);
         return m;
     }
