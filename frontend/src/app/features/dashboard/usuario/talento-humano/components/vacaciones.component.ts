@@ -659,7 +659,7 @@ export class VacacionesComponent implements OnInit, AfterViewInit {
       },
       error: err => {
         this.saving = false;
-        this.error = 'Error al guardar. Verifique los datos e intente nuevamente.';
+        this.error = err?.error?.error || 'Error al guardar. Verifique los datos e intente nuevamente.';
         console.error(err);
       }
     });

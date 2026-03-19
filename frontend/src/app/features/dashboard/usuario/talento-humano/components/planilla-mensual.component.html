@@ -265,6 +265,25 @@
                   </div>
                   <div class="pm-note-pop-txt">{{ entry.notes }}</div>
                 </div>
+
+                <!-- Popover detalle Permiso aprobado -->
+                <div class="pm-note-pop" *ngIf="isPermOpen(row.employeeId, i)" (click)="$event.stopPropagation()">
+                  <div class="pm-note-pop-hd">
+                    <span class="material-symbols-outlined">edit_note</span>
+                    Permiso aprobado
+                    <button type="button" class="pm-note-close" (click)="closePermPopover(); $event.stopPropagation()" title="Cerrar">✕</button>
+                  </div>
+                  <div class="pm-note-pop-txt" *ngIf="permPopover?.loading">Cargando…</div>
+                  <div class="pm-note-pop-txt" *ngIf="permPopover?.error">{{ permPopover?.error }}</div>
+                  <div class="pm-note-pop-txt" *ngIf="!permPopover?.loading && !permPopover?.error && permPopover?.data">
+                    <div><strong>Empleado:</strong> {{ permPopover?.data?.employeeName || row.fullName }}</div>
+                    <div><strong>Fecha:</strong> {{ permPopover?.data?.permissionDate }}</div>
+                    <div><strong>Tipo:</strong> {{ permPopover?.data?.permissionType }}</div>
+                    <div><strong>Horas:</strong> {{ permPopover?.data?.hoursRequested || 0 }}</div>
+                    <div><strong>Motivo:</strong> {{ permPopover?.data?.reason }}</div>
+                    <div><strong>Estado:</strong> {{ permPopover?.data?.status }}</div>
+                  </div>
+                </div>
               </td>
               <td class="pm-td-total" *ngFor="let k of dayTypeKeys">{{ row.totals[k] || 0 }}</td>
             </tr>

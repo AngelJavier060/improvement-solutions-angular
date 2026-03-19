@@ -19,4 +19,15 @@ public interface EmployeePermissionRepository extends JpaRepository<EmployeePerm
 
     List<EmployeePermission> findByEmployee_IdAndPermissionDateBetweenOrderByPermissionDateAsc(
             Long employeeId, LocalDate from, LocalDate to);
+
+    // Overlap check: permisos del empleado cuya fecha cae en [from, to] y no están rechazados
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT p FROM EmployeePermission p " +
+        "WHERE p.employee.id = :employeeId " +
+        "AND p.permissionDate >= :from AND p.permissionDate <= :to " +
+        "AND UPPER(p.status) <> 'RECHAZADO'")
+    List<EmployeePermission> findOverlapping(
+        @org.springframework.data.repository.query.Param("employeeId") Long employeeId,
+        @org.springframework.data.repository.query.Param("from") LocalDate from,
+        @org.springframework.data.repository.query.Param("to") LocalDate to);
 }

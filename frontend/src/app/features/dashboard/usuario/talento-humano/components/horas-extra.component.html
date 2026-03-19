@@ -295,6 +295,10 @@
 
     <div class="he-modal-body">
 
+      <!-- Aviso de solapamiento de fecha -->
+      <div class="he-form-warning" *ngIf="activityConflictWarning">
+        <span class="material-symbols-outlined">warning</span> {{ activityConflictWarning }}
+      </div>
       <!-- Error inside form -->
       <div class="he-form-error" *ngIf="error">
         <span class="material-symbols-outlined">error</span> {{ error }}
@@ -396,7 +400,10 @@
             <tbody>
               <tr *ngFor="let act of activities; let i = index">
                 <td class="text-center he-cell-muted">{{ i + 1 }}</td>
-                <td><input type="date" [(ngModel)]="act.activityDate" /></td>
+                <td>
+                  <input type="date" [(ngModel)]="act.activityDate"
+                         (ngModelChange)="onActivityDateChange(i, $event)" />
+                </td>
                 <td>
                   <div class="he-time-range">
                     <input type="time" [(ngModel)]="act.startTime" />

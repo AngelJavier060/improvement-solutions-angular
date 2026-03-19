@@ -29,6 +29,7 @@ export class VacacionSolicitudModalComponent implements OnInit, OnChanges {
   error: string | null = null;
   showSuccess = false;
   pdfBlobUrl: string | null = null;
+  dateConflictWarning: string | null = null;
 
   readonly approvers = [
     { value: 'gerente_operaciones',   label: 'Gerente de Operaciones' },
@@ -216,6 +217,32 @@ export class VacacionSolicitudModalComponent implements OnInit, OnChanges {
     const eCtrl = this.form.get('endDate');
     sCtrl?.valueChanges.subscribe(() => this.recomputeDaysBalance());
     eCtrl?.valueChanges.subscribe(() => this.recomputeDaysBalance());
+  }
+
+  checkConflictFromEvent(evt: Event): void {
+    const date = (evt.target as HTMLInputElement).value;
+    this.checkConflict(date);
+  }
+
+  checkConflict(date: string): void {
+    this.dateConflictWarning = null;
+    const empId: number | null = this.employee?.id
+      ?? (this.form.get('employeeId')?.value ? Number(this.form.get('employeeId')?.value) : null);
+    if (!date || !this.businessId || !empId) {
+      console.warn('[Vacaciones] checkConflict: faltan datos — date:', date, 'businessId:', this.businessId, 'empId:', empId);
+      return;
+    }
+    console.log('[Vacaciones] checkConflict llamado — date:', date, 'empId:', empId);
+    this.attendanceService.checkDateConflict(this.businessId, empId, date).subscribe({
+      next: res => {
+        console.log('[Vacaciones] checkConflict respuesta:', res);
+        this.dateConflictWarning = res.conflict ? res.detail : null;
+      },
+      error: err => {
+        console.error('[Vacaciones] checkConflict error:', err);
+        this.dateConflictWarning = null;
+      }
+    });
   }
 
   private recomputeDaysBalance(): void {

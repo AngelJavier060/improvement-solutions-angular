@@ -328,6 +328,19 @@ select.field-input { cursor: pointer; }
   gap: 10px;
 }
 
+.alert-warning-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  background: #fff8ed;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 4px;
+  line-height: 1.5;
+}
 .alert-error-inline {
   display: flex;
   align-items: center;
@@ -387,6 +400,15 @@ select.field-input { cursor: pointer; }
 }
 
 // ── Responsive ────────────────────────────────────────
+// ── Inline date conflict warning ──
+.date-conflict-warning {
+  display: flex; align-items: flex-start; gap: 5px;
+  margin-top: 4px; padding: 5px 8px;
+  background: #fff8ed; border: 1px solid #f59e0b; border-radius: 5px;
+  color: #92400e; font-size: 11px; font-weight: 500; line-height: 1.4;
+  i { color: #d97706; flex-shrink: 0; margin-top: 1px; }
+}
+
 @media (max-width: 720px) {
   .form-grid-4 { grid-template-columns: repeat(2, 1fr); }
   .form-doc-meta { display: none; }

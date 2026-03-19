@@ -1,137 +1,588 @@
-<div class="attendance-module">
-  <div class="module-header">
+<!-- ══════════════════════════════════════════════════
+     PANTALLA PRINCIPAL: Historial de Permisos
+════════════════════════════════════════════════════ -->
+<div class="perm-page" [class.pdf-mode]="showPdfPreview">
+
+  <!-- Toast de éxito -->
+  <div class="perm-toast perm-toast-ok" *ngIf="successMsg">
+    <i class="fas fa-check-circle"></i> {{ successMsg }}
+  </div>
+
+<!-- ══════════════════════════════════════════════════
+     MODAL: Detalle de Permiso
+════════════════════════════════════════════════════ -->
+<div class="perm-modal-overlay" *ngIf="showPermDetail" (click)="closeDetails()"></div>
+<div class="perm-modal" *ngIf="showPermDetail" (click)="$event.stopPropagation()" style="max-width: 720px; width: 94%;">
+  <div class="perm-modal-header">
     <div>
-      <nav class="breadcrumb-nav">
-        <button class="btn-link" (click)="goBack()"><i class="fas fa-arrow-left me-1"></i> Planilla</button>
-        <span class="sep">/</span><span>Permisos</span>
-      </nav>
-      <h2 class="module-title"><i class="fas fa-file-signature me-2 text-yellow"></i>Control de Permisos</h2>
-      <p class="module-subtitle">Registra y gestiona los permisos del personal — {{ businessName }}</p>
+      <span class="perm-modal-tag">DETALLE DE PERMISO</span>
+      <h3 class="perm-modal-title">{{ detailPerm ? detailPerm.employeeName || '—' : '—' }}</h3>
+    </div>
+    <button class="perm-modal-close" (click)="closeDetails()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="perm-modal-body">
+    <div class="perm-emp-info-grid" *ngIf="detailPerm">
+      <div class="perm-info-field">
+        <label>Cédula</label>
+        <div class="perm-info-val">{{ detailPerm.cedula || '—' }}</div>
+      </div>
+      <div class="perm-info-field">
+        <label>Tipo</label>
+        <div class="perm-info-val">{{ detailPerm.permissionType }}</div>
+      </div>
+      <div class="perm-info-field">
+        <label>Desde</label>
+        <div class="perm-info-val">{{ formatDate(detailPerm.permissionDate || '') }}</div>
+      </div>
+      <div class="perm-info-field">
+        <label>Hasta</label>
+        <div class="perm-info-val">{{ formatDate(detailPerm.permissionDate || '') }}</div>
+      </div>
+      <div class="perm-info-field">
+        <label>Horas</label>
+        <div class="perm-info-val">{{ detailPerm.hoursRequested || 0 }}h</div>
+      </div>
+      <div class="perm-info-field">
+        <label>Estado</label>
+        <div class="perm-info-val"><span [class]="getStatusClass(detailPerm.status || '')">{{ detailPerm.status }}</span></div>
+      </div>
+      <div class="perm-info-field" style="grid-column: span 2;">
+        <label>Motivo</label>
+        <div class="perm-info-val">{{ detailPerm.reason || '—' }}</div>
+      </div>
+      <div class="perm-info-field" style="grid-column: span 2;">
+        <label>Notas</label>
+        <div class="perm-info-val">{{ detailPerm.notes || '—' }}</div>
+      </div>
     </div>
   </div>
-
-  <div class="alert-success" *ngIf="successMsg">
-    <i class="fas fa-check-circle me-2"></i>{{ successMsg }}
+  <div class="perm-modal-footer" style="justify-content: space-between;">
+    <div></div>
+    <div class="perm-modal-footer-right">
+      <button class="perm-btn-draft" *ngIf="detailPerm && detailPerm.signedPdfPath && (detailPerm.status || '').toUpperCase() === 'APROBADO'" (click)="openPermissionPdf(detailPerm!)">
+        <i class="fas fa-file-pdf"></i> Ver PDF firmado
+      </button>
+      <button class="perm-btn-primary" (click)="closeDetails()">Cerrar</button>
+    </div>
   </div>
+</div>
 
-  <div class="two-col-layout">
-    <!-- Lista empleados -->
-    <div class="employees-panel">
-      <div class="panel-head">
-        <span class="panel-title">Personal activo</span>
-        <div class="search-small">
-          <i class="fas fa-search"></i>
-          <input [(ngModel)]="searchEmp" placeholder="Buscar…" />
-        </div>
-      </div>
-      <div class="emp-list">
-        <div *ngIf="loadingEmps" class="mini-loader">Cargando…</div>
-        <button *ngFor="let emp of filteredEmployees"
-                class="emp-btn"
-                [class.selected]="selectedEmployee?.id === emp.id"
-                (click)="selectEmployee(emp)">
-          <div class="emp-avatar">{{ (emp.nombres || emp.name || 'X').charAt(0).toUpperCase() }}</div>
-          <div class="emp-info">
-            <div class="emp-name">{{ getFullName(emp) }}</div>
-            <div class="emp-sub">{{ emp.position || 'Sin cargo' }} · {{ emp.cedula }}</div>
-          </div>
-          <i class="fas fa-chevron-right emp-arrow"></i>
+  <!-- ── Cabecera ── -->
+  <div class="perm-header" *ngIf="!showPdfPreview">
+    <div>
+      <nav class="perm-breadcrumb">
+        <button class="perm-btn-link" (click)="goBack()">
+          <i class="fas fa-arrow-left"></i> Planilla
         </button>
-        <p *ngIf="!loadingEmps && filteredEmployees.length === 0" class="no-data-sm">Sin personal encontrado</p>
+        <span class="perm-sep">/</span>
+        <span>Permisos</span>
+      </nav>
+      <h2 class="perm-title">Historial de Permisos</h2>
+      <p class="perm-subtitle">Gestione y revise el estado de sus permisos y vacaciones — <strong>{{ businessName }}</strong></p>
+    </div>
+    <button class="perm-btn-primary" (click)="openNewModal()">
+      <i class="fas fa-plus-circle"></i> Nueva Solicitud
+    </button>
+  </div>
+
+  <!-- ── KPIs ── -->
+  <div class="perm-kpis" *ngIf="!showPdfPreview">
+    <div class="perm-kpi-card">
+      <div>
+        <p class="perm-kpi-label">Total Solicitudes</p>
+        <h3 class="perm-kpi-value">{{ kpiTotal }}</h3>
+      </div>
+      <div class="perm-kpi-icon perm-kpi-blue">
+        <i class="fas fa-list-alt"></i>
+      </div>
+    </div>
+    <div class="perm-kpi-card">
+      <div>
+        <p class="perm-kpi-label">Pendientes por aprobar</p>
+        <h3 class="perm-kpi-value">{{ kpiPending | number:'2.0-0' }}</h3>
+      </div>
+      <div class="perm-kpi-icon perm-kpi-amber">
+        <i class="fas fa-hourglass-half"></i>
+      </div>
+    </div>
+    <div class="perm-kpi-card">
+      <div>
+        <p class="perm-kpi-label">Aprobados</p>
+        <h3 class="perm-kpi-value">{{ kpiApproved }}</h3>
+      </div>
+      <div class="perm-kpi-icon perm-kpi-green">
+        <i class="fas fa-calendar-check"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Filtros ── -->
+  <div class="perm-filters" *ngIf="!showPdfPreview">
+    <div class="perm-filter-search">
+      <label class="perm-filter-label">Búsqueda</label>
+      <div class="perm-search-wrap">
+        <i class="fas fa-search perm-search-icon"></i>
+        <input [(ngModel)]="filterSearch" class="perm-input" placeholder="Nombre del empleado…" />
+      </div>
+    </div>
+    <div class="perm-filter-field">
+      <label class="perm-filter-label">Año</label>
+      <select [(ngModel)]="filterYear" (change)="loadRecords()" class="perm-select">
+        <option *ngFor="let y of availableYears" [value]="y">{{ y }}</option>
+      </select>
+    </div>
+    <div class="perm-filter-field">
+      <label class="perm-filter-label">Mes</label>
+      <select [(ngModel)]="filterMonth" (change)="loadRecords()" class="perm-select">
+        <option *ngFor="let m of months" [value]="m.v">{{ m.l }}</option>
+      </select>
+    </div>
+    <div class="perm-filter-field">
+      <label class="perm-filter-label">Tipo de Permiso</label>
+      <select [(ngModel)]="filterType" class="perm-select">
+        <option value="">Todos</option>
+        <option value="MATERNIDAD">Paternidad/Maternidad</option>
+        <option value="PERSONAL">Asuntos Personales</option>
+        <option value="CALAMIDAD">Calamidad doméstica</option>
+        <option value="MEDICO">Enfermedad</option>
+        <option value="ESTUDIOS">Estudios</option>
+        <option value="OTRO">Otro</option>
+      </select>
+    </div>
+    <div class="perm-filter-clear">
+      <button class="perm-btn-clear" (click)="clearFilters()">Limpiar filtros</button>
+    </div>
+  </div>
+
+  <!-- ── Tabla ── -->
+  <div class="perm-table-card" *ngIf="!showPdfPreview">
+    <div class="perm-loader" *ngIf="loading"><i class="fas fa-spinner fa-spin"></i> Cargando…</div>
+
+    <div class="perm-empty" *ngIf="!loading && viewRecords.length === 0">
+      <i class="fas fa-file-signature perm-empty-icon"></i>
+      <p>No hay registros de permisos en este período</p>
+    </div>
+
+    <div class="perm-table-wrap" *ngIf="!loading && viewRecords.length > 0">
+      <table class="perm-table">
+        <thead>
+          <tr>
+            <th>Cód.</th>
+            <th>Empleado</th>
+            <th>Tipo</th>
+            <th>Desde</th>
+            <th>Hasta</th>
+            <th>Horas</th>
+            <th>Motivo</th>
+            <th>Estado</th>
+            <th class="perm-th-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of viewRecords">
+            <td class="perm-td-code">{{ r.id || '—' }}</td>
+            <td>
+              <p class="perm-emp-name">{{ r.employeeName || '—' }}</p>
+              <p class="perm-emp-sub">{{ r.cedula || '' }}</p>
+            </td>
+            <td>{{ r.permissionType }}</td>
+            <td>{{ formatDate(r.permissionDate) }}</td>
+            <td>{{ formatDate(r.permissionDate) }}</td>
+            <td class="perm-td-hours">{{ r.hoursRequested || 0 }}h</td>
+            <td class="perm-td-reason">{{ r.reason }}</td>
+            <td><span [class]="getStatusClass(r.status || '')">{{ r.status || 'PENDIENTE' }}</span></td>
+            <td class="perm-td-actions">
+              <div class="perm-actions-wrap">
+                <!-- Info / Detalles -->
+                <button class="perm-action-btn" title="Detalles" (click)="openDetails(r)">
+                  <i class="fas fa-info-circle"></i>
+                </button>
+
+                <!-- PDF de Solicitud (vista/impresión) -->
+                <button class="perm-action-btn" title="Ver/Imprimir solicitud (PDF)" (click)="openRequestPdf(r)">
+                  <i class="fas fa-file-pdf"></i>
+                </button>
+
+                <!-- Subir PDF firmado: visible cuando está PENDIENTE -->
+                <button class="perm-action-btn" title="Subir PDF firmado"
+                        *ngIf="(r.status || '').toUpperCase() === 'PENDIENTE'"
+                        (click)="triggerUpload(fileInp)">
+                  <i class="fas fa-file-upload"></i>
+                </button>
+                <input #fileInp type="file" accept="application/pdf" style="display:none"
+                       (change)="onSignedPdfSelectedForPermission($event, r)" />
+
+                <!-- Ver PDF firmado (ojo) cuando existe y está APROBADO -->
+                <button class="perm-action-btn" title="Ver PDF firmado"
+                        *ngIf="r.signedPdfPath && (r.status || '').toUpperCase() === 'APROBADO'"
+                        (click)="openPermissionPdf(r)">
+                  <i class="fas fa-eye"></i>
+                </button>
+
+                <!-- Rechazar solicitud/documento: visible cuando PENDIENTE -->
+                <button class="perm-action-btn perm-action-del" title="Rechazar"
+                        *ngIf="(r.status || '').toUpperCase() === 'PENDIENTE'"
+                        (click)="rejectPermission(r)">
+                  <i class="fas fa-ban"></i>
+                </button>
+
+                <!-- Eliminar: oculto si está APROBADO -->
+                <button class="perm-action-btn perm-action-del"
+                        *ngIf="(r.status || '').toUpperCase() !== 'APROBADO'"
+                        (click)="deleteRecord(r.id!)" title="Eliminar">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación info -->
+    <div class="perm-pagination" *ngIf="!loading && viewRecords.length > 0">
+      <p class="perm-pag-info">Mostrando {{ viewRecords.length }} de {{ records.length }} registros</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     MODAL: Ver PDF firmado
+════════════════════════════════════════════════════ -->
+<div class="perm-modal-overlay" *ngIf="showSignedPdfModal" (click)="closeSignedPdfModal()"></div>
+<div class="perm-modal" *ngIf="showSignedPdfModal" (click)="$event.stopPropagation()" style="max-width: 960px; width: 96%;">
+  <div class="perm-modal-header">
+    <div>
+      <span class="perm-modal-tag">DOCUMENTO FIRMADO</span>
+      <h3 class="perm-modal-title">Permiso — PDF firmado</h3>
+    </div>
+    <button class="perm-modal-close" (click)="closeSignedPdfModal()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="perm-modal-body" style="padding-top: 0;">
+    <iframe *ngIf="signedPdfSafeUrl" [src]="signedPdfSafeUrl" style="width:100%; height:72vh; border:none;"></iframe>
+  </div>
+  <div class="perm-modal-footer" style="justify-content: space-between;">
+    <div></div>
+    <div class="perm-modal-footer-right">
+      <button class="perm-btn-draft" (click)="downloadSignedPdf()">
+        <i class="fas fa-download"></i> Descargar
+      </button>
+      <button class="perm-btn-primary" (click)="printSignedPdf()">
+        <i class="fas fa-print"></i> Imprimir
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     MODAL: Nueva Solicitud
+════════════════════════════════════════════════════ -->
+<div class="perm-modal-overlay" *ngIf="showModal" (click)="closeModal()"></div>
+<div class="perm-modal" *ngIf="showModal">
+  <div class="perm-modal-header">
+    <div>
+      <span class="perm-modal-tag">NUEVA SOLICITUD DE PERMISO</span>
+      <h3 class="perm-modal-title">{{ selectedEmployee ? getFullName(selectedEmployee) : 'Seleccione un empleado' }}</h3>
+    </div>
+    <button class="perm-modal-close" (click)="closeModal()"><i class="fas fa-times"></i></button>
+  </div>
+
+  <div class="perm-modal-body">
+    <!-- Selector de empleado -->
+    <div class="perm-modal-section">
+      <div class="perm-section-label"><span class="perm-dot"></span> DATOS DEL COLABORADOR</div>
+      <div class="perm-emp-selector">
+        <div class="perm-emp-search">
+          <i class="fas fa-search"></i>
+          <input [(ngModel)]="searchEmp" placeholder="Buscar empleado…" class="perm-input" />
+        </div>
+        <div class="perm-emp-list-modal">
+          <div *ngIf="loadingEmps" class="perm-loader-sm">Cargando empleados…</div>
+          <button *ngFor="let emp of filteredEmployees"
+                  class="perm-emp-btn-modal"
+                  [class.active]="selectedEmployee?.id === emp.id"
+                  (click)="selectEmployeeForModal(emp)">
+            <div class="perm-emp-avatar">{{ (emp.nombres || emp.name || 'X').charAt(0).toUpperCase() }}</div>
+            <div>
+              <div class="perm-emp-nm">{{ getFullName(emp) }}</div>
+              <div class="perm-emp-pos">{{ emp.position || 'Sin cargo' }} · {{ emp.cedula }}</div>
+            </div>
+          </button>
+          <p *ngIf="!loadingEmps && filteredEmployees.length === 0" class="perm-no-results">Sin personal encontrado</p>
+        </div>
+      </div>
+      <!-- Info del empleado seleccionado -->
+      <div class="perm-emp-info-grid" *ngIf="selectedEmployee">
+        <div class="perm-info-field">
+          <label>Empleado</label>
+          <div class="perm-info-val">{{ getFullName(selectedEmployee) }}</div>
+        </div>
+        <div class="perm-info-field">
+          <label>N° Cédula</label>
+          <div class="perm-info-val">{{ selectedEmployee.cedula || '—' }}</div>
+        </div>
+        <div class="perm-info-field">
+          <label>Cargo</label>
+          <div class="perm-info-val">{{ selectedEmployee.position || '—' }}</div>
+        </div>
+        <div class="perm-info-field">
+          <label>Fecha de Solicitud</label>
+          <div class="perm-info-val">{{ requestDate }}</div>
+        </div>
       </div>
     </div>
 
-    <!-- Panel derecho -->
-    <div class="right-panel">
-      <!-- Formulario -->
-      <div class="form-card" *ngIf="showForm && selectedEmployee">
-        <div class="form-card-head">
-          <span>Registrar permiso — <strong>{{ getFullName(selectedEmployee) }}</strong></span>
-          <button class="btn-icon" (click)="cancelForm()"><i class="fas fa-times"></i></button>
-        </div>
-        <form [formGroup]="form" (ngSubmit)="submitForm()" class="form-grid">
-          <div class="field-group">
-            <label>Fecha <span class="required">*</span></label>
-            <input type="date" formControlName="permissionDate" />
-          </div>
-          <div class="field-group">
-            <label>Tipo de permiso <span class="required">*</span></label>
-            <select formControlName="permissionType">
-              <option *ngFor="let t of permissionTypes" [value]="t">{{ t }}</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label>Horas solicitadas</label>
-            <input type="number" formControlName="hoursRequested" min="0" step="0.5" />
-          </div>
-          <div class="field-group">
-            <label>Estado</label>
-            <select formControlName="status">
-              <option value="APROBADO">Aprobado</option>
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="RECHAZADO">Rechazado</option>
-            </select>
-          </div>
-          <div class="field-group full">
-            <label>Motivo <span class="required">*</span></label>
-            <input type="text" formControlName="reason" placeholder="Describa el motivo del permiso…" />
-          </div>
-          <div class="field-group full">
-            <label>Observaciones</label>
-            <textarea formControlName="notes" rows="2" placeholder="Notas adicionales…"></textarea>
-          </div>
-          <div class="form-actions">
-            <button type="button" class="btn-cancel" (click)="cancelForm()">Cancelar</button>
-            <button type="submit" class="btn-save" [disabled]="form.invalid || saving">
-              <i class="fas fa-save me-1"></i>{{ saving ? 'Guardando…' : 'Guardar permiso' }}
-            </button>
-          </div>
-        </form>
-        <div class="alert-error" *ngIf="error">{{ error }}</div>
-      </div>
-
-      <!-- Registros -->
-      <div class="records-card">
-        <div class="records-head">
-          <span class="panel-title">Registros del período</span>
-          <div class="period-filters">
-            <select [(ngModel)]="filterYear"  (change)="loadRecords()">
-              <option *ngFor="let y of availableYears" [value]="y">{{ y }}</option>
-            </select>
-            <select [(ngModel)]="filterMonth" (change)="loadRecords()">
-              <option *ngFor="let m of months" [value]="m.v">{{ m.l }}</option>
-            </select>
-          </div>
-        </div>
-        <div class="mini-loader" *ngIf="loading">Cargando registros…</div>
-        <div class="no-data" *ngIf="!loading && records.length === 0">
-          <i class="fas fa-file-signature fa-2x text-muted mb-2"></i>
-          <p>No hay registros de permisos en este período</p>
-        </div>
-        <table class="records-table" *ngIf="!loading && records.length > 0">
+    <!-- Tipo de permiso con fechas -->
+    <div class="perm-modal-section">
+      <div class="perm-section-label"><span class="perm-dot"></span> DETALLE DE TIPO DE PERMISO</div>
+      <div class="perm-type-table-wrap">
+        <table class="perm-type-table">
           <thead>
             <tr>
-              <th>Empleado</th><th>Fecha</th><th>Tipo</th>
-              <th>Horas</th><th>Motivo</th><th>Estado</th><th></th>
+              <th>Motivo del Permiso / Ausencia</th>
+              <th class="perm-th-center">Desde</th>
+              <th class="perm-th-center">Hasta</th>
+              <th class="perm-th-right">Total (Días)</th>
+              <th class="perm-th-center">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let r of records">
-              <td><span class="emp-pill">{{ r.employeeName }}</span></td>
-              <td>{{ r.permissionDate }}</td>
-              <td><span class="badge-status status-pend">{{ r.permissionType }}</span></td>
-              <td><span class="badge-hours">{{ r.hoursRequested }}h</span></td>
-              <td class="reason-cell">{{ r.reason }}</td>
-              <td><span class="badge-status {{ getStatusClass(r.status || '') }}">{{ r.status }}</span></td>
+            <tr *ngFor="let row of permissionTypeRows; let i = index">
               <td>
-                <button class="btn-delete" (click)="deleteRecord(r.id!)" title="Eliminar">
-                  <i class="fas fa-trash"></i>
-                </button>
+                <select class="perm-select" [(ngModel)]="row.key" (ngModelChange)="row.label = getTypeLabel(row.key)">
+                  <option *ngFor="let opt of permissionTypeOptions" [value]="opt.key">{{ opt.label }}</option>
+                </select>
+              </td>
+              <td class="perm-td-date">
+                <input type="date" [(ngModel)]="row.startDate" class="perm-date-input"
+                       (ngModelChange)="onRowDateChange(i, $event)" />
+              </td>
+              <td class="perm-td-date">
+                <input type="date" [(ngModel)]="row.endDate" class="perm-date-input"
+                       (ngModelChange)="onRowDateChange(i, $event)" />
+              </td>
+              <td class="perm-td-total">
+                <strong [class.perm-days-active]="calcDays(row) > 0">{{ calcDays(row) }}</strong>
+              </td>
+              <td class="perm-td-actions">
+                <div class="perm-actions-wrap">
+                  <button class="perm-action-btn perm-action-del" *ngIf="permissionTypeRows.length > 1" (click)="removePermissionRow(i)" title="Eliminar">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+      <div class="perm-pagination" style="display:flex; justify-content:flex-end;">
+        <button class="perm-btn-draft" (click)="addPermissionRow()">
+          <i class="fas fa-plus"></i> Agregar otro permiso
+        </button>
+      </div>
     </div>
+
+    <!-- Logística y reemplazo -->
+    <div class="perm-modal-section perm-two-col">
+      <div>
+        <div class="perm-section-label"><span class="perm-dot"></span> LOGÍSTICA Y REEMPLAZO</div>
+        <div class="perm-field-group">
+          <label>Reemplazo Asignado</label>
+          <div class="perm-search-wrap">
+            <input [(ngModel)]="replacementEmployee" class="perm-input" placeholder="Nombre del colega de reemplazo…" />
+            <i class="fas fa-user-plus perm-search-icon-right"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Autorizaciones y firmas -->
+    <div class="perm-modal-section">
+      <div class="perm-section-label"><span class="perm-dot"></span> AUTORIZACIONES Y FIRMAS</div>
+      <div class="perm-two-col">
+        <div class="perm-field-group">
+          <label>Jefe Inmediato (Nombres y Apellidos)</label>
+          <input [(ngModel)]="immediateBossName" class="perm-input" placeholder="Nombre completo del jefe inmediato" />
+        </div>
+        <div class="perm-field-group">
+          <label>Gerente de T.H. (Nombres y Apellidos)</label>
+          <input [(ngModel)]="hrManagerName" class="perm-input" placeholder="Nombre completo del gerente de T.H." />
+        </div>
+        <div class="perm-field-group">
+          <label>Gerencia General (Nombres y Apellidos)</label>
+          <input [(ngModel)]="generalManagerName" class="perm-input" placeholder="Nombre completo de gerencia general" />
+        </div>
+      </div>
+      <div class="perm-pagination" style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="perm-btn-clear" (click)="applyDefaultSigners()">
+          <i class="fas fa-download"></i> Usar predeterminados
+        </button>
+        <button class="perm-btn-draft" (click)="saveDefaultSigners()">
+          <i class="fas fa-star"></i> Guardar predeterminado
+        </button>
+        <button class="perm-btn-clear" (click)="clearDefaultSigners()">
+          <i class="fas fa-trash"></i> Quitar predeterminado
+        </button>
+      </div>
+    </div>
+
+    <!-- Observaciones -->
+    <div class="perm-modal-section">
+      <div class="perm-section-label"><span class="perm-dot"></span> OBSERVACIONES / JUSTIFICACIÓN</div>
+      <textarea [(ngModel)]="pdfObservations" class="perm-textarea" rows="3"
+                placeholder="Añada los detalles y justificación del permiso aquí…"></textarea>
+    </div>
+
+    <!-- Aviso de solapamiento de fecha -->
+    <div class="perm-alert-warning" *ngIf="dateConflictWarning">
+      <i class="fas fa-exclamation-triangle"></i> {{ dateConflictWarning }}
+    </div>
+    <!-- Error -->
+    <div class="perm-alert-error" *ngIf="error">
+      <i class="fas fa-exclamation-circle"></i> {{ error }}
+    </div>
+  </div>
+
+  <div class="perm-modal-footer">
+    <button class="perm-btn-cancel" (click)="closeModal()">Cancelar</button>
+    <div class="perm-modal-footer-right">
+      <button class="perm-btn-draft" (click)="saveDraft()" [disabled]="saving">
+        <i class="fas fa-save"></i> {{ saving ? 'Guardando…' : 'Guardar Borrador' }}
+      </button>
+      <button class="perm-btn-primary" (click)="submitForm()" [disabled]="saving">
+        <i class="fas fa-paper-plane"></i> {{ saving ? 'Guardando…' : 'Guardar Solicitud' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     VISTA PDF / IMPRESIÓN
+════════════════════════════════════════════════════ -->
+<div class="perm-pdf-overlay" *ngIf="showPdfPreview">
+  <div class="perm-pdf-actions no-print">
+    <button class="perm-btn-primary" (click)="printPdf()">
+      <i class="fas fa-print"></i> Imprimir Formulario
+    </button>
+    <button class="perm-btn-clear" (click)="closePdfPreview()">
+      <i class="fas fa-arrow-left"></i> Volver
+    </button>
+  </div>
+
+  <div class="perm-pdf-doc print-area" *ngIf="savedRecord">
+    <!-- Encabezado del documento -->
+    <header class="pdf-header">
+      <div>
+        <h1 class="pdf-company">{{ businessName || 'EMPRESA' }}</h1>
+        <span class="pdf-doc-sub">Formulario de Solicitud de Permiso</span>
+      </div>
+      <div class="pdf-meta">
+        <div>CÓDIGO: GTH-PRO-01-F5</div>
+        <div>REVISIÓN: {{ requestDate }}</div>
+        <div>PÁGINA: 1 de 1</div>
+      </div>
+    </header>
+
+    <!-- Sección I: Datos del colaborador -->
+    <section class="pdf-section">
+      <div class="pdf-section-head">I. Datos del Colaborador</div>
+      <div class="pdf-grid-4">
+        <div class="pdf-cell">
+          <label>Código Empleado</label>
+          <div class="pdf-val">{{ savedRecord.employeeId || '—' }}</div>
+        </div>
+        <div class="pdf-cell">
+          <label>Solicitud No.</label>
+          <div class="pdf-val">{{ savedRecord.id || '—' }}</div>
+        </div>
+        <div class="pdf-cell pdf-col-span-2">
+          <label>Nombres y Apellidos</label>
+          <div class="pdf-val">{{ savedRecord.employeeName || '—' }}</div>
+        </div>
+        <div class="pdf-cell pdf-col-span-2">
+          <label>Cargo</label>
+          <div class="pdf-val">{{ selectedEmployee?.position || '—' }}</div>
+        </div>
+        <div class="pdf-cell pdf-col-span-2">
+          <label>Fecha de Solicitud</label>
+          <div class="pdf-val">{{ requestDate }}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección II: Tipo de permiso -->
+    <section class="pdf-section">
+      <div class="pdf-section-head">II. Tipo de Permiso y Vigencia</div>
+      <table class="pdf-table">
+        <thead>
+          <tr>
+            <th>Concepto de Permiso</th>
+            <th class="pdf-th-center">Desde</th>
+            <th class="pdf-th-center">Hasta</th>
+            <th class="pdf-th-center">Total (Días)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of permissionTypeRows"
+              [class.pdf-row-active]="calcDays(row) > 0">
+            <td>{{ row.label }}</td>
+            <td class="pdf-td-center">{{ row.startDate ? formatDate(row.startDate) : '--/--/--' }}</td>
+            <td class="pdf-td-center">{{ row.endDate ? formatDate(row.endDate) : '--/--/--' }}</td>
+            <td class="pdf-td-center"><strong>{{ calcDays(row) || 0 }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Sección III: Logística -->
+    <section class="pdf-section pdf-grid-2">
+      <div class="pdf-cell">
+        <label>Personal de Reemplazo</label>
+        <div class="pdf-val">{{ replacementEmployee || 'NINGUNO ASIGNADO' }}</div>
+      </div>
+      <div class="pdf-cell">
+        <label>Empresa</label>
+        <div class="pdf-val">{{ businessName || '—' }}</div>
+      </div>
+    </section>
+
+    <!-- Sección IV: Observaciones -->
+    <section class="pdf-section">
+      <div class="pdf-section-head">IV. Observaciones / Justificación</div>
+      <div class="pdf-obs">{{ pdfObservations }}</div>
+    </section>
+
+    <!-- Firmas -->
+    <section class="pdf-signatures">
+      <div class="pdf-sign-box">
+        <div class="pdf-sign-line"></div>
+        <div class="pdf-sign-name">{{ savedRecord.employeeName || (selectedEmployee ? getFullName(selectedEmployee) : '—') }}</div>
+        <div class="pdf-sign-role">Solicitante</div>
+        <div class="pdf-sign-sub">Firma y Cédula</div>
+      </div>
+      <div class="pdf-sign-box">
+        <div class="pdf-sign-line"></div>
+        <div class="pdf-sign-name">{{ immediateBossName || '—' }}</div>
+        <div class="pdf-sign-role">Jefe Inmediato</div>
+        <div class="pdf-sign-sub">Firma de Autorización</div>
+      </div>
+      <div class="pdf-sign-box">
+        <div class="pdf-sign-line"></div>
+        <div class="pdf-sign-name">{{ hrManagerName || '—' }}</div>
+        <div class="pdf-sign-role">Gerente de T.H.</div>
+        <div class="pdf-sign-sub">Validación Administrativa</div>
+      </div>
+      <div class="pdf-sign-box">
+        <div class="pdf-sign-line"></div>
+        <div class="pdf-sign-name">{{ generalManagerName || '—' }}</div>
+        <div class="pdf-sign-role">Gerencia General</div>
+        <div class="pdf-sign-sub">Aprobación Final</div>
+      </div>
+    </section>
+
+    <!-- Footer del documento -->
+    <footer class="pdf-footer no-print">
+      <span>© {{ businessName }} — Documento Administrativo Interno</span>
+    </footer>
   </div>
 </div>

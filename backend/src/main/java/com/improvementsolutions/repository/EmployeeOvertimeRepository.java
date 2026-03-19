@@ -19,4 +19,14 @@ public interface EmployeeOvertimeRepository extends JpaRepository<EmployeeOverti
             Long employeeId, LocalDate from, LocalDate to);
 
     List<EmployeeOvertime> findByEmployee_IdOrderByOvertimeDateDesc(Long employeeId);
+
+    // Overlap check: horas extra del empleado cuya fecha cae en [from, to]
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT o FROM EmployeeOvertime o " +
+        "WHERE o.employee.id = :employeeId " +
+        "AND o.overtimeDate >= :from AND o.overtimeDate <= :to")
+    List<EmployeeOvertime> findOverlapping(
+        @org.springframework.data.repository.query.Param("employeeId") Long employeeId,
+        @org.springframework.data.repository.query.Param("from") LocalDate from,
+        @org.springframework.data.repository.query.Param("to") LocalDate to);
 }

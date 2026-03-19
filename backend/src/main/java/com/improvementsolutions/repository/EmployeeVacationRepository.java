@@ -16,4 +16,15 @@ public interface EmployeeVacationRepository extends JpaRepository<EmployeeVacati
             Long businessId, LocalDate from, LocalDate to);
 
     List<EmployeeVacation> findByEmployee_IdOrderByStartDateDesc(Long employeeId);
+
+    // Overlap check: vacaciones del empleado cuyo rango se superpone con [from, to] y no están rechazadas
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT v FROM EmployeeVacation v " +
+        "WHERE v.employee.id = :employeeId " +
+        "AND v.startDate <= :to AND v.endDate >= :from " +
+        "AND UPPER(v.status) <> 'RECHAZADO'")
+    List<EmployeeVacation> findOverlapping(
+        @org.springframework.data.repository.query.Param("employeeId") Long employeeId,
+        @org.springframework.data.repository.query.Param("from") LocalDate from,
+        @org.springframework.data.repository.query.Param("to") LocalDate to);
 }

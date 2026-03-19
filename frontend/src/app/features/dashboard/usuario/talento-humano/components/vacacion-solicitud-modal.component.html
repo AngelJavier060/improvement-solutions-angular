@@ -94,7 +94,11 @@
             <div class="field-wrap">
               <label class="field-label">Fecha de salida <span class="req">*</span></label>
               <input type="date" formControlName="startDate"
-                     class="field-input" [ngClass]="{'field-error': form.get('startDate')?.invalid && form.get('startDate')?.touched}" />
+                     class="field-input" [ngClass]="{'field-error': form.get('startDate')?.invalid && form.get('startDate')?.touched}"
+                     (change)="checkConflictFromEvent($event)" />
+              <div *ngIf="dateConflictWarning" class="date-conflict-warning">
+                <i class="fas fa-exclamation-triangle"></i> {{ dateConflictWarning }}
+              </div>
             </div>
 
             <div class="field-wrap">
@@ -203,6 +207,9 @@
         <!-- ── Acciones (no se imprimen) ── -->
         <div class="form-actions no-pdf" data-html2canvas-ignore="true">
           <div class="form-actions-left">
+            <div class="alert-warning-inline" *ngIf="dateConflictWarning">
+              <i class="fas fa-exclamation-triangle me-1"></i>{{ dateConflictWarning }}
+            </div>
             <div class="alert-error-inline" *ngIf="error">
               <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
             </div>

@@ -47,6 +47,25 @@ public class AttendanceController {
         }
     }
 
+    @GetMapping("/permissions/{id}/pdf")
+    public ResponseEntity<?> getPermissionSignedPdf(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        try {
+            java.util.Optional<EmployeePermission> opt = attendanceService.getPermissionsByBusiness(businessId, null, null)
+                    .stream().filter(p -> p.getId().equals(id)).findFirst();
+            if (opt.isEmpty()) return ResponseEntity.notFound().build();
+            String path = opt.get().getSignedPdfPath();
+            if (path == null || path.isBlank()) return ResponseEntity.notFound().build();
+            java.nio.file.Path p = java.nio.file.Paths.get(path);
+            if (!java.nio.file.Files.exists(p)) return ResponseEntity.notFound().build();
+            Resource res = new FileSystemResource(p.toFile());
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(res);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping("/employees/{employeeId}/day-type")
     public ResponseEntity<?> getEmployeeDayType(
             @PathVariable Long businessId,
@@ -66,6 +85,58 @@ public class AttendanceController {
             return ResponseEntity.notFound().build();
         } catch (SecurityException e) {
             return ResponseEntity.status(403).body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ─────────────────── DATE CONFLICT CHECK ───────────────────
+
+    @GetMapping("/employees/{employeeId}/date-conflict")
+    public ResponseEntity<?> checkDateConflict(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestParam("date") String dateStr) {
+        try {
+            java.time.LocalDate date = java.time.LocalDate.parse(dateStr);
+            attendanceService.requireEmployee(businessId, employeeId);
+            // Check permissions
+            List<com.improvementsolutions.model.EmployeePermission> perms =
+                attendanceService.findPermissionConflicts(employeeId, date);
+            if (!perms.isEmpty()) {
+                com.improvementsolutions.model.EmployeePermission p = perms.get(0);
+                return ResponseEntity.ok(Map.of(
+                    "conflict", true,
+                    "type", "PERMISO",
+                    "detail", "Ya existe un PERMISO (" + p.getPermissionType() + ") registrado para el " + p.getPermissionDate() + " — estado: " + p.getStatus()
+                ));
+            }
+            // Check vacations
+            List<com.improvementsolutions.model.EmployeeVacation> vacs =
+                attendanceService.findVacationConflicts(employeeId, date);
+            if (!vacs.isEmpty()) {
+                com.improvementsolutions.model.EmployeeVacation v = vacs.get(0);
+                return ResponseEntity.ok(Map.of(
+                    "conflict", true,
+                    "type", "VACACIONES",
+                    "detail", "Ya existen VACACIONES registradas del " + v.getStartDate() + " al " + v.getEndDate() + " — estado: " + v.getStatus()
+                ));
+            }
+            // Check overtime
+            List<com.improvementsolutions.model.EmployeeOvertime> ots =
+                attendanceService.findOvertimeConflicts(employeeId, date);
+            if (!ots.isEmpty()) {
+                return ResponseEntity.ok(Map.of(
+                    "conflict", true,
+                    "type", "HORAS EXTRA",
+                    "detail", "Ya existen HORAS EXTRA registradas para el " + date
+                ));
+            }
+            return ResponseEntity.ok(Map.of("conflict", false, "type", "", "detail", ""));
+        } catch (java.time.format.DateTimeParseException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Fecha inválida"));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -211,6 +282,8 @@ public class AttendanceController {
         try {
             EmployeeOvertime saved = attendanceService.saveOvertime(businessId, employeeId, dto);
             return ResponseEntity.ok(overtimeToMap(saved));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         } catch (SecurityException e) {
@@ -255,6 +328,8 @@ public class AttendanceController {
         try {
             EmployeeVacation saved = attendanceService.saveVacation(businessId, employeeId, dto);
             return ResponseEntity.ok(vacationToMap(saved));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         } catch (SecurityException e) {
@@ -378,10 +453,97 @@ public class AttendanceController {
         try {
             EmployeePermission saved = attendanceService.savePermission(businessId, employeeId, dto);
             return ResponseEntity.ok(permissionToMap(saved));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         } catch (SecurityException e) {
             return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/permissions/{id}")
+    public ResponseEntity<?> getPermissionById(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        try {
+            EmployeePermission p = attendanceService.getPermissionById(businessId, id);
+            return ResponseEntity.ok(permissionToMap(p));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/permissions/{id}")
+    public ResponseEntity<?> updatePermission(
+            @PathVariable Long businessId,
+            @PathVariable Long id,
+            @RequestBody EmployeePermission body) {
+        try {
+            EmployeePermission updated = attendanceService.updatePermission(businessId, id, body);
+            return ResponseEntity.ok(permissionToMap(updated));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/permissions/{id}/status")
+    public ResponseEntity<?> updatePermissionStatus(
+            @PathVariable Long businessId,
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        try {
+            String status = body.get("status");
+            EmployeePermission updated = attendanceService.updatePermissionStatus(businessId, id, status);
+            return ResponseEntity.ok(permissionToMap(updated));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/permissions/{id}/upload-signed", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadPermissionSignedPdf(
+            @PathVariable Long businessId,
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        String relativePath;
+        try {
+            java.nio.file.Path base = java.nio.file.Paths.get(storageBaseDir);
+            java.nio.file.Path uploadDir = base.resolve(java.nio.file.Paths.get("signed-pdfs", "permissions"));
+            java.nio.file.Files.createDirectories(uploadDir);
+            String filename = businessId + "_perm_" + id + "_" + System.currentTimeMillis() + ".pdf";
+            java.nio.file.Path target = uploadDir.resolve(filename);
+            try (java.io.InputStream in = file.getInputStream()) {
+                java.nio.file.Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+            relativePath = (storageBaseDir + "/signed-pdfs/permissions/" + filename).replace('\\','/');
+            log.debug("[permissions/upload-signed] Saved file to {} (absolute: {})", relativePath, target.toAbsolutePath());
+        } catch (java.io.IOException e) {
+            log.error("[permissions/upload-signed] IO error: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of("error", "Error al guardar el archivo: " + e.getMessage()));
+        }
+        try {
+            EmployeePermission updated = attendanceService.setPermissionSignedPdf(businessId, id, relativePath);
+            // Opcionalmente poner PENDIENTE tras carga para revisión manual
+            updated = attendanceService.updatePermissionStatus(businessId, id, "PENDIENTE");
+            return ResponseEntity.ok(permissionToMap(updated));
+        } catch (NoSuchElementException e) {
+            log.error("[permissions/upload-signed] Permiso no encontrado: {}", id, e);
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            log.error("[permissions/upload-signed] Seguridad: {}", e.getMessage(), e);
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[permissions/upload-signed] Error inesperado: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -690,6 +852,7 @@ public class AttendanceController {
         m.put("reason",         p.getReason());
         m.put("status",         p.getStatus());
         m.put("notes",          p.getNotes());
+        m.put("signedPdfPath",  p.getSignedPdfPath());
         m.put("createdAt",      p.getCreatedAt() != null ? p.getCreatedAt().toString() : null);
         return m;
     }

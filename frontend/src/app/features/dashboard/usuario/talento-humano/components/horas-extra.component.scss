@@ -403,6 +403,15 @@ $white:     #ffffff;
   }
 }
 
+// ── Form warning (date conflict) ──────────────────────────────────────────────
+.he-form-warning {
+  display: flex; align-items: flex-start; gap: .5rem;
+  padding: .65rem 1rem; border-radius: .5rem;
+  background: #fff8ed; border: 1px solid #f59e0b; color: #92400e;
+  font-size: .8rem; font-weight: 600; margin-bottom: .75rem; line-height: 1.5;
+  .material-symbols-outlined { font-size: 1.1rem; color: #d97706; flex-shrink: 0; margin-top: 1px; }
+}
+
 // ── Form error ────────────────────────────────────────────────────────────────
 .he-form-error {
   display: flex; align-items: center; gap: .5rem;
@@ -467,6 +476,15 @@ $white:     #ffffff;
   background: $slate-50; border: 1px solid $slate-200; border-radius: .5rem;
   padding: .85rem 1rem; margin-top: 1.25rem;
   font-size: .75rem; font-style: italic; color: $slate-600; line-height: 1.6;
+}
+
+// ── Inline date conflict warning ──────────────────────────────────────────────
+.he-date-warning {
+  display: flex; align-items: flex-start; gap: 4px;
+  margin-top: 4px; padding: 4px 7px;
+  background: #fff8ed; border: 1px solid #f59e0b; border-radius: 5px;
+  color: #92400e; font-size: 10.5px; font-weight: 500; line-height: 1.4;
+  span { flex-shrink: 0; margin-top: 1px; color: #d97706; }
 }
 
 // ── Misc ──────────────────────────────────────────────────────────────────────

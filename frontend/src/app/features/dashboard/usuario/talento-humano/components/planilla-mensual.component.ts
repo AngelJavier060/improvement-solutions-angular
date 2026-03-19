@@ -9,7 +9,8 @@ import {
   WorkDayEntry,
   DayTotals,
   WorkScheduleHistoryEntry,
-  MonthlyClosureEntry
+  MonthlyClosureEntry,
+  PermissionRecord
 } from '../services/attendance.service';
 import { BusinessContextService } from '../../../../../core/services/business-context.service';
 import { BusinessService } from '../../../../../services/business.service';
@@ -94,6 +95,7 @@ export class PlanillaMensualComponent implements OnInit {
 
   editingCell: { empId: number; dayIdx: number } | null = null;
   notePopover: { empId: number; dayIdx: number } | null = null;
+  permPopover: { empId: number; dayIdx: number; loading: boolean; error: string | null; data: PermissionRecord | null } | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -509,12 +511,23 @@ export class PlanillaMensualComponent implements OnInit {
       this.closeNotePopover();
       return;
     }
+    if (this.permPopover) {
+      this.closePermPopover();
+      return;
+    }
     const row = this.filteredSheet.find(r => r.employeeId === empId) || this.sheet.find(r => r.employeeId === empId);
     if (row && this.isLocked(row, dayIdx)) {
-      this.notePopover = { empId, dayIdx };
+      // Si está bloqueado y es permiso aprobado con detalle, mostrar popover de permiso
+      const entry = row.days[dayIdx];
+      if (entry?.dayType === 'P' && typeof entry.notes === 'string' && entry.notes.trim().toUpperCase().startsWith('PERM:')) {
+        this.togglePermPopover(empId, dayIdx, event);
+      } else {
+        this.notePopover = { empId, dayIdx };
+      }
       return;
     }
     this.notePopover = null;
+    this.permPopover = null;
     this.editingCell = { empId, dayIdx };
   }
 
@@ -529,7 +542,9 @@ export class PlanillaMensualComponent implements OnInit {
     if (!entry) return false;
     // Bloquear días de Vacaciones (V) y Horas Extra con motivo HE
     if (entry.dayType === 'V') return true;
-    return entry.dayType === 'EX' && typeof entry.notes === 'string' && entry.notes.trim().toUpperCase().startsWith('HE:');
+    if (entry.dayType === 'EX' && typeof entry.notes === 'string' && entry.notes.trim().toUpperCase().startsWith('HE:')) return true;
+    // Bloquear Permiso marcado automáticamente tras aprobación (nota PERM:{id})
+    return entry.dayType === 'P' && typeof entry.notes === 'string' && entry.notes.trim().toUpperCase().startsWith('PERM:');
   }
 
   isNoteOpen(empId: number, dayIdx: number): boolean {
@@ -547,6 +562,33 @@ export class PlanillaMensualComponent implements OnInit {
   }
 
   closeNotePopover(): void { this.notePopover = null; }
+
+  // ====== Popover Permiso ======
+  isPermOpen(empId: number, dayIdx: number): boolean {
+    return !!this.permPopover && this.permPopover.empId === empId && this.permPopover.dayIdx === dayIdx;
+  }
+
+  togglePermPopover(empId: number, dayIdx: number, event: Event): void {
+    event.stopPropagation();
+    if (!this.businessId) return;
+    if (this.isPermOpen(empId, dayIdx)) { this.permPopover = null; return; }
+    const row = this.filteredSheet.find(r => r.employeeId === empId) || this.sheet.find(r => r.employeeId === empId);
+    if (!row) return;
+    const entry = row.days[dayIdx];
+    if (!entry || entry.dayType !== 'P' || typeof entry.notes !== 'string') return;
+    const m = (entry.notes || '').trim().toUpperCase().match(/^PERM:(\d+)/);
+    if (!m) { this.permPopover = { empId, dayIdx, loading: false, error: 'Permiso no vinculado', data: null }; return; }
+    const permId = Number(m[1]);
+    this.permPopover = { empId, dayIdx, loading: true, error: null, data: null };
+    this.attendanceService.getPermissionById(this.businessId, permId).subscribe({
+      next: (perm) => { this.permPopover = { empId, dayIdx, loading: false, error: null, data: perm }; },
+      error: () => { this.permPopover = { empId, dayIdx, loading: false, error: 'No se pudo cargar el permiso.', data: null }; }
+    });
+    this.editingCell = null;
+    this.notePopover = null;
+  }
+
+  closePermPopover(): void { this.permPopover = null; }
 
   getMonthLabel(): string {
     return this.months.find(m => m.v === this.month)?.l ?? '';

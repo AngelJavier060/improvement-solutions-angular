@@ -60,6 +60,8 @@ export class HorasExtraComponent implements OnInit {
   };
 
   activities: OvertimeActivity[] = [];
+  activityConflictWarning: string | null = null;
+  private _lastActivityDate: string = '';
 
   readonly months = [
     {v:1,l:'Enero'},{v:2,l:'Febrero'},{v:3,l:'Marzo'},{v:4,l:'Abril'},
@@ -228,6 +230,8 @@ export class HorasExtraComponent implements OnInit {
     this.selectedEmployee = null;
     this.searchEmp = '';
     this.error = null;
+    this.activityConflictWarning = null;
+    this._lastActivityDate = '';
     this.formDraft = {
       reportPeriod: this.currentPeriod(),
       supervisorName: '',
@@ -247,11 +251,14 @@ export class HorasExtraComponent implements OnInit {
   selectEmployee(emp: EmployeeResponse): void {
     this.selectedEmployee = emp;
     this.searchEmp = '';
-    // Autocompletar Departamento y Cargo desde la ficha
     const dept = (emp as any).departmentName || (emp as any).department?.name || '';
     const cargo = (emp as any).positionName || (emp as any).position?.name || (emp as any).position || '';
     this.formDraft.department = dept;
-    this.formDraft.area = cargo; // el backend espera 'area', la UI mostrará 'Cargo'
+    this.formDraft.area = cargo;
+    // Re-evaluar si ya hay una fecha ingresada
+    if (this._lastActivityDate) {
+      this.onActivityDateChange(0, this._lastActivityDate);
+    }
   }
 
   private emptyActivity(): OvertimeActivity {
@@ -264,6 +271,16 @@ export class HorasExtraComponent implements OnInit {
 
   removeActivity(i: number): void {
     if (this.activities.length > 1) this.activities.splice(i, 1);
+  }
+
+  onActivityDateChange(idx: number, date: string): void {
+    this._lastActivityDate = date;
+    this.activityConflictWarning = null;
+    if (!date || !this.businessId || !this.selectedEmployee) return;
+    this.attendanceService.checkDateConflict(this.businessId, this.selectedEmployee.id, date).subscribe({
+      next: res => { this.activityConflictWarning = res.conflict ? res.detail : null; },
+      error: () => { this.activityConflictWarning = null; }
+    });
   }
 
   calcHours(act: OvertimeActivity): number {

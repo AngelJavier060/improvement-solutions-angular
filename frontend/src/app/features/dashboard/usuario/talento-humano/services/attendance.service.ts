@@ -128,6 +128,7 @@ export interface PermissionRecord {
   reason: string;
   status?: string;
   notes?: string;
+  signedPdfPath?: string | null;
   createdAt?: string;
 }
 
@@ -185,6 +186,12 @@ export class AttendanceService {
   getEmployeeDayType(businessId: number, employeeId: number, date: string): Observable<{ employeeId: number; date: string; dayType: string | null }>{
     const params = new HttpParams().set('date', date);
     return this.http.get<{ employeeId: number; date: string; dayType: string | null }>(`${this.apiUrl(businessId)}/employees/${employeeId}/day-type`, { params });
+  }
+
+  // Check if a date already has a permission, vacation or overtime for the given employee
+  checkDateConflict(businessId: number, employeeId: number, date: string): Observable<{ conflict: boolean; type: string; detail: string }> {
+    const params = new HttpParams().set('date', date);
+    return this.http.get<{ conflict: boolean; type: string; detail: string }>(`${this.apiUrl(businessId)}/employees/${employeeId}/date-conflict`, { params });
   }
 
   // ── Overtime Requests (nueva solicitud con múltiples actividades) ──────────
@@ -281,12 +288,39 @@ export class AttendanceService {
     return this.http.get<PermissionRecord[]>(`${this.apiUrl(businessId)}/permissions`, { params });
   }
 
+  getPermissionById(businessId: number, permissionId: number): Observable<PermissionRecord> {
+    return this.http.get<PermissionRecord>(`${this.apiUrl(businessId)}/permissions/${permissionId}`);
+  }
+
   savePermission(businessId: number, employeeId: number, dto: PermissionRecord): Observable<PermissionRecord> {
     return this.http.post<PermissionRecord>(`${this.apiUrl(businessId)}/permissions/${employeeId}`, dto);
   }
 
+  updatePermission(businessId: number, permissionId: number, dto: PermissionRecord): Observable<PermissionRecord> {
+    return this.http.put<PermissionRecord>(`${this.apiUrl(businessId)}/permissions/${permissionId}`, dto);
+  }
+
+  updatePermissionStatus(businessId: number, permissionId: number, status: string): Observable<PermissionRecord> {
+    return this.http.patch<PermissionRecord>(`${this.apiUrl(businessId)}/permissions/${permissionId}/status`, { status });
+  }
+
+  uploadPermissionSignedPdf(businessId: number, permissionId: number, file: File): Observable<PermissionRecord> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    return this.http.post<PermissionRecord>(`${this.apiUrl(businessId)}/permissions/${permissionId}/upload-signed`, formData);
+  }
+
   deletePermission(businessId: number, id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl(businessId)}/permissions/${id}`);
+  }
+
+  getPermissionPdfUrl(businessId: number, permissionId: number): string {
+    return `${this.apiUrl(businessId)}/permissions/${permissionId}/pdf`;
+  }
+
+  getPermissionPdfBlob(businessId: number, permissionId: number) {
+    const url = `${this.apiUrl(businessId)}/permissions/${permissionId}/pdf`;
+    return this.http.get(url, { responseType: 'blob' });
   }
 
   // Incidentes

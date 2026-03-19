@@ -39,13 +39,74 @@ public class AttendanceService {
                 .orElseThrow(() -> new NoSuchElementException("Empresa no encontrada: " + businessId));
     }
 
-    private BusinessEmployee requireEmployee(Long businessId, Long employeeId) {
+    public BusinessEmployee requireEmployee(Long businessId, Long employeeId) {
         BusinessEmployee emp = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new NoSuchElementException("Empleado no encontrado: " + employeeId));
         if (!emp.getBusiness().getId().equals(businessId)) {
             throw new SecurityException("El empleado no pertenece a la empresa indicada");
         }
         return emp;
+    }
+
+    // ─────────────────── DATE CONFLICT LOOKUPS (for controller) ───────────────────
+
+    @Transactional(readOnly = true)
+    public List<EmployeePermission> findPermissionConflicts(Long employeeId, LocalDate date) {
+        return permissionRepository.findOverlapping(employeeId, date, date);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EmployeeVacation> findVacationConflicts(Long employeeId, LocalDate date) {
+        return vacationRepository.findOverlapping(employeeId, date, date);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EmployeeOvertime> findOvertimeConflicts(Long employeeId, LocalDate date) {
+        return overtimeRepository.findOverlapping(employeeId, date, date);
+    }
+
+    // ─────────────────── OVERLAP VALIDATION ───────────────────
+
+    /**
+     * Verifica que el rango [from, to] no se solape con ningún permiso, vacación
+     * u hora extra ya registrados para el empleado (excluyendo RECHAZADOS).
+     * Lanza IllegalStateException con mensaje descriptivo si hay solapamiento.
+     *
+     * @param employeeId   ID del BusinessEmployee
+     * @param from         primera fecha del rango a validar (inclusive)
+     * @param to           última fecha del rango a validar (inclusive)
+     * @param excludeType  tipo a omitir en la validación ("PERMISO", "VACACION", "HORAS_EXTRA", o null = validar los 3)
+     */
+    private void checkDateOverlap(Long employeeId, LocalDate from, LocalDate to, String excludeType) {
+        if (!"PERMISO".equals(excludeType)) {
+            List<EmployeePermission> perms = permissionRepository.findOverlapping(employeeId, from, to);
+            if (!perms.isEmpty()) {
+                EmployeePermission first = perms.get(0);
+                throw new IllegalStateException(
+                    "Ya existe un PERMISO registrado para ese empleado en la fecha " +
+                    first.getPermissionDate() + " (tipo: " + first.getPermissionType() +
+                    ", estado: " + first.getStatus() + "). No se puede superponer otro registro.");
+            }
+        }
+        if (!"VACACION".equals(excludeType)) {
+            List<EmployeeVacation> vacs = vacationRepository.findOverlapping(employeeId, from, to);
+            if (!vacs.isEmpty()) {
+                EmployeeVacation first = vacs.get(0);
+                throw new IllegalStateException(
+                    "Ya existen VACACIONES registradas para ese empleado en el rango " +
+                    first.getStartDate() + " - " + first.getEndDate() +
+                    " (estado: " + first.getStatus() + "). No se puede superponer otro registro.");
+            }
+        }
+        if (!"HORAS_EXTRA".equals(excludeType)) {
+            List<EmployeeOvertime> ots = overtimeRepository.findOverlapping(employeeId, from, to);
+            if (!ots.isEmpty()) {
+                EmployeeOvertime first = ots.get(0);
+                throw new IllegalStateException(
+                    "Ya existen HORAS EXTRAS registradas para ese empleado el día " +
+                    first.getOvertimeDate() + ". No se puede superponer otro registro.");
+            }
+        }
     }
 
     // ─────────────────── PLANILLA MENSUAL ───────────────────
@@ -386,6 +447,10 @@ public class AttendanceService {
     public EmployeeOvertime saveOvertime(Long businessId, Long employeeId, EmployeeOvertime dto) {
         Business biz = requireBusiness(businessId);
         BusinessEmployee emp = requireEmployee(businessId, employeeId);
+        // Validar solapamiento con permisos y vacaciones en la misma fecha
+        if (dto.getOvertimeDate() != null) {
+            checkDateOverlap(emp.getId(), dto.getOvertimeDate(), dto.getOvertimeDate(), "HORAS_EXTRA");
+        }
         dto.setBusiness(biz);
         dto.setEmployee(emp);
         dto.setId(null);
@@ -422,6 +487,10 @@ public class AttendanceService {
     public EmployeeVacation saveVacation(Long businessId, Long employeeId, EmployeeVacation dto) {
         Business biz = requireBusiness(businessId);
         BusinessEmployee emp = requireEmployee(businessId, employeeId);
+        // Validar solapamiento con permisos y horas extra en el rango
+        if (dto.getStartDate() != null && dto.getEndDate() != null) {
+            checkDateOverlap(emp.getId(), dto.getStartDate(), dto.getEndDate(), "VACACION");
+        }
         dto.setBusiness(biz);
         dto.setEmployee(emp);
         dto.setId(null);
@@ -490,13 +559,20 @@ public class AttendanceService {
     public EmployeePermission savePermission(Long businessId, Long employeeId, EmployeePermission dto) {
         Business biz = requireBusiness(businessId);
         BusinessEmployee emp = requireEmployee(businessId, employeeId);
+        // Validar solapamiento con vacaciones y horas extra en la misma fecha
+        if (dto.getPermissionDate() != null) {
+            checkDateOverlap(emp.getId(), dto.getPermissionDate(), dto.getPermissionDate(), "PERMISO");
+        }
         dto.setBusiness(biz);
         dto.setEmployee(emp);
         dto.setId(null);
         EmployeePermission saved = permissionRepository.save(dto);
-        // Marcar el día como P en la planilla
-        saveWorkDay(businessId, employeeId, saved.getPermissionDate(), "P",
-                "Permiso: " + saved.getPermissionType());
+        // No marcar planilla aquí: sólo cuando el permiso esté APROBADO
+        // Si se requiere, marcar únicamente si ya viene aprobado
+        if ("APROBADO".equalsIgnoreCase(saved.getStatus())) {
+            saveWorkDay(businessId, employeeId, saved.getPermissionDate(), "P",
+                    "Permiso: " + saved.getPermissionType());
+        }
         return saved;
     }
 
@@ -508,6 +584,62 @@ public class AttendanceService {
             throw new SecurityException("Acceso denegado");
         }
         permissionRepository.delete(p);
+    }
+
+    // ======== PERMISOS: helpers extra ========
+
+    @Transactional(readOnly = true)
+    public EmployeePermission getPermissionById(Long businessId, Long id) {
+        EmployeePermission p = permissionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Registro no encontrado: " + id));
+        if (!p.getBusiness().getId().equals(businessId)) {
+            throw new SecurityException("Acceso denegado");
+        }
+        return p;
+    }
+
+    @Transactional
+    public EmployeePermission updatePermission(Long businessId, Long id, EmployeePermission body) {
+        EmployeePermission cur = permissionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Registro no encontrado: " + id));
+        if (!cur.getBusiness().getId().equals(businessId)) {
+            throw new SecurityException("Acceso denegado");
+        }
+        // Actualizar campos editables
+        if (body.getPermissionDate() != null) cur.setPermissionDate(body.getPermissionDate());
+        if (body.getPermissionType() != null) cur.setPermissionType(body.getPermissionType());
+        if (body.getHoursRequested() != null) cur.setHoursRequested(body.getHoursRequested());
+        if (body.getReason() != null) cur.setReason(body.getReason());
+        cur.setNotes(body.getNotes());
+        if (body.getStatus() != null && !body.getStatus().isBlank()) cur.setStatus(body.getStatus());
+        return permissionRepository.save(cur);
+    }
+
+    @Transactional
+    public EmployeePermission updatePermissionStatus(Long businessId, Long id, String status) {
+        EmployeePermission cur = permissionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Registro no encontrado: " + id));
+        if (!cur.getBusiness().getId().equals(businessId)) {
+            throw new SecurityException("Acceso denegado");
+        }
+        String up = status != null ? status.trim().toUpperCase(Locale.ROOT) : null;
+        if (up == null || up.isBlank()) return cur;
+        if (!up.equals("EN_EJECUCION") && !up.equals("PENDIENTE") && !up.equals("APROBADO") && !up.equals("RECHAZADO")) {
+            throw new IllegalArgumentException("Estado inválido: " + status);
+        }
+        cur.setStatus(up);
+        return permissionRepository.save(cur);
+    }
+
+    @Transactional
+    public EmployeePermission setPermissionSignedPdf(Long businessId, Long id, String relativePath) {
+        EmployeePermission cur = permissionRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Registro no encontrado: " + id));
+        if (!cur.getBusiness().getId().equals(businessId)) {
+            throw new SecurityException("Acceso denegado");
+        }
+        cur.setSignedPdfPath(relativePath);
+        return permissionRepository.save(cur);
     }
 
     // ─────────────────── INCIDENTES ───────────────────
