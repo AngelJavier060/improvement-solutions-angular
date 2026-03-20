@@ -1,0 +1,271 @@
+<!-- Main Content Area -->
+<main class="matriz-legal-main">
+  <!-- TopNavBar -->
+  <header class="matriz-header">
+    <div class="header-search">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input class="search-input" placeholder="Buscar requisitos, leyes o folios..." type="text"/>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" title="Notificaciones">
+        <span class="material-symbols-outlined">notifications</span>
+      </button>
+      <button class="icon-btn" title="Configuración">
+        <span class="material-symbols-outlined">settings</span>
+      </button>
+      <div class="header-divider"></div>
+      <div class="user-profile">
+        <div class="user-info">
+          <p class="user-name">Usuario</p>
+          <p class="user-role">Seguridad Industrial</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content Canvas -->
+  <section class="content-section">
+    <!-- Section Header -->
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Matriz de Requisitos Legales</h2>
+        <p class="section-subtitle">Gestión y seguimiento normativo de la organización en tiempo real.</p>
+      </div>
+      <div class="header-controls">
+        <div class="tab-group">
+          <button class="tab-btn active">Activo</button>
+          <button class="tab-btn">Archivado</button>
+        </div>
+        <button class="export-btn">
+          <span class="material-symbols-outlined">file_download</span>
+          Exportar Reporte
+        </button>
+      </div>
+    </div>
+
+    <!-- Dashboard con Velocímetro y Gráficas -->
+    <div class="mb-4">
+      <app-dashboard-cumplimiento
+        [showHeader]="false"
+        [showCompanyInfo]="false"
+        [showEmployeeStats]="true"
+        [showGauge]="true"
+        [showAgeBar]="true"
+        [showLegalSection]="false">
+      </app-dashboard-cumplimiento>
+    </div>
+
+    <!-- Dashboard Stats Summary -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <p class="stat-label">Total Requisitos</p>
+        <h3 class="stat-value">{{ obligaciones.length }}</h3>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Cumplimiento</p>
+        <h3 class="stat-value stat-success">{{ calculateCompliancePercentage() }}%</h3>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">En Riesgo</p>
+        <h3 class="stat-value stat-error">{{ countAtRisk() }}</h3>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Próx. Vencimientos</p>
+        <h3 class="stat-value stat-primary">{{ countUpcoming() }}</h3>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <div class="mt-2 text-muted">Cargando matriz legal...</div>
+    </div>
+
+    <!-- Error State -->
+    <div class="alert alert-danger" *ngIf="error && !loading">
+      <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+    </div>
+
+    <!-- Empty State -->
+    <div class="alert alert-info" *ngIf="!loading && !error && obligaciones.length === 0">
+      <i class="fas fa-info-circle me-2"></i>No hay requisitos legales registrados para esta empresa.
+    </div>
+
+    <!-- Main Table Container -->
+    <div class="table-container" *ngIf="!loading && !error && obligaciones.length > 0">
+      <div class="table-wrapper">
+        <table class="requirements-table">
+          <thead>
+            <tr>
+              <th class="th-compliance">Cumplimiento Legal</th>
+              <th class="th-regulation">Regulación Legal</th>
+              <th class="th-validity">Vigencia</th>
+              <th class="th-status">Estado</th>
+              <th class="th-priority">Prioridad</th>
+              <th class="th-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of paginatedObligaciones; let i = index" class="table-row">
+              <!-- Cumplimiento Legal -->
+              <td class="td-compliance">
+                <div class="compliance-cell">
+                  <div class="icon-wrapper icon-primary">
+                    <span class="material-symbols-outlined">policy</span>
+                  </div>
+                  <div>
+                    <p class="compliance-title">{{ resolveName(item) }}</p>
+                    <p class="compliance-subtitle">{{ resolveDescription(item) }}</p>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Regulación Legal (nueva columna corregida) -->
+              <td class="td-regulation">
+                {{ resolveLegalRegulation(item) || '—' }}
+              </td>
+
+              <!-- Vigencia -->
+              <td class="td-validity">
+                <div class="validity-cell">
+                  <span class="validity-days" 
+                        [ngClass]="{
+                          'validity-error': calculateDaysRemaining(item) < 0,
+                          'validity-warning': calculateDaysRemaining(item) >= 0 && calculateDaysRemaining(item) <= 30,
+                          'validity-success': calculateDaysRemaining(item) > 30
+                        }">
+                    <span class="validity-dot"></span>
+                    {{ displayDaysLabel(calculateDaysRemaining(item)) }}
+                  </span>
+                  <span class="validity-date">Vence: {{ formatDate(item?.dueDate) }}</span>
+                </div>
+              </td>
+
+              <!-- Estado -->
+              <td class="td-status">
+                <span class="status-badge"
+                      [ngClass]="{
+                        'status-pending': (displayStatus(item) || '').toUpperCase() === 'PENDIENTE',
+                        'status-completed': ['CUMPLIDO','CUMPLIDA'].includes((displayStatus(item) || '').toUpperCase()),
+                        'status-expired': (displayStatus(item) || '').toUpperCase() === 'VENCIDA',
+                        'status-inprogress': (displayStatus(item) || '').toUpperCase() === 'EN PROCESO'
+                      }">
+                  {{ displayStatus(item) }}
+                </span>
+              </td>
+
+              <!-- Prioridad -->
+              <td class="td-priority">
+                <span class="priority-badge"
+                      [ngClass]="{
+                        'priority-high': (item?.priority || 'MEDIA').toUpperCase() === 'ALTA',
+                        'priority-medium': (item?.priority || 'MEDIA').toUpperCase() === 'MEDIA',
+                        'priority-low': (item?.priority || 'MEDIA').toUpperCase() === 'BAJA'
+                      }">
+                  {{ item?.priority || 'MEDIA' }}
+                </span>
+              </td>
+
+              <!-- Acciones -->
+              <td class="td-actions">
+                <div class="actions-cell">
+                  <!-- Dropdown para múltiples PDFs -->
+                  <div class="pdf-dropdown" *ngIf="getTopPdfFiles(item?.id).length > 0">
+                    <button class="action-btn" 
+                            (click)="togglePdfDropdown(item?.id)"
+                            title="Ver documentos ({{ getTopPdfFiles(item?.id).length }})">
+                      <span class="material-symbols-outlined pdf-icon">picture_as_pdf</span>
+                      Ver Documentos ({{ getTopPdfFiles(item?.id).length }})
+                    </button>
+                    
+                    <!-- Dropdown Menu -->
+                    <div class="pdf-dropdown-menu" *ngIf="pdfDropdownOpen[item?.id]">
+                      <div class="pdf-dropdown-header">
+                        <span>Documentos disponibles</span>
+                        <button class="close-dropdown" (click)="closePdfDropdown(item?.id)">
+                          <span class="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
+                      <div class="pdf-list">
+                        <button class="pdf-item" 
+                                *ngFor="let file of getTopPdfFiles(item?.id); let idx = index"
+                                (click)="previewFile(file); closePdfDropdown(item?.id)"
+                                title="{{ file?.name || 'PDF ' + (idx + 1) }}">
+                          <span class="material-symbols-outlined">description</span>
+                          <div class="pdf-item-info">
+                            <span class="pdf-name">{{ file?.name || 'Documento ' + (idx + 1) }}</span>
+                            <span class="pdf-date" *ngIf="file?.createdAt">{{ formatDateTime(file?.createdAt) }}</span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Sin documentos -->
+                  <span class="text-muted" *ngIf="getTopPdfFiles(item?.id).length === 0">Sin documentos</span>
+                  
+                  <button class="icon-btn-sm" title="Más opciones">
+                    <span class="material-symbols-outlined">more_vert</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-footer">
+        <p class="pagination-info">
+          Mostrando {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, obligaciones.length) }} de {{ obligaciones.length }} requisitos legislativos
+        </p>
+        <div class="pagination-controls">
+          <button class="page-btn" 
+                  (click)="previousPage()" 
+                  [disabled]="currentPage === 1"
+                  title="Página anterior">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          
+          <button class="page-btn" 
+                  *ngIf="currentPage > 3"
+                  (click)="goToPage(1)">
+            1
+          </button>
+          <span *ngIf="currentPage > 3" class="pagination-ellipsis">...</span>
+          
+          <button class="page-btn" 
+                  *ngFor="let page of pageNumbers"
+                  [class.active]="page === currentPage"
+                  (click)="goToPage(page)">
+            {{ page }}
+          </button>
+          
+          <span *ngIf="currentPage < totalPages - 2" class="pagination-ellipsis">...</span>
+          <button class="page-btn" 
+                  *ngIf="currentPage < totalPages - 2 && totalPages > 1"
+                  (click)="goToPage(totalPages)">
+            {{ totalPages }}
+          </button>
+          
+          <button class="page-btn" 
+                  (click)="nextPage()" 
+                  [disabled]="currentPage === totalPages"
+                  title="Página siguiente">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Contextual FAB -->
+<div class="fab-container">
+  <button class="fab-button">
+    <span class="material-symbols-outlined fab-icon">add_moderator</span>
+    <span class="fab-text">Nuevo Requisito Legal</span>
+  </button>
+</div>

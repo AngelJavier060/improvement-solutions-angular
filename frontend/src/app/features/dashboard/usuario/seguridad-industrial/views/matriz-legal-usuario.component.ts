@@ -8,250 +8,8 @@ import { NotificationService } from '../../../../../services/notification.servic
 
 @Component({
   selector: 'app-matriz-legal-usuario',
-  styleUrls: ['./matriz-legal-usuario.component.scss'],
-  template: `
-    <div class="ml-container d-flex">
-      <!-- Botón toggle -->
-      <button class="ml-toggle btn btn-light shadow-sm" [class.collapsed]="isCollapsed" type="button" (click)="toggleSidebar()">
-        <i class="fas" [ngClass]="isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
-      </button>
-
-      <!-- Sidebar izquierdo -->
-      <aside class="ml-sidebar shadow-lg" [class.collapsed]="isCollapsed">
-        <div class="ml-sidebar-header pt-4 pb-2">
-          <div class="ml-sidebar-icon mb-2"><i class="fas fa-balance-scale"></i></div>
-          <h4 class="ml-sidebar-title">Matriz Legal</h4>
-        </div>
-        <nav class="ml-sidebar-nav mt-3">
-          <ul>
-            <li>
-              <a [routerLink]="inicioLink" class="nav-link">
-                <i class="fas fa-home"></i><span>Inicio</span>
-              </a>
-            </li>
-            <li>
-              <a href="#" class="nav-link active">
-                <i class="fas fa-gavel"></i><span>Matriz Legal</span>
-              </a>
-            </li>
-            <li>
-              <a href="#" class="nav-link disabled">
-                <i class="fas fa-file-upload"></i><span>Documentos (Próximamente)</span>
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-
-      <!-- Contenido -->
-      <div class="ml-content flex-grow-1" [class.full]="isCollapsed">
-        <!-- Barra superior con botón de Inicio y mensaje de bienvenida -->
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <div class="d-flex align-items-center gap-2">
-            <a class="btn btn-outline-secondary btn-sm" [routerLink]="['/usuario', ruc, 'welcome']">
-              <i class="fas fa-arrow-left me-1"></i> Volver
-            </a>
-            <a class="btn btn-outline-success btn-sm" [routerLink]="inicioLink">
-              <i class="fas fa-home me-1"></i> Inicio
-            </a>
-          </div>
-          <div></div>
-        </div>
-
-        <div class="alert alert-info" *ngIf="qrMode">
-          <i class="fas fa-qrcode me-2"></i>
-          Acceso mediante código QR. Selecciona un documento para visualizar.
-        </div>
-
-        <div class="card shadow-sm border-0 mb-3" *ngIf="qrMode">
-          <div class="card-body">
-            <div class="row g-2">
-              <div class="col-12 col-md-4">
-                <button type="button" class="btn btn-outline-primary w-100" (click)="openQrDoc('REGLAMENTO')" [disabled]="loading">
-                  Reglamento Interno
-                </button>
-              </div>
-              <div class="col-12 col-md-4">
-                <button type="button" class="btn btn-outline-primary w-100" (click)="openQrDoc('RIESGOS')" [disabled]="loading">
-                  Matriz de Riesgos
-                </button>
-              </div>
-              <div class="col-12 col-md-4">
-                <button type="button" class="btn btn-outline-primary w-100" (click)="openQrDoc('POLITICA_SST')" [disabled]="loading">
-                  Política de SST
-                </button>
-              </div>
-            </div>
-            <small class="text-muted d-block mt-2">Si no se abre un documento, es porque no hay un PDF público cargado para ese requisito.</small>
-          </div>
-        </div>
-
-        <!-- Título principal de la página -->
-        <h4 class="ml-impact-title">Matriz Legal</h4>
-
-        <!-- Resumen visual del módulo (solo gauge) reutilizando el dashboard de inicio -->
-        <div class="mb-3">
-          <app-dashboard-cumplimiento
-            [showHeader]="false"
-            [showCompanyInfo]="false"
-            [showEmployeeStats]="true"
-            [showGauge]="true"
-            [showAgeBar]="true"
-            [showLegalSection]="false">
-          </app-dashboard-cumplimiento>
-        </div>
-
-        <!-- Contenido: listado real de obligaciones de la empresa -->
-        <div class="card shadow-sm border-0" *ngIf="!qrMode">
-          <div class="card-header d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #e0e7ff 0%, #f0fdfa 100%); border-bottom: 1px solid #c7d2fe;">
-            <div class="d-flex align-items-center gap-2">
-              <div class="rounded-circle" style="background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%); color: #fff; width:36px;height:36px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 8px #6366f133;">
-                <i class="fas fa-balance-scale"></i>
-              </div>
-              <div>
-                <h5 class="mb-0" style="font-weight: 500; color: #111827; letter-spacing: 0.2px;">Listado de requisitos legales</h5>
-                <small style="color: #6366f1; font-weight: 500;">Seguridad Industrial</small>
-              </div>
-            </div>
-          </div>
-          <div class="card-body p-0">
-            <div class="text-center py-4" *ngIf="loading">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando...</span>
-              </div>
-              <div class="mt-2 text-muted">Cargando matriz legal...</div>
-            </div>
-            <div class="alert alert-danger mx-3" *ngIf="error && !loading">
-              <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
-            </div>
-            <div class="alert alert-info mx-3" *ngIf="!loading && !error && obligaciones.length === 0">
-              <i class="fas fa-info-circle me-2"></i>No hay requisitos legales registrados para esta empresa.
-            </div>
-
-            <div class="table-responsive" *ngIf="!loading && !error && obligaciones.length > 0">
-              <table class="table table-hover mb-0 shadow-sm">
-                <thead class="table-primary">
-                  <tr class="text-slate-700 font-medium text-base">
-                    <th class="px-3">#</th>
-                    <th><i class="fas fa-gavel me-1 text-blue-500"></i>Cumplimiento Legal</th>
-                    <th class="d-none d-lg-table-cell"><i class="fas fa-book me-1 text-green-500"></i>Regulación Legal</th>
-                    <th><i class="fas fa-calendar-plus me-1 text-amber-500"></i>Fecha ingreso</th>
-                    <th><i class="fas fa-calendar-times me-1 text-rose-500"></i>Fecha vencimiento</th>
-                    <th class="d-none d-md-table-cell"><i class="fas fa-clock me-1 text-indigo-500"></i>Días vigencia</th>
-                    <th class="d-none d-md-table-cell"><i class="fas fa-info-circle me-1 text-sky-500"></i>Estado</th>
-                    <th class="d-none d-lg-table-cell"><i class="fas fa-exclamation-triangle me-1 text-orange-500"></i>Prioridad</th>
-                    <th class="text-center"><i class="fas fa-paperclip me-1 text-slate-500"></i>Archivos</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let item of obligaciones; let i = index">
-                    <td class="px-3">{{ i + 1 }}</td>
-                    <td>
-                      <span class="me-2">{{ resolveName(item) }}</span>
-                      <span class="badge rounded-pill"
-                            [ngClass]="(fileCountMap[item?.id] || 0) > 0 ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary'"
-                            title="Archivos adjuntos">
-                        <i class="fas fa-paperclip me-1"></i>{{ fileCountMap[item?.id] || 0 }}
-                      </span>
-                    </td>
-                    <td class="d-none d-lg-table-cell">{{ resolveDescription(item) }}</td>
-                    <td>
-                      {{ item?.startDate ? formatDate(item?.startDate) : formatDateTime(item?.createdAt) }}
-                    </td>
-                    <td>
-                      {{ formatDate(item?.dueDate) }}
-                    </td>
-                    <td class="d-none d-md-table-cell">
-                      <span class="soft-badge" [ngClass]="{
-                        'status-vencida': calculateDaysRemaining(item) < 0,
-                        'status-pendiente': calculateDaysRemaining(item) >= 0 && calculateDaysRemaining(item) <= 5,
-                        'status-enproceso': calculateDaysRemaining(item) > 5 && calculateDaysRemaining(item) <= 30,
-                        'status-cumplido': calculateDaysRemaining(item) > 30
-                      }">
-                        <i class="fas me-1"
-                          [ngClass]="{
-                            'fa-exclamation-triangle text-rose-500': calculateDaysRemaining(item) < 0,
-                            'fa-clock text-amber-500': calculateDaysRemaining(item) >= 0
-                          }">
-                        </i>
-                        {{ displayDaysLabel(calculateDaysRemaining(item)) }}
-                      </span>
-                    </td>
-                    <td class="d-none d-md-table-cell">
-                      <span class="soft-badge"
-                        [ngClass]="{
-                          'status-pendiente': (displayStatus(item) || '').toUpperCase() === 'PENDIENTE',
-                          'status-cumplido': ['CUMPLIDO','CUMPLIDA'].includes((displayStatus(item) || '').toUpperCase()),
-                          'status-vencida': (displayStatus(item) || '').toUpperCase() === 'VENCIDA',
-                          'status-enproceso': (displayStatus(item) || '').toUpperCase() === 'EN PROCESO'
-                        }">
-                        <i class="fas me-1"
-                          [ngClass]="{
-                            'fa-pause-circle text-sky-500': (displayStatus(item) || '').toUpperCase() === 'PENDIENTE',
-                            'fa-check-circle text-green-500': ['CUMPLIDO','CUMPLIDA'].includes((displayStatus(item) || '').toUpperCase()),
-                            'fa-exclamation-triangle text-rose-500': (displayStatus(item) || '').toUpperCase() === 'VENCIDA',
-                            'fa-clock text-amber-500': (displayStatus(item) || '').toUpperCase() === 'EN PROCESO'
-                          }">
-                        </i>
-                        {{ displayStatus(item) }}
-                      </span>
-                    </td>
-                    <td class="d-none d-lg-table-cell">
-                      <span class="soft-badge"
-                        [ngClass]="{
-                          'priority-alta': (item?.priority || 'MEDIA').toUpperCase() === 'ALTA',
-                          'priority-media': (item?.priority || 'MEDIA').toUpperCase() === 'MEDIA',
-                          'priority-baja': (item?.priority || 'MEDIA').toUpperCase() === 'BAJA'
-                        }">
-                        <i class="fas me-1"
-                          [ngClass]="{
-                            'fa-exclamation-triangle text-rose-500': (item?.priority || 'MEDIA').toUpperCase() === 'ALTA',
-                            'fa-minus text-amber-500': (item?.priority || 'MEDIA').toUpperCase() === 'MEDIA',
-                            'fa-arrow-down text-green-500': (item?.priority || 'MEDIA').toUpperCase() === 'BAJA'
-                          }">
-                        </i>
-                        {{ item?.priority || 'MEDIA' }}
-                      </span>
-                    </td>
-                    <td class="text-center">
-                      <ng-container *ngIf="getTopPdfFiles(item?.id).length > 0; else noPdf">
-                        <button class="btn btn-link btn-sm" *ngFor="let f of getTopPdfFiles(item?.id); let idx = index" (click)="previewFile(f)" [title]="'Ver PDF ' + (idx+1)">
-                          <i class="fas fa-file-pdf"></i>
-                        </button>
-                      </ng-container>
-                      <ng-template #noPdf>
-                        <span class="text-muted">—</span>
-                      </ng-template>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Modal de confirmación -->
-        <div *ngIf="confirmVisible" class="modal-backdrop fade show" style="display:block;"></div>
-        <div *ngIf="confirmVisible" class="modal d-block" tabindex="-1" role="dialog">
-          <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-              <div class="modal-header py-2">
-                <h6 class="modal-title mb-0">Confirmar envío</h6>
-                <button type="button" class="btn-close" aria-label="Close" (click)="closeConfirm()"></button>
-              </div>
-              <div class="modal-body">
-                <p class="mb-0">Se enviará una solicitud de autorización al administrador para aplicar estos cambios. ¿Deseas continuar?</p>
-              </div>
-              <div class="modal-footer py-2">
-                <button class="btn btn-secondary btn-sm" (click)="closeConfirm()">Cancelar</button>
-                <button class="btn btn-primary btn-sm" (click)="performSaveEditConfirm()">Enviar</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `
+  templateUrl: './matriz-legal-usuario.component.html',
+  styleUrls: ['./matriz-legal-usuario.component.scss']
 })
 export class MatrizLegalUsuarioComponent implements OnInit {
   ruc: string | null = null;
@@ -281,6 +39,12 @@ export class MatrizLegalUsuarioComponent implements OnInit {
   confirmItemId: number | null = null;
   // Sidebar state
   isCollapsed = false;
+  // Dropdown de PDFs
+  pdfDropdownOpen: Record<number, boolean> = {};
+  // Paginación
+  currentPage: number = 1;
+  itemsPerPage: number = 15;
+  Math = Math; // Exponer Math al template
   // Tag definido por admin en descripción del archivo para mostrar al usuario
   private PUBLIC_TAG = '[PUBLIC]';
 
@@ -493,6 +257,17 @@ export class MatrizLegalUsuarioComponent implements OnInit {
     const matrix = (item.obligationMatrix ?? item.obligation_matrix) as any;
     const nestedDesc = (matrix?.description ?? matrix?.detalle ?? matrix?.detail ?? '').toString().trim();
     return nestedDesc;
+  }
+
+  resolveLegalRegulation(item: any): string {
+    if (!item) return '';
+    // 1) Regulación legal directa del item
+    const direct = (item.legalRegulation ?? item.legal_regulation ?? '').toString().trim();
+    if (direct.length > 0) return direct;
+    // 2) Si hay catálogo anidado, tomar su legalRegulation
+    const matrix = (item.obligationMatrix ?? item.obligation_matrix) as any;
+    const nested = (matrix?.legalRegulation ?? matrix?.legal_regulation ?? '').toString().trim();
+    return nested;
   }
 
   // Formateadores
@@ -1052,5 +827,80 @@ export class MatrizLegalUsuarioComponent implements OnInit {
         this.statusToggleLoading[item.id] = false;
       }
     });
+  }
+
+  // Métodos helper para estadísticas del dashboard
+  calculateCompliancePercentage(): number {
+    if (!this.obligaciones || this.obligaciones.length === 0) return 0;
+    const completed = this.obligaciones.filter(item => item?.completed).length;
+    return Math.round((completed / this.obligaciones.length) * 100);
+  }
+
+  countAtRisk(): number {
+    if (!this.obligaciones) return 0;
+    return this.obligaciones.filter(item => {
+      const days = this.calculateDaysRemaining(item);
+      return !isNaN(days) && days >= 0 && days <= 5;
+    }).length;
+  }
+
+  countUpcoming(): number {
+    if (!this.obligaciones) return 0;
+    return this.obligaciones.filter(item => {
+      const days = this.calculateDaysRemaining(item);
+      return !isNaN(days) && days > 5 && days <= 30;
+    }).length;
+  }
+
+  // Control del dropdown de PDFs
+  togglePdfDropdown(matrixId: number): void {
+    this.pdfDropdownOpen[matrixId] = !this.pdfDropdownOpen[matrixId];
+  }
+
+  closePdfDropdown(matrixId: number): void {
+    this.pdfDropdownOpen[matrixId] = false;
+  }
+
+  // Paginación
+  get paginatedObligaciones(): any[] {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    return this.obligaciones.slice(startIndex, endIndex);
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.obligaciones.length / this.itemsPerPage);
+  }
+
+  get pageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let startPage = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(this.totalPages, startPage + maxVisible - 1);
+    
+    if (endPage - startPage < maxVisible - 1) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      // Cerrar todos los dropdowns al cambiar de página
+      this.pdfDropdownOpen = {};
+    }
+  }
+
+  nextPage(): void {
+    this.goToPage(this.currentPage + 1);
+  }
+
+  previousPage(): void {
+    this.goToPage(this.currentPage - 1);
   }
 }
