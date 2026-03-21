@@ -1,0 +1,442 @@
+<div class="incident-form-page">
+
+  <!-- Header -->
+  <div class="form-page-header">
+    <div>
+      <span class="form-tag">Formulario AT-001 (Rev. 00)</span>
+      <h1 class="form-page-title">Alerta Temprana</h1>
+      <p class="form-page-subtitle">
+        Protocolo de notificación inmediata para incidentes industriales. Asegure la precisión técnica de todos los campos obligatorios según ORT-SST-FOR-016.
+      </p>
+    </div>
+    <div class="draft-badge">
+      <span class="draft-dot"></span>
+      BORRADOR AUTOMÁTICO
+    </div>
+  </div>
+
+  <!-- Mensajes -->
+  <div class="alert alert-success" *ngIf="successMsg">
+    <span class="material-symbols-outlined">check_circle</span> {{ successMsg }}
+  </div>
+  <div class="alert alert-danger" *ngIf="error">
+    <span class="material-symbols-outlined">error</span> {{ error }}
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="form-sections">
+
+    <!-- ── Sección 1: Datos Específicos ─────────────────────────────── -->
+    <div class="form-section section-primary">
+      <h3 class="section-title">
+        <span class="material-symbols-outlined">info</span>
+        Datos Específicos
+      </h3>
+      <div class="form-grid grid-3">
+
+        <div class="field-full">
+          <label class="field-label">Tipo de Afectación</label>
+          <select class="field-input" formControlName="affectationType">
+            <option>Salud y Seguridad</option>
+            <option>Ambiente</option>
+            <option>Financiero / Activos / Producción</option>
+            <option>Reputación / Licencia para operar</option>
+            <option>Procesos</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="field-label">Fecha <span class="required">*</span></label>
+          <input class="field-input" type="date" formControlName="incidentDate"
+                 [class.is-invalid]="isInvalid('incidentDate')"/>
+          <small class="field-error" *ngIf="isInvalid('incidentDate')">Campo requerido</small>
+        </div>
+
+        <div>
+          <label class="field-label">Hora (24 hrs)</label>
+          <input class="field-input" type="time" formControlName="incidentTime"/>
+        </div>
+
+        <div>
+          <label class="field-label">Lugar</label>
+          <input class="field-input" type="text" placeholder="Ubicación exacta del evento"
+                 formControlName="location"/>
+        </div>
+
+        <div>
+          <label class="field-label">Personal Propio o Contratista</label>
+          <select class="field-input" formControlName="personnelType">
+            <option>Propio</option>
+            <option>Contratista</option>
+          </select>
+        </div>
+
+        <!-- Empresa: readonly, se llena automáticamente -->
+        <div class="field-span-2">
+          <label class="field-label">
+            Empresa
+            <span class="auto-badge">Auto</span>
+          </label>
+          <div class="company-display" [class.has-error]="!!businessLoadError">
+            <span class="material-symbols-outlined company-icon">business</span>
+            <span class="company-name-text" *ngIf="!businessLoadError">
+              {{ businessName || 'Cargando empresa...' }}
+            </span>
+            <span class="company-name-text company-error" *ngIf="businessLoadError">{{ businessLoadError }}</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Sección 2: Información del Personal ──────────────────────── -->
+    <div class="form-section section-surface">
+      <h3 class="section-title">
+        <span class="material-symbols-outlined">person</span>
+        Información del Personal
+      </h3>
+
+      <div class="form-grid grid-2 mb-3">
+        <!-- Nombre y Apellido: desplegable con empleados -->
+        <div>
+          <label class="field-label-sm">Nombre y Apellido</label>
+          <div class="employee-select-wrapper">
+            <span class="material-symbols-outlined select-icon">person_search</span>
+            <select class="field-input-select"
+                    [(ngModel)]="employeeSelectValue"
+                    [ngModelOptions]="{standalone: true}"
+                    (ngModelChange)="onEmployeeSelected($event)">
+              <option [ngValue]="''">— Seleccionar empleado —</option>
+              <option *ngFor="let emp of employees" [ngValue]="'' + emp.id">
+                {{ getEmployeeFullName(emp) }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Número de Cédula: buscador con autocompletado -->
+        <div>
+          <label class="field-label-sm">
+            Número de Cédula
+            <span class="search-hint">↵ Busca y completa datos</span>
+          </label>
+          <div class="cedula-input-wrapper">
+            <span class="material-symbols-outlined search-icon-inline">search</span>
+            <input class="field-input-line cedula-search"
+                   type="text"
+                   placeholder="Ingrese cédula para buscar..."
+                   formControlName="personCedula"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid grid-4 mb-3">
+        <div>
+          <label class="field-label-sm">Nombre Completo</label>
+          <input class="field-input-line" type="text" placeholder="Se completa automáticamente"
+                 formControlName="personName" readonly/>
+        </div>
+        <div>
+          <label class="field-label-sm">Cargo</label>
+          <input class="field-input-line" type="text" placeholder="Se completa automáticamente"
+                 formControlName="personPosition" readonly/>
+        </div>
+        <div>
+          <label class="field-label-sm">Área</label>
+          <input class="field-input-line" type="text" placeholder="Se completa automáticamente"
+                 formControlName="personArea" readonly/>
+        </div>
+        <div>
+          <label class="field-label-sm">Edad</label>
+          <input class="field-input-line" type="number" placeholder="—"
+                 formControlName="personAge" readonly/>
+        </div>
+      </div>
+
+      <div class="form-grid grid-3">
+        <div>
+          <label class="field-label-sm">Género</label>
+          <select class="field-input-line" formControlName="personGender">
+            <option value="">Seleccionar</option>
+            <option>Masculino</option>
+            <option>Femenino</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label-sm">Día en Turno</label>
+          <input class="field-input-line" type="text" placeholder="Se completa automáticamente"
+                 formControlName="personShift" readonly/>
+        </div>
+        <div>
+          <label class="field-label-sm">Experiencia</label>
+          <input class="field-input-line" type="text" placeholder="Se completa automáticamente"
+                 formControlName="personExperience" readonly/>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sección 3: Detalles del Evento ───────────────────────────── -->
+    <div class="form-section section-secondary border-secondary">
+      <h3 class="section-title section-secondary-title">
+        <span class="material-symbols-outlined">title</span>
+        Título del Incidente
+      </h3>
+      <input class="field-input field-title" type="text"
+             placeholder="Resumen corto del evento..."
+             formControlName="title"
+             [class.is-invalid]="isInvalid('title')"/>
+      <small class="field-error" *ngIf="isInvalid('title')">Campo requerido</small>
+    </div>
+
+    <div class="form-section section-secondary border-secondary">
+      <h3 class="section-title section-secondary-title">
+        <span class="material-symbols-outlined">description</span>
+        Descripción de los Hechos
+      </h3>
+      <textarea class="field-input" rows="5"
+                placeholder="Relato detallado de lo ocurrido..."
+                formControlName="description"
+                [class.is-invalid]="isInvalid('description')"></textarea>
+      <small class="field-error" *ngIf="isInvalid('description')">Campo requerido</small>
+    </div>
+
+    <div class="form-section section-secondary border-secondary">
+      <h3 class="section-title section-secondary-title">
+        <span class="material-symbols-outlined">category</span>
+        Clasificación del Evento
+      </h3>
+      <div>
+        <label class="field-label">Categoría del Evento</label>
+        <select class="field-input" formControlName="eventClassification">
+          <option>Incidente</option>
+          <option>Accidente con tiempo perdido</option>
+          <option>Accidente sin tiempo perdido</option>
+          <option>Incidente sin lección</option>
+          <option>Accidente en trayecto e Itínere</option>
+          <option>No accidente de trabajo</option>
+          <option>No aplica</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ── Sección 4: Acciones de Mitigación ────────────────────────── -->
+    <div class="form-section border-top-danger">
+      <h3 class="section-title section-danger-title">
+        <span class="material-symbols-outlined">bolt</span>
+        Acciones de Mitigación Inmediata
+      </h3>
+      <textarea class="field-input" rows="3"
+                placeholder="Describa las acciones tomadas para controlar el evento..."
+                formControlName="mitigationActions"></textarea>
+    </div>
+
+    <!-- ── Sección 5: Nivel de Investigación y Criterios ─────────────── -->
+    <div class="form-section section-primary">
+      <h3 class="section-title">
+        <span class="material-symbols-outlined">analytics</span>
+        Nivel de Investigación y Criterios
+      </h3>
+
+      <p class="criteria-intro">
+        Marque <strong>SÍ</strong> o <strong>NO</strong> según corresponda. Los criterios se muestran en dos columnas para facilitar la lectura.
+      </p>
+      <div class="criteria-grid-wrap">
+        <div class="criteria-row" *ngFor="let field of criteriaFields">
+          <span class="criteria-label">{{ field.label }}</span>
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn"
+                    [class.active]="form.get(field.key)?.value === true"
+                    (click)="toggleCriteria(field.key)">SÍ</button>
+            <button type="button" class="toggle-btn"
+                    [class.active]="form.get(field.key)?.value === false"
+                    (click)="form.get(field.key)?.setValue(false)">NO</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid grid-2 mt-4 investigation-extra-grid">
+        <div>
+          <label class="field-label">Regla por la vida Vulnerada</label>
+          <select class="field-input" formControlName="lifeRuleViolated">
+            <option>Ninguna</option>
+            <option>Espacios Confinados</option>
+            <option>Trabajo en Caliente</option>
+            <option>Izaje de Cargas</option>
+            <option>Bloqueo y Etiquetado</option>
+            <option>Trabajo en Altura</option>
+            <option>Manejo Defensivo</option>
+            <option>Energías Peligrosas</option>
+            <option>Excavaciones y Zanjas</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Captación de niveles API (API 754)</label>
+          <select class="field-input" formControlName="apiLevel">
+            <option>No Aplica</option>
+            <option>Tier 1</option>
+            <option>Tier 2</option>
+            <option>Tier 3</option>
+            <option>Tier 4</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">¿El evento ha ocurrido anteriormente?</label>
+          <select class="field-input" formControlName="hasOccurredBefore">
+            <option value="">Seleccionar</option>
+            <option value="No">No</option>
+            <option value="Sí, en esta instalación">Sí, en esta instalación</option>
+            <option value="Sí, en filial">Sí, en filial</option>
+            <option value="Sí, en otra empresa">Sí, en otra empresa</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Nivel de investigación (según criterios SGI)</label>
+          <select class="field-input" formControlName="investigationLevel">
+            <option *ngFor="let lv of investigationLevels" [value]="lv">{{ lv }}</option>
+          </select>
+          <small class="field-hint">Seleccione el nivel según la gravedad y los criterios aplicables al evento.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sección 6: Comentarios y Medidas de Control ───────────────── -->
+    <div class="form-section section-surface">
+      <h3 class="section-title">
+        <span class="material-symbols-outlined">comment</span>
+        Comentarios Finales del Informe Preliminar
+      </h3>
+      <textarea class="field-input" rows="3"
+                placeholder="Describa el estado actual de la investigación y conclusiones preliminares..."
+                formControlName="preliminaryComments"></textarea>
+
+      <h3 class="section-title mt-4">
+        <span class="material-symbols-outlined">verified_user</span>
+        Medidas de Control Realizadas
+      </h3>
+      <textarea class="field-input" rows="3"
+                placeholder="Acciones preventivas inmediatas para evitar recurrencia..."
+                formControlName="controlMeasures"></textarea>
+
+      <!-- Evidencias inmediatamente después de medidas de control -->
+      <div class="evidence-nested section-evidence-inner mt-4">
+        <h3 class="section-title evidence-nested-title">
+          <span class="material-symbols-outlined">photo_library</span>
+          Evidencias Gráficas (Foto, Croquis, Plano)
+        </h3>
+        <p class="evidence-hint">
+          Adjunte fotografías, croquis o planos relacionados con el evento. Se aceptan imágenes (JPG, PNG) y documentos PDF. Estos archivos quedan como respaldo oficial de la investigación.
+        </p>
+
+      <label class="evidence-upload-zone" [class.uploading]="uploadingEvidence"
+             (dragover)="onEvidenceDragOver($event)" (drop)="onEvidenceDrop($event)">
+        <input type="file" accept="image/*,.pdf,application/pdf" multiple hidden
+               (change)="onEvidenceFilesSelected($event)"
+               [disabled]="uploadingEvidence"/>
+        <span class="material-symbols-outlined evidence-upload-icon">
+          {{ uploadingEvidence ? 'cloud_sync' : 'upload_file' }}
+        </span>
+        <span class="evidence-upload-label" *ngIf="!uploadingEvidence">
+          Haga clic o arrastre archivos aquí
+        </span>
+        <span class="evidence-upload-label" *ngIf="uploadingEvidence">
+          Subiendo archivos...
+        </span>
+        <span class="evidence-upload-sub">Imágenes JPG, PNG · PDF · Máx. 10 MB por archivo</span>
+      </label>
+
+      <!-- Lista de archivos subidos -->
+      <div class="evidence-list" *ngIf="evidenceFiles.length > 0">
+        <div class="evidence-item" *ngFor="let url of evidenceFiles; let i = index">
+          <span class="material-symbols-outlined evidence-file-icon">
+            {{ isPdfUrl(url) ? 'picture_as_pdf' : 'image' }}
+          </span>
+          <a [href]="url" target="_blank" class="evidence-file-link">
+            {{ getFileName(url) }}
+          </a>
+          <button type="button" class="evidence-remove-btn" (click)="removeEvidence(i)"
+                  title="Eliminar archivo">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="evidence-empty" *ngIf="evidenceFiles.length === 0 && !uploadingEvidence">
+        <span class="material-symbols-outlined">info</span>
+        No hay evidencias adjuntas aún.
+      </p>
+      </div>
+    </div>
+
+    <!-- ── Sección 8: Generación del Informe ─────────────────────────── -->
+    <div class="form-section section-report">
+      <h3 class="section-title">
+        <span class="material-symbols-outlined">assignment</span>
+        Generación del Informe
+      </h3>
+
+      <div class="form-grid grid-2">
+        <div>
+          <label class="field-label">
+            Elaborado por <span class="required">*</span>
+          </label>
+          <input class="field-input" type="text"
+                 placeholder="Nombre de quien elabora el informe"
+                 formControlName="reportedBy"
+                 [class.is-invalid]="isInvalid('reportedBy')"/>
+          <small class="field-error" *ngIf="isInvalid('reportedBy')">Campo requerido</small>
+        </div>
+        <div>
+          <label class="field-label">
+            Fecha del Reporte <span class="required">*</span>
+          </label>
+          <input class="field-input" type="date"
+                 formControlName="reportDate"
+                 [class.is-invalid]="isInvalid('reportDate')"/>
+          <small class="field-error" *ngIf="isInvalid('reportDate')">Campo requerido</small>
+        </div>
+        <div>
+          <label class="field-label">Revisado por</label>
+          <input class="field-input" type="text"
+                 placeholder="Nombre del revisor"
+                 formControlName="reviewedBy"/>
+        </div>
+        <div>
+          <label class="field-label">Aprobado por</label>
+          <input class="field-input" type="text"
+                 placeholder="Nombre del aprobador"
+                 formControlName="approvedBy"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Footer: Acciones ──────────────────────────────────────────── -->
+    <footer class="form-footer">
+      <div class="footer-security">
+        <span class="security-item">
+          <span class="material-symbols-outlined">lock</span>
+          Transmisión Encriptada TLS 1.3
+        </span>
+        <span class="security-item">
+          <span class="material-symbols-outlined">article</span>
+          Ref: ORT-SST-FOR-016
+        </span>
+        <span class="security-item">
+          <span class="material-symbols-outlined">cloud_done</span>
+          Respaldo Orientoil Cloud
+        </span>
+      </div>
+      <div class="footer-actions">
+        <button type="button" class="btn-cancel" (click)="cancel()" [disabled]="saving">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-submit" [disabled]="saving">
+          <span *ngIf="saving" class="spinner-border spinner-border-sm me-2"></span>
+          <span class="material-symbols-outlined" *ngIf="!saving">send</span>
+          {{ saving ? 'Registrando...' : 'Emitir Alerta Temprana' }}
+        </button>
+      </div>
+    </footer>
+
+  </form>
+</div>

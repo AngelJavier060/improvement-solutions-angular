@@ -1,0 +1,140 @@
+<div class="incidents-main">
+
+  <!-- Header -->
+  <div class="incidents-header">
+    <div class="header-breadcrumb">
+      <span class="breadcrumb-item">Dashboard</span>
+      <span class="material-symbols-outlined breadcrumb-sep">chevron_right</span>
+      <span class="breadcrumb-item active">Listado de Incidentes</span>
+    </div>
+    <h2 class="header-title">Listado de Incidentes</h2>
+    <p class="header-subtitle">
+      Registro centralizado de eventos operativos. Gestione, filtre y analice la integridad industrial en tiempo real.
+    </p>
+    <button class="btn-ingresar" (click)="openForm()">
+      <span class="material-symbols-outlined">add_circle</span>
+      + Ingresar Evento
+    </button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card stat-primary">
+      <span class="stat-label">Total Incidentes (Mes)</span>
+      <span class="stat-value">{{ loading ? '...' : stats.monthly }}</span>
+    </div>
+    <div class="stat-card stat-danger">
+      <span class="stat-label">Abiertos</span>
+      <span class="stat-value">{{ loading ? '...' : stats.open }}</span>
+    </div>
+    <div class="stat-card stat-secondary">
+      <span class="stat-label">En Revisión</span>
+      <span class="stat-value">{{ loading ? '...' : stats.inReview }}</span>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p>Cargando incidentes...</p>
+  </div>
+
+  <!-- Error -->
+  <div class="alert alert-danger" *ngIf="error && !loading">
+    <span class="material-symbols-outlined">error</span> {{ error }}
+  </div>
+
+  <!-- Table Container -->
+  <div class="table-container" *ngIf="!loading && !error">
+
+    <!-- Toolbar -->
+    <div class="table-toolbar">
+      <div class="filter-tabs">
+        <button class="filter-tab" [class.active]="activeFilter === 'TODOS'"
+                (click)="setFilter('TODOS')">Todos</button>
+        <button class="filter-tab" [class.active]="activeFilter === 'ABIERTO'"
+                (click)="setFilter('ABIERTO')">Abiertos</button>
+        <button class="filter-tab" [class.active]="activeFilter === 'EN_REVISION'"
+                (click)="setFilter('EN_REVISION')">En Revisión</button>
+        <button class="filter-tab" [class.active]="activeFilter === 'CERRADO'"
+                (click)="setFilter('CERRADO')">Cerrados</button>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="filteredIncidents.length === 0">
+      <span class="material-symbols-outlined empty-icon">assignment_late</span>
+      <p>No hay incidentes registrados.</p>
+      <button class="btn-ingresar" (click)="openForm()">
+        <span class="material-symbols-outlined">add_circle</span>
+        Ingresar primer evento
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper" *ngIf="filteredIncidents.length > 0">
+      <table class="incidents-table">
+        <thead>
+          <tr>
+            <th>Tipo de Afectación</th>
+            <th>Fecha</th>
+            <th>Título del Accidente</th>
+            <th>Área del Trabajador</th>
+            <th>Clasificación del Evento</th>
+            <th>Estado</th>
+            <th class="th-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedIncidents" class="table-row">
+            <td>
+              <span class="type-badge" [ngClass]="getTypeClass(item.affectationType)">
+                {{ getTypeBadgeLabel(item.affectationType) }}
+              </span>
+            </td>
+            <td class="td-date">{{ formatDate(item.incidentDate) }}</td>
+            <td>
+              <div class="title-cell">
+                <span class="incident-title">{{ item.title }}</span>
+                <span class="incident-location" *ngIf="item.location">{{ item.location }}</span>
+              </div>
+            </td>
+            <td class="td-area">{{ item.personArea || '—' }}</td>
+            <td class="td-classification">{{ item.eventClassification || '—' }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(item.status)">
+                <span class="status-dot"></span>
+                {{ item.status === 'EN_REVISION' ? 'En Revisión' : (item.status | titlecase) }}
+              </span>
+            </td>
+            <td class="td-actions">
+              <button class="btn-view" (click)="viewDetail(item.id)" title="Ver detalle">
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-bar" *ngIf="totalPages > 1">
+      <span class="pagination-info">
+        Mostrando {{ paginatedIncidents.length }} de {{ filteredIncidents.length }} incidentes
+      </span>
+      <div class="pagination-controls">
+        <button class="page-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+        <button class="page-btn"
+                *ngFor="let p of pageNumbers"
+                [class.active]="p === currentPage"
+                (click)="goToPage(p)">{{ p }}</button>
+        <button class="page-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

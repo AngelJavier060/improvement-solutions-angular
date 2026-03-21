@@ -84,7 +84,7 @@ public class FileController {
                         .body(new FileResponse("No se proporcionó ningún archivo"));
             }
 
-            validateFile(file);
+            validateFile(file, maxBytesForUploadDirectory(directory));
             validateDirectory(directory);
             
             logger.info("⭐ Recibiendo archivo para directorio {}: {}, tipo: {}, tamaño: {}", 
@@ -260,7 +260,18 @@ public class FileController {
         );
     }
 
+    private long maxBytesForUploadDirectory(String directory) {
+        if ("incidents-evidence".equals(directory)) {
+            return 10L * 1024 * 1024;
+        }
+        return 5L * 1024 * 1024;
+    }
+
     private void validateFile(MultipartFile file) {
+        validateFile(file, 5L * 1024 * 1024);
+    }
+
+    private void validateFile(MultipartFile file, long maxFileSize) {
         if (file == null || file.isEmpty()) {
             throw new StorageException("No se puede procesar un archivo vacío");
         }
@@ -270,8 +281,6 @@ public class FileController {
             throw new StorageException("Nombre de archivo no válido");
         }
 
-        // Validar tamaño máximo (configurable)
-        long maxFileSize = 5 * 1024 * 1024; // 5MB por defecto
         if (file.getSize() > maxFileSize) {
             throw new StorageException(
                 String.format("El archivo excede el tamaño máximo permitido de %d MB", maxFileSize / (1024 * 1024))

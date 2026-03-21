@@ -1,0 +1,380 @@
+// ══════════════════════════════════════════════════════════════
+// Accidentes / Incidentes - Listado
+// ══════════════════════════════════════════════════════════════
+
+$primary: #002b7d;
+$primary-light: #dbe1ff;
+$secondary: #4c616c;
+$danger: #6c0008;
+$danger-light: #ffdad6;
+$surface: #faf8ff;
+$surface-low: #f4f3fb;
+$surface-container: #eeedf6;
+$outline: #c4c6d4;
+$on-surface: #1a1b21;
+$on-surface-variant: #444652;
+
+.incidents-main {
+  padding: 2rem 2.5rem;
+  min-height: 100vh;
+  background: $surface;
+  font-family: 'Inter', sans-serif;
+}
+
+// ── Header ────────────────────────────────────────────────────
+.incidents-header {
+  margin-bottom: 2rem;
+}
+
+.header-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: $on-surface-variant;
+
+  .breadcrumb-sep {
+    font-size: 0.875rem;
+  }
+  .breadcrumb-item.active {
+    color: $primary;
+    font-weight: 600;
+  }
+}
+
+.header-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: $on-surface;
+  letter-spacing: -0.025em;
+  margin: 0 0 0.5rem;
+}
+
+.header-subtitle {
+  color: $on-surface-variant;
+  font-size: 0.9rem;
+  max-width: 600px;
+  margin: 0 0 1.5rem;
+}
+
+.btn-ingresar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, $primary, #1a429f);
+  color: #fff;
+  border: none;
+  padding: 0.875rem 1.75rem;
+  border-radius: 0.75rem;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 43, 125, 0.2);
+  transition: all 0.2s;
+
+  .material-symbols-outlined { font-size: 1.25rem; }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(0, 43, 125, 0.3);
+  }
+  &:active { transform: scale(0.97); }
+}
+
+// ── Stats ─────────────────────────────────────────────────────
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border-left: 4px solid transparent;
+
+  &.stat-primary { border-color: $primary; }
+  &.stat-danger  { border-color: $danger; }
+  &.stat-secondary { border-color: $secondary; }
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: $on-surface-variant;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-family: 'Manrope', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: $on-surface;
+}
+
+// ── Loading ───────────────────────────────────────────────────
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+  color: $on-surface-variant;
+
+  p { margin-top: 0.75rem; }
+}
+
+// ── Table Container ───────────────────────────────────────────
+.table-container {
+  background: white;
+  border-radius: 1.25rem;
+  box-shadow: 0 2px 12px rgba(26,27,33,0.04);
+  overflow: hidden;
+}
+
+.table-toolbar {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba($outline, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.filter-tab {
+  padding: 0.375rem 1rem;
+  border-radius: 2rem;
+  border: none;
+  background: transparent;
+  color: $on-surface-variant;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover { background: $surface-container; }
+  &.active {
+    background: $surface-container;
+    color: $primary;
+    font-weight: 700;
+  }
+}
+
+// ── Empty State ───────────────────────────────────────────────
+.empty-state {
+  padding: 4rem 2rem;
+  text-align: center;
+  color: $on-surface-variant;
+
+  .empty-icon {
+    font-size: 3.5rem;
+    color: rgba($primary, 0.2);
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  p { font-size: 1rem; margin-bottom: 1.5rem; }
+}
+
+// ── Table ─────────────────────────────────────────────────────
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.incidents-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+  font-size: 0.875rem;
+
+  thead tr {
+    background: rgba($surface-low, 0.5);
+
+    th {
+      padding: 1rem 1.5rem;
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: $on-surface-variant;
+      white-space: nowrap;
+      text-align: left;
+
+      &.th-actions { text-align: right; }
+    }
+  }
+
+  tbody {
+    .table-row {
+      border-bottom: 1px solid rgba($outline, 0.15);
+      transition: background 0.15s;
+
+      &:last-child { border-bottom: none; }
+      &:hover { background: rgba($surface-low, 0.4); }
+
+      td {
+        padding: 1.25rem 1.5rem;
+        vertical-align: middle;
+      }
+    }
+  }
+}
+
+.td-date {
+  white-space: nowrap;
+  font-weight: 600;
+  color: $on-surface;
+}
+
+.td-area, .td-classification {
+  color: $on-surface-variant;
+}
+
+.title-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.incident-title {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  color: $on-surface;
+}
+
+.incident-location {
+  font-size: 0.75rem;
+  color: $on-surface-variant;
+}
+
+// ── Badges ────────────────────────────────────────────────────
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  &.badge-seguridad {
+    background: #cfe6f2;
+    color: #354a53;
+  }
+  &.badge-ambiente {
+    background: $danger-light;
+    color: $danger;
+  }
+  &.badge-operacional {
+    background: $surface-container;
+    color: $on-surface-variant;
+  }
+  &.badge-otros {
+    background: #e2e2ea;
+    color: #444652;
+  }
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+
+  .status-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+  }
+
+  &.status-open {
+    color: #d97706;
+    .status-dot { background: #d97706; }
+  }
+  &.status-closed {
+    color: #16a34a;
+    .status-dot { background: #16a34a; }
+  }
+  &.status-review {
+    color: #dc2626;
+    .status-dot { background: #dc2626; }
+  }
+}
+
+// ── Actions ───────────────────────────────────────────────────
+.td-actions { text-align: right; }
+
+.btn-view {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: $primary;
+  padding: 0.375rem;
+  border-radius: 0.375rem;
+  opacity: 0;
+  transition: all 0.2s;
+
+  .table-row:hover & { opacity: 1; }
+
+  &:hover { background: $primary-light; }
+
+  .material-symbols-outlined { font-size: 1.25rem; }
+}
+
+// ── Pagination ────────────────────────────────────────────────
+.pagination-bar {
+  padding: 1rem 1.5rem;
+  background: rgba($surface-low, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba($outline, 0.15);
+}
+
+.pagination-info {
+  font-size: 0.75rem;
+  color: $on-surface-variant;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.page-btn {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid rgba($outline, 0.3);
+  background: transparent;
+  color: $on-surface;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) { background: $surface-container; }
+  &.active {
+    background: $primary;
+    color: white;
+    border-color: $primary;
+  }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .material-symbols-outlined { font-size: 1rem; }
+}
