@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   AttendanceService,
@@ -19,6 +19,29 @@ import { ConfigurationService, WorkSchedule } from '../services/configuration.se
 import { AttendanceHolidayService, HolidayDto } from '../services/attendance.service';
 import { PlanillaPdfService } from '../services/planilla-pdf.service';
 import { BusinessIncidentService, BusinessIncidentDto } from '../../../../../services/business-incident.service';
+
+/** Fila del modal “Detalle de registro de asistencia” (derivada de planilla + horas extra API) */
+export interface AttendanceDetailRow {
+  employeeId: number;
+  initials: string;
+  fullName: string;
+  position: string;
+  cedula: string;
+  daysWorked: number;
+  overtimeHours: number;
+  extraDays: number;
+  restDays: number;
+  permDays: number;
+  permHours: number;
+  sickness: number;
+  accidents: number;
+  /** Horas pactadas por día según jornada/horario (8, 10, etc.) */
+  dailyHours: number;
+  /** Horas hombre trabajadas en el periodo (días trabajados + extras) * horas/día + horas extra */
+  hhtt: number;
+  /** Días perdidos: permisos (días + horas convertidas), enfermedad y accidentes */
+  lostDays: number;
+}
 
 @Component({
   selector: 'app-planilla-mensual',
@@ -59,7 +82,9 @@ export class PlanillaMensualComponent implements OnInit {
   showHistoryForm = false;
   historyFormError: string | null = null;
   savingHistory = false;
-  historyDraft = { workScheduleId: '', startDate: '', endDate: '', cycleStartDate: '', notes: '' };
+  historyDraft = { workScheduleId: '', startDate: '', endDate: '', cycleStartDate: '', dailyHours: '', notes: '' };
+  updatingDailyHours = false;
+  dailyHoursUpdateError: string | null = null;
 
   // Cierre mensual
   monthClosure: MonthlyClosureEntry | null = null;
@@ -67,6 +92,17 @@ export class PlanillaMensualComponent implements OnInit {
   closureError: string | null = null;
   uploadingPdf = false;
   uploadPdfError: string | null = null;
+
+  // Historial de cierres (todos los meses)
+  closures: MonthlyClosureEntry[] = [];
+  closuresLoading = false;
+  closuresError: string | null = null;
+
+  // Resumen mensual (personas y HHTT)
+  peopleCountSummary = 0;
+  hhttTotalSummary: number | null = null;
+  hhttSummaryLoading = false;
+  hhttSummaryError: string | null = null;
 
   // Catálogo de jornadas disponibles para el selector del histórico
   availableSchedules: WorkSchedule[] = [];
@@ -82,10 +118,26 @@ export class PlanillaMensualComponent implements OnInit {
 
   readonly dayTypes = DAY_TYPES;
   readonly dayTypeKeys: DayType[] = ['T', 'D', 'EX', 'V', 'P', 'E', 'A'];
+  /** Solo las opciones editables manualmente desde la planilla */
+  readonly editableDayTypeKeys: DayType[] = ['T', 'D'];
+
+  clearingDay = false;
 
   // Accidentes de seguridad: mapa cédula+fecha → incidente
   private incidentMap: Map<string, BusinessIncidentDto> = new Map();
   accidentPopover: { empId: number; dayIdx: number; incident: BusinessIncidentDto } | null = null;
+
+  /** Modal: detalle de asistencia (vista tipo dashboard) */
+  showAttendanceDetailModal = false;
+  attendanceDetailLoading = false;
+  attendanceDetailError: string | null = null;
+  attendanceDetailRows: AttendanceDetailRow[] = [];
+  attendanceDetailMetrics = { total: 0, avgOvertimeHrs: 0, incidentEmployees: 0 };
+  attendanceDetailTotals = { scheduledHours: 0, hhtt: 0, lostDays: 0 };
+  /** Horas extra del mes por empleado (tabla employee_overtime) */
+  private overtimeHoursByEmployee = new Map<number, number>();
+  readonly attendanceDetailStandardHrs = 8;
+  readonly defaultDailyHours = 8;
 
   readonly months = [
     { v: 1,  l: 'Enero' },   { v: 2,  l: 'Febrero' }, { v: 3,  l: 'Marzo' },
@@ -235,6 +287,8 @@ export class PlanillaMensualComponent implements OnInit {
           if (refreshed) this.selectedRow = refreshed;
         }
         this.applyFilters();
+        // Resumen: cantidad de personas + HHTT total para el mes seleccionado
+        this.computeMonthlySummary();
         this.loading = false;
       },
       error: err => {
@@ -245,6 +299,7 @@ export class PlanillaMensualComponent implements OnInit {
     });
 
     this.loadClosure();
+    this.loadClosures();
     this.loadHolidays();
     this.loadSafetyIncidents();
   }
@@ -338,11 +393,13 @@ export class PlanillaMensualComponent implements OnInit {
   openHistoryForm(): void {
     this.showHistoryForm = true;
     this.historyFormError = null;
+    this.dailyHoursUpdateError = null;
     this.historyDraft = {
       workScheduleId: this.selectedRow?.workScheduleId ? String(this.selectedRow.workScheduleId) : '',
       startDate: '',
       endDate: '',
       cycleStartDate: '',
+      dailyHours: this.selectedDailyHours ? String(this.selectedDailyHours) : '',
       notes: ''
     };
   }
@@ -360,6 +417,9 @@ export class PlanillaMensualComponent implements OnInit {
       startDate: this.historyDraft.startDate,
       endDate: this.historyDraft.endDate || null,
       cycleStartDate: this.historyDraft.cycleStartDate || null,
+      dailyHours: this.historyDraft.dailyHours
+        ? Number(this.historyDraft.dailyHours.replace(',', '.'))
+        : null,
       notes: this.historyDraft.notes || null
     }).subscribe({
       next: () => {
@@ -386,8 +446,31 @@ export class PlanillaMensualComponent implements OnInit {
   loadClosure(): void {
     if (!this.businessId) return;
     this.attendanceService.getClosure(this.businessId, this.year, this.month).subscribe({
-      next: c => { this.monthClosure = c; },
+      next: c => {
+        this.monthClosure = c;
+        this.applyClosureMetricsToSummary();
+      },
       error: () => { this.monthClosure = null; }
+    });
+  }
+
+   loadClosures(): void {
+    if (!this.businessId) return;
+    this.closuresLoading = true;
+    this.closuresError = null;
+    this.attendanceService.getClosures(this.businessId).subscribe({
+      next: list => {
+        this.closures = [...list].sort((a, b) => {
+          if (a.year !== b.year) return b.year - a.year;
+          return b.month - a.month;
+        });
+        this.closuresLoading = false;
+      },
+      error: err => {
+        console.error('[Planilla] Error cargando historial de cierres:', err);
+        this.closuresLoading = false;
+        this.closuresError = 'No se pudo cargar el historial de meses.';
+      }
     });
   }
 
@@ -396,7 +479,11 @@ export class PlanillaMensualComponent implements OnInit {
     this.closingMonth = true;
     this.closureError = null;
     this.attendanceService.closeMonth(this.businessId, this.year, this.month).subscribe({
-      next: c => { this.monthClosure = c; this.closingMonth = false; },
+      next: c => {
+        this.monthClosure = c;
+        this.closingMonth = false;
+        this.applyClosureMetricsToSummary();
+      },
       error: err => { this.closureError = err?.error?.error || 'Error al cerrar el mes.'; this.closingMonth = false; }
     });
   }
@@ -404,13 +491,101 @@ export class PlanillaMensualComponent implements OnInit {
   reopenCurrentMonth(): void {
     if (!this.businessId || !confirm('¿Reabrir la planilla de este mes?')) return;
     this.attendanceService.reopenMonth(this.businessId, this.year, this.month).subscribe({
-      next: c => { this.monthClosure = c; },
+      next: c => {
+        this.monthClosure = c;
+        this.applyClosureMetricsToSummary();
+      },
       error: () => {}
     });
   }
 
   get isMonthClosed(): boolean {
     return this.monthClosure?.status === 'CLOSED' || this.monthClosure?.status === 'APPROVED';
+  }
+
+  viewSignedClosurePdf(c: MonthlyClosureEntry): void {
+    if (!this.businessId || !c || !c.signedPdfPath) return;
+    this.attendanceService.getClosureSignedPdf(this.businessId, c.year, c.month).subscribe({
+      next: blob => {
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      },
+      error: err => {
+        const msg = err?.error?.error || 'No se pudo descargar el PDF firmado.';
+        alert(msg);
+      }
+    });
+  }
+
+  getClosureMonthLabel(month: number): string {
+    const found = this.months.find(m => m.v === month);
+    return found ? found.l : String(month);
+  }
+
+  private computeMonthlySummary(): void {
+    if (!this.businessId) return;
+    const src = this.sheet;
+    this.peopleCountSummary = src.length;
+    if (!src.length) {
+      this.hhttTotalSummary = 0;
+      this.hhttSummaryError = null;
+      this.hhttSummaryLoading = false;
+      return;
+    }
+
+    this.hhttSummaryLoading = true;
+    this.hhttSummaryError = null;
+
+    this.attendanceService.getOvertime(this.businessId, this.year, this.month).subscribe({
+      next: list => {
+        const map = new Map<number, number>();
+        for (const o of list) {
+          const eid = o.employeeId;
+          if (eid == null) continue;
+          const h = Number(o.hoursTotal) || 0;
+          map.set(eid, (map.get(eid) ?? 0) + h);
+        }
+        let total = 0;
+        for (const row of src) {
+          const daily = this.parseDailyHoursFromShiftName(row.workShiftName) ?? this.defaultDailyHours;
+          // Usar savedT/savedEX (solo días guardados en BD) para que coincida con el consolidado
+          const t = row.savedT ?? row.totals.T ?? 0;
+          const ex = row.savedEX ?? row.totals.EX ?? 0;
+          const oh = map.get(row.employeeId) ?? 0;
+          const workedDays = t + ex;
+          const ordHrs = workedDays * daily;
+          total += ordHrs + oh;
+        }
+        this.hhttTotalSummary = Math.round(total * 10) / 10;
+        this.hhttSummaryLoading = false;
+      },
+      error: err => {
+        console.error('[Planilla] Error cargando horas extra para resumen HHTT:', err);
+        let total = 0;
+        for (const row of src) {
+          const daily = this.parseDailyHoursFromShiftName(row.workShiftName) ?? this.defaultDailyHours;
+          const t = row.savedT ?? row.totals.T ?? 0;
+          const ex = row.savedEX ?? row.totals.EX ?? 0;
+          const workedDays = t + ex;
+          total += workedDays * daily;
+        }
+        this.hhttTotalSummary = Math.round(total * 10) / 10;
+        this.hhttSummaryLoading = false;
+        this.hhttSummaryError = 'No se pudieron incluir las horas extra en el cálculo de HHTT.';
+      }
+    });
+  }
+
+  private applyClosureMetricsToSummary(): void {
+    if (!this.monthClosure) return;
+    if (this.monthClosure.peopleCount != null) {
+      this.peopleCountSummary = this.monthClosure.peopleCount;
+    }
+    if (this.monthClosure.hhttTotalHours != null) {
+      this.hhttTotalSummary = Math.round(this.monthClosure.hhttTotalHours * 10) / 10;
+      this.hhttSummaryLoading = false;
+      this.hhttSummaryError = null;
+    }
   }
 
   /** Genera y descarga el PDF de la planilla */
@@ -428,6 +603,7 @@ export class PlanillaMensualComponent implements OnInit {
       sheet        : this.filteredSheet.length ? this.filteredSheet : this.sheet,
       dayTypeKeys  : this.dayTypeKeys,
       logoBase64   : this.businessLogoBase64 || undefined,
+      monthClosed  : this.isMonthClosed,
     });
   }
 
@@ -442,7 +618,11 @@ export class PlanillaMensualComponent implements OnInit {
 
     const doUpload = () => {
       this.attendanceService.uploadSignedPdf(this.businessId!, this.year, this.month, file).subscribe({
-        next: c => { this.monthClosure = c; this.uploadingPdf = false; },
+        next: c => {
+          this.monthClosure = c;
+          this.uploadingPdf = false;
+          this.applyClosureMetricsToSummary();
+        },
         error: err => {
           this.uploadPdfError = err?.error?.error || 'Error al subir el PDF firmado.';
           this.uploadingPdf = false;
@@ -496,8 +676,8 @@ export class PlanillaMensualComponent implements OnInit {
         if (entry) {
           const oldType = entry.dayType;
           entry.dayType = newType;
-          // Actualizar totales localmente
-          if (row.totals[oldType as keyof DayTotals] > 0) {
+          // Actualizar totales localmente (oldType puede ser null si era un día vacío)
+          if (oldType && (row.totals as any)[oldType] > 0) {
             (row.totals as any)[oldType]--;
           }
           (row.totals as any)[newType] = ((row.totals as any)[newType] ?? 0) + 1;
@@ -506,9 +686,36 @@ export class PlanillaMensualComponent implements OnInit {
             this.selectedRow = { ...row };
           }
         }
-        this.editingCell = null;
+        // Mantener picker abierto para edición continua; el usuario cierra con Escape o X
       },
       error: err => console.error('Error guardando día:', err)
+    });
+  }
+
+  clearDay(row: EmployeeSheetRow, dayIdx: number): void {
+    if (!this.businessId) return;
+    const date = this.monthDates[dayIdx];
+    this.clearingDay = true;
+    this.attendanceService.deleteWorkDay(this.businessId, row.employeeId, date).subscribe({
+      next: () => {
+        const entry = row.days[dayIdx];
+        if (entry) {
+          const oldType = entry.dayType;
+          entry.dayType = null as any;
+          if (oldType && (row.totals as any)[oldType] > 0) {
+            (row.totals as any)[oldType]--;
+          }
+          if (this.selectedRow?.employeeId === row.employeeId) {
+            this.selectedRow = { ...row };
+          }
+        }
+        this.clearingDay = false;
+        this.editingCell = null;
+      },
+      error: err => {
+        console.error('Error borrando día:', err);
+        this.clearingDay = false;
+      }
     });
   }
 
@@ -710,5 +917,232 @@ export class PlanillaMensualComponent implements OnInit {
   }
 
   trackByEmployee(_i: number, row: EmployeeSheetRow): number { return row.employeeId; }
+  trackByDetailRow(_i: number, row: AttendanceDetailRow): number { return row.employeeId; }
   trackByDay(_i: number, d: WorkDayEntry): string { return d.date; }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscape(_ev: KeyboardEvent): void {
+    // Cerrar picker de día primero; si no hay picker, cerrar modal si está abierto
+    if (this.editingCell) {
+      this.editingCell = null;
+      return;
+    }
+    if (this.showAttendanceDetailModal) {
+      this.closeAttendanceDetail();
+    }
+  }
+
+  openAttendanceDetail(): void {
+    if (!this.businessId || this.loading) return;
+    this.showAttendanceDetailModal = true;
+    this.refreshAttendanceDetail();
+  }
+
+  closeAttendanceDetail(): void {
+    this.showAttendanceDetailModal = false;
+    this.attendanceDetailError = null;
+  }
+
+  onAttendanceDetailBackdrop(ev: MouseEvent): void {
+    if (ev.target === ev.currentTarget) {
+      this.closeAttendanceDetail();
+    }
+  }
+
+  /** Recarga el detalle (y la planilla) cuando se cambia año/mes desde el modal. */
+  onDetailPeriodChange(): void {
+    this.buildCalendar();
+    this.loadData();
+    if (this.businessId) {
+      this.refreshAttendanceDetail();
+    }
+  }
+
+  private refreshAttendanceDetail(): void {
+    if (!this.businessId) return;
+    this.attendanceDetailLoading = true;
+    this.attendanceDetailError = null;
+    this.attendanceService.getOvertime(this.businessId, this.year, this.month).subscribe({
+      next: (list) => {
+        this.overtimeHoursByEmployee.clear();
+        for (const o of list) {
+          const eid = o.employeeId;
+          if (eid == null) continue;
+          const h = Number(o.hoursTotal) || 0;
+          this.overtimeHoursByEmployee.set(eid, (this.overtimeHoursByEmployee.get(eid) ?? 0) + h);
+        }
+        this.rebuildAttendanceDetailRows();
+        this.attendanceDetailLoading = false;
+      },
+      error: (err) => {
+        console.error('[Consolidado HHTT] Error cargando horas extra para detalle:', err);
+        this.attendanceDetailLoading = false;
+        this.attendanceDetailError =
+          err?.error?.message ?? err?.message ?? 'No se pudo cargar el detalle de horas extra.';
+        // Aun con error en horas extra, mostrar filas con horas extra = 0
+        this.overtimeHoursByEmployee.clear();
+        this.rebuildAttendanceDetailRows();
+      }
+    });
+  }
+
+  private rebuildAttendanceDetailRows(): void {
+    const src = this.filteredSheet.length ? this.filteredSheet : this.sheet;
+    let scheduledHoursTotal = 0;
+    let hhttTotal = 0;
+    let lostDaysTotal = 0;
+
+    this.attendanceDetailRows = src.map((row) => {
+      const oh = this.overtimeHoursByEmployee.get(row.employeeId) ?? 0;
+      // Usar savedT/savedEX: solo días con registro real en BD para que HHTT coincida con el consolidado
+      const t = row.savedT ?? row.totals.T ?? 0;
+      const ex = row.savedEX ?? row.totals.EX ?? 0;
+      const rest = row.totals.D ?? 0;
+      const permDays = row.totals.P ?? 0;
+      const sick = row.totals.E ?? 0;
+      const acc = row.totals.A ?? 0;
+      // Horas pactadas por día: intentar leer del nombre del horario de trabajo; fallback a default
+      const daily = this.parseDailyHoursFromShiftName(row.workShiftName) ?? this.defaultDailyHours;
+      // HHTT (en horas): (días trabajados + días EX guardados) * horas/día + horas extra
+      const workedDays = t + ex;
+      const ordHrs = workedDays * daily;
+      const hhtt = ordHrs + oh;
+      // Días perdidos: permisos (días) + enfermedad + accidentes (+ permisos por horas cuando se conecten)
+      const permHours = 0; // TODO: sumar permisos por horas desde módulo de permisos
+      const lostFromPermHours = daily > 0 ? permHours / daily : 0;
+      const lostDays = permDays + sick + acc + lostFromPermHours;
+
+      scheduledHoursTotal += daily;
+      hhttTotal += hhtt;
+      lostDaysTotal += lostDays;
+
+      return {
+        employeeId: row.employeeId,
+        initials: this.initialsFromName(row.fullName),
+        fullName: row.fullName,
+        position: row.position || '—',
+        cedula: row.cedula || '—',
+        daysWorked: t,
+        overtimeHours: Math.round(oh * 10) / 10,
+        extraDays: ex,
+        restDays: rest,
+        permDays,
+        permHours,
+        sickness: sick,
+        accidents: acc,
+        dailyHours: Math.round(daily * 10) / 10,
+        hhtt: Math.round(hhtt * 10) / 10,
+        lostDays: Math.round(lostDays * 10) / 10
+      };
+    });
+    const n = this.attendanceDetailRows.length;
+    const sumOh = this.attendanceDetailRows.reduce((a, r) => a + r.overtimeHours, 0);
+    const inc = this.attendanceDetailRows.filter((r) => r.accidents > 0).length;
+    this.attendanceDetailMetrics = {
+      total: n,
+      avgOvertimeHrs: n ? Math.round((sumOh / n) * 10) / 10 : 0,
+      incidentEmployees: inc
+    };
+
+    this.attendanceDetailTotals = {
+      scheduledHours: Math.round(scheduledHoursTotal * 10) / 10,
+      hhtt: Math.round(hhttTotal * 10) / 10,
+      lostDays: Math.round(lostDaysTotal * 10) / 10
+    };
+  }
+
+  private initialsFromName(name: string): string {
+    const p = (name || '').trim().split(/\s+/).filter(Boolean);
+    if (p.length === 0) return '?';
+    if (p.length === 1) return p[0].slice(0, 2).toUpperCase();
+    return (p[0][0] + p[p.length - 1][0]).toUpperCase();
+  }
+
+  attendanceDetailAvatarClass(index: number): string {
+    return ['pm-ad-avatar--a', 'pm-ad-avatar--b', 'pm-ad-avatar--c'][index % 3];
+  }
+
+  attendanceDetailSecurityLabel(): string {
+    const n = this.attendanceDetailMetrics.incidentEmployees;
+    if (n === 0) return 'Sin incidencias';
+    if (n === 1) return '1 incidencia';
+    return `${n} incidencias`;
+  }
+
+  /** Actualiza las horas/día del periodo vigente directamente en el historial (auto-guardado al salir del campo). */
+  onDailyHoursBlur(h: WorkScheduleHistoryEntry, rawValue: string): void {
+    if (!this.businessId || !h || !!h.endDate) return;
+    const trimmed = (rawValue ?? '').toString().trim();
+    let value: number | null;
+    if (!trimmed) {
+      value = null;
+    } else {
+      const parsed = parseFloat(trimmed.replace(',', '.'));
+      if (isNaN(parsed) || parsed <= 0 || parsed > 24) {
+        this.dailyHoursUpdateError = 'Las horas por día deben estar entre 1 y 24.';
+        return;
+      }
+      value = parsed;
+    }
+    // Si no hay cambio real, no llamar al backend
+    const current = h.dailyHours != null ? h.dailyHours : null;
+    if ((current === null && value === null) || (current !== null && value !== null && Math.abs(current - value) < 0.01)) {
+      return;
+    }
+
+    this.updatingDailyHours = true;
+    this.dailyHoursUpdateError = null;
+    this.attendanceService.updateScheduleHistory(this.businessId, h.id, {
+      endDate: h.endDate,
+      cycleStartDate: h.cycleStartDate,
+      dailyHours: value,
+      notes: h.notes
+    }).subscribe({
+      next: (updated) => {
+        // Actualizar el registro en memoria
+        h.dailyHours = updated.dailyHours;
+        h.endDate = updated.endDate;
+        h.cycleStartDate = updated.cycleStartDate;
+        this.updatingDailyHours = false;
+      },
+      error: (err) => {
+        this.updatingDailyHours = false;
+        this.dailyHoursUpdateError = err?.error?.error || 'No se pudieron guardar las horas por día.';
+      }
+    });
+  }
+
+  /** Horas/día estimadas para la jornada activa del empleado seleccionado. */
+  get selectedDailyHours(): number {
+    const row = this.selectedRow;
+    if (!row) return this.defaultDailyHours;
+    // 1) Preferir horas del registro vigente en el histórico, si ya está cargado
+    const currentHist = this.scheduleHistory.find((h) => !h.endDate) || this.scheduleHistory[0];
+    if (currentHist && currentHist.dailyHours && currentHist.dailyHours > 0 && currentHist.dailyHours <= 24) {
+      return currentHist.dailyHours;
+    }
+    // 2) Intentar inferir desde el nombre del horario de trabajo (workShift)
+    const fromShift = this.parseDailyHoursFromShiftName(row.workShiftName);
+    return fromShift ?? this.defaultDailyHours;
+  }
+
+  private parseDailyHoursFromShiftName(name?: string | null): number | null {
+    if (!name) return null;
+    const s = name.toLowerCase();
+    // 1) Buscar patrón explícito de horas, p.ej. "8h", "10 horas", "12 hora"
+    const m = s.match(/(\d+(?:[.,]\d+)?)\s*(h|hora|horas)\b/);
+    if (m) {
+      const raw = m[1].replace(',', '.');
+      const v = parseFloat(raw);
+      if (!isNaN(v) && v > 0 && v <= 24) return v;
+    }
+    // 2) Fallback: primer número "suelto" razonable (evitar capturar años, etc.)
+    const m2 = s.match(/(\d+(?:[.,]\d+)?)/);
+    if (m2) {
+      const raw = m2[1].replace(',', '.');
+      const v = parseFloat(raw);
+      if (!isNaN(v) && v > 0 && v <= 24) return v;
+    }
+    return null;
+  }
 }

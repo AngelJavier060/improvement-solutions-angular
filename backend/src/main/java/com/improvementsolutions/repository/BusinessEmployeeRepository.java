@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -46,10 +47,11 @@ public interface BusinessEmployeeRepository extends JpaRepository<BusinessEmploy
            "(LOWER(be.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(be.cedula) LIKE LOWER(CONCAT('%', :searchTerm, '%')))"
     )
-    List<BusinessEmployee> searchByBusinessIdAndNameOrCedula(Long businessId, String searchTerm);
+    List<BusinessEmployee> searchByBusinessIdAndNameOrCedula(@Param("businessId") Long businessId,
+                                                           @Param("searchTerm") String searchTerm);
   
     @Query("SELECT be FROM BusinessEmployee be LEFT JOIN FETCH be.gender WHERE be.business.id = :businessId")
-    List<BusinessEmployee> findByBusinessIdWithGender(Long businessId);
+    List<BusinessEmployee> findByBusinessIdWithGender(@Param("businessId") Long businessId);
 
     // Para datos legados: considerar empleados que no tengan seteada la relación 'business'
     // y usen el campo codigoEmpresa (RUC) o cuando el RUC coincide con el de la empresa
@@ -59,7 +61,8 @@ public interface BusinessEmployeeRepository extends JpaRepository<BusinessEmploy
            "WHERE (b.id = :businessId) " +
            "   OR (LOWER(TRIM(be.codigoEmpresa)) = LOWER(TRIM(:ruc))) " +
            "   OR (b.ruc IS NOT NULL AND LOWER(TRIM(b.ruc)) = LOWER(TRIM(:ruc)))")
-    List<BusinessEmployee> findByBusinessOrRucOrCodigo(Long businessId, String ruc);
+    List<BusinessEmployee> findByBusinessOrRucOrCodigo(@Param("businessId") Long businessId,
+                                                       @Param("ruc") String ruc);
 
     @Query(value = "SELECT be FROM BusinessEmployee be WHERE be.business.id = :businessId " +
             "AND (:cedula IS NULL OR LOWER(be.cedula) LIKE LOWER(CONCAT('%', :cedula, '%'))) " +
@@ -72,11 +75,11 @@ public interface BusinessEmployeeRepository extends JpaRepository<BusinessEmploy
                     "AND (:apellidos IS NULL OR LOWER(be.apellidos) LIKE LOWER(CONCAT('%', :apellidos, '%'))) " +
                     "AND (:codigo IS NULL OR LOWER(be.codigoEmpresa) LIKE LOWER(CONCAT('%', :codigo, '%')))"
     )
-    Page<BusinessEmployee> searchByFilters(Long businessId,
-                                           String cedula,
-                                           String nombres,
-                                           String apellidos,
-                                           String codigo,
+    Page<BusinessEmployee> searchByFilters(@Param("businessId") Long businessId,
+                                           @Param("cedula") String cedula,
+                                           @Param("nombres") String nombres,
+                                           @Param("apellidos") String apellidos,
+                                           @Param("codigo") String codigo,
                                            Pageable pageable);
 
     // Para desasociar empleados del cargo antes de eliminarlo definitivamente

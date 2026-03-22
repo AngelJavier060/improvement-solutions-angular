@@ -47,6 +47,34 @@ public class AttendanceController {
         }
     }
 
+    /** Diagnóstico: qué registros cuenta el consolidado de HHTT (solo para debug, sin auth en esta ruta no aplica) */
+    @GetMapping("/consolidado-hhtt/debug")
+    public ResponseEntity<?> debugConsolidadoHhtt(
+            @PathVariable Long businessId,
+            @RequestParam int year) {
+        try {
+            return ResponseEntity.ok(attendanceService.debugConsolidadoRecords(businessId, year));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /** Consolidado anual HH (planilla mensual + horas extra) para indicadores HSSE */
+    @GetMapping("/consolidado-hhtt")
+    public ResponseEntity<?> getConsolidadoHhtt(
+            @PathVariable Long businessId,
+            @RequestParam int year,
+            @RequestParam(required = false) Double standardHoursPerDay) {
+        try {
+            double h = standardHoursPerDay != null ? standardHoursPerDay : 8.0;
+            return ResponseEntity.ok(attendanceService.getConsolidadoHhttSummary(businessId, year, h));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/permissions/{id}/pdf")
     public ResponseEntity<?> getPermissionSignedPdf(
             @PathVariable Long businessId,
@@ -233,6 +261,23 @@ public class AttendanceController {
                     "date",    saved.getWorkDate().toString(),
                     "dayType", saved.getDayType()
             ));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/sheet/{employeeId}/day")
+    public ResponseEntity<?> deleteWorkDay(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestParam String date) {
+        try {
+            attendanceService.deleteWorkDay(businessId, employeeId, LocalDate.parse(date));
+            return ResponseEntity.ok(Map.of("deleted", true, "date", date));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         } catch (SecurityException e) {
@@ -631,9 +676,13 @@ public class AttendanceController {
                     ? LocalDate.parse(body.get("endDate")) : null;
             LocalDate cycleStartDate = body.get("cycleStartDate") != null && !body.get("cycleStartDate").isBlank()
                     ? LocalDate.parse(body.get("cycleStartDate")) : null;
+            Double dailyHours = null;
+            if (body.get("dailyHours") != null && !body.get("dailyHours").isBlank()) {
+                dailyHours = Double.parseDouble(body.get("dailyHours"));
+            }
             String notes = body.get("notes");
             EmployeeWorkScheduleHistory saved = attendanceService.addScheduleHistory(
-                    businessId, employeeId, workScheduleId, startDate, endDate, cycleStartDate, notes);
+                    businessId, employeeId, workScheduleId, startDate, endDate, cycleStartDate, dailyHours, notes);
             return ResponseEntity.ok(historyToMap(saved));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
@@ -654,8 +703,12 @@ public class AttendanceController {
                     ? LocalDate.parse(body.get("endDate")) : null;
             LocalDate cycleStartDate = body.get("cycleStartDate") != null && !body.get("cycleStartDate").isBlank()
                     ? LocalDate.parse(body.get("cycleStartDate")) : null;
+            Double dailyHours = null;
+            if (body.get("dailyHours") != null && !body.get("dailyHours").isBlank()) {
+                dailyHours = Double.parseDouble(body.get("dailyHours"));
+            }
             EmployeeWorkScheduleHistory updated = attendanceService.updateScheduleHistory(
-                    businessId, historyId, endDate, cycleStartDate, body.get("notes"));
+                    businessId, historyId, endDate, cycleStartDate, dailyHours, body.get("notes"));
             return ResponseEntity.ok(historyToMap(updated));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
@@ -751,28 +804,36 @@ public class AttendanceController {
         }
     }
 
-    @PostMapping("/closures/{year}/{month}/upload-signed")
+    @PostMapping(value = "/closures/{year}/{month}/upload-signed", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadSignedPdf(
             @PathVariable Long businessId,
             @PathVariable int year,
             @PathVariable int month,
-            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
-        // 1) Guardar el archivo primero (siempre)
+            @RequestParam("file") MultipartFile file) {
+        // 1) Guardar el archivo firmado en el mismo esquema de storage que vacaciones/permisos
         String relativePath;
         try {
-            java.nio.file.Path uploadDir = java.nio.file.Paths.get("uploads", "signed-pdfs");
+            java.nio.file.Path base = java.nio.file.Paths.get(storageBaseDir);
+            java.nio.file.Path uploadDir = base.resolve(java.nio.file.Paths.get("signed-pdfs", "closures"));
             java.nio.file.Files.createDirectories(uploadDir);
-            String filename = businessId + "_" + year + "_" + String.format("%02d", month)
-                    + "_signed_" + System.currentTimeMillis() + ".pdf";
-            file.transferTo(uploadDir.resolve(filename).toFile());
-            relativePath = "uploads/signed-pdfs/" + filename;
+
+            String filename = businessId + "_closure_" + year + "_" + String.format("%02d", month)
+                    + "_" + System.currentTimeMillis() + ".pdf";
+            java.nio.file.Path target = uploadDir.resolve(filename);
+            try (java.io.InputStream in = file.getInputStream()) {
+                java.nio.file.Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            // Ruta relativa basada en 'app.storage.location'
+            relativePath = (storageBaseDir + "/signed-pdfs/closures/" + filename).replace('\\', '/');
+            log.debug("[closures/upload-signed] Saved file to {} (absolute: {})", relativePath, target.toAbsolutePath());
         } catch (java.io.IOException e) {
+            log.error("[closures/upload-signed] IO error: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body(Map.of("error", "Error al guardar el archivo: " + e.getMessage()));
         }
 
-        // 2) Cerrar el mes si no está cerrado aún, luego aprobar
+        // 2) Cerrar el mes si no está cerrado aún, luego aprobar con la ruta del PDF firmado
         try {
-            // Obtener estado actual
             java.util.Optional<MonthlySheetClosure> existing =
                     attendanceService.getClosure(businessId, year, month);
             String currentStatus = existing.map(MonthlySheetClosure::getStatus).orElse("OPEN");
@@ -781,16 +842,40 @@ public class AttendanceController {
                 return ResponseEntity.status(409).body(Map.of("error", "Este mes ya está aprobado."));
             }
             if (!"CLOSED".equals(currentStatus)) {
-                // Cerrar primero
                 attendanceService.closureMonth(businessId, year, month, "sistema", null);
             }
+
             MonthlySheetClosure approved =
                     attendanceService.approveMonth(businessId, year, month, "sistema", relativePath);
             return ResponseEntity.ok(closureToMap(approved));
         } catch (IllegalStateException e) {
+            log.error("[closures/upload-signed] Estado inválido: {}", e.getMessage(), e);
             return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
         } catch (NoSuchElementException e) {
+            log.error("[closures/upload-signed] Cierre no encontrado para {}/{}/{}", businessId, year, month, e);
             return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("[closures/upload-signed] Error inesperado: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/closures/{year}/{month}/signed-pdf")
+    public ResponseEntity<?> getClosureSignedPdf(
+            @PathVariable Long businessId,
+            @PathVariable int year,
+            @PathVariable int month) {
+        try {
+            java.util.Optional<MonthlySheetClosure> opt = attendanceService.getClosure(businessId, year, month);
+            if (opt.isEmpty()) return ResponseEntity.notFound().build();
+            String path = opt.get().getSignedPdfPath();
+            if (path == null || path.isBlank()) return ResponseEntity.notFound().build();
+            java.nio.file.Path p = java.nio.file.Paths.get(path);
+            if (!java.nio.file.Files.exists(p)) return ResponseEntity.notFound().build();
+            Resource res = new FileSystemResource(p.toFile());
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).body(res);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -884,6 +969,7 @@ public class AttendanceController {
         m.put("startDate",          h.getStartDate() != null ? h.getStartDate().toString() : null);
         m.put("endDate",            h.getEndDate() != null ? h.getEndDate().toString() : null);
         m.put("cycleStartDate",     h.getCycleStartDate() != null ? h.getCycleStartDate().toString() : null);
+        m.put("dailyHours",         h.getDailyHours());
         m.put("notes",              h.getNotes());
         m.put("createdAt",          h.getCreatedAt() != null ? h.getCreatedAt().toString() : null);
         return m;
@@ -902,6 +988,8 @@ public class AttendanceController {
         m.put("approvedBy",     c.getApprovedBy());
         m.put("pdfPath",        c.getPdfPath());
         m.put("signedPdfPath",  c.getSignedPdfPath());
+        m.put("peopleCount",    c.getPeopleCount());
+        m.put("hhttTotalHours", c.getHhttTotalHours());
         m.put("notes",          c.getNotes());
         m.put("createdAt",      c.getCreatedAt() != null ? c.getCreatedAt().toString() : null);
         return m;

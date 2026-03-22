@@ -73,7 +73,7 @@ export class CompanySelectorComponent implements OnInit {
       const active: ActiveBusiness = { id: b.id, ruc: b.ruc, name: b.name };
       this.businessContext.setActiveBusiness(active);
       // Navegar a la ruta consistente con el RUC
-      this.router.navigate(['/usuario', b.ruc, 'dashboard', 'talento-humano']);
+      this.router.navigate(['/usuario', b.ruc, 'talento-humano']);
     }
   }
 }

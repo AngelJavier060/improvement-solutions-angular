@@ -20,22 +20,84 @@
           <span>Matriz Legal</span>
         </a>
       </li>
+      <li class="nav-group" [class.nav-group-active]="indicadoresSectionActive">
+        <!-- Colapsado: entra al panel principal (misma vista que el HTML de referencia) -->
+        <a *ngIf="collapsed"
+           routerLink="indicadores-reactivos"
+           [class.active]="indicadoresSectionActive"
+           class="nav-link"
+           title="Indicadores Reactivos">
+          <i class="fas fa-chart-line"></i>
+          <span>Indicadores</span>
+        </a>
+        <ng-container *ngIf="!collapsed">
+          <div class="nav-group-header">
+            <a
+              routerLink="indicadores-reactivos"
+              [class.active]="indicadoresSectionActive"
+              class="nav-link nav-group-main text-decoration-none"
+              (click)="expandIndicadores()">
+              <i class="fas fa-chart-line"></i>
+              <span class="flex-grow-1 text-start">Indicadores Reactivos</span>
+            </a>
+            <button
+              type="button"
+              class="nav-group-chevron"
+              [attr.aria-expanded]="indicadoresExpanded"
+              aria-controls="submenu-indicadores"
+              (click)="toggleIndicadoresChevron($event)"
+              aria-label="Expandir o contraer submenú Indicadores Reactivos">
+              <i class="fas fa-chevron-down submenu-chevron" [class.rotated]="indicadoresExpanded"></i>
+            </button>
+          </div>
+          <ul id="submenu-indicadores" class="nav-submenu list-unstyled mb-0" *ngIf="indicadoresExpanded">
+            <li>
+              <a
+                routerLink="indicadores-reactivos"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+                class="nav-link nav-sublink">
+                <i class="fas fa-th-large"></i>
+                <span>Panel de indicadores</span>
+              </a>
+            </li>
+            <li>
+              <a routerLink="indicadores-reactivos/consolidado-hhtt" routerLinkActive="active" class="nav-link nav-sublink">
+                <i class="fas fa-clock"></i>
+                <span>Consolidado de HHTT</span>
+              </a>
+            </li>
+            <li>
+              <a routerLink="indicadores-reactivos/indice-frecuencia" routerLinkActive="active" class="nav-link nav-sublink">
+                <i class="fas fa-chart-area"></i>
+                <span>Índice de Frecuencia</span>
+              </a>
+            </li>
+            <li>
+              <a routerLink="indicadores-reactivos/indice-trif" routerLinkActive="active" class="nav-link nav-sublink">
+                <i class="fas fa-percent"></i>
+                <span>Índice TRIF</span>
+              </a>
+            </li>
+            <li>
+              <a routerLink="indicadores-reactivos/indice-gravedad" routerLinkActive="active" class="nav-link nav-sublink">
+                <i class="fas fa-weight-hanging"></i>
+                <span>Índice de Gravedad</span>
+              </a>
+            </li>
+            <li>
+              <a routerLink="indicadores-reactivos/indice-riesgo" routerLinkActive="active" class="nav-link nav-sublink">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Índice de Riesgo</span>
+              </a>
+            </li>
+          </ul>
+        </ng-container>
+      </li>
       <li>
-        <a routerLink="accidentes-incidentes" routerLinkActive="active" class="nav-link">
+        <a routerLink="accidentes-incidentes" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }" class="nav-link">
           <i class="fas fa-exclamation-triangle"></i>
-          <span>Accidentes/Incidentes</span>
-        </a>
-      </li>
-      <li>
-        <a href="#" class="nav-link disabled">
-          <i class="fas fa-chart-bar"></i>
-          <span>Reportes (Próximamente)</span>
-        </a>
-      </li>
-      <li>
-        <a href="#" class="nav-link disabled">
-          <i class="fas fa-cog"></i>
-          <span>Configuración (Próximamente)</span>
+          <span>Accidentes / Incidentes</span>
         </a>
       </li>
     </ul>

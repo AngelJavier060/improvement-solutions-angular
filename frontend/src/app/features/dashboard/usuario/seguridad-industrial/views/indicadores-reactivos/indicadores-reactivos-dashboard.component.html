@@ -1,0 +1,259 @@
+<div class="ir-dashboard">
+  <!-- TopAppBar (referencia HTML) -->
+  <header class="ir-topbar">
+    <h1 class="ir-topbar-title">{{ centroTrabajo }}</h1>
+    <div class="ir-topbar-actions">
+      <div class="ir-search-wrap d-none d-lg-block">
+        <span class="material-symbols-outlined ir-search-icon">search</span>
+        <input type="text" class="ir-search-input" placeholder="Buscar indicadores..." />
+      </div>
+      <div class="ir-topbar-icons">
+        <button type="button" class="ir-icon-btn" aria-label="Notificaciones">
+          <span class="material-symbols-outlined">notifications</span>
+        </button>
+        <button type="button" class="ir-icon-btn" aria-label="Ayuda">
+          <span class="material-symbols-outlined">help_outline</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="ir-content">
+    <!-- 1. Encabezado datos generales -->
+    <section class="ir-hero">
+      <div class="ir-hero-deco" aria-hidden="true"></div>
+      <div class="ir-hero-brand">
+        <div class="ir-hero-icon-wrap">
+          <span class="material-symbols-outlined ir-hero-icon">domain</span>
+        </div>
+        <div>
+          <h2 class="ir-hero-name">{{ empresa.razonSocial }}</h2>
+          <p class="ir-hero-ruc">
+            <span class="ir-hero-ruc-label">RUC:</span>
+            {{ empresa.ruc }}
+          </p>
+        </div>
+      </div>
+      <div class="ir-hero-meta">
+        <div class="ir-hero-meta-item">
+          <span class="material-symbols-outlined ir-meta-icon">person_check</span>
+          <div>
+            <p class="ir-meta-label">Representante Legal</p>
+            <p class="ir-meta-value">{{ empresa.representanteLegal }}</p>
+          </div>
+        </div>
+        <div class="ir-hero-meta-item">
+          <span class="material-symbols-outlined ir-meta-icon">groups</span>
+          <div>
+            <p class="ir-meta-label">Total Trabajadores</p>
+            <p class="ir-meta-value">{{ empresa.totalTrabajadores }} Colaboradores</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. KPIs -->
+    <section class="ir-kpi-row">
+      <div class="ir-kpi ir-kpi--primary">
+        <div class="ir-kpi-deco-icon" aria-hidden="true">
+          <span class="material-symbols-outlined">verified_user</span>
+        </div>
+        <p class="ir-kpi-label ir-kpi-label--on-dark">Índice de Gestión</p>
+        <div class="ir-kpi-value-row">
+          <span class="ir-kpi-big ir-kpi-big--white">{{ indiceGestionPct | number : '1.1-1' }}%</span>
+          <span class="material-symbols-outlined ir-trend-up">trending_up</span>
+        </div>
+        <p class="ir-kpi-foot ir-kpi-foot--muted-white">Cumplimiento global de seguridad industrial</p>
+      </div>
+
+      <div class="ir-kpi ir-kpi--eficacia">
+        <div class="ir-kpi-eficacia-head">
+          <p class="ir-kpi-label">Índice de Eficacia</p>
+          <div class="ir-kpi-round-icon">
+            <span class="material-symbols-outlined">target</span>
+          </div>
+        </div>
+        <div class="ir-kpi-value-row">
+          <span class="ir-kpi-big">{{ indiceEficaciaPct | number : '1.1-1' }}%</span>
+          <span class="ir-kpi-delta-pos">{{ indiceEficaciaDelta }}</span>
+        </div>
+        <p class="ir-kpi-foot">Ejecución perfecta de protocolos preventivos</p>
+      </div>
+
+      <div class="ir-kpi ir-kpi--periodo">
+        <div>
+          <p class="ir-kpi-label">Periodo Actual</p>
+          <p class="ir-kpi-subtle">Ciclo de reporte anual</p>
+        </div>
+        <div class="ir-periodo-row">
+          <span class="ir-kpi-year">{{ anioFiscal }}</span>
+          <div class="ir-periodo-divider"></div>
+          <span class="ir-periodo-q">{{ trimestreLabel }} <br />{{ trimestreEstado }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Grid índices reactivos | proactivos -->
+    <div class="ir-main-grid">
+      <section class="ir-col-reactivos">
+        <div class="ir-section-heading">
+          <span class="material-symbols-outlined ir-h-ico">analytics</span>
+          <h3 class="ir-h3">Índices Reactivos</h3>
+        </div>
+        <div class="ir-card ir-card--low">
+          <!-- IF -->
+          <div class="ir-gauge-row">
+            <div class="ir-ring-wrap">
+              <svg class="ir-ring" viewBox="0 0 96 96" aria-hidden="true">
+                <circle class="ir-ring-bg" cx="48" cy="48" r="40" fill="transparent" stroke-width="8" />
+                <circle
+                  class="ir-ring-fill ir-ring-fill--anim"
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  fill="transparent"
+                  stroke-width="8"
+                  [attr.stroke-dasharray]="ringLen"
+                  [attr.stroke-dashoffset]="dashOffset(0)"
+                />
+              </svg>
+              <span class="ir-ring-label">{{ indiceFrecuenciaValor | number : '1.1-1' }}</span>
+            </div>
+            <div class="ir-gauge-copy">
+              <h4 class="ir-h4">Índice de Frecuencia</h4>
+              <p class="ir-gauge-desc">Accidentes por millón de horas hombre.</p>
+              <span class="ir-badge-meta">{{ indiceFrecuenciaMetaLabel }}</span>
+            </div>
+          </div>
+          <!-- IG -->
+          <div class="ir-gauge-row">
+            <div class="ir-ring-wrap">
+              <svg class="ir-ring" viewBox="0 0 96 96" aria-hidden="true">
+                <circle class="ir-ring-bg" cx="48" cy="48" r="40" fill="transparent" stroke-width="8" />
+                <circle
+                  class="ir-ring-fill"
+                  cx="48"
+                  cy="48"
+                  r="40"
+                  fill="transparent"
+                  stroke-width="8"
+                  [attr.stroke-dasharray]="ringLen"
+                  [attr.stroke-dashoffset]="dashOffset(0)"
+                />
+              </svg>
+              <span class="ir-ring-label">{{ indiceGravedadValor | number : '1.1-1' }}</span>
+            </div>
+            <div class="ir-gauge-copy">
+              <h4 class="ir-h4">Índice de Gravedad</h4>
+              <p class="ir-gauge-desc">Días perdidos por millón de horas hombre.</p>
+              <span class="ir-badge-meta">{{ indiceGravedadBadge }}</span>
+            </div>
+          </div>
+          <!-- Tasa riesgo -->
+          <div class="ir-risk-strip">
+            <div>
+              <h4 class="ir-h4">Tasa de Riesgo</h4>
+              <p class="ir-gauge-desc">Evaluación de severidad mensual</p>
+            </div>
+            <span class="ir-risk-dash">{{ tasaRiesgoDisplay }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="ir-col-proactivos">
+        <div class="ir-section-heading ir-section-heading--between">
+          <div class="ir-section-heading">
+            <span class="material-symbols-outlined ir-h-ico">speed</span>
+            <h3 class="ir-h3">Índices Proactivos (Gestión Preventiva)</h3>
+          </div>
+          <span class="ir-pill-today">Actualizado hoy</span>
+        </div>
+
+        <div class="ir-card ir-card--white ir-card--p-lg ir-shadow">
+          <div class="ir-pro-list">
+            <div class="ir-pro-item">
+              <div class="ir-pro-head">
+                <div class="ir-pro-title">
+                  <span class="ir-dot"></span>
+                  <span>Análisis de Riesgo de Tarea (IART)</span>
+                </div>
+                <span class="ir-pro-pct">{{ proactivos.iart }}%</span>
+              </div>
+              <div class="ir-bar-track">
+                <div class="ir-bar-fill" [style.width.%]="proactivos.iart"></div>
+              </div>
+            </div>
+            <div class="ir-pro-item">
+              <div class="ir-pro-head">
+                <div class="ir-pro-title">
+                  <span class="ir-dot"></span>
+                  <span>Observaciones Planeadas (OPAS)</span>
+                </div>
+                <span class="ir-pro-pct">{{ proactivos.opas }}%</span>
+              </div>
+              <div class="ir-bar-track">
+                <div class="ir-bar-fill" [style.width.%]="proactivos.opas"></div>
+              </div>
+            </div>
+            <div class="ir-pro-item">
+              <div class="ir-pro-head">
+                <div class="ir-pro-title">
+                  <span class="ir-dot"></span>
+                  <span>Diálogo Periódico (IDPS)</span>
+                </div>
+                <span class="ir-pro-pct">{{ proactivos.idps }}%</span>
+              </div>
+              <div class="ir-bar-track">
+                <div class="ir-bar-fill" [style.width.%]="proactivos.idps"></div>
+              </div>
+            </div>
+            <div class="ir-pro-item">
+              <div class="ir-pro-head">
+                <div class="ir-pro-title">
+                  <span class="ir-dot"></span>
+                  <span>Demanda de Seguridad (IDS)</span>
+                </div>
+                <span class="ir-pro-pct">{{ proactivos.ids }}%</span>
+              </div>
+              <div class="ir-bar-track">
+                <div class="ir-bar-fill" [style.width.%]="proactivos.ids"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ir-triple">
+            <div>
+              <p class="ir-triple-label">Entrenamiento (IENTS)</p>
+              <div class="ir-triple-row">
+                <span class="ir-triple-val">{{ proactivos.ients | number : '1.1-1' }}%</span>
+                <span class="material-symbols-outlined ir-check-fill">check_circle</span>
+              </div>
+            </div>
+            <div>
+              <p class="ir-triple-label">Órdenes Servicio (OSEA)</p>
+              <div class="ir-triple-row">
+                <span class="ir-triple-val">{{ proactivos.osea | number : '1.1-1' }}%</span>
+                <span class="material-symbols-outlined ir-check-fill">check_circle</span>
+              </div>
+            </div>
+            <div>
+              <p class="ir-triple-label">Control Accidentes (ICAI)</p>
+              <div class="ir-triple-row">
+                <span class="ir-triple-val">{{ proactivos.icai | number : '1.1-1' }}%</span>
+                <span class="material-symbols-outlined ir-check-fill">check_circle</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ir-info-footer">
+          <span class="material-symbols-outlined ir-info-ico">info</span>
+          <p class="ir-info-text">
+            Los indicadores proactivos muestran un <span class="ir-info-strong">alto nivel de cumplimiento</span> operativo.
+            Se recomienda mantener la rigurosidad en los Diálogos Periódicos para sostener el 98% de IDPS.
+          </p>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>

@@ -57,6 +57,14 @@ public class MonthlySheetClosure {
     @Column(name = "signed_pdf_path")
     private String signedPdfPath;
 
+    // Total de personas en planilla para el mes (snapshot al cerrar)
+    @Column(name = "people_count")
+    private Integer peopleCount;
+
+    // Total de horas hombre trabajadas (HHTT) del mes en horas (snapshot al cerrar)
+    @Column(name = "hhtt_total_hours")
+    private Double hhttTotalHours;
+
     @Column(name = "notes")
     private String notes;
 

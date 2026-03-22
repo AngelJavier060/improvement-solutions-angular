@@ -51,6 +51,7 @@ public class SecurityConfig {    private final JwtAuthenticationEntryPoint unaut
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Permitir todas las solicitudes preflight OPTIONS
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/api/attendance/*/consolidado-hhtt/debug").permitAll()
                 .requestMatchers("/api/configuration/**").permitAll() // Permitir endpoints de configuración
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/health").permitAll()

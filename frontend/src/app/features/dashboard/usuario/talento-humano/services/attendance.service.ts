@@ -42,11 +42,49 @@ export interface EmployeeSheetRow {
   position: string;
   cedula: string;
   codigoEmpresa?: string;
+  departmentId?: number | null;
+  departmentName?: string | null;
   workScheduleId?: number | null;
   workScheduleName?: string | null;
   workScheduleStartDate?: string | null;
+  // Horario de trabajo (turno) tomado de la ficha del empleado
+  workShiftId?: number | null;
+  workShiftName?: string | null;
   days: WorkDayEntry[];
   totals: DayTotals;
+  /** Días T guardados explícitamente en BD (excluye auto-generados del horario) */
+  savedT?: number;
+  /** Días EX guardados explícitamente en BD */
+  savedEX?: number;
+}
+
+/** Respuesta de GET /api/attendance/{id}/consolidado-hhtt */
+export interface ConsolidadoHhttSummary {
+  year: number;
+  standardHoursPerDay: number;
+  ordinaryHoursYtd: number;
+  extraHoursYtd: number;
+  totalHoursYtd: number;
+  previousYearTotalHours: number;
+  previousYearOrdinaryHours: number;
+  previousYearExtraHours: number;
+  ytdVsPreviousYearPct: number;
+  averageMonthlyHours: number;
+  extraHoursSharePct: number;
+  activeEmployees: number;
+  monthsTrend: { month: number; label: string; ordinHours: number; extraHours: number }[];
+  byDepartment: { nombre: string; hours: number; pct: number }[];
+  detailRows: {
+    mesSort: number;
+    mesAnio: string;
+    departamento: string;
+    horasOrdinarias: number;
+    horasExtras: number;
+    totalHh: number;
+    numColaboradores: number;
+  }[];
+  departmentOptions: { value: string; label: string }[];
+  projectOptions: { value: string; label: string }[];
 }
 
 export interface MonthlyKpis {
@@ -172,8 +210,26 @@ export class AttendanceService {
     return this.http.get<EmployeeSheetRow[]>(`${this.apiUrl(businessId)}/sheet`, { params });
   }
 
+  /** Consolidado anual HH (misma lógica que planilla mensual + horas extra registradas) */
+  getConsolidadoHhtt(
+    businessId: number,
+    year: number,
+    standardHoursPerDay = 8
+  ): Observable<ConsolidadoHhttSummary> {
+    let params = new HttpParams().set('year', String(year));
+    if (standardHoursPerDay != null && standardHoursPerDay > 0) {
+      params = params.set('standardHoursPerDay', String(standardHoursPerDay));
+    }
+    return this.http.get<ConsolidadoHhttSummary>(`${this.apiUrl(businessId)}/consolidado-hhtt`, { params });
+  }
+
   saveWorkDay(businessId: number, employeeId: number, date: string, dayType: DayType, notes?: string): Observable<any> {
     return this.http.put(`${this.apiUrl(businessId)}/sheet/${employeeId}/day`, { date, dayType, notes });
+  }
+
+  deleteWorkDay(businessId: number, employeeId: number, date: string): Observable<any> {
+    const params = new HttpParams().set('date', date);
+    return this.http.delete(`${this.apiUrl(businessId)}/sheet/${employeeId}/day`, { params });
   }
 
   saveWorkDaysBatch(businessId: number, employeeId: number, days: { date: string; dayType: string; notes?: string }[]): Observable<any> {
@@ -351,6 +407,7 @@ export class AttendanceService {
     startDate: string;
     endDate?: string | null;
     cycleStartDate?: string | null;
+    dailyHours?: number | null;
     notes?: string | null;
   }): Observable<WorkScheduleHistoryEntry> {
     return this.http.post<WorkScheduleHistoryEntry>(`${this.apiUrl(businessId)}/employees/${employeeId}/schedule-history`, {
@@ -358,6 +415,7 @@ export class AttendanceService {
       startDate: dto.startDate,
       endDate: dto.endDate || '',
       cycleStartDate: dto.cycleStartDate || '',
+      dailyHours: dto.dailyHours != null ? String(dto.dailyHours) : '',
       notes: dto.notes || ''
     });
   }
@@ -365,11 +423,13 @@ export class AttendanceService {
   updateScheduleHistory(businessId: number, historyId: number, dto: {
     endDate?: string | null;
     cycleStartDate?: string | null;
+    dailyHours?: number | null;
     notes?: string | null;
   }): Observable<WorkScheduleHistoryEntry> {
     return this.http.put<WorkScheduleHistoryEntry>(`${this.apiUrl(businessId)}/schedule-history/${historyId}`, {
       endDate: dto.endDate || '',
       cycleStartDate: dto.cycleStartDate || '',
+      dailyHours: dto.dailyHours != null ? String(dto.dailyHours) : '',
       notes: dto.notes || ''
     });
   }
@@ -403,6 +463,11 @@ export class AttendanceService {
     const formData = new FormData();
     formData.append('file', file, file.name);
     return this.http.post<MonthlyClosureEntry>(`${this.apiUrl(businessId)}/closures/${year}/${month}/upload-signed`, formData);
+  }
+
+  getClosureSignedPdf(businessId: number, year: number, month: number): Observable<Blob> {
+    const url = `${this.apiUrl(businessId)}/closures/${year}/${month}/signed-pdf`;
+    return this.http.get(url, { responseType: 'blob' as 'json' }) as Observable<Blob>;
   }
 
   // ─────────────── Holidays ───────────────
@@ -448,6 +513,7 @@ export interface WorkScheduleHistoryEntry {
   startDate: string;
   endDate: string | null;
   cycleStartDate: string | null;
+  dailyHours: number | null;
   notes: string | null;
   createdAt: string;
 }
@@ -464,6 +530,8 @@ export interface MonthlyClosureEntry {
   approvedBy?: string | null;
   pdfPath?: string | null;
   signedPdfPath?: string | null;
+  peopleCount?: number | null;
+  hhttTotalHours?: number | null;
   notes?: string | null;
   createdAt?: string;
 }

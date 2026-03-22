@@ -20,6 +20,8 @@ import com.improvementsolutions.repository.ContractorCompanyRepository;
 import com.improvementsolutions.repository.ContractorBlockRepository;
 import com.improvementsolutions.repository.WorkScheduleRepository;
 import com.improvementsolutions.repository.WorkShiftRepository;
+import com.improvementsolutions.repository.EmployeeWorkScheduleHistoryRepository;
+import com.improvementsolutions.model.EmployeeWorkScheduleHistory;
 import com.improvementsolutions.repository.EmployeeMovementRepository;
 import com.improvementsolutions.repository.BusinessEmployeeDocumentRepository;
 import com.improvementsolutions.repository.BusinessEmployeeCourseRepository;
@@ -46,13 +48,16 @@ import com.improvementsolutions.model.MovementType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -81,6 +86,7 @@ public class BusinessEmployeeService {
     private final ContractorBlockRepository contractorBlockRepository;
     private final WorkScheduleRepository workScheduleRepository;
     private final WorkShiftRepository workShiftRepository;
+    private final EmployeeWorkScheduleHistoryRepository scheduleHistoryRepository;
     private final EmployeeMovementRepository employeeMovementRepository;
     private final BusinessEmployeeDocumentRepository businessEmployeeDocumentRepository;
     private final BusinessEmployeeCourseRepository businessEmployeeCourseRepository;
@@ -213,15 +219,73 @@ public class BusinessEmployeeService {
                                                                       String codigo,
                                                                       Pageable pageable) {
         Long businessId = getBusinessIdFromRuc(codigoEmpresa);
-        Page<com.improvementsolutions.model.BusinessEmployee> page = businessEmployeeRepository.searchByFilters(
-                businessId,
-                emptyToNull(cedula),
-                emptyToNull(nombres),
-                emptyToNull(apellidos),
-                emptyToNull(codigo),
-                pageable
-        );
-        return page.map(this::convertToResponseDto);
+        String fc = emptyToNull(cedula);
+        String fn = emptyToNull(nombres);
+        String fa = emptyToNull(apellidos);
+        String fco = emptyToNull(codigo);
+
+        // Misma carga que el listado completo (EntityGraph): evita fallos de la query JPQL paginada
+        // (COUNT/sort en algunos entornos Hibernate/BD) y asegura relaciones para convertToResponseDto.
+        List<BusinessEmployee> all = businessEmployeeRepository.findWithRelationsByBusinessId(businessId);
+
+        List<BusinessEmployee> filtered = all.stream()
+                .filter(be -> fc == null || (be.getCedula() != null && be.getCedula().toLowerCase().contains(fc)))
+                .filter(be -> fn == null || (be.getNombres() != null && be.getNombres().toLowerCase().contains(fn)))
+                .filter(be -> fa == null || (be.getApellidos() != null && be.getApellidos().toLowerCase().contains(fa)))
+                .filter(be -> fco == null || (be.getCodigoEmpresa() != null
+                        && be.getCodigoEmpresa().toLowerCase().contains(fco)))
+                .sorted(comparatorForBusinessEmployeeList(pageable))
+                .collect(Collectors.toList());
+
+        List<BusinessEmployeeResponseDto> dtos = filtered.stream()
+                .map(this::convertToResponseDto)
+                .collect(Collectors.toList());
+
+        int start = (int) pageable.getOffset();
+        int pageSize = pageable.getPageSize();
+        if (start >= dtos.size()) {
+            return new PageImpl<>(List.of(), pageable, dtos.size());
+        }
+        int end = Math.min(start + pageSize, dtos.size());
+        return new PageImpl<>(dtos.subList(start, end), pageable, dtos.size());
+    }
+
+    /** Orden seguro para listados en memoria (whitelist de propiedades). */
+    private static Comparator<BusinessEmployee> comparatorForBusinessEmployeeList(Pageable pageable) {
+        Sort sort = pageable.getSort();
+        if (sort == null || sort.isEmpty()) {
+            return Comparator.comparing(BusinessEmployee::getApellidos,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+        }
+        Sort.Order order = sort.iterator().next();
+        String prop = normalizeSortProperty(order.getProperty());
+        boolean desc = order.getDirection() == Sort.Direction.DESC;
+        Comparator<BusinessEmployee> cmp = switch (prop) {
+            case "nombres" -> Comparator.comparing(BusinessEmployee::getNombres,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+            case "cedula" -> Comparator.comparing(BusinessEmployee::getCedula,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+            case "fechaIngreso" -> Comparator.comparing(BusinessEmployee::getFechaIngreso,
+                    Comparator.nullsLast(Comparator.naturalOrder()));
+            case "name" -> Comparator.comparing(BusinessEmployee::getName,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+            case "codigoEmpresa" -> Comparator.comparing(BusinessEmployee::getCodigoEmpresa,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+            default -> Comparator.comparing(BusinessEmployee::getApellidos,
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+        };
+        return desc ? cmp.reversed() : cmp;
+    }
+
+    private static String normalizeSortProperty(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "apellidos";
+        }
+        String p = raw.trim();
+        return switch (p) {
+            case "nombres", "cedula", "fechaIngreso", "name", "codigoEmpresa" -> p;
+            default -> "apellidos";
+        };
     }
 
     private String emptyToNull(String s) {
@@ -671,6 +735,9 @@ public class BusinessEmployeeService {
     }
     
     private void updateEntityFromUpdateDto(BusinessEmployee employee, UpdateBusinessEmployeeDto updateDto) {
+        // Valores previos para detectar cambios en jornada/horario
+        Long oldWorkScheduleId = employee.getWorkSchedule() != null ? employee.getWorkSchedule().getId() : null;
+        Long oldWorkShiftId = employee.getWorkShift() != null ? employee.getWorkShift().getId() : null;
         if (updateDto.getCedula() != null) employee.setCedula(updateDto.getCedula());
         if (updateDto.getApellidos() != null) employee.setApellidos(updateDto.getApellidos());
         if (updateDto.getNombres() != null) employee.setNombres(updateDto.getNombres());
@@ -765,6 +832,91 @@ public class BusinessEmployeeService {
             if (!fullName.isEmpty()) employee.setName(fullName);
         }
         employee.setUpdatedAt(LocalDateTime.now());
+
+        // Registrar o actualizar histórico de jornada/horas cuando cambie jornada u horario
+        Long newWorkScheduleId = employee.getWorkSchedule() != null ? employee.getWorkSchedule().getId() : null;
+        Long newWorkShiftId = employee.getWorkShift() != null ? employee.getWorkShift().getId() : null;
+        boolean scheduleChanged = (updateDto.getWorkScheduleId() != null && !java.util.Objects.equals(oldWorkScheduleId, newWorkScheduleId));
+        boolean shiftChanged = (updateDto.getWorkShiftId() != null && !java.util.Objects.equals(oldWorkShiftId, newWorkShiftId));
+
+        if (scheduleChanged || shiftChanged) {
+            autoRegisterScheduleHistory(employee, scheduleChanged, shiftChanged);
+        }
+    }
+
+    /**
+     * Crea o ajusta automáticamente una entrada en employee_work_schedule_history cuando
+     * cambian la jornada (workSchedule) o el horario (workShift) desde la ficha del empleado.
+     * No pide fechas adicionales: usa hoy como inicio de vigencia para el nuevo periodo.
+     */
+    private void autoRegisterScheduleHistory(BusinessEmployee employee, boolean scheduleChanged, boolean shiftChanged) {
+        if (employee.getBusiness() == null || employee.getWorkSchedule() == null) {
+            return;
+        }
+
+        Long businessId = employee.getBusiness().getId();
+        Long employeeId = employee.getId();
+        WorkSchedule ws = employee.getWorkSchedule();
+
+        // 1) Cerrar en automático el periodo vigente (si existe)
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.util.List<EmployeeWorkScheduleHistory> current =
+                scheduleHistoryRepository.findOverlappingNew(employeeId, today, today);
+        for (EmployeeWorkScheduleHistory h : current) {
+            if (h.getEndDate() == null || !h.getEndDate().isBefore(today)) {
+                h.setEndDate(today.minusDays(1));
+                scheduleHistoryRepository.save(h);
+            }
+        }
+
+        // 2) Calcular horas/día a partir del horario actual del empleado
+        Double dailyHours = null;
+        if (employee.getWorkShift() != null) {
+            String shiftName = employee.getWorkShift().getName();
+            dailyHours = parseDailyHoursFromShiftName(shiftName);
+        }
+
+        // 3) Crear nuevo periodo con jornada actual + horas/día inferidas
+        EmployeeWorkScheduleHistory hist = new EmployeeWorkScheduleHistory();
+        hist.setBusiness(employee.getBusiness());
+        hist.setEmployee(employee);
+        hist.setWorkSchedule(ws);
+        hist.setStartDate(today);
+        hist.setCycleStartDate(today);
+        hist.setEndDate(null);
+        hist.setDailyHours(dailyHours);
+        hist.setNotes("Actualizado desde ficha de empleado (jornada/horario).");
+        scheduleHistoryRepository.save(hist);
+    }
+
+    private Double parseDailyHoursFromShiftName(String name) {
+        if (name == null) return null;
+        String s = java.text.Normalizer.normalize(name, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(java.util.Locale.ROOT);
+
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("(\\d+(?:[.,]\\d+)?)\\s*(h|hora|horas)\\b")
+                .matcher(s);
+        if (m.find()) {
+            String raw = m.group(1).replace(',', '.');
+            try {
+                double v = Double.parseDouble(raw);
+                if (v > 0 && v <= 24) return v;
+            } catch (NumberFormatException ignore) {}
+        }
+
+        java.util.regex.Matcher m2 = java.util.regex.Pattern
+                .compile("(\\d+(?:[.,]\\d+)?)")
+                .matcher(s);
+        if (m2.find()) {
+            String raw = m2.group(1).replace(',', '.');
+            try {
+                double v = Double.parseDouble(raw);
+                if (v > 0 && v <= 24) return v;
+            } catch (NumberFormatException ignore) {}
+        }
+        return null;
     }
     
     /**

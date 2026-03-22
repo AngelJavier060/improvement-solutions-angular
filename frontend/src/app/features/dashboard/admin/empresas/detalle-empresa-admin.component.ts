@@ -673,7 +673,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   goToTHEmployees(): void {
     const ruc = this.empresa?.ruc;
     if (ruc) {
-      this.router.navigate(['/usuario', ruc, 'dashboard', 'talento-humano', 'gestion-empleados']);
+      this.router.navigate(['/usuario', ruc, 'talento-humano', 'gestion-empleados']);
     }
   }
 

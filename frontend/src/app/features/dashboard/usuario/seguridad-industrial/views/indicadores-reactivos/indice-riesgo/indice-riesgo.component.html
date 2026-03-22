@@ -1,0 +1,195 @@
+<div class="trisk-page">
+  <header class="trisk-topbar">
+    <div class="trisk-topbar-left">
+      <span class="trisk-brand">Orientoil Guardian</span>
+    </div>
+    <div class="trisk-topbar-right">
+      <nav class="trisk-nav d-none d-md-flex" aria-label="Secciones (demo)">
+        <span class="trisk-nav-link trisk-nav-link--active">Dashboard</span>
+        <span class="trisk-nav-link">Alertas</span>
+        <span class="trisk-nav-link">Reportes</span>
+        <span class="trisk-nav-link">Estadísticas</span>
+      </nav>
+      <div class="trisk-top-icons">
+        <button type="button" class="trisk-icon-btn" aria-label="Notificaciones">
+          <span class="material-symbols-outlined">notifications</span>
+        </button>
+        <button type="button" class="trisk-icon-btn" aria-label="Cuenta">
+          <span class="material-symbols-outlined">account_circle</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="trisk-main">
+    <div class="trisk-container">
+      <div class="trisk-page-head">
+        <div>
+          <span class="trisk-eyebrow">Métricas corporativas</span>
+          <h1 class="trisk-h1">Tasa de riesgo (TR)</h1>
+        </div>
+        <div class="trisk-formula-cards">
+          <div class="trisk-fcard">
+            <div class="trisk-fcard-ico">
+              <span class="material-symbols-outlined">functions</span>
+            </div>
+            <div>
+              <p class="trisk-fcard-k">Fórmula directa</p>
+              <p class="trisk-fcard-v">TR = # Días perdidos / # Lesiones</p>
+            </div>
+          </div>
+          <div class="trisk-fcard">
+            <div class="trisk-fcard-ico">
+              <span class="material-symbols-outlined">calculate</span>
+            </div>
+            <div>
+              <p class="trisk-fcard-k">Método relativo</p>
+              <p class="trisk-fcard-v">TR = IG / IF</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section class="trisk-kpi-row">
+        <article class="trisk-kpi">
+          <div class="trisk-kpi-head">
+            <span class="trisk-kpi-lbl">Total días perdidos</span>
+            <span class="trisk-pill trisk-pill--ter">
+              <span class="material-symbols-outlined trisk-pill-ico">trending_up</span>
+              +{{ tendenciaDiasPct }}%
+            </span>
+          </div>
+          <p class="trisk-kpi-val">{{ diasPerdidosYtd | number }}</p>
+          <p class="trisk-kpi-foot">Acumulado anual vs. {{ diasPerdidosPy | number }} (año ant.)</p>
+        </article>
+
+        <article class="trisk-kpi">
+          <div class="trisk-kpi-head">
+            <span class="trisk-kpi-lbl">Total lesiones</span>
+            <span class="trisk-pill trisk-pill--sec">
+              <span class="material-symbols-outlined trisk-pill-ico">trending_down</span>
+              {{ tendenciaLesionesPct }}%
+            </span>
+          </div>
+          <p class="trisk-kpi-val">{{ lesionesYtd | number }}</p>
+          <p class="trisk-kpi-foot">Incidentes registrados a la fecha</p>
+        </article>
+
+        <article class="trisk-kpi trisk-kpi--hero">
+          <div class="trisk-kpi-hero-deco" aria-hidden="true">
+            <span class="material-symbols-outlined trisk-shield">shield_with_heart</span>
+          </div>
+          <div class="trisk-kpi-hero-inner">
+            <span class="trisk-kpi-hero-lbl">Tasa de riesgo actual (TR)</span>
+            <p class="trisk-kpi-hero-val">{{ trActual | number : '1.2-2' }}</p>
+            <div class="trisk-kpi-hero-ok">
+              <span class="material-symbols-outlined trisk-ok-ico">check_circle</span>
+              Dentro del umbral de seguridad objetivo
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="trisk-split">
+        <div class="trisk-chart-panel">
+          <div class="trisk-panel-head">
+            <div>
+              <h3 class="trisk-h3">Tasa de riesgo mensual</h3>
+              <p class="trisk-panel-sub">Comparativa empresa vs. contratista</p>
+            </div>
+            <div class="trisk-leg">
+              <span><i class="trisk-dot trisk-dot--p"></i> Empresa</span>
+              <span><i class="trisk-dot trisk-dot--s"></i> Contratista</span>
+            </div>
+          </div>
+          <div class="trisk-bar-chart">
+            <div class="trisk-bar-col" *ngFor="let m of barrasMensuales">
+              <div class="trisk-bar-pair">
+                <div class="trisk-bar trisk-bar--emp" [style.height.%]="m.emp"></div>
+                <div class="trisk-bar trisk-bar--contr" [style.height.%]="m.contr"></div>
+              </div>
+              <span class="trisk-bar-lbl">{{ m.label }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="trisk-matrix-panel">
+          <div class="trisk-panel-head trisk-panel-head--matrix">
+            <h3 class="trisk-h3 mb-0">Matriz de severidad</h3>
+            <span class="material-symbols-outlined trisk-info-ico">info</span>
+          </div>
+          <div class="trisk-heat-grid">
+            <div
+              *ngFor="let c of heatCells"
+              class="trisk-heat-cell"
+              [ngClass]="'trisk-heat--' + c.v">
+              <span *ngIf="c.t" class="trisk-heat-txt">{{ c.t }}</span>
+            </div>
+          </div>
+          <div class="trisk-matrix-axis">
+            <span>Likelihood →</span>
+            <span>Severity ↑</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="trisk-table-card">
+        <div class="trisk-table-top">
+          <h3 class="trisk-h3 mb-0">Datos consolidados mensuales</h3>
+          <div class="trisk-export-btns">
+            <button type="button" class="trisk-btn-sec" (click)="exportarPdf()">Exportar PDF</button>
+            <button type="button" class="trisk-btn-sec" (click)="exportarCsv()">Exportar CSV</button>
+          </div>
+        </div>
+        <div class="trisk-table-scroll">
+          <table class="trisk-table">
+            <thead>
+              <tr>
+                <th>Mes</th>
+                <th class="trisk-th-emp trisk-th-split-start">IG (empresa)</th>
+                <th class="trisk-th-emp">IF (empresa)</th>
+                <th class="trisk-th-emp trisk-th-highlight">TR (empresa)</th>
+                <th class="trisk-th-contr trisk-th-split-start2">IG (contr.)</th>
+                <th class="trisk-th-contr">IF (contr.)</th>
+                <th class="trisk-th-contr trisk-th-highlight2">TR (contr.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of tablaMensual">
+                <td class="fw-bold">{{ r.mes }}</td>
+                <td class="trisk-td-emp trisk-td-split-start">{{ r.igEmp | number : '1.1-1' }}</td>
+                <td class="trisk-td-emp">{{ r.ifEmp | number : '1.1-1' }}</td>
+                <td class="trisk-td-tr trisk-td-tr--emp">{{ r.trEmp | number : '1.2-2' }}</td>
+                <td class="trisk-td-contr trisk-td-split-start2">{{ r.igContr | number : '1.1-1' }}</td>
+                <td class="trisk-td-contr">{{ r.ifContr | number : '1.1-1' }}</td>
+                <td class="trisk-td-tr trisk-td-tr--contr">{{ r.trContr | number : '1.2-2' }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td class="fw-black">Promedio YTD</td>
+                <td class="fw-black trisk-td-emp trisk-td-split-start">{{ promediosYtd.igEmp | number : '1.1-1' }}</td>
+                <td class="fw-black trisk-td-emp">{{ promediosYtd.ifEmp | number : '1.1-1' }}</td>
+                <td class="fw-black trisk-td-tr trisk-td-tr--emp trisk-tfoot-strong">{{ promediosYtd.trEmp | number : '1.2-2' }}</td>
+                <td class="fw-black trisk-td-contr trisk-td-split-start2">{{ promediosYtd.igContr | number : '1.1-1' }}</td>
+                <td class="fw-black trisk-td-contr">{{ promediosYtd.ifContr | number : '1.1-1' }}</td>
+                <td class="fw-black trisk-td-tr trisk-td-tr--contr trisk-tfoot-strong2">{{ promediosYtd.trContr | number : '1.2-2' }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+
+      <footer class="trisk-foot">
+        <span class="material-symbols-outlined trisk-foot-ico">verified_user</span>
+        <p class="trisk-foot-txt mb-0">
+          Reporte generado automáticamente por Industrial Integrity Core v4.2
+        </p>
+      </footer>
+    </div>
+  </main>
+
+  <a routerLink="../../accidentes-incidentes/nuevo" class="trisk-fab" aria-label="Nuevo reporte">
+    <span class="material-symbols-outlined trisk-fab-ico">add</span>
+  </a>
+</div>

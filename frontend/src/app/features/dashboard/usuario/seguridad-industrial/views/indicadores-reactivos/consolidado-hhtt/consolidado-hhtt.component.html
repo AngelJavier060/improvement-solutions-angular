@@ -1,0 +1,268 @@
+<div class="ch-page">
+  <!-- Top bar estilo Horizon (contenido; el shell ya tiene navegación lateral) -->
+  <header class="ch-topbar mb-4">
+    <div class="ch-topbar-left">
+      <h1 class="ch-topbar-title">Consolidado de Horas Hombre</h1>
+      <span class="ch-topbar-divider" aria-hidden="true"></span>
+      <span class="ch-topbar-kicker">Horizon Industrial</span>
+    </div>
+    <div class="ch-topbar-right d-none d-md-flex align-items-center gap-3">
+      <div class="ch-search">
+        <span class="material-symbols-outlined ch-search-ico" aria-hidden="true">search</span>
+        <input type="search" class="ch-search-input" placeholder="Buscar reporte..." />
+      </div>
+      <button type="button" class="ch-icon-btn" aria-label="Notificaciones">
+        <span class="material-symbols-outlined">notifications</span>
+        <span class="ch-icon-dot" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="ch-icon-btn" aria-label="Cuenta">
+        <span class="material-symbols-outlined">account_circle</span>
+      </button>
+    </div>
+  </header>
+
+  <p class="ch-lead mb-4">
+    Seguridad industrial · Indicadores reactivos · Horas hombre desde planilla mensual y registros de horas extra
+    ({{ standardHoursPerDay }} h/día laborable tipo T; días EX + horas en tabla de extras).
+  </p>
+
+  <p *ngIf="loadError" class="alert alert-danger mb-4" role="alert">{{ loadError }}</p>
+
+  <div *ngIf="loading" class="text-center py-5 text-secondary">
+    <span class="material-symbols-outlined align-middle me-2" aria-hidden="true">hourglass_empty</span>
+    Cargando consolidado…
+  </div>
+
+  <!-- Filtros -->
+  <section class="si-filters ch-filters mb-4" *ngIf="businessId">
+    <div class="si-filter-group">
+      <label for="ch-year">Año fiscal</label>
+      <select
+        id="ch-year"
+        class="ch-select-wide"
+        [(ngModel)]="filterYear"
+        (ngModelChange)="onYearChange()">
+        <option *ngFor="let y of fiscalYears" [value]="y">{{ y }}</option>
+      </select>
+    </div>
+    <div class="si-filter-group">
+      <label for="ch-dept">Departamento</label>
+      <select
+        id="ch-dept"
+        class="ch-select-dept"
+        [(ngModel)]="filterDepartment"
+        (ngModelChange)="currentPage = 0">
+        <option *ngFor="let d of departmentOptions" [value]="d.value">{{ d.label }}</option>
+      </select>
+    </div>
+    <div class="si-filter-group">
+      <label for="ch-proj">Proyecto</label>
+      <select id="ch-proj" class="ch-select-proj" [(ngModel)]="filterProject">
+        <option *ngFor="let p of projectOptions" [value]="p.value">{{ p.label }}</option>
+      </select>
+    </div>
+    <button type="button" class="si-btn-ghost ch-btn-clear" (click)="clearFilters()">
+      <span class="material-symbols-outlined ch-btn-ico">filter_list</span>
+      Limpiar filtros
+    </button>
+  </section>
+
+  <!-- KPIs -->
+  <section class="ch-kpi-grid mb-4" *ngIf="businessId && !loading">
+    <article class="ch-kpi-card">
+      <div class="ch-kpi-top">
+        <div class="ch-kpi-ico ch-kpi-ico--primary">
+          <span class="material-symbols-outlined">timer</span>
+        </div>
+        <span
+          class="ch-pill"
+          [ngClass]="{
+            'ch-pill--success': kpiTrendPct > 0,
+            'ch-pill--danger': kpiTrendPct < 0,
+            'ch-pill--muted': kpiTrendPct === 0
+          }">
+          <span class="material-symbols-outlined ch-pill-ico">{{
+            kpiTrendPct > 0 ? 'trending_up' : kpiTrendPct < 0 ? 'trending_down' : 'horizontal_rule'
+          }}</span>
+          {{ kpiTrendPct > 0 ? '+' : '' }}{{ kpiTrendPct }}%
+        </span>
+      </div>
+      <p class="ch-kpi-label">Total horas hombre (YTD)</p>
+      <h3 class="ch-kpi-val">{{ kpiTotalYtd | number }}</h3>
+      <p class="ch-kpi-hint">vs {{ kpiTotalPrev | number }} año anterior</p>
+    </article>
+
+    <article class="ch-kpi-card">
+      <div class="ch-kpi-top">
+        <div class="ch-kpi-ico ch-kpi-ico--secondary">
+          <span class="material-symbols-outlined">calendar_today</span>
+        </div>
+        <span class="ch-pill ch-pill--muted">
+          <span class="material-symbols-outlined ch-pill-ico">horizontal_rule</span>
+          Promedio
+        </span>
+      </div>
+      <p class="ch-kpi-label">Promedio mensual</p>
+      <h3 class="ch-kpi-val">{{ kpiPromedioMensual | number }}</h3>
+      <p class="ch-kpi-hint">Solo meses con registros de asistencia</p>
+    </article>
+
+    <article class="ch-kpi-card">
+      <div class="ch-kpi-top">
+        <div class="ch-kpi-ico ch-kpi-ico--tertiary">
+          <span class="material-symbols-outlined">event_busy</span>
+        </div>
+        <span
+          class="ch-pill"
+          [ngClass]="{
+            'ch-pill--success': kpiExtrasTrendPct < 0,
+            'ch-pill--danger': kpiExtrasTrendPct > 0,
+            'ch-pill--muted': kpiExtrasTrendPct === 0
+          }">
+          <span class="material-symbols-outlined ch-pill-ico">{{
+            kpiExtrasTrendPct > 0 ? 'trending_up' : kpiExtrasTrendPct < 0 ? 'trending_down' : 'horizontal_rule'
+          }}</span>
+          {{ kpiExtrasTrendPct > 0 ? '+' : '' }}{{ kpiExtrasTrendPct }}% vs año ant.
+        </span>
+      </div>
+      <p class="ch-kpi-label">Horas extras acumuladas</p>
+      <h3 class="ch-kpi-val">{{ kpiHorasExtras | number }}</h3>
+      <p class="ch-kpi-hint">{{ kpiExtrasDelTotalPct }}% del total general</p>
+    </article>
+
+    <article class="ch-kpi-card">
+      <div class="ch-kpi-top">
+        <div class="ch-kpi-ico ch-kpi-ico--pc">
+          <span class="material-symbols-outlined">group</span>
+        </div>
+        <span class="ch-pill ch-pill--muted" *ngIf="kpiColaboradores > 0">
+          <span class="material-symbols-outlined ch-pill-ico">badge</span>
+          Activos
+        </span>
+      </div>
+      <p class="ch-kpi-label">N° de colaboradores</p>
+      <h3 class="ch-kpi-val">{{ kpiColaboradores | number }}</h3>
+      <p class="ch-kpi-hint">Empleados activos en la empresa</p>
+    </article>
+  </section>
+
+  <!-- Gráficos -->
+  <section class="row g-4 mb-4" *ngIf="businessId && !loading">
+    <div class="col-lg-8">
+      <div class="si-panel ch-chart-panel h-100">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+          <div>
+            <h2 class="si-section-title mb-1">Tendencia mensual</h2>
+            <p class="si-section-sub mb-0">Evolución de HH ordinarias vs extras</p>
+          </div>
+          <div class="ch-legend-inline">
+            <span><i class="ch-leg ch-leg--ord"></i> Ordinarias</span>
+            <span><i class="ch-leg ch-leg--ext"></i> Extras</span>
+          </div>
+        </div>
+        <div class="ch-trend-chart">
+          <div class="ch-trend-grid" aria-hidden="true"></div>
+          <div class="ch-trend-col" *ngFor="let m of mesesTrend">
+            <div class="ch-trend-track">
+              <div class="ch-trend-stack" [style.height.%]="heightPct(m)">
+                <div class="ch-trend-seg ch-trend-seg--ord" [style.flex-grow]="m.ordin"></div>
+                <div class="ch-trend-seg ch-trend-seg--ext" [style.flex-grow]="m.extra"></div>
+              </div>
+            </div>
+            <span class="ch-trend-lbl">{{ m.label }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="si-panel ch-dist-panel h-100 d-flex flex-column">
+        <h2 class="si-section-title mb-1">Distribución por áreas</h2>
+        <p class="si-section-sub mb-4">Participación porcentual de HH</p>
+        <div class="flex-grow-1">
+          <div *ngFor="let a of areasHhtt" class="si-progress-row">
+            <div class="si-progress-head">
+              <span>{{ a.nombre }}</span>
+              <span class="si-progress-val">{{ a.pct }}%</span>
+            </div>
+            <div class="si-progress-track">
+              <div
+                class="si-progress-fill"
+                [ngClass]="{
+                  'ch-fill--primary': a.barClass === 'primary',
+                  'ch-fill--pc': a.barClass === 'primary-container',
+                  'ch-fill--secondary': a.barClass === 'secondary',
+                  'ch-fill--outline': a.barClass === 'outline'
+                }"
+                [style.width.%]="a.pct"></div>
+            </div>
+          </div>
+        </div>
+        <div class="ch-dist-foot mt-4 pt-4">
+          <button type="button" class="ch-link-btn">
+            Ver detalles por área
+            <span class="material-symbols-outlined ch-link-ico">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tabla detallada -->
+  <section class="si-panel ch-table-panel p-0 overflow-hidden" *ngIf="businessId && !loading">
+    <div class="ch-table-head px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <h2 class="si-section-title mb-0">Registro detallado</h2>
+      <div class="d-flex gap-1">
+        <button type="button" class="ch-icon-btn ch-icon-btn--light" title="Descargar" aria-label="Descargar">
+          <span class="material-symbols-outlined">download</span>
+        </button>
+        <button type="button" class="ch-icon-btn ch-icon-btn--light" title="Más opciones" aria-label="Más opciones">
+          <span class="material-symbols-outlined">more_vert</span>
+        </button>
+      </div>
+    </div>
+    <div class="si-table-wrap">
+      <table class="si-table ch-table">
+        <thead>
+          <tr>
+            <th class="ps-4">Mes / año</th>
+            <th>Departamento</th>
+            <th class="text-end">Horas ordinarias</th>
+            <th class="text-end text-si-error">Horas extras</th>
+            <th class="text-end">Total horas hombre</th>
+            <th class="text-end">N° colaboradores</th>
+            <th class="text-end pe-4">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of paginatedRegistros">
+            <td class="ps-4 fw-bold">{{ row.mesAnio }}</td>
+            <td>{{ row.departamento }}</td>
+            <td class="text-end">{{ row.horasOrdinarias | number }}</td>
+            <td class="text-end fw-semibold text-si-error">{{ row.horasExtras | number }}</td>
+            <td class="text-end fw-bold">{{ row.totalHh | number }}</td>
+            <td class="text-end">{{ row.numColaboradores | number }}</td>
+            <td class="text-end pe-4">
+              <button type="button" class="ch-link-action" (click)="verRegistro(row)">Ver</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ch-table-footer px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span class="ch-footer-txt">
+        Mostrando {{ firstIdx }}–{{ lastIdx }} de {{ totalRegistros }} registros
+      </span>
+      <div class="d-flex gap-2">
+        <button type="button" class="ch-page-btn" [disabled]="!canPrev" (click)="prevPage()">Anterior</button>
+        <button type="button" class="ch-page-btn" [disabled]="!canNext" (click)="nextPage()">Siguiente</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="mt-4 d-flex justify-content-end" *ngIf="businessId && !loading">
+    <button type="button" class="ch-report-btn" (click)="generarReporte()">
+      <span class="material-symbols-outlined">description</span>
+      Generar reporte
+    </button>
+  </div>
+</div>

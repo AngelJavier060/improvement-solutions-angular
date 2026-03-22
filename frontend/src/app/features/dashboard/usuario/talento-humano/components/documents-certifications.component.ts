@@ -103,7 +103,7 @@ export class DocumentsCertificationsComponent implements OnInit {
 
   goToEmployeeDocuments(employee: EmployeeResponse): void {
     if (this.businessRuc) {
-      this.router.navigate(['/usuario', this.businessRuc, 'dashboard', 'talento-humano', 'employee', employee.cedula], {
+      this.router.navigate(['/usuario', this.businessRuc, 'talento-humano', 'employee', employee.cedula], {
         queryParams: { tab: 'documents' }
       });
     }
@@ -111,7 +111,7 @@ export class DocumentsCertificationsComponent implements OnInit {
 
   goToEmployeeCourses(employee: EmployeeResponse): void {
     if (this.businessRuc) {
-      this.router.navigate(['/usuario', this.businessRuc, 'dashboard', 'talento-humano', 'employee', employee.cedula], {
+      this.router.navigate(['/usuario', this.businessRuc, 'talento-humano', 'employee', employee.cedula], {
         queryParams: { tab: 'courses' }
       });
     }
@@ -133,7 +133,7 @@ export class DocumentsCertificationsComponent implements OnInit {
 
   manageCourses(employee: EmployeeResponse): void {
     if (this.businessRuc) {
-      this.router.navigate(['/usuario', this.businessRuc, 'dashboard', 'talento-humano', 'employee', employee.cedula], {
+      this.router.navigate(['/usuario', this.businessRuc, 'talento-humano', 'employee', employee.cedula], {
         queryParams: { tab: 'courses' }
       });
     }
@@ -141,7 +141,7 @@ export class DocumentsCertificationsComponent implements OnInit {
 
   manageDocuments(employee: EmployeeResponse): void {
     if (this.businessRuc) {
-      this.router.navigate(['/usuario', this.businessRuc, 'dashboard', 'talento-humano', 'employee', employee.cedula], {
+      this.router.navigate(['/usuario', this.businessRuc, 'talento-humano', 'employee', employee.cedula], {
         queryParams: { tab: 'documents' }
       });
     }

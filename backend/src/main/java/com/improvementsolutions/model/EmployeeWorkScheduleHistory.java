@@ -42,6 +42,14 @@ public class EmployeeWorkScheduleHistory {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    /**
+     * Horas ordinarias de trabajo por día en este periodo de jornada.
+     * Se usa como base para cálculos de horas hombre (HHTT). Opcional; si es null
+     * se aplicará una convención (por ejemplo 8h/día) en los módulos de reporte.
+     */
+    @Column(name = "daily_hours")
+    private Double dailyHours;
+
     @Column(name = "notes")
     private String notes;
 

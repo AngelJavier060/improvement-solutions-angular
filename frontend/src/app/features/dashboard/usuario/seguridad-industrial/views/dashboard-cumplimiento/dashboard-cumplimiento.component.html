@@ -30,21 +30,121 @@
   </div>
 
   <!-- Contenido principal -->
-  <div *ngIf="!loading && !error && business">
-    <div class="row mb-4" *ngIf="showHeader">
-      <div class="col-md-6 mb-3 mb-md-0">
-        <div class="metric-card primary">
-          <div class="metric-title"><i class="fas fa-users me-2"></i>Total de personas</div>
-          <div class="metric-value">{{ employeeStats.total }}</div>
+  <div *ngIf="!loading && !error && business" class="dc-root">
+    <!-- Vista HSSE completa (ruta Inicio / dashboard-cumplimiento con cabecera) -->
+    <ng-container *ngIf="showHeader">
+      <section class="dc-hsse-hero mb-4">
+        <div class="dc-hsse-hero__main">
+          <h2 class="dc-hsse-hero__h">Dashboard Ejecutivo de Seguridad (HSSE)</h2>
+          <p class="dc-hsse-hero__p">Resumen corporativo de integridad operativa y prevención de riesgos.</p>
+        </div>
+        <div class="dc-hsse-pill">
+          <span class="material-symbols-outlined dc-hsse-pill__ico" aria-hidden="true">calendar_today</span>
+          Incidentes: últimos 30 días · Tendencia: 12 meses
+        </div>
+      </section>
+
+      <div class="dc-kpi-grid mb-4">
+        <article class="dc-kpi-card">
+          <div class="dc-kpi-card__deco" aria-hidden="true">
+            <span class="material-symbols-outlined dc-kpi-card__deco-ico">verified_user</span>
+          </div>
+          <span class="dc-kpi-card__k">Accidentes / incidentes (30 días)</span>
+          <div class="dc-kpi-card__row">
+            <span class="dc-kpi-card__val">{{ incidents30dCount }}</span>
+            <span class="dc-kpi-badge" *ngIf="incidents30dCount === 0">Sin eventos</span>
+            <span class="dc-kpi-badge dc-kpi-badge--warn" *ngIf="incidents30dCount > 0">Revisar</span>
+          </div>
+          <div class="dc-kpi-card__foot">
+            <span class="material-symbols-outlined dc-kpi-card__foot-ico">timer</span>
+            Días sin incidente registrado: {{ daysWithoutIncident }}
+          </div>
+        </article>
+
+        <article class="dc-kpi-card">
+          <span class="dc-kpi-card__k">Índice de frecuencia (IF)</span>
+          <span class="dc-kpi-card__val dc-kpi-card__val--sm">{{ ifOshaApprox | number:'1.2-2' }}</span>
+          <div class="dc-kpi-card__meta" [class.dc-kpi-meta--ok]="ifOshaApprox &lt; 2.5" [class.dc-kpi-meta--warn]="ifOshaApprox &gt;= 2.5">
+            <span class="dc-kpi-dot"></span>
+            <span *ngIf="ifOshaApprox &lt; 2.5">Dentro de referencia (aprox. OSHA)</span>
+            <span *ngIf="ifOshaApprox &gt;= 2.5">Por encima de referencia</span>
+          </div>
+          <a class="dc-kpi-link" [routerLink]="['/usuario', ruc, 'seguridad-industrial', 'indicadores-reactivos', 'indice-frecuencia']">Cálculo normado en Indicadores →</a>
+        </article>
+
+        <article class="dc-kpi-card">
+          <span class="dc-kpi-card__k">Índice de gravedad (IG)</span>
+          <span class="dc-kpi-card__val">{{ igSeverityIndex }}</span>
+          <div class="dc-kpi-card__meta dc-kpi-meta--muted">
+            <span class="material-symbols-outlined dc-kpi-info-ico">info</span>
+            Proxy (críticos + volumen). Críticos 12 m: {{ highRisk12mCount }}
+          </div>
+          <a class="dc-kpi-link" [routerLink]="['/usuario', ruc, 'seguridad-industrial', 'indicadores-reactivos', 'indice-gravedad']">IG detallado →</a>
+        </article>
+
+        <article class="dc-kpi-card">
+          <span class="dc-kpi-card__k">Tasa de riesgo legal (TR)</span>
+          <span class="dc-kpi-card__val" *ngIf="trComplianceRatio !== null">{{ trComplianceRatio | number:'1.2-2' }}</span>
+          <span class="dc-kpi-card__val dc-kpi-card__val--sm" *ngIf="trComplianceRatio === null">—</span>
+          <div class="dc-kpi-card__meta" [class.dc-kpi-meta--danger]="legalPendingPct &gt; 25">
+            <span class="material-symbols-outlined">trending_up</span>
+            Brecha pendiente: {{ legalPendingPct | number:'1.1-1' }}%
+          </div>
+          <a class="dc-kpi-link" [routerLink]="['/usuario', ruc, 'seguridad-industrial', 'indicadores-reactivos', 'indice-riesgo']">TR en indicadores →</a>
+        </article>
+
+        <article class="dc-kpi-card">
+          <span class="dc-kpi-card__k">TRIF corporativo (aprox.)</span>
+          <span class="dc-kpi-card__val dc-kpi-card__val--sm">{{ trifApprox | number:'1.2-2' }}</span>
+          <div class="dc-kpi-card__trif-bar">
+            <span class="dc-kpi-card__trif-meta">Meta referencia: &lt; 1.5 (ajustar según política)</span>
+            <div class="dc-kpi-progress">
+              <div class="dc-kpi-progress__fill" [style.width.%]="trifApprox &lt;= 1.5 ? 80 : (trifApprox &lt;= 3 ? 95 : 100)"></div>
+            </div>
+          </div>
+          <a class="dc-kpi-link" [routerLink]="['/usuario', ruc, 'seguridad-industrial', 'indicadores-reactivos', 'indice-trif']">TRIF detallado →</a>
+        </article>
+      </div>
+
+      <div class="dc-mid-grid mb-4">
+        <div class="dc-mid-chart">
+          <div class="dc-mid-chart__head">
+            <h3 class="dc-mid-chart__title">Correlación incidentes vs. alta criticidad (12 meses)</h3>
+            <div class="dc-mid-chart__legend">
+              <span><i class="dc-leg dc-leg--p"></i>Incidentes</span>
+              <span><i class="dc-leg dc-leg--t"></i>Alta criticidad</span>
+            </div>
+          </div>
+          <p class="dc-mid-chart__sub">Sustituye la vista decorativa del mock: datos reales por mes desde registros de seguridad.</p>
+          <div echarts [options]="hsseTrendOptions" class="dc-mid-chart__echarts"></div>
+        </div>
+        <div class="dc-mid-ring-card">
+          <h3 class="dc-mid-ring-card__title">Estado del umbral de cumplimiento</h3>
+          <div class="dc-ring-wrap">
+            <svg class="dc-ring-svg" viewBox="0 0 160 160" aria-hidden="true">
+              <circle class="dc-ring-bg" cx="80" cy="80" r="70" fill="none" stroke-width="10" />
+              <circle
+                class="dc-ring-fg"
+                cx="80"
+                cy="80"
+                r="70"
+                fill="none"
+                stroke-width="10"
+                stroke-linecap="round"
+                transform="rotate(-90 80 80)"
+                [attr.stroke-dasharray]="complianceRingLen"
+                [attr.stroke-dashoffset]="complianceRingOffset" />
+            </svg>
+            <div class="dc-ring-center">
+              <span class="dc-ring-val">{{ summaryPercentage | number:'1.0-1' }}%</span>
+              <span class="dc-ring-sub">{{ complianceRingLabel }}</span>
+            </div>
+          </div>
+          <p class="dc-mid-ring-card__txt">{{ summaryCompleted }} cumplidos de {{ summaryTotal }} requisitos en matriz legal.</p>
         </div>
       </div>
-      <div class="col-md-6">
-        <div class="metric-card success">
-          <div class="metric-title"><i class="fas fa-check-circle me-2"></i>Cumplimiento matriz legal</div>
-          <div class="metric-value">{{ summaryPercentage | number:'1.0-1' }}%</div>
-        </div>
-      </div>
-    </div>
+    </ng-container>
+
     <!-- Información de la empresa -->
     <div class="card shadow-sm border-0 mb-4" *ngIf="showCompanyInfo">
       <div class="card-header bg-primary text-white">
@@ -103,31 +203,75 @@
       </div>
     </div>
 
-    <!-- Gráficos -->
-    <div class="row mb-4" *ngIf="showGauge || showAgeBar">
-      <!-- Gráfico Gauge -->
-      <div class="col-md-6" *ngIf="showGauge">
-        <div class="chart-card h-100">
-          <div class="chart-header info d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>Cumplimiento de matriz legal</h5>
-            <div class="kpi-pill">{{ summaryCompleted }}/{{ summaryTotal }} • {{ summaryPercentage | number:'1.0-1' }}%</div>
+    <!-- Matriz legal + Edades (recuadros inferiores del mock; datos reales) -->
+    <div class="row g-4 mb-4 dc-bottom-grid" *ngIf="showGauge || showAgeBar">
+      <div class="col-12 col-lg-6" *ngIf="showGauge">
+        <section class="dc-matriz-card h-100">
+          <h3 class="dc-matriz-card__title">Matriz legal de cumplimiento</h3>
+          <div class="dc-matriz-card__body">
+            <div class="dc-matriz-card__gauge">
+              <div echarts [options]="gaugeOptions" class="dc-gauge-echarts"></div>
+            </div>
+            <div class="dc-matriz-card__side">
+              <span class="dc-matriz-card__k">Estatus de requerimientos</span>
+              <div class="dc-matriz-stats">
+                <div class="dc-matriz-stat">
+                  <i class="dc-matriz-dot dc-matriz-dot--ok"></i>
+                  <span><strong>{{ summaryCompleted }}</strong> Cumplidos</span>
+                </div>
+                <div class="dc-matriz-stat">
+                  <i class="dc-matriz-dot dc-matriz-dot--pend"></i>
+                  <span><strong>{{ summaryPending }}</strong> Pendientes</span>
+                </div>
+              </div>
+              <div class="dc-matriz-card__foot">
+                {{ nextDueComplianceHint }} Nivel global: <strong>{{ summaryPercentage | number:'1.0-1' }}%</strong>.
+              </div>
+            </div>
           </div>
-          <div class="chart-body">
-            <div echarts [options]="gaugeOptions" class="chart-container"></div>
-          </div>
-        </div>
+        </section>
       </div>
-
-      <!-- Gráfico de Barras -->
-      <div class="col-md-6" *ngIf="showAgeBar">
-        <div class="chart-card h-100">
-          <div class="chart-header warning d-flex align-items-center">
-            <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Rango de edades</h5>
+      <div class="col-12 col-lg-6" *ngIf="showAgeBar">
+        <section class="dc-matriz-card h-100">
+          <h3 class="dc-matriz-card__title">Rango de edades de la fuerza laboral</h3>
+          <div class="dc-age-visual">
+            <div class="dc-age-col">
+              <div class="dc-age-track">
+                <div class="dc-age-fill" [style.height.%]="agePercent(0)"></div>
+              </div>
+              <span class="dc-age-pct">{{ agePercent(0) | number:'1.0-0' }}%</span>
+              <span class="dc-age-lbl">&lt;18</span>
+            </div>
+            <div class="dc-age-col">
+              <div class="dc-age-track">
+                <div class="dc-age-fill" [style.height.%]="agePercent(1)"></div>
+              </div>
+              <span class="dc-age-pct">{{ agePercent(1) | number:'1.0-0' }}%</span>
+              <span class="dc-age-lbl">19-30</span>
+            </div>
+            <div class="dc-age-col">
+              <div class="dc-age-track">
+                <div class="dc-age-fill" [style.height.%]="agePercent(2)"></div>
+              </div>
+              <span class="dc-age-pct">{{ agePercent(2) | number:'1.0-0' }}%</span>
+              <span class="dc-age-lbl">31-50</span>
+            </div>
+            <div class="dc-age-col">
+              <div class="dc-age-track">
+                <div class="dc-age-fill" [style.height.%]="agePercent(3)"></div>
+              </div>
+              <span class="dc-age-pct">{{ agePercent(3) | number:'1.0-0' }}%</span>
+              <span class="dc-age-lbl">&gt;50</span>
+            </div>
           </div>
-          <div class="chart-body">
-            <div echarts [options]="barOptions" class="chart-container"></div>
+          <div class="dc-age-echarts-wrap">
+            <div echarts [options]="barOptions" class="dc-age-echarts"></div>
           </div>
-        </div>
+          <div class="dc-age-summary">
+            <span>Promedio de edad (estimado): <strong>{{ estimatedAverageAge | number:'1.1-1' }} años</strong></span>
+            <span>Población total: <strong>{{ (ageRangesTotal || employeeStats.total) | number }} personas</strong></span>
+          </div>
+        </section>
       </div>
     </div>
 

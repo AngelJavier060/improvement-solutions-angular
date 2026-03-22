@@ -1,0 +1,410 @@
+/* Tema visual alineado con mockups Orientoil (sin Tailwind CDN) */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:host {
+  --si-primary: #002b7d;
+  --si-primary-container: #1a429f;
+  --si-on-primary-container: #9fb6ff;
+  --si-surface: #faf8ff;
+  --si-surface-low: #f4f3fb;
+  --si-surface-lowest: #ffffff;
+  --si-surface-high: #e8e7f0;
+  --si-on-surface: #1a1b21;
+  --si-on-surface-variant: #444652;
+  --si-outline-variant: #c4c6d4;
+  --si-secondary: #4c616c;
+  --si-secondary-container: #cfe6f2;
+  --si-on-secondary-container: #526772;
+  --si-tertiary: #6c0008;
+  --si-error: #ba1a1a;
+  --si-error-container: #ffdad6;
+  --si-radius: 12px;
+  --si-radius-sm: 8px;
+  display: block;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--si-on-surface);
+  background: var(--si-surface);
+}
+
+.si-page {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.si-page-title {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 800;
+  font-size: 1.35rem;
+  background: linear-gradient(135deg, var(--si-primary), var(--si-primary-container));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.02em;
+}
+
+.si-page-sub {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--si-on-surface-variant);
+  font-weight: 600;
+}
+
+.si-filters {
+  background: var(--si-surface-low);
+  border-radius: var(--si-radius);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1.25rem;
+}
+
+.si-filter-group label {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--si-on-surface-variant);
+  margin-bottom: 0.35rem;
+  margin-left: 0.15rem;
+}
+
+.si-filter-group select {
+  border: none;
+  border-radius: var(--si-radius-sm);
+  padding: 0.55rem 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: var(--si-surface-lowest);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  min-width: 10rem;
+}
+
+.si-btn-ghost {
+  border: none;
+  background: transparent;
+  color: var(--si-primary);
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--si-radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  cursor: pointer;
+}
+.si-btn-ghost:hover {
+  background: rgba(0, 43, 125, 0.06);
+}
+
+.si-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.si-kpi-card {
+  background: var(--si-surface-lowest);
+  border-radius: var(--si-radius);
+  padding: 1.35rem;
+  border: 1px solid rgba(196, 198, 212, 0.35);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.si-kpi-card .si-kpi-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.si-kpi-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--si-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.si-kpi-label {
+  font-size: 0.75rem;
+  color: var(--si-on-surface-variant);
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.si-kpi-value {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 800;
+  font-size: 1.65rem;
+  line-height: 1.1;
+}
+
+.si-kpi-foot {
+  font-size: 0.62rem;
+  color: var(--si-on-surface-variant);
+  margin-top: 0.5rem;
+}
+
+.si-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.si-pill-success {
+  background: #ecfdf5;
+  color: #047857;
+}
+.si-pill-muted {
+  background: var(--si-surface-high);
+  color: var(--si-on-surface-variant);
+}
+.si-pill-danger {
+  background: rgba(255, 218, 214, 0.65);
+  color: var(--si-error);
+}
+
+.si-section-title {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 0.35rem;
+}
+
+.si-section-sub {
+  font-size: 0.75rem;
+  color: var(--si-on-surface-variant);
+}
+
+.si-panel {
+  background: var(--si-surface-lowest);
+  border-radius: var(--si-radius);
+  padding: 1.75rem;
+  border: 1px solid rgba(196, 198, 212, 0.25);
+}
+
+.si-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  height: 14rem;
+  padding: 0 0.5rem 1.5rem;
+  position: relative;
+}
+
+.si-bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.si-bar-track {
+  width: 100%;
+  background: rgba(0, 43, 125, 0.12);
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+}
+
+.si-bar-fill {
+  width: 100%;
+  background: var(--si-primary);
+  border-radius: 4px 4px 0 0;
+  transition: filter 0.2s;
+}
+.si-bar-fill:hover {
+  filter: brightness(1.08);
+}
+
+.si-bar-fill-alt {
+  background: var(--si-tertiary);
+}
+
+.si-bar-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--si-on-surface-variant);
+  margin-top: 0.45rem;
+  text-transform: uppercase;
+}
+
+.si-progress-row {
+  margin-bottom: 1.1rem;
+}
+
+.si-progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.si-progress-head span:first-child {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.si-progress-val {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.si-progress-track {
+  height: 0.55rem;
+  background: #eeedf6;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.si-progress-fill {
+  height: 100%;
+  background: var(--si-primary);
+  border-radius: 999px;
+}
+
+.si-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--si-radius);
+}
+
+.si-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.si-table thead tr {
+  background: var(--si-surface-low);
+}
+
+.si-table th {
+  text-align: left;
+  padding: 0.85rem 1rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--si-on-surface-variant);
+}
+
+.si-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(196, 198, 212, 0.35);
+}
+
+.si-table tbody tr:hover {
+  background: rgba(244, 243, 251, 0.5);
+}
+
+.si-table tfoot tr {
+  background: #eeedf6;
+  font-weight: 800;
+}
+
+.si-formula-card {
+  background: var(--si-surface-low);
+  border-radius: var(--si-radius);
+  padding: 1.75rem;
+  border: 1px solid rgba(0, 43, 125, 0.08);
+}
+
+.si-formula-card-dark {
+  background: var(--si-primary-container);
+  color: #fff;
+  border: none;
+}
+
+.si-formula-line {
+  height: 2px;
+  background: currentColor;
+  width: 100%;
+  opacity: 0.85;
+}
+
+.si-info-banner {
+  background: var(--si-surface-low);
+  border: 1px solid rgba(0, 43, 125, 0.12);
+  border-radius: 1rem;
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.si-heatmap {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.si-heat-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.si-month-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+  height: 14rem;
+  padding: 0 0.25rem 1.25rem;
+}
+
+.si-month-pair {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.si-month-bars {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+}
+
+.si-mini-bar {
+  width: 8px;
+  border-radius: 2px 2px 0 0;
+}
+
+.text-si-primary {
+  color: var(--si-primary);
+}
+.text-si-error {
+  color: var(--si-error);
+}
+.bg-si-primary {
+  background: var(--si-primary);
+}
+.bg-si-secondary {
+  background: var(--si-secondary);
+}

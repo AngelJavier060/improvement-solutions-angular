@@ -1,8 +1,9 @@
 import { Component, OnInit, OnDestroy, Input } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgxEchartsModule, NGX_ECHARTS_CONFIG } from 'ngx-echarts';
 import { BusinessService } from '../../../../../../services/business.service';
 import { BusinessObligationMatrixService } from '../../../../../../services/business-obligation-matrix.service';
+import { BusinessIncidentService, BusinessIncidentDto } from '../../../../../../services/business-incident.service';
 import { interval, Subscription } from 'rxjs';
 import { EmployeeService } from '../../../talento-humano/services/employee.service';
 import { CommonModule } from '@angular/common';
@@ -18,7 +19,7 @@ interface EmployeeStats {
 @Component({
   selector: 'app-dashboard-cumplimiento',
   standalone: true,
-  imports: [CommonModule, NgxEchartsModule],
+  imports: [CommonModule, NgxEchartsModule, RouterLink],
   templateUrl: './dashboard-cumplimiento.component.html',
   styleUrls: ['./dashboard-cumplimiento.component.scss'],
   providers: [
@@ -57,6 +58,7 @@ export class DashboardCumplimientoComponent implements OnInit, OnDestroy {
   // Configuraciones de gráficos
   gaugeOptions: any = {};
   barOptions: any = {};
+  hsseTrendOptions: any = {};
 
   // Resumen para velocímetro desde backend
   summaryTotal = 0;
@@ -70,6 +72,13 @@ export class DashboardCumplimientoComponent implements OnInit, OnDestroy {
     from31To50: 0,
     over50: 0
   };
+  /** Total devuelto por API o suma de tramos */
+  ageRangesTotal = 0;
+
+  /** Incidentes de seguridad (misma fuente que accidentes-incidentes) */
+  safetyIncidents: BusinessIncidentDto[] = [];
+
+  private readonly hoursPerEmployeeYear = 2000;
 
   // Estado de carga de PDFs por fila
   pdfLoadingMap: Record<number, boolean> = {};
@@ -79,7 +88,8 @@ export class DashboardCumplimientoComponent implements OnInit, OnDestroy {
     private router: Router,
     private businessService: BusinessService,
     private bomService: BusinessObligationMatrixService,
-    private employeeService: EmployeeService
+    private employeeService: EmployeeService,
+    private incidentService: BusinessIncidentService
   ) {}
 
   ngOnInit(): void {
@@ -151,6 +161,7 @@ export class DashboardCumplimientoComponent implements OnInit, OnDestroy {
         this.loadEmployeeStats();
         this.loadEmployeeAgeRanges();
         this.loadComplianceSummary();
+        this.loadSafetyIncidents();
         this.startAutoRefresh();
       },
       error: (err) => {
@@ -175,14 +186,275 @@ export class DashboardCumplimientoComponent implements OnInit, OnDestroy {
           from31To50: Number(ranges?.from31To50) || 0,
           over50: Number(ranges?.over50) || 0
         };
+        const sum =
+          this.ageRanges.under18 +
+          this.ageRanges.from19To30 +
+          this.ageRanges.from31To50 +
+          this.ageRanges.over50;
+        this.ageRangesTotal = Number(ranges?.total) > 0 ? Number(ranges?.total) : sum;
         this.updateBarChart();
       },
       error: (err: any) => {
         console.error('[DashboardCumplimiento] Error al cargar rangos de edad:', err);
         this.ageRanges = { under18: 0, from19To30: 0, from31To50: 0, over50: 0 };
+        this.ageRangesTotal = 0;
         this.updateBarChart();
       }
     });
+  }
+
+  loadSafetyIncidents(): void {
+    if (!this.ruc) return;
+    this.incidentService.getSafetyByRuc(this.ruc).subscribe({
+      next: (list) => {
+        this.safetyIncidents = Array.isArray(list) ? list : [];
+        this.updateHsseTrendChart();
+      },
+      error: (err) => {
+        console.error('[DashboardCumplimiento] Error al cargar incidentes de seguridad:', err);
+        this.safetyIncidents = [];
+        this.updateHsseTrendChart();
+      }
+    });
+  }
+
+  private incidentTimeMs(inc: BusinessIncidentDto): number {
+    const raw = inc.incidentDate || inc.createdAt;
+    if (!raw) return NaN;
+    const t = new Date(raw).getTime();
+    return Number.isFinite(t) ? t : NaN;
+  }
+
+  private isHighRiskIncident(inc: BusinessIncidentDto): boolean {
+    return !!(inc.isHighPotential || inc.isFatal || inc.involvesAmputation);
+  }
+
+  /** Requisitos pendientes (matriz legal) */
+  get summaryPending(): number {
+    return Math.max(0, (this.summaryTotal || 0) - (this.summaryCompleted || 0));
+  }
+
+  get incidents30dCount(): number {
+    const now = Date.now();
+    const from = now - 30 * 86400000;
+    return this.safetyIncidents.filter((i) => {
+      const t = this.incidentTimeMs(i);
+      return Number.isFinite(t) && t >= from && t <= now;
+    }).length;
+  }
+
+  get incidents12mCount(): number {
+    const now = Date.now();
+    const from = now - 365 * 86400000;
+    return this.safetyIncidents.filter((i) => {
+      const t = this.incidentTimeMs(i);
+      return Number.isFinite(t) && t >= from && t <= now;
+    }).length;
+  }
+
+  get highRisk12mCount(): number {
+    const now = Date.now();
+    const from = now - 365 * 86400000;
+    return this.safetyIncidents.filter((i) => {
+      const t = this.incidentTimeMs(i);
+      return Number.isFinite(t) && t >= from && t <= now && this.isHighRiskIncident(i);
+    }).length;
+  }
+
+  /** Días desde el último incidente con fecha conocida (mínimo 0). */
+  get daysWithoutIncident(): number {
+    let latest = 0;
+    for (const i of this.safetyIncidents) {
+      const t = this.incidentTimeMs(i);
+      if (Number.isFinite(t) && t > latest) latest = t;
+    }
+    if (!latest) return 0;
+    const diff = Date.now() - latest;
+    return Math.max(0, Math.floor(diff / 86400000));
+  }
+
+  /**
+   * IF aproximado estilo OSHA: (casos con pérdida de tiempo no disponible → usamos todos los incidentes 12m)
+   * sobre horas-hombre anuales estimadas (empleados × 2000 h).
+   */
+  get ifOshaApprox(): number {
+    const emp = Math.max(0, this.employeeStats.total || 0);
+    const hours = Math.max(1, emp * this.hoursPerEmployeeYear);
+    return (this.incidents12mCount * 200000) / hours;
+  }
+
+  /** TRIF aproximado (1.000.000 / horas-hombre anual estimada). */
+  get trifApprox(): number {
+    const emp = Math.max(0, this.employeeStats.total || 0);
+    const hours = Math.max(1, emp * this.hoursPerEmployeeYear);
+    return (this.incidents12mCount * 1000000) / hours;
+  }
+
+  /**
+   * Índice de gravedad operativo (proxy): pondera incidentes críticos y volumen anual.
+   * El cálculo normado de IG está en Indicadores reactivos.
+   */
+  get igSeverityIndex(): number {
+    return Math.min(
+      999,
+      Math.round(this.highRisk12mCount * 22 + this.incidents12mCount * 1.5)
+    );
+  }
+
+  /** Ratio cumplidos / pendientes (tasa de riesgo normativo); null si no hay pendientes. */
+  get trComplianceRatio(): number | null {
+    const p = this.summaryPending;
+    if (p <= 0) return null;
+    return this.summaryCompleted / p;
+  }
+
+  /** % de requisitos pendientes sobre el total (riesgo normativo). */
+  get legalPendingPct(): number {
+    const t = this.summaryTotal || 0;
+    if (t <= 0) return 0;
+    return (this.summaryPending / t) * 100;
+  }
+
+  /** Puntos de edad por tramo (para barra visual). */
+  agePercent(idx: 0 | 1 | 2 | 3): number {
+    const t = this.ageRangesTotal || 0;
+    if (t <= 0) return 0;
+    const vals = [
+      this.ageRanges.under18,
+      this.ageRanges.from19To30,
+      this.ageRanges.from31To50,
+      this.ageRanges.over50
+    ];
+    return (vals[idx] / t) * 100;
+  }
+
+  /** Promedio de edad estimado por punto medio de cada tramo. */
+  get estimatedAverageAge(): number {
+    const t = this.ageRangesTotal || 0;
+    if (t <= 0) return 0;
+    const w =
+      this.ageRanges.under18 * 16.5 +
+      this.ageRanges.from19To30 * 24.5 +
+      this.ageRanges.from31To50 * 40.5 +
+      this.ageRanges.over50 * 58;
+    return Math.round((w / t) * 10) / 10;
+  }
+
+  /** Circunferencia del anillo (r=70) para SVG. */
+  get complianceRingLen(): number {
+    return 2 * Math.PI * 70;
+  }
+
+  get complianceRingOffset(): number {
+    const p = Math.min(100, Math.max(0, Number(this.summaryPercentage) || 0));
+    return this.complianceRingLen * (1 - p / 100);
+  }
+
+  get complianceRingLabel(): string {
+    const p = Math.min(100, Math.max(0, Number(this.summaryPercentage) || 0));
+    if (p >= 70) return 'Zona segura';
+    if (p >= 40) return 'Atención';
+    return 'Crítico';
+  }
+
+  get nextDueComplianceHint(): string {
+    const items = this.complianceData || [];
+    let best: number | null = null;
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    for (const it of items) {
+      const raw = it?.dueDate;
+      if (!raw) continue;
+      const d = new Date(raw).getTime();
+      if (!Number.isFinite(d)) continue;
+      if (d < start.getTime()) continue;
+      if (best === null || d < best) best = d;
+    }
+    if (best === null) {
+      return 'No hay fechas de vencimiento futuras registradas en la matriz.';
+    }
+    return `Próximo vencimiento relevante: ${new Date(best).toLocaleDateString('es-EC', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })}.`;
+  }
+
+  updateHsseTrendChart(): void {
+    const labels: string[] = [];
+    const totals: number[] = [];
+    const highs: number[] = [];
+    const now = new Date();
+    for (let k = 11; k >= 0; k--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - k, 1);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      labels.push(
+        d
+          .toLocaleDateString('es-EC', { month: 'short' })
+          .replace('.', '')
+          .toUpperCase()
+          .slice(0, 3)
+      );
+      let c = 0;
+      let h = 0;
+      for (const inc of this.safetyIncidents) {
+        const t = this.incidentTimeMs(inc);
+        if (!Number.isFinite(t)) continue;
+        const dt = new Date(t);
+        if (dt.getFullYear() === y && dt.getMonth() === m) {
+          c++;
+          if (this.isHighRiskIncident(inc)) h++;
+        }
+      }
+      totals.push(c);
+      highs.push(h);
+    }
+
+    this.hsseTrendOptions = {
+      color: ['#002b7d', '#6c0008'],
+      textStyle: { fontFamily: 'Inter, system-ui, sans-serif' },
+      tooltip: { trigger: 'axis' },
+      legend: {
+        data: ['Incidentes', 'Alta criticidad'],
+        bottom: 0,
+        textStyle: { fontSize: 11, color: '#444652' }
+      },
+      grid: { left: '3%', right: '3%', bottom: '18%', top: '10%', containLabel: true },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: labels,
+        axisLabel: { fontSize: 10, color: '#444652' }
+      },
+      yAxis: {
+        type: 'value',
+        minInterval: 1,
+        splitLine: { lineStyle: { color: 'rgba(116,118,131,0.15)' } },
+        axisLabel: { fontSize: 10, color: '#444652' }
+      },
+      series: [
+        {
+          name: 'Incidentes',
+          type: 'line',
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 6,
+          data: totals,
+          lineStyle: { width: 2 },
+          areaStyle: { opacity: 0.06, color: '#002b7d' }
+        },
+        {
+          name: 'Alta criticidad',
+          type: 'line',
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 6,
+          data: highs,
+          lineStyle: { width: 2 }
+        }
+      ]
+    };
   }
 
   private startAutoRefresh(): void {
@@ -196,6 +468,7 @@ export class DashboardCumplimientoComponent implements OnInit, OnDestroy {
         this.loadComplianceData();
         this.loadEmployeeAgeRanges();
         this.loadComplianceSummary();
+        this.loadSafetyIncidents();
       });
     }
   }
@@ -282,20 +555,23 @@ export class DashboardCumplimientoComponent implements OnInit, OnDestroy {
         min: 0,
         max: 100,
         splitNumber: 10,
+        radius: '100%',
+        center: ['50%', '70%'],
         itemStyle: {
           color: '#52c41a'
         },
         progress: {
           show: true,
-          width: 18
+          width: 28
         },
         pointer: {
           show: true,
-          length: '60%'
+          length: '72%',
+          width: 8
         },
         axisLine: {
           lineStyle: {
-            width: 18,
+            width: 28,
             color: [
               [0.3, '#ff4d4f'],
               [0.7, '#faad14'],
@@ -315,9 +591,11 @@ export class DashboardCumplimientoComponent implements OnInit, OnDestroy {
         detail: {
           valueAnimation: true,
           formatter: (val: number) => `${(Math.round((val ?? 0) * 10) / 10).toFixed(1)}%`,
-          color: '#000',
-          fontSize: 24,
-          offsetCenter: [0, '40%']
+          color: '#1a1b21',
+          fontSize: 44,
+          fontWeight: 800,
+          fontFamily: 'Manrope, Inter, system-ui, sans-serif',
+          offsetCenter: [0, '52%']
         },
         data: [{
           value: percentage
@@ -337,17 +615,27 @@ export class DashboardCumplimientoComponent implements OnInit, OnDestroy {
 
     this.barOptions = {
       tooltip: { trigger: 'axis' },
+      grid: { left: '3%', right: '4%', bottom: '8%', top: '8%', containLabel: true },
       xAxis: {
         type: 'category',
-        data: categories
+        data: categories,
+        axisLabel: { color: '#444652', fontSize: 11 }
       },
-      yAxis: { type: 'value' },
+      yAxis: {
+        type: 'value',
+        splitLine: { lineStyle: { color: 'rgba(116,118,131,0.15)' } },
+        axisLabel: { color: '#444652', fontSize: 11 }
+      },
       series: [
         {
           name: 'Personas',
           type: 'bar',
           data,
-          itemStyle: { color: '#1890ff' }
+          barMaxWidth: 36,
+          itemStyle: {
+            color: '#1a429f',
+            borderRadius: [4, 4, 0, 0]
+          }
         }
       ]
     };

@@ -1,0 +1,259 @@
+<div class="trif-page">
+  <header class="trif-topbar">
+    <div class="trif-topbar-brand">
+      <span class="trif-gradient-title">Gestión de seguridad industrial</span>
+    </div>
+    <div class="trif-topbar-actions">
+      <div class="trif-search d-none d-lg-flex">
+        <span class="material-symbols-outlined trif-search-ico">search</span>
+        <input type="text" class="trif-search-input" placeholder="Buscar reporte..." />
+      </div>
+      <div class="trif-topbar-icons">
+        <button type="button" class="trif-icon-btn trif-icon-btn--dot" aria-label="Notificaciones">
+          <span class="material-symbols-outlined">notifications</span>
+        </button>
+        <button type="button" class="trif-icon-btn" aria-label="Ayuda">
+          <span class="material-symbols-outlined">help</span>
+        </button>
+        <div class="trif-user">
+          <div class="trif-user-text d-none d-sm-block text-end">
+            <p class="trif-user-name mb-0">{{ usuario.nombre }}</p>
+            <p class="trif-user-role mb-0">{{ usuario.rol }}</p>
+          </div>
+          <div class="trif-user-avatar" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="trif-canvas">
+    <section class="trif-hero-grid">
+      <div class="trif-hero-copy">
+        <h2 class="trif-h2">Análisis de frecuencia TRIF</h2>
+        <p class="trif-lead">
+          Visualización estratégica del Total Recordable Injury Frequency (TRIF). Este indicador mide el número de
+          lesiones registrables por cada millón de horas hombre trabajadas, permitiendo comparar el desempeño de seguridad
+          bajo estándares internacionales.
+        </p>
+      </div>
+      <div class="trif-formula-card">
+        <div class="trif-formula-glow" aria-hidden="true"></div>
+        <div class="trif-formula-inner">
+          <h3 class="trif-formula-kicker">Ecuación estándar TRIF</h3>
+          <div class="trif-formula-body">
+            <div class="trif-formula-frac">
+              <p class="trif-formula-num">Lesiones registrables</p>
+              <p class="trif-formula-den">Total horas trabajadas</p>
+            </div>
+            <span class="trif-formula-times">×</span>
+            <span class="trif-formula-factor">{{ factorTrif | number }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="trif-kpi-row">
+      <article class="trif-kpi trif-kpi--primary">
+        <div class="trif-kpi-head">
+          <span class="material-symbols-outlined trif-kpi-ico trif-kpi-ico--p">medical_services</span>
+          <span class="trif-pill trif-pill--danger">
+            <span class="material-symbols-outlined trif-pill-ico">trending_up</span>
+            +{{ tendenciaLesionesPct }}%
+          </span>
+        </div>
+        <p class="trif-kpi-label">Accidentes registrables (YTD)</p>
+        <p class="trif-kpi-val trif-kpi-val--primary">{{ lesionesYtd }}</p>
+        <p class="trif-kpi-foot">Acumulado ene. – dic. 2023</p>
+      </article>
+
+      <article class="trif-kpi trif-kpi--secondary">
+        <div class="trif-kpi-head">
+          <span class="material-symbols-outlined trif-kpi-ico trif-kpi-ico--s">history_toggle_off</span>
+          <span class="trif-tag-live">En tiempo real</span>
+        </div>
+        <p class="trif-kpi-label">Horas hombre trabajadas</p>
+        <p class="trif-kpi-val">{{ horasYtd | number }}</p>
+        <p class="trif-kpi-foot">Total operativo consolidado</p>
+      </article>
+
+      <article class="trif-kpi trif-kpi--container">
+        <div class="trif-kpi-head">
+          <span class="material-symbols-outlined trif-kpi-ico trif-kpi-ico--c">speed</span>
+          <div class="trif-mini-track">
+            <div class="trif-mini-fill"></div>
+          </div>
+        </div>
+        <p class="trif-kpi-label">Índice TRIF actual</p>
+        <p class="trif-kpi-val trif-kpi-val--pc">{{ trifActual | number : '1.2-2' }}</p>
+        <p class="trif-kpi-foot">Basado en último cierre mensual</p>
+      </article>
+
+      <article class="trif-kpi trif-kpi--meta">
+        <div class="trif-kpi-head">
+          <span class="material-symbols-outlined trif-kpi-ico trif-kpi-ico--o">track_changes</span>
+          <span class="trif-meta-tag">Meta: {{ metaCorporativa | number : '1.2-2' }}</span>
+        </div>
+        <p class="trif-kpi-label">Delta vs. meta corporativa</p>
+        <p class="trif-kpi-val trif-kpi-val--err">+{{ deltaVsMeta | number : '1.2-2' }}</p>
+        <p class="trif-kpi-foot trif-kpi-foot--err">Requiere plan de mitigación</p>
+      </article>
+    </section>
+
+    <section class="trif-bento">
+      <div class="trif-chart-card">
+        <div class="trif-chart-head">
+          <div>
+            <h3 class="trif-h3">Tendencia de tasa de riesgo (TRIF) empresarial</h3>
+            <p class="trif-chart-sub">Evolución mensual de lesiones vs. horas trabajadas</p>
+          </div>
+          <div class="trif-seg">
+            <button
+              type="button"
+              class="trif-seg-btn"
+              [class.trif-seg-btn--on]="vistaPeriodo === 'mensual'"
+              (click)="setVista('mensual')">
+              Mensual
+            </button>
+            <button
+              type="button"
+              class="trif-seg-btn"
+              [class.trif-seg-btn--on]="vistaPeriodo === 'trimestral'"
+              (click)="setVista('trimestral')">
+              Trimestral
+            </button>
+          </div>
+        </div>
+
+        <div class="trif-chart-plot">
+          <div class="trif-chart-grid" aria-hidden="true">
+            <div class="trif-chart-grid-line"></div>
+            <div class="trif-chart-grid-line"></div>
+            <div class="trif-chart-grid-line"></div>
+            <div class="trif-chart-grid-line"></div>
+          </div>
+          <div class="trif-bars-row">
+            <div class="trif-bar-col" *ngFor="let b of barrasMensuales" [class.trif-bar-col--hi]="b.highlight">
+              <div class="trif-bar-fill" [style.height.%]="b.h"></div>
+              <span class="trif-bar-lbl" [class.trif-bar-lbl--hi]="b.highlight">{{ b.label }}</span>
+            </div>
+          </div>
+          <div class="trif-line-layer" aria-hidden="true">
+            <svg class="trif-line-svg" viewBox="0 0 1200 300" preserveAspectRatio="none">
+              <path
+                class="trif-line-path"
+                [attr.d]="lineaTrifPath"
+                fill="none"
+                stroke-width="3"
+                stroke-dasharray="8 4"
+                stroke-linecap="round"
+                stroke-linejoin="round" />
+              <circle class="trif-line-dot" cx="600" cy="40" r="6" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="trif-legend-row">
+          <span class="trif-legend-item">
+            <i class="trif-legend-swatch trif-legend-swatch--bar"></i>
+            # Lesiones (barras)
+          </span>
+          <span class="trif-legend-item">
+            <i class="trif-legend-swatch trif-legend-swatch--line"></i>
+            TRIF variable (línea)
+          </span>
+        </div>
+      </div>
+
+      <div class="trif-side-col">
+        <div class="trif-info-card">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="material-symbols-outlined trif-ico-primary">info</span>
+            <h3 class="trif-h3-side mb-0">Guía de interpretación</h3>
+          </div>
+          <p class="trif-info-text mb-3">
+            El factor constante de <strong class="trif-strong">1.000.000</strong> en nuestra fórmula representa el tiempo
+            trabajado por <strong class="trif-strong">500 trabajadores</strong> a tiempo completo durante un año (basado
+            en 2.000 horas anuales por persona).
+          </p>
+          <div class="trif-factor-box">
+            <div class="trif-factor-row">
+              <span class="trif-factor-label">Factor OSHA</span>
+              <span class="trif-factor-val">200.000 h</span>
+            </div>
+            <div class="trif-factor-row">
+              <span class="trif-factor-label">Factor IADC</span>
+              <span class="trif-factor-val">1.000.000 h</span>
+            </div>
+          </div>
+          <p class="trif-info-note mb-0">
+            Nota: se utiliza el estándar IADC para comparativas internacionales en el sector petrolero.
+          </p>
+        </div>
+
+        <div class="trif-impact-card">
+          <h4 class="trif-impact-title">Distribución de impacto</h4>
+          <div class="trif-impact-list">
+            <div class="trif-impact-item" *ngFor="let d of distribucionImpacto">
+              <div class="trif-impact-head">
+                <span>{{ d.nombre }}</span>
+                <span class="fw-bold">{{ d.pct }}%</span>
+              </div>
+              <div class="trif-impact-track">
+                <div
+                  class="trif-impact-fill"
+                  [class.trif-impact-fill--sec]="d.nombre.includes('Logística')"
+                  [style.width.%]="d.pct"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="trif-table-section">
+      <div class="trif-table-head">
+        <div>
+          <h3 class="trif-h3">Índice de accidentes registrables — empresa</h3>
+          <p class="trif-table-sub">Detalle consolidado del periodo fiscal vigente</p>
+        </div>
+        <button type="button" class="trif-btn-export" (click)="exportarCsv()">
+          <span class="material-symbols-outlined trif-btn-ico">download</span>
+          Exportar CSV
+        </button>
+      </div>
+      <div class="trif-table-scroll">
+        <table class="trif-table">
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th># Lesiones</th>
+              <th># H-trabajadas</th>
+              <th>H-trab. acumuladas</th>
+              <th class="text-end">Índice TRIF</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of tablaRows" [class.trif-tr--alert]="r.alerta" [class.trif-tr--total]="r.esTotal">
+              <td class="fw-bold">{{ r.mes }}</td>
+              <td [class.trif-td-alert]="r.alerta && r.lesiones > 0">{{ r.lesiones }}</td>
+              <td class="text-muted-cell">{{ r.horasMes | number }}</td>
+              <td class="text-muted-cell">
+                <ng-container *ngIf="r.esTotal">—</ng-container>
+                <ng-container *ngIf="!r.esTotal">{{ r.horasAcum | number }}</ng-container>
+              </td>
+              <td class="text-end trif-td-trif" [class.trif-td-trif--alert]="r.alerta" [class.trif-td-total]="r.esTotal">
+                {{ r.trif | number : '1.2-2' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="trif-table-footer">{{ cierreDatos }}</div>
+    </section>
+  </div>
+
+  <a routerLink="../../accidentes-incidentes/nuevo" class="trif-fab d-none d-md-inline-flex">
+    <span class="material-symbols-outlined">add_alert</span>
+    <span>Nuevo reporte</span>
+  </a>
+</div>

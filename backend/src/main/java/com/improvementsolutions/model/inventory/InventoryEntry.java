@@ -29,6 +29,8 @@ public class InventoryEntry {
     @JsonIgnore
     private Business business;
 
+    public Business getBusiness() { return this.business; }
+
     @Column(name = "entry_number", nullable = false, length = 50)
     private String entryNumber; // Número de documento: factura, guía
 

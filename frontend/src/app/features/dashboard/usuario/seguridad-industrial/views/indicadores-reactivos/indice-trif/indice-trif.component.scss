@@ -1,0 +1,896 @@
+$primary: #002b7d;
+$primary-container: #1a429f;
+$primary-fixed: #dbe1ff;
+$on-surface: #1a1b21;
+$on-surface-variant: #444652;
+$secondary: #4c616c;
+$secondary-container: #cfe6f2;
+$secondary-fixed: #cfe6f2;
+$surface: #faf8ff;
+$surface-container: #eeedf6;
+$surface-container-low: #f4f3fb;
+$surface-container-high: #e8e7f0;
+$surface-container-highest: #e2e2ea;
+$outline: #747683;
+$outline-variant: #c4c6d4;
+$error: #ba1a1a;
+$error-container: #ffdad6;
+
+:host {
+  display: block;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: $on-surface;
+  background: $surface;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.trif-h2,
+.trif-h3,
+.trif-h3-side,
+.trif-gradient-title,
+.trif-kpi-val,
+.trif-formula-factor,
+.trif-formula-frac,
+.trif-td-trif {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+}
+
+.trif-page {
+  min-height: 100%;
+  padding-top: 4rem;
+  padding-bottom: 5rem;
+  position: relative;
+}
+
+/* ——— Top bar ——— */
+.trif-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 4rem;
+  padding: 0 2rem;
+  background: rgba($surface, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba($outline-variant, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.trif-gradient-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, $primary, $primary-container);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.trif-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.trif-search {
+  align-items: center;
+  background: $surface-container-low;
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
+  width: 16rem;
+}
+
+.trif-search-ico {
+  color: $outline;
+  margin-right: 0.35rem;
+  font-size: 1.25rem;
+}
+
+.trif-search-input {
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  width: 100%;
+  outline: none;
+}
+
+.trif-topbar-icons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.trif-icon-btn {
+  position: relative;
+  border: none;
+  background: transparent;
+  color: $primary-container;
+  padding: 0.5rem;
+  border-radius: 999px;
+  line-height: 0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.trif-icon-btn:hover {
+  background: $surface-container-low;
+}
+
+.trif-icon-btn--dot::after {
+  content: '';
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: $error;
+  border-radius: 50%;
+}
+
+.trif-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: 0.5rem;
+  padding-left: 1rem;
+  border-left: 1px solid rgba($outline-variant, 0.35);
+}
+
+.trif-user-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.trif-user-role {
+  font-size: 0.75rem;
+  color: $on-surface-variant;
+}
+
+.trif-user-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $primary-fixed, $surface-container-high);
+  border: 2px solid rgba($primary, 0.12);
+}
+
+/* ——— Canvas ——— */
+.trif-canvas {
+  padding: 2rem;
+  max-width: 90rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.trif-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .trif-hero-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.trif-h2 {
+  font-size: 1.875rem;
+  font-weight: 800;
+  color: $primary;
+  letter-spacing: -0.02em;
+  margin: 0 0 1rem;
+}
+
+.trif-lead {
+  margin: 0;
+  color: $on-surface-variant;
+  line-height: 1.65;
+  max-width: 42rem;
+}
+
+.trif-formula-card {
+  position: relative;
+  background: $primary-container;
+  color: #fff;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 40px rgba(0, 43, 125, 0.25);
+  overflow: hidden;
+}
+
+.trif-formula-glow {
+  position: absolute;
+  right: -2rem;
+  top: -2rem;
+  width: 8rem;
+  height: 8rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  filter: blur(24px);
+  pointer-events: none;
+}
+
+.trif-formula-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.trif-formula-kicker {
+  margin: 0 0 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.85;
+}
+
+.trif-formula-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  font-style: italic;
+}
+
+.trif-formula-frac {
+  text-align: center;
+}
+
+.trif-formula-num {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.35);
+  padding-bottom: 0.25rem;
+}
+
+.trif-formula-den {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.92;
+}
+
+.trif-formula-times {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.trif-formula-factor {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+/* KPI row */
+.trif-kpi-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .trif-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 992px) {
+  .trif-kpi-row {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.trif-kpi {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border-bottom: 4px solid $outline-variant;
+}
+
+.trif-kpi--primary {
+  border-bottom-color: $primary;
+}
+.trif-kpi--secondary {
+  border-bottom-color: $secondary;
+}
+.trif-kpi--container {
+  border-bottom-color: $primary-container;
+}
+.trif-kpi--meta {
+  border-bottom-color: $outline-variant;
+}
+
+.trif-kpi-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.trif-kpi-ico {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 1.5rem;
+}
+.trif-kpi-ico--p {
+  color: $primary;
+  background: rgba($primary-fixed, 0.65);
+}
+.trif-kpi-ico--s {
+  color: $secondary;
+  background: rgba($secondary-fixed, 0.9);
+}
+.trif-kpi-ico--c {
+  color: $primary-container;
+  background: rgba($primary-fixed, 0.85);
+}
+.trif-kpi-ico--o {
+  color: $outline;
+  background: $surface-container-highest;
+}
+
+.trif-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+}
+.trif-pill--danger {
+  color: $error;
+  background: $error-container;
+}
+.trif-pill-ico {
+  font-size: 0.875rem !important;
+}
+
+.trif-tag-live {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: $secondary;
+}
+
+.trif-mini-track {
+  width: 3rem;
+  height: 0.5rem;
+  background: $surface-container-highest;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.65rem;
+}
+.trif-mini-fill {
+  width: 66%;
+  height: 100%;
+  background: $primary;
+  border-radius: 999px;
+}
+
+.trif-meta-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: $primary;
+}
+
+.trif-kpi-label {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: $on-surface-variant;
+}
+
+.trif-kpi-val {
+  margin: 0;
+  font-size: 1.875rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.trif-kpi-val--primary {
+  color: $primary;
+}
+.trif-kpi-val--pc {
+  color: $primary-container;
+}
+.trif-kpi-val--err {
+  color: $error;
+}
+
+.trif-kpi-foot {
+  margin: 0.5rem 0 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba($on-surface-variant, 0.55);
+}
+.trif-kpi-foot--err {
+  color: rgba($error, 0.65);
+}
+
+/* Bento */
+.trif-bento {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .trif-bento {
+    grid-template-columns: 3fr 1fr;
+  }
+}
+
+.trif-chart-card {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.trif-chart-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 576px) {
+  .trif-chart-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.trif-h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.trif-h3-side {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.trif-chart-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: $on-surface-variant;
+}
+
+.trif-seg {
+  display: flex;
+  background: $surface-container-low;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  gap: 0.125rem;
+}
+
+.trif-seg-btn {
+  border: none;
+  background: transparent;
+  padding: 0.35rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: $on-surface-variant;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.trif-seg-btn--on {
+  background: #fff;
+  color: $primary;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.trif-chart-plot {
+  position: relative;
+  height: 16rem;
+  margin-bottom: 1rem;
+  padding: 0 0.5rem 0.5rem;
+}
+
+.trif-chart-grid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  opacity: 0.12;
+  padding-bottom: 1.5rem;
+}
+
+.trif-chart-grid-line {
+  border-top: 1px solid $on-surface;
+  width: 100%;
+}
+
+.trif-bars-row {
+  position: absolute;
+  inset: 0 0.5rem 1.75rem 0.5rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.trif-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.trif-bar-fill {
+  width: 100%;
+  max-width: 2.5rem;
+  border-radius: 2px 2px 0 0;
+  background: $primary-fixed;
+  transition: background 0.2s, height 0.3s;
+}
+.trif-bar-col:hover .trif-bar-fill {
+  background: $primary;
+}
+
+.trif-bar-col--hi .trif-bar-fill {
+  box-shadow: 0 0 0 3px #fff inset;
+  border-left: 2px solid #fff;
+  border-right: 2px solid #fff;
+}
+
+.trif-bar-lbl {
+  margin-top: 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: $on-surface-variant;
+}
+.trif-bar-lbl--hi {
+  color: $primary;
+}
+
+.trif-line-layer {
+  position: absolute;
+  left: 1.5rem;
+  right: 1.5rem;
+  top: 2.5rem;
+  bottom: 2rem;
+  pointer-events: none;
+}
+
+.trif-line-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.trif-line-path {
+  stroke: $error;
+  opacity: 0.65;
+}
+
+.trif-line-dot {
+  fill: $error;
+}
+
+.trif-legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.trif-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: $on-surface-variant;
+}
+
+.trif-legend-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  display: inline-block;
+}
+.trif-legend-swatch--bar {
+  background: $primary-fixed;
+}
+.trif-legend-swatch--line {
+  width: 1.25rem;
+  height: 0;
+  border-radius: 0;
+  border-top: 2px dashed $error;
+  background: transparent;
+}
+
+/* Side column */
+.trif-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.trif-info-card {
+  background: $surface-container-low;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  flex: 1;
+}
+
+.trif-info-text {
+  font-size: 0.875rem;
+  color: $on-surface-variant;
+  line-height: 1.6;
+}
+
+.trif-strong {
+  color: $primary;
+  font-weight: 700;
+}
+
+.trif-factor-box {
+  background: #fff;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.trif-factor-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trif-factor-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: $on-surface-variant;
+}
+
+.trif-factor-val {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: $primary;
+}
+
+.trif-info-note {
+  font-size: 0.6875rem;
+  font-style: italic;
+  color: rgba($on-surface-variant, 0.85);
+  margin-top: 1rem;
+}
+
+.trif-impact-card {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba($secondary-container, 0.6);
+}
+
+.trif-impact-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.trif-impact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.trif-impact-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+  color: $on-surface-variant;
+}
+
+.trif-impact-track {
+  height: 0.375rem;
+  background: $surface-container;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.trif-impact-fill {
+  height: 100%;
+  background: $primary;
+  border-radius: 999px;
+}
+.trif-impact-fill--sec {
+  background: $secondary;
+}
+
+/* Table */
+.trif-table-section {
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.trif-table-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid $surface-container;
+}
+
+@media (min-width: 576px) {
+  .trif-table-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.trif-table-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: $on-surface-variant;
+}
+
+.trif-btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: none;
+  background: $surface-container-low;
+  color: $primary;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.trif-btn-export:hover {
+  background: $surface-container-high;
+}
+
+.trif-btn-ico {
+  font-size: 1.125rem !important;
+}
+
+.trif-table-scroll {
+  overflow-x: auto;
+}
+
+.trif-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.trif-table thead tr {
+  background: $surface-container-low;
+}
+
+.trif-table th {
+  padding: 1rem 2rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: $on-surface-variant;
+}
+
+.trif-table td {
+  padding: 1.25rem 2rem;
+  border-top: 1px solid $surface-container-low;
+  vertical-align: middle;
+}
+
+.text-muted-cell {
+  color: $on-surface-variant;
+}
+
+.trif-tr--alert {
+  background: rgba($error, 0.05);
+}
+
+.trif-tr--total td {
+  color: $primary;
+  font-weight: 700;
+  border-top: 2px solid $surface-container;
+}
+
+.trif-td-trif {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  color: $primary;
+}
+
+.trif-tr--alert .trif-td-trif.text-danger {
+  color: $error;
+}
+
+.trif-td-total {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: $primary-container !important;
+}
+
+.trif-table-footer {
+  padding: 1rem 2rem;
+  background: rgba($surface-container-low, 0.5);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: $on-surface-variant;
+  text-align: center;
+}
+
+/* FAB */
+.trif-fab {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 90;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  background: $primary;
+  color: #fff;
+  border-radius: 999px;
+  text-decoration: none;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: 0 12px 32px rgba(0, 43, 125, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.trif-fab:hover {
+  color: #fff;
+  transform: scale(1.03);
+}
+
+.trif-ico-primary {
+  color: $primary;
+}
+
+.trif-td-alert {
+  color: $error;
+  font-weight: 700;
+}
+
+.trif-td-trif--alert {
+  color: $error;
+}

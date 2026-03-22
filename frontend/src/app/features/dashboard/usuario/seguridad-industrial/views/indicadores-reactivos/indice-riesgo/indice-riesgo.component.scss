@@ -1,0 +1,772 @@
+$primary: #002b7d;
+$primary-container: #1a429f;
+$primary-fixed-dim: #b4c5ff;
+$on-surface: #1a1b21;
+$on-surface-variant: #444652;
+$secondary: #4c616c;
+$secondary-container: #cfe6f2;
+$on-secondary-container: #526772;
+$tertiary: #6c0008;
+$tertiary-container: #970010;
+$on-tertiary-container: #ff9e95;
+$surface: #faf8ff;
+$surface-container: #eeedf6;
+$surface-container-low: #f4f3fb;
+$surface-container-lowest: #ffffff;
+$surface-container-high: #e8e7f0;
+$surface-container-highest: #e2e2ea;
+$outline-variant: #c4c6d4;
+
+:host {
+  display: block;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: $on-surface;
+  background: $surface;
+}
+
+.trisk-h1,
+.trisk-h3,
+.trisk-brand,
+.trisk-kpi-val,
+.trisk-kpi-hero-val,
+.trisk-fcard-v,
+.trisk-td-tr {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  line-height: 1;
+}
+
+.trisk-page {
+  min-height: 100%;
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+  position: relative;
+}
+
+/* Top bar */
+.trisk-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  background: rgba($surface, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.trisk-brand {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: $primary;
+}
+
+.trisk-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.trisk-nav {
+  align-items: stretch;
+  gap: 2rem;
+  margin-right: 1rem;
+}
+
+.trisk-nav-link {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: $on-surface-variant;
+  padding: 1.25rem 0.25rem;
+  border-bottom: 2px solid transparent;
+  cursor: default;
+  transition: background 0.15s;
+}
+.trisk-nav-link:hover {
+  background: rgba($primary, 0.04);
+  border-radius: 4px;
+}
+.trisk-nav-link--active {
+  color: $primary;
+  font-weight: 700;
+  border-bottom-color: $primary;
+}
+
+.trisk-top-icons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.trisk-icon-btn {
+  border: none;
+  background: transparent;
+  color: $on-surface-variant;
+  padding: 0.5rem;
+  border-radius: 999px;
+  line-height: 0;
+  transition: background 0.15s;
+}
+.trisk-icon-btn:hover {
+  background: rgba($primary, 0.05);
+}
+
+/* Main */
+.trisk-main {
+  padding: 2rem 1.5rem;
+}
+
+.trisk-container {
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.trisk-page-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+@media (min-width: 768px) {
+  .trisk-page-head {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.trisk-eyebrow {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: $primary;
+  margin-bottom: 0.5rem;
+}
+
+.trisk-h1 {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.trisk-formula-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.trisk-fcard {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: $surface-container-lowest;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.trisk-fcard-ico {
+  background: rgba($primary, 0.05);
+  color: $primary;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.trisk-fcard-k {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: $on-surface-variant;
+}
+
+.trisk-fcard-v {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: $primary;
+}
+
+/* KPI */
+.trisk-kpi-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+@media (min-width: 768px) {
+  .trisk-kpi-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.trisk-kpi {
+  background: $surface-container-lowest;
+  padding: 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.trisk-kpi-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.trisk-kpi-lbl {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: $on-surface-variant;
+}
+
+.trisk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+.trisk-pill--ter {
+  background: rgba($tertiary-container, 0.1);
+  color: $tertiary-container;
+}
+.trisk-pill--sec {
+  background: $secondary-container;
+  color: $on-secondary-container;
+}
+.trisk-pill-ico {
+  font-size: 0.875rem !important;
+}
+
+.trisk-kpi-val {
+  margin: 0 0 0.5rem;
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.trisk-kpi-foot {
+  margin: 0;
+  font-size: 0.75rem;
+  color: $on-surface-variant;
+}
+
+.trisk-kpi--hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, $primary 0%, $primary-container 100%);
+  color: #fff;
+  box-shadow: 0 8px 32px rgba(0, 43, 125, 0.3);
+}
+
+.trisk-kpi-hero-deco {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2rem;
+  opacity: 0.1;
+  pointer-events: none;
+  transition: transform 0.5s ease;
+}
+.trisk-kpi--hero:hover .trisk-kpi-hero-deco {
+  transform: scale(1.08);
+}
+
+.trisk-shield {
+  font-size: 5rem !important;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.trisk-kpi-hero-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.trisk-kpi-hero-lbl {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: $primary-fixed-dim;
+}
+
+.trisk-kpi-hero-val {
+  margin: 0.5rem 0;
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.trisk-kpi-hero-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $primary-fixed-dim;
+}
+
+.trisk-ok-ico {
+  font-size: 1rem !important;
+}
+
+/* Split */
+.trisk-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+@media (min-width: 992px) {
+  .trisk-split {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.trisk-chart-panel {
+  background: $surface-container-low;
+  padding: 2rem;
+  border-radius: 0.75rem;
+}
+
+.trisk-panel-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 576px) {
+  .trisk-panel-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.trisk-panel-head--matrix {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.trisk-h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.trisk-panel-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: $on-surface-variant;
+}
+
+.trisk-leg {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: $on-surface-variant;
+}
+.trisk-leg span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.trisk-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  display: inline-block;
+}
+.trisk-dot--p {
+  background: $primary;
+}
+.trisk-dot--s {
+  background: $secondary;
+}
+
+.trisk-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  height: 16rem;
+  padding: 0 0.5rem;
+}
+
+.trisk-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.trisk-bar-pair {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.25rem;
+  height: 100%;
+  width: 100%;
+}
+
+.trisk-bar {
+  width: 0.5rem;
+  border-radius: 2px 2px 0 0;
+  min-height: 4px;
+  transition: opacity 0.15s;
+}
+.trisk-bar--emp {
+  background: $primary;
+}
+.trisk-bar--contr {
+  background: $secondary;
+}
+
+.trisk-bar-lbl {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: $on-surface-variant;
+}
+
+/* Matrix */
+.trisk-matrix-panel {
+  background: rgba($surface-container-highest, 0.3);
+  padding: 2rem;
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.trisk-info-ico {
+  color: $primary;
+}
+
+.trisk-heat-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.trisk-heat-cell {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+}
+
+.trisk-heat-txt {
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+@mixin heat-primary($a) {
+  background: rgba($primary, $a);
+}
+@mixin heat-tert($a) {
+  background: rgba($tertiary-container, $a);
+}
+
+.trisk-heat--p5 {
+  @include heat-primary(0.05);
+  .trisk-heat-txt {
+    color: rgba($primary, 0.4);
+  }
+}
+.trisk-heat--p10 {
+  @include heat-primary(0.1);
+}
+.trisk-heat--p20 {
+  @include heat-primary(0.2);
+}
+.trisk-heat--p25 {
+  @include heat-primary(0.25);
+  .trisk-heat-txt {
+    color: $primary;
+  }
+}
+.trisk-heat--p30 {
+  @include heat-primary(0.3);
+  .trisk-heat-txt {
+    color: $primary;
+  }
+}
+.trisk-heat--p40 {
+  @include heat-primary(0.4);
+  .trisk-heat-txt {
+    color: $primary;
+  }
+}
+.trisk-heat--p50 {
+  @include heat-primary(0.5);
+}
+
+.trisk-heat--t20 {
+  @include heat-tert(0.2);
+}
+.trisk-heat--t30 {
+  @include heat-tert(0.3);
+  .trisk-heat-txt {
+    color: $tertiary;
+  }
+}
+.trisk-heat--t40 {
+  @include heat-tert(0.4);
+}
+.trisk-heat--t50 {
+  @include heat-tert(0.5);
+}
+.trisk-heat--t60 {
+  @include heat-tert(0.6);
+}
+.trisk-heat--t70 {
+  @include heat-tert(0.7);
+}
+.trisk-heat--t80 {
+  @include heat-tert(0.8);
+  .trisk-heat-txt {
+    color: #fff;
+  }
+}
+
+.trisk-heat--tfull {
+  background: $tertiary-container;
+  .trisk-heat-txt {
+    color: #fff;
+  }
+}
+
+.trisk-matrix-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: $on-surface-variant;
+}
+
+/* Table */
+.trisk-table-card {
+  background: $surface-container-lowest;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.trisk-table-top {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba($outline-variant, 0.12);
+}
+
+@media (min-width: 576px) {
+  .trisk-table-top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.trisk-export-btns {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.trisk-btn-sec {
+  border: none;
+  background: $surface-container;
+  color: $on-surface-variant;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.trisk-btn-sec:hover {
+  background: $surface-container-high;
+}
+
+.trisk-table-scroll {
+  overflow-x: auto;
+}
+
+.trisk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+.trisk-table thead tr {
+  background: $surface-container-low;
+}
+
+.trisk-table th {
+  padding: 1rem 1.5rem;
+  font-size: 0.625rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: $on-surface-variant;
+}
+
+.trisk-th-emp {
+  color: $primary !important;
+}
+.trisk-th-split-start {
+  border-left: 1px solid rgba($primary, 0.1);
+}
+.trisk-th-split-start2 {
+  border-left: 1px solid rgba($secondary, 0.15);
+}
+.trisk-th-highlight {
+  background: rgba($primary, 0.05);
+  font-family: 'Manrope', sans-serif;
+}
+.trisk-th-contr {
+  color: $secondary !important;
+}
+.trisk-th-highlight2 {
+  background: rgba($secondary, 0.05);
+  font-family: 'Manrope', sans-serif;
+}
+
+.trisk-table td {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba($outline-variant, 0.12);
+  vertical-align: middle;
+}
+
+.trisk-table tbody tr:hover {
+  background: rgba($surface-container, 0.35);
+}
+
+.trisk-td-split-start {
+  border-left: 1px solid rgba($primary, 0.1);
+}
+.trisk-td-split-start2 {
+  border-left: 1px solid rgba($secondary, 0.12);
+}
+
+.trisk-td-tr {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+}
+.trisk-td-tr--emp {
+  color: $primary;
+  background: rgba($primary, 0.05);
+}
+.trisk-td-tr--contr {
+  color: $secondary;
+  background: rgba($secondary, 0.05);
+}
+
+.trisk-tfoot-strong {
+  font-size: 0.875rem;
+  background: rgba($primary, 0.1) !important;
+}
+.trisk-tfoot-strong2 {
+  font-size: 0.875rem;
+  background: rgba($secondary, 0.1) !important;
+}
+
+.fw-black {
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.trisk-foot {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: $on-surface-variant;
+  opacity: 0.65;
+}
+
+.trisk-foot-ico {
+  font-size: 0.875rem !important;
+}
+
+.trisk-foot-txt {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* FAB */
+.trisk-fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 90;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: $primary;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-shadow: 0 12px 32px rgba(0, 43, 125, 0.35);
+  transition: transform 0.15s;
+}
+.trisk-fab:hover {
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.trisk-fab-ico {
+  font-size: 1.75rem !important;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+@media print {
+  .trisk-topbar,
+  .trisk-fab,
+  .trisk-export-btns {
+    display: none !important;
+  }
+  .trisk-page {
+    padding-top: 0;
+  }
+}

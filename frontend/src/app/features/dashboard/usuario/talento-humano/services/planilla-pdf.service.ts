@@ -12,6 +12,8 @@ export interface PdfOptions {
   sheet: EmployeeSheetRow[];
   dayTypeKeys: DayType[];
   logoBase64?: string;
+  /** Si true (planilla cerrada/aprobada): PDF resumido — solo días efectivos trabajados (T+EX) y total, sin leyenda de todos los tipos. */
+  monthClosed?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -28,7 +30,8 @@ export class PlanillaPdfService {
     EX:  [255, 237, 213],  // naranja claro
     V:   [219, 234, 254],  // azul
     P:   [254, 243, 199],  // amarillo
-    E:   [255, 228, 230],  // rojo claro
+    E:   [255, 228, 230],  // rojo claro (enfermedad)
+    A:   [254, 215, 215],  // rojo suave (accidente — distinto de E)
   };
 
   private readonly DAY_TEXT_COLORS: Record<string, [number,number,number]> = {
@@ -38,10 +41,23 @@ export class PlanillaPdfService {
     V:   [37,  99,  235],
     P:   [217, 119,   6],
     E:   [225, 29,   72],
+    A:   [127, 29,  29],
   };
+
+  /** Marca visual en PDF de mes cerrado (día efectivo = T o EX) */
+  private readonly EFFECTIVE_DAY_MARK = '•';
+  private readonly EFFECTIVE_DAY_FILL: [number, number, number] = [209, 250, 229];
+  private readonly EFFECTIVE_DAY_TEXT: [number, number, number] = [22, 101, 52];
+
+  /** Paleta PDF (sin negro puro): encabezados, pies y bordes */
+  private readonly PDF_HEADER_BG: [number, number, number] = [71, 85, 105];   // slate-600
+  private readonly PDF_HEADER_BG2: [number, number, number] = [100, 116, 139]; // slate-500
+  private readonly PDF_BORDER_STRONG: [number, number, number] = [71, 85, 105];
+  private readonly PDF_GRID_LINE: [number, number, number] = [100, 116, 139];
 
   generate(opts: PdfOptions): void {
     const { businessName, businessRuc, year, month, monthLabel, sheet, dayTypeKeys } = opts;
+    const monthClosed = !!opts.monthClosed;
     const daysCount = new Date(year, month, 0).getDate();
 
     // ── Orientación landscape A4 ──────────────────────────────────────────
@@ -53,19 +69,31 @@ export class PlanillaPdfService {
     // ── HEADER ────────────────────────────────────────────────────────────
     this.drawHeader(doc, businessName, businessRuc, year, month, monthLabel, pageW, margin, opts.logoBase64);
 
-    // ── LEYENDA DE TIPOS ──────────────────────────────────────────────────
+    // ── LEYENDA (varias filas si hace falta; mes cerrado = texto resumido) ─
     const legendY = 28;
-    this.drawLegend(doc, dayTypeKeys, legendY, margin);
+    const legendBottom = this.drawLegend(doc, dayTypeKeys, legendY, margin, pageW, monthClosed);
 
     // ── TABLA ─────────────────────────────────────────────────────────────
-    const tableStartY = 36;
-    this.drawTable(doc, sheet, dayTypeKeys, daysCount, year, month, tableStartY, margin, pageW, pageH);
+    const tableStartY = legendBottom + 3;
+    this.drawTable(
+      doc,
+      sheet,
+      daysCount,
+      year,
+      month,
+      tableStartY,
+      margin,
+      pageW,
+      pageH,
+      monthClosed
+    );
 
     // ── PIE DE PÁGINA ─────────────────────────────────────────────────────
     this.drawFooter(doc, businessName, year, month, monthLabel);
 
     // ── GUARDAR ───────────────────────────────────────────────────────────
-    const fileName = `Planilla_${businessName.replace(/\s+/g,'_')}_${year}_${String(month).padStart(2,'0')}.pdf`;
+    const suffix = monthClosed ? '_cerrada' : '';
+    const fileName = `Planilla_${businessName.replace(/\s+/g,'_')}_${year}_${String(month).padStart(2,'0')}${suffix}.pdf`;
     doc.save(fileName);
   }
 
@@ -84,13 +112,14 @@ export class PlanillaPdfService {
     const hH = 24; // height del header box
 
     // Borde exterior del header
-    doc.setDrawColor(0);
-    doc.setLineWidth(0.3);
+    doc.setDrawColor(...this.PDF_BORDER_STRONG);
+    doc.setLineWidth(0.45);
     doc.rect(margin, margin, pageW - margin * 2, hH);
 
     // ── Logo / nombre empresa (25% izquierda) ──
     const logoW = (pageW - margin * 2) * 0.22;
-    doc.setDrawColor(0);
+    doc.setDrawColor(...this.PDF_GRID_LINE);
+    doc.setLineWidth(0.35);
     doc.line(margin + logoW, margin, margin + logoW, margin + hH);
 
     if (logoBase64) {
@@ -131,19 +160,21 @@ export class PlanillaPdfService {
     // ── Panel derecho (año/mes) ──
     const rightX = titleX + titleW;
     const rightW = pageW - margin - rightX;
+    doc.setDrawColor(...this.PDF_GRID_LINE);
+    doc.setLineWidth(0.35);
     doc.line(rightX, margin, rightX, margin + hH);
 
-    doc.setFillColor(15, 23, 42);
+    doc.setFillColor(...this.PDF_HEADER_BG);
     doc.rect(rightX, margin, rightW, hH / 2, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(255, 255, 255);
     doc.text(String(year), rightX + rightW / 2, margin + hH / 4 + 2, { align: 'center' });
 
-    doc.setFillColor(30, 41, 59);
+    doc.setFillColor(...this.PDF_HEADER_BG2);
     doc.rect(rightX, margin + hH / 2, rightW, hH / 2, 'F');
     doc.setFontSize(8);
-    doc.setTextColor(148, 163, 184);
+    doc.setTextColor(241, 245, 249);
     doc.text(monthLabel.toUpperCase(), rightX + rightW / 2, margin + hH * 0.75 + 1, { align: 'center' });
   }
 
@@ -156,45 +187,91 @@ export class PlanillaPdfService {
   }
 
   // ────────────────────────────────────────────────────────────────────────
-  private drawLegend(doc: jsPDF, keys: DayType[], y: number, margin: number): void {
+  /** Devuelve la coordenada Y inferior de la leyenda (para posicionar la tabla). */
+  private drawLegend(
+    doc: jsPDF,
+    keys: DayType[],
+    y: number,
+    margin: number,
+    pageW: number,
+    monthClosed: boolean
+  ): number {
+    const usableW = pageW - margin * 2;
+
+    if (monthClosed) {
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(51, 65, 85);
+      const msg =
+        'Mes cerrado — Resumen de días efectivos: cada “•” es un día trabajado (jornada normal o horas extra). ' +
+        'No se muestran indicadores de descanso, vacaciones, permisos, enfermedad ni accidente. ' +
+        'La última columna es el total de días efectivos del empleado.';
+      const lines = doc.splitTextToSize(msg, usableW);
+      doc.text(lines, margin, y + 3.5);
+      return y + lines.length * 3.6 + 2;
+    }
+
+    // Texto compacto en 2 líneas, centrado (más limpio en PDF)
     const labels: Record<string, string> = {
-      T: 'T — Trabajo normal',
-      D: 'D — Descanso',
-      EX: 'EX — Horas extra',
-      V: 'V — Vacaciones',
-      P: 'P — Permiso',
-      E: 'E — Enfermedad',
+      T: 'T\nTrabajo',
+      D: 'D\nDescanso',
+      EX: 'EX\nExtra',
+      V: 'V\nVacaciones',
+      P: 'P\nPermiso',
+      E: 'E\nEnfermedad',
+      A: 'A\nAccidente',
     };
+
+    const boxW = 27;
+    const boxH = 5.4;
+    const gap = 1.2;
     let x = margin;
-    doc.setFontSize(6.5);
+    let rowY = y;
+
+    doc.setFontSize(5);
     keys.forEach(k => {
+      if (x + boxW > margin + usableW + 0.5) {
+        x = margin;
+        rowY += boxH + gap + 0.4;
+      }
       const [br, bg, bb] = this.DAY_COLORS[k] ?? [230, 230, 230];
       const [tr, tg, tb] = this.DAY_TEXT_COLORS[k] ?? [0, 0, 0];
       doc.setFillColor(br, bg, bb);
-      doc.setDrawColor(200, 200, 200);
-      doc.roundedRect(x, y, 42, 5, 1, 1, 'FD');
+      doc.setDrawColor(...this.PDF_BORDER_STRONG);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(x, rowY, boxW, boxH, 0.5, 0.5, 'FD');
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(tr, tg, tb);
-      doc.text(labels[k] ?? k, x + 21, y + 3.5, { align: 'center' });
-      x += 44;
+      const line = labels[k] ?? String(k);
+      const split = doc.splitTextToSize(line, boxW - 1.6);
+      const lineH = 1.85;
+      const textStartY = rowY + (boxH - split.length * lineH) / 2 + lineH - 0.15;
+      doc.text(split, x + boxW / 2, textStartY, { align: 'center' });
+      x += boxW + gap;
     });
+
+    return rowY + boxH + 2;
   }
 
   // ────────────────────────────────────────────────────────────────────────
   private drawTable(
     doc: jsPDF,
     sheet: EmployeeSheetRow[],
-    dayTypeKeys: DayType[],
     daysCount: number,
     year: number,
     month: number,
     startY: number,
     margin: number,
     pageW: number,
-    pageH: number
+    pageH: number,
+    monthClosed: boolean
   ): void {
     // Nombres de día de semana abreviados (L/M/X/J/V/S/D)
     const DAY_LETTER = ['D','L','M','X','J','V','S'];
+
+    // PDF: sin columnas resumen T/D/EX/… (solo calendario; mes cerrado conserva “Días efectivos”)
+    const totCount = monthClosed ? 1 : 0;
+    const totW = 14;
 
     // ── Encabezados ──────────────────────────────────────────────────────
     const fixedHeaders = ['#', 'Personal', 'Cargo'];
@@ -203,8 +280,8 @@ export class PlanillaPdfService {
       const dow = new Date(year, month - 1, d).getDay();
       return `${d}\n${DAY_LETTER[dow]}`;
     });
-    const totHeaders   = dayTypeKeys.map(k => k);
-    const head         = [[...fixedHeaders, ...dayHeaders, ...totHeaders]];
+    const totHeaders: string[] = monthClosed ? ['Días efectivos'] : [];
+    const head = [[...fixedHeaders, ...dayHeaders, ...totHeaders]];
 
     // ── Filas ────────────────────────────────────────────────────────────
     const body = sheet.map((row, idx) => {
@@ -213,21 +290,35 @@ export class PlanillaPdfService {
         row.cedula ? `${row.fullName}\n${row.cedula}` : row.fullName,
         row.position ?? '',
       ];
-      const days = Array.from({ length: daysCount }, (_, i) => row.days[i]?.dayType ?? '');
-      const totals = dayTypeKeys.map(k => String((row.totals as any)[k] ?? 0));
+      const days = Array.from({ length: daysCount }, (_, i) => {
+        const t = (row.days[i]?.dayType ?? '') as string;
+        if (!monthClosed) return t;
+        return t === 'T' || t === 'EX' ? this.EFFECTIVE_DAY_MARK : '';
+      });
+      const totals = monthClosed
+        ? [String((row.totals?.T ?? 0) + (row.totals?.EX ?? 0))]
+        : [];
       return [...fixed, ...days, ...totals];
     });
 
-    // ── Fila de TOTALES ──────────────────────────────────────────────────
+    // ── Fila de TOTALES (solo columnas de días + opcional días efectivos) ─
     const totalRow: string[] = ['', 'TOTALES', ''];
     for (let d = 0; d < daysCount; d++) {
-      const countForDay = sheet.filter(r => r.days[d]?.dayType === 'T').length;
+      const countForDay = monthClosed
+        ? sheet.filter(r => {
+            const t = r.days[d]?.dayType;
+            return t === 'T' || t === 'EX';
+          }).length
+        : sheet.filter(r => r.days[d]?.dayType === 'T').length;
       totalRow.push(countForDay > 0 ? String(countForDay) : '');
     }
-    dayTypeKeys.forEach(k => {
-      const sum = sheet.reduce((acc, r) => acc + ((r.totals as any)[k] ?? 0), 0);
-      totalRow.push(String(sum));
-    });
+    if (monthClosed) {
+      const sumEff = sheet.reduce(
+        (acc, r) => acc + (r.totals?.T ?? 0) + (r.totals?.EX ?? 0),
+        0
+      );
+      totalRow.push(String(sumEff));
+    }
     body.push(totalRow);
 
     // ── Anchos de columna ─────────────────────────────────────────────────
@@ -235,10 +326,9 @@ export class PlanillaPdfService {
     const nameW     = 38;
     const posW      = 22;
     const indexW    = 5;
-    const totW      = 5.5;
     const dayW      = Math.max(
       3.5,
-      (usable - nameW - posW - indexW - totW * dayTypeKeys.length) / daysCount
+      (usable - nameW - posW - indexW - totW * totCount) / daysCount
     );
     const columnStyles: any = {
       0: { cellWidth: indexW, halign: 'center' },
@@ -248,55 +338,79 @@ export class PlanillaPdfService {
     for (let i = 0; i < daysCount; i++) {
       columnStyles[3 + i] = { cellWidth: dayW, halign: 'center' };
     }
-    for (let i = 0; i < dayTypeKeys.length; i++) {
+    for (let i = 0; i < totCount; i++) {
       columnStyles[3 + daysCount + i] = { cellWidth: totW, halign: 'center' };
     }
 
-    // ── Colorear celdas de días según tipo ────────────────────────────────
+    // ── Tabla: rejilla visible y tonos corporativos (sin negro puro) ─────
     autoTable(doc, {
       head,
       body,
       startY,
+      theme: 'grid',
       margin: { left: margin, right: margin, bottom: 42 },
       tableWidth: 'auto',
       styles: {
         fontSize: 5.5,
         cellPadding: { top: 0.8, bottom: 0.8, left: 0.5, right: 0.5 },
-        lineColor: [200, 210, 220],
-        lineWidth: 0.15,
+        lineColor: [...this.PDF_GRID_LINE],
+        lineWidth: 0.3,
         overflow: 'linebreak',
         minCellHeight: 5,
       },
       headStyles: {
-        fillColor:   [15, 23, 42],
-        textColor:   [255, 255, 255],
-        fontStyle:   'bold',
-        fontSize:    5.5,
-        halign:      'center',
-        valign:      'middle',
+        fillColor: [...this.PDF_HEADER_BG],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 5.5,
+        halign: 'center',
+        valign: 'middle',
         minCellHeight: 7,
+        lineColor: [...this.PDF_BORDER_STRONG],
+        lineWidth: 0.35,
       },
       alternateRowStyles: {
         fillColor: [248, 250, 252],
+        lineColor: [...this.PDF_GRID_LINE],
+        lineWidth: 0.3,
       },
       columnStyles,
       didParseCell: (data: any) => {
         const { section, column, row: rowData, cell } = data;
+
+        if (section === 'head') {
+          cell.styles.lineColor = [...this.PDF_BORDER_STRONG];
+          cell.styles.lineWidth = 0.35;
+          return;
+        }
+
         if (section !== 'body') return;
+
+        const colIdx = column.index;
+        cell.styles.lineColor = [...this.PDF_GRID_LINE];
+        cell.styles.lineWidth = 0.3;
 
         // ── Fila de totales (última fila)
         if (rowData.index === body.length - 1) {
-          cell.styles.fillColor   = [15, 23, 42];
-          cell.styles.textColor   = [255, 255, 255];
-          cell.styles.fontStyle   = 'bold';
-          cell.styles.fontSize    = 6;
+          cell.styles.fillColor = [...this.PDF_HEADER_BG];
+          cell.styles.textColor = [255, 255, 255];
+          cell.styles.fontStyle = 'bold';
+          cell.styles.fontSize = 6;
+          cell.styles.lineColor = [...this.PDF_BORDER_STRONG];
+          cell.styles.lineWidth = 0.35;
           return;
         }
 
         // ── Celdas de días (columna 3 … 3+daysCount-1)
-        const colIdx = column.index;
         if (colIdx >= 3 && colIdx < 3 + daysCount) {
           const val = cell.raw as string;
+          if (monthClosed && val === this.EFFECTIVE_DAY_MARK) {
+            cell.styles.fillColor = this.EFFECTIVE_DAY_FILL;
+            cell.styles.textColor = this.EFFECTIVE_DAY_TEXT;
+            cell.styles.fontStyle = 'bold';
+            cell.styles.fontSize = 7;
+            return;
+          }
           if (val && this.DAY_COLORS[val]) {
             const [br, bg, bb] = this.DAY_COLORS[val];
             const [tr, tg, tb] = this.DAY_TEXT_COLORS[val];
@@ -304,24 +418,21 @@ export class PlanillaPdfService {
             cell.styles.textColor = [tr, tg, tb];
             cell.styles.fontStyle = 'bold';
           }
+          return;
         }
 
-        // ── Celdas de totales (últimas columnas)
-        if (colIdx >= 3 + daysCount) {
-          const keyIdx = colIdx - 3 - daysCount;
-          const key    = dayTypeKeys[keyIdx];
-          if (key && this.DAY_COLORS[key]) {
-            const [br, bg, bb] = this.DAY_COLORS[key];
-            cell.styles.fillColor = [br, bg, bb];
-            cell.styles.textColor = this.DAY_TEXT_COLORS[key] ?? [0, 0, 0];
-            cell.styles.fontStyle = 'bold';
-          }
+        // ── Columna “Días efectivos” (solo mes cerrado)
+        if (monthClosed && colIdx >= 3 + daysCount) {
+          cell.styles.fillColor = [236, 253, 245];
+          cell.styles.textColor = [22, 101, 52];
+          cell.styles.fontStyle = 'bold';
+          return;
         }
 
         // ── Primera y segunda columna: texto más oscuro
         if (colIdx === 1) {
           cell.styles.fontStyle = 'bold';
-          cell.styles.fontSize  = 6;
+          cell.styles.fontSize = 6;
         }
       },
     });
@@ -393,7 +504,7 @@ export class PlanillaPdfService {
           // etiqueta en negrita
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(8);
-          doc.setTextColor(15, 23, 42);
+          doc.setTextColor(...this.PDF_HEADER_BG);
           doc.text(lb.title, x + colW / 2, lineY + 4, { align: 'center' });
         });
       }

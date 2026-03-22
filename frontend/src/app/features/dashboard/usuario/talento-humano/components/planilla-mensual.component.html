@@ -209,6 +209,19 @@
       </div>
     </div>
 
+    <div class="pm-attendance-detail-trigger">
+      <button type="button"
+              class="pm-btn pm-btn--outline pm-btn--detail"
+              [disabled]="loading || !businessId"
+              (click)="openAttendanceDetail()">
+        <span class="material-symbols-outlined">assignment</span>
+        Detalle de registro de asistencia
+      </button>
+      <p class="pm-attendance-detail-hint">
+        Vista resumida por colaborador: días trabajados, horas extra registradas, descansos, permisos, enfermedad, accidentes y totales de horas ({{ attendanceDetailStandardHrs }} h/día laboral tipo T).
+      </p>
+    </div>
+
     <!-- ── ESTADO CARGA / ERROR ── -->
     <div class="pm-state-center" *ngIf="loading">
       <div class="pm-spinner"></div>
@@ -247,9 +260,26 @@
                 <div class="pm-picker"
                      *ngIf="isEditing(row.employeeId, i)"
                      (click)="$event.stopPropagation()">
-                  <button *ngFor="let k of dayTypeKeys"
+                  <!-- Solo T y D desde planilla; resto desde formularios -->
+                  <button *ngFor="let k of editableDayTypeKeys"
                           class="pm-picker-btn {{ dayTypes[k].cls }}"
-                          (click)="saveDay(row, i, k)">{{ k }}</button>
+                          [title]="dayTypes[k].label"
+                          (click)="saveDay(row, i, k)">
+                    {{ k }}
+                  </button>
+                  <!-- Borrar registro -->
+                  <button class="pm-picker-btn pm-picker-btn--clear"
+                          title="Borrar día"
+                          [disabled]="clearingDay"
+                          (click)="clearDay(row, i)">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                  <!-- Cerrar picker -->
+                  <button class="pm-picker-btn pm-picker-btn--close"
+                          title="Cerrar (Esc)"
+                          (click)="cancelEdit(); $event.stopPropagation()">
+                    <span class="material-symbols-outlined">close</span>
+                  </button>
                 </div>
                 <!-- Celda -->
                 <div class="pm-day-cell {{ getDayClass(entry.dayType) }}"
@@ -366,6 +396,12 @@
             <span class="pm-sched-badge" *ngIf="selectedRow.workScheduleName">
               Activa: {{ selectedRow.workScheduleName }}
             </span>
+            <span class="pm-sched-badge pm-sched-badge--shift" *ngIf="selectedRow.workShiftName">
+              Horario: {{ selectedRow.workShiftName }}
+            </span>
+            <span class="pm-sched-badge pm-sched-badge--hours">
+              {{ selectedDailyHours | number:'1.0-1' }} h/día estimadas
+            </span>
           </div>
           <div class="pm-history-actions">
             <button class="pm-btn pm-btn--outline pm-btn--sm"
@@ -432,6 +468,23 @@
             <span class="pm-hist-range">
               {{ h.startDate }} → {{ h.endDate || 'actualidad' }}
             </span>
+            <!-- Horas/día editable solo para el periodo vigente -->
+            <span class="pm-hist-cycle pm-hist-cycle--hours" *ngIf="!h.endDate">
+              Horas/día:
+              <input
+                #dhInput
+                type="number"
+                min="1"
+                max="24"
+                step="0.5"
+                [ngModel]="h.dailyHours"
+                (blur)="onDailyHoursBlur(h, dhInput.value)"
+                [disabled]="updatingDailyHours"
+              />
+            </span>
+            <span class="pm-hist-cycle" *ngIf="h.endDate && h.dailyHours">
+              · {{ h.dailyHours | number:'1.0-1' }} h/día
+            </span>
             <span class="pm-hist-cycle" *ngIf="h.cycleStartDate && h.cycleStartDate !== h.startDate">
               (ciclo desde {{ h.cycleStartDate }})
             </span>
@@ -462,5 +515,243 @@
 
     </div><!-- /pm-detail -->
 
+    <!-- Historial de meses y resumen HHTT (debajo de la planilla) -->
+    <section class="pm-closures-card">
+      <header class="pm-closures-header">
+        <div class="pm-closures-title">
+          <h3>Historial de meses</h3>
+          <p>Registro de cierres, aprobaciones y PDFs firmados por período.</p>
+        </div>
+      </header>
+
+      <div class="pm-closures-body" *ngIf="!closuresLoading && closures?.length">
+        <table class="pm-closures-table">
+          <thead>
+            <tr>
+              <th>Año</th>
+              <th>Mes</th>
+              <th>Personas</th>
+              <th>Estado</th>
+              <th>Cerrado el</th>
+              <th>HHTT (horas)</th>
+              <th>PDF firmado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let c of closures">
+              <td>{{ c.year }}</td>
+              <td>{{ getClosureMonthLabel(c.month) }}</td>
+              <td>{{ c.peopleCount != null ? c.peopleCount : '—' }}</td>
+              <td>
+                <span class="pm-closures-status-badge"
+                      [ngClass]="{
+                        'pm-closures-status--open': c.status === 'OPEN',
+                        'pm-closures-status--closed': c.status === 'CLOSED',
+                        'pm-closures-status--approved': c.status === 'APPROVED'
+                      }">
+                  {{ c.status === 'OPEN' ? 'Abierto' : (c.status === 'CLOSED' ? 'Cerrado' : 'Aprobado') }}
+                </span>
+              </td>
+              <td>{{ c.closedAt | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <span class="pm-closures-hhtt" *ngIf="c.hhttTotalHours != null; else noHhtt">
+                  {{ c.hhttTotalHours | number:'1.0-1' }} h
+                </span>
+                <ng-template #noHhtt>—</ng-template>
+              </td>
+              <td>
+                <button *ngIf="c.signedPdfPath"
+                        type="button"
+                        class="pm-btn pm-btn--outline pm-btn--sm"
+                        (click)="viewSignedClosurePdf(c)">
+                  <span class="material-symbols-outlined">visibility</span>
+                  Ver PDF
+                </button>
+                <span *ngIf="!c.signedPdfPath" class="pm-closures-missing">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="closuresLoading" class="pm-closures-loading">Cargando historial de meses…</div>
+      <div *ngIf="!closuresLoading && !closures?.length" class="pm-closures-empty">
+        Aún no hay meses registrados en el historial.
+      </div>
+      <div *ngIf="closuresError" class="pm-alert pm-alert--error">
+        <span class="material-symbols-outlined">error</span> {{ closuresError }}
+      </div>
+      <div *ngIf="hhttSummaryError" class="pm-alert pm-alert--error">
+        <span class="material-symbols-outlined">error</span> {{ hhttSummaryError }}
+      </div>
+    </section>
+
   </div><!-- /pm-body -->
+
+  <!-- ── Modal: Detalle de registro de asistencia ── -->
+  <div class="pm-ad-overlay"
+       *ngIf="showAttendanceDetailModal"
+       (click)="onAttendanceDetailBackdrop($event)">
+    <div class="pm-ad-dialog"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="pm-ad-title"
+         (click)="$event.stopPropagation()">
+      <button type="button" class="pm-ad-close" (click)="closeAttendanceDetail()" aria-label="Cerrar detalle">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <header class="pm-ad-header">
+        <div class="pm-ad-header-main">
+          <nav class="pm-ad-breadcrumb" aria-label="Miga de pan">
+            <span>Talento humano</span>
+            <span class="material-symbols-outlined pm-ad-bc-ico">chevron_right</span>
+            <span>Planilla mensual</span>
+            <span class="material-symbols-outlined pm-ad-bc-ico">chevron_right</span>
+            <span class="pm-ad-breadcrumb-current">Asistencia</span>
+          </nav>
+          <h1 id="pm-ad-title" class="pm-ad-title">Detalle de Registro de Asistencia</h1>
+          <p class="pm-ad-lead">
+            Panel centralizado para el monitoreo de la integridad operativa. Registro detallado de tiempos, ausentismos y métricas de seguridad laboral por colaborador
+            ({{ getMonthLabel() }} {{ year }}).
+          </p>
+        </div>
+        <div class="pm-ad-header-filters" aria-label="Periodo">
+          <label>
+            <span>Año</span>
+            <select [(ngModel)]="year" (ngModelChange)="onDetailPeriodChange()">
+              <option *ngFor="let y of availableYears" [value]="y">{{ y }}</option>
+            </select>
+          </label>
+          <label>
+            <span>Mes</span>
+            <select [(ngModel)]="month" (ngModelChange)="onDetailPeriodChange()">
+              <option *ngFor="let m of months" [value]="m.v">{{ m.l }}</option>
+            </select>
+          </label>
+        </div>
+      </header>
+
+      <div class="pm-ad-alert" *ngIf="attendanceDetailError" role="alert">{{ attendanceDetailError }}</div>
+
+      <div class="pm-ad-loading" *ngIf="attendanceDetailLoading">
+        <div class="pm-spinner"></div>
+        <span>Cargando detalle y horas extra…</span>
+      </div>
+
+      <section class="pm-ad-table-wrap" *ngIf="!attendanceDetailLoading">
+        <div class="pm-ad-table-inner">
+          <table class="pm-ad-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Cédula</th>
+                <th class="pm-ad-th-num">Días trabajados</th>
+                <th class="pm-ad-th-num">Horas extras</th>
+                <th class="pm-ad-th-num">Días extras</th>
+                <th class="pm-ad-th-num">Descansos</th>
+                <th class="pm-ad-th-num">Permisos (días)</th>
+                <th class="pm-ad-th-num" title="Desglose no disponible en planilla">Permisos (horas)</th>
+                <th class="pm-ad-th-num">Enfermedad</th>
+                <th class="pm-ad-th-num">Accidentes</th>
+                <th class="pm-ad-th-num">Horas pactadas</th>
+                <th class="pm-ad-th-num">HHTT</th>
+                <th class="pm-ad-th-num">Días perdidos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of attendanceDetailRows; let i = index; trackBy: trackByDetailRow">
+                <td>
+                  <div class="pm-ad-namecell">
+                    <div class="pm-ad-avatar" [ngClass]="attendanceDetailAvatarClass(i)">{{ row.initials }}</div>
+                    <div>
+                      <p class="pm-ad-name">{{ row.fullName }}</p>
+                      <p class="pm-ad-role">{{ row.position }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="pm-ad-td-muted">{{ row.cedula }}</td>
+                <td class="pm-ad-td-center">
+                  <span class="pm-ad-pill pm-ad-pill--work">{{ row.daysWorked }}</span>
+                </td>
+                <td class="pm-ad-td-center pm-ad-td-strong">{{ row.overtimeHours | number:'1.0-1' }}</td>
+                <td class="pm-ad-td-center pm-ad-td-muted">{{ row.extraDays }}</td>
+                <td class="pm-ad-td-center pm-ad-td-muted">{{ row.restDays }}</td>
+                <td class="pm-ad-td-center pm-ad-td-muted">{{ row.permDays }}</td>
+                <td class="pm-ad-td-center pm-ad-td-muted">{{ row.permHours | number:'1.1-1' }}</td>
+                <td class="pm-ad-td-center pm-ad-td-muted">{{ row.sickness }}</td>
+                <td class="pm-ad-td-center">
+                  <span class="pm-ad-pill pm-ad-pill--none" *ngIf="row.accidents === 0">NINGUNO</span>
+                  <span class="pm-ad-pill pm-ad-pill--alert" *ngIf="row.accidents > 0">REPORTADO ({{ row.accidents }})</span>
+                </td>
+                <td class="pm-ad-td-center pm-ad-td-muted">{{ row.dailyHours | number:'1.0-1' }}</td>
+                <td class="pm-ad-td-center pm-ad-td-primary">{{ row.hhtt | number:'1.0-1' }}</td>
+                <td class="pm-ad-td-center pm-ad-td-muted">{{ row.lostDays | number:'1.0-1' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="pm-ad-empty" *ngIf="attendanceDetailRows.length === 0">No hay colaboradores en la vista actual (ajuste filtros o cargue la planilla).</p>
+      </section>
+
+      <div class="pm-ad-metrics" *ngIf="!attendanceDetailLoading">
+        <!-- Total empleados -->
+        <div class="pm-ad-metric">
+          <div class="pm-ad-metric-ico pm-ad-metric-ico--primary">
+            <span class="material-symbols-outlined">groups</span>
+          </div>
+          <div>
+            <p class="pm-ad-metric-label">Total empleados</p>
+            <p class="pm-ad-metric-val">{{ attendanceDetailMetrics.total }}</p>
+          </div>
+        </div>
+        <!-- Horas pactadas total -->
+        <div class="pm-ad-metric pm-ad-metric--accent">
+          <div class="pm-ad-metric-ico pm-ad-metric-ico--primary">
+            <span class="material-symbols-outlined">schedule</span>
+          </div>
+          <div>
+            <p class="pm-ad-metric-label">Horas pactadas</p>
+            <p class="pm-ad-metric-val">{{ attendanceDetailTotals.scheduledHours | number:'1.0-1' }} h</p>
+          </div>
+        </div>
+        <!-- HHTT total -->
+        <div class="pm-ad-metric pm-ad-metric--accent">
+          <div class="pm-ad-metric-ico pm-ad-metric-ico--secondary">
+            <span class="material-symbols-outlined">engineering</span>
+          </div>
+          <div>
+            <p class="pm-ad-metric-label">HHTT total</p>
+            <p class="pm-ad-metric-val">{{ attendanceDetailTotals.hhtt | number:'1.0-1' }} h</p>
+          </div>
+        </div>
+        <!-- Días perdidos total -->
+        <div class="pm-ad-metric">
+          <div class="pm-ad-metric-ico pm-ad-metric-ico--secondary">
+            <span class="material-symbols-outlined">event_busy</span>
+          </div>
+          <div>
+            <p class="pm-ad-metric-label">Días perdidos</p>
+            <p class="pm-ad-metric-val">{{ attendanceDetailTotals.lostDays | number:'1.0-1' }} d</p>
+          </div>
+        </div>
+        <!-- Incidentes -->
+        <div class="pm-ad-metric"
+             [class.pm-ad-metric--warn]="attendanceDetailMetrics.incidentEmployees > 0">
+          <div class="pm-ad-metric-ico pm-ad-metric-ico--warn">
+            <span class="material-symbols-outlined pm-ad-ico-fill">warning</span>
+          </div>
+          <div>
+            <p class="pm-ad-metric-label pm-ad-metric-label--warn">Estado de seguridad</p>
+            <p class="pm-ad-metric-val pm-ad-metric-val--warn">{{ attendanceDetailSecurityLabel() }}</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="pm-ad-footer-actions">
+        <button type="button" class="pm-btn pm-btn--primary" (click)="closeAttendanceDetail()">Cerrar</button>
+      </footer>
+    </div>
+  </div>
+
 </div><!-- /pm-root -->

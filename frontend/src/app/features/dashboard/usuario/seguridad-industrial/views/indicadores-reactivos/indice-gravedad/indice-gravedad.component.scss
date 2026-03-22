@@ -1,0 +1,730 @@
+$primary: #002b7d;
+$primary-container: #1a429f;
+$primary-fixed: #dbe1ff;
+$on-primary-container: #9fb6ff;
+$on-surface: #1a1b21;
+$on-surface-variant: #444652;
+$secondary: #4c616c;
+$secondary-container: #cfe6f2;
+$secondary-fixed-dim: #b4cad6;
+$tertiary: #6c0008;
+$tertiary-container: #970010;
+$tertiary-fixed: #ffdad6;
+$on-tertiary-container: #ff9e95;
+$on-tertiary-fixed-variant: #930010;
+$surface-tint: #3659b6;
+$error: #ba1a1a;
+$error-container: #ffdad6;
+$background: #faf8ff;
+$surface: #faf8ff;
+$surface-container: #eeedf6;
+$surface-container-low: #f4f3fb;
+$surface-container-lowest: #ffffff;
+$surface-container-highest: #e2e2ea;
+$outline-variant: #c4c6d4;
+
+:host {
+  display: block;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: $on-surface;
+  background: $background;
+}
+
+.ig-h1,
+.ig-h3,
+.ig-brand,
+.ig-kpi-val,
+.ig-formula-ig,
+.ig-formula-factor,
+.ig-td-g {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  line-height: 1;
+}
+
+.ig-page {
+  min-height: 100%;
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+  position: relative;
+}
+
+/* Top bar */
+.ig-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba($outline-variant, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.ig-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ig-brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: $primary-container;
+}
+
+.ig-topbar-divider {
+  width: 1px;
+  height: 1.5rem;
+  background: #f1f5f9;
+  margin: 0 0.5rem;
+}
+
+.ig-nav {
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.ig-nav-link {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  padding: 1.25rem 0;
+  cursor: default;
+  border-bottom: 2px solid transparent;
+}
+.ig-nav-link--active {
+  color: $primary-container;
+  font-weight: 700;
+  border-bottom-color: $primary-container;
+}
+
+.ig-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ig-icon-btn {
+  border: none;
+  background: transparent;
+  padding: 0.5rem;
+  border-radius: 999px;
+  color: $on-surface-variant;
+  line-height: 0;
+  transition: background 0.15s;
+}
+.ig-icon-btn:hover {
+  background: #f8fafc;
+}
+
+.ig-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: $surface-container;
+  border: 1px solid rgba($outline-variant, 0.35);
+}
+
+/* Main */
+.ig-main {
+  padding: 1.5rem 1.5rem 2rem;
+}
+
+.ig-container {
+  max-width: 80rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.ig-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+@media (min-width: 1200px) {
+  .ig-hero-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.ig-h1 {
+  font-size: 1.875rem;
+  font-weight: 800;
+  color: $primary;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.5rem;
+}
+
+.ig-lead {
+  margin: 0;
+  color: $on-surface-variant;
+  line-height: 1.6;
+  max-width: 40rem;
+}
+
+.ig-formula-card {
+  position: relative;
+  background: $primary-container;
+  color: #fff;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 40px rgba(26, 66, 159, 0.35);
+  overflow: hidden;
+}
+
+.ig-formula-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, $primary 0%, transparent 55%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.ig-formula-inner {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.ig-formula-kicker {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba($on-primary-container, 0.85);
+  margin-bottom: 0.75rem;
+}
+
+.ig-formula-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 1rem;
+  font-weight: 700;
+  font-size: 1.25rem;
+  font-family: 'Manrope', sans-serif;
+}
+
+.ig-formula-ig {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+}
+
+.ig-formula-eq {
+  font-size: 1.5rem;
+}
+
+.ig-formula-frac {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.ig-frac-num {
+  font-size: 0.875rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  padding-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.ig-frac-den {
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding-top: 0.25rem;
+  opacity: 0.95;
+}
+
+.ig-formula-factor {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: $on-primary-container;
+}
+
+.ig-formula-note {
+  margin: 1rem 0 0;
+  font-size: 0.625rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: left;
+}
+
+/* KPIs */
+.ig-kpi-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .ig-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 992px) {
+  .ig-kpi-row {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.ig-kpi {
+  background: $surface-container-lowest;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 7rem;
+  border-left: 4px solid $outline-variant;
+}
+
+.ig-kpi--p {
+  border-left-color: $primary;
+}
+.ig-kpi--s {
+  border-left-color: $secondary;
+}
+.ig-kpi--t {
+  border-left-color: $surface-tint;
+}
+.ig-kpi--ter {
+  border-left-color: $tertiary;
+}
+
+.ig-kpi-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: $on-surface-variant;
+}
+
+.ig-kpi-val-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.ig-kpi-val {
+  font-size: 1.875rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.ig-kpi-val--lg {
+  font-size: 2.25rem;
+}
+.ig-kpi-val--primary {
+  color: $primary;
+}
+.ig-kpi-val--tertiary {
+  color: $tertiary;
+}
+
+.ig-kpi-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.ig-kpi-badge--err {
+  color: $error;
+}
+
+.ig-kpi-ico-sm {
+  font-size: 0.875rem !important;
+}
+
+.ig-kpi-hint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: $secondary-fixed-dim;
+}
+.ig-kpi--t .ig-kpi-hint {
+  color: $on-surface-variant;
+}
+
+.ig-pill-mejor {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: $primary;
+  color: #fff;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+}
+
+/* Bento */
+.ig-bento {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (min-width: 1200px) {
+  .ig-bento {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.ig-chart-card {
+  background: $surface-container-lowest;
+  padding: 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.ig-chart-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+@media (min-width: 576px) {
+  .ig-chart-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.ig-h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.ig-chart-legend {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ig-leg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: $on-surface-variant;
+}
+
+.ig-leg-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  display: inline-block;
+}
+.ig-leg-dot--p {
+  background: $primary;
+}
+.ig-leg-dot--m {
+  background: $surface-container-highest;
+}
+
+.ig-chart-plot {
+  position: relative;
+  height: 16rem;
+  padding: 0 1rem 0.5rem;
+}
+
+.ig-chart-grid-line {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  height: 1px;
+  background: #f1f5f9;
+  pointer-events: none;
+}
+
+.ig-bars {
+  position: absolute;
+  inset: 0 1rem 1.5rem 1rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.ig-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  height: 100%;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.ig-bar {
+  width: 100%;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: $primary;
+  transition: background 0.2s;
+  min-height: 4px;
+}
+.ig-bar-col:hover .ig-bar {
+  background: $primary-container;
+}
+
+.ig-bar-lbl {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: $on-surface-variant;
+}
+
+/* Side naturaleza */
+.ig-side-panel {
+  background: $surface-container-low;
+  padding: 2rem;
+  border-radius: 0.75rem;
+}
+
+.ig-nat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ig-nat-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: $surface-container-lowest;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-left: 4px solid $outline-variant;
+}
+
+.ig-nat--tertiary {
+  border-left-color: $tertiary;
+}
+.ig-nat--error {
+  border-left-color: $error;
+}
+.ig-nat--otv {
+  border-left-color: $on-tertiary-fixed-variant;
+}
+.ig-nat--primary {
+  border-left-color: $primary;
+}
+.ig-nat--secondary {
+  border-left-color: $secondary;
+}
+
+.ig-nat-icon-wrap {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ig-nat-icon--tertiary {
+  background: $tertiary-fixed;
+}
+.ig-nat-icon--error {
+  background: $error-container;
+}
+.ig-nat-icon--on-tertiary-fixed-variant {
+  background: $tertiary-fixed;
+}
+.ig-nat-icon--primary {
+  background: $primary-fixed;
+}
+.ig-nat-icon--secondary {
+  background: $secondary-container;
+}
+
+.ig-nat-icon {
+  font-size: 1.25rem;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.ig-nat--tertiary .ig-nat-icon {
+  color: $tertiary;
+}
+.ig-nat--error .ig-nat-icon {
+  color: $error;
+}
+.ig-nat--otv .ig-nat-icon {
+  color: $tertiary;
+}
+.ig-nat--primary .ig-nat-icon {
+  color: $primary;
+}
+.ig-nat--secondary .ig-nat-icon {
+  color: $secondary;
+}
+
+.ig-nat-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.ig-nat-sub {
+  font-size: 0.625rem;
+  color: $on-surface-variant;
+}
+
+.ig-nat-jorn {
+  font-size: 0.875rem;
+  font-weight: 800;
+  font-family: 'Manrope', sans-serif;
+}
+
+.ig-nat-unit {
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  color: $on-surface-variant;
+}
+
+/* Table */
+.ig-table-card {
+  background: $surface-container-lowest;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.ig-table-head {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba($outline-variant, 0.15);
+}
+
+.ig-table-scroll {
+  overflow-x: auto;
+}
+
+.ig-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.ig-table thead tr {
+  background: $surface-container-low;
+}
+
+.ig-table th {
+  padding: 1rem 1.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: $on-surface-variant;
+  text-align: left;
+}
+
+.ig-table td {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid rgba($outline-variant, 0.12);
+  vertical-align: middle;
+}
+
+.ig-table tbody tr:hover {
+  background: $surface-container;
+}
+
+.ig-tr--soft {
+  background: rgba($surface-container-low, 0.35);
+}
+
+.ig-tr--resto td {
+  color: $on-surface-variant;
+}
+
+.text-muted-cell {
+  color: $on-surface-variant;
+}
+
+.text-tertiary {
+  color: $tertiary !important;
+}
+
+.ig-tag {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+.ig-tag--temp {
+  background: $secondary-container;
+  color: $secondary;
+}
+.ig-tag--perm {
+  background: $tertiary-container;
+  color: $on-tertiary-container;
+}
+
+.ig-td-g {
+  font-family: 'Manrope', sans-serif;
+  color: $primary;
+}
+
+.ig-td-nd {
+  color: #cbd5e1 !important;
+}
+
+.ig-td-resto {
+  color: $on-surface-variant;
+  font-style: italic;
+}
+
+/* FAB */
+.ig-fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 90;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: $primary;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-shadow: 0 12px 32px rgba(0, 43, 125, 0.35);
+  transition: transform 0.15s;
+}
+.ig-fab:hover {
+  color: #fff;
+  transform: scale(1.05);
+}
+.ig-fab .material-symbols-outlined {
+  font-size: 1.75rem;
+}

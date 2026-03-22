@@ -1,0 +1,228 @@
+<div class="if-page">
+  <!-- Barra superior contextual (sin duplicar sidebar de la app) -->
+  <header class="if-topbar">
+    <div class="if-topbar-left">
+      <span class="if-topbar-title">Índice de frecuencia de accidentes</span>
+    </div>
+    <div class="if-topbar-right">
+      <nav class="if-nav-pills d-none d-md-flex" aria-label="Secciones (demo)">
+        <span class="if-nav-pill if-nav-pill--active">Dashboard</span>
+        <span class="if-nav-pill">Alertas</span>
+        <span class="if-nav-pill">Reportes</span>
+        <span class="if-nav-pill">Estadísticas</span>
+      </nav>
+      <div class="if-topbar-icons">
+        <button type="button" class="if-icon-btn" aria-label="Notificaciones">
+          <span class="material-symbols-outlined">notifications</span>
+        </button>
+        <button type="button" class="if-icon-btn" aria-label="Ayuda">
+          <span class="material-symbols-outlined">help_outline</span>
+        </button>
+        <div class="if-avatar" aria-hidden="true"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="if-main">
+    <div class="if-container">
+      <!-- Hero + filtros -->
+      <section class="if-hero-row">
+        <div>
+          <h1 class="if-h1">Panel de indicadores IF</h1>
+          <p class="if-lead">Gestión de seguridad industrial y reportes operativos</p>
+        </div>
+        <div class="if-filter-pills">
+          <div class="if-select-wrap">
+            <select class="if-select" aria-label="Año fiscal">
+              <option>Año fiscal 2024</option>
+              <option>Año fiscal 2023</option>
+            </select>
+            <span class="material-symbols-outlined if-select-chevron">expand_more</span>
+          </div>
+          <div class="if-select-wrap">
+            <select class="if-select" aria-label="Proyecto o ámbito">
+              <option>Todos los proyectos</option>
+              <option>Refinería Alpha</option>
+              <option>Pipeline Beta</option>
+            </select>
+            <span class="material-symbols-outlined if-select-chevron">expand_more</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Fórmula + KPIs -->
+      <section class="if-bento">
+        <div class="if-formula-card">
+          <h3 class="if-kicker">Cálculo del indicador</h3>
+          <div class="if-formula-row">
+            <div class="if-formula-if">IF</div>
+            <span class="if-formula-eq">=</span>
+            <div class="if-formula-fraction">
+              <span class="if-formula-frac-line"># de lesiones</span>
+              <div class="formula-line"></div>
+              <span class="if-formula-frac-line"># de H-trabajadas</span>
+            </div>
+            <span class="if-formula-eq">×</span>
+            <div class="if-formula-factor">{{ factorOsha | number }}</div>
+          </div>
+          <p class="if-formula-note">
+            Base estándar OSHA para 100 empleados a tiempo completo (100 × 40 h × 50 semanas = 200.000 h-referencia).
+          </p>
+        </div>
+
+        <div class="if-kpi-grid">
+          <article class="if-kpi">
+            <div class="if-kpi-head">
+              <span class="material-symbols-outlined if-kpi-ico if-kpi-ico--danger">emergency</span>
+              <span class="if-badge-ytd">YTD</span>
+            </div>
+            <p class="if-kpi-label">Total lesiones</p>
+            <h4 class="if-kpi-value">{{ totalLesionesYtd }}</h4>
+            <div class="if-kpi-trend if-kpi-trend--ok">
+              <span class="material-symbols-outlined if-kpi-trend-ico">arrow_downward</span>
+              100% vs. año anterior
+            </div>
+          </article>
+
+          <article class="if-kpi">
+            <div class="if-kpi-head">
+              <span class="material-symbols-outlined if-kpi-ico if-kpi-ico--primary">schedule</span>
+            </div>
+            <p class="if-kpi-label">Total horas hombre</p>
+            <h4 class="if-kpi-value">{{ totalHorasYtdLabel }}</h4>
+            <div class="if-kpi-trend">
+              <span class="material-symbols-outlined if-kpi-trend-ico">trending_up</span>
+              Crecimiento consistente
+            </div>
+          </article>
+
+          <article class="if-kpi if-kpi--target">
+            <div class="if-kpi-deco" aria-hidden="true"></div>
+            <div class="if-kpi-head">
+              <span class="material-symbols-outlined if-kpi-ico if-kpi-ico--fill">security</span>
+            </div>
+            <p class="if-kpi-label">IF actual vs. meta</p>
+            <div class="if-kpi-if-row">
+              <h4 class="if-kpi-value">{{ ifActual | number : '1.2-2' }}</h4>
+              <span class="if-kpi-meta">/ {{ metaIf | number : '1.2-2' }}</span>
+            </div>
+            <div class="if-mini-bar">
+              <div class="if-mini-bar-fill" [style.width.%]="ifVsMetaBarDisplayPct"></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Gráfico evolución -->
+      <section class="if-chart-card">
+        <div class="if-chart-head">
+          <div>
+            <h3 class="if-h3">Evolución mensual IF</h3>
+            <p class="if-chart-sub">Consolidado empresa + contratistas</p>
+          </div>
+          <div class="if-legend">
+            <span class="if-legend-item"><i class="if-legend-dot if-legend-dot--primary"></i> IF real</span>
+            <span class="if-legend-item"><i class="if-legend-dot if-legend-dot--muted"></i> IF meta</span>
+          </div>
+        </div>
+        <div class="if-chart-area">
+          <div class="if-chart-grid-line" style="top: 0"></div>
+          <div class="if-chart-grid-line" style="top: 25%"></div>
+          <div class="if-chart-grid-line" style="top: 50%"></div>
+          <div class="if-chart-grid-line" style="top: 75%"></div>
+          <div class="if-chart-bars">
+            <div class="if-bar-col" *ngFor="let m of mesesGrafico">
+              <div class="if-bar-track">
+                <div
+                  class="if-bar-fill"
+                  [class.if-bar-fill--zero]="m.ifReal === 0"
+                  [style.height.px]="barHeightPx(m.ifReal)">
+                  <span class="if-bar-tip">{{ m.ifReal | number : '1.1-1' }}</span>
+                </div>
+              </div>
+              <span class="if-bar-label">{{ m.label }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tablas -->
+      <section class="if-tables">
+        <div class="if-table-block">
+          <h3 class="if-table-title">
+            <span class="if-table-title-dot"></span>
+            Índice de accidentes — empresa
+          </h3>
+          <div class="if-table-wrap">
+            <table class="if-table">
+              <thead>
+                <tr>
+                  <th>Mes</th>
+                  <th class="text-center"># Lesiones</th>
+                  <th class="text-center">H-trabajadas</th>
+                  <th class="text-end">IF</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of tablaEmpresa">
+                  <td>{{ r.mes }}</td>
+                  <td class="text-center">{{ r.lesiones }}</td>
+                  <td class="text-center">{{ r.horas | number }}</td>
+                  <td class="text-end if-td-if">{{ r.if | number : '1.2-2' }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="if-tfoot-row">
+                  <td>Total YTD</td>
+                  <td class="text-center">{{ tablaEmpresaTotales.lesiones }}</td>
+                  <td class="text-center">{{ tablaEmpresaTotales.horas | number }}</td>
+                  <td class="text-end">{{ tablaEmpresaTotales.if | number : '1.2-2' }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div class="if-table-block">
+          <h3 class="if-table-title">
+            <span class="if-table-title-dot if-table-title-dot--secondary"></span>
+            Índice de accidentes — contratistas
+          </h3>
+          <div class="if-table-wrap if-table-wrap--empty" *ngIf="tablaContratistas.length === 0">
+            <p class="if-empty-msg mb-0">Sin registros en el período. Los datos se mostrarán al integrar el backend.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Interpretación -->
+      <section class="if-interpret">
+        <div class="if-interpret-icon-wrap">
+          <span class="material-symbols-outlined if-interpret-icon">info</span>
+        </div>
+        <div class="if-interpret-body">
+          <h3 class="if-h3 mb-3">Interpretación del indicador</h3>
+          <p class="if-interpret-text">
+            El factor de <strong class="if-primary-strong">{{ factorOsha | number }}</strong> representa el equivalente de
+            100 trabajadores que laboran 40 horas por semana durante 50 semanas al año (100 × 40 × 50). Este estándar permite
+            comparar empresas de distinto tamaño y sector, normalizando el riesgo respecto a la carga horaria total.
+          </p>
+          <div class="if-interpret-badges">
+            <span class="if-interpret-badge">
+              <span class="material-symbols-outlined if-interpret-check">done</span>
+              Estándar OSHA (200.000)
+            </span>
+            <span class="if-interpret-badge">
+              <span class="material-symbols-outlined if-interpret-check">done</span>
+              Normalización para comparar IF
+            </span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <a routerLink="../../accidentes-incidentes/nuevo" class="if-fab">
+    <span class="material-symbols-outlined">add_alert</span>
+    <span class="if-fab-label">Reportar incidente</span>
+  </a>
+</div>

@@ -2,6 +2,8 @@ package com.improvementsolutions.repository;
 
 import com.improvementsolutions.model.EmployeeOvertime;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -14,6 +16,14 @@ public interface EmployeeOvertimeRepository extends JpaRepository<EmployeeOverti
 
     List<EmployeeOvertime> findByBusiness_IdAndOvertimeDateBetweenOrderByOvertimeDateDesc(
             Long businessId, LocalDate from, LocalDate to);
+
+    @Query("SELECT DISTINCT o FROM EmployeeOvertime o JOIN FETCH o.employee e LEFT JOIN FETCH e.department "
+            + "WHERE o.business.id = :businessId AND o.overtimeDate BETWEEN :from AND :to "
+            + "ORDER BY o.overtimeDate ASC, o.id ASC")
+    List<EmployeeOvertime> findByBusinessAndDateRangeWithEmployee(
+            @Param("businessId") Long businessId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to);
 
     List<EmployeeOvertime> findByEmployee_IdAndOvertimeDateBetweenOrderByOvertimeDateAsc(
             Long employeeId, LocalDate from, LocalDate to);
