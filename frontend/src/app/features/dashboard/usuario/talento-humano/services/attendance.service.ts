@@ -5,7 +5,7 @@ import { environment } from '../../../../../../environments/environment';
 
 // ─────────────── Interfaces / Modelos ───────────────
 
-export type DayType = 'T' | 'D' | 'EX' | 'V' | 'P' | 'E';
+export type DayType = 'T' | 'D' | 'EX' | 'V' | 'P' | 'E' | 'A';
 
 export interface DayTypeInfo {
   label: string;
@@ -20,6 +20,7 @@ export const DAY_TYPES: Record<DayType, DayTypeInfo> = {
   V:  { label: 'Vacaciones',  cls: 'day-V',  dotColor: '#3b82f6' },
   P:  { label: 'Permiso',     cls: 'day-P',  dotColor: '#eab308' },
   E:  { label: 'Enfermedad',  cls: 'day-E',  dotColor: '#ec4899' },
+  A:  { label: 'Accidente',   cls: 'day-A',  dotColor: '#dc2626' },
 };
 
 export interface WorkDayEntry {
@@ -32,7 +33,7 @@ export interface WorkDayEntry {
 }
 
 export interface DayTotals {
-  T: number; D: number; EX: number; V: number; P: number; E: number;
+  T: number; D: number; EX: number; V: number; P: number; E: number; A: number;
 }
 
 export interface EmployeeSheetRow {
@@ -49,7 +50,7 @@ export interface EmployeeSheetRow {
 }
 
 export interface MonthlyKpis {
-  T: number; D: number; EX: number; V: number; P: number; E: number;
+  T: number; D: number; EX: number; V: number; P: number; E: number; A: number;
   overtimeRecords: number;
   vacationRecords: number;
   permissionRecords: number;
@@ -114,6 +115,7 @@ export interface VacationRecord {
   daysAccumulated?: number;
   status?: string;
   notes?: string;
+  signedPdfPath?: string | null;
   createdAt?: string;
 }
 

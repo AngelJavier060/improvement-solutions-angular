@@ -78,4 +78,38 @@ public class BusinessIncidentController {
     public ResponseEntity<Map<String, Long>> getStats(@PathVariable String ruc) {
         return ResponseEntity.ok(incidentService.getStatsForBusiness(ruc));
     }
+
+    // ── GET /api/incidents/business/{ruc}/safety ── Solo Salud y Seguridad
+    @GetMapping("/business/{ruc}/safety")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    public ResponseEntity<List<BusinessIncidentDto>> getSafetyByRuc(@PathVariable String ruc) {
+        return ResponseEntity.ok(incidentService.findSafetyByRuc(ruc));
+    }
+
+    // ── GET /api/incidents/business/{ruc}/safety/range?from=&to= ──────────
+    @GetMapping("/business/{ruc}/safety/range")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    public ResponseEntity<List<BusinessIncidentDto>> getSafetyByRucAndRange(
+            @PathVariable String ruc,
+            @RequestParam String from,
+            @RequestParam String to) {
+        return ResponseEntity.ok(incidentService.findSafetyByRucAndDateRange(
+                ruc,
+                java.time.LocalDate.parse(from),
+                java.time.LocalDate.parse(to)));
+    }
+
+    // ── GET /api/incidents/business/{ruc}/safety/cedula/{cedula}?from=&to= ─
+    @GetMapping("/business/{ruc}/safety/cedula/{cedula}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    public ResponseEntity<List<BusinessIncidentDto>> getSafetyByCedula(
+            @PathVariable String ruc,
+            @PathVariable String cedula,
+            @RequestParam String from,
+            @RequestParam String to) {
+        return ResponseEntity.ok(incidentService.findSafetyByCedulaAndDateRange(
+                ruc, cedula,
+                java.time.LocalDate.parse(from),
+                java.time.LocalDate.parse(to)));
+    }
 }

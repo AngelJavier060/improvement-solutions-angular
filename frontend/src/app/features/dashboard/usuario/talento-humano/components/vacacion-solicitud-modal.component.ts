@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChange
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { EmployeeResponse } from '../models/employee.model';
-import { AttendanceService } from '../services/attendance.service';
+import { AttendanceService, VacationRecord } from '../services/attendance.service';
 
 declare const jspdf: any;
 
@@ -18,6 +18,7 @@ export class VacacionSolicitudModalComponent implements OnInit, OnChanges {
   @Input() businessId: number | null = null;
   @Input() businessName: string = '';
   @Input() businessLogoUrl: string | null = null;
+  @Input() previewRecord: VacationRecord | null = null;
   @Output() closed = new EventEmitter<void>();
   @Output() saved  = new EventEmitter<void>();
 
@@ -43,8 +44,13 @@ export class VacacionSolicitudModalComponent implements OnInit, OnChanges {
     private attendanceService: AttendanceService
   ) {}
 
+  get previewMode(): boolean { return !!this.previewRecord; }
+
   ngOnInit(): void {
     this.buildForm();
+    if (this.previewRecord) {
+      this.prefillFromRecord(this.previewRecord);
+    }
   }
 
   private setupApproverAutofill(): void {
@@ -81,9 +87,42 @@ export class VacacionSolicitudModalComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['employee'] && this.employee && this.form) {
+    if (changes['previewRecord'] && this.previewRecord && this.form) {
+      this.prefillFromRecord(this.previewRecord);
+    } else if (changes['employee'] && this.employee && this.form) {
       this.prefillEmployee();
     }
+  }
+
+  private prefillFromRecord(rec: VacationRecord): void {
+    const emp = this.employees.find(e => e.id === rec.employeeId) || null;
+    if (emp) this.employee = emp;
+    const fullName = rec.employeeName || (emp ? ((emp.nombres || '') + ' ' + (emp.apellidos || '')).trim() : '');
+    const dept = emp ? ((emp as any).departmentName || (emp as any).department || '') : '';
+    const cargo = emp ? ((emp as any).positionName || (emp as any).position?.name || (emp as any).jobTitle || '') : '';
+    const hire = emp ? ((emp as any).fechaIngreso || (emp as any).hireDate || '') : '';
+    this.form.patchValue({
+      employeeId: rec.employeeId,
+      fullName,
+      cedula: rec.cedula || (emp?.cedula || ''),
+      department: dept,
+      jobTitle: cargo,
+      hireDate: this.toIsoDate(hire),
+      startDate: rec.startDate || '',
+      endDate: rec.endDate || '',
+      daysBalance: rec.daysTaken ?? this.computeDaysFromRecord(rec),
+      observations: rec.notes || '',
+      status: rec.status || 'EN_CURSO',
+    }, { emitEvent: false });
+    this.recomputeDaysBalance();
+  }
+
+  private computeDaysFromRecord(rec: VacationRecord): number {
+    if (!rec.startDate || !rec.endDate) return 0;
+    const s = new Date(`${rec.startDate}T00:00:00`);
+    const e = new Date(`${rec.endDate}T00:00:00`);
+    const diff = e.getTime() - s.getTime();
+    return diff > 0 ? Math.round(diff / (24 * 60 * 60 * 1000)) : 0;
   }
 
   private buildForm(): void {
@@ -365,6 +404,10 @@ export class VacacionSolicitudModalComponent implements OnInit, OnChanges {
       try { this.pdfContent?.nativeElement?.classList?.remove('pdf-center'); } catch {}
       this.generatingPdf = false;
     }
+  }
+
+  async generateAndOpenPdf(): Promise<void> {
+    await this.generatePdf();
   }
 
   getFullName(): string {

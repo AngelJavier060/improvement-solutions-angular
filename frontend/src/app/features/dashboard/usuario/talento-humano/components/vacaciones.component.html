@@ -8,6 +8,7 @@
     [businessId]="businessId"
     [businessName]="businessName"
     [businessLogoUrl]="businessLogoUrl"
+    [previewRecord]="previewRecord"
     (closed)="onModalClosed()"
     (saved)="onModalSaved()">
   </app-vacacion-solicitud-modal>
@@ -147,16 +148,18 @@
                 </span>
               </td>
               <td class="vcol-actions no-print">
-                <button class="tbl-btn tbl-btn-view" *ngIf="!r.signedPdfPath" (click)="openNewForm(getEmployeeById(r.employeeId))" title="Ver / Editar">
-                  <i class="fas fa-eye me-1"></i>Ver/Editar
-                </button>
-                <ng-container *ngIf="!r.signedPdfPath; else viewPdfBtn">
+                <ng-container *ngIf="!r.signedPdfPath; else viewSignedPdf">
+                  <!-- Sin PDF firmado: Vista previa + Subir PDF -->
+                  <button class="tbl-btn tbl-btn-view" (click)="openPreviewForm(r)" title="Generar y visualizar PDF de solicitud">
+                    <i class="fas fa-file-pdf me-1"></i>Vista Previa PDF
+                  </button>
                   <label class="tbl-btn tbl-btn-upload" [class.disabled]="uploadingPdfId===r.id" [attr.title]="uploadingPdfId===r.id ? 'Cargando…' : 'Cargar PDF firmado'">
                     <i class="fas fa-file-upload me-1"></i>Subir PDF
                     <input type="file" accept="application/pdf" (change)="onUploadVacationPdf(r, $event)" style="display:none" />
                   </label>
                 </ng-container>
-                <ng-template #viewPdfBtn>
+                <ng-template #viewSignedPdf>
+                  <!-- Con PDF firmado: Ver PDF validado + Aprobar/Rechazar -->
                   <button class="tbl-btn tbl-btn-view" (click)="viewVacationPdf(r)" title="Ver PDF firmado">
                     <i class="fas fa-eye me-1"></i>Ver PDF
                   </button>

@@ -125,6 +125,15 @@
           <div class="pm-kpi-lbl">ENFERMEDAD</div>
         </div>
       </div>
+      <div class="pm-kpi">
+        <div class="pm-kpi-icon" style="background:#dc2626;">
+          <span class="material-symbols-outlined">warning</span>
+        </div>
+        <div class="pm-kpi-data">
+          <div class="pm-kpi-val">{{ kpis.A || 0 }}</div>
+          <div class="pm-kpi-lbl">ACCIDENTES</div>
+        </div>
+      </div>
     </div>
 
     <!-- ── FILTROS + LEYENDA ── -->
@@ -158,6 +167,7 @@
             <option value="V">Con vacaciones</option>
             <option value="P">Con permisos</option>
             <option value="E">Con enfermedad</option>
+            <option value="A">Con accidentes</option>
           </select>
         </div>
       </div>
@@ -243,10 +253,12 @@
                 </div>
                 <!-- Celda -->
                 <div class="pm-day-cell {{ getDayClass(entry.dayType) }}"
-                     [title]="(entry.holiday ? (entry.holidayName + ' — ') : '') + (entry.dayType ? (dayTypes[entry.dayType].label || entry.dayType) : '') + (entry.notes ? (' — ' + entry.notes) : '')"
+                     [class.pm-day-accident]="isAccidentDay(row, i)"
+                     [title]="(isAccidentDay(row, i) ? 'ACCIDENTE — Clic para ver detalle ' : '') + (entry.holiday ? (entry.holidayName + ' — ') : '') + (entry.dayType ? ((dayTypes[entry.dayType] ? dayTypes[entry.dayType].label : entry.dayType) || entry.dayType) : '') + (entry.notes ? (' — ' + entry.notes) : '')"
                      (click)="startEdit(row.employeeId, i, $event)">
                   {{ entry.dayType || '' }}
                   <span class="pm-hday-dot" *ngIf="entry.holiday" [title]="entry.holidayName"></span>
+                  <span class="pm-accident-dot" *ngIf="isAccidentDay(row, i)" title="Accidente de seguridad"></span>
                   <button class="pm-exicon material-symbols-outlined"
                           *ngIf="entry.dayType==='EX' && entry.notes?.startsWith('HE:')"
                           (click)="toggleNotePopover(row.employeeId, i, $event)"
@@ -282,6 +294,25 @@
                     <div><strong>Horas:</strong> {{ permPopover?.data?.hoursRequested || 0 }}</div>
                     <div><strong>Motivo:</strong> {{ permPopover?.data?.reason }}</div>
                     <div><strong>Estado:</strong> {{ permPopover?.data?.status }}</div>
+                  </div>
+                </div>
+
+                <!-- Popover detalle Accidente de seguridad -->
+                <div class="pm-note-pop pm-note-pop--accident" *ngIf="isAccidentPopoverOpen(row.employeeId, i)" (click)="$event.stopPropagation()">
+                  <div class="pm-note-pop-hd pm-note-pop-hd--accident">
+                    <span class="material-symbols-outlined">warning</span>
+                    Accidente de Seguridad
+                    <button type="button" class="pm-note-close" (click)="closeAccidentPopover(); $event.stopPropagation()" title="Cerrar">✕</button>
+                  </div>
+                  <div class="pm-note-pop-txt" *ngIf="accidentPopover?.incident as inc">
+                    <div><strong>Título:</strong> {{ inc.title || '—' }}</div>
+                    <div><strong>Fecha:</strong> {{ inc.incidentDate }} {{ inc.incidentTime || '' }}</div>
+                    <div><strong>Trabajador:</strong> {{ inc.personName || '—' }}</div>
+                    <div><strong>Cédula:</strong> {{ inc.personCedula || '—' }}</div>
+                    <div><strong>Clasificación:</strong> {{ inc.eventClassification || '—' }}</div>
+                    <div><strong>Lugar:</strong> {{ inc.location || '—' }}</div>
+                    <div *ngIf="inc.description"><strong>Descripción:</strong> {{ inc.description }}</div>
+                    <div *ngIf="inc.mitigationActions"><strong>Mitigación:</strong> {{ inc.mitigationActions }}</div>
                   </div>
                 </div>
               </td>

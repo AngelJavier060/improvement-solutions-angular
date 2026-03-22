@@ -7,7 +7,7 @@
   <!-- ── Modal Header bar ── -->
   <div class="modal-topbar">
     <span class="modal-topbar-title">
-      <i class="fas fa-umbrella-beach me-2"></i>Nueva Solicitud de Vacaciones
+      <i class="fas fa-umbrella-beach me-2"></i>{{ previewMode ? 'Vista Previa — Solicitud de Vacaciones' : 'Nueva Solicitud de Vacaciones' }}
     </span>
     <button class="modal-close-btn" (click)="close()" title="Cerrar">
       <i class="fas fa-times"></i>
@@ -219,19 +219,33 @@
           </div>
           <div class="form-actions-right">
             <button type="button" class="btn-cancel-form" (click)="close()">
-              Cancelar
+              {{ previewMode ? 'Cerrar' : 'Cancelar' }}
             </button>
-            <button type="button" class="btn-submit-form" [disabled]="form.invalid || saving || generatingPdf" (click)="submit()">
-              <ng-container *ngIf="!saving && !generatingPdf">
-                <i class="fas fa-save me-1"></i>Guardar y Visualizar PDF
-              </ng-container>
-              <ng-container *ngIf="saving">
-                <i class="fas fa-spinner fa-spin me-1"></i>Guardando…
-              </ng-container>
-              <ng-container *ngIf="generatingPdf">
-                <i class="fas fa-spinner fa-spin me-1"></i>Generando vista previa…
-              </ng-container>
-            </button>
+            <!-- Modo nueva solicitud: guardar y generar PDF -->
+            <ng-container *ngIf="!previewMode">
+              <button type="button" class="btn-submit-form" [disabled]="form.invalid || saving || generatingPdf" (click)="submit()">
+                <ng-container *ngIf="!saving && !generatingPdf">
+                  <i class="fas fa-save me-1"></i>Guardar y Visualizar PDF
+                </ng-container>
+                <ng-container *ngIf="saving">
+                  <i class="fas fa-spinner fa-spin me-1"></i>Guardando…
+                </ng-container>
+                <ng-container *ngIf="generatingPdf">
+                  <i class="fas fa-spinner fa-spin me-1"></i>Generando vista previa…
+                </ng-container>
+              </button>
+            </ng-container>
+            <!-- Modo vista previa: solo generar PDF -->
+            <ng-container *ngIf="previewMode">
+              <button type="button" class="btn-submit-form" [disabled]="generatingPdf" (click)="generateAndOpenPdf()">
+                <ng-container *ngIf="!generatingPdf">
+                  <i class="fas fa-file-pdf me-1"></i>Generar PDF
+                </ng-container>
+                <ng-container *ngIf="generatingPdf">
+                  <i class="fas fa-spinner fa-spin me-1"></i>Generando…
+                </ng-container>
+              </button>
+            </ng-container>
             <button type="button" class="btn-submit-form" *ngIf="pdfBlobUrl && !saving && !generatingPdf" (click)="printPdf()" title="Imprimir PDF">
               <i class="fas fa-print me-1"></i>Imprimir
             </button>

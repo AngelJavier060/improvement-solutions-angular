@@ -38,6 +38,7 @@ export class VacacionesComponent implements OnInit, AfterViewInit {
   uploadingPdfId: number | null = null;
 
   selectedEmployee: EmployeeResponse | null = null;
+  previewRecord: VacationRecord | null = null;
   // Search used for employee list (legacy) and for records list
   searchEmp: string = '';
   // Filters for main schedule table
@@ -167,7 +168,7 @@ export class VacacionesComponent implements OnInit, AfterViewInit {
       if (!this.businessRuc) this.businessRuc = active.ruc;
       // Cargar detalles para obtener logo
       this.businessService.getById(active.id).subscribe({
-        next: (b: any) => { this.businessLogoUrl = (b && (b.logo || b.logoUrl)) ? (b.logo || b.logoUrl) : null; },
+        next: (b: any) => { this.businessLogoUrl = this.resolveLogoUrl(b?.logo || b?.logoUrl || ''); },
         error: () => { /* ignore */ }
       });
       this.loadEmployees();
@@ -176,7 +177,7 @@ export class VacacionesComponent implements OnInit, AfterViewInit {
       this.businessService.getAll().subscribe({
         next: (list: any[]) => {
           const found = list.find((b: any) => b.ruc === this.businessRuc);
-          if (found) { this.businessId = found.id; this.businessName = found.name ?? ''; this.businessLogoUrl = found.logo || found.logoUrl || null; }
+          if (found) { this.businessId = found.id; this.businessName = found.name ?? ''; this.businessLogoUrl = this.resolveLogoUrl(found.logo || found.logoUrl || ''); }
           this.loadEmployees();
           this.loadRecords();
         },
@@ -616,17 +617,27 @@ export class VacacionesComponent implements OnInit, AfterViewInit {
 
   openNewForm(emp?: EmployeeResponse): void {
     this.selectedEmployee = emp || null;
+    this.previewRecord = null;
+    this.showNewForm = true;
+  }
+
+  openPreviewForm(rec: VacationRecord): void {
+    const emp = this.employees.find(e => e.id === rec.employeeId) || null;
+    this.selectedEmployee = emp;
+    this.previewRecord = rec;
     this.showNewForm = true;
   }
 
   onModalClosed(): void {
     this.showNewForm = false;
     this.selectedEmployee = null;
+    this.previewRecord = null;
   }
 
   onModalSaved(): void {
     this.showNewForm = false;
     this.selectedEmployee = null;
+    this.previewRecord = null;
     this.successMsg = 'Solicitud guardada. Se abrió la vista previa del PDF en una nueva pestaña.';
     setTimeout(() => this.successMsg = null, 4000);
     this.loadRecords();
@@ -822,5 +833,13 @@ export class VacacionesComponent implements OnInit, AfterViewInit {
 
   goBack(): void {
     if (this.businessRuc) this.router.navigate(['/usuario', this.businessRuc, 'talento-humano', 'planilla-mensual']);
+  }
+
+  private resolveLogoUrl(raw: string): string | null {
+    if (!raw || !raw.trim()) return null;
+    raw = raw.trim();
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (raw.startsWith('logos/')) return `/api/files/${raw}`;
+    return `/api/files/logos/${raw}`;
   }
 }

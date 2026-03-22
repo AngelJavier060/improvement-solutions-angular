@@ -55,6 +55,7 @@ public class EmployeeVacation {
 
     public int getDaysTaken() {
         if (startDate == null || endDate == null) return 0;
-        return (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        // endDate = día de reincorporación (no cuenta como vacación)
+        return (int) ChronoUnit.DAYS.between(startDate, endDate);
     }
 }

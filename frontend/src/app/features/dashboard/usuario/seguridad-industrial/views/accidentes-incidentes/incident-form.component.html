@@ -56,10 +56,10 @@
           <input class="field-input" type="time" formControlName="incidentTime"/>
         </div>
 
-        <div>
-          <label class="field-label">Lugar</label>
-          <input class="field-input" type="text" placeholder="Ubicación exacta del evento"
-                 formControlName="location"/>
+        <div class="field-span-2">
+          <label class="field-label">Empresa</label>
+          <input class="field-input" type="text" placeholder="Nombre de la empresa involucrada"
+                 formControlName="companyName" readonly/>
         </div>
 
         <div>
@@ -70,19 +70,10 @@
           </select>
         </div>
 
-        <!-- Empresa: readonly, se llena automáticamente -->
-        <div class="field-span-2">
-          <label class="field-label">
-            Empresa
-            <span class="auto-badge">Auto</span>
-          </label>
-          <div class="company-display" [class.has-error]="!!businessLoadError">
-            <span class="material-symbols-outlined company-icon">business</span>
-            <span class="company-name-text" *ngIf="!businessLoadError">
-              {{ businessName || 'Cargando empresa...' }}
-            </span>
-            <span class="company-name-text company-error" *ngIf="businessLoadError">{{ businessLoadError }}</span>
-          </div>
+        <div>
+          <label class="field-label">Lugar</label>
+          <input class="field-input" type="text" placeholder="Ubicación exacta del evento"
+                 formControlName="location"/>
         </div>
 
       </div>
@@ -98,42 +89,26 @@
       <div class="form-grid grid-2 mb-3">
         <!-- Nombre y Apellido: desplegable con empleados -->
         <div>
-          <label class="field-label-sm">Nombre y Apellido</label>
-          <div class="employee-select-wrapper">
-            <span class="material-symbols-outlined select-icon">person_search</span>
-            <select class="field-input-select"
-                    [(ngModel)]="employeeSelectValue"
-                    [ngModelOptions]="{standalone: true}"
-                    (ngModelChange)="onEmployeeSelected($event)">
-              <option [ngValue]="''">— Seleccionar empleado —</option>
-              <option *ngFor="let emp of employees" [ngValue]="'' + emp.id">
-                {{ getEmployeeFullName(emp) }}
-              </option>
-            </select>
-          </div>
+          <label class="field-label-sm">Seleccionar Empleado</label>
+          <select class="field-input-line" (change)="onEmployeeSelected($any($event.target).value)">
+            <option value="">-- Seleccione empleado --</option>
+            <option *ngFor="let emp of employees" [value]="$any(emp).id">{{ getEmployeeFullName(emp) }}</option>
+          </select>
         </div>
 
         <!-- Número de Cédula: buscador con autocompletado -->
         <div>
-          <label class="field-label-sm">
-            Número de Cédula
-            <span class="search-hint">↵ Busca y completa datos</span>
-          </label>
-          <div class="cedula-input-wrapper">
-            <span class="material-symbols-outlined search-icon-inline">search</span>
-            <input class="field-input-line cedula-search"
-                   type="text"
-                   placeholder="Ingrese cédula para buscar..."
-                   formControlName="personCedula"/>
-          </div>
+          <label class="field-label-sm">Número de Cédula</label>
+          <input class="field-input-line" type="text" placeholder="Buscar por cédula..."
+                 formControlName="personCedula"/>
         </div>
       </div>
 
       <div class="form-grid grid-4 mb-3">
         <div>
-          <label class="field-label-sm">Nombre Completo</label>
+          <label class="field-label-sm">Área</label>
           <input class="field-input-line" type="text" placeholder="Se completa automáticamente"
-                 formControlName="personName" readonly/>
+                 formControlName="personArea" readonly/>
         </div>
         <div>
           <label class="field-label-sm">Cargo</label>
@@ -141,18 +116,10 @@
                  formControlName="personPosition" readonly/>
         </div>
         <div>
-          <label class="field-label-sm">Área</label>
-          <input class="field-input-line" type="text" placeholder="Se completa automáticamente"
-                 formControlName="personArea" readonly/>
-        </div>
-        <div>
           <label class="field-label-sm">Edad</label>
           <input class="field-input-line" type="number" placeholder="—"
                  formControlName="personAge" readonly/>
         </div>
-      </div>
-
-      <div class="form-grid grid-3">
         <div>
           <label class="field-label-sm">Género</label>
           <select class="field-input-line" formControlName="personGender">
@@ -162,6 +129,9 @@
             <option>Otro</option>
           </select>
         </div>
+      </div>
+
+      <div class="form-grid grid-3">
         <div>
           <label class="field-label-sm">Día en Turno</label>
           <input class="field-input-line" type="text" placeholder="Se completa automáticamente"
@@ -240,9 +210,9 @@
       <p class="criteria-intro">
         Marque <strong>SÍ</strong> o <strong>NO</strong> según corresponda. Los criterios se muestran en dos columnas para facilitar la lectura.
       </p>
-      <div class="criteria-grid-wrap">
-        <div class="criteria-row" *ngFor="let field of criteriaFields">
-          <span class="criteria-label">{{ field.label }}</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div *ngFor="let field of criteriaFields" style="display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;">
+          <span class="criteria-label" style="font-size:0.88rem;">{{ field.label }}</span>
           <div class="toggle-group">
             <button type="button" class="toggle-btn"
                     [class.active]="form.get(field.key)?.value === true"

@@ -18,6 +18,7 @@ import { Business } from '../../../../../models/business.model';
 import { ConfigurationService, WorkSchedule } from '../services/configuration.service';
 import { AttendanceHolidayService, HolidayDto } from '../services/attendance.service';
 import { PlanillaPdfService } from '../services/planilla-pdf.service';
+import { BusinessIncidentService, BusinessIncidentDto } from '../../../../../services/business-incident.service';
 
 @Component({
   selector: 'app-planilla-mensual',
@@ -80,7 +81,11 @@ export class PlanillaMensualComponent implements OnInit {
   holidayDraft = { date: '', name: '' };
 
   readonly dayTypes = DAY_TYPES;
-  readonly dayTypeKeys: DayType[] = ['T', 'D', 'EX', 'V', 'P', 'E'];
+  readonly dayTypeKeys: DayType[] = ['T', 'D', 'EX', 'V', 'P', 'E', 'A'];
+
+  // Accidentes de seguridad: mapa cédula+fecha → incidente
+  private incidentMap: Map<string, BusinessIncidentDto> = new Map();
+  accidentPopover: { empId: number; dayIdx: number; incident: BusinessIncidentDto } | null = null;
 
   readonly months = [
     { v: 1,  l: 'Enero' },   { v: 2,  l: 'Febrero' }, { v: 3,  l: 'Marzo' },
@@ -105,7 +110,8 @@ export class PlanillaMensualComponent implements OnInit {
     private businessService: BusinessService,
     private configService: ConfigurationService,
     private pdfService: PlanillaPdfService,
-    private holidayService: AttendanceHolidayService
+    private holidayService: AttendanceHolidayService,
+    private incidentService: BusinessIncidentService
   ) {}
 
   ngOnInit(): void {
@@ -222,6 +228,7 @@ export class PlanillaMensualComponent implements OnInit {
     this.attendanceService.getMonthlySheet(this.businessId, this.year, this.month).subscribe({
       next: rows => {
         this.sheet = rows;
+        this.applyAccidentOverlay();
         // Refresh selected row data if panel is open
         if (this.selectedRow) {
           const refreshed = rows.find(r => r.employeeId === this.selectedRow!.employeeId);
@@ -239,6 +246,7 @@ export class PlanillaMensualComponent implements OnInit {
 
     this.loadClosure();
     this.loadHolidays();
+    this.loadSafetyIncidents();
   }
 
   loadHolidays(): void {
@@ -515,8 +523,17 @@ export class PlanillaMensualComponent implements OnInit {
       this.closePermPopover();
       return;
     }
+    if (this.accidentPopover) {
+      this.closeAccidentPopover();
+      return;
+    }
     const row = this.filteredSheet.find(r => r.employeeId === empId) || this.sheet.find(r => r.employeeId === empId);
     if (row && this.isLocked(row, dayIdx)) {
+      // Si es día de accidente, mostrar popover de accidente
+      if (this.isAccidentDay(row, dayIdx)) {
+        this.toggleAccidentPopover(empId, dayIdx, event);
+        return;
+      }
       // Si está bloqueado y es permiso aprobado con detalle, mostrar popover de permiso
       const entry = row.days[dayIdx];
       if (entry?.dayType === 'P' && typeof entry.notes === 'string' && entry.notes.trim().toUpperCase().startsWith('PERM:')) {
@@ -528,6 +545,7 @@ export class PlanillaMensualComponent implements OnInit {
     }
     this.notePopover = null;
     this.permPopover = null;
+    this.accidentPopover = null;
     this.editingCell = { empId, dayIdx };
   }
 
@@ -540,6 +558,8 @@ export class PlanillaMensualComponent implements OnInit {
   isLocked(row: EmployeeSheetRow, dayIdx: number): boolean {
     const entry = row.days[dayIdx];
     if (!entry) return false;
+    // Bloquear días de accidente de seguridad
+    if (this.isAccidentDay(row, dayIdx)) return true;
     // Bloquear días de Vacaciones (V) y Horas Extra con motivo HE
     if (entry.dayType === 'V') return true;
     if (entry.dayType === 'EX' && typeof entry.notes === 'string' && entry.notes.trim().toUpperCase().startsWith('HE:')) return true;
@@ -597,6 +617,90 @@ export class PlanillaMensualComponent implements OnInit {
   getTotalForKey(key: string): number {
     if (!this.kpis) return 0;
     return (this.kpis as any)[key] ?? 0;
+  }
+
+  // ─── Accidentes de seguridad ───
+  private loadSafetyIncidents(): void {
+    if (!this.businessRuc) return;
+    const from = `${this.year}-${String(this.month).padStart(2,'0')}-01`;
+    const lastDay = new Date(this.year, this.month, 0).getDate();
+    const to = `${this.year}-${String(this.month).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+    this.incidentService.getSafetyByRucAndRange(this.businessRuc, from, to).subscribe({
+      next: list => {
+        this.incidentMap.clear();
+        for (const inc of list) {
+          if (inc.personCedula && inc.incidentDate) {
+            const key = `${inc.personCedula.trim()}|${inc.incidentDate}`;
+            this.incidentMap.set(key, inc);
+          }
+        }
+        // Overlay accident days onto the already-loaded sheet
+        this.applyAccidentOverlay();
+        this.applyFilters();
+      },
+      error: () => {}
+    });
+  }
+
+  /** Marca las celdas de accidente con dayType='A' en el sheet cargado */
+  private applyAccidentOverlay(): void {
+    if (this.incidentMap.size === 0 || this.sheet.length === 0) return;
+    for (const row of this.sheet) {
+      if (!row.cedula) continue;
+      let accidentCount = 0;
+      for (let i = 0; i < row.days.length; i++) {
+        const date = this.monthDates[i];
+        if (!date) continue;
+        const key = `${row.cedula.trim()}|${date}`;
+        if (this.incidentMap.has(key)) {
+          const entry = row.days[i];
+          const oldType = entry.dayType;
+          if (oldType !== 'A' as DayType) {
+            entry.dayType = 'A' as DayType;
+            // Ajustar totales
+            if (oldType && (row.totals as any)[oldType] > 0) {
+              (row.totals as any)[oldType]--;
+            }
+            (row.totals as any)['A'] = ((row.totals as any)['A'] ?? 0) + 1;
+          }
+          accidentCount++;
+        }
+      }
+    }
+  }
+
+  getIncidentForCell(row: EmployeeSheetRow, dayIdx: number): BusinessIncidentDto | null {
+    if (!row.cedula) return null;
+    const date = this.monthDates[dayIdx];
+    return this.incidentMap.get(`${row.cedula.trim()}|${date}`) || null;
+  }
+
+  isAccidentDay(row: EmployeeSheetRow, dayIdx: number): boolean {
+    return this.getIncidentForCell(row, dayIdx) !== null;
+  }
+
+  isAccidentPopoverOpen(empId: number, dayIdx: number): boolean {
+    return !!this.accidentPopover && this.accidentPopover.empId === empId && this.accidentPopover.dayIdx === dayIdx;
+  }
+
+  toggleAccidentPopover(empId: number, dayIdx: number, event: Event): void {
+    event.stopPropagation();
+    if (this.isAccidentPopoverOpen(empId, dayIdx)) {
+      this.accidentPopover = null;
+      return;
+    }
+    const row = this.filteredSheet.find(r => r.employeeId === empId) || this.sheet.find(r => r.employeeId === empId);
+    if (!row) return;
+    const inc = this.getIncidentForCell(row, dayIdx);
+    if (!inc) return;
+    this.accidentPopover = { empId, dayIdx, incident: inc };
+    this.editingCell = null;
+    this.notePopover = null;
+    this.permPopover = null;
+  }
+
+  closeAccidentPopover(): void {
+    this.accidentPopover = null;
   }
 
   navigateTo(sub: string): void {

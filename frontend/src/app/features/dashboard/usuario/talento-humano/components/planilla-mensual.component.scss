@@ -9,6 +9,7 @@
 .day-V     { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
 .day-P     { background: #fffbeb; color: #d97706; border: 1px solid #fef3c7; }
 .day-E     { background: #fff1f2; color: #e11d48; border: 1px solid #ffe4e6; }
+.day-A     { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 .day-blank { background: #ffffff; color: transparent; border: 1px solid #f1f5f9; }
 
 /* ═══════════════════════════════════════════
@@ -887,6 +888,42 @@
    ═══════════════════════════════════════════ */
 @keyframes pm-spin  { to { transform: rotate(360deg); } }
 @keyframes pm-pulse { 0%,100%{ opacity:1 } 50%{ opacity:.4 } }
+
+/* ═══════════════════════════════════════════
+   ACCIDENT DAY INDICATOR
+   ═══════════════════════════════════════════ */
+.pm-day-accident {
+  border: 2px solid #dc2626 !important;
+  background: #fef2f2 !important;
+  position: relative;
+  cursor: pointer !important;
+}
+
+.pm-accident-dot {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #dc2626;
+  pointer-events: none;
+}
+
+/* Accident popover header */
+.pm-note-pop--accident {
+  min-width: 260px;
+}
+
+.pm-note-pop-hd--accident {
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+  border-bottom-color: #fecaca !important;
+}
+
+.pm-note-pop-hd--accident .material-symbols-outlined {
+  color: #dc2626;
+}
 
 /* ═══════════════════════════════════════════
    PRINT STYLES

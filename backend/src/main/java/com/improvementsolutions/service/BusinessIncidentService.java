@@ -97,6 +97,30 @@ public class BusinessIncidentService {
         log.info("[BusinessIncidentService] Incidente eliminado id={}", id);
     }
 
+    // ── Listar solo incidentes de Salud y Seguridad por RUC ─────────────
+    @Transactional(readOnly = true)
+    public List<BusinessIncidentDto> findSafetyByRuc(String ruc) {
+        return incidentRepository
+                .findByBusiness_RucAndAffectationTypeOrderByIncidentDateDescCreatedAtDesc(ruc, "Salud y Seguridad")
+                .stream().map(this::toDto).collect(Collectors.toList());
+    }
+
+    // ── Incidentes de seguridad en un rango de fechas ─────────────────────
+    @Transactional(readOnly = true)
+    public List<BusinessIncidentDto> findSafetyByRucAndDateRange(String ruc, LocalDate from, LocalDate to) {
+        return incidentRepository
+                .findSafetyIncidentsByRucAndDateRange(ruc, from, to)
+                .stream().map(this::toDto).collect(Collectors.toList());
+    }
+
+    // ── Incidentes de seguridad de un empleado por cédula en rango ────────
+    @Transactional(readOnly = true)
+    public List<BusinessIncidentDto> findSafetyByCedulaAndDateRange(String ruc, String cedula, LocalDate from, LocalDate to) {
+        return incidentRepository
+                .findSafetyIncidentsByCedulaAndDateRange(ruc, cedula, from, to)
+                .stream().map(this::toDto).collect(Collectors.toList());
+    }
+
     // ── Estadísticas del mes ─────────────────────────────────────────────
     @Transactional(readOnly = true)
     public java.util.Map<String, Long> getStatsForBusiness(String ruc) {

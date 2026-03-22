@@ -1,139 +1,188 @@
-<div class="attendance-module">
-  <div class="module-header">
+<div class="acc-page">
+
+  <!-- Header -->
+  <div class="acc-header">
     <div>
-      <nav class="breadcrumb-nav">
-        <button class="btn-link" (click)="goBack()"><i class="fas fa-arrow-left me-1"></i> Planilla</button>
-        <span class="sep">/</span><span>Accidentes / Incidentes</span>
-      </nav>
-      <h2 class="module-title"><i class="fas fa-exclamation-triangle me-2 text-red"></i>Registro de Accidentes e Incidentes</h2>
-      <p class="module-subtitle">Registra y gestiona los accidentes/incidentes laborales — {{ businessName }}</p>
-    </div>
-  </div>
-
-  <div class="alert-success" *ngIf="successMsg">
-    <i class="fas fa-check-circle me-2"></i>{{ successMsg }}
-  </div>
-
-  <div class="two-col-layout">
-    <!-- Lista empleados -->
-    <div class="employees-panel">
-      <div class="panel-head">
-        <span class="panel-title">Personal activo</span>
-        <div class="search-small">
-          <i class="fas fa-search"></i>
-          <input [(ngModel)]="searchEmp" placeholder="Buscar…" />
-        </div>
-      </div>
-      <div class="emp-list">
-        <div *ngIf="loadingEmps" class="mini-loader">Cargando…</div>
-        <button *ngFor="let emp of filteredEmployees"
-                class="emp-btn"
-                [class.selected]="selectedEmployee?.id === emp.id"
-                (click)="selectEmployee(emp)">
-          <div class="emp-avatar">{{ (emp.nombres || emp.name || 'X').charAt(0).toUpperCase() }}</div>
-          <div class="emp-info">
-            <div class="emp-name">{{ getFullName(emp) }}</div>
-            <div class="emp-sub">{{ emp.position || 'Sin cargo' }} · {{ emp.cedula }}</div>
-          </div>
-          <i class="fas fa-chevron-right emp-arrow"></i>
+      <nav class="acc-breadcrumb">
+        <button class="acc-link" (click)="goBack()">
+          <i class="fas fa-arrow-left"></i> Talento Humano
         </button>
-        <p *ngIf="!loadingEmps && filteredEmployees.length === 0" class="no-data-sm">Sin personal encontrado</p>
+        <span class="acc-sep">/</span>
+        <span class="acc-current">Listado de Incidentes</span>
+      </nav>
+      <h2 class="acc-title">Listado de Incidentes</h2>
+      <p class="acc-subtitle">
+        Registro centralizado de eventos de seguridad industrial que involucran personal.
+        Solo se muestran incidentes de tipo <strong>Salud y Seguridad</strong> — {{ businessName }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="acc-alert-error" *ngIf="error">
+    <i class="fas fa-exclamation-circle"></i> {{ error }}
+  </div>
+
+  <!-- Table Card -->
+  <div class="acc-table-card">
+    <!-- Toolbar -->
+    <div class="acc-toolbar">
+      <div class="acc-search">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Buscar por nombre, cédula, título..."
+               [(ngModel)]="searchTerm" (input)="applyFilters()"/>
       </div>
     </div>
 
-    <!-- Panel derecho -->
-    <div class="right-panel">
-      <!-- Formulario -->
-      <div class="form-card" *ngIf="showForm && selectedEmployee">
-        <div class="form-card-head">
-          <span>Registrar incidente — <strong>{{ getFullName(selectedEmployee) }}</strong></span>
-          <button class="btn-icon" (click)="cancelForm()"><i class="fas fa-times"></i></button>
-        </div>
-        <form [formGroup]="form" (ngSubmit)="submitForm()" class="form-grid">
-          <div class="field-group">
-            <label>Fecha <span class="required">*</span></label>
-            <input type="date" formControlName="incidentDate" />
-          </div>
-          <div class="field-group">
-            <label>Hora</label>
-            <input type="time" formControlName="incidentTime" />
-          </div>
-          <div class="field-group">
-            <label>Tipo <span class="required">*</span></label>
-            <select formControlName="incidentType">
-              <option *ngFor="let t of incidentTypes" [value]="t">{{ t }}</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label>Gravedad <span class="required">*</span></label>
-            <select formControlName="severity">
-              <option *ngFor="let s of severities" [value]="s">{{ s }}</option>
-            </select>
-          </div>
-          <div class="field-group full">
-            <label>Descripción <span class="required">*</span></label>
-            <textarea formControlName="description" rows="3"
-                      placeholder="Describa detalladamente el incidente/accidente ocurrido…"></textarea>
-          </div>
-          <div class="field-group full">
-            <label>Lugar / Ubicación</label>
-            <input type="text" formControlName="location" placeholder="Área, sección, lugar específico…" />
-          </div>
-          <div class="field-group full">
-            <label>Observaciones adicionales</label>
-            <textarea formControlName="notes" rows="2" placeholder="Acciones tomadas, seguimiento, notas…"></textarea>
-          </div>
-          <div class="form-actions">
-            <button type="button" class="btn-cancel" (click)="cancelForm()">Cancelar</button>
-            <button type="submit" class="btn-save" [disabled]="form.invalid || saving">
-              <i class="fas fa-save me-1"></i>{{ saving ? 'Guardando…' : 'Guardar registro' }}
-            </button>
-          </div>
-        </form>
-        <div class="alert-error" *ngIf="error">{{ error }}</div>
-      </div>
+    <!-- Loading -->
+    <div class="acc-loading" *ngIf="loading">
+      <i class="fas fa-spinner fa-spin"></i> Cargando incidentes...
+    </div>
 
-      <!-- Registros -->
-      <div class="records-card">
-        <div class="records-head">
-          <span class="panel-title">Registros del período</span>
-          <div class="period-filters">
-            <select [(ngModel)]="filterYear"  (change)="loadRecords()">
-              <option *ngFor="let y of availableYears" [value]="y">{{ y }}</option>
-            </select>
-            <select [(ngModel)]="filterMonth" (change)="loadRecords()">
-              <option *ngFor="let m of months" [value]="m.v">{{ m.l }}</option>
-            </select>
-          </div>
+    <!-- Empty -->
+    <div class="acc-empty" *ngIf="!loading && filteredRecords.length === 0">
+      <i class="fas fa-hard-hat"></i>
+      <p>No hay incidentes de seguridad registrados</p>
+    </div>
+
+    <!-- Table -->
+    <div class="acc-table-wrap" *ngIf="!loading && filteredRecords.length > 0">
+      <table class="acc-table">
+        <thead>
+          <tr>
+            <th>Clasificación</th>
+            <th>Fecha</th>
+            <th>Título del Accidente</th>
+            <th>Trabajador</th>
+            <th>Número de Cédula</th>
+            <th>Descripción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of filteredRecords"
+              class="acc-row"
+              [class.acc-row-selected]="selectedIncident?.id === r.id"
+              (click)="selectIncident(r)">
+            <td>
+              <span class="acc-badge" [ngClass]="getClassificationBadge(r.eventClassification)">
+                {{ r.eventClassification || 'Seguridad' }}
+              </span>
+            </td>
+            <td class="acc-date">{{ r.incidentDate }}</td>
+            <td class="acc-title-cell">{{ r.title || '—' }}</td>
+            <td>
+              <div class="acc-person">
+                <div class="acc-avatar">{{ getInitials(r.personName) }}</div>
+                <span class="acc-person-name">{{ r.personName || '—' }}</span>
+              </div>
+            </td>
+            <td class="acc-cedula">{{ r.personCedula || '—' }}</td>
+            <td class="acc-desc">{{ r.description || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación info -->
+    <div class="acc-footer" *ngIf="!loading && filteredRecords.length > 0">
+      <span class="acc-count">
+        Mostrando {{ filteredRecords.length }} de {{ records.length }} incidentes de seguridad
+      </span>
+    </div>
+  </div>
+
+  <!-- Detail Panel -->
+  <div class="acc-detail-panel" *ngIf="selectedIncident">
+    <div class="acc-detail-header">
+      <h3>Detalle del Incidente</h3>
+      <button class="acc-close-btn" (click)="closeDetail()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="acc-detail-body">
+      <div class="acc-detail-grid">
+        <div class="acc-detail-item">
+          <label>Título</label>
+          <span>{{ selectedIncident.title || '—' }}</span>
         </div>
-        <div class="mini-loader" *ngIf="loading">Cargando registros…</div>
-        <div class="no-data" *ngIf="!loading && records.length === 0">
-          <i class="fas fa-hard-hat fa-2x text-muted mb-2"></i>
-          <p>No hay registros de accidentes/incidentes en este período</p>
+        <div class="acc-detail-item">
+          <label>Fecha</label>
+          <span>{{ selectedIncident.incidentDate }} {{ selectedIncident.incidentTime || '' }}</span>
         </div>
-        <table class="records-table" *ngIf="!loading && records.length > 0">
-          <thead>
-            <tr>
-              <th>Empleado</th><th>Fecha</th><th>Tipo</th>
-              <th>Gravedad</th><th>Descripción</th><th>Lugar</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let r of records">
-              <td><span class="emp-pill">{{ r.employeeName }}</span></td>
-              <td>{{ r.incidentDate }}<br><small *ngIf="r.incidentTime" class="text-muted">{{ r.incidentTime }}</small></td>
-              <td><span class="badge-status {{ getTypeClass(r.incidentType) }}">{{ r.incidentType }}</span></td>
-              <td><span class="badge-severity {{ getSeverityClass(r.severity || 'LEVE') }}">{{ r.severity }}</span></td>
-              <td class="reason-cell">{{ r.description }}</td>
-              <td class="reason-cell">{{ r.location || '—' }}</td>
-              <td>
-                <button class="btn-delete" (click)="deleteRecord(r.id!)" title="Eliminar">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="acc-detail-item">
+          <label>Trabajador</label>
+          <span>{{ selectedIncident.personName || '—' }}</span>
+        </div>
+        <div class="acc-detail-item">
+          <label>Cédula</label>
+          <span>{{ selectedIncident.personCedula || '—' }}</span>
+        </div>
+        <div class="acc-detail-item">
+          <label>Cargo</label>
+          <span>{{ selectedIncident.personPosition || '—' }}</span>
+        </div>
+        <div class="acc-detail-item">
+          <label>Área</label>
+          <span>{{ selectedIncident.personArea || '—' }}</span>
+        </div>
+        <div class="acc-detail-item">
+          <label>Edad</label>
+          <span>{{ selectedIncident.personAge || '—' }}</span>
+        </div>
+        <div class="acc-detail-item">
+          <label>Género</label>
+          <span>{{ selectedIncident.personGender || '—' }}</span>
+        </div>
+        <div class="acc-detail-item">
+          <label>Turno</label>
+          <span>{{ selectedIncident.personShift || '—' }}</span>
+        </div>
+        <div class="acc-detail-item">
+          <label>Experiencia</label>
+          <span>{{ selectedIncident.personExperience || '—' }}</span>
+        </div>
+        <div class="acc-detail-item">
+          <label>Clasificación</label>
+          <span>{{ selectedIncident.eventClassification || '—' }}</span>
+        </div>
+        <div class="acc-detail-item">
+          <label>Lugar</label>
+          <span>{{ selectedIncident.location || '—' }}</span>
+        </div>
+      </div>
+      <div class="acc-detail-full">
+        <label>Descripción</label>
+        <p>{{ selectedIncident.description || '—' }}</p>
+      </div>
+      <div class="acc-detail-full" *ngIf="selectedIncident.mitigationActions">
+        <label>Acciones de Mitigación</label>
+        <p>{{ selectedIncident.mitigationActions }}</p>
+      </div>
+      <div class="acc-detail-full" *ngIf="selectedIncident.controlMeasures">
+        <label>Medidas de Control</label>
+        <p>{{ selectedIncident.controlMeasures }}</p>
+      </div>
+      <div class="acc-detail-full" *ngIf="selectedIncident.preliminaryComments">
+        <label>Comentarios Preliminares</label>
+        <p>{{ selectedIncident.preliminaryComments }}</p>
+      </div>
+      <div class="acc-detail-grid" *ngIf="selectedIncident.reportedBy || selectedIncident.reviewedBy">
+        <div class="acc-detail-item">
+          <label>Elaborado por</label>
+          <span>{{ selectedIncident.reportedBy || '—' }}</span>
+        </div>
+        <div class="acc-detail-item">
+          <label>Fecha Reporte</label>
+          <span>{{ selectedIncident.reportDate || '—' }}</span>
+        </div>
+        <div class="acc-detail-item">
+          <label>Revisado por</label>
+          <span>{{ selectedIncident.reviewedBy || '—' }}</span>
+        </div>
+        <div class="acc-detail-item">
+          <label>Aprobado por</label>
+          <span>{{ selectedIncident.approvedBy || '—' }}</span>
+        </div>
       </div>
     </div>
   </div>

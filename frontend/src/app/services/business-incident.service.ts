@@ -102,4 +102,23 @@ export class BusinessIncidentService {
   getStats(ruc: string): Observable<IncidentStats> {
     return this.http.get<IncidentStats>(`${this.base}/business/${ruc}/stats`);
   }
+
+  /** Solo incidentes de tipo "Salud y Seguridad" */
+  getSafetyByRuc(ruc: string): Observable<BusinessIncidentDto[]> {
+    return this.http.get<BusinessIncidentDto[]>(`${this.base}/business/${ruc}/safety`);
+  }
+
+  /** Incidentes de seguridad en un rango de fechas */
+  getSafetyByRucAndRange(ruc: string, from: string, to: string): Observable<BusinessIncidentDto[]> {
+    return this.http.get<BusinessIncidentDto[]>(
+      `${this.base}/business/${ruc}/safety/range`, { params: { from, to } }
+    );
+  }
+
+  /** Incidentes de seguridad de un empleado por cédula en rango */
+  getSafetyByCedula(ruc: string, cedula: string, from: string, to: string): Observable<BusinessIncidentDto[]> {
+    return this.http.get<BusinessIncidentDto[]>(
+      `${this.base}/business/${ruc}/safety/cedula/${cedula}`, { params: { from, to } }
+    );
+  }
 }

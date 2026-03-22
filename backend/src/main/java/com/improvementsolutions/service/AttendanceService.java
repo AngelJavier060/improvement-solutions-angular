@@ -488,16 +488,20 @@ public class AttendanceService {
         Business biz = requireBusiness(businessId);
         BusinessEmployee emp = requireEmployee(businessId, employeeId);
         // Validar solapamiento con permisos y horas extra en el rango
+        // endDate = día de reincorporación, no cuenta como vacación
         if (dto.getStartDate() != null && dto.getEndDate() != null) {
-            checkDateOverlap(emp.getId(), dto.getStartDate(), dto.getEndDate(), "VACACION");
+            LocalDate lastVacDay = dto.getEndDate().minusDays(1);
+            if (!lastVacDay.isBefore(dto.getStartDate())) {
+                checkDateOverlap(emp.getId(), dto.getStartDate(), lastVacDay, "VACACION");
+            }
         }
         dto.setBusiness(biz);
         dto.setEmployee(emp);
         dto.setId(null);
         EmployeeVacation saved = vacationRepository.save(dto);
-        // Marcar cada día del rango como V en la planilla
+        // Marcar cada día del rango como V en la planilla (excluyendo endDate = día de reincorporación)
         LocalDate d = saved.getStartDate();
-        while (!d.isAfter(saved.getEndDate())) {
+        while (d.isBefore(saved.getEndDate())) {
             saveWorkDay(businessId, employeeId, d, "V", "Vacaciones");
             d = d.plusDays(1);
         }
