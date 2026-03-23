@@ -117,7 +117,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       nombres: [''],
       apellidos: [''],
       name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
-      phone: ['', [Validators.required, Validators.pattern(/^\+?\d{10,12}$/)]],
+      phone: ['', [Validators.required, Validators.pattern(/^[\+]?[\d\s\-\(\)]{7,20}$/)]],
       email: ['', [Validators.required, Validators.email]],
       birthdate: ['', [Validators.required]],
       address: ['', [Validators.required]],
@@ -129,9 +129,9 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       tipoSangre: [''],
       discapacidad: [''],
       codigoIess: [''],
-      contact_kinship: ['', [Validators.required]],
-      contact_name: ['', [Validators.required]],
-      contact_phone: ['', [Validators.required, Validators.pattern(/^\+?\d{10,12}$/)]],
+      contact_kinship: [''],
+      contact_name: [''],
+      contact_phone: ['', [Validators.pattern(/^[\+]?[\d\s\-\(\)]{7,20}$/)]],
       status: [true],
       codigo_trabajador: [{ value: '', disabled: true }],
       salario: [{ value: '', disabled: true }],
@@ -206,6 +206,9 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     if (civilStatusId === '') civilStatusId = this.resolveIdByName(this.civilStatuses, emp.civil_status_name || emp.civilStatusName || emp.civil_status?.name || emp.civilStatus?.name || emp.civil_status || emp.civilStatus);
     if (ethnicityId === '') ethnicityId = this.resolveIdByName(this.etnias, emp.ethnicity_name || emp.ethnia_name || emp.etnia_name || emp.ethnicityName || emp.etniaName || emp.ethnia?.name || emp.ethnicity?.name || emp.etnia?.name || emp.ethnia || emp.ethnicity || emp.etnia);
     if (contractorCompanyId === '') contractorCompanyId = this.resolveIdByName(this.contractorCompanies as any[], emp.contractor_company_name || emp.contractorCompanyName || emp.contractor_company?.name || emp.contractorCompany?.name);
+    // Fallback por nombre para jornada y horario
+    if (workScheduleId === '') workScheduleId = this.resolveIdByName(this.workSchedules, emp.workScheduleName || emp.work_schedule_name || emp.workSchedule?.name);
+    if (workShiftId === '') workShiftId = this.resolveIdByName(this.workShifts, emp.workShiftName || emp.work_shift_name || emp.workShift?.name);
 
     // Si el id existe pero no está en el catálogo cargado (otra empresa), intentar resolver por nombre
     const ensureInCatalog = (id: any, catalog: any[], nameProvider: () => string | undefined | null) => {
@@ -226,6 +229,8 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     civilStatusId = ensureInCatalog(civilStatusId, this.civilStatuses, () => emp.civil_status_name || emp.civilStatusName || emp.civil_status?.name || emp.civilStatus?.name || emp.civil_status || emp.civilStatus);
     ethnicityId = ensureInCatalog(ethnicityId, this.etnias, () => emp.ethnicity_name || emp.ethnia_name || emp.etnia_name || emp.ethnicityName || emp.etniaName || emp.ethnia?.name || emp.ethnicity?.name || emp.etnia?.name || emp.ethnia || emp.ethnicity || emp.etnia);
     contractorCompanyId = ensureInCatalog(contractorCompanyId, this.contractorCompanies as any[], () => emp.contractor_company_name || emp.contractorCompanyName || emp.contractor_company?.name || emp.contractorCompany?.name);
+    workScheduleId = ensureInCatalog(workScheduleId, this.workSchedules, () => emp.workScheduleName || emp.work_schedule_name || emp.workSchedule?.name);
+    workShiftId = ensureInCatalog(workShiftId, this.workShifts, () => emp.workShiftName || emp.work_shift_name || emp.workShift?.name);
 
     this.employeeForm.patchValue({
       position_id: toStrId(positionId),
@@ -499,9 +504,9 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     if (field?.errors && field?.touched) {
       if (field.errors['required']) return `${fieldName} es requerido`;
       if (field.errors['email']) return 'Email inválido';
-      if (field.errors['pattern']) {
+        if (field.errors['pattern']) {
         if (fieldName === 'cedula') return 'Cédula debe tener 10 dígitos';
-        if (fieldName === 'phone' || fieldName === 'contact_phone') return 'Teléfono debe tener 10-12 dígitos';
+        if (fieldName === 'phone' || fieldName === 'contact_phone') return 'Teléfono inválido (ej: 0993456789 o +593993456789)';
       }
       if (field.errors['minlength']) return `Mínimo ${field.errors['minlength'].requiredLength} caracteres`;
       if (field.errors['maxlength']) return `Máximo ${field.errors['maxlength'].requiredLength} caracteres`;

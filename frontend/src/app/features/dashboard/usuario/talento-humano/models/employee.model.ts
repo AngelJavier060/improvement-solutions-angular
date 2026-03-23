@@ -182,4 +182,11 @@ export interface EmployeeResponse {
   contractorCompanyName?: string;
   contractorBlockId?: number;
   contractorBlockName?: string;
+  workScheduleId?: number;
+  workScheduleName?: string;
+  workShiftId?: number;
+  workShiftName?: string;
+  contactName?: string;
+  contactKinship?: string;
+  contactPhone?: string;
 }

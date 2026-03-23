@@ -28,6 +28,9 @@ export class GestionEmpleadosComponent implements OnInit {
   businessShortUpper: string = '';
   businessName: string | null = null;
   businessEmail: string | null = null;
+  businessLogo: string | null = null;
+  businessLegalRep: string | null = null;
+  businessCity: string | null = null;
   currentUserName: string | null = null;
   currentUserEmail: string | null = null;
   userPhotoUrl: string | null = null;
@@ -1004,14 +1007,24 @@ export class GestionEmpleadosComponent implements OnInit {
     });
   }
 
+  private applyBusinessData(b: any): void {
+    this.businessShortUpper = ((b?.nameShort || b?.name) || '').toUpperCase();
+    this.businessName = (b?.name) || null;
+    this.businessEmail = b?.email || null;
+    this.businessLegalRep = b?.legalRepresentative || null;
+    this.businessCity = b?.city || b?.province || null;
+    const logo = b?.logo || '';
+    if (logo) {
+      this.businessLogo = logo.startsWith('http') ? logo
+        : logo.startsWith('logos/') ? `/api/files/${logo}`
+        : `/api/files/logos/${logo}`;
+    }
+  }
+
   private fetchBusinessShortName(): void {
     if (this.businessRuc) {
       this.businessService.getByRuc(this.businessRuc).subscribe({
-        next: (b) => {
-          this.businessShortUpper = ((b?.nameShort || b?.name) || '').toUpperCase();
-          this.businessName = (b?.nameShort || b?.name) || null;
-          this.businessEmail = b?.email || null;
-        },
+        next: (b) => { this.applyBusinessData(b); },
         error: () => {
           this.businessShortUpper = '';
           this.businessName = null;
@@ -1022,11 +1035,7 @@ export class GestionEmpleadosComponent implements OnInit {
     }
     if (this.businessId != null) {
       this.businessService.getById(this.businessId).subscribe({
-        next: (b) => {
-          this.businessShortUpper = ((b?.nameShort || b?.name) || '').toUpperCase();
-          this.businessName = (b?.nameShort || b?.name) || null;
-          this.businessEmail = b?.email || null;
-        },
+        next: (b) => { this.applyBusinessData(b); },
         error: () => {
           this.businessShortUpper = '';
           this.businessName = null;
@@ -1044,163 +1053,445 @@ export class GestionEmpleadosComponent implements OnInit {
     if (!emp) return '';
     return emp.codigoTrabajador || emp.cedula || String(emp.id || '');
   }
-  async exportEmployeesToExcel(): Promise<void> {
-    try {
-      const list: any[] = Array.isArray(this.employees) ? this.employees : [];
-      if (!list.length) { alert('No hay datos para exportar'); return; }
-      const rows: string[] = [];
-      const headers = [
-        'FOTO','ID','CÉDULA','CÓDIGO','NOMBRES','APELLIDOS','NOMBRE COMPLETO','EMAIL','TELÉFONO',
-        'FECHA NAC.','PROV. NAC.','CIUDAD NAC.','PARROQ. NAC.',
-        'DIRECCIÓN','CONTACTO (NOMBRE)','CONTACTO (PARENTESCO)','CONTACTO (TELÉFONO)',
-        'FECHA INGRESO','DEPARTAMENTO','CARGO','TIPO CONTRATO','GÉNERO','ESTADO CIVIL','ETNIA','NIVEL EDUCACIÓN','DISCAPACIDAD','CÓDIGO IESS','TIPO SANGRE','SUELDO (CONTRATISTA)',
-        'ACTIVO','STATUS','CREADO','ACTUALIZADO'
-      ];
-      const toDataUrl = async (url: string): Promise<string> => {
-        try {
-          const resp = await fetch(url);
-          if (!resp.ok) throw new Error('HTTP ' + resp.status);
-          const blob = await resp.blob();
-          return await new Promise<string>((resolve) => {
-            const r = new FileReader();
-            r.onload = () => resolve(r.result as string);
-            r.readAsDataURL(blob);
-          });
-        } catch {
-          return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==';
-        }
-      };
-      const imageUrlFor = (emp: any): string => {
-        const path = emp?.imagePath || emp?.profile_picture || emp?.photoFileName || '';
-        if (!path) return '';
-        if (path.startsWith('http')) return path;
-        if (path.startsWith('uploads/')) return `/api/files/${path.replace(/^uploads\//,'')}`;
-        if (path.startsWith('profiles/')) return `/api/files/${path}`;
-        if (!path.includes('/')) return `/api/files/profiles/${path}`;
-        return `/api/files/${path}`;
-      };
-      const imageDataUrls = await Promise.all(list.map(async (e) => {
-        const url = imageUrlFor(e);
-        return url ? await toDataUrl(url) : '';
-      }));
-      rows.push('<tr>' + headers.map(h => `<th style="background:#f0f0f0;border:1px solid #ccc;">${h}</th>`).join('') + '</tr>');
-      const fmt = (v: any) => (v === undefined || v === null ? '' : String(v));
-      const fullNameFor = (e: any) => {
-        const n = fmt(e.nombres); const a = fmt(e.apellidos);
-        const fa = `${n} ${a}`.trim();
-        return fa || fmt(e.name);
-      };
-      const departmentFor = (e: any) => fmt(e.departmentName || e.department?.name || '');
-      const positionFor = (e: any) => fmt(e.positionName || e.position?.name || '');
-      const contractFor = (e: any) => fmt(e.contractTypeName || '');
-      list.forEach((e, idx) => {
-        const img = imageDataUrls[idx] ? `<img src="${imageDataUrls[idx]}" width="48" height="48"/>` : '';
-        const rowCells = [
-          img,
-          fmt(e.id), fmt(e.cedula), fmt(e.codigoTrabajador || e.codigoEmpresa || ''), fmt(e.nombres), fmt(e.apellidos), fullNameFor(e),
-          fmt(e.email), fmt(e.phone),
-          fmt(e.dateBirth ? (new Date(e.dateBirth).toLocaleDateString()) : ''),
-          fmt(e.lugarNacimientoProvincia), fmt(e.lugarNacimientoCiudad), fmt(e.lugarNacimientoParroquia),
-          fmt(e.address || e.direccionDomiciliaria), fmt(e.contactName), fmt(e.contactKinship), fmt(e.contactPhone),
-          fmt(e.fechaIngreso ? (new Date(e.fechaIngreso).toLocaleDateString()) : ''),
-          departmentFor(e), positionFor(e), contractFor(e),
-          fmt(e.genderName), fmt(e.civilStatusName), fmt(e.etniaName), fmt(e.nivelEducacion || e.degreeName), fmt(e.discapacidad), fmt(e.codigoIess), fmt(e.tipoSangre), fmt(e.salario),
-          (e.active === true ? 'SI' : 'NO'), fmt(e.status),
-          fmt(e.created_at || e.createdAt || ''), fmt(e.updated_at || e.updatedAt || '')
-        ];
-        rows.push('<tr>' + rowCells.map(c => `<td style="border:1px solid #ddd;vertical-align:middle;">${c}</td>`).join('') + '</tr>');
-      });
-      const title = `Empleados_${this.businessRuc || ''}_${new Date().toISOString().slice(0,10)}`;
-      const html = `<!doctype html><html><head><meta charset="utf-8"></head><body>
-        <table cellspacing="0" cellpadding="4">${rows.join('')}</table>
-      </body></html>`;
-      const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${title}.xls`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      alert('No se pudo exportar a Excel');
-    }
-  }
   async exportEmployeesToPdf(): Promise<void> {
     try {
       const list: any[] = Array.isArray(this.employees) ? this.employees : [];
       if (!list.length) { alert('No hay datos para exportar'); return; }
+
       const pdfMakeImport: any = await import('pdfmake/build/pdfmake');
       const pdfFontsImport: any = await import('pdfmake/build/vfs_fonts');
       const pdfMake: any = pdfMakeImport?.default || pdfMakeImport;
       const vfs = (pdfFontsImport?.default?.vfs) || (pdfFontsImport?.pdfMake?.vfs) || (pdfFontsImport?.vfs);
       if (vfs) pdfMake.vfs = vfs;
+
+      const token = this.authService.getToken ? this.authService.getToken() : localStorage.getItem('auth_token');
+      const fetchOpts: RequestInit = token ? { headers: { 'Authorization': `Bearer ${token}` } } : {};
+
       const toDataUrl = async (url: string): Promise<string | null> => {
         try {
-          const resp = await fetch(url);
-          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          const resp = await fetch(url, fetchOpts);
+          if (!resp.ok) return null;
           const blob = await resp.blob();
-          return await new Promise<string>((resolve) => {
+          return await new Promise<string>((resolve, reject) => {
             const r = new FileReader();
             r.onload = () => resolve(r.result as string);
+            r.onerror = reject;
             r.readAsDataURL(blob);
           });
         } catch { return null; }
       };
-      const imageUrlFor = (emp: any): string => {
-        const path = emp?.imagePath || emp?.profile_picture || emp?.photoFileName || '';
-        if (!path) return '';
-        if (path.startsWith('http')) return path;
-        if (path.startsWith('uploads/')) return `/api/files/${path.replace(/^uploads\//,'')}`;
-        if (path.startsWith('profiles/')) return `/api/files/${path}`;
-        if (!path.includes('/')) return `/api/files/profiles/${path}`;
-        return `/api/files/${path}`;
+
+      const logoDataUrl = this.businessLogo ? await toDataUrl(this.businessLogo) : null;
+
+      const today = new Date();
+      const fmt = (v: any) => (v === undefined || v === null ? '' : String(v));
+      const fullName = (e: any) => `${fmt(e.apellidos)} ${fmt(e.nombres)}`.trim() || fmt(e.name);
+      const statusLabel = (e: any) => (e.active === true || fmt(e.status).toUpperCase() === 'ACT') ? 'ACTIVO' : 'INACTIVO';
+      const fmtDate = (ds: string | null): string => {
+        if (!ds) return '';
+        const d = new Date(ds);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
       };
-      const imageData = await Promise.all(list.map(async e => {
-        const u = imageUrlFor(e);
-        return u ? (await toDataUrl(u)) : null;
-      }));
-      const header = [
-        { text: 'Foto', bold: true },
-        { text: 'Nombre', bold: true },
-        { text: 'Cédula', bold: true },
-        { text: 'Código', bold: true },
-        { text: 'Departamento', bold: true },
-        { text: 'Cargo', bold: true },
-        { text: 'Estado', bold: true }
+      const calcYears = (ds: string | null): string => {
+        if (!ds) return '';
+        const d = new Date(ds);
+        if (isNaN(d.getTime())) return '';
+        const yrs = Math.floor((today.getTime() - d.getTime()) / (365.25 * 86400000));
+        return yrs >= 0 && yrs < 120 ? String(yrs) : '';
+      };
+      const fmtSalary = (v: any): string => {
+        const n = parseFloat(v);
+        return isNaN(n) ? '' : n.toFixed(2);
+      };
+
+      const dateStr    = today.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const companyName = (this.businessName || this.businessShortUpper || '').toUpperCase();
+      const legalRep   = this.businessLegalRep || 'Gerente General';
+      const cityLine   = this.businessCity ? ` — ${this.businessCity}` : '';
+      const docCode    = 'STH-PRO-001-PG-10';
+
+      const BLUE  = '#1B3A6B';
+      const LBLUE = '#D6E4F0';
+      const WHITE = '#FFFFFF';
+      const SUBHD = '#EEF4FB';
+
+      const logoCell: any = logoDataUrl
+        ? { image: logoDataUrl, width: 68, rowSpan: 3, alignment: 'center', margin: [2, 4, 2, 4] }
+        : { text: companyName.substring(0, 2), fontSize: 20, bold: true, color: BLUE, rowSpan: 3, alignment: 'center', margin: [0, 14, 0, 0] };
+
+      const headerTable: any = {
+        margin: [0, 0, 0, 4],
+        table: {
+          widths: [72, '*', 140],
+          body: [
+            [
+              logoCell,
+              { text: 'NÓMINA DE TRABAJADORES', fontSize: 12, bold: true, color: BLUE, alignment: 'center', margin: [0, 6, 0, 2] },
+              { text: `Código: ${docCode}`, fontSize: 7, color: '#444', alignment: 'right', margin: [0, 4, 2, 0] }
+            ],
+            [
+              {},
+              { text: companyName + cityLine, fontSize: 9, bold: true, color: BLUE, alignment: 'center', margin: [0, 0, 0, 2] },
+              { text: `Fecha: ${dateStr}`, fontSize: 7, color: '#444', alignment: 'right', margin: [0, 0, 2, 0] }
+            ],
+            [
+              {},
+              { text: 'PROCESO: Gestión de Talento Humano', fontSize: 8, color: '#333', alignment: 'center', margin: [0, 2, 0, 4] },
+              { text: `Aprobado por: ${legalRep}`, fontSize: 7, color: '#333', italics: true, alignment: 'right', margin: [0, 2, 2, 4] }
+            ]
+          ]
+        },
+        layout: {
+          hLineWidth: (i: number, node: any) => (i === 0 || i === node.table.body.length) ? 1.5 : 0.4,
+          vLineWidth: (i: number, node: any) => (i === 0 || i === node.table.widths.length) ? 1.5 : 0.4,
+          hLineColor: () => BLUE,
+          vLineColor: () => BLUE,
+          paddingLeft: () => 3, paddingRight: () => 3, paddingTop: () => 1, paddingBottom: () => 1
+        }
+      };
+
+      // 22 columnas con todos los datos del trabajador
+      const cols = [
+        { label: 'N°',            w: 16 },
+        { label: 'NOMBRE',        w: 88 },
+        { label: 'CÉDULA',        w: 50 },
+        { label: 'F. NAC.',       w: 42 },
+        { label: 'EDAD',          w: 20 },
+        { label: 'GÉNERO',        w: 34 },
+        { label: 'E. CIVIL',      w: 40 },
+        { label: 'DEPARTAMENTO',  w: 66 },
+        { label: 'CARGO',         w: 74 },
+        { label: 'T. CONTRATO',   w: 54 },
+        { label: 'ESTADO',        w: 34 },
+        { label: 'SUELDO',        w: 38 },
+        { label: 'ING. IESS',     w: 42 },
+        { label: 'ANTIGÜEDAD',    w: 34 },
+        { label: 'TELÉFONO',      w: 48 },
+        { label: 'CORREO',        w: 88 },
+        { label: 'CIUDAD',        w: 46 },
+        { label: 'DIRECCIÓN',     w: 68 },
+        { label: 'T. SANGRE',     w: 32 },
+        { label: 'DISCAPACIDAD',  w: 40 },
+        { label: 'SUT',           w: 38 },
+        { label: 'IESS',          w: 50 },
       ];
-      const body: any[] = [header];
-      list.forEach((e, i) => {
-        const photo = imageData[i] ? { image: imageData[i], fit: [32, 32] } : { text: '' };
-        body.push([
-          photo,
-          String(((e.nombres || '') + ' ' + (e.apellidos || '')).trim() || e.name || ''),
-          String(e.cedula || ''),
-          String(e.codigoTrabajador || e.codigoEmpresa || ''),
-          String(e.departmentName || e.department?.name || ''),
-          String(e.positionName || e.position?.name || ''),
-          this.isActive(e) ? 'ACTIVO' : 'INACTIVO'
+
+      const hdrRow = cols.map(c => ({
+        text: c.label, bold: true, fontSize: 6, color: WHITE,
+        fillColor: BLUE, alignment: 'center', margin: [1, 3, 1, 3]
+      }));
+
+      const tableBody: any[] = [hdrRow];
+      list.forEach((e, idx) => {
+        const fill = idx % 2 === 0 ? WHITE : LBLUE;
+        const c = (txt: string, opts: any = {}) => ({
+          text: txt, fontSize: 6, fillColor: fill, margin: [1, 2, 1, 2], ...opts
+        });
+        tableBody.push([
+          c(String(idx + 1), { alignment: 'center' }),
+          c(fullName(e)),
+          c(fmt(e.cedula), { alignment: 'center' }),
+          c(fmtDate(e.dateBirth), { alignment: 'center' }),
+          c(calcYears(e.dateBirth), { alignment: 'center' }),
+          c(fmt(e.genderName), { alignment: 'center' }),
+          c(fmt(e.civilStatusName || e.civil_status?.name || ''), { alignment: 'center' }),
+          c(fmt(e.departmentName || e.position?.departmentName || '')),
+          c(fmt(e.positionName || e.position?.name || '')),
+          c(fmt(e.contractTypeName || ''), { alignment: 'center' }),
+          c(statusLabel(e), { alignment: 'center' }),
+          c(fmtSalary(e.salario), { alignment: 'right' }),
+          c(fmtDate(e.fechaIngreso), { alignment: 'center' }),
+          c(calcYears(e.fechaIngreso), { alignment: 'center' }),
+          c(fmt(e.phone), { alignment: 'center' }),
+          c(fmt(e.email)),
+          c(fmt(e.lugarNacimientoCiudad || ''), { alignment: 'center' }),
+          c(fmt(e.address || e.direccionDomiciliaria || '')),
+          c(fmt(e.tipoSangre || ''), { alignment: 'center' }),
+          c(fmt(e.discapacidad || ''), { alignment: 'center' }),
+          c(fmt(e.codigoTrabajador || ''), { alignment: 'center' }),
+          c(fmt(e.codigoIess || ''), { alignment: 'center' }),
         ]);
       });
+
+      // Fila de total
+      tableBody.push([
+        { text: `Total: ${list.length} colaborador(es)`, colSpan: cols.length, bold: true,
+          fontSize: 7, fillColor: SUBHD, margin: [4, 3, 4, 3], alignment: 'left' },
+        ...Array(cols.length - 1).fill({})
+      ]);
+
       const docDefinition: any = {
-        pageSize: 'A4',
+        pageSize: 'A3',
         pageOrientation: 'landscape',
-        pageMargins: [15, 20, 15, 20],
+        pageMargins: [12, 12, 12, 28],
+        footer: (currentPage: number, pageCount: number) => ({
+          margin: [12, 4, 12, 0],
+          columns: [
+            { text: `Generado el ${dateStr} — ${companyName}`, fontSize: 7, color: '#666' },
+            { text: `Pág. ${currentPage} / ${pageCount}`, fontSize: 7, color: '#666', alignment: 'right' }
+          ]
+        }),
         content: [
-          { text: `Empleados - ${this.businessShortUpper || ''} ${this.businessRuc || ''}`, style: 'title', margin: [0,0,0,10] },
+          headerTable,
+          { text: '', margin: [0, 4, 0, 0] },
           {
-            table: { headerRows: 1, widths: [35, '*', 70, 60, '*', '*', 55], body },
-            layout: 'lightHorizontalLines'
+            table: { headerRows: 1, widths: cols.map(c => c.w), body: tableBody },
+            layout: {
+              hLineWidth: (i: number) => i === 0 || i === 1 ? 1 : 0.25,
+              vLineWidth: () => 0.25,
+              hLineColor: () => '#AAAAAA',
+              vLineColor: () => '#AAAAAA',
+              paddingLeft: () => 0, paddingRight: () => 0, paddingTop: () => 0, paddingBottom: () => 0
+            }
           }
         ],
-        styles: { title: { fontSize: 12, bold: true } }
+        defaultStyle: { font: 'Roboto' }
       };
-      const fileName = `Empleados_${this.businessRuc || ''}_${new Date().toISOString().slice(0,10)}.pdf`;
+
+      const fileName = `Nomina_${companyName}_${today.toISOString().slice(0, 10)}.pdf`;
       const pdf = pdfMake.createPdf(docDefinition);
       try { pdf.open(); } catch { pdf.download(fileName); }
     } catch (e) {
+      console.error('Error exportando PDF:', e);
       alert('No se pudo exportar a PDF');
+    }
+  }
+
+  async exportEmployeesToExcel(): Promise<void> {
+    try {
+      const list: any[] = Array.isArray(this.employees) ? this.employees : [];
+      if (!list.length) { alert('No hay datos para exportar'); return; }
+
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const companyName = (this.businessName || this.businessShortUpper || '').toUpperCase();
+      const legalRep = this.businessLegalRep || 'Gerente General';
+      const cityLine = this.businessCity ? ` — ${this.businessCity}` : '';
+
+      const fmt = (v: any) => (v === undefined || v === null ? '' : String(v).trim());
+      const fmtDate = (ds: string | null | undefined): string => {
+        if (!ds) return '';
+        const d = new Date(ds);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      };
+      const fmtSalary = (v: any): string => {
+        const n = parseFloat(v);
+        return isNaN(n) ? '' : n.toFixed(2);
+      };
+
+      // 31 columnas: N° + 30 campos solicitados
+      const COLS = 31;
+      const BLUE  = '#1B3A6B';
+      const BLUE2 = '#243F6E';   // segundo tono para sub-cabecera
+      const ALT   = '#EBF3FB';
+      const SUBHD = '#F0F4FA';
+
+      const token = this.authService.getToken ? this.authService.getToken() : localStorage.getItem('auth_token');
+      const fetchOpts: RequestInit = token ? { headers: { 'Authorization': `Bearer ${token}` } } : {};
+
+      let logoHtml = '';
+      if (this.businessLogo) {
+        try {
+          const resp = await fetch(this.businessLogo, fetchOpts);
+          if (resp.ok) {
+            const blob = await resp.blob();
+            const dataUrl = await new Promise<string>((res, rej) => {
+              const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+            });
+            logoHtml = `<img src="${dataUrl}" style="height:56px;max-width:110px;object-fit:contain;" />`;
+          }
+        } catch { /* sin logo */ }
+      }
+
+      // Anchos de columna (en px, usado en <col>)
+      const colWidths = [
+        30,   // N°
+        90,   // Cédula
+        80,   // Cód. Trabajador
+        110,  // Apellidos
+        110,  // Nombres
+        150,  // Email
+        90,   // Teléfono
+        88,   // F. Nacimiento
+        140,  // Dirección
+        70,   // Salario
+        88,   // F. Ingreso
+        110,  // Departamento
+        120,  // Cargo
+        110,  // Tipo Contrato
+        115,  // Empresa Contratista
+        75,   // Género
+        90,   // Estado Civil
+        90,   // Etnia
+        105,  // Prov. Nacimiento
+        105,  // Ciudad Nacimiento
+        115,  // Parroquia Nacimiento
+        110,  // Jornada Trabajo
+        110,  // Horario Trabajo
+        72,   // Tipo Sangre
+        105,  // Nivel Educación
+        90,   // Discapacidad
+        100,  // Cód. IESS
+        120,  // Nombre Contacto
+        88,   // Parentesco
+        90,   // Tel. Contacto
+        140,  // Dir. Domiciliaria
+      ];
+
+      const colGroupHtml = `<colgroup>${colWidths.map(w => `<col style="width:${w}px">`).join('')}</colgroup>`;
+
+      const td = (txt: string, bg = '#FFFFFF', extra = '') =>
+        `<td style="border:1px solid #C8D6E5;padding:3px 5px;font-size:9px;vertical-align:middle;background:${bg};${extra}">${txt !== '' ? txt : '&nbsp;'}</td>`;
+
+      const th = (txt: string, w = '') =>
+        `<td style="border:1px solid #0A2040;padding:5px 4px;font-size:8.5px;font-weight:bold;background:${BLUE};color:#FFFFFF;text-align:center;vertical-align:middle;white-space:nowrap;${w ? `min-width:${w}px;` : ''}">${txt}</td>`;
+
+      const rows: string[] = [];
+
+      // ── FILA 1: Membrete principal ──────────────────────────────────────────
+      rows.push(`<tr>
+        <td colspan="${COLS}" style="padding:0;border:2px solid #0A2040;background:${BLUE};">
+          <table style="width:100%;border-collapse:collapse;border:none;">
+            <tr>
+              <td style="border:none;width:90px;padding:6px 8px;text-align:center;vertical-align:middle;">
+                ${logoHtml || `<div style="width:60px;height:60px;background:#FFFFFF22;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#FFFFFF;">${companyName.substring(0,2)}</div>`}
+              </td>
+              <td style="border:none;text-align:center;vertical-align:middle;padding:10px 6px;">
+                <div style="color:#FFFFFF;font-size:14px;font-weight:900;letter-spacing:0.5px;">NÓMINA DE TRABAJADORES</div>
+                <div style="color:#A8C8F0;font-size:11px;font-weight:700;margin-top:4px;">${companyName}${cityLine}</div>
+              </td>
+              <td style="border:none;width:160px;padding:6px 10px;text-align:right;vertical-align:middle;">
+                <div style="color:#A8C8F0;font-size:8px;line-height:1.8;">Código: STH-PRO-001-PG-10</div>
+                <div style="color:#A8C8F0;font-size:8px;line-height:1.8;">Fecha: ${dateStr}</div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>`);
+
+      // ── FILA 2: Proceso / Aprobado ─────────────────────────────────────────
+      rows.push(`<tr>
+        <td colspan="${Math.ceil(COLS * 0.55)}" style="background:${SUBHD};font-size:9px;padding:4px 8px;border:1px solid #C8D6E5;vertical-align:middle;">
+          <b>PROCESO:</b> Gestión de Talento Humano &nbsp;&nbsp;|&nbsp;&nbsp; <b>EMPRESA:</b> ${companyName}
+        </td>
+        <td colspan="${COLS - Math.ceil(COLS * 0.55)}" style="background:${SUBHD};font-size:9px;padding:4px 8px;border:1px solid #C8D6E5;text-align:right;vertical-align:middle;">
+          <b>Aprobado por:</b> ${legalRep} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Total colaboradores:</b> ${list.length}
+        </td>
+      </tr>`);
+
+      // ── FILA 3: Cabeceras de columnas ──────────────────────────────────────
+      rows.push(`<tr>
+        ${th('N°')}
+        ${th('CÉDULA')}
+        ${th('CÓD. TRABAJADOR')}
+        ${th('APELLIDOS')}
+        ${th('NOMBRES')}
+        ${th('EMAIL')}
+        ${th('TELÉFONO')}
+        ${th('F. NACIMIENTO')}
+        ${th('DIRECCIÓN')}
+        ${th('SALARIO')}
+        ${th('F. INGRESO')}
+        ${th('DEPARTAMENTO')}
+        ${th('CARGO')}
+        ${th('TIPO CONTRATO')}
+        ${th('EMPRESA CONTRATISTA')}
+        ${th('GÉNERO')}
+        ${th('ESTADO CIVIL')}
+        ${th('ETNIA')}
+        ${th('PROV. NACIMIENTO')}
+        ${th('CIUDAD NACIMIENTO')}
+        ${th('PARROQUIA NAC.')}
+        ${th('JORNADA TRABAJO')}
+        ${th('HORARIO TRABAJO')}
+        ${th('TIPO SANGRE')}
+        ${th('NIVEL EDUCACIÓN')}
+        ${th('DISCAPACIDAD')}
+        ${th('CÓD. IESS')}
+        ${th('NOMBRE CONTACTO')}
+        ${th('PARENTESCO')}
+        ${th('TEL. CONTACTO')}
+        ${th('DIR. DOMICILIARIA')}
+      </tr>`);
+
+      // ── FILAS DE DATOS ─────────────────────────────────────────────────────
+      list.forEach((e, idx) => {
+        const bg  = idx % 2 === 1 ? ALT : '#FFFFFF';
+        const ct  = 'text-align:center;';
+        const rt  = 'text-align:right;';
+        rows.push(`<tr>
+          ${td(String(idx + 1), bg, ct)}
+          ${td(fmt(e.cedula), bg, ct)}
+          ${td(fmt(e.codigoTrabajador || ''), bg, ct)}
+          ${td(fmt(e.apellidos || ''), bg)}
+          ${td(fmt(e.nombres || ''), bg)}
+          ${td(fmt(e.email), bg)}
+          ${td(fmt(e.phone), bg, ct)}
+          ${td(fmtDate(e.dateBirth || e.birthdate), bg, ct)}
+          ${td(fmt(e.address || ''), bg)}
+          ${td(fmtSalary(e.salario), bg, rt)}
+          ${td(fmtDate(e.fechaIngreso), bg, ct)}
+          ${td(fmt(e.departmentName || ''), bg)}
+          ${td(fmt(e.positionName || e.position?.name || ''), bg)}
+          ${td(fmt(e.contractTypeName || ''), bg)}
+          ${td(fmt(e.contractorCompanyName || ''), bg)}
+          ${td(fmt(e.genderName || ''), bg, ct)}
+          ${td(fmt(e.civilStatusName || e.civil_status?.name || ''), bg, ct)}
+          ${td(fmt(e.etniaName || e.ethnicity?.name || ''), bg, ct)}
+          ${td(fmt(e.lugarNacimientoProvincia || ''), bg)}
+          ${td(fmt(e.lugarNacimientoCiudad || ''), bg)}
+          ${td(fmt(e.lugarNacimientoParroquia || ''), bg)}
+          ${td(fmt(e.workScheduleName || ''), bg)}
+          ${td(fmt(e.workShiftName || ''), bg)}
+          ${td(fmt(e.tipoSangre || ''), bg, ct)}
+          ${td(fmt(e.nivelEducacion || e.degreeName || ''), bg)}
+          ${td(fmt(e.discapacidad || ''), bg)}
+          ${td(fmt(e.codigoIess || ''), bg, ct)}
+          ${td(fmt(e.contactName || e.contact_name || ''), bg)}
+          ${td(fmt(e.contactKinship || e.contact_kinship || ''), bg, ct)}
+          ${td(fmt(e.contactPhone || e.contact_phone || ''), bg, ct)}
+          ${td(fmt(e.direccionDomiciliaria || ''), bg)}
+        </tr>`);
+      });
+
+      // ── FILA TOTALES ───────────────────────────────────────────────────────
+      rows.push(`<tr>
+        <td colspan="${COLS}" style="background:${SUBHD};font-size:9px;font-weight:bold;padding:5px 8px;border:1px solid #C8D6E5;text-align:left;">
+          Total: ${list.length} colaborador(es) &nbsp;&mdash;&nbsp; Generado el ${dateStr} &nbsp;&mdash;&nbsp; ${companyName}
+        </td>
+      </tr>`);
+
+      const html = `<!doctype html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:x="urn:schemas-microsoft-com:office:excel"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { mso-number-format:"@"; word-wrap: break-word; }
+  </style>
+</head>
+<body>
+<table>${colGroupHtml}${rows.join('')}</table>
+</body>
+</html>`;
+
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `Nomina_${companyName}_${today.toISOString().slice(0, 10)}.xls`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Error exportando Excel:', e);
+      alert('No se pudo exportar a Excel');
     }
   }
 }

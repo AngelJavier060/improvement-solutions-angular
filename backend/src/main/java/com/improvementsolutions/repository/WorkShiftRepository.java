@@ -13,6 +13,9 @@ public interface WorkShiftRepository extends JpaRepository<WorkShift, Long> {
 
     Optional<WorkShift> findByName(String name);
 
-    @Query("SELECT ws FROM WorkShift ws JOIN ws.businesses b WHERE b.id = :businessId")
+    // Incluye horarios vinculados por la tabla many-to-many Y los usados directamente por empleados de la empresa
+    @Query("SELECT DISTINCT ws FROM WorkShift ws WHERE ws IN " +
+           "(SELECT ws2 FROM WorkShift ws2 JOIN ws2.businesses b WHERE b.id = :businessId) " +
+           "OR ws IN (SELECT be.workShift FROM BusinessEmployee be WHERE be.business.id = :businessId AND be.workShift IS NOT NULL)")
     List<WorkShift> findByBusinessId(Long businessId);
 }
