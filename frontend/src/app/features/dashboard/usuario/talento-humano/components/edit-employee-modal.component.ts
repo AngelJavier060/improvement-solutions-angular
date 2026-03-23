@@ -116,11 +116,11 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       cedula: [{ value: '', disabled: true }, [Validators.required, Validators.pattern(/^\d{10}$/)]],
       nombres: [''],
       apellidos: [''],
-      name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
-      phone: ['', [Validators.required, Validators.pattern(/^[\+]?[\d\s\-\(\)]{7,20}$/)]],
+      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(120)]],
+      phone: ['', [Validators.required, Validators.pattern(/^[\+]?[\d\s\-\(\)\.]{6,25}$/)]],
       email: ['', [Validators.required, Validators.email]],
       birthdate: ['', [Validators.required]],
-      address: ['', [Validators.required]],
+      address: [''],
       direccionDomiciliaria: [''],
       lugarNacimientoProvincia: [''],
       lugarNacimientoCiudad: [''],
@@ -295,26 +295,32 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       const codigoTrab = (this as any).employee.codigoTrabajador || (this as any).employee.codigo_trabajador || (this as any).employee.codigoEmpresa || '';
       const salario = (this as any).employee.salario || '';
 
-      const nombres = (this as any).employee.nombres || '';
-      const apellidos = (this as any).employee.apellidos || '';
-      const fullName = this.employee.name && this.employee.name.trim().length > 0
-        ? this.employee.name
+      const nombres = ((this as any).employee.nombres || '').trim();
+      const apellidos = ((this as any).employee.apellidos || '').trim();
+      const rawName = ((this as any).employee.name || '').trim();
+      const fullName = rawName.length > 0
+        ? rawName
         : `${nombres} ${apellidos}`.trim();
 
       // Flexible mapping for contact and address fields
-      const contactNameVal = (this as any).employee.contact_name || (this as any).employee.contactName || '';
-      const contactKinshipVal = (this as any).employee.contact_kinship || (this as any).employee.contactKinship || '';
-      const contactPhoneVal = (this as any).employee.contact_phone || (this as any).employee.contactPhone || '';
-      const addressVal = (this as any).employee.address || (this as any).employee.residentAddress || '';
+      const contactNameVal = ((this as any).employee.contact_name || (this as any).employee.contactName || '').trim();
+      const contactKinshipVal = ((this as any).employee.contact_kinship || (this as any).employee.contactKinship || '').trim();
+      const contactPhoneVal = ((this as any).employee.contact_phone || (this as any).employee.contactPhone || '').trim();
+      // address: usar cualquier fuente disponible, nunca dejar null
+      const addressVal = (
+        (this as any).employee.address ||
+        (this as any).employee.direccionDomiciliaria ||
+        (this as any).employee.residentAddress || ''
+      ).trim();
 
       const toStrId = (v: any) => (v === '' || v === null || v === undefined) ? '' : String(v);
       this.employeeForm.patchValue({
-        cedula: this.employee.cedula,
+        cedula: (this.employee.cedula || '').trim(),
         nombres: nombres,
         apellidos: apellidos,
         name: fullName,
-        phone: this.employee.phone,
-        email: this.employee.email,
+        phone: (this.employee.phone || '').trim(),
+        email: (this.employee.email || '').trim(),
         birthdate: birthdate,
         address: addressVal,
         direccionDomiciliaria: (this as any).employee.direccionDomiciliaria || (this as any).employee.residentAddress || '',
@@ -497,6 +503,25 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       const control = this.employeeForm.get(key);
       control?.markAsTouched();
     });
+  }
+
+  /** Devuelve los nombres legibles de los controles que están inválidos (para mostrar al usuario) */
+  getInvalidFieldLabels(): string {
+    const labels: Record<string, string> = {
+      name: 'Nombre Completo',
+      phone: 'Teléfono',
+      email: 'Email',
+      birthdate: 'Fecha de Nacimiento',
+      address: 'Dirección',
+      contact_phone: 'Teléfono de Contacto',
+    };
+    return Object.keys(this.employeeForm.controls)
+      .filter(k => {
+        const ctrl = this.employeeForm.get(k);
+        return ctrl && ctrl.enabled && ctrl.invalid;
+      })
+      .map(k => labels[k] || k)
+      .join(', ');
   }
 
   getFieldError(fieldName: string): string {

@@ -450,21 +450,27 @@
         </div>
 
         <!-- Modal Footer -->
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="closeModal()">
-            <i class="fas fa-times"></i>
-            Cancelar
-          </button>
-          <button 
-            type="submit" 
-            class="btn btn-primary" 
-            (click)="onSubmit()"
-            [disabled]="loading || employeeForm.invalid"
-          >
-            <i class="fas fa-save" *ngIf="!loading"></i>
-            <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
-            {{ loading ? 'Actualizando...' : 'Actualizar Empleado' }}
-          </button>
+        <div class="modal-footer flex-column align-items-stretch gap-1">
+          <div *ngIf="employeeForm.invalid && getInvalidFieldLabels()" class="text-danger" style="font-size:12px;padding:4px 8px;background:#fff3cd;border:1px solid #ffc107;border-radius:4px;">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            Campos pendientes: <strong>{{ getInvalidFieldLabels() }}</strong>
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">
+              <i class="fas fa-times"></i>
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              class="btn btn-primary" 
+              (click)="onSubmit()"
+              [disabled]="loading || employeeForm.invalid"
+            >
+              <i class="fas fa-save" *ngIf="!loading"></i>
+              <i class="fas fa-spinner fa-spin" *ngIf="loading"></i>
+              {{ loading ? 'Actualizando...' : 'Actualizar Empleado' }}
+            </button>
+          </div>
         </div>
       </form>
 
