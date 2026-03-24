@@ -510,3 +510,404 @@
 .ch-report-btn:hover {
   opacity: 0.92;
 }
+
+.ch-report-btn--sm {
+  font-size: 0.8rem;
+  padding: 0.55rem 1rem;
+}
+
+/* ── Table enhancements ──────────────────────────────────── */
+.ch-dept-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.ch-dept-name {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--si-on-surface);
+}
+
+.ch-dept-mes {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--si-on-surface-variant);
+}
+
+.ch-unit {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--si-on-surface-variant);
+  margin-left: 1px;
+}
+
+.ch-badge-days {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(89, 0, 13, 0.1);
+  color: var(--si-tertiary);
+  padding: 0 0.4rem;
+}
+
+.ch-badge-days--zero {
+  background: var(--si-surface-high);
+  color: var(--si-on-surface-variant);
+}
+
+.ch-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background: rgba(0, 43, 125, 0.06);
+  color: var(--si-primary);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--si-radius-sm);
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.ch-action-btn .material-symbols-outlined {
+  font-size: 0.95rem !important;
+}
+
+.ch-action-btn:hover {
+  background: rgba(0, 43, 125, 0.13);
+}
+
+/* ── Summary Modal ───────────────────────────────────────── */
+.ch-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 28, 30, 0.48);
+  backdrop-filter: blur(3px);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: ch-fade-in 0.18s ease;
+}
+
+@keyframes ch-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.ch-modal {
+  background: var(--si-surface-lowest, #fff);
+  border-radius: var(--si-radius, 0.5rem);
+  box-shadow: 0 24px 60px rgba(0, 20, 48, 0.22);
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  animation: ch-slide-up 0.2s ease;
+}
+
+@keyframes ch-slide-up {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.ch-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid rgba(196, 198, 212, 0.35);
+}
+
+.ch-modal-title-block {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ch-modal-ico {
+  font-size: 1.5rem !important;
+  color: var(--si-primary);
+  background: rgba(0, 43, 125, 0.08);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--si-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ch-modal-title {
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--si-on-surface);
+  letter-spacing: -0.01em;
+}
+
+.ch-modal-sub {
+  font-size: 0.7rem;
+  color: var(--si-on-surface-variant);
+  margin: 0.1rem 0 0;
+}
+
+.ch-modal-close {
+  border: none;
+  background: transparent;
+  color: var(--si-on-surface-variant);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.ch-modal-close:hover {
+  background: var(--si-surface-low);
+}
+
+.ch-modal-body {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.ch-modal-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.ch-modal-kpi {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--si-surface-low, #f1f4f6);
+  border-radius: var(--si-radius-sm);
+  padding: 0.85rem 1rem;
+}
+
+.ch-modal-kpi-ico {
+  font-size: 1.25rem !important;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--si-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ch-modal-kpi-ico--primary  { background: rgba(0, 43, 125, 0.1);  color: var(--si-primary); }
+.ch-modal-kpi-ico--secondary { background: rgba(207, 230, 242, 0.65); color: var(--si-secondary); }
+.ch-modal-kpi-ico--tertiary  { background: rgba(151, 0, 16, 0.1);   color: var(--si-tertiary); }
+.ch-modal-kpi-ico--pc        { background: rgba(26, 66, 159, 0.1);   color: var(--si-primary-container); }
+
+.ch-modal-kpi-lbl {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--si-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.2rem;
+}
+
+.ch-modal-kpi-val {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--si-on-surface);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.ch-modal-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.ch-modal-detail-table tr {
+  border-bottom: 1px solid rgba(196, 198, 212, 0.25);
+}
+
+.ch-modal-detail-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--si-on-surface-variant);
+  padding: 0.6rem 0.75rem 0.6rem 0;
+  width: 55%;
+  vertical-align: middle;
+}
+
+.ch-modal-detail-table td {
+  text-align: right;
+  padding: 0.6rem 0;
+  color: var(--si-on-surface);
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.ch-modal-row-total th,
+.ch-modal-row-total td {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+  font-size: 0.88rem;
+  color: var(--si-on-surface);
+  font-weight: 800;
+  border-top: 2px solid rgba(196, 198, 212, 0.5);
+}
+
+/* ── Accordion (Registro detallado por mes) ──────────────── */
+.ch-accordion {
+  display: flex;
+  flex-direction: column;
+}
+
+.ch-acc-month {
+  border-bottom: 1px solid rgba(196, 198, 212, 0.25);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.ch-acc-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.25rem;
+  background: var(--si-surface-low, #f5f6fa);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+  flex-wrap: wrap;
+
+  &:hover {
+    background: rgba(0, 43, 125, 0.04);
+  }
+
+  &--expanded {
+    background: rgba(0, 43, 125, 0.06);
+    border-bottom: 1px solid rgba(0, 43, 125, 0.12);
+  }
+}
+
+.ch-acc-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.ch-acc-chevron {
+  font-size: 1.1rem !important;
+  color: var(--si-primary);
+  flex-shrink: 0;
+}
+
+.ch-acc-mes-label {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--si-on-surface);
+  letter-spacing: -0.01em;
+  text-transform: capitalize;
+}
+
+.ch-acc-rows-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--si-on-surface-variant);
+  background: rgba(196, 198, 212, 0.3);
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.ch-acc-summary {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-shrink: 0;
+}
+
+.ch-acc-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.05rem;
+  min-width: 56px;
+}
+
+.ch-acc-stat-lbl {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--si-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ch-acc-stat-val {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--si-on-surface);
+
+  &--error {
+    color: var(--si-tertiary, #97000f);
+  }
+}
+
+.ch-acc-body {
+  animation: ch-acc-open 0.18s ease;
+  overflow: hidden;
+}
+
+@keyframes ch-acc-open {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ch-acc-table {
+  width: 100%;
+
+  thead tr th {
+    background: rgba(0, 43, 125, 0.04);
+    font-size: 0.68rem;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid rgba(196, 198, 212, 0.3);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.ch-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(196, 198, 212, 0.25);
+  background: rgba(244, 243, 251, 0.4);
+}

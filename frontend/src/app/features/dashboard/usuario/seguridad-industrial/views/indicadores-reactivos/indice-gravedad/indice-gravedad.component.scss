@@ -703,6 +703,299 @@ $outline-variant: #c4c6d4;
   font-style: italic;
 }
 
+/* ── Naturaleza — scroll ──────────────────────── */
+.ig-nat-scroll {
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-right: 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba($outline-variant, 0.5) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba($outline-variant, 0.5);
+    border-radius: 4px;
+  }
+}
+
+.ig-nat-count-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: $primary-fixed;
+  color: $primary;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+
+.ig-nat-num {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: $on-surface-variant;
+  width: 1.2rem;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+/* OTV border/icon (on-tertiary-fixed-variant) */
+.ig-nat--otv {
+  border-left-color: $on-tertiary-fixed-variant;
+}
+.ig-nat-icon--otv {
+  background: $tertiary-fixed;
+  color: $on-tertiary-fixed-variant;
+}
+
+/* ── Table header sub-text ─────────────────────── */
+.ig-table-sub {
+  font-size: 0.8rem;
+  color: $on-surface-variant;
+  margin: 0.25rem 0 0;
+}
+
+/* ── Días badge ────────────────────────────────── */
+.ig-dias-badge {
+  display: inline-block;
+  background: $tertiary-container;
+  color: $tertiary;
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+}
+
+.ig-td-zero {
+  color: $outline-variant;
+}
+
+/* ── Parámetro button ──────────────────────────── */
+.ig-param-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: $primary-container;
+  background: $primary-fixed;
+  border: none;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+
+  .material-symbols-outlined {
+    font-size: 0.9rem !important;
+  }
+
+  &:hover {
+    background: $primary-container;
+    color: #fff;
+  }
+}
+
+/* ── Parameter panel (slide in from right) ─────── */
+.ig-param-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 200;
+  animation: ig-fade-in 0.2s ease;
+}
+
+@keyframes ig-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.ig-param-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(640px, 95vw);
+  background: $surface-container-lowest;
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.14);
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: ig-slide-in 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes ig-slide-in {
+  from { transform: translateX(100%); opacity: 0.5; }
+  to   { transform: translateX(0);    opacity: 1;   }
+}
+
+.ig-param-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid rgba($outline-variant, 0.2);
+  flex-shrink: 0;
+}
+
+.ig-param-panel-sub {
+  font-size: 0.75rem;
+  color: $on-surface-variant;
+  margin: 0.25rem 0 0;
+}
+
+.ig-param-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba($outline-variant, 0.15);
+}
+
+.ig-param-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  background: $surface-container-low;
+  padding: 0.85rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.ig-param-kpi--accent {
+  background: $primary-fixed;
+}
+
+.ig-param-kpi-lbl {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: $on-surface-variant;
+}
+
+.ig-param-kpi-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-family: 'Manrope', sans-serif;
+  color: $primary;
+}
+
+.ig-param-list-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+}
+
+.ig-param-list-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: $on-surface-variant;
+  margin-bottom: 0.75rem;
+}
+
+.ig-param-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: $on-surface-variant;
+  font-size: 0.875rem;
+  text-align: center;
+
+  .material-symbols-outlined {
+    font-size: 2.5rem !important;
+    color: #4caf50;
+  }
+}
+
+.ig-param-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+
+  thead tr {
+    background: $surface-container-low;
+  }
+
+  th {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $on-surface-variant;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.85rem;
+    border-top: 1px solid rgba($outline-variant, 0.12);
+    vertical-align: middle;
+  }
+
+  tbody tr:hover {
+    background: $surface-container;
+  }
+}
+
+.ig-param-td-date {
+  font-variant-numeric: tabular-nums;
+  color: $on-surface-variant;
+  white-space: nowrap;
+}
+
+.ig-param-td-title {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ig-param-tfoot td {
+  background: $surface-container-low;
+  padding: 0.75rem 0.85rem;
+  border-top: 2px solid rgba($outline-variant, 0.3);
+  font-size: 0.82rem;
+  color: $on-surface;
+}
+
+.ig-param-panel-foot {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba($outline-variant, 0.2);
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.ig-param-close-btn {
+  background: $surface-container;
+  color: $on-surface;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.6rem 1.5rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: $surface-container-highest;
+  }
+}
+
 /* FAB */
 .ig-fab {
   position: fixed;

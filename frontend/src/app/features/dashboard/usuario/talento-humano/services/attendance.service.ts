@@ -78,7 +78,10 @@ export interface ConsolidadoHhttSummary {
     mesSort: number;
     mesAnio: string;
     departamento: string;
+    cargo: string;
     horasOrdinarias: number;
+    horasExtraOt: number;
+    diasExtrasCount: number;
     horasExtras: number;
     totalHh: number;
     numColaboradores: number;
@@ -197,6 +200,15 @@ export interface SafetyIndicesKpis {
   tr: number;
 }
 
+export interface IncidenteDetalle {
+  id: number;
+  personName: string;
+  personCedula: string;
+  title: string;
+  incidentDate: string;
+  lostDays: number;
+}
+
 export interface SafetyIndicesMonth {
   month: number;
   label: string;
@@ -208,6 +220,7 @@ export interface SafetyIndicesMonth {
   trif: number;
   ig: number;
   tr: number;
+  incidentes?: IncidenteDetalle[];
 }
 
 export interface SafetyIndicesSummary {

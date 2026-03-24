@@ -837,12 +837,20 @@ public class AttendanceService {
         // ── 1. Horas extra registradas ──────────────────────────────────────────
         List<EmployeeOvertime> overtimeYear = overtimeRepository.findByBusinessAndDateRangeWithEmployee(
                 businessId, yStart, yEnd);
-        Map<Integer, Double> otHoursByMonth    = new HashMap<>();
-        Map<String, Double>  otHoursByDeptYear = new HashMap<>();
+        Map<Integer, Double>                 otHoursByMonth          = new HashMap<>();
+        Map<String, Double>                  otHoursByDeptYear       = new HashMap<>();
+        Map<Integer, Map<String, Double>>    otHoursByMonthDeptCargo = new HashMap<>();
         for (EmployeeOvertime o : overtimeYear) {
-            int m = o.getOvertimeDate().getMonthValue();
+            int    m       = o.getOvertimeDate().getMonthValue();
+            String otDept  = departmentName(o.getEmployee());
+            String otPos   = (o.getEmployee() != null && o.getEmployee().getPosition() != null
+                    && !o.getEmployee().getPosition().isBlank())
+                    ? o.getEmployee().getPosition() : "Sin cargo";
+            String otDC    = otDept + "|" + otPos;
             otHoursByMonth.merge(m, o.getHoursTotal(), Double::sum);
-            otHoursByDeptYear.merge(departmentName(o.getEmployee()), o.getHoursTotal(), Double::sum);
+            otHoursByDeptYear.merge(otDept, o.getHoursTotal(), Double::sum);
+            otHoursByMonthDeptCargo.computeIfAbsent(m, k -> new HashMap<>())
+                    .merge(otDC, o.getHoursTotal(), Double::sum);
         }
 
         // ── 2. Días T/EX desde planilla mensual (saved + auto-generados por jornada) ──
@@ -854,9 +862,14 @@ public class AttendanceService {
         Map<String, Double> exHoursByDeptYear   = new LinkedHashMap<>();
 
         // Acumuladores por mes/depto para tabla de detalle
-        Map<Integer, Map<String, Double>>      ordHoursMD = new HashMap<>();
-        Map<Integer, Map<String, Double>>      exHoursMD  = new HashMap<>();
-        Map<Integer, Map<String, Set<Long>>>   colabMD    = new HashMap<>();
+        Map<Integer, Map<String, Double>>      ordHoursMD  = new HashMap<>();
+        Map<Integer, Map<String, Double>>      exHoursMD   = new HashMap<>();
+        Map<Integer, Map<String, Set<Long>>>   colabMD     = new HashMap<>();
+        // Acumuladores por mes/depto+cargo (tabla detallada)
+        Map<Integer, Map<String, Double>>      ordHoursMDC = new HashMap<>();
+        Map<Integer, Map<String, Double>>      exHoursMDC  = new HashMap<>();
+        Map<Integer, Map<String, Integer>>     exCountMDC  = new HashMap<>();
+        Map<Integer, Map<String, Set<Long>>>   colabMDC    = new HashMap<>();
 
         java.time.format.DateTimeFormatter mesFmt =
                 java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.forLanguageTag("es-EC"));
@@ -869,7 +882,10 @@ public class AttendanceService {
             for (Map<String, Object> empRow : monthSheet) {
                 Object empIdObj = empRow.get("employeeId");
                 Long empId = (empIdObj instanceof Number) ? ((Number) empIdObj).longValue() : null;
-                String dept = (String) empRow.getOrDefault("departmentName", "Sin departamento");
+                String dept  = (String) empRow.getOrDefault("departmentName", "Sin departamento");
+                String pos   = (String) empRow.get("position");
+                String cargo = (pos != null && !pos.isBlank()) ? pos : "Sin cargo";
+                String deptCargo = dept + "|" + cargo;
                 String shiftName = (String) empRow.get("workShiftName");
                 double daily = inferDailyHoursFromShiftName(shiftName);
 
@@ -883,9 +899,12 @@ public class AttendanceService {
                     ordHoursByMonth[month]          += ordH;
                     ordHoursByDeptYear.merge(dept, ordH, Double::sum);
                     ordHoursMD.computeIfAbsent(month, k -> new HashMap<>()).merge(dept, ordH, Double::sum);
+                    ordHoursMDC.computeIfAbsent(month, k -> new HashMap<>()).merge(deptCargo, ordH, Double::sum);
                     if (empId != null) {
                         colabMD.computeIfAbsent(month, k -> new HashMap<>())
                                .computeIfAbsent(dept, k -> new HashSet<>()).add(empId);
+                        colabMDC.computeIfAbsent(month, k -> new HashMap<>())
+                                .computeIfAbsent(deptCargo, k -> new HashSet<>()).add(empId);
                     }
                 }
                 if (exDays > 0) {
@@ -893,15 +912,19 @@ public class AttendanceService {
                     exDayHoursByMonth[month]        += exH;
                     exHoursByDeptYear.merge(dept, exH, Double::sum);
                     exHoursMD.computeIfAbsent(month, k -> new HashMap<>()).merge(dept, exH, Double::sum);
+                    exHoursMDC.computeIfAbsent(month, k -> new HashMap<>()).merge(deptCargo, exH, Double::sum);
+                    exCountMDC.computeIfAbsent(month, k -> new HashMap<>()).merge(deptCargo, exDays, Integer::sum);
                     if (empId != null) {
                         colabMD.computeIfAbsent(month, k -> new HashMap<>())
                                .computeIfAbsent(dept, k -> new HashSet<>()).add(empId);
+                        colabMDC.computeIfAbsent(month, k -> new HashMap<>())
+                                .computeIfAbsent(deptCargo, k -> new HashSet<>()).add(empId);
                     }
                 }
             }
         }
 
-        // ── 3. Tabla de detalle (solo meses con datos reales) ──────────────────
+        // ── 3. Tabla de detalle por mes/depto/cargo ────────────────────────────
         List<Map<String, Object>> detailRows = new ArrayList<>();
         Set<Integer> monthsWithData = new TreeSet<>();
 
@@ -909,35 +932,40 @@ public class AttendanceService {
             LocalDate ms = LocalDate.of(year, month, 1);
             String mesLabel = capitalizeEsMonth(ms.format(mesFmt));
 
-            Map<String, Double> ordM = ordHoursMD.getOrDefault(month, Collections.emptyMap());
-            Map<String, Double> exM  = exHoursMD.getOrDefault(month, Collections.emptyMap());
-            Map<String, Double> otM  = new HashMap<>();
-            for (EmployeeOvertime o : overtimeYear) {
-                if (o.getOvertimeDate().getMonthValue() != month) continue;
-                otM.merge(departmentName(o.getEmployee()), o.getHoursTotal(), Double::sum);
-            }
+            Map<String, Double>  ordM = ordHoursMDC.getOrDefault(month, Collections.emptyMap());
+            Map<String, Double>  exHM = exHoursMDC.getOrDefault(month, Collections.emptyMap());
+            Map<String, Integer> exCM = exCountMDC.getOrDefault(month, Collections.emptyMap());
+            Map<String, Double>  otDC = otHoursByMonthDeptCargo.getOrDefault(month, Collections.emptyMap());
 
-            Set<String> depts = new TreeSet<>();
-            depts.addAll(ordM.keySet());
-            depts.addAll(exM.keySet());
-            depts.addAll(otM.keySet());
+            Set<String> dcKeys = new TreeSet<>();
+            dcKeys.addAll(ordM.keySet());
+            dcKeys.addAll(exHM.keySet());
+            dcKeys.addAll(otDC.keySet());
 
-            if (!depts.isEmpty()) monthsWithData.add(month);
+            if (!dcKeys.isEmpty()) monthsWithData.add(month);
 
-            for (String d : depts) {
-                double ordHD = ordM.getOrDefault(d, 0.0);
-                double exHD  = exM.getOrDefault(d, 0.0) + otM.getOrDefault(d, 0.0);
-                if (ordHD <= 0 && exHD <= 0) continue;
+            for (String dcKey : dcKeys) {
+                String[] parts  = dcKey.split("\\|", 2);
+                String   d      = parts[0];
+                String   c      = parts.length > 1 ? parts[1] : "Sin cargo";
+                double   ordHD  = ordM.getOrDefault(dcKey, 0.0);
+                double   exHD   = exHM.getOrDefault(dcKey, 0.0);
+                int      exCnt  = exCM.getOrDefault(dcKey, 0);
+                double   otHD   = otDC.getOrDefault(dcKey, 0.0);
+                if (ordHD <= 0 && exHD <= 0 && otHD <= 0) continue;
+                int numColab = colabMDC.getOrDefault(month, Collections.emptyMap())
+                                       .getOrDefault(dcKey, Collections.emptySet()).size();
                 Map<String, Object> dr = new LinkedHashMap<>();
-                dr.put("mesSort",         year * 100 + month);
-                dr.put("mesAnio",         mesLabel);
-                dr.put("departamento",    d);
-                dr.put("horasOrdinarias", Math.round(ordHD));
-                dr.put("horasExtras",     Math.round(exHD));
-                dr.put("totalHh",         Math.round(ordHD + exHD));
-                dr.put("numColaboradores",
-                        colabMD.getOrDefault(month, Collections.emptyMap())
-                               .getOrDefault(d, Collections.emptySet()).size());
+                dr.put("mesSort",          year * 100 + month);
+                dr.put("mesAnio",          mesLabel);
+                dr.put("departamento",     d);
+                dr.put("cargo",            c);
+                dr.put("horasOrdinarias",  Math.round(ordHD));
+                dr.put("horasExtraOt",     Math.round(otHD));
+                dr.put("diasExtrasCount",  exCnt);
+                dr.put("horasExtras",      Math.round(exHD + otHD));
+                dr.put("totalHh",          Math.round(ordHD + exHD + otHD));
+                dr.put("numColaboradores", numColab);
                 detailRows.add(dr);
             }
         }
@@ -1073,6 +1101,7 @@ public class AttendanceService {
         // ── 1. HHTT por mes (planilla, misma lógica que consolidado) ──────────
         LocalDate today = LocalDate.now();
         double[] hhttByMonth = new double[13]; // index 1-12
+        int[]    accDaysByMonth = new int[13]; // días perdidos por accidentes desde planilla (A)
         for (int month = 1; month <= 12; month++) {
             if (LocalDate.of(year, month, 1).isAfter(today)) continue;
             List<Map<String, Object>> sheet = getMonthlySheet(businessId, year, month);
@@ -1083,8 +1112,11 @@ public class AttendanceService {
                 Map<String, Integer> totals = (Map<String, Integer>) row.get("totals");
                 if (totals == null) continue;
                 int tDays  = totals.getOrDefault("T",  0);
-                int exDays = totals.getOrDefault("EX", 0);
-                hhttByMonth[month] += (tDays + exDays) * daily;
+                int aDays  = totals.getOrDefault("A",  0); // accidentes
+                // Para índices de seguridad: horas base SOLO de días T; las horas extra (EX)
+                // se suman explícitamente desde el repositorio de overtime más abajo.
+                hhttByMonth[month] += tDays * daily;
+                accDaysByMonth[month] += aDays;
             }
             // añadir horas extra registradas (tabla employee_overtime)
             List<com.improvementsolutions.model.EmployeeOvertime> ot =
@@ -1105,14 +1137,43 @@ public class AttendanceService {
                         LocalDate.of(year, 1, 1),
                         LocalDate.of(year, 12, 31));
 
-        int[]    lesionesByMonth    = new int[13];
-        int[]    diasPerdidosByMonth = new int[13];
+        int[]    lesionesByMonth        = new int[13];
+        int[]    diasPerdidosByMonth    = new int[13]; // desde módulo de incidentes (lostDays)
+        int[]    countTiempoPerdidoByMo = new int[13]; // fallback: conteo de "Accidente con tiempo perdido"
+        @SuppressWarnings("unchecked")
+        List<Map<String,Object>>[] incidentDetailByMonth = new List[13];
+        for (int i = 1; i <= 12; i++) incidentDetailByMonth[i] = new ArrayList<>();
         for (com.improvementsolutions.model.BusinessIncident inc : incidents) {
             if (inc.getIncidentDate() == null) continue;
             if (inc.getIncidentDate().isAfter(today)) continue;
             int m = inc.getIncidentDate().getMonthValue();
             lesionesByMonth[m]++;
-            diasPerdidosByMonth[m] += (inc.getLostDays() != null ? inc.getLostDays() : 0);
+            int dp = (inc.getLostDays() != null ? inc.getLostDays() : 0);
+            diasPerdidosByMonth[m] += dp;
+            Map<String,Object> det = new LinkedHashMap<>();
+            det.put("id",           inc.getId());
+            det.put("personName",   inc.getPersonName()   != null ? inc.getPersonName()   : "");
+            det.put("personCedula", inc.getPersonCedula() != null ? inc.getPersonCedula() : "");
+            det.put("title",        inc.getTitle()        != null ? inc.getTitle()        : "");
+            det.put("incidentDate", inc.getIncidentDate().toString());
+            det.put("lostDays",     dp);
+            det.put("eventClassification", inc.getEventClassification());
+            incidentDetailByMonth[m].add(det);
+
+            // Fallback: si la clasificación es "Accidente con tiempo perdido" y lostDays es 0/NULL, contar como 1
+            String cls = inc.getEventClassification();
+            if (cls != null) {
+                String n = cls.trim().toLowerCase();
+                boolean isAccidente   = n.contains("accidente");
+                boolean isSinTP       = n.contains("sin tiempo perdido");
+                boolean isConTP       = n.contains("tiempo perdido") && !isSinTP;
+                boolean isItinere     = n.contains("itínere") || n.contains("itinere");
+                boolean isNoAccidente = n.contains("no accidente de trabajo");
+                boolean isNoAplica    = n.contains("no aplica");
+                if (dp <= 0 && isAccidente && !isSinTP && !isNoAccidente && !isNoAplica) {
+                    countTiempoPerdidoByMo[m]++;
+                }
+            }
         }
 
         // ── 3. Calcular índices por mes ──────────────────────────────────────
@@ -1129,11 +1190,15 @@ public class AttendanceService {
             if (LocalDate.of(year, m, 1).isAfter(today)) continue;
             double hh  = hhttByMonth[m];
             int    les = lesionesByMonth[m];
-            int    dp  = diasPerdidosByMonth[m];
+            // Combinar: usar el mayor entre planilla (accidentes A) y módulo de incidentes (lostDays)
+            int    dpPlanilla = accDaysByMonth[m];
+            int    dpInc      = diasPerdidosByMonth[m];
+            int    dpFallback = countTiempoPerdidoByMo[m];
+            int    dp         = Math.max(Math.max(dpPlanilla, dpInc), dpFallback);
 
             double ifM    = hh > 0 ? (les / hh) * 200_000.0 : 0.0;
             double trifM  = hh > 0 ? (les / hh) * 1_000_000.0 : 0.0;
-            double igM    = hh > 0 ? (dp  / hh) * 200.0 : 0.0;
+            double igM    = hh > 0 ? (dp  / hh) * 200_000.0 : 0.0;
             double trM    = ifM > 0 ? igM / ifM : 0.0;
 
             Map<String, Object> mo = new LinkedHashMap<>();
@@ -1147,6 +1212,7 @@ public class AttendanceService {
             mo.put("trif",         Math.round(trifM * 100.0) / 100.0);
             mo.put("ig",           Math.round(igM   * 100.0) / 100.0);
             mo.put("tr",           Math.round(trM   * 100.0) / 100.0);
+            mo.put("incidentes",   incidentDetailByMonth[m]);
             months.add(mo);
 
             ytdHhtt     += hh;
@@ -1157,7 +1223,7 @@ public class AttendanceService {
         // ── 4. YTD ───────────────────────────────────────────────────────────
         double ytdIf   = ytdHhtt > 0 ? (ytdLesiones / ytdHhtt) * 200_000.0   : 0.0;
         double ytdTrif = ytdHhtt > 0 ? (ytdLesiones / ytdHhtt) * 1_000_000.0 : 0.0;
-        double ytdIg   = ytdHhtt > 0 ? (ytdDias     / ytdHhtt) * 200.0       : 0.0;
+        double ytdIg   = ytdHhtt > 0 ? (ytdDias     / ytdHhtt) * 200_000.0   : 0.0;
         double ytdTr   = ytdIf   > 0 ? ytdIg / ytdIf                          : 0.0;
 
         Map<String, Object> ytd = new LinkedHashMap<>();
@@ -1428,8 +1494,8 @@ public class AttendanceService {
                 int ex = totals != null ? totals.getOrDefault("EX", 0) : 0;
                 double overtimeHrs = (empId != null) ? overtimeByEmployee.getOrDefault(empId, 0.0) : 0.0;
 
-                double workedDays = t + ex;
-                double ordHours = workedDays * dailyHours;
+                // Solo contar días ordinarios (T) como horas base; las horas extra se agregan aparte
+                double ordHours = t * dailyHours;
                 totalHhtt += ordHours + overtimeHrs;
             }
 

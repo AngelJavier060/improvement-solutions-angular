@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { BusinessService } from '../../../../../../../services/business.service';
-import { AttendanceService, SafetyIndicesSummary } from '../../../../talento-humano/services/attendance.service';
+import { AttendanceService, IncidenteDetalle, SafetyIndicesMonth, SafetyIndicesSummary } from '../../../../talento-humano/services/attendance.service';
 
 /**
  * Índice de Gravedad: (días perdidos / horas trabajadas del periodo) × 200.
@@ -13,7 +13,7 @@ import { AttendanceService, SafetyIndicesSummary } from '../../../../talento-hum
 })
 export class IndiceGravedadComponent implements OnInit {
   /** Factor numérico alineado con filas del HTML de referencia */
-  readonly factorIg = 200;
+  readonly factorIg = 200000;
 
   loading = false;
   loadError: string | null = null;
@@ -40,17 +40,34 @@ export class IndiceGravedadComponent implements OnInit {
   barrasMensuales: { label: string; h: number }[] = [];
 
   naturalezaLesion: {
+    num: number;
     titulo: string;
-    sub: string;
     jornadas: number;
     icono: string;
-    borde: 'tertiary' | 'error' | 'on-tertiary-fixed-variant' | 'primary' | 'secondary';
+    borde: 'tertiary' | 'error' | 'otv' | 'primary' | 'secondary';
   }[] = [
-    { titulo: 'Muerte',           sub: 'Pérdida de vida',  jornadas: 6_000, icono: 'person_off',    borde: 'tertiary' },
-    { titulo: 'Incapacidad total', sub: 'Permanente',       jornadas: 6_000, icono: 'accessible',    borde: 'error' },
-    { titulo: 'Pérdida de un brazo', sub: 'Cualquier punto', jornadas: 4_500, icono: 'healing',      borde: 'on-tertiary-fixed-variant' },
-    { titulo: 'Pérdida de un ojo',   sub: 'Visión completa', jornadas: 1_800, icono: 'visibility_off', borde: 'primary' },
-    { titulo: 'Pérdida de un dedo',  sub: 'Cualquier dedo',  jornadas: 300,   icono: 'back_hand',    borde: 'secondary' }
+    { num:  1, titulo: 'Muerte',                                                      jornadas: 6_000, icono: 'person_off',       borde: 'tertiary' },
+    { num:  2, titulo: 'Incapacidad permanente absoluta (I.P.A.)',                    jornadas: 6_000, icono: 'accessible_forward', borde: 'error' },
+    { num:  3, titulo: 'Incapacidad permanente total (I.P.T.)',                       jornadas: 4_500, icono: 'accessible',         borde: 'error' },
+    { num:  4, titulo: 'Pérdida del brazo por encima del codo',                      jornadas: 4_500, icono: 'back_hand',          borde: 'otv' },
+    { num:  6, titulo: 'Pérdida de la mano',                                          jornadas: 3_000, icono: 'back_hand',          borde: 'primary' },
+    { num:  7, titulo: 'Pérdida o invalidez permanente del pulgar',                   jornadas:   600, icono: 'thumb_up',           borde: 'secondary' },
+    { num:  8, titulo: 'Pérdida o invalidez permanente de un dedo cualquiera',        jornadas:   300, icono: 'gesture',            borde: 'secondary' },
+    { num:  9, titulo: 'Pérdida o invalidez permanente de dos dedos',                 jornadas:   750, icono: 'gesture',            borde: 'secondary' },
+    { num: 10, titulo: 'Pérdida o invalidez permanente de tres dedos',                jornadas: 1_200, icono: 'gesture',            borde: 'secondary' },
+    { num: 11, titulo: 'Pérdida o invalidez permanente de cuatro dedos',              jornadas: 1_800, icono: 'gesture',            borde: 'secondary' },
+    { num: 12, titulo: 'Pérdida o invalidez permanente del pulgar y un dedo',         jornadas: 1_200, icono: 'gesture',            borde: 'secondary' },
+    { num: 13, titulo: 'Pérdida o invalidez permanente del pulgar y dos dedos',       jornadas: 1_500, icono: 'gesture',            borde: 'secondary' },
+    { num: 14, titulo: 'Pérdida o invalidez permanente del pulgar y tres dedos',      jornadas: 2_000, icono: 'gesture',            borde: 'secondary' },
+    { num: 15, titulo: 'Pérdida o invalidez permanente del pulgar y cuatro dedos',    jornadas: 2_400, icono: 'gesture',            borde: 'secondary' },
+    { num: 16, titulo: 'Pérdida de una pierna por encima de la rodilla',              jornadas: 4_500, icono: 'accessibility',       borde: 'otv' },
+    { num: 17, titulo: 'Pérdida de una pierna por la rodilla o debajo',               jornadas: 3_000, icono: 'accessibility',       borde: 'primary' },
+    { num: 18, titulo: 'Pérdida del pie',                                             jornadas: 2_400, icono: 'accessibility',       borde: 'primary' },
+    { num: 19, titulo: 'Pérdida o invalidez permanente de dedo gordo o dos o más del pie', jornadas: 300, icono: 'straighten',       borde: 'secondary' },
+    { num: 20, titulo: 'Pérdida de la visión de un ojo',                              jornadas: 1_800, icono: 'visibility_off',     borde: 'primary' },
+    { num: 21, titulo: 'Ceguera total',                                               jornadas: 6_000, icono: 'visibility_off',     borde: 'tertiary' },
+    { num: 22, titulo: 'Pérdida de un oído (uno sólo)',                               jornadas:   600, icono: 'hearing',            borde: 'secondary' },
+    { num: 23, titulo: 'Sordera total',                                               jornadas: 3_000, icono: 'hearing',            borde: 'error' }
   ];
 
   tablaMensual: {
@@ -65,6 +82,35 @@ export class IndiceGravedadComponent implements OnInit {
   }[] = [];
 
   private businessId: number | null = null;
+  private monthsData: SafetyIndicesMonth[] = [];
+
+  /** Panel de parámetros por mes */
+  showParamPanel = false;
+  paramMes: SafetyIndicesMonth | null = null;
+
+  get paramIncidentes(): IncidenteDetalle[] {
+    return this.paramMes?.incidentes ?? [];
+  }
+
+  get paramTotalDias(): number {
+    const sum = this.paramIncidentes.reduce((s, i) => s + (i.lostDays || 0), 0);
+    return sum > 0 ? sum : (this.paramMes?.diasPerdidos || 0);
+  }
+
+  get paramIg(): number {
+    if (!this.paramMes?.horasHombre) return 0;
+    return Math.round((this.paramTotalDias / this.paramMes.horasHombre) * 200000 * 1000) / 1000;
+  }
+
+  openParam(mesAnio: string): void {
+    this.paramMes = this.monthsData.find(m => m.mesAnio === mesAnio) ?? null;
+    this.showParamPanel = true;
+  }
+
+  closeParam(): void {
+    this.showParamPanel = false;
+    this.paramMes = null;
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -113,21 +159,34 @@ export class IndiceGravedadComponent implements OnInit {
   }
 
   private applyData(data: SafetyIndicesSummary): void {
-    this.diasPerdidosYtd    = data.ytd.diasPerdidos;
     this.horasTrabajadasYtd = data.ytd.horasHombre;
 
-    const maxIg = data.months.reduce((mx, m) => Math.max(mx, m.ig), 0.001);
-    this.barrasMensuales = data.months.map(m => ({
+    // Normalizar días perdidos por mes tomando la suma de incidentes si está disponible
+    const monthsNorm = data.months.map(m => {
+      const sumInc = (m.incidentes ?? []).reduce((s, it) => s + (it.lostDays || 0), 0);
+      const dp = Math.max(m.diasPerdidos || 0, sumInc);
+      const igCalc = m.horasHombre > 0 ? (dp / m.horasHombre) * this.factorIg : 0;
+      // Retornamos con días normalizados y un IG recalculado
+      return { ...m, diasPerdidos: dp, ig: Math.round(igCalc * 1000) / 1000 } as SafetyIndicesMonth;
+    });
+
+    // YTD de días perdidos confiable (suma mensual)
+    this.diasPerdidosYtd = monthsNorm.reduce((s, m) => s + (m.diasPerdidos || 0), 0);
+
+    const maxIg = monthsNorm.reduce((mx, m) => Math.max(mx, m.ig), 0.001);
+    this.barrasMensuales = monthsNorm.map(m => ({
       label: m.label,
       h:     Math.round((m.ig / maxIg) * 100)
     }));
 
-    const maxIgMonth = data.months.reduce(
+    const maxIgMonth = monthsNorm.reduce(
       (best, m) => m.ig > best.ig ? m : best,
-      data.months[0] ?? { ig: 0, diasPerdidos: 0 } as any
+      monthsNorm[0] ?? { ig: 0, diasPerdidos: 0 } as any
     );
 
-    this.tablaMensual = data.months.map(m => ({
+    this.monthsData = monthsNorm;
+
+    this.tablaMensual = monthsNorm.map(m => ({
       mes:         m.mesAnio,
       dias:        m.diasPerdidos,
       horas:       m.horasHombre,

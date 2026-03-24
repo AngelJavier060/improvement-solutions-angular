@@ -95,19 +95,15 @@
           <div class="trisk-panel-head">
             <div>
               <h3 class="trisk-h3">Tasa de riesgo mensual</h3>
-              <p class="trisk-panel-sub">Comparativa empresa vs. contratista</p>
+              <p class="trisk-panel-sub">Empresa</p>
             </div>
             <div class="trisk-leg">
               <span><i class="trisk-dot trisk-dot--p"></i> Empresa</span>
-              <span><i class="trisk-dot trisk-dot--s"></i> Contratista</span>
             </div>
           </div>
           <div class="trisk-bar-chart">
             <div class="trisk-bar-col" *ngFor="let m of barrasMensuales">
-              <div class="trisk-bar-pair">
-                <div class="trisk-bar trisk-bar--emp" [style.height.%]="m.emp"></div>
-                <div class="trisk-bar trisk-bar--contr" [style.height.%]="m.contr"></div>
-              </div>
+              <div class="trisk-bar trisk-bar--emp" [style.height.%]="m.emp"></div>
               <span class="trisk-bar-lbl">{{ m.label }}</span>
             </div>
           </div>
@@ -149,9 +145,6 @@
                 <th class="trisk-th-emp trisk-th-split-start">IG (empresa)</th>
                 <th class="trisk-th-emp">IF (empresa)</th>
                 <th class="trisk-th-emp trisk-th-highlight">TR (empresa)</th>
-                <th class="trisk-th-contr trisk-th-split-start2">IG (contr.)</th>
-                <th class="trisk-th-contr">IF (contr.)</th>
-                <th class="trisk-th-contr trisk-th-highlight2">TR (contr.)</th>
               </tr>
             </thead>
             <tbody>
@@ -160,9 +153,6 @@
                 <td class="trisk-td-emp trisk-td-split-start">{{ r.igEmp | number : '1.1-1' }}</td>
                 <td class="trisk-td-emp">{{ r.ifEmp | number : '1.1-1' }}</td>
                 <td class="trisk-td-tr trisk-td-tr--emp">{{ r.trEmp | number : '1.2-2' }}</td>
-                <td class="trisk-td-contr trisk-td-split-start2">{{ r.igContr | number : '1.1-1' }}</td>
-                <td class="trisk-td-contr">{{ r.ifContr | number : '1.1-1' }}</td>
-                <td class="trisk-td-tr trisk-td-tr--contr">{{ r.trContr | number : '1.2-2' }}</td>
               </tr>
             </tbody>
             <tfoot>
@@ -171,9 +161,6 @@
                 <td class="fw-black trisk-td-emp trisk-td-split-start">{{ promediosYtd.igEmp | number : '1.1-1' }}</td>
                 <td class="fw-black trisk-td-emp">{{ promediosYtd.ifEmp | number : '1.1-1' }}</td>
                 <td class="fw-black trisk-td-tr trisk-td-tr--emp trisk-tfoot-strong">{{ promediosYtd.trEmp | number : '1.2-2' }}</td>
-                <td class="fw-black trisk-td-contr trisk-td-split-start2">{{ promediosYtd.igContr | number : '1.1-1' }}</td>
-                <td class="fw-black trisk-td-contr">{{ promediosYtd.ifContr | number : '1.1-1' }}</td>
-                <td class="fw-black trisk-td-tr trisk-td-tr--contr trisk-tfoot-strong2">{{ promediosYtd.trContr | number : '1.2-2' }}</td>
               </tr>
             </tfoot>
           </table>

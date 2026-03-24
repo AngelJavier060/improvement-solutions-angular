@@ -29,7 +29,7 @@ export class IndiceRiesgoComponent implements OnInit {
   /** TR = IG / IF (ratio índice gravedad / índice frecuencia) */
   trActual = 0;
 
-  barrasMensuales: { label: string; emp: number; contr: number }[] = [];
+  barrasMensuales: { label: string; emp: number }[] = [];
 
   /** 25 celdas en orden fila a fila (estructura fija del diseño HTML) */
   heatCells: { v: HeatVariant; t?: string }[] = [
@@ -45,27 +45,15 @@ export class IndiceRiesgoComponent implements OnInit {
     igEmp: number;
     ifEmp: number;
     trEmp: number;
-    igContr: number;
-    ifContr: number;
-    trContr: number;
   }[] = [];
 
-  get promediosYtd(): {
-    igEmp: number; ifEmp: number; trEmp: number;
-    igContr: number; ifContr: number; trContr: number;
-  } {
+  get promediosYtd(): { igEmp: number; ifEmp: number; trEmp: number } {
     const n = this.tablaMensual.length || 1;
     const s = this.tablaMensual.reduce(
-      (a, r) => ({
-        igEmp: a.igEmp + r.igEmp, ifEmp: a.ifEmp + r.ifEmp, trEmp: a.trEmp + r.trEmp,
-        igContr: a.igContr + r.igContr, ifContr: a.ifContr + r.ifContr, trContr: a.trContr + r.trContr
-      }),
-      { igEmp: 0, ifEmp: 0, trEmp: 0, igContr: 0, ifContr: 0, trContr: 0 }
+      (a, r) => ({ igEmp: a.igEmp + r.igEmp, ifEmp: a.ifEmp + r.ifEmp, trEmp: a.trEmp + r.trEmp }),
+      { igEmp: 0, ifEmp: 0, trEmp: 0 }
     );
-    return {
-      igEmp: s.igEmp / n, ifEmp: s.ifEmp / n, trEmp: s.trEmp / n,
-      igContr: s.igContr / n, ifContr: s.ifContr / n, trContr: s.trContr / n
-    };
+    return { igEmp: s.igEmp / n, ifEmp: s.ifEmp / n, trEmp: s.trEmp / n };
   }
 
   private businessId: number | null = null;
@@ -119,36 +107,50 @@ export class IndiceRiesgoComponent implements OnInit {
   private applyData(data: SafetyIndicesSummary): void {
     this.diasPerdidosYtd = data.ytd.diasPerdidos;
     this.lesionesYtd     = data.ytd.lesiones;
-    this.trActual        = data.ytd.tr;
+    // TR actual por requerimiento: TR = IG / IF
+    this.trActual        = data.ytd.if > 0 ? data.ytd.ig / data.ytd.if : 0;
 
-    const maxTr = data.months.reduce((mx, m) => Math.max(mx, m.tr), 0.001);
-    this.barrasMensuales = data.months.map(m => ({
-      label: m.label,
-      emp:   Math.round((m.tr / maxTr) * 100),
-      contr: 0
-    }));
+    const F = 200000;
+    const maxTr = data.months.reduce((mx, m) => {
+      const dpSumInc = (m.incidentes ?? []).reduce((s, it: any) => s + (it.lostDays || 0), 0);
+      const dp       = Math.max(m.diasPerdidos || 0, dpSumInc);
+      const ifC = m.horasHombre > 0 ? (m.lesiones / m.horasHombre) * F : 0;
+      const igC = m.horasHombre > 0 ? (dp         / m.horasHombre) * F : 0;
+      const trC = ifC > 0 ? igC / ifC : 0;
+      return Math.max(mx, trC);
+    }, 0.001);
+    this.barrasMensuales = data.months.map(m => {
+      const dpSumInc = (m.incidentes ?? []).reduce((s, it: any) => s + (it.lostDays || 0), 0);
+      const dp       = Math.max(m.diasPerdidos || 0, dpSumInc);
+      const ifC = m.horasHombre > 0 ? (m.lesiones / m.horasHombre) * F : 0;
+      const igC = m.horasHombre > 0 ? (dp         / m.horasHombre) * F : 0;
+      const trC = ifC > 0 ? igC / ifC : 0;
+      return { label: m.label, emp: Math.round((trC / maxTr) * 100) };
+    });
 
-    this.tablaMensual = data.months.map(m => ({
-      mes:     m.mesAnio,
-      igEmp:   m.ig,
-      ifEmp:   m.if,
-      trEmp:   m.tr,
-      igContr: 0,
-      ifContr: 0,
-      trContr: 0
-    }));
+    this.tablaMensual = data.months.map(m => {
+      const dpSumInc = (m.incidentes ?? []).reduce((s, it: any) => s + (it.lostDays || 0), 0);
+      const dp       = Math.max(m.diasPerdidos || 0, dpSumInc);
+      const ifC = m.horasHombre > 0 ? (m.lesiones / m.horasHombre) * F : 0;
+      const igC = m.horasHombre > 0 ? (dp         / m.horasHombre) * F : 0;
+      return {
+        mes:   m.mesAnio,
+        igEmp: Math.round(igC * 10) / 10,
+        ifEmp: Math.round(ifC * 10) / 10,
+        trEmp: ifC > 0 ? igC / ifC : 0
+      };
+    });
 
     this.loading = false;
   }
 
   exportarCsv(): void {
-    const headers = ['Mes', 'IG Emp', 'IF Emp', 'TR Emp', 'IG Contr', 'IF Contr', 'TR Contr'];
+    const headers = ['Mes', 'IG Empresa', 'IF Empresa', 'TR Empresa'];
     const lines = this.tablaMensual.map((r) =>
-      [r.mes, r.igEmp, r.ifEmp, r.trEmp, r.igContr, r.ifContr, r.trContr].join(';')
+      [r.mes, r.igEmp, r.ifEmp, r.trEmp].join(';')
     );
     const p = this.promediosYtd;
-    lines.push(['Promedio YTD', p.igEmp.toFixed(1), p.ifEmp.toFixed(1), p.trEmp.toFixed(2),
-                 p.igContr.toFixed(1), p.ifContr.toFixed(1), p.trContr.toFixed(2)].join(';'));
+    lines.push(['Promedio YTD', p.igEmp.toFixed(1), p.ifEmp.toFixed(1), p.trEmp.toFixed(2)].join(';'));
     const csv = [headers.join(';'), ...lines].join('\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);

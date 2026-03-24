@@ -56,6 +56,12 @@
       </select>
     </div>
     <div class="si-filter-group">
+      <label for="ch-cargo">Cargo</label>
+      <select id="ch-cargo" class="ch-select-dept" [(ngModel)]="filterCargo" (ngModelChange)="currentPage = 0">
+        <option *ngFor="let c of cargoOptions" [value]="c.value">{{ c.label }}</option>
+      </select>
+    </div>
+    <div class="si-filter-group">
       <label for="ch-proj">Proyecto</label>
       <select id="ch-proj" class="ch-select-proj" [(ngModel)]="filterProject">
         <option *ngFor="let p of projectOptions" [value]="p.value">{{ p.label }}</option>
@@ -207,62 +213,224 @@
     </div>
   </section>
 
-  <!-- Tabla detallada -->
+  <!-- Registro detallado — acordeón por mes -->
   <section class="si-panel ch-table-panel p-0 overflow-hidden" *ngIf="businessId && !loading">
     <div class="ch-table-head px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-      <h2 class="si-section-title mb-0">Registro detallado</h2>
+      <div>
+        <h2 class="si-section-title mb-0">Registro detallado</h2>
+        <p class="si-section-sub mb-0 mt-1">{{ registrosPorMes.length }} mes(es) con registros · {{ totalRegistros }} filas</p>
+      </div>
       <div class="d-flex gap-1">
-        <button type="button" class="ch-icon-btn ch-icon-btn--light" title="Descargar" aria-label="Descargar">
-          <span class="material-symbols-outlined">download</span>
+        <button type="button" class="ch-icon-btn ch-icon-btn--light" title="Generar PDF" aria-label="Generar PDF" (click)="generarReporte()">
+          <span class="material-symbols-outlined">picture_as_pdf</span>
         </button>
         <button type="button" class="ch-icon-btn ch-icon-btn--light" title="Más opciones" aria-label="Más opciones">
           <span class="material-symbols-outlined">more_vert</span>
         </button>
       </div>
     </div>
-    <div class="si-table-wrap">
-      <table class="si-table ch-table">
-        <thead>
-          <tr>
-            <th class="ps-4">Mes / año</th>
-            <th>Departamento</th>
-            <th class="text-end">Horas ordinarias</th>
-            <th class="text-end text-si-error">Horas extras</th>
-            <th class="text-end">Total horas hombre</th>
-            <th class="text-end">N° colaboradores</th>
-            <th class="text-end pe-4">Acciones</th>
-          </tr>
-        </thead>
+
+    <!-- Acordeón -->
+    <div class="ch-accordion" *ngIf="registrosPorMes.length > 0; else noDataTpl">
+      <div class="ch-acc-month" *ngFor="let group of registrosPorMes">
+
+        <!-- Cabecera del mes (siempre visible) -->
+        <button
+          type="button"
+          class="ch-acc-header"
+          [class.ch-acc-header--expanded]="expandedMonths.has(group.mesAnio)"
+          (click)="toggleMonth(group.mesAnio)"
+          [attr.aria-expanded]="expandedMonths.has(group.mesAnio)">
+          <div class="ch-acc-left">
+            <span class="material-symbols-outlined ch-acc-chevron">
+              {{ expandedMonths.has(group.mesAnio) ? 'expand_less' : 'expand_more' }}
+            </span>
+            <span class="ch-acc-mes-label">{{ group.mesAnio }}</span>
+            <span class="ch-acc-rows-badge">{{ group.rows.length }} registro{{ group.rows.length !== 1 ? 's' : '' }}</span>
+          </div>
+          <div class="ch-acc-summary">
+            <div class="ch-acc-stat">
+              <span class="ch-acc-stat-lbl">Total HH</span>
+              <span class="ch-acc-stat-val fw-bold">{{ group.totalHh | number:'1.0-1' }} h</span>
+            </div>
+            <div class="ch-acc-stat">
+              <span class="ch-acc-stat-lbl">H. Extras</span>
+              <span class="ch-acc-stat-val ch-acc-stat-val--error">{{ group.totalOtHoras | number:'1.0-1' }} h</span>
+            </div>
+            <div class="ch-acc-stat">
+              <span class="ch-acc-stat-lbl">Días EX</span>
+              <span class="ch-acc-stat-val">{{ group.totalDiasExtras }}</span>
+            </div>
+          </div>
+        </button>
+
+        <!-- Filas del mes (desplegado) -->
+        <div class="ch-acc-body" *ngIf="expandedMonths.has(group.mesAnio)">
+          <table class="si-table ch-table ch-acc-table">
+            <thead>
+              <tr>
+                <th class="ps-5">Departamento</th>
+                <th>Cargo</th>
+                <th class="text-end">N° Colab.</th>
+                <th class="text-end">H. Extras (OT)</th>
+                <th class="text-end">Días EX</th>
+                <th class="text-end">Total HH</th>
+                <th class="text-center pe-4">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of group.rows">
+                <td class="ps-5 fw-semibold">{{ row.departamento }}</td>
+                <td class="text-secondary">{{ row.cargo }}</td>
+                <td class="text-end">{{ row.numColaboradores }}</td>
+                <td class="text-end">
+                  <span [class.text-si-error]="row.horasExtraOt > 0" [class.fw-semibold]="row.horasExtraOt > 0">
+                    {{ row.horasExtraOt | number:'1.0-1' }} h
+                  </span>
+                </td>
+                <td class="text-end">
+                  <span class="ch-badge-days" [class.ch-badge-days--zero]="row.diasExtrasCount === 0">
+                    {{ row.diasExtrasCount }}
+                  </span>
+                </td>
+                <td class="text-end fw-bold">{{ row.totalHh | number:'1.0-1' }} <span class="ch-unit">h</span></td>
+                <td class="text-center pe-4">
+                  <button type="button" class="ch-action-btn" (click)="verRegistro(row)" title="Ver resumen">
+                    <span class="material-symbols-outlined">visibility</span>
+                    Detalle
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noDataTpl>
+      <div class="text-center py-5 text-secondary">
+        <span class="material-symbols-outlined d-block mb-2" style="font-size:2rem">inbox</span>
+        Sin registros para los filtros seleccionados
+      </div>
+    </ng-template>
+  </section>
+
+  <div class="mt-4 d-flex justify-content-end" *ngIf="businessId && !loading">
+    <button type="button" class="ch-report-btn" (click)="generarReporte()">
+      <span class="material-symbols-outlined">picture_as_pdf</span>
+      Generar reporte PDF
+    </button>
+  </div>
+</div>
+
+<!-- ── Modal de resumen detallado ── -->
+<div class="ch-modal-overlay" *ngIf="showModal" (click)="closeSummaryModal()">
+  <div class="ch-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+
+    <div class="ch-modal-header">
+      <div class="ch-modal-title-block">
+        <span class="material-symbols-outlined ch-modal-ico">bar_chart</span>
+        <div>
+          <h3 class="ch-modal-title">Resumen detallado</h3>
+          <p class="ch-modal-sub">{{ selectedRow?.mesAnio }} · {{ selectedRow?.departamento }}</p>
+        </div>
+      </div>
+      <button type="button" class="ch-modal-close" (click)="closeSummaryModal()" aria-label="Cerrar">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="ch-modal-body" *ngIf="selectedRow">
+      <!-- KPI cards inline -->
+      <div class="ch-modal-kpi-grid">
+        <div class="ch-modal-kpi">
+          <span class="material-symbols-outlined ch-modal-kpi-ico ch-modal-kpi-ico--primary">timer</span>
+          <div>
+            <p class="ch-modal-kpi-lbl">Total Horas Hombre</p>
+            <p class="ch-modal-kpi-val">{{ selectedRow.totalHh | number:'1.0-1' }} h</p>
+          </div>
+        </div>
+        <div class="ch-modal-kpi">
+          <span class="material-symbols-outlined ch-modal-kpi-ico ch-modal-kpi-ico--secondary">work_history</span>
+          <div>
+            <p class="ch-modal-kpi-lbl">Horas Ordinarias</p>
+            <p class="ch-modal-kpi-val">{{ selectedRow.horasOrdinarias | number:'1.0-1' }} h</p>
+          </div>
+        </div>
+        <div class="ch-modal-kpi">
+          <span class="material-symbols-outlined ch-modal-kpi-ico ch-modal-kpi-ico--tertiary">more_time</span>
+          <div>
+            <p class="ch-modal-kpi-lbl">Horas Extras (OT)</p>
+            <p class="ch-modal-kpi-val">{{ selectedRow.horasExtraOt | number:'1.0-1' }} h</p>
+          </div>
+        </div>
+        <div class="ch-modal-kpi">
+          <span class="material-symbols-outlined ch-modal-kpi-ico ch-modal-kpi-ico--pc">event_available</span>
+          <div>
+            <p class="ch-modal-kpi-lbl">Días Extras (EX)</p>
+            <p class="ch-modal-kpi-val">{{ selectedRow.diasExtrasCount }} días</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail table -->
+      <table class="ch-modal-detail-table">
         <tbody>
-          <tr *ngFor="let row of paginatedRegistros">
-            <td class="ps-4 fw-bold">{{ row.mesAnio }}</td>
-            <td>{{ row.departamento }}</td>
-            <td class="text-end">{{ row.horasOrdinarias | number }}</td>
-            <td class="text-end fw-semibold text-si-error">{{ row.horasExtras | number }}</td>
-            <td class="text-end fw-bold">{{ row.totalHh | number }}</td>
-            <td class="text-end">{{ row.numColaboradores | number }}</td>
-            <td class="text-end pe-4">
-              <button type="button" class="ch-link-action" (click)="verRegistro(row)">Ver</button>
+          <tr>
+            <th>Período</th>
+            <td>{{ selectedRow.mesAnio }}</td>
+          </tr>
+          <tr>
+            <th>Departamento</th>
+            <td>{{ selectedRow.departamento }}</td>
+          </tr>
+          <tr>
+            <th>Cargo</th>
+            <td>{{ selectedRow.cargo }}</td>
+          </tr>
+          <tr>
+            <th>N° de Colaboradores</th>
+            <td>{{ selectedRow.numColaboradores }}</td>
+          </tr>
+          <tr>
+            <th>Horas ordinarias (T)</th>
+            <td>{{ selectedRow.horasOrdinarias | number:'1.0-1' }} h</td>
+          </tr>
+          <tr>
+            <th>Horas extras overtime (OT)</th>
+            <td class="text-si-error fw-semibold">{{ selectedRow.horasExtraOt | number:'1.0-1' }} h</td>
+          </tr>
+          <tr>
+            <th>Días extras en planilla (EX)</th>
+            <td>{{ selectedRow.diasExtrasCount }} días</td>
+          </tr>
+          <tr>
+            <th>Horas EX en planilla</th>
+            <td>{{ selectedRow.horasExtras - selectedRow.horasExtraOt | number:'1.0-1' }} h</td>
+          </tr>
+          <tr class="ch-modal-row-total">
+            <th>Total Horas Hombre</th>
+            <td class="fw-bold">{{ selectedRow.totalHh | number:'1.0-1' }} h</td>
+          </tr>
+          <tr>
+            <th>Extras / Total HHTT</th>
+            <td>
+              <span *ngIf="selectedRow.totalHh > 0">
+                {{ ((selectedRow.horasExtraOt + (selectedRow.horasExtras - selectedRow.horasExtraOt)) / selectedRow.totalHh * 100) | number:'1.1-1' }}%
+              </span>
+              <span *ngIf="selectedRow.totalHh === 0">—</span>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-    <div class="ch-table-footer px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-      <span class="ch-footer-txt">
-        Mostrando {{ firstIdx }}–{{ lastIdx }} de {{ totalRegistros }} registros
-      </span>
-      <div class="d-flex gap-2">
-        <button type="button" class="ch-page-btn" [disabled]="!canPrev" (click)="prevPage()">Anterior</button>
-        <button type="button" class="ch-page-btn" [disabled]="!canNext" (click)="nextPage()">Siguiente</button>
-      </div>
-    </div>
-  </section>
 
-  <div class="mt-4 d-flex justify-content-end" *ngIf="businessId && !loading">
-    <button type="button" class="ch-report-btn" (click)="generarReporte()">
-      <span class="material-symbols-outlined">description</span>
-      Generar reporte
-    </button>
+    <div class="ch-modal-footer">
+      <button type="button" class="ch-report-btn ch-report-btn--sm" (click)="generarReporte()">
+        <span class="material-symbols-outlined">picture_as_pdf</span>
+        Generar reporte PDF
+      </button>
+      <button type="button" class="ch-page-btn" (click)="closeSummaryModal()">Cerrar</button>
+    </div>
   </div>
 </div>
