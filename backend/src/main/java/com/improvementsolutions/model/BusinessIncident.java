@@ -185,6 +185,10 @@ public class BusinessIncident {
      * ABIERTO | CERRADO | EN_REVISION
      */
     @Builder.Default
+    @Column(name = "lost_days")
+    private Integer lostDays = 0;
+
+    @Builder.Default
     @Column(name = "status", length = 20, nullable = false)
     private String status = "ABIERTO";
 

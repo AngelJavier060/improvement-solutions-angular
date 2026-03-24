@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
 import { BusinessContextService } from '../../../../core/services/business-context.service';
 import { environment } from '../../../../../environments/environment';
+import { AttendanceService, MonthlyClosureEntry } from './components/../services/attendance.service';
 
 @Component({
   selector: 'app-talento-humano-dashboard',
@@ -16,10 +17,23 @@ export class TalentoHumanoDashboardComponent implements OnInit {
   currentUserEmail: string | null = null;
   businessName: string | null = null;
   businessEmail: string | null = null;
+  businessId: number | null = null;
   userPhotoUrl: string | null = null;
   initials: string | null = null;
 
-  constructor(private route: ActivatedRoute, private authService: AuthService, private businessContext: BusinessContextService) {}
+  // Cierres
+  closures: MonthlyClosureEntry[] = [];
+  closuresLoading = false;
+  closuresError: string | null = null;
+  showClosureMenu = false;
+  closingTarget: { year: number; month: number } | null = null;
+
+  constructor(
+    private route: ActivatedRoute,
+    private authService: AuthService,
+    private businessContext: BusinessContextService,
+    private attendanceService: AttendanceService
+  ) {}
 
   ngOnInit(): void {
     let parent: ActivatedRoute | null = this.route;
@@ -48,15 +62,19 @@ export class TalentoHumanoDashboardComponent implements OnInit {
     if (ctx) {
       this.businessName = (ctx.name || '').toString().trim() || null;
       this.businessEmail = (ctx.email || '').toString().trim() || null;
+      this.businessId = Number(ctx.id) || null;
     }
     if (!this.businessName && u?.businesses && Array.isArray(u.businesses)) {
       const found = this.ruc ? u.businesses.find((b: any) => String(b?.ruc) === String(this.ruc)) : u.businesses[0];
       if (found) {
         this.businessName = (found.name || '').toString().trim() || null;
         this.businessEmail = (found.email || '').toString().trim() || null;
+        if (!this.businessId) this.businessId = Number(found.id) || null;
         if (!this.initials) this.initials = this.buildInitials(this.businessName);
       }
     }
+
+    this.loadClosures();
   }
 
   private buildUserPhotoUrl(raw: string): string | null {
@@ -80,5 +98,49 @@ export class TalentoHumanoDashboardComponent implements OnInit {
     const b = parts.length > 1 ? parts[1].charAt(0) : '';
     const init = `${a}${b}`.toUpperCase();
     return init || null;
+  }
+
+  // ── Cierres: helpers/acciones ──
+  private loadClosures(): void {
+    if (!this.businessId) return;
+    this.closuresLoading = true;
+    this.closuresError = null;
+    this.attendanceService.getClosures(this.businessId).subscribe({
+      next: list => { this.closures = list || []; this.closuresLoading = false; },
+      error: () => { this.closuresLoading = false; this.closuresError = 'No se pudo cargar los cierres.'; }
+    });
+  }
+
+  toggleClosureMenu(): void { this.showClosureMenu = !this.showClosureMenu; }
+  hideClosureMenu(): void { this.showClosureMenu = false; }
+
+  formatMonthLabel(y: number, m: number): string {
+    const labels = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    return `${labels[m-1] || m}/${y}`;
+  }
+
+  canClose(c: MonthlyClosureEntry): boolean {
+    const st = (c.status || '').toUpperCase();
+    return st !== 'CLOSED' && st !== 'APPROVED';
+  }
+
+  closePeriod(c: MonthlyClosureEntry): void {
+    if (!this.businessId || !this.canClose(c)) return;
+    this.closingTarget = { year: c.year, month: c.month };
+    const u = this.authService.getCurrentUser();
+    const who = (u?.email || u?.username || u?.name || 'usuario') as string;
+    this.attendanceService.closeMonth(this.businessId, c.year, c.month, who).subscribe({
+      next: res => {
+        const idx = this.closures.findIndex(x => x.year === res.year && x.month === res.month);
+        if (idx >= 0) this.closures[idx] = res; else this.closures.push(res);
+        this.closingTarget = null;
+      },
+      error: () => { this.closingTarget = null; }
+    });
+  }
+
+  logoutNow(): void {
+    this.hideClosureMenu();
+    this.authService.logout();
   }
 }

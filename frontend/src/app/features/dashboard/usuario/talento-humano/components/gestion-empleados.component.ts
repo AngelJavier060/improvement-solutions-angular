@@ -8,6 +8,7 @@ import { BusinessService } from '../../../../../services/business.service';
 import { BusinessContextService } from '../../../../../core/services/business-context.service';
 import { QrLegalDocsService } from '../../../../../core/services/qr-legal-docs.service';
 import { AuthService } from '../../../../../core/services/auth.service';
+import { AttendanceService, MonthlyClosureEntry } from '../services/attendance.service';
 
 @Component({
   selector: 'app-gestion-empleados',
@@ -72,6 +73,13 @@ export class GestionEmpleadosComponent implements OnInit {
   newEmployeesFiltered: EmployeeResponse[] = [];
   showNewEmployeesPanel: boolean = false;
 
+  // Cierre mensual (top-right dropdown)
+  closures: MonthlyClosureEntry[] = [];
+  closuresLoading = false;
+  closuresError: string | null = null;
+  showClosureMenu = false;
+  closingTarget: { year: number; month: number } | null = null;
+
   constructor(
     private employeeService: EmployeeService,
     private route: ActivatedRoute,
@@ -79,7 +87,8 @@ export class GestionEmpleadosComponent implements OnInit {
     private businessService: BusinessService,
     private businessContext: BusinessContextService,
     private qrLegalDocsService: QrLegalDocsService,
-    private authService: AuthService
+    private authService: AuthService,
+    private attendanceService: AttendanceService
   ) {}
 
   ngOnInit(): void {
@@ -117,6 +126,8 @@ export class GestionEmpleadosComponent implements OnInit {
       this.fetchBusinessShortName();
       this.loadEmployees();
     });
+
+    this.loadClosures();
   }
 
   // trackBy para estabilizar el *ngFor de empleados
@@ -165,6 +176,12 @@ export class GestionEmpleadosComponent implements OnInit {
     // Si no hay businessId pero sí RUC, intentar resolverlo
     if (this.businessRuc) {
       this.resolveBusinessIdFromRuc(this.businessRuc);
+    }
+
+    // Intentar obtener businessId desde el contexto si aún no está
+    if (this.businessId == null) {
+      const active = this.businessContext.getActiveBusiness();
+      if (active) this.businessId = active.id;
     }
   }
 
@@ -217,6 +234,49 @@ export class GestionEmpleadosComponent implements OnInit {
       this.loading = false;
       this.error = 'Seleccione una empresa para ver sus empleados.';
     }
+  }
+
+  // Top-right closure dropdown
+  private loadClosures(): void {
+    if (!this.businessId) return;
+    this.closuresLoading = true;
+    this.closuresError = null;
+    this.attendanceService.getClosures(this.businessId).subscribe({
+      next: list => { this.closures = list || []; this.closuresLoading = false; },
+      error: () => { this.closuresLoading = false; this.closuresError = 'No se pudo cargar los cierres.'; }
+    });
+  }
+
+  logoutNow(): void {
+    this.hideClosureMenu();
+    this.authService.logout();
+  }
+
+  toggleClosureMenu(): void { this.showClosureMenu = !this.showClosureMenu; }
+  hideClosureMenu(): void { this.showClosureMenu = false; }
+
+  formatMonthLabel(y: number, m: number): string {
+    const labels = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    return `${labels[m-1] || m}/${y}`;
+  }
+
+  canClose(c: MonthlyClosureEntry): boolean {
+    const st = (c.status || '').toUpperCase();
+    return st !== 'CLOSED' && st !== 'APPROVED';
+  }
+
+  closePeriod(c: MonthlyClosureEntry): void {
+    if (!this.businessId || !this.canClose(c)) return;
+    this.closingTarget = { year: c.year, month: c.month };
+    const who = this.currentUserEmail || this.currentUserName || 'usuario';
+    this.attendanceService.closeMonth(this.businessId, c.year, c.month, who).subscribe({
+      next: res => {
+        const idx = this.closures.findIndex(x => x.year === res.year && x.month === res.month);
+        if (idx >= 0) this.closures[idx] = res; else this.closures.push(res);
+        this.closingTarget = null;
+      },
+      error: () => { this.closingTarget = null; }
+    });
   }
 
   // Método para filtrar empleados por búsqueda y status

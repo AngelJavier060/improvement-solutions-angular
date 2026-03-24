@@ -121,7 +121,7 @@ export class CreateEmployeeModalComponent implements OnInit {
     for (const e of this.existingEmployees) {
       const ced = (e?.cedula || '').trim();
       if (ced) this.cedulaSet.add(ced);
-      const code = (e?.codigoTrabajador || e?.codigo_empresa || e?.codigoEmpresa || '').toString().trim();
+      const code = (e?.codigoTrabajador || '').toString().trim();
       if (code) this.codeSet.add(code.toLowerCase());
       const ap = (e?.apellidos || '').toString().trim().toLowerCase();
       const no = (e?.nombres || '').toString().trim().toLowerCase();
@@ -493,7 +493,10 @@ export class CreateEmployeeModalComponent implements OnInit {
       if (msgs.length) {
         this.error = msgs.join('. ');
         this.notificationService.warning(this.error);
+      } else {
+        this.markFormGroupTouched();
       }
+      return;
     }
     if (this.employeeForm.valid) {
       console.log('Formulario válido, enviando datos...');
@@ -568,6 +571,7 @@ export class CreateEmployeeModalComponent implements OnInit {
           // Actualizar índice local para futuras validaciones
           this.existingEmployees.push(response as any);
           this.rebuildDuplicateIndex();
+          this.notificationService.success('Empleado registrado exitosamente.');
           this.closeModal();
           this.onEmployeeCreated.emit();
         },

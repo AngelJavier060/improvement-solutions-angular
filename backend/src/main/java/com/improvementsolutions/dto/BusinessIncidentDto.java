@@ -71,6 +71,9 @@ public class BusinessIncidentDto {
     // Evidencias (rutas de archivos subidos)
     private List<String> evidenceFiles;
 
+    // Días perdidos por accidente
+    private Integer lostDays;
+
     // Estado
     private String status;
 

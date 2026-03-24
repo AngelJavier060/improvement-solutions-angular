@@ -184,6 +184,7 @@ public class BusinessIncidentService {
                                 .filter(s -> s != null && !s.isBlank())
                                 .toList()
                 )
+                .lostDays(e.getLostDays())
                 .status(e.getStatus())
                 .createdBy(e.getCreatedBy())
                 .createdAt(e.getCreatedAt())
@@ -240,6 +241,7 @@ public class BusinessIncidentService {
         if (dto.getReviewedBy()         != null) e.setReviewedBy(dto.getReviewedBy());
         if (dto.getApprovedBy()         != null) e.setApprovedBy(dto.getApprovedBy());
         if (dto.getEvidenceFiles()      != null) e.setEvidencePaths(String.join("|", dto.getEvidenceFiles()));
+        if (dto.getLostDays()           != null) e.setLostDays(dto.getLostDays());
         if (dto.getStatus()             != null) e.setStatus(dto.getStatus().toUpperCase());
         if (dto.getCreatedBy()          != null) e.setCreatedBy(dto.getCreatedBy());
     }

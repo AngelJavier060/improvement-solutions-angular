@@ -17,22 +17,60 @@
         </h2>
         <p class="page-subtitle text-muted mb-0">Administra y gestiona la información de todos los empleados</p>
       </div>
-      <div class="d-flex align-items-center">
+      <div class="d-flex align-items-center position-relative">
         <i class="far fa-bell text-muted me-3 position-relative" title="Notificaciones">
           <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"
                 style="width:8px;height:8px;"></span>
         </i>
         <span class="border-end mx-2" style="height:24px;"></span>
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center" (click)="toggleClosureMenu()" style="cursor:pointer;">
           <div class="text-end me-2">
-            <div class="fw-semibold">{{ currentUserName || businessName || 'Usuario' }}</div>
-            <div class="text-muted small">{{ currentUserEmail || businessEmail || '' }}</div>
+            <div class="text-muted small">{{ currentUserEmail || businessEmail || '—' }}</div>
+            <div class="fw-semibold">{{ businessName || currentUserName || 'Empresa' }}</div>
           </div>
           <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary text-white"
                style="width:36px;height:36px;">
             <i class="fas fa-user"></i>
           </div>
           <i class="fas fa-chevron-down text-muted ms-2"></i>
+        </div>
+
+        <!-- Dropdown de cierres -->
+        <div *ngIf="showClosureMenu" class="card shadow-sm position-absolute end-0 mt-2" style="top:42px; min-width: 320px; z-index: 20;">
+          <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <strong><i class="fas fa-lock me-2"></i>Rangos de Cierre</strong>
+            <button class="btn btn-sm btn-outline-secondary" (click)="hideClosureMenu()"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="list-group list-group-flush" style="max-height: 320px; overflow:auto;">
+            <div class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let c of closures">
+              <div>
+                <div class="fw-semibold">{{ formatMonthLabel(c.year, c.month) }}</div>
+                <small class="text-muted">Estado: {{ c.status }}</small>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge" [ngClass]="{
+                  'bg-secondary': (c.status||'').toUpperCase() === 'OPEN',
+                  'bg-info': (c.status||'').toUpperCase() === 'CLOSED',
+                  'bg-success': (c.status||'').toUpperCase() === 'APPROVED'
+                }">{{ (c.status||'').toUpperCase() }}</span>
+                <button class="btn btn-sm btn-primary" [disabled]="!canClose(c) || (closingTarget && closingTarget.year===c.year && closingTarget.month===c.month)" (click)="$event.stopPropagation(); closePeriod(c)">
+                  <ng-container *ngIf="!(closingTarget && closingTarget.year===c.year && closingTarget.month===c.month); else closingSpn">
+                    Cerrar
+                  </ng-container>
+                  <ng-template #closingSpn><i class="fas fa-spinner fa-spin"></i></ng-template>
+                </button>
+              </div>
+            </div>
+            <div class="list-group-item text-muted small" *ngIf="closures?.length===0 && !closuresLoading">No hay periodos registrados.</div>
+            <div class="list-group-item text-muted small" *ngIf="closuresLoading"><i class="fas fa-spinner fa-spin me-1"></i>Cargando…</div>
+            <div class="list-group-item text-danger small" *ngIf="closuresError">{{ closuresError }}</div>
+          </div>
+          <div class="card-footer d-flex justify-content-between align-items-center py-2">
+            <span class="text-muted small">Opciones</span>
+            <button class="btn btn-sm btn-outline-danger" (click)="$event.stopPropagation(); logoutNow()">
+              <i class="fas fa-sign-out-alt me-1"></i> Cerrar sesión
+            </button>
+          </div>
         </div>
       </div>
     </div>

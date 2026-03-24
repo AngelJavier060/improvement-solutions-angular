@@ -1,0 +1,2 @@
+ALTER TABLE business_incidents
+    ADD COLUMN IF NOT EXISTS lost_days INTEGER DEFAULT 0;

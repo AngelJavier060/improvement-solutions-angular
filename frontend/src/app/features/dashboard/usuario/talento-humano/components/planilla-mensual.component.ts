@@ -548,9 +548,8 @@ export class PlanillaMensualComponent implements OnInit {
         let total = 0;
         for (const row of src) {
           const daily = this.parseDailyHoursFromShiftName(row.workShiftName) ?? this.defaultDailyHours;
-          // Usar savedT/savedEX (solo días guardados en BD) para que coincida con el consolidado
-          const t = row.savedT ?? row.totals.T ?? 0;
-          const ex = row.savedEX ?? row.totals.EX ?? 0;
+          const t = row.totals.T ?? 0;
+          const ex = row.totals.EX ?? 0;
           const oh = map.get(row.employeeId) ?? 0;
           const workedDays = t + ex;
           const ordHrs = workedDays * daily;
@@ -564,8 +563,8 @@ export class PlanillaMensualComponent implements OnInit {
         let total = 0;
         for (const row of src) {
           const daily = this.parseDailyHoursFromShiftName(row.workShiftName) ?? this.defaultDailyHours;
-          const t = row.savedT ?? row.totals.T ?? 0;
-          const ex = row.savedEX ?? row.totals.EX ?? 0;
+          const t = row.totals.T ?? 0;
+          const ex = row.totals.EX ?? 0;
           const workedDays = t + ex;
           total += workedDays * daily;
         }
@@ -994,9 +993,9 @@ export class PlanillaMensualComponent implements OnInit {
 
     this.attendanceDetailRows = src.map((row) => {
       const oh = this.overtimeHoursByEmployee.get(row.employeeId) ?? 0;
-      // Usar savedT/savedEX: solo días con registro real en BD para que HHTT coincida con el consolidado
-      const t = row.savedT ?? row.totals.T ?? 0;
-      const ex = row.savedEX ?? row.totals.EX ?? 0;
+      // Usar totals.T/EX del sheet (siempre calculados desde los datos cargados del servidor)
+      const t = row.totals.T ?? 0;
+      const ex = row.totals.EX ?? 0;
       const rest = row.totals.D ?? 0;
       const permDays = row.totals.P ?? 0;
       const sick = row.totals.E ?? 0;

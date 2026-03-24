@@ -187,6 +187,35 @@ export interface IncidentRecord {
   createdAt?: string;
 }
 
+export interface SafetyIndicesKpis {
+  lesiones: number;
+  diasPerdidos: number;
+  horasHombre: number;
+  if: number;
+  trif: number;
+  ig: number;
+  tr: number;
+}
+
+export interface SafetyIndicesMonth {
+  month: number;
+  label: string;
+  mesAnio: string;
+  lesiones: number;
+  diasPerdidos: number;
+  horasHombre: number;
+  if: number;
+  trif: number;
+  ig: number;
+  tr: number;
+}
+
+export interface SafetyIndicesSummary {
+  year: number;
+  ytd: SafetyIndicesKpis;
+  months: SafetyIndicesMonth[];
+}
+
 // ─────────────── Service ───────────────
 
 @Injectable({ providedIn: 'root' })
@@ -436,6 +465,12 @@ export class AttendanceService {
 
   deleteScheduleHistory(businessId: number, historyId: number): Observable<any> {
     return this.http.delete(`${this.apiUrl(businessId)}/schedule-history/${historyId}`);
+  }
+
+  /** Índices de seguridad (IF, TRIF, IG, TR) combinando HHTT + incidentes del año */
+  getSafetyIndices(businessId: number, year: number): Observable<SafetyIndicesSummary> {
+    const params = new HttpParams().set('year', String(year));
+    return this.http.get<SafetyIndicesSummary>(`${this.apiUrl(businessId)}/safety-indices`, { params });
   }
 
   // Cierre mensual

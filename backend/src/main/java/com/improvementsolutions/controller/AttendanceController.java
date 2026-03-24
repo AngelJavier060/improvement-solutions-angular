@@ -75,6 +75,18 @@ public class AttendanceController {
         }
     }
 
+    /** Índices de seguridad (IF, TRIF, IG, TR) basados en HHTT e incidentes registrados */
+    @GetMapping("/safety-indices")
+    public ResponseEntity<?> getSafetyIndices(
+            @PathVariable Long businessId,
+            @RequestParam int year) {
+        try {
+            return ResponseEntity.ok(attendanceService.getSafetyIndicesSummary(businessId, year));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/permissions/{id}/pdf")
     public ResponseEntity<?> getPermissionSignedPdf(
             @PathVariable Long businessId,

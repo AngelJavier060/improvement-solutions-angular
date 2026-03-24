@@ -1,59 +1,44 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { BusinessService } from '../../../../../../../services/business.service';
+import { AttendanceService, SafetyIndicesSummary } from '../../../../talento-humano/services/attendance.service';
 
 /**
  * TRIF (IADC / comparativas internacionales): (lesiones registrables / horas trabajadas) × 1.000.000
- * Los valores de tabla/KPI siguen el mock HTML hasta integrar API.
  */
 @Component({
   selector: 'app-si-indice-trif',
   templateUrl: './indice-trif.component.html',
   styleUrls: ['./indice-trif.component.scss']
 })
-export class IndiceTrifComponent {
+export class IndiceTrifComponent implements OnInit {
   readonly factorTrif = 1_000_000;
+
+  loading = false;
+  loadError: string | null = null;
+  filterYear = String(new Date().getFullYear());
+  fiscalYears: string[] = [];
 
   vistaPeriodo: 'mensual' | 'trimestral' = 'mensual';
 
-  lesionesYtd = 14;
-  horasYtd = 1_124_580;
-  /** Coherente con mock */
-  trifActual = 1.24;
+  lesionesYtd = 0;
+  horasYtd = 0;
+  trifActual = 0;
   metaCorporativa = 0.8;
-  tendenciaLesionesPct = 2;
+  tendenciaLesionesPct = 0;
 
   get deltaVsMeta(): number {
     return this.trifActual - this.metaCorporativa;
   }
 
-  usuario = { nombre: 'Ing. Marvín Rico', rol: 'Admin HSE' };
+  usuario = { nombre: '', rol: 'Admin HSE' };
 
-  /** Alturas relativas de barras (%) — mock */
-  barrasMensuales = [
-    { label: 'Ene', h: 40, highlight: false },
-    { label: 'Feb', h: 55, highlight: false },
-    { label: 'Mar', h: 30, highlight: false },
-    { label: 'Abr', h: 70, highlight: false },
-    { label: 'May', h: 45, highlight: false },
-    { label: 'Jun', h: 60, highlight: false },
-    { label: 'Jul', h: 85, highlight: true },
-    { label: 'Ago', h: 50, highlight: false },
-    { label: 'Sep', h: 40, highlight: false },
-    { label: 'Oct', h: 35, highlight: false },
-    { label: 'Nov', h: 55, highlight: false },
-    { label: 'Dic', h: 65, highlight: false }
-  ];
+  barrasMensuales: { label: string; h: number; highlight: boolean }[] = [];
 
-  /** Path SVG línea TRIF (viewBox 0 0 1200 300) — del HTML de referencia */
-  lineaTrifPath =
-    'M0,150 L100,120 L200,180 L300,80 L400,140 L500,100 L600,40 L700,110 L800,150 L900,170 L1000,120 L1100,100';
+  lineaTrifPath = '';
 
-  distribucionImpacto = [
-    { nombre: 'Operaciones campo', pct: 62 },
-    { nombre: 'Logística y transp.', pct: 28 },
-    { nombre: 'Otros', pct: 10 }
-  ];
+  distribucionImpacto: { nombre: string; pct: number }[] = [];
 
-  /** Filas según mock (valores TRIF mensuales tal cual referencia) */
   tablaRows: {
     mes: string;
     lesiones: number;
@@ -62,38 +47,120 @@ export class IndiceTrifComponent {
     trif: number;
     alerta?: boolean;
     esTotal?: boolean;
-  }[] = [
-    { mes: 'Enero', lesiones: 1, horasMes: 92_400, horasAcum: 92_400, trif: 1.08 },
-    { mes: 'Febrero', lesiones: 2, horasMes: 88_500, horasAcum: 180_900, trif: 1.1 },
-    { mes: 'Marzo', lesiones: 0, horasMes: 95_000, horasAcum: 275_900, trif: 0 },
-    { mes: 'Abril', lesiones: 4, horasMes: 91_200, horasAcum: 367_100, trif: 1.09, alerta: true },
-    { mes: 'Mayo', lesiones: 1, horasMes: 98_200, horasAcum: 465_300, trif: 2.15 },
-    {
-      mes: 'Total YTD',
-      lesiones: 14,
-      horasMes: 1_124_580,
-      horasAcum: 0,
-      trif: 1.24,
-      esTotal: true
-    }
-  ];
+  }[] = [];
 
-  cierreDatos = 'Cierre de datos actualizado al 31 de diciembre de 2023 23:59 GMT-5';
+  cierreDatos = '';
+
+  private businessId: number | null = null;
+
+  constructor(
+    private route: ActivatedRoute,
+    private businessService: BusinessService,
+    private attendanceService: AttendanceService
+  ) {}
+
+  ngOnInit(): void {
+    const y = new Date().getFullYear();
+    this.fiscalYears = [y, y - 1, y - 2].map(String);
+    this.filterYear = String(y);
+
+    let parent: ActivatedRoute | null = this.route;
+    let ruc: string | null = null;
+    while (parent) {
+      ruc = parent.snapshot.paramMap.get('ruc');
+      if (ruc) break;
+      parent = parent.parent;
+    }
+    if (!ruc) { this.loadError = 'No se encontró el RUC en la ruta.'; return; }
+
+    this.loading = true;
+    this.businessService.getByRuc(ruc).subscribe({
+      next: (empresa: any) => {
+        const id = empresa?.id;
+        if (!id) { this.loadError = 'Empresa no encontrada.'; this.loading = false; return; }
+        this.businessId = Number(id);
+        this.fetchIndices();
+      },
+      error: () => { this.loadError = 'No se pudo obtener la empresa.'; this.loading = false; }
+    });
+  }
+
+  onYearChange(): void {
+    if (this.businessId) this.fetchIndices();
+  }
 
   setVista(p: 'mensual' | 'trimestral'): void {
     this.vistaPeriodo = p;
   }
 
+  private fetchIndices(): void {
+    if (!this.businessId) return;
+    this.loading = true;
+    this.loadError = null;
+    this.attendanceService.getSafetyIndices(this.businessId, Number(this.filterYear)).subscribe({
+      next: (data: SafetyIndicesSummary) => this.applyData(data),
+      error: () => { this.loadError = 'Error al cargar los índices.'; this.loading = false; }
+    });
+  }
+
+  private applyData(data: SafetyIndicesSummary): void {
+    this.lesionesYtd = data.ytd.lesiones;
+    this.horasYtd    = data.ytd.horasHombre;
+    this.trifActual  = data.ytd.trif;
+
+    const maxTrif = data.months.reduce((mx, m) => Math.max(mx, m.trif), 0.001);
+    this.barrasMensuales = data.months.map(m => ({
+      label:     m.label,
+      h:         Math.round((m.trif / maxTrif) * 100),
+      highlight: m.trif === maxTrif
+    }));
+
+    let acum = 0;
+    const rows: typeof this.tablaRows = data.months.map(m => {
+      acum += m.horasHombre;
+      return {
+        mes:       m.mesAnio,
+        lesiones:  m.lesiones,
+        horasMes:  m.horasHombre,
+        horasAcum: acum,
+        trif:      m.trif,
+        alerta:    m.trif > this.metaCorporativa
+      };
+    });
+    rows.push({
+      mes:      'Total YTD',
+      lesiones:  data.ytd.lesiones,
+      horasMes:  data.ytd.horasHombre,
+      horasAcum: 0,
+      trif:      data.ytd.trif,
+      esTotal:   true
+    });
+    this.tablaRows = rows;
+
+    this.lineaTrifPath = this.buildLinePath(data.months.map(m => m.trif));
+
+    const now = new Date();
+    this.cierreDatos = `Datos actualizados al ${now.toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' })}`;
+    this.loading = false;
+  }
+
+  private buildLinePath(values: number[]): string {
+    if (!values.length) return '';
+    const max = Math.max(...values, 0.001);
+    const w = 1200, h = 300, pad = 20;
+    const step = (w - pad * 2) / Math.max(values.length - 1, 1);
+    return values.map((v, i) => {
+      const x = pad + i * step;
+      const y = h - pad - ((v / max) * (h - pad * 2));
+      return `${i === 0 ? 'M' : 'L'}${x.toFixed(0)},${y.toFixed(0)}`;
+    }).join(' ');
+  }
+
   exportarCsv(): void {
     const headers = ['Mes', 'Lesiones', 'H-Mes', 'H-Acumuladas', 'TRIF'];
     const lines = this.tablaRows.map((r) =>
-      [
-        r.mes,
-        r.lesiones,
-        r.horasMes,
-        r.esTotal ? '' : r.horasAcum,
-        r.trif.toFixed(2).replace('.', ',')
-      ].join(';')
+      [r.mes, r.lesiones, r.horasMes, r.esTotal ? '' : r.horasAcum,
+       r.trif.toFixed(2).replace('.', ',')].join(';')
     );
     const csv = [headers.join(';'), ...lines].join('\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
