@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -7,6 +7,8 @@ import { InventoryVariantService, InventoryVariant } from '../../../../../servic
 import { InventorySupplierService, InventorySupplier } from '../../../../../services/inventory-supplier.service';
 import { InventoryCategoryService, InventoryCategory } from '../../../../../services/inventory-category.service';
 import { FileService } from '../../../../../services/file.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-catalogo-productos',
@@ -47,6 +49,13 @@ export class CatalogoProductosComponent implements OnInit {
   selectedImageFile: File | null = null;
   imagePreviewUrl: string | null = null;
 
+  // Panel de formulario de producto
+  showProductForm = false;
+  panelPos = { x: 0, y: 0 };
+  private dragging = false;
+  private dragStart = { x: 0, y: 0 };
+  private panelStart = { x: 0, y: 0 };
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -63,8 +72,26 @@ export class CatalogoProductosComponent implements OnInit {
     this.initForm();
     this.initVariantForm();
     this.loadProducts();
+    // Cargar listas globales (se reflejan las pantallas de configuración)
     this.loadSuppliers();
     this.loadCategories();
+  }
+
+  private toNum(val: any): number {
+    if (val == null) return 0;
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+      const n = parseFloat(val.replace(/,/g, '.'));
+      return isNaN(n) ? 0 : n;
+    }
+    // Intentar BigDecimal serializado como objeto { value: "123.45" }
+    const maybe = (val as any).value ?? (val as any)._value ?? null;
+    if (maybe != null) {
+      const n = parseFloat(String(maybe).replace(/,/g, '.'));
+      return isNaN(n) ? 0 : n;
+    }
+    const n = Number(val);
+    return isNaN(n) ? 0 : n;
   }
 
   loadProducts(): void {
@@ -116,7 +143,15 @@ export class CatalogoProductosComponent implements OnInit {
 
   loadVariants(productId: number): void {
     this.variantService.listByProduct(this.ruc, productId).subscribe({
-      next: (data) => this.productVariants = data,
+      next: (data) => {
+        const list = Array.isArray(data) ? data : [];
+        this.productVariants = list.map(v => ({
+          ...v,
+          currentQty: this.toNum((v as any).currentQty),
+          minQty: this.toNum((v as any).minQty),
+          salePrice: this.toNum((v as any).salePrice)
+        }));
+      },
       error: () => this.productVariants = []
     });
   }
@@ -133,6 +168,28 @@ export class CatalogoProductosComponent implements OnInit {
 
   editProduct(product: InventoryProduct): void {
     this.fillForm(product);
+    this.showProductForm = true;
+  }
+
+  openNewProductForm(): void {
+    this.cancelEdit();
+    this.showProductForm = true;
+    this.loadSuppliers();
+    this.loadCategories();
+    this.setDefaultPanelPosition();
+  }
+
+  openEditProductForm(product: InventoryProduct): void {
+    this.fillForm(product);
+    this.showProductForm = true;
+    this.selectedProduct = null;
+    this.loadSuppliers();
+    this.loadCategories();
+    this.setDefaultPanelPosition();
+  }
+
+  getInactiveCount(): number {
+    return this.products.filter(p => p.status === 'INACTIVO' || p.status === 'DESCONTINUADO').length;
   }
 
   createVariant(): void {
@@ -293,19 +350,37 @@ export class CatalogoProductosComponent implements OnInit {
   }
 
   loadSuppliers(): void {
-    this.supplierService.list(this.ruc).subscribe({
-      next: (data) => this.suppliers = data,
-      error: () => this.suppliers = []
-    });
+    forkJoin([
+      this.supplierService.listGlobal().pipe(catchError(() => of([] as any[]))),
+      this.supplierService.listCatalog().pipe(catchError(() => of([] as any[]))),
+      this.supplierService.list(this.ruc).pipe(catchError(() => of([] as any[])))
+    ]).subscribe(([global, catalog, byRuc]) => {
+      const map = new Map<string, InventorySupplier & { name: string }>();
+      [...(global||[]), ...(catalog||[]), ...(byRuc||[])].forEach((s: any) => {
+        const name = (s?.name || '').toString().trim();
+        if (!name) return;
+        const key = name.toLowerCase();
+        if (!map.has(key)) map.set(key, { ...s, name });
+      });
+      this.suppliers = Array.from(map.values()).sort((a, b) => (a.name||'').localeCompare(b.name||''));
+    }, () => this.suppliers = []);
   }
 
   loadCategories(): void {
-    this.categoryService.list(this.ruc).subscribe({
-      next: (data) => {
-        this.categories = data.filter(c => c.active !== false);
-      },
-      error: () => this.categories = []
-    });
+    forkJoin([
+      this.categoryService.listGlobal().pipe(catchError(() => of([] as any[]))),
+      this.categoryService.listCatalog().pipe(catchError(() => of([] as any[]))),
+      this.categoryService.list(this.ruc).pipe(catchError(() => of([] as any[])))
+    ]).subscribe(([global, catalog, byRuc]) => {
+      const set = new Map<string, InventoryCategory & { name: string }>();
+      [...(global||[]), ...(catalog||[]), ...(byRuc||[])].forEach((c: any) => {
+        const name = (c?.name || '').toString().trim();
+        if (!name) return;
+        const key = name.toLowerCase();
+        if (!set.has(key)) set.set(key, { ...c, name });
+      });
+      this.categories = Array.from(set.values()).sort((a, b) => (a.name||'').localeCompare(b.name||''));
+    }, () => this.categories = []);
   }
 
   suggestCode(): void {
@@ -343,6 +418,7 @@ export class CatalogoProductosComponent implements OnInit {
 
   cancelEdit(): void {
     this.editingProductId = null;
+    this.showProductForm = false;
     this.productForm.reset({
       code: '',
       name: '',
@@ -355,6 +431,52 @@ export class CatalogoProductosComponent implements OnInit {
     });
     this.selectedImageFile = null;
     this.imagePreviewUrl = null;
+  }
+
+  private setDefaultPanelPosition(): void {
+    try {
+      const width = 520; // mismo ancho aprox. del panel flotante
+      const x = Math.max(16, Math.round((window.innerWidth - width) / 2));
+      const y = 64;
+      this.panelPos = { x, y };
+    } catch {
+      this.panelPos = { x: 24, y: 64 };
+    }
+  }
+
+  onPanelHeaderMouseDown(event: MouseEvent): void {
+    this.dragging = true;
+    this.dragStart = { x: event.clientX, y: event.clientY };
+    this.panelStart = { ...this.panelPos };
+    event.preventDefault();
+  }
+
+  @HostListener('window:mousemove', ['$event'])
+  onWindowMouseMove(event: MouseEvent): void {
+    if (!this.dragging) return;
+    const dx = event.clientX - this.dragStart.x;
+    const dy = event.clientY - this.dragStart.y;
+    const width = 520;
+    const margin = 8;
+    const maxX = Math.max(margin, (typeof window !== 'undefined' ? window.innerWidth : 1200) - width - margin);
+    const maxY = Math.max(margin, (typeof window !== 'undefined' ? window.innerHeight : 800) - 120 - margin);
+    let x = this.panelStart.x + dx;
+    let y = this.panelStart.y + dy;
+    x = Math.min(Math.max(margin, x), maxX);
+    y = Math.max(margin, y);
+    this.panelPos = { x, y };
+  }
+
+  @HostListener('window:mouseup')
+  onWindowMouseUp(): void {
+    this.dragging = false;
+  }
+
+  @HostListener('window:focus')
+  onWindowFocus(): void {
+    // Si el usuario regresó desde las pantallas de configuración, refrescar listas
+    this.loadSuppliers();
+    this.loadCategories();
   }
 
   onImageSelected(event: any): void {

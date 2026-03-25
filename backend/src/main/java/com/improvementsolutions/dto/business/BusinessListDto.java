@@ -16,6 +16,7 @@ public class BusinessListDto {
     private String phone;
     private Boolean active;
     private String logo;
+    private String legalRepresentative;
 
     public static BusinessListDto fromEntity(Business b) {
         if (b == null) return null;
@@ -26,7 +27,8 @@ public class BusinessListDto {
             b.getEmail(),
             b.getPhone(),
             b.isActive(),
-            b.getLogo()
+            b.getLogo(),
+            b.getLegalRepresentative()
         );
     }
 }

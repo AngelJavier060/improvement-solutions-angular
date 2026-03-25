@@ -21,7 +21,7 @@ export class IndicadoresReactivosDashboardComponent implements OnInit {
   empresa = {
     razonSocial: 'ORIENTOIL S.A.',
     ruc: '1791808398001',
-    representanteLegal: 'Rosmel Balcazar',
+    representanteLegal: '—',
     totalTrabajadores: 265
   };
 
@@ -69,7 +69,12 @@ export class IndicadoresReactivosDashboardComponent implements OnInit {
         this.businessId = Number(id);
         this.empresa.razonSocial   = empresa.name        ?? this.empresa.razonSocial;
         this.empresa.ruc           = empresa.ruc         ?? ruc!;
-        this.empresa.representanteLegal = empresa.legalRepresentative ?? this.empresa.representanteLegal;
+        this.empresa.representanteLegal = (
+          (empresa as any).legalRepresentative ??
+          (empresa as any).representanteLegal ??
+          (empresa as any).legal_representative ??
+          '—'
+        );
         // Fallback rápido si viene en el modelo
         if (typeof empresa.employeesCount === 'number') {
           this.empresa.totalTrabajadores = empresa.employeesCount;

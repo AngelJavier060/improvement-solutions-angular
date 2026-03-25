@@ -1,409 +1,423 @@
-<div class="container-fluid py-4">
-  <!-- Header -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <h2 class="mb-2"><i class="fas fa-book me-2 text-primary"></i>Catálogo de Productos</h2>
-      <p class="text-muted">Gestiona el catálogo completo de productos y sus variantes</p>
-    </div>
+<div class="cat-page">
+
+  <!-- Alerts -->
+  <div class="cat-alert cat-alert--error" *ngIf="errorMessage">
+    <span class="material-symbols-outlined">error</span>
+    {{ errorMessage }}
+    <button class="cat-alert-close" (click)="errorMessage = ''">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+  <div class="cat-alert cat-alert--success" *ngIf="successMessage">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ successMessage }}
+    <button class="cat-alert-close" (click)="successMessage = ''">
+      <span class="material-symbols-outlined">close</span>
+    </button>
   </div>
 
-  <!-- Alertas -->
-  <div class="row" *ngIf="errorMessage">
-    <div class="col-12">
-      <div class="alert alert-danger alert-dismissible fade show">
-        <i class="fas fa-exclamation-circle me-2"></i>{{ errorMessage }}
-        <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+  <!-- Page Header -->
+  <div class="cat-page-head">
+    <div class="cat-page-head-left">
+      <h1 class="cat-title">Catálogo de Productos</h1>
+      <p class="cat-subtitle">Visualización integral de activos, niveles de inventario y estados de abastecimiento operativo.</p>
+    </div>
+    <div class="cat-page-head-right">
+      <div class="cat-search-box">
+        <span class="material-symbols-outlined cat-search-ico">search</span>
+        <input type="text" class="cat-search-input" placeholder="Buscar por código, nombre..." [(ngModel)]="searchTerm">
       </div>
+      <select class="cat-select" [(ngModel)]="filterCategory">
+        <option value="">Todas las Categorías</option>
+        <option *ngFor="let cat of categories" [value]="cat.name">{{ cat.name }}</option>
+      </select>
+      <select class="cat-select" [(ngModel)]="filterStatus">
+        <option value="">Todos</option>
+        <option value="ACTIVO">Activos</option>
+        <option value="INACTIVO">Inactivos</option>
+        <option value="DESCONTINUADO">Descontinuados</option>
+      </select>
+      <button class="cat-btn-primary" (click)="openNewProductForm()">
+        <span class="material-symbols-outlined">add</span>
+        Nuevo Producto
+      </button>
     </div>
   </div>
 
-  <div class="row" *ngIf="successMessage">
-    <div class="col-12">
-      <div class="alert alert-success alert-dismissible fade show">
-        <i class="fas fa-check-circle me-2"></i>{{ successMessage }}
-        <button type="button" class="btn-close" (click)="successMessage = ''"></button>
+  <!-- Metrics -->
+  <div class="cat-metrics">
+    <div class="cat-metric-card cat-metric-card--blue">
+      <div class="cat-metric-top">
+        <span class="material-symbols-outlined">inventory_2</span>
+        <span class="cat-metric-badge cat-metric-badge--blue">TOTAL</span>
       </div>
+      <p class="cat-metric-label">Total SKU's</p>
+      <p class="cat-metric-value">{{ products.length }}</p>
+    </div>
+    <div class="cat-metric-card cat-metric-card--red">
+      <div class="cat-metric-top">
+        <span class="material-symbols-outlined cat-metric-icon--red">warning</span>
+        <span class="cat-metric-badge cat-metric-badge--red">ALERTA</span>
+      </div>
+      <p class="cat-metric-label">Inactivos / Desc.</p>
+      <p class="cat-metric-value">{{ getInactiveCount() }}</p>
+    </div>
+    <div class="cat-metric-card cat-metric-card--teal">
+      <div class="cat-metric-top">
+        <span class="material-symbols-outlined cat-metric-icon--teal">local_shipping</span>
+        <span class="cat-metric-badge cat-metric-badge--teal">OK</span>
+      </div>
+      <p class="cat-metric-label">Proveedores Activos</p>
+      <p class="cat-metric-value">{{ suppliers.length }}</p>
     </div>
   </div>
 
-  <!-- Layout dos columnas: Formulario (izquierda) y Lista (derecha) -->
-  <div class="row">
-    <!-- Columna izquierda: Formulario -->
-    <div class="col-md-4">
-      <div class="card shadow-sm mb-4">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-          <h5 class="mb-0"><i class="fas fa-edit me-2"></i>{{ editingProductId ? 'Editar Producto' : 'Nuevo Producto' }}</h5>
-          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelEdit()">
-            <i class="fas fa-plus me-1"></i>Nuevo
+  <!-- Product Table -->
+  <div class="cat-table-card">
+    <div class="cat-loading" *ngIf="loading">
+      <span class="material-symbols-outlined cat-spin">sync</span>
+      Cargando productos...
+    </div>
+
+    <div *ngIf="!loading">
+      <table class="cat-table" *ngIf="getFilteredProducts().length > 0; else noProducts">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Código</th>
+            <th>Categoría</th>
+            <th class="cat-th-center">Stock Mín.</th>
+            <th>Proveedor</th>
+            <th>Estado</th>
+            <th class="cat-th-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let product of getFilteredProducts()"
+              class="cat-tr"
+              [class.cat-tr--active]="editingProductId === product.id">
+            <td>
+              <div class="cat-product-cell">
+                <div class="cat-product-img">
+                  <img *ngIf="product.image" [src]="getImageUrl(product.image)" [alt]="product.name">
+                  <span *ngIf="!product.image" class="material-symbols-outlined cat-img-placeholder">image</span>
+                </div>
+                <span class="cat-product-name">{{ product.name }}</span>
+              </div>
+            </td>
+            <td><span class="cat-code">{{ product.code }}</span></td>
+            <td>
+              <span class="cat-badge-cat">{{ product.category }}</span>
+            </td>
+            <td class="cat-td-center"><span class="cat-stock-val">{{ product.minStock ?? 0 }}</span></td>
+            <td class="cat-supplier-name">{{ getSupplierName(product.supplier?.id) }}</td>
+            <td>
+              <span class="cat-status-badge"
+                [class.cat-status-badge--active]="product.status === 'ACTIVO'"
+                [class.cat-status-badge--inactive]="product.status === 'INACTIVO'"
+                [class.cat-status-badge--disc]="product.status === 'DESCONTINUADO'">
+                <span class="cat-status-dot"></span>{{ product.status }}
+              </span>
+            </td>
+            <td>
+              <div class="cat-actions">
+                <button class="cat-action-btn" (click)="viewProductDetails(product, $event)" title="Ver detalles">
+                  <span class="material-symbols-outlined">visibility</span>
+                </button>
+                <button class="cat-action-btn" (click)="openVariants(product, $event)" title="Variantes">
+                  <span class="material-symbols-outlined">category</span>
+                </button>
+                <button class="cat-action-btn cat-action-btn--edit" (click)="openEditProductForm(product); $event.stopPropagation()" title="Editar">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button *ngIf="product.status === 'ACTIVO'" class="cat-action-btn cat-action-btn--warn"
+                        (click)="confirmDeactivate(product, $event)" title="Desactivar">
+                  <span class="material-symbols-outlined">block</span>
+                </button>
+                <button *ngIf="product.status === 'INACTIVO'" class="cat-action-btn cat-action-btn--del"
+                        (click)="confirmDelete(product, $event)" title="Eliminar definitivamente">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noProducts>
+        <div class="cat-empty">
+          <span class="material-symbols-outlined">inventory_2</span>
+          <p>No se encontraron productos</p>
+          <button class="cat-btn-primary" (click)="openNewProductForm()">
+            <span class="material-symbols-outlined">add</span> Crear primer producto
           </button>
         </div>
-        <div class="card-body">
-          <form [formGroup]="productForm" (ngSubmit)="submitProduct()">
-            <div class="row g-2">
-              <!-- Fila 1: Código con botón Sugerir -->
-              <div class="col-12">
-                <label class="form-label fw-semibold small mb-1">Código <span class="text-danger">*</span></label>
-                <div class="input-group input-group-sm">
-                  <input type="text" class="form-control" formControlName="code" placeholder="Código">
-                  <button type="button" class="btn btn-outline-secondary" (click)="suggestCode()" title="Sugerir">
-                    <i class="fas fa-magic"></i>
-                  </button>
-                </div>
-              </div>
+      </ng-template>
+    </div>
 
-              <!-- Fila 2: Nombre -->
-              <div class="col-12">
-                <label class="form-label fw-semibold small mb-1">Nombre <span class="text-danger">*</span></label>
-                <input type="text" class="form-control form-control-sm" formControlName="name" placeholder="Nombre del producto">
-              </div>
+    <div class="cat-table-footer">
+      <span>Mostrando <strong>{{ getFilteredProducts().length }}</strong> de <strong>{{ products.length }}</strong> productos</span>
+    </div>
+  </div>
 
-              <!-- Fila 3: Categoría + Unidad -->
-              <div class="col-7">
-                <label class="form-label fw-semibold small mb-1">Categoría <span class="text-danger">*</span></label>
-                <select class="form-select form-select-sm" formControlName="category">
-                  <option value="">-- Seleccionar --</option>
-                  <option *ngFor="let cat of categories" [value]="cat.name">{{ cat.name }}</option>
-                </select>
-              </div>
-              <div class="col-5">
-                <label class="form-label fw-semibold small mb-1">Unidad</label>
-                <input type="text" class="form-control form-control-sm" formControlName="unitOfMeasure" placeholder="Ej: UND">
-              </div>
+</div>
 
-              <!-- Fila 4: Stock + Estado -->
-              <div class="col-5">
-                <label class="form-label fw-semibold small mb-1">Stock mín.</label>
-                <input type="number" class="form-control form-control-sm" formControlName="minStock" min="0">
-              </div>
-              <div class="col-7">
-                <label class="form-label fw-semibold small mb-1">Estado <span class="text-danger">*</span></label>
-                <select class="form-select form-select-sm" formControlName="status">
-                  <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
-                </select>
-              </div>
+<!-- ── Product Form Slide-in Panel ───────────────────────────────── -->
+<div class="cat-overlay" *ngIf="showProductForm" (click)="cancelEdit()"></div>
 
-              <!-- Fila 5: Proveedor -->
-              <div class="col-12">
-                <label class="form-label fw-semibold small mb-1">Proveedor</label>
-                <select class="form-select form-select-sm" formControlName="supplierId">
-                  <option [ngValue]="null">-- Seleccionar --</option>
-                  <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
-                </select>
-              </div>
+<aside class="cat-panel cat-panel--floating" [class.cat-panel--open]="showProductForm" [ngStyle]="{ left: panelPos.x + 'px', top: panelPos.y + 'px' }">
+  <div class="cat-panel-header" (mousedown)="onPanelHeaderMouseDown($event)">
+    <div>
+      <h2 class="cat-panel-title">{{ editingProductId ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
+      <p class="cat-panel-sub">{{ editingProductId ? 'Modifica los campos del producto' : 'Completa los campos para crear un producto' }}</p>
+    </div>
+    <button class="cat-close-btn" (click)="cancelEdit()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
 
-              <!-- Fila 6: Descripción -->
-              <div class="col-12">
-                <label class="form-label fw-semibold small mb-1">Descripción</label>
-                <textarea class="form-control form-control-sm" rows="2" formControlName="description" placeholder="Descripción breve"></textarea>
-              </div>
+  <form [formGroup]="productForm" (ngSubmit)="submitProduct()" class="cat-panel-body">
 
-              <!-- Fila 7: Imagen -->
-              <div class="col-12">
-                <label class="form-label fw-semibold small mb-1">Imagen</label>
-                <input type="file" class="form-control form-control-sm" (change)="onImageSelected($event)" accept="image/*">
-                <div *ngIf="imagePreviewUrl" class="mt-1">
-                  <img [src]="imagePreviewUrl" alt="Preview" class="img-thumbnail" style="max-width: 80px; max-height: 80px; border-radius: 6px;">
-                </div>
-              </div>
-
-              <!-- Fila 8: Botones horizontales -->
-              <div class="col-12 d-flex gap-2 mt-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" (click)="cancelEdit()">
-                  <i class="fas fa-times me-1"></i>Cancelar
-                </button>
-                <button type="submit" class="btn btn-sm btn-success flex-fill">
-                  <i class="fas fa-save me-1"></i>{{ editingProductId ? 'Actualizar' : 'Crear' }}
-                </button>
-              </div>
-            </div>
-          </form>
+    <!-- Image Upload -->
+    <div class="cat-field">
+      <label class="cat-label">Imagen del Producto</label>
+      <div class="cat-img-upload" [class.cat-img-upload--has-img]="!!imagePreviewUrl">
+        <img *ngIf="imagePreviewUrl" [src]="imagePreviewUrl" class="cat-img-upload-preview" alt="Preview">
+        <div class="cat-img-upload-inner">
+          <span class="material-symbols-outlined">add_a_photo</span>
+          <span>{{ imagePreviewUrl ? 'Cambiar imagen' : 'Subir imagen' }}</span>
         </div>
+        <input type="file" class="cat-img-upload-input" (change)="onImageSelected($event)" accept="image/*">
       </div>
     </div>
 
-    <!-- Columna derecha: Filtros + Lista -->
-    <div class="col-md-8 right-panel">
-      <!-- Filtros y Búsqueda -->
-      <div class="card shadow-sm mb-4">
-        <div class="card-body">
-          <div class="row g-3 align-items-end">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Buscar Producto</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-search"></i></span>
-                <input type="text" class="form-control" [(ngModel)]="searchTerm" placeholder="Buscar por código, nombre o categoría...">
-              </div>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label fw-semibold">Filtrar por Categoría</label>
-              <select class="form-select" [(ngModel)]="filterCategory">
-                <option value="">Todas las categorías</option>
-                <option *ngFor="let cat of categories" [value]="cat.name">{{ cat.name }}</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label fw-semibold">Estado</label>
-              <select class="form-select" [(ngModel)]="filterStatus">
-                <option value="">Todos</option>
-                <option value="ACTIVO">Activos</option>
-                <option value="INACTIVO">Inactivos</option>
-                <option value="DESCONTINUADO">Descontinuados</option>
-              </select>
-            </div>
-          </div>
+    <div class="cat-form-grid">
+      <!-- Código -->
+      <div class="cat-field">
+        <label class="cat-label">Código <span class="cat-req">*</span></label>
+        <div class="cat-input-row">
+          <input type="text" class="cat-input" formControlName="code" placeholder="EPP-001">
+          <button type="button" class="cat-suggest-btn" (click)="suggestCode()" title="Sugerir código">
+            <span class="material-symbols-outlined">auto_fix_high</span>
+          </button>
         </div>
       </div>
 
-      <!-- Contador -->
-      <div class="mb-3">
-        <p class="text-muted mb-0"><strong>{{ getFilteredProducts().length }}</strong> productos encontrados</p>
+      <!-- Nombre -->
+      <div class="cat-field">
+        <label class="cat-label">Nombre <span class="cat-req">*</span></label>
+        <input type="text" class="cat-input" formControlName="name" placeholder="Nombre del producto">
       </div>
 
-      <!-- Lista de Productos -->
-      <div class="card shadow-sm">
-        <div class="card-body p-0">
-          <div class="table-responsive" *ngIf="getFilteredProducts().length > 0; else noProducts">
-            <table class="table table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th style="width: 50px"></th>
-                  <th style="width: 12%">Código</th>
-                  <th style="width: 22%">Nombre</th>
-                  <th style="width: 12%">Categoría</th>
-                  <th style="width: 10%">Unidad</th>
-                  <th style="width: 15%">Proveedor</th>
-                  <th style="width: 10%">Estado</th>
-                  <th style="width: 10%" class="text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let product of getFilteredProducts()" 
-                    class="product-row" 
-                    (click)="editProduct(product)"
-                    [class.table-active]="editingProductId === product.id">
-                  <td>
-                    <img [src]="getImageUrl(product.image || '')" [alt]="product.name" 
-                         class="product-thumbnail rounded-circle" 
-                         style="width: 40px; height: 40px; object-fit: cover;">
-                  </td>
-                  <td class="fw-semibold">{{ product.code }}</td>
-                  <td>{{ product.name }}</td>
-                  <td><span class="badge bg-light text-dark">{{ product.category }}</span></td>
-                  <td><small class="text-muted">{{ product.unitOfMeasure || '-' }}</small></td>
-                  <td><small class="text-muted">{{ getSupplierName(product.supplier?.id) }}</small></td>
-                  <td>
-                    <span class="badge"
-                          [ngClass]="{
-                            'bg-success': product.status === 'ACTIVO',
-                            'bg-secondary': product.status === 'INACTIVO',
-                            'bg-danger': product.status === 'DESCONTINUADO'
-                          }">{{ product.status }}</span>
-                  </td>
-                  <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-primary me-1" 
-                            (click)="viewProductDetails(product, $event)" title="Ver detalles">
-                      <i class="fas fa-eye"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-info me-1" 
-                            (click)="openVariants(product, $event)" title="Variantes">
-                      <i class="fas fa-tags"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-success me-1" 
-                            (click)="editProduct(product); $event.stopPropagation()" title="Editar">
-                      <i class="fas fa-edit"></i>
-                    </button>
-                    <!-- Solo mostrar 'Desactivar' si está ACTIVO -->
-                    <button *ngIf="product.status === 'ACTIVO'" type="button" class="btn btn-sm btn-outline-warning" 
-                            (click)="confirmDeactivate(product, $event)" title="Desactivar">
-                      <i class="fas fa-ban"></i>
-                    </button>
-                    <!-- Solo mostrar 'Eliminar' si está INACTIVO -->
-                    <button *ngIf="product.status === 'INACTIVO'" type="button" class="btn btn-sm btn-outline-danger" 
-                            (click)="confirmDelete(product, $event)" title="Eliminar definitivamente">
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+      <!-- Categoría -->
+      <div class="cat-field">
+        <label class="cat-label">Categoría <span class="cat-req">*</span></label>
+        <select class="cat-input" formControlName="category">
+          <option value="">-- Seleccionar --</option>
+          <option *ngFor="let cat of categories" [value]="cat.name">{{ cat.name }}</option>
+        </select>
+      </div>
+
+      <!-- Cantidad (antes Unidad de medida) -->
+      <div class="cat-field">
+        <label class="cat-label">Cantidad</label>
+        <input type="number" class="cat-input" formControlName="minStock" min="0" placeholder="0">
+      </div>
+
+      <!-- Unidad de medida (texto) -->
+      <div class="cat-field">
+        <label class="cat-label">Unidad de medida</label>
+        <input type="text" class="cat-input" formControlName="unitOfMeasure" placeholder="UND / KG / M">
+      </div>
+
+      <!-- Estado -->
+      <div class="cat-field">
+        <label class="cat-label">Estado <span class="cat-req">*</span></label>
+        <div class="cat-toggle-group">
+          <button type="button" class="cat-toggle-btn"
+            [class.cat-toggle-btn--on]="productForm.get('status')?.value === 'ACTIVO'"
+            (click)="productForm.get('status')?.setValue('ACTIVO')">ACTIVO</button>
+          <button type="button" class="cat-toggle-btn"
+            [class.cat-toggle-btn--on]="productForm.get('status')?.value === 'INACTIVO'"
+            (click)="productForm.get('status')?.setValue('INACTIVO')">INACTIVO</button>
+          <button type="button" class="cat-toggle-btn"
+            [class.cat-toggle-btn--on]="productForm.get('status')?.value === 'DESCONTINUADO'"
+            (click)="productForm.get('status')?.setValue('DESCONTINUADO')">DESCONT.</button>
+        </div>
+      </div>
+
+      <!-- Proveedor (full width) -->
+      <div class="cat-field cat-field--full">
+        <label class="cat-label">Proveedor</label>
+        <select class="cat-input" formControlName="supplierId">
+          <option [ngValue]="null">-- Seleccionar proveedor --</option>
+          <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
+        </select>
+      </div>
+
+      <!-- Descripción (full width) -->
+      <div class="cat-field cat-field--full">
+        <label class="cat-label">Descripción</label>
+        <textarea class="cat-input cat-textarea" formControlName="description" rows="3"
+          placeholder="Detalles técnicos, especificaciones o notas adicionales..."></textarea>
+      </div>
+    </div>
+
+    <p class="cat-req-note">* CAMPOS OBLIGATORIOS</p>
+
+    <div class="cat-panel-footer">
+      <button type="button" class="cat-btn-sec" (click)="cancelEdit()">Cancelar</button>
+      <button type="submit" class="cat-btn-primary">
+        <span class="material-symbols-outlined">save</span>
+        {{ editingProductId ? 'Actualizar Producto' : 'Crear Producto' }}
+      </button>
+    </div>
+  </form>
+</aside>
+
+<!-- ── Product Detail Modal ──────────────────────────────────────── -->
+<div class="cat-modal-overlay" *ngIf="selectedProduct" (click)="selectedProduct = null">
+  <div class="cat-modal" (click)="$event.stopPropagation()">
+    <div class="cat-modal-header">
+      <h3 class="cat-modal-title">{{ selectedProduct.name }}</h3>
+      <button class="cat-close-btn" (click)="selectedProduct = null">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="cat-modal-body">
+      <div class="cat-modal-split">
+
+        <!-- Info column -->
+        <div class="cat-modal-info">
+          <div class="cat-modal-img-wrap">
+            <img [src]="getImageUrl(selectedProduct.image || '')" [alt]="selectedProduct.name" class="cat-modal-img">
           </div>
-          <ng-template #noProducts>
-            <div class="text-center py-4">
-              <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
-              <p class="text-muted mb-0">No se encontraron productos</p>
+          <table class="cat-detail-table">
+            <tr><th>Código</th><td>{{ selectedProduct.code }}</td></tr>
+            <tr><th>Categoría</th><td>{{ selectedProduct.category }}</td></tr>
+            <tr><th>Unidad</th><td>{{ selectedProduct.unitOfMeasure || '-' }}</td></tr>
+            <tr><th>Stock Mín.</th><td>{{ selectedProduct.minStock }}</td></tr>
+            <tr>
+              <th>Estado</th>
+              <td>
+                <span class="cat-status-badge"
+                  [class.cat-status-badge--active]="selectedProduct.status === 'ACTIVO'"
+                  [class.cat-status-badge--inactive]="selectedProduct.status === 'INACTIVO'"
+                  [class.cat-status-badge--disc]="selectedProduct.status === 'DESCONTINUADO'">
+                  <span class="cat-status-dot"></span>{{ selectedProduct.status }}
+                </span>
+              </td>
+            </tr>
+          </table>
+          <p class="cat-modal-desc">{{ selectedProduct.description || 'Sin descripción' }}</p>
+        </div>
+
+        <!-- Variants column -->
+        <div class="cat-modal-variants">
+          <div class="cat-variants-head">
+            <h4>Variantes ({{ productVariants.length }})</h4>
+            <button class="cat-btn-primary cat-btn-primary--sm" (click)="createVariant()">
+              <span class="material-symbols-outlined">add</span> Nueva
+            </button>
+          </div>
+
+          <!-- Variant form -->
+          <div class="cat-variant-form" *ngIf="showVariantForm">
+            <form [formGroup]="variantForm" (ngSubmit)="submitVariant()">
+              <div class="cat-form-grid cat-form-grid--tight">
+                <div class="cat-field">
+                  <label class="cat-label">Código SKU <span class="cat-req">*</span></label>
+                  <input type="text" class="cat-input" formControlName="code" placeholder="SKU">
+                </div>
+                <div class="cat-field">
+                  <label class="cat-label">Talla/Tamaño</label>
+                  <input type="text" class="cat-input" formControlName="sizeLabel">
+                </div>
+                <div class="cat-field">
+                  <label class="cat-label">Dimensiones</label>
+                  <input type="text" class="cat-input" formControlName="dimensions">
+                </div>
+                <div class="cat-field">
+                  <label class="cat-label">Precio Venta</label>
+                  <input type="number" class="cat-input" formControlName="salePrice" min="0" step="0.01">
+                </div>
+                <div class="cat-field">
+                  <label class="cat-label">Stock mín.</label>
+                  <input type="number" class="cat-input" formControlName="minQty" min="0">
+                </div>
+              </div>
+              <div class="cat-variant-actions">
+                <button type="button" class="cat-btn-sec" (click)="cancelVariantEdit()">Cancelar</button>
+                <button type="submit" class="cat-btn-primary cat-btn-primary--sm">
+                  {{ editingVariant ? 'Actualizar Variante' : 'Crear Variante' }}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Variants table -->
+          <table class="cat-table cat-table--sm" *ngIf="productVariants.length > 0; else noVariants">
+            <thead>
+              <tr>
+                <th>Foto</th>
+                <th>Código</th>
+                <th>Talla</th>
+                <th>Stock</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let variant of productVariants" class="cat-tr">
+                <td>
+                  <div class="cat-product-img cat-product-img--sm">
+                    <img [src]="getImageUrl(variant.image || selectedProduct.image || '')" [alt]="variant.code">
+                  </div>
+                </td>
+                <td><span class="cat-code">{{ variant.code }}</span></td>
+                <td>{{ variant.sizeLabel || '-' }}</td>
+                <td>
+                  <span class="cat-stock-badge"
+                    [class.cat-stock-badge--ok]="(variant.currentQty || 0) > (variant.minQty || 0)"
+                    [class.cat-stock-badge--warn]="(variant.currentQty || 0) <= (variant.minQty || 0) && (variant.currentQty || 0) > 0"
+                    [class.cat-stock-badge--crit]="(variant.currentQty || 0) === 0">
+                    {{ (variant.currentQty ?? 0) | number:'1.0-2' }}
+                  </span>
+                </td>
+                <td>${{ variant.salePrice | number:'1.2-2' }}</td>
+                <td>
+                  <span class="cat-status-badge"
+                    [class.cat-status-badge--active]="variant.status === 'ACTIVO'"
+                    [class.cat-status-badge--inactive]="variant.status === 'INACTIVO'">
+                    <span class="cat-status-dot"></span>{{ variant.status }}
+                  </span>
+                </td>
+                <td>
+                  <button class="cat-action-btn cat-action-btn--edit" (click)="editVariant(variant)" title="Editar">
+                    <span class="material-symbols-outlined">edit</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <ng-template #noVariants>
+            <div class="cat-empty cat-empty--sm">
+              <span class="material-symbols-outlined">category</span>
+              <p>Sin variantes. Crea una para registrar stock.</p>
             </div>
           </ng-template>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- Modal de Detalle de Producto -->
-<div class="modal fade show d-block" *ngIf="selectedProduct" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="fas fa-info-circle me-2"></i>{{ selectedProduct.name }}
-        </h5>
-        <button type="button" class="btn-close" (click)="selectedProduct = null"></button>
-      </div>
-      <div class="modal-body">
-        <div class="row">
-          <!-- Información del Producto -->
-          <div class="col-md-4">
-            <img [src]="getImageUrl(selectedProduct.image || '')" [alt]="selectedProduct.name" 
-                 class="img-fluid rounded mb-3" style="width: 100%; max-height: 300px; object-fit: cover;">
-            
-            <table class="table table-sm">
-              <tbody>
-                <tr>
-                  <th style="width: 40%">Código:</th>
-                  <td>{{ selectedProduct.code }}</td>
-                </tr>
-                <tr>
-                  <th>Categoría:</th>
-                  <td>{{ selectedProduct.category }}</td>
-                </tr>
-                <tr>
-                  <th>Unidad:</th>
-                  <td>{{ selectedProduct.unitOfMeasure }}</td>
-                </tr>
-                <tr>
-                  <th>Stock Mín:</th>
-                  <td>{{ selectedProduct.minStock }}</td>
-                </tr>
-                <tr>
-                  <th>Estado:</th>
-                  <td>
-                    <span class="badge" 
-                          [ngClass]="{
-                            'bg-success': selectedProduct.status === 'ACTIVO',
-                            'bg-secondary': selectedProduct.status === 'INACTIVO',
-                            'bg-danger': selectedProduct.status === 'DESCONTINUADO'
-                          }">
-                      {{ selectedProduct.status }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div class="mb-3">
-              <label class="fw-semibold">Descripción:</label>
-              <p class="text-muted">{{ selectedProduct.description || 'Sin descripción' }}</p>
-            </div>
-          </div>
-
-          <!-- Variantes del Producto -->
-          <div class="col-md-8">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="mb-0">Variantes ({{ productVariants.length }})</h6>
-              <button class="btn btn-sm btn-success" (click)="createVariant()">
-                <i class="fas fa-plus me-1"></i>Nueva Variante
-              </button>
-            </div>
-
-            <div *ngIf="showVariantForm" class="card card-body mb-3">
-              <form [formGroup]="variantForm" (ngSubmit)="submitVariant()">
-                <div class="row g-2">
-                  <div class="col-md-3">
-                    <label class="form-label fw-semibold small mb-1">Código SKU</label>
-                    <input type="text" class="form-control form-control-sm" formControlName="code" placeholder="SKU">
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label fw-semibold small mb-1">Talla/Tamaño</label>
-                    <input type="text" class="form-control form-control-sm" formControlName="sizeLabel">
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label fw-semibold small mb-1">Dimensiones</label>
-                    <input type="text" class="form-control form-control-sm" formControlName="dimensions">
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label fw-semibold small mb-1">Precio Venta</label>
-                    <input type="number" class="form-control form-control-sm" formControlName="salePrice" min="0" step="0.01">
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label fw-semibold small mb-1">Stock mín.</label>
-                    <input type="number" class="form-control form-control-sm" formControlName="minQty" min="0">
-                  </div>
-                  <div class="col-12 d-flex gap-2 mt-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary flex-fill" (click)="cancelVariantEdit()">Cancelar</button>
-                    <button type="submit" class="btn btn-sm btn-success flex-fill">{{ editingVariant ? 'Actualizar Variante' : 'Crear Variante' }}</button>
-                  </div>
-                </div>
-              </form>
-            </div>
-
-            <div class="table-responsive">
-              <table class="table table-hover align-middle">
-                <thead>
-                  <tr>
-                    <th style="width: 80px">Foto</th>
-                    <th>Código</th>
-                    <th>Talla/Tamaño</th>
-                    <th>Stock</th>
-                    <th>Costo</th>
-                    <th>Precio Venta</th>
-                    <th>Estado</th>
-                    <th style="width: 100px">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let variant of productVariants">
-                    <td>
-                      <img [src]="getImageUrl(variant.image || selectedProduct.image || '')" 
-                           [alt]="variant.code" 
-                           class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
-                    </td>
-                    <td class="fw-semibold">{{ variant.code }}</td>
-                    <td>{{ variant.sizeLabel || '-' }}</td>
-                    <td>
-                      <span class="badge" 
-                            [ngClass]="{
-                              'bg-success': (variant.currentQty || 0) > (variant.minQty || 0),
-                              'bg-warning': (variant.currentQty || 0) <= (variant.minQty || 0) && (variant.currentQty || 0) > 0,
-                              'bg-danger': (variant.currentQty || 0) === 0
-                            }">
-                        {{ variant.currentQty || 0 }}
-                      </span>
-                    </td>
-                    <td>${{ variant.unitCost | number:'1.2-2' }}</td>
-                    <td>${{ variant.salePrice | number:'1.2-2' }}</td>
-                    <td>
-                      <span class="badge" 
-                            [ngClass]="{
-                              'bg-success': variant.status === 'ACTIVO',
-                              'bg-secondary': variant.status === 'INACTIVO'
-                            }">
-                        {{ variant.status }}
-                      </span>
-                    </td>
-                    <td>
-                      <button class="btn btn-sm btn-outline-primary me-1" 
-                              (click)="editVariant(variant)" title="Editar">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                    </td>
-                  </tr>
-                  <tr *ngIf="productVariants.length === 0">
-                    <td colspan="8" class="text-center text-muted py-3">
-                      Este producto no tiene variantes. Crea una para poder registrar stock.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="selectedProduct = null">Cerrar</button>
-        <button type="button" class="btn btn-primary" (click)="editProduct(selectedProduct)">
-          <i class="fas fa-edit me-2"></i>Editar Producto
-        </button>
-      </div>
+    <div class="cat-modal-footer">
+      <button class="cat-btn-sec" (click)="selectedProduct = null">Cerrar</button>
+      <button class="cat-btn-primary" (click)="openEditProductForm(selectedProduct)">
+        <span class="material-symbols-outlined">edit</span> Editar Producto
+      </button>
     </div>
   </div>
 </div>
