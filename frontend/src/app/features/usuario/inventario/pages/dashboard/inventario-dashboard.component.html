@@ -5,6 +5,9 @@
       Dashboard de Inventario
     </h1>
     <p class="dashboard-subtitle">Resumen general del módulo de inventario</p>
+    <button class="btn btn-outline-secondary btn-sm ms-auto" (click)="loadData()" [disabled]="loading">
+      <i class="fas fa-sync-alt me-1" [class.fa-spin]="loading"></i> Actualizar
+    </button>
   </div>
 
   <!-- Tarjetas de estadísticas -->
@@ -20,8 +23,137 @@
     </div>
   </div>
 
-  <!-- Sección de información -->
-  <div class="info-section">
+  <!-- Alertas de stock bajo -->
+  <div class="info-section" *ngIf="alerts && alerts.stockBajo?.length">
+    <div class="info-card info-card--warn">
+      <div class="info-header">
+        <i class="fas fa-exclamation-triangle text-warning"></i>
+        <h3>Stock Bajo ({{ alerts.stockBajo.length }} variantes)</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Producto</th>
+              <th>Código</th>
+              <th class="text-end">Stock Actual</th>
+              <th class="text-end">Stock Mínimo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of alerts.stockBajo">
+              <td>{{ item.productName }}</td>
+              <td><code>{{ item.variantCode }}</code></td>
+              <td class="text-end text-danger fw-bold">{{ item.currentQty }}</td>
+              <td class="text-end">{{ item.minQty }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Alto (excede máximo) -->
+  <div class="info-section" *ngIf="alerts && alerts.stockAlto?.length">
+    <div class="info-card info-card--warn">
+      <div class="info-header">
+        <i class="fas fa-arrow-up text-warning"></i>
+        <h3>Stock Alto — Sobre el Máximo ({{ alerts.stockAlto.length }} variantes)</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Producto</th>
+              <th>Código</th>
+              <th class="text-end">Stock Actual</th>
+              <th class="text-end">Stock Máximo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of alerts.stockAlto">
+              <td>{{ item.productName }}</td>
+              <td><code>{{ item.variantCode }}</code></td>
+              <td class="text-end text-warning fw-bold">{{ item.currentQty }}</td>
+              <td class="text-end">{{ item.maxStock }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Préstamos vencidos -->
+  <div class="info-section" *ngIf="alerts && alerts.prestamosVencidos?.length">
+    <div class="info-card info-card--danger">
+      <div class="info-header">
+        <i class="fas fa-clock text-danger"></i>
+        <h3>Préstamos Vencidos ({{ alerts.prestamosVencidos.length }})</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>N° Salida</th>
+              <th>Trabajador</th>
+              <th>Debía devolver</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of alerts.prestamosVencidos">
+              <td><code>{{ item.outputNumber }}</code></td>
+              <td>{{ item.employeeId || '—' }}</td>
+              <td class="text-danger">{{ item.returnDate }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lotes por vencer -->
+  <div class="info-section" *ngIf="alerts && alerts.lotesPorVencer?.length">
+    <div class="info-card info-card--warn">
+      <div class="info-header">
+        <i class="fas fa-calendar-times text-warning"></i>
+        <h3>Lotes por Vencer (próximos 30 días: {{ alerts.lotesPorVencer.length }})</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Lote</th>
+              <th>Variante</th>
+              <th>Vence</th>
+              <th class="text-end">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of alerts.lotesPorVencer">
+              <td>{{ item.lotNumber }}</td>
+              <td><code>{{ item.variantCode }}</code></td>
+              <td class="text-warning">{{ item.expirationDate }}</td>
+              <td class="text-end">{{ item.currentQty }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sin alertas -->
+  <div class="info-section" *ngIf="alerts && !alerts.stockBajo?.length && !alerts.stockAlto?.length && !alerts.prestamosVencidos?.length && !alerts.lotesPorVencer?.length">
+    <div class="info-card info-card--ok">
+      <div class="info-header">
+        <i class="fas fa-check-circle text-success"></i>
+        <h3>Todo en orden</h3>
+      </div>
+      <p class="mb-0">No hay alertas activas: el stock está dentro de los rangos definidos y no hay préstamos vencidos ni lotes próximos a expirar.</p>
+    </div>
+  </div>
+
+  <!-- Bienvenida (cuando no hay datos cargados) -->
+  <div class="info-section" *ngIf="!alerts && !loading">
     <div class="info-card">
       <div class="info-header">
         <i class="fas fa-info-circle"></i>
@@ -30,11 +162,11 @@
       <div class="info-content">
         <p>Desde aquí podrás gestionar todo lo relacionado con el inventario de tu empresa:</p>
         <ul>
-          <li><strong>Registro de Ingreso:</strong> Registra nuevos productos y entradas al inventario</li>
-          <li><strong>Registrar Salida:</strong> Registra el consumo de piezas o EPP</li>
-          <li><strong>Stock:</strong> Visualiza el inventario actual disponible</li>
-          <li><strong>Historial de Ingresos:</strong> Consulta todos los ingresos registrados</li>
-          <li><strong>Historial de Salidas:</strong> Consulta todas las salidas realizadas</li>
+          <li><strong>Catálogo de Productos:</strong> Registra productos con variantes y atributos</li>
+          <li><strong>Nueva Entrada:</strong> Registra ingresos de productos al inventario</li>
+          <li><strong>Nueva Salida:</strong> Registra entregas, préstamos, ventas y bajas</li>
+          <li><strong>Gestión Especial:</strong> Maneja préstamos, devoluciones y ajustes</li>
+          <li><strong>Reportes:</strong> Analiza el inventario con kardex y reportes financieros</li>
         </ul>
       </div>
     </div>

@@ -5,7 +5,8 @@ import { Observable } from 'rxjs';
 export interface InventoryProduct {
   id?: number;
   code: string;
-  category: string;
+  category?: string;
+  categoryRef?: { id: number; name?: string } | null;
   name: string;
   description?: string;
   unitOfMeasure?: string;
@@ -16,6 +17,7 @@ export interface InventoryProduct {
   image?: string;
   status?: 'ACTIVO' | 'INACTIVO' | 'DESCONTINUADO';
   minStock?: number;
+  maxStock?: number;
   supplier?: { id: number } | null;
 }
 

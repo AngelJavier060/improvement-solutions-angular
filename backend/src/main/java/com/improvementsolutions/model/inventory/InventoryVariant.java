@@ -2,6 +2,8 @@ package com.improvementsolutions.model.inventory;
 
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.improvementsolutions.model.inventory.enums.VariantStatus;
@@ -57,6 +59,9 @@ public class InventoryVariant {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private VariantStatus status = VariantStatus.ACTIVO;
+
+    @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<InventoryVariantAttribute> attributes = new ArrayList<>();
 
     @Version
     private Long version;

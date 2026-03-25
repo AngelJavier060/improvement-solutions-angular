@@ -29,7 +29,7 @@
       </div>
       <select class="cat-select" [(ngModel)]="filterCategory">
         <option value="">Todas las Categorías</option>
-        <option *ngFor="let cat of categories" [value]="cat.name">{{ cat.name }}</option>
+        <option *ngFor="let name of categoryNames" [value]="name">{{ name }}</option>
       </select>
       <select class="cat-select" [(ngModel)]="filterStatus">
         <option value="">Todos</option>
@@ -107,7 +107,7 @@
             </td>
             <td><span class="cat-code">{{ product.code }}</span></td>
             <td>
-              <span class="cat-badge-cat">{{ product.category }}</span>
+              <span class="cat-badge-cat">{{ getProductCategory(product) }}</span>
             </td>
             <td class="cat-td-center"><span class="cat-stock-val">{{ product.minStock ?? 0 }}</span></td>
             <td class="cat-supplier-name">{{ getSupplierName(product.supplier?.id) }}</td>
@@ -191,8 +191,9 @@
       </div>
     </div>
 
-    <div class="cat-form-grid">
-      <!-- Código -->
+    <!-- Sección: Identificación -->
+    <div class="cat-form-section-title">Identificación del Producto</div>
+    <div class="cat-form-grid cat-form-grid--3col">
       <div class="cat-field">
         <label class="cat-label">Código <span class="cat-req">*</span></label>
         <div class="cat-input-row">
@@ -202,35 +203,21 @@
           </button>
         </div>
       </div>
-
-      <!-- Nombre -->
-      <div class="cat-field">
-        <label class="cat-label">Nombre <span class="cat-req">*</span></label>
-        <input type="text" class="cat-input" formControlName="name" placeholder="Nombre del producto">
+      <div class="cat-field cat-field--span2">
+        <label class="cat-label">Nombre del Producto <span class="cat-req">*</span></label>
+        <input type="text" class="cat-input" formControlName="name" placeholder="Ej: Casco de Seguridad">
       </div>
-
-      <!-- Categoría -->
       <div class="cat-field">
         <label class="cat-label">Categoría <span class="cat-req">*</span></label>
-        <select class="cat-input" formControlName="category">
+        <select class="cat-input" formControlName="categoryName">
           <option value="">-- Seleccionar --</option>
           <option *ngFor="let cat of categories" [value]="cat.name">{{ cat.name }}</option>
         </select>
       </div>
-
-      <!-- Cantidad (antes Unidad de medida) -->
       <div class="cat-field">
-        <label class="cat-label">Cantidad</label>
-        <input type="number" class="cat-input" formControlName="minStock" min="0" placeholder="0">
+        <label class="cat-label">Unidad de Medida</label>
+        <input type="text" class="cat-input" formControlName="unitOfMeasure" placeholder="UND / KG / M / PAR">
       </div>
-
-      <!-- Unidad de medida (texto) -->
-      <div class="cat-field">
-        <label class="cat-label">Unidad de medida</label>
-        <input type="text" class="cat-input" formControlName="unitOfMeasure" placeholder="UND / KG / M">
-      </div>
-
-      <!-- Estado -->
       <div class="cat-field">
         <label class="cat-label">Estado <span class="cat-req">*</span></label>
         <div class="cat-toggle-group">
@@ -245,21 +232,57 @@
             (click)="productForm.get('status')?.setValue('DESCONTINUADO')">DESCONT.</button>
         </div>
       </div>
+    </div>
 
-      <!-- Proveedor (full width) -->
-      <div class="cat-field cat-field--full">
+    <!-- Sección: Control de Stock y Alertas -->
+    <div class="cat-form-section-title">Control de Stock y Alertas</div>
+    <div class="cat-form-grid cat-form-grid--3col">
+      <div class="cat-field">
+        <label class="cat-label">
+          Stock Mínimo
+          <span class="cat-hint" title="El sistema alertará cuando el stock baje de este valor">ⓘ</span>
+        </label>
+        <input type="number" class="cat-input" formControlName="minStock" min="0" placeholder="Ej: 5">
+        <span class="cat-field-note">Alerta de stock bajo</span>
+      </div>
+      <div class="cat-field">
+        <label class="cat-label">
+          Stock Máximo
+          <span class="cat-hint" title="El sistema alertará cuando el stock supere este valor">ⓘ</span>
+        </label>
+        <input type="number" class="cat-input" formControlName="maxStock" min="0" placeholder="Ej: 100">
+        <span class="cat-field-note">Alerta de sobreabastecimiento</span>
+      </div>
+      <div class="cat-field">
         <label class="cat-label">Proveedor</label>
         <select class="cat-input" formControlName="supplierId">
           <option [ngValue]="null">-- Seleccionar proveedor --</option>
           <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
         </select>
       </div>
+    </div>
 
-      <!-- Descripción (full width) -->
+    <!-- Nota sobre stock -->
+    <div class="cat-stock-note">
+      <span class="material-symbols-outlined">info</span>
+      El <strong>stock real</strong> se registra mediante <strong>Nueva Entrada</strong>. Stock Mín./Máx. definen los umbrales para alertas automáticas.
+    </div>
+
+    <!-- Sección: Ficha Técnica -->
+    <div class="cat-form-section-title">Ficha Técnica <span class="cat-section-opt">(opcional)</span></div>
+    <div class="cat-form-grid cat-form-grid--3col">
+      <div class="cat-field">
+        <label class="cat-label">Marca</label>
+        <input type="text" class="cat-input" formControlName="brand" placeholder="3M, Honeywell, Caterpillar...">
+      </div>
+      <div class="cat-field">
+        <label class="cat-label">Modelo / Referencia</label>
+        <input type="text" class="cat-input" formControlName="model" placeholder="Ref. del fabricante">
+      </div>
       <div class="cat-field cat-field--full">
         <label class="cat-label">Descripción</label>
-        <textarea class="cat-input cat-textarea" formControlName="description" rows="3"
-          placeholder="Detalles técnicos, especificaciones o notas adicionales..."></textarea>
+        <textarea class="cat-input cat-textarea" formControlName="description" rows="2"
+          placeholder="Especificaciones técnicas, notas de uso, normas aplicables..."></textarea>
       </div>
     </div>
 
@@ -295,9 +318,12 @@
           </div>
           <table class="cat-detail-table">
             <tr><th>Código</th><td>{{ selectedProduct.code }}</td></tr>
-            <tr><th>Categoría</th><td>{{ selectedProduct.category }}</td></tr>
+            <tr><th>Categoría</th><td>{{ getProductCategory(selectedProduct) }}</td></tr>
             <tr><th>Unidad</th><td>{{ selectedProduct.unitOfMeasure || '-' }}</td></tr>
-            <tr><th>Stock Mín.</th><td>{{ selectedProduct.minStock }}</td></tr>
+            <tr><th>Stock Mín.</th><td>{{ selectedProduct.minStock ?? '—' }}</td></tr>
+            <tr><th>Stock Máx.</th><td>{{ selectedProduct.maxStock ?? '—' }}</td></tr>
+            <tr><th>Marca</th><td>{{ selectedProduct.brand || '—' }}</td></tr>
+            <tr><th>Modelo</th><td>{{ selectedProduct.model || '—' }}</td></tr>
             <tr>
               <th>Estado</th>
               <td>
@@ -347,6 +373,24 @@
                   <input type="number" class="cat-input" formControlName="minQty" min="0">
                 </div>
               </div>
+
+              <!-- Atributos dinámicos -->
+              <div class="cat-attr-section">
+                <div class="cat-attr-head">
+                  <span class="cat-label">Atributos (Color, Talla, Tipo...)</span>
+                  <button type="button" class="cat-btn-sec cat-btn-sec--xs" (click)="addAttrRow()">
+                    <span class="material-symbols-outlined">add</span> Agregar
+                  </button>
+                </div>
+                <div *ngFor="let attr of attrRows; let i = index" class="cat-attr-row">
+                  <input type="text" class="cat-input cat-input--sm" [(ngModel)]="attr.name" [ngModelOptions]="{standalone: true}" placeholder="Nombre (ej: Color)">
+                  <input type="text" class="cat-input cat-input--sm" [(ngModel)]="attr.value" [ngModelOptions]="{standalone: true}" placeholder="Valor (ej: Azul)">
+                  <button type="button" class="cat-action-btn cat-action-btn--del" (click)="removeAttrRow(i)">
+                    <span class="material-symbols-outlined">close</span>
+                  </button>
+                </div>
+              </div>
+
               <div class="cat-variant-actions">
                 <button type="button" class="cat-btn-sec" (click)="cancelVariantEdit()">Cancelar</button>
                 <button type="submit" class="cat-btn-primary cat-btn-primary--sm">
@@ -363,6 +407,7 @@
                 <th>Foto</th>
                 <th>Código</th>
                 <th>Talla</th>
+                <th>Atributos</th>
                 <th>Stock</th>
                 <th>Precio</th>
                 <th>Estado</th>
@@ -378,6 +423,12 @@
                 </td>
                 <td><span class="cat-code">{{ variant.code }}</span></td>
                 <td>{{ variant.sizeLabel || '-' }}</td>
+                <td>
+                  <div *ngIf="getVariantAttributes(variant.id).length > 0" class="cat-attr-tags">
+                    <span *ngFor="let a of getVariantAttributes(variant.id)" class="cat-attr-tag">{{ a.attributeName }}: {{ a.attributeValue }}</span>
+                  </div>
+                  <span *ngIf="!getVariantAttributes(variant.id).length" class="cat-text-muted">—</span>
+                </td>
                 <td>
                   <span class="cat-stock-badge"
                     [class.cat-stock-badge--ok]="(variant.currentQty || 0) > (variant.minQty || 0)"

@@ -53,6 +53,12 @@ public class InventoryOutputDetail {
     @Column(name = "department_id")
     private Long departmentId;
 
+    @Column(name = "sale_price", precision = 18, scale = 2)
+    private BigDecimal salePrice;
+
+    @Column(name = "discount_amount", precision = 18, scale = 2)
+    private BigDecimal discountAmount;
+
     @Column(name = "created_at")
     private java.time.LocalDateTime createdAt;
 

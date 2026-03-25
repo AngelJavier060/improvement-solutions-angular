@@ -4,5 +4,7 @@ public enum OutputType {
     EPP_TRABAJADOR,
     PRESTAMO,
     CONSUMO_AREA,
-    BAJA
+    BAJA,
+    VENTA,
+    DESCUENTO_TRABAJADOR
 }

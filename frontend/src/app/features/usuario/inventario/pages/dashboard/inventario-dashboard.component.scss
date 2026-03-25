@@ -153,6 +153,28 @@
   }
 }
 
+.dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.info-card--warn {
+  border-left: 4px solid #f39c12;
+  .info-header i { color: #f39c12; }
+}
+
+.info-card--danger {
+  border-left: 4px solid #e74c3c;
+  .info-header i { color: #e74c3c; }
+}
+
+.info-card--ok {
+  border-left: 4px solid #2ecc71;
+  .info-header i { color: #2ecc71; }
+}
+
 @media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: 1fr;

@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { InventoryProductService, InventoryProduct } from '../../../../../services/inventory-product.service';
 import { InventoryVariantService, InventoryVariant } from '../../../../../services/inventory-variant.service';
+import { InventoryVariantAttributeService, VariantAttribute } from '../../../../../services/inventory-variant-attribute.service';
 import { InventorySupplierService, InventorySupplier } from '../../../../../services/inventory-supplier.service';
 import { InventoryCategoryService, InventoryCategory } from '../../../../../services/inventory-category.service';
 import { FileService } from '../../../../../services/file.service';
@@ -45,6 +46,10 @@ export class CatalogoProductosComponent implements OnInit {
   suppliers: InventorySupplier[] = [];
   statusOptions = ['ACTIVO', 'INACTIVO', 'DESCONTINUADO'];
   
+  // Atributos de variante (para el formulario)
+  attrRows: { name: string; value: string; id?: number }[] = [];
+  variantAttributes: { [variantId: number]: VariantAttribute[] } = {};
+
   // Subida de imagen
   selectedImageFile: File | null = null;
   imagePreviewUrl: string | null = null;
@@ -62,6 +67,7 @@ export class CatalogoProductosComponent implements OnInit {
     private fb: FormBuilder,
     private productService: InventoryProductService,
     private variantService: InventoryVariantService,
+    private attrService: InventoryVariantAttributeService,
     private supplierService: InventorySupplierService,
     private categoryService: InventoryCategoryService,
     private fileService: FileService
@@ -114,19 +120,26 @@ export class CatalogoProductosComponent implements OnInit {
   extractCategories(): void {
     const cats = new Set<string>();
     this.products.forEach(p => {
-      if (p.category) cats.add(p.category);
+      const name = this.getProductCategory(p);
+      if (name) cats.add(name);
     });
     this.categoryNames = Array.from(cats).sort();
   }
 
+  getProductCategory(p: InventoryProduct): string {
+    if (p.categoryRef?.name) return p.categoryRef.name;
+    return p.category || '';
+  }
+
   getFilteredProducts(): InventoryProduct[] {
     return this.products.filter(p => {
+      const catName = this.getProductCategory(p);
       const matchesSearch = !this.searchTerm || 
         p.name?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
         p.code?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        p.category?.toLowerCase().includes(this.searchTerm.toLowerCase());
+        catName.toLowerCase().includes(this.searchTerm.toLowerCase());
       
-      const matchesCategory = !this.filterCategory || p.category === this.filterCategory;
+      const matchesCategory = !this.filterCategory || catName === this.filterCategory;
       const matchesStatus = !this.filterStatus || p.status === this.filterStatus;
       
       return matchesSearch && matchesCategory && matchesStatus;
@@ -151,9 +164,31 @@ export class CatalogoProductosComponent implements OnInit {
           minQty: this.toNum((v as any).minQty),
           salePrice: this.toNum((v as any).salePrice)
         }));
+        // Load attributes for each variant
+        this.productVariants.forEach(v => { if (v.id) this.loadVariantAttributes(v.id); });
       },
       error: () => this.productVariants = []
     });
+  }
+
+  loadVariantAttributes(variantId: number): void {
+    this.attrService.list(this.ruc, variantId).subscribe({
+      next: (attrs) => { this.variantAttributes[variantId] = attrs || []; },
+      error: () => { this.variantAttributes[variantId] = []; }
+    });
+  }
+
+  getVariantAttributes(variantId?: number): VariantAttribute[] {
+    if (!variantId) return [];
+    return this.variantAttributes[variantId] || [];
+  }
+
+  addAttrRow(): void {
+    this.attrRows.push({ name: '', value: '' });
+  }
+
+  removeAttrRow(i: number): void {
+    this.attrRows.splice(i, 1);
   }
 
   viewProductDetails(product: InventoryProduct, event: Event): void {
@@ -196,11 +231,11 @@ export class CatalogoProductosComponent implements OnInit {
     if (!this.selectedProduct) return;
     this.showVariantForm = true;
     this.editingVariant = null;
+    this.attrRows = [];
     this.variantForm.reset({ code: '', sizeLabel: '', dimensions: '', salePrice: 0, minQty: 0 });
   }
 
   editVariant(variant: InventoryVariant): void {
-    // Editar en línea dentro del modal
     this.showVariantForm = true;
     this.editingVariant = variant;
     this.variantForm.patchValue({
@@ -210,6 +245,13 @@ export class CatalogoProductosComponent implements OnInit {
       salePrice: variant.salePrice || 0,
       minQty: variant.minQty || 0
     });
+    // Load existing attributes into attrRows
+    if (variant.id) {
+      const existing = this.variantAttributes[variant.id] || [];
+      this.attrRows = existing.map(a => ({ id: a.id, name: a.attributeName, value: a.attributeValue }));
+    } else {
+      this.attrRows = [];
+    }
   }
 
   getImageUrl(imagePath: string): string {
@@ -281,11 +323,14 @@ export class CatalogoProductosComponent implements OnInit {
     this.productForm = this.fb.group({
       code: ['', [Validators.required, Validators.maxLength(100)]],
       name: ['', [Validators.required, Validators.maxLength(200)]],
-      category: ['', [Validators.required, Validators.maxLength(50)]],
+      categoryName: ['', Validators.required],
       unitOfMeasure: [''],
-      minStock: [0],
+      minStock: [null],
+      maxStock: [null],
       status: ['ACTIVO', Validators.required],
       supplierId: [null],
+      brand: [''],
+      model: [''],
       description: ['']
     });
   }
@@ -309,6 +354,7 @@ export class CatalogoProductosComponent implements OnInit {
   cancelVariantEdit(): void {
     this.showVariantForm = false;
     this.editingVariant = null;
+    this.attrRows = [];
     if (this.variantForm) {
       this.variantForm.reset({ code: '', sizeLabel: '', dimensions: '', salePrice: 0, minQty: 0 });
     }
@@ -328,9 +374,21 @@ export class CatalogoProductosComponent implements OnInit {
       minQty: raw.minQty || 0
     };
 
+    const saveAttributes = (variantId: number) => {
+      const validAttrs = this.attrRows.filter(a => a.name.trim() && a.value.trim());
+      if (!validAttrs.length) return;
+      const calls = validAttrs.map(a =>
+        a.id
+          ? this.attrService.update(this.ruc, variantId, a.id, { attributeName: a.name, attributeValue: a.value })
+          : this.attrService.create(this.ruc, variantId, { attributeName: a.name, attributeValue: a.value })
+      );
+      forkJoin(calls).subscribe({ next: () => {}, error: () => {} });
+    };
+
     if (this.editingVariant?.id) {
       this.variantService.update(this.ruc, this.editingVariant.id!, payload).subscribe({
-        next: () => {
+        next: (updated) => {
+          saveAttributes(updated.id!);
           this.successMessage = 'Variante actualizada correctamente';
           this.loadVariants(this.selectedProduct!.id!);
           this.cancelVariantEdit();
@@ -339,7 +397,8 @@ export class CatalogoProductosComponent implements OnInit {
       });
     } else {
       this.variantService.create(this.ruc, payload).subscribe({
-        next: () => {
+        next: (created) => {
+          saveAttributes(created.id!);
           this.successMessage = 'Variante creada correctamente';
           this.loadVariants(this.selectedProduct!.id!);
           this.cancelVariantEdit();
@@ -373,18 +432,43 @@ export class CatalogoProductosComponent implements OnInit {
       this.categoryService.list(this.ruc).pipe(catchError(() => of([] as any[])))
     ]).subscribe(([global, catalog, byRuc]) => {
       const set = new Map<string, InventoryCategory & { name: string }>();
-      [...(global||[]), ...(catalog||[]), ...(byRuc||[])].forEach((c: any) => {
+
+      // Global/catalog categories: solo nombre, sin ID (el ID es de otra tabla)
+      [...(global||[]), ...(catalog||[])].forEach((c: any) => {
         const name = (c?.name || '').toString().trim();
         if (!name) return;
         const key = name.toLowerCase();
-        if (!set.has(key)) set.set(key, { ...c, name });
+        if (!set.has(key)) set.set(key, { name, id: undefined as any });
       });
+
+      // Categorías de la empresa: tienen ID válido para categoryRef → siempre sobreescriben
+      [...(byRuc||[])].forEach((c: any) => {
+        const name = (c?.name || '').toString().trim();
+        if (!name) return;
+        const key = name.toLowerCase();
+        set.set(key, { ...c, name });
+      });
+
       this.categories = Array.from(set.values()).sort((a, b) => (a.name||'').localeCompare(b.name||''));
     }, () => this.categories = []);
   }
 
+  getCategoryName(categoryId: number | null): string {
+    if (!categoryId) return '';
+    const cat = this.categories.find(c => c.id === categoryId);
+    return cat?.name || '';
+  }
+
+  /** Obtiene el categoryRef (id de InventoryCategory) por nombre, solo si existe en categorías de empresa */
+  getCategoryRefByName(name: string): { id: number } | null {
+    if (!name) return null;
+    const cat = this.categories.find(c => c.name?.toLowerCase() === name.toLowerCase() && c.id);
+    return cat?.id ? { id: cat.id } : null;
+  }
+
   suggestCode(): void {
-    const cat = (this.productForm.value.category || 'PRD').toString().toUpperCase().slice(0, 3);
+    const catName = this.productForm.value.categoryName || 'PRD';
+    const cat = catName.toUpperCase().slice(0, 3);
     const now = new Date();
     const y = now.getFullYear();
     const ts = now.getTime().toString().slice(-5);
@@ -393,12 +477,25 @@ export class CatalogoProductosComponent implements OnInit {
 
   fillForm(p: InventoryProduct): void {
     this.editingProductId = p.id || null;
+    // Resolve category name: prioritize categoryRef.name, then category string, then lookup
+    let catName = '';
+    if (p.categoryRef?.name) {
+      catName = p.categoryRef.name;
+    } else if ((p as any).categoryRef?.id) {
+      const found = this.categories.find(c => c.id === (p as any).categoryRef.id);
+      catName = found?.name || p.category || '';
+    } else if (p.category) {
+      catName = p.category;
+    }
     this.productForm.reset({
       code: p.code,
       name: p.name,
-      category: p.category,
+      categoryName: catName,
+      brand: p.brand || '',
+      model: p.model || '',
       unitOfMeasure: p.unitOfMeasure || '',
-      minStock: p.minStock || 0,
+      minStock: p.minStock ?? null,
+      maxStock: p.maxStock ?? null,
       status: p.status || 'ACTIVO',
       supplierId: p.supplier?.id || null,
       description: p.description || ''
@@ -422,11 +519,14 @@ export class CatalogoProductosComponent implements OnInit {
     this.productForm.reset({
       code: '',
       name: '',
-      category: '',
+      categoryName: '',
       unitOfMeasure: '',
-      minStock: 0,
+      minStock: null,
+      maxStock: null,
       status: 'ACTIVO',
       supplierId: null,
+      brand: '',
+      model: '',
       description: ''
     });
     this.selectedImageFile = null;
@@ -435,9 +535,9 @@ export class CatalogoProductosComponent implements OnInit {
 
   private setDefaultPanelPosition(): void {
     try {
-      const width = 520; // mismo ancho aprox. del panel flotante
+      const width = 720; // panel más amplio para reducir scroll
       const x = Math.max(16, Math.round((window.innerWidth - width) / 2));
-      const y = 64;
+      const y = 48;
       this.panelPos = { x, y };
     } catch {
       this.panelPos = { x: 24, y: 64 };
@@ -456,7 +556,7 @@ export class CatalogoProductosComponent implements OnInit {
     if (!this.dragging) return;
     const dx = event.clientX - this.dragStart.x;
     const dy = event.clientY - this.dragStart.y;
-    const width = 520;
+    const width = 720;
     const margin = 8;
     const maxX = Math.max(margin, (typeof window !== 'undefined' ? window.innerWidth : 1200) - width - margin);
     const maxY = Math.max(margin, (typeof window !== 'undefined' ? window.innerHeight : 800) - 120 - margin);
@@ -512,27 +612,38 @@ export class CatalogoProductosComponent implements OnInit {
     }
     this.errorMessage = '';
     const raw = this.productForm.value;
+    const categoryName: string = (raw.categoryName || '').trim();
+    // Solo usar categoryRef si la categoría tiene un ID válido de InventoryCategory (de la empresa)
+    const categoryRef = this.getCategoryRefByName(categoryName);
     const payload: InventoryProduct = {
       code: raw.code,
       name: raw.name,
-      category: raw.category,
+      category: categoryName,
+      categoryRef,
       unitOfMeasure: raw.unitOfMeasure || undefined,
-      minStock: raw.minStock,
+      minStock: raw.minStock ?? undefined,
+      maxStock: raw.maxStock ?? undefined,
+      brand: raw.brand || undefined,
+      model: raw.model || undefined,
       status: raw.status,
       supplier: raw.supplierId ? { id: raw.supplierId } : null,
       description: raw.description || undefined
     };
 
     if (this.editingProductId) {
-      // Actualizar (enviar payload completo para no borrar campos como image/brand/model)
+      // Actualizar: construir payload completo para no perder imagen ni otros campos
       const existing = this.products.find(p => p.id === this.editingProductId) || {} as InventoryProduct;
       const payloadFull: InventoryProduct = {
         ...existing,
         code: raw.code,
         name: raw.name,
-        category: raw.category,
+        category: categoryName,
+        categoryRef,
         unitOfMeasure: raw.unitOfMeasure || existing.unitOfMeasure,
-        minStock: raw.minStock,
+        minStock: raw.minStock ?? undefined,
+        maxStock: raw.maxStock ?? undefined,
+        brand: raw.brand || existing.brand,
+        model: raw.model || existing.model,
         status: raw.status,
         supplier: raw.supplierId ? { id: raw.supplierId } : null,
         description: raw.description || existing.description,

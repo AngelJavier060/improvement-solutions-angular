@@ -48,7 +48,9 @@ export class NuevaSalidaComponent implements OnInit {
     { value: 'EPP_TRABAJADOR', label: 'Entrega de EPP a trabajador' },
     { value: 'PRESTAMO', label: 'Préstamo de herramienta' },
     { value: 'CONSUMO_AREA', label: 'Consumo de proyecto/área' },
-    { value: 'BAJA', label: 'Baja de productos' }
+    { value: 'BAJA', label: 'Baja de productos' },
+    { value: 'VENTA', label: 'Venta de producto' },
+    { value: 'DESCUENTO_TRABAJADOR', label: 'Descuento a trabajador (nómina)' }
   ];
   
   itemConditions = ['NUEVO', 'USADO', 'REACONDICIONADO'];

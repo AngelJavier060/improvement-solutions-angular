@@ -25,4 +25,7 @@ public interface InventoryOutputRepository extends JpaRepository<InventoryOutput
     List<InventoryOutput> findByBusinessIdAndOutputTypeOrderByOutputDateDesc(Long businessId, OutputType outputType);
     
     List<InventoryOutput> findByBusinessIdAndEmployeeIdOrderByOutputDateDesc(Long businessId, Long employeeId);
+
+    @Query("SELECT o FROM InventoryOutput o WHERE o.business.id = :businessId AND o.outputType = 'PRESTAMO' AND o.status = 'CONFIRMADO'")
+    List<InventoryOutput> findActiveLoans(@Param("businessId") Long businessId);
 }

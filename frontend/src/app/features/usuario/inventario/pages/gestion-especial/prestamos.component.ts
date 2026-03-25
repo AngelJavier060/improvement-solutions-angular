@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { InventoryOutputService, InventoryOutput } from '../../../../../services/inventory-output.service';
+import { InventoryEntryService, InventoryEntry } from '../../../../../services/inventory-entry.service';
 import { InventoryProductService } from '../../../../../services/inventory-product.service';
 import { InventoryVariantService, InventoryVariant } from '../../../../../services/inventory-variant.service';
 import { InventoryLotService, InventoryLotDto } from '../../../../../services/inventory-lot.service';
@@ -131,6 +132,7 @@ import { AuthService } from '../../../../../core/services/auth.service';
                       <th>Entrega</th>
                       <th>Debe devolver</th>
                       <th class="text-end">Estado</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -142,8 +144,13 @@ import { AuthService } from '../../../../../core/services/auth.service';
                       <td class="text-end">
                         <span class="badge" [ngClass]="getBadgeClass(p)">{{ getLoanStatus(p) }}</span>
                       </td>
+                      <td>
+                        <button class="btn btn-sm btn-outline-success" (click)="returnLoan(p)" [disabled]="loading" title="Registrar devolución">
+                          <i class="fas fa-undo me-1"></i>Devolver
+                        </button>
+                      </td>
                     </tr>
-                    <tr *ngIf="!loans.length && !loading"><td colspan="5" class="text-center text-muted py-3">Sin préstamos</td></tr>
+                    <tr *ngIf="!loans.length && !loading"><td colspan="6" class="text-center text-muted py-3">Sin préstamos</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -177,6 +184,7 @@ export class PrestamosComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private outputService: InventoryOutputService,
+    private entryService: InventoryEntryService,
     private productService: InventoryProductService,
     private variantService: InventoryVariantService,
     private lotService: InventoryLotService,
@@ -267,6 +275,49 @@ export class PrestamosComponent implements OnInit {
 
   canSubmit(): boolean {
     return !!(this.selectedEmployee && this.selectedVariant && this.selectedLotId && this.expectedReturnDate);
+  }
+
+  returnLoan(loan: any): void {
+    if (!confirm(`¿Confirmar devolución del préstamo ${loan.outputNumber}?`)) return;
+    this.loading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+    const details = Array.isArray(loan.details) ? loan.details : [];
+    const entryDetails = details.map((d: any) => ({
+      variantId: Number(d.variantId || d.variant?.id || 0),
+      quantity: Number(d.quantity || 1),
+      unitCost: Number(d.unitCost || 0),
+      taxPercentage: 0,
+      taxAmount: 0,
+      totalCost: 0,
+      itemCondition: 'USADO',
+      notes: `Devolución del préstamo ${loan.outputNumber}`
+    }));
+    if (!entryDetails.length && loan.detailVariantCode) {
+      // Fallback: solo tenemos el código de variante, usamos variantId del préstamo si existe
+      entryDetails.push({ variantId: 0, quantity: 1, unitCost: 0, taxPercentage: 0, taxAmount: 0, totalCost: 0, itemCondition: 'USADO', notes: `Devolución ${loan.outputNumber}` });
+    }
+    const entry: InventoryEntry = {
+      entryNumber: this.buildNumber('DEV'),
+      entryDate: new Date().toISOString().slice(0, 10),
+      entryType: 'DEVOLUCION',
+      receivedBy: (this.auth.getCurrentUser()?.name || this.auth.getCurrentUser()?.username || 'Sistema') as string,
+      authorizedBy: (this.auth.getCurrentUser()?.name || '') as string,
+      notes: `Devolución del préstamo ${loan.outputNumber}`,
+      status: 'BORRADOR',
+      details: entryDetails
+    } as any;
+    this.entryService.create(this.ruc, entry).subscribe({
+      next: (created) => {
+        const id = Number(created?.id);
+        if (!id) { this.loading = false; this.successMessage = 'Devolución registrada'; this.reloadLists(); return; }
+        this.entryService.confirm(this.ruc, id).subscribe({
+          next: () => { this.loading = false; this.successMessage = 'Devolución registrada y confirmada correctamente'; this.reloadLists(); },
+          error: () => { this.loading = false; this.errorMessage = 'Devolución creada pero no se pudo confirmar'; this.reloadLists(); }
+        });
+      },
+      error: () => { this.loading = false; this.errorMessage = 'No se pudo registrar la devolución'; }
+    });
   }
 
   private buildNumber(prefix: string): string {

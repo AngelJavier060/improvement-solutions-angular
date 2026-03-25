@@ -15,6 +15,8 @@ export interface InventoryOutputDetail {
   notes?: string;
   issuedSize?: string;
   departmentId?: number;
+  salePrice?: number;
+  discountAmount?: number;
   // Campos auxiliares para UI
   productName?: string;
   variantCode?: string;
@@ -25,7 +27,7 @@ export interface InventoryOutput {
   id?: number;
   outputNumber: string;
   outputDate: string; // formato: YYYY-MM-DD
-  outputType: 'EPP_TRABAJADOR' | 'PRESTAMO' | 'CONSUMO_AREA' | 'BAJA';
+  outputType: 'EPP_TRABAJADOR' | 'PRESTAMO' | 'CONSUMO_AREA' | 'BAJA' | 'VENTA' | 'DESCUENTO_TRABAJADOR';
   employeeId?: number; // Para EPP a trabajador
   employeeName?: string; // Nombre del trabajador
   employeeCedula?: string; // Cédula del trabajador

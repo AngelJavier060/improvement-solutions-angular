@@ -28,8 +28,13 @@ public class InventoryProduct {
     @Column(nullable = false, length = 100)
     private String code;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = true, length = 50)
     private String category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "business", "parent"})
+    private InventoryCategory categoryRef;
 
     @Column(nullable = false, length = 200)
     private String name;
@@ -67,6 +72,9 @@ public class InventoryProduct {
 
     @Column(name = "min_stock")
     private Integer minStock;
+
+    @Column(name = "max_stock")
+    private Integer maxStock;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

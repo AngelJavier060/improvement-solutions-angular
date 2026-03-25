@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { trigger, state, style, transition, animate } from '@angular/animations';
+import { InventoryAlertService } from '../../../services/inventory-alert.service';
+import { catchError, of } from 'rxjs';
 
 @Component({
   selector: 'app-inventario-layout',
@@ -86,7 +88,7 @@ export class InventarioLayoutComponent implements OnInit {
       items: [
         { label: 'Cambios/Reemplazos', icon: 'fas fa-exchange-alt', route: 'cambios-reemplazos' },
         { label: 'Devoluciones', icon: 'fas fa-undo', route: 'devoluciones' },
-        { label: 'Préstamos', icon: 'fas fa-handshake', route: 'prestamos', badge: 3 },
+        { label: 'Préstamos', icon: 'fas fa-handshake', route: 'prestamos', badge: 0 },
         { label: 'Ajustes', icon: 'fas fa-sliders-h', route: 'ajustes' },
         { label: 'Traslados', icon: 'fas fa-truck', route: 'traslados' }
       ]
@@ -100,7 +102,7 @@ export class InventarioLayoutComponent implements OnInit {
         { label: 'General', icon: 'fas fa-chart-line', route: 'reportes-general' },
         { label: 'Kardex', icon: 'fas fa-file-alt', route: 'reportes-kardex' },
         { label: 'Asignaciones por Persona', icon: 'fas fa-user-check', route: 'asignaciones-persona' },
-        { label: 'Alertas', icon: 'fas fa-exclamation-triangle', route: 'reportes-alertas', badge: 5, badgeColor: 'danger' },
+        { label: 'Alertas', icon: 'fas fa-exclamation-triangle', route: 'reportes-alertas', badge: 0, badgeColor: 'danger' as const },
         { label: 'Financiero', icon: 'fas fa-dollar-sign', route: 'reportes-financiero' }
       ]
     }
@@ -108,11 +110,32 @@ export class InventarioLayoutComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private alertService: InventoryAlertService
   ) {}
 
   ngOnInit(): void {
     this.ruc = this.route.snapshot.params['ruc'] || '';
+    this.loadAlertBadges();
+  }
+
+  loadAlertBadges(): void {
+    if (!this.ruc) return;
+    this.alertService.getAlerts(this.ruc).pipe(catchError(() => of(null))).subscribe(alerts => {
+      if (!alerts) return;
+      // Update Préstamos badge
+      const gestionSection = this.menuSections.find(s => s.label === 'GESTIÓN ESPECIAL');
+      if (gestionSection?.items) {
+        const loanItem = gestionSection.items.find(i => i.route === 'prestamos');
+        if (loanItem) loanItem.badge = alerts.prestamosVencidos?.length ?? 0;
+      }
+      // Update Alertas badge
+      const reportesSection = this.menuSections.find(s => s.label === 'REPORTES');
+      if (reportesSection?.items) {
+        const alertItem = reportesSection.items.find(i => i.route === 'reportes-alertas');
+        if (alertItem) alertItem.badge = alerts.totalAlertas ?? 0;
+      }
+    });
   }
 
   toggleSidebar(): void {

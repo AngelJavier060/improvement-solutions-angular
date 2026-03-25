@@ -8,9 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.improvementsolutions.model.Business;
+import com.improvementsolutions.model.inventory.InventoryCategory;
 import com.improvementsolutions.model.inventory.InventoryProduct;
 import com.improvementsolutions.model.inventory.InventorySupplier;
 import com.improvementsolutions.model.inventory.enums.ProductStatus;
+import com.improvementsolutions.repository.inventory.InventoryCategoryRepository;
 import com.improvementsolutions.repository.inventory.InventoryProductRepository;
 import com.improvementsolutions.repository.inventory.InventorySupplierRepository;
 import jakarta.persistence.EntityManager;
@@ -21,6 +23,7 @@ public class InventoryProductService {
 
     private final InventoryProductRepository productRepository;
     private final InventorySupplierRepository supplierRepository;
+    private final InventoryCategoryRepository categoryRepository;
     private final InventoryAuthorizationService authService;
     @PersistenceContext
     private EntityManager em;
@@ -28,9 +31,11 @@ public class InventoryProductService {
     public InventoryProductService(
             InventoryProductRepository productRepository,
             InventorySupplierRepository supplierRepository,
+            InventoryCategoryRepository categoryRepository,
             InventoryAuthorizationService authService) {
         this.productRepository = productRepository;
         this.supplierRepository = supplierRepository;
+        this.categoryRepository = categoryRepository;
         this.authService = authService;
     }
 
@@ -89,7 +94,7 @@ public class InventoryProductService {
         if (input.getName() == null || input.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("El nombre del producto es obligatorio");
         }
-        if (input.getCategory() == null) {
+        if (input.getCategoryRef() == null && (input.getCategory() == null || input.getCategory().trim().isEmpty())) {
             throw new IllegalArgumentException("La categoría del producto es obligatoria");
         }
         if (productRepository.existsByBusiness_IdAndCode(business.getId(), input.getCode().trim())) {
@@ -99,8 +104,16 @@ public class InventoryProductService {
         InventoryProduct entity = new InventoryProduct();
         entity.setBusiness(business);
         entity.setCode(input.getCode().trim());
-        entity.setCategory(input.getCategory());
         entity.setName(input.getName().trim());
+        // Resolver categoría FK si se provee
+        if (input.getCategoryRef() != null && input.getCategoryRef().getId() != null) {
+            InventoryCategory cat = categoryRepository.findById(input.getCategoryRef().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada"));
+            entity.setCategoryRef(cat);
+            entity.setCategory(cat.getName());
+        } else {
+            entity.setCategory(input.getCategory());
+        }
         entity.setDescription(input.getDescription());
         entity.setUnitOfMeasure(input.getUnitOfMeasure());
         entity.setBrand(input.getBrand());
@@ -110,6 +123,7 @@ public class InventoryProductService {
         entity.setImage(input.getImage());
         entity.setStatus(input.getStatus() != null ? input.getStatus() : ProductStatus.ACTIVO);
         entity.setMinStock(input.getMinStock());
+        entity.setMaxStock(input.getMaxStock());
 
         if (input.getSupplier() != null && input.getSupplier().getId() != null) {
             InventorySupplier sup = supplierRepository.findById(input.getSupplier().getId())
@@ -137,7 +151,15 @@ public class InventoryProductService {
             entity.setCode(newCode);
         }
         if (input.getName() != null) entity.setName(input.getName().trim());
-        if (input.getCategory() != null) entity.setCategory(input.getCategory());
+        // Resolver categoría FK si se provee
+        if (input.getCategoryRef() != null && input.getCategoryRef().getId() != null) {
+            InventoryCategory cat = categoryRepository.findById(input.getCategoryRef().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Categoría no encontrada"));
+            entity.setCategoryRef(cat);
+            entity.setCategory(cat.getName());
+        } else if (input.getCategory() != null) {
+            entity.setCategory(input.getCategory());
+        }
         entity.setDescription(input.getDescription());
         entity.setUnitOfMeasure(input.getUnitOfMeasure());
         if (input.getBrand() != null) entity.setBrand(input.getBrand());
@@ -147,6 +169,7 @@ public class InventoryProductService {
         entity.setImage(input.getImage());
         if (input.getStatus() != null) entity.setStatus(input.getStatus());
         entity.setMinStock(input.getMinStock());
+        entity.setMaxStock(input.getMaxStock());
 
         if (input.getSupplier() != null && input.getSupplier().getId() != null) {
             InventorySupplier sup = supplierRepository.findById(input.getSupplier().getId())

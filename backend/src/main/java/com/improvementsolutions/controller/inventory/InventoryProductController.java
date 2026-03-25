@@ -47,7 +47,8 @@ public class InventoryProductController {
                     p.getUnitOfMeasure(),
                     p.getImage(),
                     p.getStatus() != null ? p.getStatus().name() : null,
-                    p.getMinStock()
+                    p.getMinStock(),
+                    p.getMaxStock()
                 )).toList();
                 logger.info("[InventoryProducts] Consulta ligera exitosa: {} productos", dtos.size());
                 return ResponseEntity.ok(dtos);
@@ -72,7 +73,8 @@ public class InventoryProductController {
             String unitOfMeasure,
             String image,
             String status,
-            Integer minStock
+            Integer minStock,
+            Integer maxStock
     ) {}
 
     @GetMapping("/products/{id}")
