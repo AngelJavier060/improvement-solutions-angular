@@ -98,9 +98,9 @@
 
               <!-- Documento Adjunto -->
               <div class="col-md-12">
-                <label class="form-label fw-semibold">Documento PDF de Factura/Guía</label>
-                <input type="file" class="form-control" (change)="onFileSelected($event)" accept="application/pdf,.pdf">
-                <small class="text-muted">Solo archivos PDF (ocupa menos espacio que imágenes)</small>
+                <label class="form-label fw-semibold">Adjunto (PDF o Imagen)</label>
+                <input type="file" class="form-control" (change)="onFileSelected($event)" accept="application/pdf,image/*,.pdf,.jpg,.jpeg,.png,.webp">
+                <small class="text-muted">Se permiten PDF o imágenes (JPG/PNG/WEBP). Máx 20MB.</small>
                 <div *ngIf="documentFileName" class="mt-2 alert alert-success d-flex align-items-center">
                   <i class="fas fa-file-pdf fa-2x me-3 text-danger"></i>
                   <div>
@@ -115,6 +115,15 @@
                 <label class="form-label fw-semibold">Observaciones Generales</label>
                 <textarea class="form-control" formControlName="notes" rows="2" 
                           placeholder="Ej: Todo llegó en perfecto estado"></textarea>
+              </div>
+
+              <!-- Metadatos de Registro (solo visual) -->
+              <div class="col-12">
+                <div class="alert alert-secondary py-2">
+                  <i class="fas fa-user-clock me-2"></i>
+                  <strong>Registro:</strong>
+                  Fecha {{ registeredDate }} · Hora {{ registeredTime }} · Usuario {{ currentUserName || '—' }}
+                </div>
               </div>
             </div>
           </div>

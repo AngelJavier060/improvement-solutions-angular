@@ -134,7 +134,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       contact_phone: ['', [Validators.pattern(/^[\+]?[\d\s\-\(\)]{7,20}$/)]],
       status: [true],
       codigo_trabajador: [{ value: '', disabled: true }],
-      salario: [{ value: '', disabled: true }],
+      salario: [''],
       position_id: [''],
       department_id: [''],
       type_contract_id: [''],
@@ -384,6 +384,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
         contactName: fv.contact_name,
         contactPhone: fv.contact_phone,
         fechaIngreso: fv.fechaIngreso || undefined,
+        salario: fv.salario !== '' && fv.salario !== null && fv.salario !== undefined ? Number(fv.salario) : undefined,
         // IDs de catálogos
         positionId: fv.position_id ? Number(fv.position_id) : undefined,
         departmentId: fv.department_id ? Number(fv.department_id) : undefined,

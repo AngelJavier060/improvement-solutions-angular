@@ -7,6 +7,7 @@ import { InventoryProductService, InventoryProduct } from '../../../../../servic
 import { InventoryVariantService, InventoryVariant } from '../../../../../services/inventory-variant.service';
 import { InventorySupplierService, InventorySupplier } from '../../../../../services/inventory-supplier.service';
 import { FileService } from '../../../../../services/file.service';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-nueva-entrada',
@@ -44,6 +45,11 @@ export class NuevaEntradaComponent implements OnInit {
   documentFileName: string = '';
   documentFileSize: string = '';
 
+  // Metadatos de registro (visual)
+  registeredDate: string = '';
+  registeredTime: string = '';
+  currentUserName: string = '';
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -52,7 +58,8 @@ export class NuevaEntradaComponent implements OnInit {
     private productService: InventoryProductService,
     private variantService: InventoryVariantService,
     private supplierService: InventorySupplierService,
-    private fileService: FileService
+    private fileService: FileService,
+    private authService: AuthService
   ) {
     const today = new Date().toISOString().split('T')[0];
     const suggestedNumber = this.generateEntryNumber();
@@ -72,6 +79,16 @@ export class NuevaEntradaComponent implements OnInit {
     this.ruc = this.route.parent?.snapshot.params['ruc'] || '';
     this.loadSuppliers();
     this.loadProducts();
+
+    // Metadatos visuales
+    const now = new Date();
+    this.registeredDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    this.registeredTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const user = this.authService.getCurrentUser();
+    this.currentUserName = (user?.name || user?.username || '').toString();
+    if (this.currentUserName) {
+      this.entryForm.patchValue({ receivedBy: this.currentUserName });
+    }
   }
 
   loadSuppliers(): void {
@@ -167,9 +184,10 @@ export class NuevaEntradaComponent implements OnInit {
   onFileSelected(event: any): void {
     const file = event.target.files?.[0];
     if (file) {
-      // Validar que sea PDF
-      if (file.type !== 'application/pdf') {
-        this.errorMessage = 'Solo se permiten archivos PDF';
+      // Validar tipo permitido (PDF o imagen)
+      const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+      if (!allowed.includes(file.type)) {
+        this.errorMessage = 'Solo se permiten archivos PDF o imágenes (JPG/PNG/WEBP)';
         event.target.value = ''; // Limpiar el input
         this.selectedFile = null;
         this.documentFileName = '';
@@ -242,24 +260,38 @@ export class NuevaEntradaComponent implements OnInit {
       }))
     };
 
-    this.entryService.create(this.ruc, payload).subscribe({
-      next: (created) => {
-        if (this.selectedFile) {
-          this.uploadDocument(created.id!);
-        } else {
-          this.onSuccess();
-        }
-      },
-      error: (err) => {
-        this.loading = false;
-        if (err.status === 409) {
-          this.errorMessage = err?.error?.message || 'El número de documento ya existe. Por favor use un número único.';
-        } else {
-          this.errorMessage = err?.error?.message || 'Error al registrar la entrada';
-        }
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+    const proceedCreate = (docFilename?: string) => {
+      if (docFilename) {
+        payload.documentImage = docFilename;
       }
-    });
+      this.entryService.create(this.ruc, payload).subscribe({
+        next: () => this.onSuccess(),
+        error: (err) => {
+          this.loading = false;
+          if (err.status === 409) {
+            this.errorMessage = err?.error?.message || 'El número de documento ya existe. Por favor use un número único.';
+          } else {
+            this.errorMessage = err?.error?.message || 'Error al registrar la entrada';
+          }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+    };
+
+    if (this.selectedFile) {
+      this.fileService.uploadFileToDirectory('inventory_entries', this.selectedFile).subscribe({
+        next: (resp) => {
+          const filename = resp?.filename || null;
+          proceedCreate(filename || undefined);
+        },
+        error: () => {
+          // Continuar sin adjunto si falla la carga
+          proceedCreate();
+        }
+      });
+    } else {
+      proceedCreate();
+    }
   }
 
   uploadDocument(entryId: number): void {

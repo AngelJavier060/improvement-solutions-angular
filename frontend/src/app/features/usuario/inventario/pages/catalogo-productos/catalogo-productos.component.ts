@@ -31,6 +31,8 @@ export class CatalogoProductosComponent implements OnInit {
   filterStatus = 'ACTIVO';
   categories: InventoryCategory[] = [];
   categoryNames: string[] = [];
+  categoryStockTotals: { [name: string]: number } = {};
+  private loadingCategoryTotals = new Set<string>();
 
   // Modal de detalle
   selectedProduct: InventoryProduct | null = null;
@@ -45,6 +47,12 @@ export class CatalogoProductosComponent implements OnInit {
   editingProductId: number | null = null;
   suppliers: InventorySupplier[] = [];
   statusOptions = ['ACTIVO', 'INACTIVO', 'DESCONTINUADO'];
+  subcategoryOptions: { prefix: string; label: string }[] = [
+    { prefix: 'CAS', label: 'Casco' },
+    { prefix: 'PAN', label: 'Pantalón' },
+    { prefix: 'CAM', label: 'Camisa' },
+    { prefix: 'GUA', label: 'Guantes' },
+  ];
   
   // Atributos de variante (para el formulario)
   attrRows: { name: string; value: string; id?: number }[] = [];
@@ -83,6 +91,21 @@ export class CatalogoProductosComponent implements OnInit {
     this.loadCategories();
   }
 
+  private generateVariantCode(product: InventoryProduct): string {
+    const base = (product.code || 'SKU').toString();
+    let max = 0;
+    (this.productVariants || []).forEach(v => {
+      const c = (v.code || '').toString();
+      const m = c.match(/-(\d{1,})$/);
+      if (m && m[1]) {
+        const n = parseInt(m[1], 10);
+        if (!isNaN(n)) max = Math.max(max, n);
+      }
+    });
+    const next = String(max + 1).padStart(2, '0');
+    return `${base}-${next}`;
+  }
+
   private toNum(val: any): number {
     if (val == null) return 0;
     if (typeof val === 'number') return val;
@@ -100,6 +123,57 @@ export class CatalogoProductosComponent implements OnInit {
     return isNaN(n) ? 0 : n;
   }
 
+  // ====== UTILIDADES PARA CÓDIGOS ======
+  private normalizePrefix(text: string, fallback: string = 'PRD'): string {
+    try {
+      if (!text) return fallback;
+      const cleaned = text
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .trim();
+      if (!cleaned) return fallback;
+      const firstWord = cleaned.split(/\s+/)[0];
+      return firstWord.substring(0, 3).toUpperCase();
+    } catch { return fallback; }
+  }
+
+  private deriveCategoryPrefix(categoryName: string): string {
+    const map: Record<string, string> = {
+      'equipos de proteccion personal': 'EPP'
+    };
+    const key = (categoryName || '').toString().toLowerCase().trim();
+    if (map[key]) return map[key];
+    return this.normalizePrefix(categoryName, 'PRD');
+  }
+
+  private deriveSubcategoryPrefixFromName(productName: string): string {
+    return this.normalizePrefix(productName, 'GEN');
+  }
+
+  private extractSubPrefixFromCode(code: string): string | null {
+    if (!code) return null;
+    const m = code.toUpperCase().match(/^[A-Z0-9]{3}-([A-Z0-9]{3})-\d{3}$/);
+    return m ? m[1] : null;
+  }
+
+  private nextProductSequence(catPrefix: string, subPrefix: string): number {
+    let maxSeq = 0;
+    const pattern = new RegExp(`^${catPrefix}-${subPrefix}-([0-9]{1,})$`, 'i');
+    (this.products || []).forEach(p => {
+      const code = (p.code || '').toString().toUpperCase();
+      const m = code.match(pattern);
+      if (m && m[1]) {
+        const n = parseInt(m[1], 10);
+        if (!isNaN(n)) maxSeq = Math.max(maxSeq, n);
+      }
+    });
+    return maxSeq + 1;
+  }
+
+  private pad3(n: number): string { return String(n).padStart(3, '0'); }
+
   loadProducts(): void {
     this.loading = true;
     this.errorMessage = '';
@@ -108,6 +182,8 @@ export class CatalogoProductosComponent implements OnInit {
       next: (data) => {
         this.products = data;
         this.extractCategories();
+        this.categoryStockTotals = {};
+        this.loadingCategoryTotals.clear();
         this.loading = false;
       },
       error: (err) => {
@@ -129,6 +205,45 @@ export class CatalogoProductosComponent implements OnInit {
   getProductCategory(p: InventoryProduct): string {
     if (p.categoryRef?.name) return p.categoryRef.name;
     return p.category || '';
+  }
+
+  getCategoryTotal(name: string): number | null {
+    if (name in this.categoryStockTotals) return this.categoryStockTotals[name];
+    this.computeCategoryTotal(name);
+    return null;
+  }
+
+  private computeCategoryTotal(name: string): void {
+    if (!name && name !== '') return;
+    if (name in this.categoryStockTotals) return;
+    if (this.loadingCategoryTotals.has(name)) return;
+    const productIds = this.products
+      .filter(p => this.getProductCategory(p) === name)
+      .map(p => p.id)
+      .filter((id): id is number => !!id);
+    if (!productIds.length) {
+      this.categoryStockTotals[name] = 0;
+      return;
+    }
+    this.loadingCategoryTotals.add(name);
+    const calls = productIds.map(id => this.variantService.listByProduct(this.ruc, id).pipe(catchError(() => of([] as any[]))));
+    forkJoin(calls).subscribe({
+      next: (results: any[][]) => {
+        let total = 0;
+        results.forEach(arr => {
+          const list = Array.isArray(arr) ? arr : [];
+          list.forEach(v => {
+            total += this.toNum((v as any).currentQty);
+          });
+        });
+        this.categoryStockTotals[name] = total;
+        this.loadingCategoryTotals.delete(name);
+      },
+      error: () => {
+        this.categoryStockTotals[name] = 0;
+        this.loadingCategoryTotals.delete(name);
+      }
+    });
   }
 
   getFilteredProducts(): InventoryProduct[] {
@@ -212,6 +327,8 @@ export class CatalogoProductosComponent implements OnInit {
     this.loadSuppliers();
     this.loadCategories();
     this.setDefaultPanelPosition();
+    // Defaults amistosos
+    this.productForm.patchValue({ categoryName: 'EPP', subcategoryPrefix: 'CAS' });
   }
 
   openEditProductForm(product: InventoryProduct): void {
@@ -232,7 +349,8 @@ export class CatalogoProductosComponent implements OnInit {
     this.showVariantForm = true;
     this.editingVariant = null;
     this.attrRows = [];
-    this.variantForm.reset({ code: '', sizeLabel: '', dimensions: '', salePrice: 0, minQty: 0 });
+    const autoCode = this.generateVariantCode(this.selectedProduct);
+    this.variantForm.reset({ code: autoCode, sizeLabel: '', dimensions: '', salePrice: 0, minQty: 0 });
   }
 
   editVariant(variant: InventoryVariant): void {
@@ -323,7 +441,8 @@ export class CatalogoProductosComponent implements OnInit {
     this.productForm = this.fb.group({
       code: ['', [Validators.required, Validators.maxLength(100)]],
       name: ['', [Validators.required, Validators.maxLength(200)]],
-      categoryName: ['', Validators.required],
+      categoryName: ['EPP', Validators.required],
+      subcategoryPrefix: ['CAS'],
       unitOfMeasure: [''],
       minStock: [null],
       maxStock: [null],
@@ -391,6 +510,7 @@ export class CatalogoProductosComponent implements OnInit {
           saveAttributes(updated.id!);
           this.successMessage = 'Variante actualizada correctamente';
           this.loadVariants(this.selectedProduct!.id!);
+          this.refreshCategoryTotalForSelectedProduct();
           this.cancelVariantEdit();
         },
         error: (err) => this.errorMessage = err?.error?.message || 'Error al actualizar la variante'
@@ -401,11 +521,21 @@ export class CatalogoProductosComponent implements OnInit {
           saveAttributes(created.id!);
           this.successMessage = 'Variante creada correctamente';
           this.loadVariants(this.selectedProduct!.id!);
+          this.refreshCategoryTotalForSelectedProduct();
           this.cancelVariantEdit();
         },
         error: (err) => this.errorMessage = err?.error?.message || 'Error al crear la variante'
       });
     }
+  }
+
+  private refreshCategoryTotalForSelectedProduct(): void {
+    if (!this.selectedProduct) return;
+    const name = this.getProductCategory(this.selectedProduct);
+    if (!name) return;
+    delete this.categoryStockTotals[name];
+    this.loadingCategoryTotals.delete(name);
+    this.computeCategoryTotal(name);
   }
 
   loadSuppliers(): void {
@@ -450,6 +580,16 @@ export class CatalogoProductosComponent implements OnInit {
       });
 
       this.categories = Array.from(set.values()).sort((a, b) => (a.name||'').localeCompare(b.name||''));
+      // Establecer categoría por defecto si el formulario está vacío y no estamos editando
+      try {
+        const current = (this.productForm?.value?.categoryName || '').toString();
+        const hasCurrent = current && this.categories.some(c => (c.name||'').toLowerCase() === current.toLowerCase());
+        if (!hasCurrent && !this.editingProductId) {
+          const hasEpp = this.categories.find(c => (c.name||'').toUpperCase() === 'EPP');
+          const def = hasEpp?.name || this.categories[0]?.name || '';
+          if (def) this.productForm.patchValue({ categoryName: def });
+        }
+      } catch {}
     }, () => this.categories = []);
   }
 
@@ -467,12 +607,13 @@ export class CatalogoProductosComponent implements OnInit {
   }
 
   suggestCode(): void {
-    const catName = this.productForm.value.categoryName || 'PRD';
-    const cat = catName.toUpperCase().slice(0, 3);
-    const now = new Date();
-    const y = now.getFullYear();
-    const ts = now.getTime().toString().slice(-5);
-    this.productForm.patchValue({ code: `${cat}-${y}-${ts}` });
+    const catName = (this.productForm.value.categoryName || '').toString();
+    const prodName = (this.productForm.value.name || '').toString();
+    const subSel = (this.productForm.value.subcategoryPrefix || '').toString().toUpperCase();
+    const catPrefix = this.deriveCategoryPrefix(catName);
+    const subPrefix = subSel || this.deriveSubcategoryPrefixFromName(prodName);
+    const seq = this.nextProductSequence(catPrefix, subPrefix);
+    this.productForm.patchValue({ code: `${catPrefix}-${subPrefix}-${this.pad3(seq)}` });
   }
 
   fillForm(p: InventoryProduct): void {
@@ -487,10 +628,12 @@ export class CatalogoProductosComponent implements OnInit {
     } else if (p.category) {
       catName = p.category;
     }
+    const subFromCode = this.extractSubPrefixFromCode(p.code || '') || this.deriveSubcategoryPrefixFromName(p.name || '');
     this.productForm.reset({
       code: p.code,
       name: p.name,
       categoryName: catName,
+      subcategoryPrefix: (subFromCode || 'CAS').toUpperCase(),
       brand: p.brand || '',
       model: p.model || '',
       unitOfMeasure: p.unitOfMeasure || '',
@@ -519,7 +662,8 @@ export class CatalogoProductosComponent implements OnInit {
     this.productForm.reset({
       code: '',
       name: '',
-      categoryName: '',
+      categoryName: 'EPP',
+      subcategoryPrefix: 'CAS',
       unitOfMeasure: '',
       minStock: null,
       maxStock: null,
