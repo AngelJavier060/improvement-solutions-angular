@@ -4,6 +4,7 @@ import com.improvementsolutions.model.MetodologiaRiesgo;
 import com.improvementsolutions.model.ParametroMetodologia;
 import com.improvementsolutions.model.NivelParametro;
 import com.improvementsolutions.repository.MetodologiaRiesgoRepository;
+import com.improvementsolutions.service.MetodologiaRiesgoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,20 +24,22 @@ public class PublicMetodologiaRiesgoController {
     private static final Logger log = LoggerFactory.getLogger(PublicMetodologiaRiesgoController.class);
 
     private final MetodologiaRiesgoRepository repository;
+    private final MetodologiaRiesgoService service;
 
     @Autowired
-    public PublicMetodologiaRiesgoController(MetodologiaRiesgoRepository repository) {
+    public PublicMetodologiaRiesgoController(MetodologiaRiesgoRepository repository, MetodologiaRiesgoService service) {
         this.repository = repository;
+        this.service = service;
     }
 
     @GetMapping
     public ResponseEntity<List<MetodologiaRiesgo>> getAll() {
-        return ResponseEntity.ok(repository.findAllWithParametrosAndNiveles());
+        return ResponseEntity.ok(service.listAllForPublic());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<MetodologiaRiesgo> getById(@PathVariable Long id) {
-        return repository.findByIdWithParametrosAndNiveles(id)
+        return service.getByIdForPublic(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

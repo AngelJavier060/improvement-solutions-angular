@@ -18,4 +18,10 @@ public interface MetodologiaRiesgoRepository extends JpaRepository<MetodologiaRi
 
     @Query("select distinct m from MetodologiaRiesgo m left join fetch m.parametros p left join fetch p.niveles where m.id = :id")
     Optional<MetodologiaRiesgo> findByIdWithParametrosAndNiveles(@Param("id") Long id);
+
+    @Query("select distinct m from MetodologiaRiesgo m left join fetch m.parametros p order by m.id")
+    List<MetodologiaRiesgo> findAllWithParametros();
+
+    @Query("select distinct m from MetodologiaRiesgo m left join fetch m.parametros p where m.id = :id")
+    Optional<MetodologiaRiesgo> findByIdWithParametros(@Param("id") Long id);
 }
