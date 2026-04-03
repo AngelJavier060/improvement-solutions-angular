@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.improvementsolutions.model.Business;
@@ -50,6 +52,14 @@ public class InventoryEntryService {
         entry.setEntryNumber(uniqueNumber);
 
         entry.setBusiness(business);
+
+        // Registrar usuario que realiza la acción
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated()) {
+                entry.setCreatedBy(auth.getName());
+            }
+        } catch (Exception ignored) {}
 
         // Enlazar detalles con la cabecera y adjuntar variantes como referencias gestionadas
         if (entry.getDetails() != null) {
