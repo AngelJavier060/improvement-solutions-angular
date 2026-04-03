@@ -1,0 +1,156 @@
+<div class="form-container">
+  <div class="page-header">
+    <button class="btn-back" (click)="goBack()">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <div>
+      <h2><i class="fas fa-edit"></i> Editar Distancia a Recorrer</h2>
+      <p>Actualice el rango de distancia sin configuración adicional.</p>
+    </div>
+  </div>
+
+  <div class="alert-danger" *ngIf="error">
+    <i class="fas fa-exclamation-circle"></i> {{ error }}
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <i class="fas fa-spinner fa-spin"></i> Cargando...
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" *ngIf="!loading">
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-road"></i> Información Básica
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label>Nombre de la distancia *</label>
+            <input
+              type="text"
+              formControlName="name"
+              class="form-control"
+              placeholder="Ej: Menor a 50 km"
+            >
+            <span class="field-error" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
+              El nombre es requerido
+            </span>
+          </div>
+          <div class="form-group flex-1">
+            <label>Descripción (opcional)</label>
+            <input type="text" formControlName="description" class="form-control">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-shield-alt"></i> Metodología y Parámetros
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label>Metodología *</label>
+          <select class="form-control metodologia-select" formControlName="metodologiaId" (change)="onMetodologiaChange()">
+            <option [ngValue]="null">Seleccione una metodología</option>
+            <option *ngFor="let metodologia of metodologias" [ngValue]="metodologia.id">
+              {{ metodologia.name }}
+            </option>
+          </select>
+          <span class="field-error" *ngIf="form.get('metodologiaId')?.invalid && form.get('metodologiaId')?.touched">
+            La metodología es requerida
+          </span>
+        </div>
+
+        <p class="table-hint" *ngIf="selectedMetodologia">
+          Aquí puede ajustar `NE`, `ND` y `NC` desde la metodología ya registrada.
+          `NP` y `NR` se recalculan automáticamente.
+        </p>
+
+        <div class="alert-warn" *ngIf="selectedMetodologia && !hasRequiredParams">
+          <i class="fas fa-info-circle"></i>
+          La metodología seleccionada no tiene configurados los parámetros `NE`, `ND` y `NC`.
+        </div>
+
+        <div class="param-grid" *ngIf="selectedMetodologia && hasRequiredParams">
+          <div class="param-card">
+            <div class="param-head">
+              <span class="param-code ne">NE</span>
+              <strong>Nivel de Exposición</strong>
+            </div>
+            <select class="form-control" formControlName="neNivelId">
+              <option [ngValue]="null">Seleccione NE</option>
+              <option *ngFor="let nivel of getNiveles('NE')" [ngValue]="nivel.id">
+                {{ nivel.nombre }} · {{ nivel.valor }}
+              </option>
+            </select>
+            <small class="nivel-preview" *ngIf="getNivelSeleccionado('NE') as nivel">
+              {{ nivel.description || nivel.nombre }}
+            </small>
+          </div>
+
+          <div class="param-card">
+            <div class="param-head">
+              <span class="param-code nd">ND</span>
+              <strong>Nivel de Deficiencia</strong>
+            </div>
+            <select class="form-control" formControlName="ndNivelId">
+              <option [ngValue]="null">Seleccione ND</option>
+              <option *ngFor="let nivel of getNiveles('ND')" [ngValue]="nivel.id">
+                {{ nivel.nombre }} · {{ nivel.valor }}
+              </option>
+            </select>
+            <small class="nivel-preview" *ngIf="getNivelSeleccionado('ND') as nivel">
+              {{ nivel.description || nivel.nombre }}
+            </small>
+          </div>
+
+          <div class="param-card">
+            <div class="param-head">
+              <span class="param-code nc">NC</span>
+              <strong>Nivel de Consecuencia</strong>
+            </div>
+            <select class="form-control" formControlName="ncNivelId">
+              <option [ngValue]="null">Seleccione NC</option>
+              <option *ngFor="let nivel of getNiveles('NC')" [ngValue]="nivel.id">
+                {{ nivel.nombre }} · {{ nivel.valor }}
+              </option>
+            </select>
+            <small class="nivel-preview" *ngIf="getNivelSeleccionado('NC') as nivel">
+              {{ nivel.description || nivel.nombre }}
+            </small>
+          </div>
+        </div>
+
+        <div class="calc-grid" *ngIf="selectedMetodologia && hasRequiredParams">
+          <div class="calc-card">
+            <span class="calc-label">NP</span>
+            <strong>{{ npValue !== null ? npValue : '—' }}</strong>
+            <small>ND × NE</small>
+          </div>
+          <div class="calc-card" [ngClass]="nrClass">
+            <span class="calc-label">NR</span>
+            <strong>{{ nrValue !== null ? nrValue : '—' }}</strong>
+            <small>{{ nrLabel }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="goBack()">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+      <button type="submit" class="btn-primary"
+              [disabled]="form.invalid || saving">
+        <span *ngIf="saving">
+          <i class="fas fa-spinner fa-spin"></i> Guardando...
+        </span>
+        <span *ngIf="!saving">
+          <i class="fas fa-save"></i> Guardar Cambios
+        </span>
+      </button>
+    </div>
+
+  </form>
+</div>

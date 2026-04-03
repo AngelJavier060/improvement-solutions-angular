@@ -1,0 +1,144 @@
+<div class="config-list-container">
+  <div class="config-list-header">
+    <div class="header-left">
+      <button class="btn-back" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <div>
+        <h2>Metodologías de Evaluación de Riesgo</h2>
+        <p class="subtitle">Configure las metodologías de evaluación de riesgo para viajes en ruta (GTC-45, IPER, etc.)</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="goToNew()">
+      <i class="fas fa-plus"></i> Nueva Metodología
+    </button>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    <i class="fas fa-exclamation-circle"></i> {{ error }}
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <i class="fas fa-spinner fa-spin"></i> Cargando metodologías...
+  </div>
+
+  <div *ngIf="!loading && items.length === 0" class="empty-state">
+    <div class="empty-icon"><i class="fas fa-shield-alt"></i></div>
+    <p>No hay metodologías configuradas</p>
+    <span>Cree su primera metodología de evaluación de riesgo (Ej: GTC-45, IPER)</span>
+    <button class="btn-primary mt-1" (click)="goToNew()">
+      <i class="fas fa-plus"></i> Crear Metodología
+    </button>
+  </div>
+
+  <div *ngIf="!loading && items.length > 0" class="metodologia-grid">
+    <div *ngFor="let item of items" class="metodologia-card">
+
+      <!-- Encabezado de la tarjeta -->
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-icon"><i class="fas fa-shield-alt"></i></div>
+          <div>
+            <h3>{{ item.name }}</h3>
+            <p class="card-description" *ngIf="item.description">{{ item.description }}</p>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-icon btn-expand"
+                  (click)="toggleExpand(item.id!)"
+                  [title]="isExpanded(item.id!) ? 'Colapsar detalles' : 'Ver detalles'">
+            <i class="fas" [class.fa-chevron-up]="isExpanded(item.id!)" [class.fa-chevron-down]="!isExpanded(item.id!)"></i>
+          </button>
+          <button class="btn-icon btn-edit" (click)="goToEdit(item.id!)" title="Editar">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn-icon btn-delete" (click)="deleteItem(item.id!)" title="Eliminar">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Estadísticas rápidas -->
+      <div class="card-stats">
+        <div class="stat">
+          <span class="stat-value">{{ item.parametros?.length || 0 }}</span>
+          <span class="stat-label">Parámetros</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value">{{ getNonCalculatedParams(item).length }}</span>
+          <span class="stat-label">Directos</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value">{{ getCalculatedParams(item).length }}</span>
+          <span class="stat-label">Calculados</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value">{{ getTotalNiveles(item) }}</span>
+          <span class="stat-label">Niveles totales</span>
+        </div>
+      </div>
+
+      <!-- Flujo de cálculo visual (siempre visible) -->
+      <div class="flow-section" *ngIf="item.parametros && item.parametros.length > 0">
+        <div class="flow-label"><i class="fas fa-project-diagram"></i> Flujo de cálculo</div>
+        <div class="flow-chain">
+          <ng-container *ngFor="let p of item.parametros; let pi = index">
+            <div class="flow-node" [class.calculated]="p.isCalculated" [title]="p.name">
+              <span class="node-code">{{ p.code }}</span>
+              <span *ngIf="p.isCalculated && p.formula" class="node-formula">= {{ p.formula }}</span>
+              <div *ngIf="!p.isCalculated && p.niveles && p.niveles.length > 0" class="node-color-strip">
+                <span *ngFor="let n of getLevelColors(p)"
+                      class="level-dot"
+                      [style.background]="n"
+                      [title]="n"></span>
+              </div>
+            </div>
+            <div class="flow-arrow" *ngIf="pi < item.parametros!.length - 1">
+              <i class="fas fa-arrow-right"></i>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Detalle expandible -->
+      <div class="card-detail" *ngIf="isExpanded(item.id!) && item.parametros && item.parametros.length > 0">
+        <div class="detail-divider"></div>
+        <div *ngFor="let p of item.parametros" class="detail-param">
+          <div class="detail-param-header" [class.is-calculated]="p.isCalculated">
+            <div class="detail-param-code">
+              <strong>{{ p.code }}</strong>
+              <span class="calc-badge" *ngIf="p.isCalculated">
+                <i class="fas fa-calculator"></i> Calculado
+              </span>
+            </div>
+            <span class="detail-param-name">{{ p.name }}</span>
+          </div>
+
+          <p class="detail-param-desc" *ngIf="p.description">{{ p.description }}</p>
+
+          <div *ngIf="p.isCalculated && p.formula" class="detail-formula">
+            <i class="fas fa-calculator"></i>
+            <code>{{ p.code }} = {{ p.formula }}</code>
+          </div>
+
+          <div *ngIf="!p.isCalculated && p.niveles && p.niveles.length > 0" class="detail-niveles">
+            <div *ngFor="let n of p.niveles" class="detail-nivel">
+              <span class="nivel-color" [style.background]="n.color || '#94a3b8'"></span>
+              <span class="nivel-valor">{{ n.valor }}</span>
+              <span class="nivel-nombre">{{ n.nombre }}</span>
+              <span class="nivel-desc" *ngIf="n.description">{{ n.description }}</span>
+            </div>
+          </div>
+
+          <div *ngIf="!p.isCalculated && (!p.niveles || p.niveles.length === 0)" class="no-niveles">
+            <small><i class="fas fa-info-circle"></i> Sin niveles configurados</small>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

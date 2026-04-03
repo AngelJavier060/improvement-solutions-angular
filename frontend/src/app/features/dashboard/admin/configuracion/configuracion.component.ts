@@ -156,6 +156,86 @@ export class ConfiguracionComponent implements OnInit {
       proximamente: false
     },
   ];
+
+  // Secciones organizadas para la vista de configuración
+  secciones = [
+    {
+      titulo: 'Recursos Humanos',
+      descripcion: 'Gestión de parámetros de personal y estructura organizacional.',
+      icono: 'fas fa-users',
+      colorClase: 'seccion-rrhh',
+      categorias: [
+        { nombre: 'Género', descripcion: 'Gestionar los tipos de género para los empleados', ruta: 'genero', icono: 'fas fa-venus-mars', proximamente: false },
+        { nombre: 'Estudios / Educación', descripcion: 'Gestionar los niveles educativos', ruta: 'estudio', icono: 'fas fa-graduation-cap', proximamente: false },
+        { nombre: 'Estado Civil', descripcion: 'Gestionar los diferentes estados civiles', ruta: 'estado-civil', icono: 'fas fa-ring', proximamente: false },
+        { nombre: 'Tipo de Residencia', descripcion: 'Gestionar los tipos de residencia', ruta: 'tipo-residencia', icono: 'fas fa-home', proximamente: false },
+        { nombre: 'Etnias', descripcion: 'Gestionar los grupos étnicos', ruta: 'etnias', icono: 'fas fa-users', proximamente: false },
+        { nombre: 'Documentos personales', descripcion: 'Gestionar los tipos de documentos personales', ruta: 'tipo-documento', icono: 'fas fa-id-card', proximamente: false },
+        { nombre: 'Departamentos', descripcion: 'Gestionar los departamentos de la empresa', ruta: 'departamentos', icono: 'fas fa-building', proximamente: false },
+        { nombre: 'Cargos', descripcion: 'Gestionar los cargos disponibles en la empresa', ruta: 'cargos', icono: 'fas fa-briefcase', proximamente: false },
+        { nombre: 'Cursos y certificaciones', descripcion: 'Gestionar catálogo de cursos y certificaciones', ruta: 'cursos-certificaciones', icono: 'fas fa-certificate', proximamente: false },
+        { nombre: 'Jornadas de Trabajo', descripcion: 'Gestionar las jornadas de trabajo del personal', ruta: 'jornadas-trabajo', icono: 'fas fa-calendar-alt', proximamente: false },
+        { nombre: 'Horarios de Trabajo', descripcion: 'Gestionar los horarios de trabajo del personal', ruta: 'horarios-trabajo', icono: 'fas fa-clock', proximamente: false },
+      ]
+    },
+    {
+      titulo: 'Configuración General',
+      descripcion: 'Parámetros legales, contractuales y sectorización.',
+      icono: 'fas fa-cogs',
+      colorClase: 'seccion-general',
+      categorias: [
+        { nombre: 'Código Sectorial IESS', descripcion: 'Gestionar las categorías del IESS', ruta: 'iess', icono: 'fas fa-hospital', proximamente: false },
+        { nombre: 'Tipo de Contrato', descripcion: 'Gestionar los tipos de contratos laborales', ruta: 'tipo-contrato', icono: 'fas fa-file-signature', proximamente: false },
+        { nombre: 'Matriz Legal', descripcion: 'Gestionar las matrices legales de obligación', ruta: 'matriz-legal', icono: 'fas fa-balance-scale', proximamente: false },
+        { nombre: 'Empresas Contratistas', descripcion: 'Gestionar empresas contratistas y sus bloques', ruta: 'empresas-contratistas', icono: 'fas fa-industry', proximamente: false },
+      ]
+    },
+    {
+      titulo: 'Mantenimiento Automotriz',
+      descripcion: 'Configuración técnica de flota, vehículos y logística de transporte.',
+      icono: 'fas fa-car',
+      colorClase: 'seccion-automotriz',
+      categorias: [
+        { nombre: 'Marca de vehículo', descripcion: 'Catálogo de fabricantes y marcas soportadas', ruta: 'marca-vehiculo', icono: 'fas fa-copyright', proximamente: false },
+        { nombre: 'Tipos de vehículo', descripcion: 'Clasificación (SUV, Sedán, Camión, etc)', ruta: 'tipo-vehiculo', icono: 'fas fa-truck', proximamente: false },
+        { nombre: 'Tipos de combustible', descripcion: 'Gestión de Gasolina, Diesel, Eléctrico', ruta: 'tipo-combustible', icono: 'fas fa-gas-pump', proximamente: false },
+        { nombre: 'Colores', descripcion: 'Paleta de colores oficiales de la flota', ruta: 'color-vehiculo', icono: 'fas fa-palette', proximamente: false },
+        { nombre: 'Estado de unidad', descripcion: 'Activo, En reparación, Siniestro', ruta: 'estado-unidad', icono: 'fas fa-tools', proximamente: false },
+        { nombre: 'Transmisión', descripcion: 'Manual, Automática, Semiautomática', ruta: 'transmision', icono: 'fas fa-cogs', proximamente: false },
+        { nombre: 'Propietario/Empresa', descripcion: 'Registro de titularidad y leasing', ruta: 'propietario-vehiculo', icono: 'fas fa-user-tie', proximamente: false },
+        { nombre: 'Tipo de documentos', descripcion: 'Seguros, matrículas y revisiones', ruta: 'tipo-documento-vehiculo', icono: 'fas fa-file-alt', proximamente: false },
+        { nombre: 'Unidades de medida', descripcion: 'Km, Millas, Litros, Galones', ruta: 'unidad-medida', icono: 'fas fa-ruler', proximamente: false },
+        { nombre: 'Ubicación/Rutas', descripcion: 'Asignación de zonas geográficas', ruta: 'ubicacion-ruta', icono: 'fas fa-route', proximamente: false },
+        { nombre: 'País de origen', descripcion: 'Regulación por origen de fabricación', ruta: 'pais-origen', icono: 'fas fa-globe', proximamente: false },
+      ]
+    },
+    {
+      titulo: 'Evaluación de Riesgo — Gerencia de Viajes',
+      descripcion: 'Configuración de parámetros de seguridad y logística para viajes en ruta.',
+      icono: 'fas fa-map-marked-alt',
+      colorClase: 'seccion-viajes',
+      categorias: [
+        { nombre: 'Distancia a recorrer', descripcion: 'Gestionar parámetros de distancia para rutas', ruta: 'distancia-recorrer', icono: 'fas fa-road', proximamente: false },
+        { nombre: 'Tipo de vía', descripcion: 'Definir categorías de tipos de carreteras', ruta: 'tipo-via', icono: 'fas fa-map-signs', proximamente: false },
+        { nombre: 'Condiciones climáticas', descripcion: 'Configurar factores de clima permitidos', ruta: 'condicion-climatica', icono: 'fas fa-cloud-sun', proximamente: false },
+        { nombre: 'Horario de circulación', descripcion: 'Establecer rangos horarios de operación', ruta: 'horario-circulacion', icono: 'fas fa-clock', proximamente: false },
+        { nombre: 'Estado de carretera', descripcion: 'Configurar estados de carreteras para evaluación', ruta: 'estado-carretera', icono: 'fas fa-road', proximamente: false },
+        { nombre: 'Tipo de carga', descripcion: 'Clasificar tipos de carga para evaluación de riesgo', ruta: 'tipo-carga', icono: 'fas fa-boxes', proximamente: false },
+        { nombre: 'Horas de conducción', descripcion: 'Parámetros de horas máximas de conducción', ruta: 'hora-conduccion', icono: 'fas fa-steering-wheel', proximamente: false },
+        { nombre: 'Horas de descanso', descripcion: 'Parámetros de descanso obligatorio para conductores', ruta: 'hora-descanso', icono: 'fas fa-bed', proximamente: false },
+        { nombre: 'Medio de comunicación', descripcion: 'Medios de comunicación disponibles en ruta', ruta: 'medio-comunicacion', icono: 'fas fa-satellite-dish', proximamente: false },
+        { nombre: 'Transporta pasajeros', descripcion: 'Configurar si el vehículo transporta pasajeros', ruta: 'transporta-pasajero', icono: 'fas fa-users', proximamente: false },
+        {
+          nombre: 'Metodologías de Riesgo',
+          descripcion: 'Configurar parámetros GTC-45, IPER y otras metodologías de evaluación de riesgo de viaje',
+          ruta: 'aceptacion-riesgo',
+          icono: 'fas fa-shield-alt',
+          proximamente: false
+        },
+      ]
+    },
+  ];
+
   navegarA(ruta: string): void {
     console.log('Navegando a:', ruta);
     console.log('Ruta completa:', '/dashboard/admin/configuracion/' + ruta);

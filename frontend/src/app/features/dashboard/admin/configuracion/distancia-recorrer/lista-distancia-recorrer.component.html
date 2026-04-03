@@ -1,0 +1,116 @@
+<div class="lista-container">
+  <div class="page-header">
+    <div class="header-left">
+      <button class="btn-back" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <div>
+        <h2><i class="fas fa-route"></i> Distancias a Recorrer</h2>
+        <p>Parámetros registrados con `NE`, `ND`, `NP`, `NC` y `NR` desde aceptación de riesgo.</p>
+      </div>
+    </div>
+    <button class="btn-primary" (click)="goToNew()">
+      <i class="fas fa-plus"></i> Nueva Distancia
+    </button>
+  </div>
+
+  <div class="alert-danger" *ngIf="error">
+    <i class="fas fa-exclamation-circle"></i> {{ error }}
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <i class="fas fa-spinner fa-spin"></i> Cargando...
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && items.length === 0">
+    <i class="fas fa-route"></i>
+    <h3>Sin distancias configuradas</h3>
+    <p>Agregue rangos de distancia y asígneles valores metodológicos desde `aceptacion-riesgo`.</p>
+    <button class="btn-primary" (click)="goToNew()">
+      <i class="fas fa-plus"></i> Agregar primera distancia
+    </button>
+  </div>
+
+  <div class="group-card" *ngIf="!loading && items.length > 0">
+    <div class="group-header">
+      <div class="metodologia-info">
+        <i class="fas fa-shield-alt"></i>
+        <strong>Parámetros registrados: Distancia a Recorrer</strong>
+        <span class="item-count">{{ items.length }} registro(s)</span>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="risk-table">
+        <thead>
+          <tr>
+            <th class="col-index">A</th>
+            <th class="col-nombre">Distancia a Recorrer</th>
+            <th class="col-value">NE</th>
+            <th class="col-value">ND</th>
+            <th class="col-value">NP</th>
+            <th class="col-value">NC</th>
+            <th class="col-value">NR</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of items; let i = index">
+            <td class="col-index">
+              <span class="row-index">{{ (i + 1).toString().padStart(2, '0') }}</span>
+            </td>
+            <td class="col-nombre">
+              <span class="item-name">{{ item.name }}</span>
+              <span class="item-desc">{{ item.description || (getMetodologia(item)?.name || 'Sin metodología') }}</span>
+            </td>
+            <td class="col-value">{{ getNe(item) ?? '—' }}</td>
+            <td class="col-value">{{ getNd(item) ?? '—' }}</td>
+            <td class="col-value">{{ getNp(item) ?? '—' }}</td>
+            <td class="col-value">{{ getNc(item) ?? '—' }}</td>
+            <td class="col-value">
+              <span class="risk-badge" [ngClass]="getRiskClass(getNr(item))">
+                {{ getNr(item) ?? '—' }}
+              </span>
+            </td>
+            <td class="col-actions">
+              <button class="btn-icon btn-edit" (click)="goToEdit(item.id!)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-icon btn-delete" (click)="deleteItem(item.id!)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend-footer">
+      <div class="legend-items">
+        <span class="legend-title">Leyenda NR:</span>
+        <span class="legend-item"><span class="legend-dot low"></span> Bajo (&lt; 40)</span>
+        <span class="legend-item"><span class="legend-dot medium"></span> Medio (40 - 149)</span>
+        <span class="legend-item"><span class="legend-dot high"></span> Alto (150 - 500)</span>
+        <span class="legend-item"><span class="legend-dot critical"></span> Crítico (&gt; 500)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="metrics-grid" *ngIf="!loading && items.length > 0">
+    <div class="metric-card primary">
+      <h3>Total de Rangos</h3>
+      <strong>{{ items.length }}</strong>
+      <span>registros activos</span>
+    </div>
+    <div class="metric-card tertiary">
+      <h3>Pico de Riesgo</h3>
+      <strong>{{ getPeakRisk() }}</strong>
+      <span>NR máximo detectado</span>
+    </div>
+    <div class="metric-card success">
+      <h3>Estado del Sistema</h3>
+      <strong>{{ getSystemStatus() }}</strong>
+      <span>resumen general</span>
+    </div>
+  </div>
+</div>

@@ -63,19 +63,28 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<?> handleDataIntegrity(DataIntegrityViolationException ex) {
-        // Try to detect FK or unique constraint issues
         Throwable root = getRootCause(ex);
-        if (root instanceof SQLIntegrityConstraintViolationException
-                || (root != null && root.getClass().getSimpleName().toLowerCase().contains("constraint"))) {
-            return conflictWithDetails(
-                "No se puede completar la operación",
-                "La operación viola una restricción de integridad (por ejemplo, está en uso o el nombre ya existe).",
-                "DATA_INTEGRITY_CONFLICT",
-                ex);
+        // Log detallado para diagnóstico
+        log.error("[DataIntegrity] Violación de integridad: {} | Causa raíz: {} | Mensaje raíz: {}",
+                ex.getMessage(),
+                root != null ? root.getClass().getSimpleName() : "null",
+                root != null ? root.getMessage() : "null");
+
+        String userMessage = "La operación viola una restricción de integridad en la base de datos.";
+        if (root != null && root.getMessage() != null) {
+            String rootMsg = root.getMessage().toLowerCase();
+            if (rootMsg.contains("unique") || rootMsg.contains("duplicate")) {
+                userMessage = "Ya existe un registro con los mismos datos únicos. Verifique que no haya duplicados.";
+            } else if (rootMsg.contains("not-null") || rootMsg.contains("null value") || rootMsg.contains("not null")) {
+                userMessage = "Uno o más campos obligatorios están vacíos. Verifique los datos enviados.";
+            } else if (rootMsg.contains("foreign key") || rootMsg.contains("referenced")) {
+                userMessage = "El registro está referenciado por otros datos y no puede ser modificado o eliminado.";
+            }
         }
+
         return conflictWithDetails(
             "No se puede completar la operación",
-            "La operación viola una restricción de integridad.",
+            userMessage,
             "DATA_INTEGRITY_CONFLICT",
             ex);
     }

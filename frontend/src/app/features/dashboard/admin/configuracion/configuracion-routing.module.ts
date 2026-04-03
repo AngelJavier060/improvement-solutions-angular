@@ -80,6 +80,94 @@ const routes: Routes = [
       {
         path: 'horarios-trabajo',
         loadChildren: () => import('./horario-trabajo/horario-trabajo.module').then(m => m.HorarioTrabajoModule)
+      },
+      {
+        path: 'marca-vehiculo',
+        loadChildren: () => import('./marca-vehiculo/marca-vehiculo.module').then(m => m.MarcaVehiculoModule)
+      },
+      {
+        path: 'tipo-vehiculo',
+        loadChildren: () => import('./tipo-vehiculo/tipo-vehiculo.module').then(m => m.TipoVehiculoModule)
+      },
+      {
+        path: 'tipo-combustible',
+        loadChildren: () => import('./tipo-combustible/tipo-combustible.module').then(m => m.TipoCombustibleModule)
+      },
+      {
+        path: 'color-vehiculo',
+        loadChildren: () => import('./color-vehiculo/color-vehiculo.module').then(m => m.ColorVehiculoModule)
+      },
+      {
+        path: 'estado-unidad',
+        loadChildren: () => import('./estado-unidad/estado-unidad.module').then(m => m.EstadoUnidadModule)
+      },
+      {
+        path: 'transmision',
+        loadChildren: () => import('./transmision/transmision.module').then(m => m.TransmisionModule)
+      },
+      {
+        path: 'propietario-vehiculo',
+        loadChildren: () => import('./propietario-vehiculo/propietario-vehiculo.module').then(m => m.PropietarioVehiculoModule)
+      },
+      {
+        path: 'tipo-documento-vehiculo',
+        loadChildren: () => import('./tipo-documento-vehiculo/tipo-documento-vehiculo.module').then(m => m.TipoDocumentoVehiculoModule)
+      },
+      {
+        path: 'unidad-medida',
+        loadChildren: () => import('./unidad-medida/unidad-medida.module').then(m => m.UnidadMedidaModule)
+      },
+      {
+        path: 'ubicacion-ruta',
+        loadChildren: () => import('./ubicacion-ruta/ubicacion-ruta.module').then(m => m.UbicacionRutaModule)
+      },
+      {
+        path: 'pais-origen',
+        loadChildren: () => import('./pais-origen/pais-origen.module').then(m => m.PaisOrigenModule)
+      },
+      {
+        path: 'distancia-recorrer',
+        loadChildren: () => import('./distancia-recorrer/distancia-recorrer.module').then(m => m.DistanciaRecorrerModule)
+      },
+      {
+        path: 'tipo-via',
+        loadChildren: () => import('./tipo-via/tipo-via.module').then(m => m.TipoViaModule)
+      },
+      {
+        path: 'condicion-climatica',
+        loadChildren: () => import('./condicion-climatica/condicion-climatica.module').then(m => m.CondicionClimaticaModule)
+      },
+      {
+        path: 'horario-circulacion',
+        loadChildren: () => import('./horario-circulacion/horario-circulacion.module').then(m => m.HorarioCirculacionModule)
+      },
+      {
+        path: 'estado-carretera',
+        loadChildren: () => import('./estado-carretera/estado-carretera.module').then(m => m.EstadoCarreteraModule)
+      },
+      {
+        path: 'tipo-carga',
+        loadChildren: () => import('./tipo-carga/tipo-carga.module').then(m => m.TipoCargaModule)
+      },
+      {
+        path: 'hora-conduccion',
+        loadChildren: () => import('./hora-conduccion/hora-conduccion.module').then(m => m.HoraConduccionModule)
+      },
+      {
+        path: 'hora-descanso',
+        loadChildren: () => import('./hora-descanso/hora-descanso.module').then(m => m.HoraDescansoModule)
+      },
+      {
+        path: 'medio-comunicacion',
+        loadChildren: () => import('./medio-comunicacion/medio-comunicacion.module').then(m => m.MedioComunicacionModule)
+      },
+      {
+        path: 'transporta-pasajero',
+        loadChildren: () => import('./transporta-pasajero/transporta-pasajero.module').then(m => m.TransportaPasajeroModule)
+      },
+      {
+        path: 'aceptacion-riesgo',
+        loadChildren: () => import('./aceptacion-riesgo/aceptacion-riesgo.module').then(m => m.AceptacionRiesgoModule)
       }
     ]
   }

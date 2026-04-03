@@ -1,0 +1,265 @@
+<div class="config-form-container">
+  <div class="config-form-header">
+    <button class="btn-back" (click)="goBack()">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <div>
+      <h2>Editar Metodología de Riesgo</h2>
+      <p class="header-subtitle">Modifique los parámetros y niveles de esta metodología de evaluación</p>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    <i class="fas fa-exclamation-circle"></i> {{ error }}
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <i class="fas fa-spinner fa-spin"></i> Cargando metodología...
+  </div>
+
+  <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="onSubmit()" class="methodology-form">
+
+    <div class="section-card automation-card">
+      <h3 class="section-title"><i class="fas fa-cogs"></i> Lógica de automatización</h3>
+      <div class="automation-summary" *ngIf="parametros.length > 0">
+        <span class="summary-pill auto">{{ totalAutomaticos }} automáticos</span>
+        <span class="summary-pill manual">{{ totalSeleccionables }} seleccionables</span>
+        <span class="summary-pill calc">{{ totalCalculados }} calculados</span>
+      </div>
+    </div>
+
+    <!-- Datos básicos -->
+    <div class="section-card">
+      <h3 class="section-title"><i class="fas fa-info-circle"></i> Información General</h3>
+      <div class="form-group">
+        <label for="name">Nombre de la Metodología *</label>
+        <input id="name" type="text" formControlName="name" class="form-control"
+               placeholder="Ej: GTC-45, IPER, William Fine"
+               [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched">
+        <span class="invalid-feedback" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
+          El nombre es requerido
+        </span>
+      </div>
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea id="description" formControlName="description" class="form-control" rows="2"
+                  placeholder="Breve descripción de la metodología y su objetivo"></textarea>
+      </div>
+    </div>
+
+    <!-- Vista previa del flujo de cálculo -->
+    <div class="section-card flow-preview-card" *ngIf="parametros.length > 0">
+      <h3 class="section-title"><i class="fas fa-project-diagram"></i> Flujo de cálculo</h3>
+      <div class="flow-chain">
+        <ng-container *ngFor="let param of parametros.controls; let pi = index">
+          <div class="flow-node"
+               [class.tipo-factor]="param.get('tipUso')?.value === 'FACTOR'"
+               [class.tipo-seleccionable]="param.get('tipUso')?.value === 'SELECCIONABLE'"
+               [class.tipo-calculado]="param.get('tipUso')?.value === 'CALCULADO'">
+            <span class="node-code">{{ param.get('code')?.value || '?' }}</span>
+            <span class="node-tipo-badge" *ngIf="param.get('tipUso')?.value">
+              {{ param.get('tipUso')?.value === 'FACTOR' ? 'Factor' :
+                 param.get('tipUso')?.value === 'SELECCIONABLE' ? 'Elegible' : 'Calculado' }}
+            </span>
+            <span class="node-formula" *ngIf="param.get('tipUso')?.value === 'CALCULADO' && param.get('formula')?.value">
+              = {{ param.get('formula')?.value }}
+            </span>
+            <span class="node-levels" *ngIf="param.get('tipUso')?.value === 'SELECCIONABLE'">
+              {{ getNiveles(pi).length }} nivel{{ getNiveles(pi).length !== 1 ? 'es' : '' }}
+            </span>
+            <span class="node-levels" *ngIf="param.get('tipUso')?.value === 'FACTOR'">
+              {{ getSelectedSourceLabels(pi).length || 0 }} factor{{ getSelectedSourceLabels(pi).length !== 1 ? 'es' : '' }}
+            </span>
+            <div class="node-source-list" *ngIf="param.get('tipUso')?.value === 'FACTOR' && getPreviewBadges(pi).length > 0">
+              <span *ngFor="let badge of getPreviewBadges(pi)" class="node-source-badge">{{ badge }}</span>
+            </div>
+          </div>
+          <div class="flow-arrow" *ngIf="pi < parametros.length - 1">
+            <i class="fas fa-arrow-right"></i>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Parámetros -->
+    <div class="section-card">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="fas fa-sliders-h"></i> Parámetros
+          <span class="params-count" *ngIf="parametros.length > 0">{{ parametros.length }}</span>
+        </h3>
+        <button type="button" class="btn-add" (click)="addParametro()">
+          <i class="fas fa-plus"></i> Agregar Parámetro
+        </button>
+      </div>
+
+      <div *ngIf="parametros.length === 0" class="empty-params">
+        <i class="fas fa-sliders-h"></i>
+        <p>No hay parámetros definidos.</p>
+        <small>Agregue los parámetros que componen esta metodología.</small>
+      </div>
+
+      <div formArrayName="parametros">
+        <div *ngFor="let param of parametros.controls; let pi = index"
+             class="param-block"
+             [class.param-factor]="param.get('tipUso')?.value === 'FACTOR'"
+             [class.param-seleccionable]="param.get('tipUso')?.value === 'SELECCIONABLE'"
+             [class.param-calculado]="param.get('tipUso')?.value === 'CALCULADO'"
+             [formGroupName]="pi">
+
+          <div class="param-header">
+            <div class="param-tipo-indicator" [title]="getTipoUsoDef(param.get('tipUso')?.value)?.label">
+              <i [class]="getTipoUsoDef(param.get('tipUso')?.value)?.icono || 'fas fa-circle'"></i>
+            </div>
+            <div class="param-header-fields">
+              <div class="field-inline">
+                <label>Código *</label>
+                <input type="text" formControlName="code" class="form-control form-control-sm"
+                       placeholder="NE" style="max-width: 80px; text-transform: uppercase;">
+              </div>
+              <div class="field-inline flex-grow">
+                <label>Nombre *</label>
+                <input type="text" formControlName="name" class="form-control form-control-sm"
+                       placeholder="Nivel de Exposición">
+              </div>
+            </div>
+            <button type="button" class="btn-remove" (click)="removeParametro(pi)" title="Eliminar parámetro">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="param-body">
+            <div class="form-group">
+              <label>Descripción</label>
+              <input type="text" formControlName="description" class="form-control form-control-sm"
+                     placeholder="Descripción del parámetro y su uso dentro de la metodología">
+            </div>
+
+            <!-- Selector de tipo de uso -->
+            <div class="tipo-uso-selector">
+              <label class="tipo-uso-label">
+                <i class="fas fa-tag"></i> Tipo de uso en la evaluación
+              </label>
+              <div class="tipo-uso-options">
+                <label *ngFor="let tipo of TIPOS_USO"
+                       class="tipo-option"
+                       [class.selected]="param.get('tipUso')?.value === tipo.value"
+                       [style.--tipo-color]="tipo.color">
+                  <input type="radio" formControlName="tipUso" [value]="tipo.value" style="display: none;"
+                         (change)="onTipUsoChange(pi)">
+                  <span class="tipo-option-icon" [style.color]="tipo.color">
+                    <i [class]="tipo.icono"></i>
+                  </span>
+                  <span class="tipo-option-text">{{ tipo.label }}</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Fuentes automáticas si es FACTOR -->
+            <div *ngIf="param.get('tipUso')?.value === 'FACTOR'" class="form-group source-entity-group">
+              <label><i class="fas fa-link"></i> Factores que alimentan este parámetro</label>
+              <div class="source-entity-grid">
+                <label *ngFor="let ent of ENTIDADES_CONFIG"
+                       class="source-entity-option"
+                       [class.selected]="isSourceSelected(pi, ent.value)">
+                  <input type="checkbox"
+                         [checked]="isSourceSelected(pi, ent.value)"
+                         (change)="toggleSourceEntity(pi, ent.value, $any($event.target).checked)">
+                  <span class="source-entity-icon"><i [class]="ent.icono"></i></span>
+                  <span class="source-entity-copy">
+                    <strong>{{ ent.label }}</strong>
+                    <small>{{ ent.ayuda }}</small>
+                  </span>
+                </label>
+              </div>
+              <div class="source-selected-summary" *ngIf="getSelectedSourceLabels(pi).length > 0">
+                <i class="fas fa-check-circle"></i>
+                {{ getSelectedSourceSummary(pi) }}
+              </div>
+              <small class="hint">
+                <i class="fas fa-info-circle"></i>
+                Defina desde qué catálogos de viaje se autocompletará este parámetro cuando se aplique la metodología.
+              </small>
+            </div>
+
+            <!-- Fórmula si es CALCULADO -->
+            <div *ngIf="param.get('tipUso')?.value === 'CALCULADO'" class="form-group formula-group">
+              <label><i class="fas fa-calculator"></i> Fórmula de cálculo</label>
+              <input type="text" formControlName="formula" class="form-control form-control-sm"
+                     placeholder="Ej: NE*ND  |  NP*NC  |  NP*NS">
+              <small class="hint">
+                <i class="fas fa-info-circle"></i>
+                Use los <strong>códigos</strong> de parámetros anteriores para expresar cómo lo resolverá el sistema.
+                Ejemplo: <code>NE*ND</code> o <code>NP*NC</code>.
+              </small>
+            </div>
+
+            <!-- Niveles si NO es CALCULADO -->
+            <div *ngIf="param.get('tipUso')?.value !== 'CALCULADO'" class="niveles-section">
+              <div class="niveles-header">
+                <div>
+                  <label>
+                    <i class="fas fa-layer-group"></i>
+                    <span *ngIf="param.get('tipUso')?.value === 'FACTOR'">
+                      Niveles normativos del parámetro <span class="hint-inline">(los factores automáticos resolverán uno de estos niveles)</span>
+                    </span>
+                    <span *ngIf="param.get('tipUso')?.value === 'SELECCIONABLE'">
+                      Niveles seleccionables <span class="hint-inline">(el evaluador elegirá uno al evaluar)</span>
+                    </span>
+                  </label>
+                </div>
+                <button type="button" class="btn-add-sm" (click)="addNivel(pi)">
+                  <i class="fas fa-plus"></i> Agregar nivel
+                </button>
+              </div>
+
+              <div *ngIf="getNiveles(pi).length === 0" class="empty-niveles">
+                <small>
+                  <i class="fas fa-info-circle"></i>
+                  Sin niveles definidos. Agregue los valores posibles para este parámetro.
+                </small>
+              </div>
+
+              <div *ngIf="getNiveles(pi).length > 0" class="niveles-table-header">
+                <span class="th-color-dot"></span>
+                <span class="th-valor">Valor</span>
+                <span class="th-nombre">Nombre / Etiqueta</span>
+                <span class="th-desc">Descripción (Significado)</span>
+                <span class="th-color">Color</span>
+                <span class="th-action"></span>
+              </div>
+
+              <div formArrayName="niveles">
+                <div *ngFor="let nivel of getNiveles(pi).controls; let ni = index"
+                     class="nivel-row" [formGroupName]="ni">
+                  <div class="nivel-color-indicator" [style.background]="nivel.get('color')?.value || '#94a3b8'"></div>
+                  <input type="number" formControlName="valor" class="form-control form-control-sm nivel-valor"
+                         placeholder="0" step="any">
+                  <input type="text" formControlName="nombre" class="form-control form-control-sm nivel-nombre"
+                         placeholder="Ej: Muy Alto (MA), Continua (EC)">
+                  <input type="text" formControlName="description" class="form-control form-control-sm nivel-desc"
+                         placeholder="Significado del nivel según la normativa">
+                  <input type="color" formControlName="color" class="color-picker" title="Color identificador">
+                  <button type="button" class="btn-remove-sm" (click)="removeNivel(pi, ni)" title="Eliminar nivel">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="goBack()">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+      <button type="submit" class="btn-primary" [disabled]="form.invalid || saving">
+        <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i> Guardando...</span>
+        <span *ngIf="!saving"><i class="fas fa-save"></i> Actualizar Metodología</span>
+      </button>
+    </div>
+  </form>
+</div>

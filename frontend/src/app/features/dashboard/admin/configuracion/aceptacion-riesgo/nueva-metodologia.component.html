@@ -1,0 +1,202 @@
+<div class="methodology-page">
+  <div class="page-header">
+    <button class="btn-back" (click)="esVistaSeleccion ? goBack() : volverASeleccion()">
+      <i class="fas" [class.fa-arrow-left]="esVistaSeleccion" [class.fa-chevron-left]="!esVistaSeleccion"></i>
+    </button>
+    <div>
+      <h2 *ngIf="esVistaSeleccion">Seleccionar metodología</h2>
+      <h2 *ngIf="!esVistaSeleccion">{{ metodologiaActiva?.nombre }} | Parámetros</h2>
+      <p *ngIf="esVistaSeleccion">Elige una metodología predefinida y te mostramos sus parámetros principales.</p>
+      <p *ngIf="!esVistaSeleccion">{{ metodologiaActiva?.descripcion }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="alert-danger">
+    <i class="fas fa-exclamation-circle"></i> {{ error }}
+  </div>
+
+  <ng-container *ngIf="esVistaSeleccion; else detailView">
+    <div class="selection-layout">
+      <div class="cards-area">
+        <div class="method-card gtc" (click)="seleccionarMetodologia(plantillas[0])">
+          <div class="badge" *ngIf="plantillas[0].badge">{{ plantillas[0].badge }}</div>
+          <div class="card-icon"><i [class]="plantillas[0].icono"></i></div>
+          <h3>{{ plantillas[0].nombre }}</h3>
+          <p>{{ plantillas[0].descripcion }}</p>
+          <span class="card-link">Seleccionar metodologia <i class="fas fa-arrow-right"></i></span>
+        </div>
+
+        <div class="method-card" (click)="seleccionarMetodologia(plantillas[1])">
+          <div class="card-icon alt"><i [class]="plantillas[1].icono"></i></div>
+          <h3>{{ plantillas[1].nombre }}</h3>
+          <p>{{ plantillas[1].descripcion }}</p>
+          <span class="card-link">Seleccionar metodologia <i class="fas fa-arrow-right"></i></span>
+        </div>
+      </div>
+
+      <div class="info-panel">
+        <h4>Cómo funciona</h4>
+        <div class="steps">
+          <div class="step">
+            <span class="step-number">1</span>
+            <div>
+              <strong>Escoge la metodología</strong>
+              <p>Selecciona GTC-45 o IPER según el tipo de evaluación.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-number">2</span>
+            <div>
+              <strong>Revisa los parámetros</strong>
+              <p>El sistema te muestra automáticamente los parámetros normativos de la metodología.</p>
+            </div>
+          </div>
+          <div class="step">
+            <span class="step-number">3</span>
+            <div>
+              <strong>Guarda la plantilla</strong>
+              <p>La metodología queda lista para usarse después con los factores como distancia o tipo de vía.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #detailView>
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="save-bar">
+        <div class="save-fields">
+          <div class="field">
+            <label>Nombre</label>
+            <input type="text" class="form-control" formControlName="name" (input)="checkNombreDuplicado()">
+          </div>
+          <div class="field">
+            <label>Descripción</label>
+            <input type="text" class="form-control" formControlName="description">
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" [disabled]="loading || nombreDuplicado">
+          <span *ngIf="loading"><i class="fas fa-spinner fa-spin"></i> Guardando...</span>
+          <span *ngIf="!loading"><i class="fas fa-save"></i> Guardar metodología</span>
+        </button>
+      </div>
+
+      <div class="alert-warn" *ngIf="nombreDuplicado">
+        <i class="fas fa-exclamation-triangle"></i>
+        Ya existe una metodología con ese nombre.
+      </div>
+
+      <ng-container *ngIf="esGtc45; else genericView">
+        <div class="dashboard-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <h3>Nivel de Deficiencia (ND)</h3>
+              <span class="pill">Cualitativo</span>
+            </div>
+            <div class="level-list">
+              <div *ngFor="let nivel of getNivelesPorCodigo('ND')" class="level-item" [style.border-left-color]="nivel.color">
+                <div>
+                  <strong>{{ nivel.nombre }}</strong>
+                  <small>{{ nivel.description }}</small>
+                </div>
+                <span>{{ nivel.valor }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h3>Nivel de Exposición (NE)</h3>
+              <span class="pill">Temporal</span>
+            </div>
+            <div class="level-list">
+              <div *ngFor="let nivel of getNivelesPorCodigo('NE')" class="level-item simple">
+                <div>
+                  <strong>{{ nivel.nombre }}</strong>
+                  <small>{{ nivel.description }}</small>
+                </div>
+                <span>{{ nivel.valor }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="formula-panel">
+            <h3>Nivel de Probabilidad (NP)</h3>
+            <p>Se calcula automáticamente a partir de los parámetros base.</p>
+            <div class="formula-box">
+              <div><span>NP</span><small>Resultado</small></div>
+              <strong>=</strong>
+              <div><span>ND</span><small>Deficiencia</small></div>
+              <strong>x</strong>
+              <div><span>NE</span><small>Exposición</small></div>
+            </div>
+          </section>
+
+          <section class="matrix-panel">
+            <div class="panel-head">
+              <h3>Matriz de Riesgo (NR)</h3>
+              <span class="panel-subtitle">NP y NC</span>
+            </div>
+            <div class="matrix-table-wrapper">
+              <table class="matrix-table">
+                <thead>
+                  <tr>
+                    <th>NC</th>
+                    <th>40 - 24</th>
+                    <th>20 - 10</th>
+                    <th>8 - 6</th>
+                    <th>4 - 2</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of matrizGtc45">
+                    <td class="row-head">
+                      <strong>{{ row.nc }}</strong>
+                      <small>{{ row.label }}</small>
+                    </td>
+                    <td *ngFor="let cell of row.cells" [class]="getCellClass(cell)">{{ cell }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <h3>Nivel de Consecuencia (NC)</h3>
+              <span class="pill">Impacto</span>
+            </div>
+            <div class="level-list consequence">
+              <div *ngFor="let nivel of getNivelesPorCodigo('NC')" class="consequence-item">
+                <span class="value">{{ nivel.valor }}</span>
+                <div>
+                  <strong>{{ nivel.nombre }}</strong>
+                  <small>{{ nivel.description }}</small>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </ng-container>
+
+      <ng-template #genericView>
+        <div class="generic-panel">
+          <h3>{{ metodologiaActiva?.nombre }}</h3>
+          <p>Parámetros configurados de la metodología seleccionada.</p>
+          <div class="generic-params">
+            <div *ngFor="let param of parametros.controls" class="generic-param">
+              <div class="generic-param-head">
+                <strong>{{ param.get('code')?.value }}</strong>
+                <span>{{ param.get('tipUso')?.value }}</span>
+              </div>
+              <h4>{{ param.get('name')?.value }}</h4>
+              <p>{{ param.get('description')?.value }}</p>
+              <small *ngIf="param.get('formula')?.value">Fórmula: {{ param.get('formula')?.value }}</small>
+            </div>
+          </div>
+        </div>
+      </ng-template>
+    </form>
+  </ng-template>
+</div>

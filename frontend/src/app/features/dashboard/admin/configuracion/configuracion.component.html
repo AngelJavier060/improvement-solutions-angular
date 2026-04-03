@@ -4,27 +4,45 @@
     <div class="header">
       <h1>Configuración del Sistema</h1>
       <p>Gestione los parámetros básicos del sistema que se utilizarán en otras secciones</p>
-    </div>    <div class="categorias-grid">
-      <a *ngFor="let categoria of categorias" 
-        [routerLink]="[categoria.ruta]"
-        (click)="$event.preventDefault(); !categoria.proximamente && navegarA(categoria.ruta)"
-        class="categoria-card"
-        [class.disabled]="categoria.proximamente">
-        <div class="icon-container">
-          <i [class]="categoria.icono"></i>
+    </div>
+
+    <!-- Secciones organizadas -->
+    <div *ngFor="let seccion of secciones" class="seccion-config" [ngClass]="seccion.colorClase">
+      <div class="seccion-header">
+        <div class="seccion-titulo">
+          <div class="seccion-icono-wrapper">
+            <i [class]="seccion.icono"></i>
+          </div>
+          <div>
+            <h2>{{ seccion.titulo }}</h2>
+            <p>{{ seccion.descripcion }}</p>
+          </div>
         </div>
-        <div class="content">
-          <h3>{{ categoria.nombre }}</h3>
-          <p>{{ categoria.descripcion }}</p>
-          <small *ngIf="categoria.proximamente" class="text-muted">(Próximamente)</small>
-        </div>
-        <div class="arrow">
-          <i class="fas fa-chevron-right"></i>
-        </div>
-      </a>
+        <div class="seccion-linea"></div>
+      </div>
+
+      <div class="categorias-grid">
+        <a *ngFor="let categoria of seccion.categorias"
+          [routerLink]="[categoria.ruta]"
+          (click)="$event.preventDefault(); !categoria.proximamente && navegarA(categoria.ruta)"
+          class="categoria-card"
+          [class.disabled]="categoria.proximamente">
+          <div class="icon-container">
+            <i [class]="categoria.icono"></i>
+          </div>
+          <div class="content">
+            <h3>{{ categoria.nombre }}</h3>
+            <p>{{ categoria.descripcion }}</p>
+            <small *ngIf="categoria.proximamente" class="proximamente-badge">Próximamente</small>
+          </div>
+          <div class="arrow">
+            <i class="fas fa-chevron-right"></i>
+          </div>
+        </a>
+      </div>
     </div>
   </div>
-  
+
   <!-- Router outlet para los componentes hijos -->
   <router-outlet></router-outlet>
 </div>
