@@ -755,6 +755,7 @@ public class BusinessEmployeeService {
         if (updateDto.getFechaIngreso() != null) employee.setFechaIngreso(updateDto.getFechaIngreso());
         if (updateDto.getCodigoEmpresa() != null) employee.setCodigoEmpresa(updateDto.getCodigoEmpresa());
         if (updateDto.getTipoSangre() != null) employee.setTipoSangre(updateDto.getTipoSangre());
+        if (updateDto.getSalario() != null) employee.setSalario(updateDto.getSalario());
         if (updateDto.getCodigoIess() != null) employee.setCodigoIess(updateDto.getCodigoIess());
         if (updateDto.getNivelEducacion() != null) employee.setNivelEducacion(updateDto.getNivelEducacion());
         if (updateDto.getDiscapacidad() != null) employee.setDiscapacidad(updateDto.getDiscapacidad());

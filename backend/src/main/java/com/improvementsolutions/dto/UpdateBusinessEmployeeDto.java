@@ -48,6 +48,7 @@ public class UpdateBusinessEmployeeDto {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate fechaIngreso;
     private String codigoEmpresa;
+    private Double salario;
     private Long positionId;
     private Long departmentId;
     private Long typeContractId;

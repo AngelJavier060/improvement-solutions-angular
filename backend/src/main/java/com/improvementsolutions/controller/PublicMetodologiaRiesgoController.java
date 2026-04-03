@@ -31,12 +31,12 @@ public class PublicMetodologiaRiesgoController {
 
     @GetMapping
     public ResponseEntity<List<MetodologiaRiesgo>> getAll() {
-        return ResponseEntity.ok(repository.findAll());
+        return ResponseEntity.ok(repository.findAllWithParametrosAndNiveles());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<MetodologiaRiesgo> getById(@PathVariable Long id) {
-        return repository.findById(id)
+        return repository.findByIdWithParametrosAndNiveles(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -80,7 +80,7 @@ public class PublicMetodologiaRiesgoController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody MetodologiaRiesgo entity) {
-        Optional<MetodologiaRiesgo> existingOpt = repository.findById(id);
+        Optional<MetodologiaRiesgo> existingOpt = repository.findByIdWithParametrosAndNiveles(id);
         if (!existingOpt.isPresent()) {
             return ResponseEntity.notFound().build();
         }
