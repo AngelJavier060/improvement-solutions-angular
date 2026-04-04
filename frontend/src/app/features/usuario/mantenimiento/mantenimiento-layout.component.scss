@@ -1,0 +1,11 @@
+// Estilos para el layout del módulo de mantenimiento
+
+.nav-link.active {
+  background-color: var(--bs-primary);
+  color: white !important;
+  font-weight: 600;
+}
+
+.nav-link:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}

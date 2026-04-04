@@ -10,25 +10,73 @@
   <div *ngIf="loading" class="loading">Cargando...</div>
 
   <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="onSubmit()" class="config-form">
-    <div class="form-group">
-      <label for="name">Nombre *</label>
-      <input id="name" type="text" formControlName="name" class="form-control"
-             [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched">
-      <span class="invalid-feedback" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
-        El nombre es requerido
-      </span>
+    
+    <!-- Sección 1: Tipos de Documentos Requeridos -->
+    <div class="form-section">
+      <h3 class="section-title">
+        <i class="fas fa-file-alt me-2"></i>
+        Tipos de Documentos Requeridos
+      </h3>
+      <p class="text-muted small mb-3">Seleccione los documentos que debe tener cada unidad de este tipo de vehículo</p>
+      
+      <div class="documents-grid">
+        <div *ngFor="let documento of tiposDocumento" class="document-checkbox-item">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [checked]="isDocumentoSeleccionado(documento.id!)"
+              (change)="toggleDocumento(documento.id!)"
+              class="form-check-input me-2">
+            <span class="document-name">{{ documento.name }}</span>
+            <small class="text-muted d-block ms-4" *ngIf="documento.description">{{ documento.description }}</small>
+          </label>
+        </div>
+      </div>
+      
+      <div *ngIf="tiposDocumento.length === 0" class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        No hay tipos de documentos configurados. 
+        <a href="/dashboard/admin/configuracion/tipo-documento-vehiculo/nuevo" class="alert-link">Crear uno nuevo</a>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label for="description">Descripción</label>
-      <textarea id="description" formControlName="description" class="form-control" rows="3"></textarea>
+    <!-- Sección 2: Información del Tipo de Vehículo -->
+    <div class="form-section mt-4">
+      <h3 class="section-title">
+        <i class="fas fa-truck me-2"></i>
+        Información del Tipo de Vehículo
+      </h3>
+      
+      <div class="form-group">
+        <label for="name">Nombre del Tipo de Vehículo *</label>
+        <input id="name" type="text" formControlName="name" class="form-control"
+               placeholder="Ej: Camión, Trailer, Camioneta, etc."
+               [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched">
+        <span class="invalid-feedback" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
+          El nombre es requerido
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Descripción</label>
+        <textarea id="description" formControlName="description" class="form-control" rows="3"
+                  placeholder="Descripción opcional del tipo de vehículo"></textarea>
+      </div>
+    </div>
+
+    <!-- Resumen de Selección -->
+    <div class="alert alert-secondary mt-3" *ngIf="documentosSeleccionados.length > 0">
+      <strong><i class="fas fa-check-circle me-2"></i>Documentos seleccionados:</strong> {{ documentosSeleccionados.length }}
     </div>
 
     <div class="form-actions">
-      <button type="button" class="btn-secondary" (click)="goBack()">Cancelar</button>
+      <button type="button" class="btn-secondary" (click)="goBack()">
+        <i class="fas fa-times me-2"></i>Cancelar
+      </button>
       <button type="submit" class="btn-primary" [disabled]="form.invalid || saving">
-        <span *ngIf="saving">Guardando...</span>
-        <span *ngIf="!saving">Actualizar</span>
+        <i class="fas fa-save me-2"></i>
+        <span *ngIf="saving">Actualizando...</span>
+        <span *ngIf="!saving">Actualizar Tipo de Vehículo</span>
       </button>
     </div>
   </form>

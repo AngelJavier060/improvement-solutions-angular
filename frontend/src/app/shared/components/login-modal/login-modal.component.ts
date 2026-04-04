@@ -55,11 +55,13 @@ export class LoginModalComponent implements OnInit {
 
     const credentials = this.loginForm.value;
     
-    console.log('Intentando login con credenciales:', { username: credentials.username });
+    console.log('Intentando login para usuario:', credentials.username);
     
     this.authService.login(credentials)
       .subscribe({
         next: (response: AuthResponse) => {
+          // Limpiar contraseña del formulario inmediatamente tras login exitoso
+          this.loginForm.patchValue({ password: '' });
           console.log('Login exitoso, respuesta:', response);
           this.loading = false;
           
@@ -87,6 +89,8 @@ export class LoginModalComponent implements OnInit {
         },
         error: (error: any) => {
           console.error('Error en login:', error);
+          // Limpiar contraseña también en caso de error para no dejarla expuesta
+          this.loginForm.patchValue({ password: '' });
           this.loading = false;
           
           if (typeof error === 'string') {

@@ -110,6 +110,22 @@ import { FileService } from './services/file.service';
         loadChildren: () => import('./features/dashboard/usuario/seguridad-industrial/seguridad-industrial.module').then(m => m.SeguridadIndustrialModule),
         canActivate: [AuthGuard]
       },
+      {
+        path: 'usuario/:ruc/mantenimiento',
+        loadComponent: () => import('./features/usuario/mantenimiento/mantenimiento-layout.component').then(m => m.MantenimientoLayoutComponent),
+        canActivate: [AuthGuard],
+        children: [
+          { path: '', loadComponent: () => import('./features/usuario/mantenimiento/pages/lista-vehiculos/lista-vehiculos.component').then(m => m.ListaVehiculosComponent) },
+          { path: 'dashboard', loadComponent: () => import('./features/usuario/mantenimiento/pages/dashboard/dashboard.component').then(m => m.MantenimientoDashboardComponent) },
+          { path: 'nueva-ficha', loadComponent: () => import('./features/usuario/mantenimiento/pages/nueva-ficha/nueva-ficha.component').then(m => m.NuevaFichaComponent) },
+          { path: 'editar-ficha/:vehicleId', loadComponent: () => import('./features/usuario/mantenimiento/pages/nueva-ficha/nueva-ficha.component').then(m => m.NuevaFichaComponent) },
+          { path: 'documentacion/unidad/:vehicleId/historial', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-historial/documentacion-historial.component').then(m => m.DocumentacionHistorialComponent) },
+          { path: 'documentacion/unidad/:vehicleId/registro', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-registro/documentacion-registro.component').then(m => m.DocumentacionRegistroComponent) },
+          { path: 'documentacion/unidad/:vehicleId', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-unidad/documentacion-unidad.component').then(m => m.DocumentacionUnidadComponent) },
+          { path: 'documentacion/registro', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-registro/documentacion-registro.component').then(m => m.DocumentacionRegistroComponent) },
+          { path: 'documentacion', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-lista/documentacion-lista.component').then(m => m.DocumentacionListaComponent) }
+        ]
+      },
       
       // Rutas del dashboard por RUC (para admin)
       {

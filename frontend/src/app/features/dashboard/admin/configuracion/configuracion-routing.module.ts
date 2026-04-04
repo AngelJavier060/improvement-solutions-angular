@@ -86,6 +86,14 @@ const routes: Routes = [
         loadChildren: () => import('./marca-vehiculo/marca-vehiculo.module').then(m => m.MarcaVehiculoModule)
       },
       {
+        path: 'clase-vehiculo',
+        loadChildren: () => import('./clase-vehiculo/clase-vehiculo.module').then(m => m.ClaseVehiculoModule)
+      },
+      {
+        path: 'entidad-remitente',
+        loadChildren: () => import('./entidad-remitente/entidad-remitente.module').then(m => m.EntidadRemitenteModule)
+      },
+      {
         path: 'tipo-vehiculo',
         loadChildren: () => import('./tipo-vehiculo/tipo-vehiculo.module').then(m => m.TipoVehiculoModule)
       },
@@ -124,6 +132,14 @@ const routes: Routes = [
       {
         path: 'pais-origen',
         loadChildren: () => import('./pais-origen/pais-origen.module').then(m => m.PaisOrigenModule)
+      },
+      {
+        path: 'numero-eje',
+        loadChildren: () => import('./numero-eje/numero-eje.module').then(m => m.NumeroEjeModule)
+      },
+      {
+        path: 'configuracion-eje',
+        loadChildren: () => import('./configuracion-eje/configuracion-eje.module').then(m => m.ConfiguracionEjeModule)
       },
       {
         path: 'distancia-recorrer',

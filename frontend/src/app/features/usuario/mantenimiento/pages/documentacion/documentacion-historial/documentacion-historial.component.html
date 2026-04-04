@@ -1,0 +1,120 @@
+<div class="doc-page" *ngIf="!loading && !error && vehicle">
+  <nav class="doc-breadcrumb d-flex align-items-center gap-2 mb-3 flex-wrap">
+    <a [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion']">Documentación</a>
+    <i class="fas fa-chevron-right small opacity-50"></i>
+    <a [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', vehicleId]">Unidad {{ vehicle.placa }}</a>
+    <i class="fas fa-chevron-right small opacity-50"></i>
+    <span class="text-primary fw-bold">Historial</span>
+  </nav>
+
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h1 class="doc-headline h2 mb-2">Historial de documentos</h1>
+      <p class="doc-muted mb-0 small">Versiones anteriores por actualizaciones o eliminaciones desde el módulo de documentación.</p>
+    </div>
+    <div class="doc-unit-pill d-flex align-items-center gap-2 px-3 py-2 rounded-3">
+      <i class="fas fa-tag text-primary"></i>
+      <div>
+        <p class="mb-0 text-uppercase fw-bold text-primary opacity-75" style="font-size: 0.65rem;">Unidad</p>
+        <p class="mb-0 fw-bold text-primary">{{ vehicle.placa }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="doc-form-card p-4 mb-4">
+        <h3 class="h6 doc-headline text-secondary text-uppercase mb-3" style="font-size: 0.75rem;">Perfil de unidad</h3>
+        <div class="ratio ratio-16x9 rounded overflow-hidden bg-light mb-3">
+          <img *ngIf="vehicle.fotoPrincipal" [src]="vehicle.fotoPrincipal" class="object-fit-cover" [alt]="vehicle.placa" />
+        </div>
+        <div class="d-flex justify-content-between py-2 border-bottom border-light">
+          <span class="small text-secondary">Modelo</span>
+          <span class="small fw-bold">{{ vehicle.marca }} {{ vehicle.modelo }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-2 border-bottom border-light">
+          <span class="small text-secondary">Año</span>
+          <span class="small fw-bold">{{ vehicle.anio ?? '—' }}</span>
+        </div>
+        <div class="d-flex justify-content-between py-2">
+          <span class="small text-secondary">Código</span>
+          <span class="small fw-bold">{{ vehicle.codigoEquipo || '—' }}</span>
+        </div>
+      </div>
+      <div class="alert alert-light border doc-muted small mb-0">
+        <i class="fas fa-archive me-2 text-primary"></i>
+        Cada vez que edita un documento, la copia previa aparece aquí como registro de auditoría.
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="doc-table-wrap">
+        <div class="p-4 border-bottom d-flex flex-column flex-sm-row justify-content-between align-items-start gap-3">
+          <h3 class="doc-headline h5 mb-0">Línea de tiempo</h3>
+          <div class="position-relative w-100" style="max-width: 280px;">
+            <i class="fas fa-search position-absolute text-muted" style="left: 0.65rem; top: 50%; transform: translateY(-50%); font-size: 0.8rem;"></i>
+            <input type="search" class="form-control form-control-sm ps-4" placeholder="Buscar…" [(ngModel)]="search" />
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table doc-table mb-0">
+            <thead>
+              <tr>
+                <th>Documento</th>
+                <th>Entidad</th>
+                <th>PDF</th>
+                <th>Referencia</th>
+                <th>Vigencia (copia)</th>
+                <th>Estado</th>
+                <th>Evento</th>
+                <th class="text-end">Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let e of entries()" class="align-middle">
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="rounded d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary doc-hist-icon">
+                      <i class="fas" [ngClass]="e.action === 'DELETED' ? 'fa-trash-alt' : 'fa-file-alt'"></i>
+                    </div>
+                    <div>
+                      <p class="mb-0 fw-bold small">{{ e.snapshot.typeLabel }}</p>
+                      <p class="mb-0 text-secondary" style="font-size: 0.65rem;">{{ e.note || '—' }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="small">{{ e.snapshot.entidadRemitenteName || '—' }}</td>
+                <td class="small">
+                  <a
+                    *ngIf="e.snapshot.attachedDocumentUrl"
+                    [href]="e.snapshot.attachedDocumentUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >Abrir</a>
+                  <span *ngIf="!e.snapshot.attachedDocumentUrl" class="text-muted">—</span>
+                </td>
+                <td><span class="doc-id-chip">{{ e.snapshot.referenceId }}</span></td>
+                <td class="small">{{ period(e.snapshot) }}</td>
+                <td><span [ngClass]="snapshotBadgeClass(e.snapshot)">{{ snapshotStatus(e.snapshot) }}</span></td>
+                <td><span [ngClass]="actionBadgeClass(e)">{{ actionLabel(e) }}</span></td>
+                <td class="text-end small text-secondary text-nowrap">{{ changedAt(e) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="px-4 py-3 bg-light border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <span class="small text-muted text-uppercase fw-bold" style="font-size: 0.65rem;">{{ entries().length }} registro(s)</span>
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="volverUnidad()">Volver a documentación</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="doc-page" *ngIf="loading">
+  <p class="text-center text-muted py-5"><i class="fas fa-spinner fa-spin me-2"></i>Cargando…</p>
+</div>
+<div class="doc-page" *ngIf="error && !loading">
+  <div class="alert alert-warning">{{ error }}</div>
+  <button type="button" class="btn btn-outline-primary" [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion']">Volver</button>
+</div>

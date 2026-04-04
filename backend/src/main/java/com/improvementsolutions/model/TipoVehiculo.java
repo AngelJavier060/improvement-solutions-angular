@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "tipo_vehiculos")
@@ -22,6 +24,14 @@ public class TipoVehiculo {
     private String name;
 
     private String description;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "tipo_vehiculo_documentos",
+        joinColumns = @JoinColumn(name = "tipo_vehiculo_id"),
+        inverseJoinColumns = @JoinColumn(name = "tipo_documento_id")
+    )
+    private Set<TipoDocumentoVehiculo> documentos = new HashSet<>();
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

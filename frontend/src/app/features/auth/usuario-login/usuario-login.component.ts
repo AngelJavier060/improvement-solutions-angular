@@ -64,6 +64,8 @@ export class UsuarioLoginComponent implements OnInit {
       this.error = '';
 
       const { username, password } = this.loginForm.value;
+      // Limpiar contraseña del formulario inmediatamente para no dejarla en memoria
+      this.loginForm.patchValue({ password: '' });
 
       this.authService.login(username, password).subscribe({
         next: (response) => {

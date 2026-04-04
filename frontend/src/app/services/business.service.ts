@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Business } from '../models/business.model';
 import { ApiUrlService } from '../core/services/api-url.service';
 
@@ -104,6 +105,22 @@ export class BusinessService {
   // === MÉTODO PARA ACTUALIZAR CONFIGURACIONES GENERALES ===
   updateBusinessConfigurations(businessId: number, configurations: any): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/${businessId}/admin/configurations`, configurations);
+  }
+
+  // === CONFIGURACIÓN DE MANTENIMIENTO (por empresa) ===
+  getMaintenanceConfig(businessId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${businessId}/maintenance-config`, { responseType: 'text' })
+      .pipe(map(raw => {
+        try { return raw ? JSON.parse(raw as any) : {}; } catch { return {}; }
+      }));
+  }
+
+  updateMaintenanceConfig(businessId: number, config: any): Observable<any> {
+    const body = JSON.stringify(config || {});
+    return this.http.put(`${this.apiUrl}/${businessId}/maintenance-config`, body, { responseType: 'text' })
+      .pipe(map(raw => {
+        try { return raw ? JSON.parse(raw as any) : {}; } catch { return {}; }
+      }));
   }
 
   // === MÉTODOS PARA IESS ===

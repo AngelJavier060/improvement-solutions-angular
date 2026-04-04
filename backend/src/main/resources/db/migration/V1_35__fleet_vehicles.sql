@@ -1,0 +1,48 @@
+-- Fichas técnicas de flota por empresa (PostgreSQL / referencia; en local suele usarse ddl-auto)
+
+CREATE TABLE IF NOT EXISTS fleet_vehicles (
+    id BIGSERIAL PRIMARY KEY,
+    business_id BIGINT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    codigo_equipo VARCHAR(100) NOT NULL,
+    placa VARCHAR(30) NOT NULL,
+    clase VARCHAR(150),
+    tipo_vehiculo_id BIGINT REFERENCES tipo_vehiculos(id),
+    marca_vehiculo_id BIGINT REFERENCES marca_vehiculos(id),
+    modelo VARCHAR(200),
+    anio INTEGER,
+    serie_chasis VARCHAR(120),
+    serie_motor VARCHAR(120),
+    color_vehiculo_id BIGINT REFERENCES color_vehiculos(id),
+    pais_origen_id BIGINT REFERENCES pais_origenes(id),
+    tipo_combustible_id BIGINT REFERENCES tipo_combustibles(id),
+    estado_unidad_id BIGINT REFERENCES estado_unidades(id),
+    transmision_id BIGINT REFERENCES transmisiones(id),
+    numero_eje_id BIGINT REFERENCES numero_ejes(id),
+    configuracion_eje_id BIGINT REFERENCES configuracion_ejes(id),
+    estado_activo VARCHAR(30) NOT NULL DEFAULT 'ACTIVO',
+    cilindraje VARCHAR(50),
+    pasajeros INTEGER,
+    tonelaje VARCHAR(50),
+    capacidad VARCHAR(100),
+    potencia VARCHAR(50),
+    km_inicio INTEGER,
+    largo VARCHAR(50),
+    ancho VARCHAR(50),
+    alto VARCHAR(50),
+    proyecto_asignado VARCHAR(255),
+    medida_neumaticos VARCHAR(120),
+    marca_neumatico VARCHAR(120),
+    km_reencauche VARCHAR(80),
+    numero_repuestos INTEGER DEFAULT 0,
+    observaciones TEXT,
+    foto_principal TEXT,
+    foto_lateral TEXT,
+    foto_interior TEXT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    CONSTRAINT uk_fleet_vehicle_business_codigo UNIQUE (business_id, codigo_equipo),
+    CONSTRAINT uk_fleet_vehicle_business_placa UNIQUE (business_id, placa)
+);
+
+CREATE INDEX IF NOT EXISTS idx_fleet_vehicles_business ON fleet_vehicles(business_id);
+CREATE INDEX IF NOT EXISTS idx_fleet_vehicles_placa ON fleet_vehicles(placa);

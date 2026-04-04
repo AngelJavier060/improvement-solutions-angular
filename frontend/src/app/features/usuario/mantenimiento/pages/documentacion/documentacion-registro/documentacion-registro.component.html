@@ -1,0 +1,199 @@
+<div class="doc-page">
+  <nav class="doc-breadcrumb d-flex align-items-center gap-2 mb-3 flex-wrap">
+    <a [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion']">Documentación</a>
+    <i class="fas fa-chevron-right small opacity-50"></i>
+    <a *ngIf="vehicle?.id" [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', vehicle!.id!]">Unidad</a>
+    <i *ngIf="vehicle?.id" class="fas fa-chevron-right small opacity-50"></i>
+    <span class="text-primary fw-bold">{{ editDocId ? 'Editar registro' : 'Nuevo registro' }}</span>
+  </nav>
+
+  <header class="mb-4">
+    <h1 class="doc-headline h2 mb-2">Registro de documentación</h1>
+    <p class="doc-muted mb-0">Complete los datos del documento. Puede adjuntar un PDF como respaldo; se guarda en el servidor vinculado a la unidad.</p>
+  </header>
+
+  <div *ngIf="error" class="alert alert-warning">{{ error }}</div>
+
+  <!-- Selector de unidad (solo ruta sin vehicleId) -->
+  <section *ngIf="routeVehicleId == null" class="doc-form-card p-4 mb-4">
+    <h2 class="h6 doc-headline mb-3">1. Elija la unidad</h2>
+    <p class="small text-muted mb-3">Busque por placa o código y seleccione el vehículo para continuar.</p>
+    <div *ngIf="loadingFleet" class="text-muted small">Cargando flota…</div>
+    <ng-container *ngIf="!loadingFleet">
+      <input
+        type="search"
+        class="form-control mb-3"
+        placeholder="Filtrar por placa, código o motor…"
+        [(ngModel)]="vehicleSearch"
+        [ngModelOptions]="{ standalone: true }"
+      />
+      <div class="list-group doc-vehicle-pick-list">
+        <button
+          type="button"
+          class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+          *ngFor="let v of filteredPickerVehicles()"
+          (click)="v.id != null && onSelectVehicle(v.id)"
+        >
+          <div>
+            <span class="fw-bold text-primary">{{ v.placa }}</span>
+            <span class="text-muted small ms-2">{{ v.codigoEquipo }}</span>
+            <p class="mb-0 small text-secondary">{{ vehicleSubtitle(v) }}</p>
+          </div>
+          <i class="fas fa-chevron-right text-muted"></i>
+        </button>
+      </div>
+      <p *ngIf="!filteredPickerVehicles().length" class="text-muted small mb-0">No hay coincidencias. Registre vehículos en Flota.</p>
+    </ng-container>
+  </section>
+
+  <ng-container *ngIf="routeVehicleId != null && !loadingFleet && vehicle">
+    <div class="doc-registro-hero mb-4 d-flex flex-column flex-md-row align-items-center gap-4 p-4 rounded-xl text-white">
+      <div class="rounded overflow-hidden flex-shrink-0 bg-white bg-opacity-10" style="width: 128px; height: 128px;">
+        <img *ngIf="vehicle.fotoPrincipal" [src]="vehicle.fotoPrincipal" class="w-100 h-100" style="object-fit: cover;" [alt]="vehicle.placa" />
+      </div>
+      <div class="row row-cols-2 row-cols-lg-5 g-3 flex-grow-1 w-100">
+        <div>
+          <p class="small text-white-50 text-uppercase fw-bold mb-1" style="font-size: 0.65rem;">Placa</p>
+          <p class="doc-headline h5 mb-0">{{ vehicle.placa }}</p>
+        </div>
+        <div>
+          <p class="small text-white-50 text-uppercase fw-bold mb-1" style="font-size: 0.65rem;">Código</p>
+          <p class="doc-headline h5 mb-0">{{ vehicle.codigoEquipo || '—' }}</p>
+        </div>
+        <div>
+          <p class="small text-white-50 text-uppercase fw-bold mb-1" style="font-size: 0.65rem;">Clase</p>
+          <p class="fw-bold mb-0 small">{{ vehicle.clase || '—' }}</p>
+        </div>
+        <div>
+          <p class="small text-white-50 text-uppercase fw-bold mb-1" style="font-size: 0.65rem;">Número motor</p>
+          <p class="fw-bold mb-0 small">{{ vehicle.serieMotor || '—' }}</p>
+        </div>
+        <div>
+          <p class="small text-white-50 text-uppercase fw-bold mb-1" style="font-size: 0.65rem;">Chasis</p>
+          <p class="fw-bold mb-0 small">{{ vehicle.serieChasis || '—' }}</p>
+        </div>
+        <div class="col-12">
+          <p class="small text-white-50 text-uppercase fw-bold mb-1" style="font-size: 0.65rem;">Tipo de vehículo</p>
+          <p class="fw-bold mb-0 small">{{ vehicle.tipoVehiculo || '—' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="docConfigMessage" class="alert alert-info small mb-3">{{ docConfigMessage }}</div>
+
+    <div class="doc-form-card p-4 p-md-5">
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="mb-4">
+              <label class="doc-form-label d-block mb-2">Tipo de documento</label>
+              <p class="text-muted small mb-2" *ngIf="dynamicDocTypes.length">
+                Listado según configuración del tipo de vehículo (administración → Tipo de vehículo).
+              </p>
+              <select class="form-select" formControlName="typeCode">
+                <option *ngFor="let t of docTypeOptionsForSelect()" [value]="t.code">{{ t.label }}</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="doc-form-label d-block mb-2">Entidad remitente</label>
+              <p class="text-muted small mb-2">
+                Catálogo de la empresa (mismo origen que en administración de empresa / ficha de vehículo).
+              </p>
+              <select class="form-select" formControlName="entidadRemitenteId">
+                <option [ngValue]="null">— Seleccione —</option>
+                <option *ngFor="let e of entidadRemitentes" [ngValue]="e.id">{{ e.name }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-4">
+              <label class="doc-form-label d-block mb-2">Fecha de expedición</label>
+              <input type="date" class="form-control" formControlName="issueDate" />
+            </div>
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <label class="doc-form-label mb-0">Fecha de vencimiento</label>
+                <span class="badge rounded-pill small bg-success text-dark" *ngIf="statusChip() === 'VIGENTE'">Vigente</span>
+                <span class="badge rounded-pill small bg-warning text-dark" *ngIf="statusChip() === 'PROXIMO'">Próximo</span>
+                <span class="badge rounded-pill small bg-danger" *ngIf="statusChip() === 'VENCIDO'">Vencido</span>
+              </div>
+              <input type="date" class="form-control" formControlName="expiryDate" />
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="noCaduca" formControlName="noCaduca" />
+                <label class="form-check-label small" for="noCaduca">No caduca</label>
+              </div>
+            </div>
+            <div class="mb-4">
+              <label class="doc-form-label d-block mb-2">Días de vigencia</label>
+              <div class="d-flex align-items-center justify-content-between border rounded p-3 bg-light">
+                <span class="doc-headline h3 mb-0 text-primary">{{ daysRemaining() ?? '—' }}</span>
+                <span class="doc-form-label mb-0">Días restantes</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label class="doc-form-label d-block mb-2">Respaldo PDF (opcional)</label>
+            <p class="text-muted small mb-2">Solo PDF. El archivo se almacena en el servidor y queda asociado a este registro de documentación.</p>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+              <input
+                #pdfInput
+                type="file"
+                class="form-control"
+                style="max-width: 22rem;"
+                accept="application/pdf,.pdf"
+                (change)="onPdfSelected($event, pdfInput)"
+              />
+              <button type="button" class="btn btn-outline-secondary btn-sm" *ngIf="pendingPdfFile" (click)="clearPendingPdf(pdfInput)">
+                Quitar archivo nuevo
+              </button>
+            </div>
+            <p class="small text-success mb-1" *ngIf="pendingPdfFile"><i class="fas fa-paperclip me-1"></i>{{ pendingPdfFile.name }}</p>
+            <div class="small text-muted" *ngIf="editDocId && existingPdfUrl && !pendingPdfFile">
+              <span class="me-2">Archivo actual:</span>
+              <a [href]="existingPdfUrl" target="_blank" rel="noopener noreferrer" class="fw-semibold">{{ existingPdfName || 'Ver PDF' }}</a>
+              <span class="text-muted ms-2">(sustitúyalo eligiendo otro PDF arriba)</span>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="row g-3">
+              <div class="col-sm-6 col-md-4">
+                <div class="border rounded p-3 d-flex justify-content-between align-items-center h-100">
+                  <span class="small fw-bold text-primary text-uppercase">Activo</span>
+                  <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" formControlName="active" />
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-6 col-md-4">
+                <div class="border rounded p-3 d-flex justify-content-between align-items-center h-100">
+                  <span class="small fw-bold text-secondary text-uppercase">Histórico</span>
+                  <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" formControlName="historicMode" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-4 pt-4 border-top">
+          <button type="button" class="btn btn-outline-secondary px-4" [disabled]="saving" (click)="cancel()">Cancelar</button>
+          <button type="submit" class="doc-btn-primary px-5" [disabled]="form.invalid || saving">
+            <span *ngIf="saving"><i class="fas fa-spinner fa-spin me-2"></i>Guardando…</span>
+            <span *ngIf="!saving">Guardar registro</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="alert alert-primary d-flex gap-3 mt-4 align-items-start border-0" style="background: rgba(0, 50, 122, 0.12); color: #001e4f;">
+      <i class="fas fa-info-circle mt-1"></i>
+      <p class="small mb-0"><strong>Auditoría:</strong> las ediciones archivan la versión anterior en el historial. Si al editar sube un PDF nuevo, tras guardar correctamente se elimina el archivo anterior del servidor (si existía).</p>
+    </div>
+  </ng-container>
+
+  <div *ngIf="routeVehicleId != null && loadingFleet" class="text-center py-5 text-muted">
+    <i class="fas fa-spinner fa-spin me-2"></i>Cargando unidad…
+  </div>
+</div>

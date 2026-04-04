@@ -321,6 +321,67 @@ public class BusinessController {
         response.put("workSchedules", business.getWorkSchedules().stream().map(wsDto).collect(Collectors.toList()));
         response.put("workShifts", business.getWorkShifts().stream().map(wshDto).collect(Collectors.toList()));
         response.put("ieses", business.getIessItems().stream().map(iessDto).collect(Collectors.toList()));
+        
+        // Mantenimiento: Tipos de Vehículo y Estados de Unidad
+        java.util.function.Function<com.improvementsolutions.model.TipoVehiculo, Map<String, Object>> tvDto = tv -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", tv.getId());
+            m.put("name", tv.getName());
+            m.put("description", tv.getDescription());
+            return m;
+        };
+        java.util.function.Function<com.improvementsolutions.model.EstadoUnidad, Map<String, Object>> euDto = eu -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", eu.getId());
+            m.put("name", eu.getName());
+            m.put("description", eu.getDescription());
+            return m;
+        };
+        response.put("tipoVehiculos", business.getTipoVehiculos().stream().map(tvDto).collect(Collectors.toList()));
+        response.put("estadoUnidades", business.getEstadoUnidades().stream().map(euDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.MarcaVehiculo, Map<String, Object>> simpleDto =
+            e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; };
+        response.put("marcaVehiculos", business.getMarcaVehiculos().stream().map(simpleDto).collect(Collectors.toList()));
+        java.util.function.Function<com.improvementsolutions.model.ClaseVehiculo, Map<String, Object>> claseDto =
+            e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; };
+        response.put("claseVehiculos", business.getClaseVehiculos().stream().map(claseDto).collect(Collectors.toList()));
+        java.util.function.Function<com.improvementsolutions.model.EntidadRemitente, Map<String, Object>> erDto =
+            e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; };
+        response.put("entidadRemitentes", business.getEntidadRemitentes().stream().map(erDto).collect(Collectors.toList()));
+        response.put("tipoCombustibles", business.getTipoCombustibles().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
+        response.put("colorVehiculos", business.getColorVehiculos().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
+        response.put("transmisiones", business.getTransmisiones().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
+        response.put("propietarioVehiculos", business.getPropietarioVehiculos().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
+        response.put("tipoDocumentoVehiculos", business.getTipoDocumentoVehiculos().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
+        response.put("unidadMedidas", business.getUnidadMedidas().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
+        response.put("ubicacionRutas", business.getUbicacionRutas().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
+        response.put("paisOrigenes", business.getPaisOrigenes().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
+        response.put("numeroEjes", business.getNumeroEjes().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
+        response.put("configuracionEjes", business.getConfiguracionEjes().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
+
+        // === Gerencia de Viajes ===
+        java.util.function.Function<Object, Map<String, Object>> viajesDto = e -> {
+            Map<String, Object> m = new HashMap<>();
+            try { m.put("id", e.getClass().getMethod("getId").invoke(e)); } catch (Exception ex) {}
+            try { m.put("name", e.getClass().getMethod("getName").invoke(e)); } catch (Exception ex) {}
+            try { m.put("description", e.getClass().getMethod("getDescription").invoke(e)); } catch (Exception ex) {}
+            return m;
+        };
+        response.put("distanciaRecorrers", business.getDistanciaRecorrers().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("tipoVias", business.getTipoVias().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("condicionClimaticas", business.getCondicionClimaticas().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("horarioCirculaciones", business.getHorarioCirculaciones().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("estadoCarreteras", business.getEstadoCarreteras().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("tipoCargas", business.getTipoCargas().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("horaConducciones", business.getHoraConducciones().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("horaDescansos", business.getHoraDescansos().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("medioComunicaciones", business.getMedioComunicaciones().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("transportaPasajeros", business.getTransportaPasajeros().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("metodologiaRiesgos", business.getMetodologiaRiesgos().stream().map(viajesDto).collect(Collectors.toList()));
+
+        // Configuración de mantenimiento (JSON plano almacenado en la entidad)
+        response.put("maintenanceConfig", business.getMaintenanceConfig());
         // Filtrar duplicados: solo una relación activa por matriz de obligación (por catalog id)
         java.util.Map<Long, com.improvementsolutions.model.BusinessObligationMatrix> obligationMap = new java.util.LinkedHashMap<>();
         for (com.improvementsolutions.model.BusinessObligationMatrix bom : business.getBusinessObligationMatrices()) {
@@ -337,10 +398,23 @@ public class BusinessController {
             if (bom == null) continue;
             Map<String, Object> m = new HashMap<>();
             m.put("id", bom.getId());
+            m.put("name", bom.getName());
+            m.put("description", bom.getDescription());
+            m.put("observations", bom.getObservations());
+            m.put("priority", bom.getPriority());
+            m.put("status", bom.getStatus());
+            m.put("dueDate", bom.getDueDate());
+            m.put("createdAt", bom.getCreatedAt());
+            m.put("updatedAt", bom.getUpdatedAt());
+            m.put("completed", bom.isCompleted());
+            m.put("completionDate", bom.getCompletionDate());
+            m.put("currentVersion", bom.getCurrentVersion());
             if (bom.getObligationMatrix() != null) {
                 Map<String, Object> cat = new HashMap<>();
                 cat.put("id", bom.getObligationMatrix().getId());
                 cat.put("name", bom.getObligationMatrix().getName());
+                cat.put("legalRegulation", bom.getObligationMatrix().getLegalRegulation());
+                cat.put("description", bom.getObligationMatrix().getDescription());
                 m.put("obligationMatrix", cat);
             }
             bomDtos.add(m);
@@ -1055,5 +1129,384 @@ public class BusinessController {
         Map<String, String> response = new HashMap<>();
         response.put("message", "Horario de trabajo eliminado exitosamente");
         return ResponseEntity.ok(response);
+    }
+
+    // === ENDPOINTS DE CONFIGURACIÓN DE MANTENIMIENTO (por empresa) ===
+    @GetMapping("/{businessId}/maintenance-config")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<String> getMaintenanceConfig(@PathVariable Long businessId) {
+        String json = businessService.getMaintenanceConfig(businessId);
+        if (json == null || json.trim().isEmpty()) {
+            json = "{}";
+        }
+        return ResponseEntity.ok(json);
+    }
+
+    @PutMapping("/{businessId}/maintenance-config")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<String> updateMaintenanceConfig(
+            @PathVariable Long businessId,
+            @RequestBody String maintenanceJson) {
+        String saved = businessService.updateMaintenanceConfig(businessId, maintenanceJson);
+        return ResponseEntity.ok(saved);
+    }
+
+    // === ENDPOINTS PARA TIPOS DE VEHÍCULO ===
+    @PostMapping("/{businessId}/tipo-vehiculo/{tipoVehiculoId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addTipoVehiculoToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long tipoVehiculoId) {
+        businessService.addTipoVehiculoToBusiness(businessId, tipoVehiculoId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Tipo de vehículo asignado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{businessId}/tipo-vehiculo/{tipoVehiculoId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeTipoVehiculoFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long tipoVehiculoId) {
+        businessService.removeTipoVehiculoFromBusiness(businessId, tipoVehiculoId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Tipo de vehículo eliminado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    // === ENDPOINTS PARA ESTADOS DE UNIDAD ===
+    @PostMapping("/{businessId}/estado-unidad/{estadoUnidadId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addEstadoUnidadToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long estadoUnidadId) {
+        businessService.addEstadoUnidadToBusiness(businessId, estadoUnidadId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Estado de unidad asignado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{businessId}/estado-unidad/{estadoUnidadId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeEstadoUnidadFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long estadoUnidadId) {
+        businessService.removeEstadoUnidadFromBusiness(businessId, estadoUnidadId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Estado de unidad eliminado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{businessId}/marca-vehiculo/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addMarcaVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addMarcaVehiculoToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/marca-vehiculo/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeMarcaVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeMarcaVehiculoFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/clase-vehiculo/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addClaseVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addClaseVehiculoToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/clase-vehiculo/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeClaseVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeClaseVehiculoFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/entidad-remitente/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addEntidadRemitente(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addEntidadRemitenteToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/entidad-remitente/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeEntidadRemitente(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeEntidadRemitenteFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/tipo-combustible/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addTipoCombustible(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addTipoCombustibleToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/tipo-combustible/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeTipoCombustible(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeTipoCombustibleFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/color-vehiculo/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addColorVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addColorVehiculoToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/color-vehiculo/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeColorVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeColorVehiculoFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/transmision/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addTransmision(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addTransmisionToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/transmision/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeTransmision(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeTransmisionFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/propietario-vehiculo/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addPropietarioVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addPropietarioVehiculoToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/propietario-vehiculo/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removePropietarioVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removePropietarioVehiculoFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/tipo-documento-vehiculo/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addTipoDocumentoVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addTipoDocumentoVehiculoToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/tipo-documento-vehiculo/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeTipoDocumentoVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeTipoDocumentoVehiculoFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/unidad-medida/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addUnidadMedida(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addUnidadMedidaToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/unidad-medida/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeUnidadMedida(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeUnidadMedidaFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/ubicacion-ruta/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addUbicacionRuta(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addUbicacionRutaToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/ubicacion-ruta/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeUbicacionRuta(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeUbicacionRutaFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/pais-origen/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addPaisOrigen(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addPaisOrigenToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/pais-origen/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removePaisOrigen(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removePaisOrigenFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/numero-eje/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addNumeroEje(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addNumeroEjeToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/numero-eje/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeNumeroEje(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeNumeroEjeFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/configuracion-eje/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addConfiguracionEje(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addConfiguracionEjeToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/configuracion-eje/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeConfiguracionEje(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeConfiguracionEjeFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    // === GERENCIA DE VIAJES ===
+    @PostMapping("/{businessId}/distancia-recorrer/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addDistanciaRecorrer(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addDistanciaRecorrerToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/distancia-recorrer/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeDistanciaRecorrer(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeDistanciaRecorrerFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/tipo-via/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addTipoVia(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addTipoViaToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/tipo-via/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeTipoVia(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeTipoViaFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/condicion-climatica/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addCondicionClimatica(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addCondicionClimaticaToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/condicion-climatica/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeCondicionClimatica(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeCondicionClimaticaFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/horario-circulacion/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addHorarioCirculacion(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addHorarioCirculacionToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/horario-circulacion/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeHorarioCirculacion(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeHorarioCirculacionFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/estado-carretera/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addEstadoCarretera(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addEstadoCarreteraToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/estado-carretera/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeEstadoCarretera(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeEstadoCarreteraFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/tipo-carga/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addTipoCarga(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addTipoCargaToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/tipo-carga/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeTipoCarga(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeTipoCargaFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/hora-conduccion/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addHoraConduccion(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addHoraConduccionToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/hora-conduccion/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeHoraConduccion(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeHoraConduccionFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/hora-descanso/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addHoraDescanso(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addHoraDescansoToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/hora-descanso/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeHoraDescanso(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeHoraDescansoFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/medio-comunicacion/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addMedioComunicacion(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addMedioComunicacionToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/medio-comunicacion/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeMedioComunicacion(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeMedioComunicacionFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/transporta-pasajero/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addTransportaPasajero(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addTransportaPasajeroToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/transporta-pasajero/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeTransportaPasajero(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeTransportaPasajeroFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/metodologia-riesgo/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addMetodologiaRiesgo(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addMetodologiaRiesgoToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+    @DeleteMapping("/{businessId}/metodologia-riesgo/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeMetodologiaRiesgo(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeMetodologiaRiesgoFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
     }
 }

@@ -1,0 +1,181 @@
+<div class="doc-page">
+  <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+    <div>
+      <h1 class="doc-headline h2 mb-2">Vigencia de documentación de flota</h1>
+      <p class="doc-muted mb-0">
+        Control de permisos, seguros y revisiones técnicas. Los vehículos se cargan desde su flota registrada.
+      </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-light border shadow-sm" (click)="exportCsv()">
+        <i class="fas fa-file-download me-2"></i>Exportar reporte
+      </button>
+      <button type="button" class="doc-btn-primary" (click)="irRegistro()">
+        <i class="fas fa-folder-plus me-2"></i>Registrar documentación
+      </button>
+    </div>
+  </header>
+
+  <section class="row g-3 mb-4" *ngIf="!loading && !error">
+    <div class="col-6 col-lg-3">
+      <div class="doc-card-kpi">
+        <p class="text-uppercase fw-bold text-secondary mb-1 small" style="font-size: 0.65rem; letter-spacing: 0.08em;">Total vehículos</p>
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="doc-headline h3 mb-0">{{ kpi().total }}</span>
+          <span class="text-muted small">En flota</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="doc-card-kpi doc-card-kpi--ok">
+        <p class="text-uppercase fw-bold text-secondary mb-1 small" style="font-size: 0.65rem; letter-spacing: 0.08em;">Vigente</p>
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="doc-headline h3 mb-0 text-success">{{ kpi().vigente }}</span>
+          <span class="text-muted small">Cumplimiento {{ kpi().pct }}%</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="doc-card-kpi doc-card-kpi--warn">
+        <p class="text-uppercase fw-bold mb-1 small text-warning-emphasis" style="font-size: 0.65rem; letter-spacing: 0.08em;">Próximo a vencer</p>
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="doc-headline h3 mb-0 text-warning">{{ kpi().proximo }}</span>
+          <span class="text-muted small">&lt; 30 días</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="doc-card-kpi doc-card-kpi--err">
+        <p class="text-uppercase fw-bold mb-1 small text-danger" style="font-size: 0.65rem; letter-spacing: 0.08em;">Vencido</p>
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="doc-headline h3 mb-0 text-danger">{{ kpi().vencido }}</span>
+          <span class="text-muted small">Acción requerida</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div *ngIf="error" class="alert alert-warning">{{ error }}</div>
+  <div *ngIf="loading" class="text-center py-5 text-muted">
+    <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+    <p class="mb-0">Cargando flota…</p>
+  </div>
+
+  <ng-container *ngIf="!loading && !error">
+    <div class="position-relative doc-search mb-3">
+      <i class="fas fa-search doc-search-icon"></i>
+      <input
+        type="search"
+        class="form-control"
+        placeholder="Buscar por placa, código, serie de motor o chasis…"
+        [(ngModel)]="search"
+        (ngModelChange)="currentPage = 1"
+      />
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 px-1">
+      <div class="d-flex flex-wrap align-items-center">
+        <button type="button" class="doc-filter-pill" [class.active]="filterTab === 'ALL'" (click)="setTab('ALL')">Todos</button>
+        <button
+          type="button"
+          class="doc-filter-pill"
+          *ngFor="let t of docFilterTypes()"
+          [class.active]="filterTab === t.code"
+          (click)="setTab(t.code)"
+        >{{ t.label }}</button>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <label class="small text-muted text-uppercase fw-bold mb-0">Ordenar</label>
+        <select class="form-select form-select-sm" style="width: auto; min-width: 12rem;" [(ngModel)]="sortKey">
+          <option value="daysAsc">Días de vigencia (menor a mayor)</option>
+          <option value="daysDesc">Días de vigencia (mayor a menor)</option>
+          <option value="placa">Placa (A-Z)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="d-flex flex-column gap-3">
+      <div
+        *ngFor="let v of pagedVehicles(); trackBy: trackById"
+        class="doc-vehicle-card d-flex flex-column flex-md-row align-items-center gap-3"
+      >
+        <div class="flex-shrink-0 rounded overflow-hidden bg-light" style="width: 160px; height: 96px;">
+          <img
+            *ngIf="v.fotoPrincipal"
+            [src]="v.fotoPrincipal"
+            [alt]="v.placa"
+            class="w-100 h-100 object-fit-cover"
+            style="object-fit: cover;"
+          />
+          <div *ngIf="!v.fotoPrincipal" class="w-100 h-100 d-flex align-items-center justify-content-center text-muted small">
+            Sin foto
+          </div>
+        </div>
+        <div class="row row-cols-2 row-cols-lg-4 flex-grow-1 g-3 w-100">
+          <div>
+            <p class="text-uppercase fw-bold text-secondary mb-1 small" style="font-size: 0.65rem; letter-spacing: 0.08em;">Vehículo</p>
+            <h3 class="doc-headline h5 mb-0">{{ v.placa }}</h3>
+            <p class="small text-muted mb-0">{{ vehicleSubtitle(v) }}</p>
+          </div>
+          <div>
+            <p class="text-uppercase fw-bold text-secondary mb-1 small" style="font-size: 0.65rem; letter-spacing: 0.08em;">Clase / tipo</p>
+            <p class="fw-bold mb-0 small">{{ v.clase || '—' }}</p>
+            <p class="small text-muted mb-0">{{ v.tipoVehiculo || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-uppercase fw-bold text-secondary mb-1 small" style="font-size: 0.65rem; letter-spacing: 0.08em;">Días de vigencia</p>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span
+                class="doc-headline h4 mb-0"
+                [class.text-danger]="statusFor(v)==='VENCIDO'"
+                [class.text-warning]="statusFor(v)==='PROXIMO'"
+                [class.text-success]="statusFor(v)==='VIGENTE' || statusFor(v)==='NO_CADUCA'"
+              >{{ daysLabel(v) }}</span>
+              <span class="small fw-bold text-uppercase text-danger" *ngIf="statusFor(v)==='VENCIDO'">Expirado</span>
+              <span class="small fw-bold text-uppercase text-warning" *ngIf="statusFor(v)==='PROXIMO'">En riesgo</span>
+              <span class="small fw-bold text-uppercase text-success" *ngIf="statusFor(v)==='VIGENTE' || statusFor(v)==='NO_CADUCA'">Seguro</span>
+            </div>
+          </div>
+          <div class="d-flex align-items-center justify-content-lg-end">
+            <span [ngClass]="statusBadgeClass(v)">{{ statusText(v) }}</span>
+          </div>
+        </div>
+        <div class="d-flex gap-1 flex-shrink-0" *ngIf="v.id != null">
+          <a
+            class="btn btn-outline-secondary btn-sm"
+            [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', v.id]"
+            title="Ver documentación"
+          ><i class="fas fa-eye"></i></a>
+          <a
+            class="btn btn-outline-primary btn-sm"
+            [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', v.id, 'registro']"
+            title="Nuevo o renovar"
+          ><i class="fas fa-sync-alt"></i></a>
+        </div>
+      </div>
+    </div>
+
+    <p *ngIf="filteredVehicles().length === 0" class="text-center text-muted py-5 mb-0">
+      No hay vehículos que coincidan. Ajuste la búsqueda o registre unidades en <strong>Flota</strong>.
+    </p>
+
+    <footer class="mt-4 d-flex flex-wrap justify-content-between align-items-center border-top pt-3 gap-2" *ngIf="filteredVehicles().length > 0">
+      <p class="small text-muted mb-0">
+        Mostrando {{ (currentPage - 1) * pageSize + 1 }} – {{ Math.min(currentPage * pageSize, filteredVehicles().length) }} de {{ filteredVehicles().length }} vehículos
+      </p>
+      <nav *ngIf="totalPages() > 1">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item" [class.disabled]="currentPage === 1">
+            <button type="button" class="page-link" (click)="goPage(currentPage - 1)"><i class="fas fa-chevron-left"></i></button>
+          </li>
+          <li class="page-item" *ngFor="let p of pageNumbers()" [class.active]="currentPage === p">
+            <button type="button" class="page-link" (click)="goPage(p)">{{ p }}</button>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage === totalPages()">
+            <button type="button" class="page-link" (click)="goPage(currentPage + 1)"><i class="fas fa-chevron-right"></i></button>
+          </li>
+        </ul>
+      </nav>
+    </footer>
+  </ng-container>
+</div>

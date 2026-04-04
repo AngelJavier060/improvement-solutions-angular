@@ -31,6 +31,32 @@ public class BusinessService {
     private final CourseCertificationRepository courseCertificationRepository;
     private final CardCatalogRepository cardCatalogRepository;
     private final com.improvementsolutions.storage.StorageService storageService;
+    private final com.improvementsolutions.repository.TipoVehiculoRepository tipoVehiculoRepository;
+    private final com.improvementsolutions.repository.EstadoUnidadRepository estadoUnidadRepository;
+    private final com.improvementsolutions.repository.MarcaVehiculoRepository marcaVehiculoRepository;
+    private final com.improvementsolutions.repository.ClaseVehiculoRepository claseVehiculoRepository;
+    private final com.improvementsolutions.repository.EntidadRemitenteRepository entidadRemitenteRepository;
+    private final com.improvementsolutions.repository.TipoCombustibleRepository tipoCombustibleRepository;
+    private final com.improvementsolutions.repository.ColorVehiculoRepository colorVehiculoRepository;
+    private final com.improvementsolutions.repository.TransmisionRepository transmisionRepository;
+    private final com.improvementsolutions.repository.PropietarioVehiculoRepository propietarioVehiculoRepository;
+    private final com.improvementsolutions.repository.TipoDocumentoVehiculoRepository tipoDocumentoVehiculoRepository;
+    private final com.improvementsolutions.repository.UnidadMedidaRepository unidadMedidaRepository;
+    private final com.improvementsolutions.repository.UbicacionRutaRepository ubicacionRutaRepository;
+    private final com.improvementsolutions.repository.PaisOrigenRepository paisOrigenRepository;
+    private final com.improvementsolutions.repository.NumeroEjeRepository numeroEjeRepository;
+    private final com.improvementsolutions.repository.ConfiguracionEjeRepository configuracionEjeRepository;
+    private final com.improvementsolutions.repository.DistanciaRecorrerRepository distanciaRecorrerRepository;
+    private final com.improvementsolutions.repository.TipoViaRepository tipoViaRepository;
+    private final com.improvementsolutions.repository.CondicionClimaticaRepository condicionClimaticaRepository;
+    private final com.improvementsolutions.repository.HorarioCirculacionRepository horarioCirculacionRepository;
+    private final com.improvementsolutions.repository.EstadoCarreteraRepository estadoCarreteraRepository;
+    private final com.improvementsolutions.repository.TipoCargaRepository tipoCargaRepository;
+    private final com.improvementsolutions.repository.HoraConduccionRepository horaConduccionRepository;
+    private final com.improvementsolutions.repository.HoraDescansoRepository horaDescansoRepository;
+    private final com.improvementsolutions.repository.MedioComunicacionRepository medioComunicacionRepository;
+    private final com.improvementsolutions.repository.TransportaPasajeroRepository transportaPasajeroRepository;
+    private final com.improvementsolutions.repository.MetodologiaRiesgoRepository metodologiaRiesgoRepository;
 
     public List<Business> findAll() {
         return businessRepository.findAll();
@@ -98,6 +124,34 @@ public class BusinessService {
                         }
                     }
                 }
+                // Initialize maintenance ManyToMany lazy collections
+                if (business.getTipoVehiculos() != null) business.getTipoVehiculos().size();
+                if (business.getEstadoUnidades() != null) business.getEstadoUnidades().size();
+                if (business.getMarcaVehiculos() != null) business.getMarcaVehiculos().size();
+                if (business.getClaseVehiculos() != null) business.getClaseVehiculos().size();
+                if (business.getEntidadRemitentes() != null) business.getEntidadRemitentes().size();
+                if (business.getTipoCombustibles() != null) business.getTipoCombustibles().size();
+                if (business.getColorVehiculos() != null) business.getColorVehiculos().size();
+                if (business.getTransmisiones() != null) business.getTransmisiones().size();
+                if (business.getPropietarioVehiculos() != null) business.getPropietarioVehiculos().size();
+                if (business.getTipoDocumentoVehiculos() != null) business.getTipoDocumentoVehiculos().size();
+                if (business.getUnidadMedidas() != null) business.getUnidadMedidas().size();
+                if (business.getUbicacionRutas() != null) business.getUbicacionRutas().size();
+                if (business.getPaisOrigenes() != null) business.getPaisOrigenes().size();
+                if (business.getNumeroEjes() != null) business.getNumeroEjes().size();
+                if (business.getConfiguracionEjes() != null) business.getConfiguracionEjes().size();
+                // Gerencia de Viajes
+                if (business.getDistanciaRecorrers() != null) business.getDistanciaRecorrers().size();
+                if (business.getTipoVias() != null) business.getTipoVias().size();
+                if (business.getCondicionClimaticas() != null) business.getCondicionClimaticas().size();
+                if (business.getHorarioCirculaciones() != null) business.getHorarioCirculaciones().size();
+                if (business.getEstadoCarreteras() != null) business.getEstadoCarreteras().size();
+                if (business.getTipoCargas() != null) business.getTipoCargas().size();
+                if (business.getHoraConducciones() != null) business.getHoraConducciones().size();
+                if (business.getHoraDescansos() != null) business.getHoraDescansos().size();
+                if (business.getMedioComunicaciones() != null) business.getMedioComunicaciones().size();
+                if (business.getTransportaPasajeros() != null) business.getTransportaPasajeros().size();
+                if (business.getMetodologiaRiesgos() != null) business.getMetodologiaRiesgos().size();
             } catch (Exception e) {
                 log.warn("[BusinessService] Could not initialize obligation matrices for business {}: {}", id, e.getMessage());
             }
@@ -573,6 +627,24 @@ public class BusinessService {
         return userRepository.findAll();
     }
 
+    // === CONFIGURACIÓN DE MANTENIMIENTO (por empresa) ===
+    @Transactional(readOnly = true)
+    public String getMaintenanceConfig(Long businessId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        return business.getMaintenanceConfig();
+    }
+
+    @Transactional
+    public String updateMaintenanceConfig(Long businessId, String maintenanceJson) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        business.setMaintenanceConfig(maintenanceJson);
+        business.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(business);
+        return maintenanceJson;
+    }
+
     // === MÉTODOS PARA DEPARTAMENTOS ===
     @Transactional
     public Business addDepartmentToBusiness(Long businessId, Long departmentId) {
@@ -771,5 +843,336 @@ public class BusinessService {
         business.getWorkShifts().removeIf(wsh -> wsh.getId().equals(workShiftId));
         business.setUpdatedAt(LocalDateTime.now());
         businessRepository.save(business);
+    }
+
+    // === MÉTODOS PARA TIPOS DE VEHÍCULO ===
+    @Transactional
+    public void addTipoVehiculoToBusiness(Long businessId, Long tipoVehiculoId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        TipoVehiculo tipoVehiculo = tipoVehiculoRepository.findById(tipoVehiculoId)
+                .orElseThrow(() -> new RuntimeException("Tipo de vehículo no encontrado"));
+        business.addTipoVehiculo(tipoVehiculo);
+        business.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(business);
+    }
+
+    @Transactional
+    public void removeTipoVehiculoFromBusiness(Long businessId, Long tipoVehiculoId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        business.getTipoVehiculos().removeIf(tv -> tv.getId().equals(tipoVehiculoId));
+        business.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(business);
+    }
+
+    // === MÉTODOS PARA ESTADOS DE UNIDAD ===
+    @Transactional
+    public void addEstadoUnidadToBusiness(Long businessId, Long estadoUnidadId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        EstadoUnidad estadoUnidad = estadoUnidadRepository.findById(estadoUnidadId)
+                .orElseThrow(() -> new RuntimeException("Estado de unidad no encontrado"));
+        business.addEstadoUnidad(estadoUnidad);
+        business.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(business);
+    }
+
+    @Transactional
+    public void removeEstadoUnidadFromBusiness(Long businessId, Long estadoUnidadId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        business.getEstadoUnidades().removeIf(eu -> eu.getId().equals(estadoUnidadId));
+        business.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(business);
+    }
+
+    @Transactional
+    public void addMarcaVehiculoToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.MarcaVehiculo e = marcaVehiculoRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addMarcaVehiculo(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeMarcaVehiculoFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getMarcaVehiculos().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addClaseVehiculoToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.ClaseVehiculo e = claseVehiculoRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addClaseVehiculo(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeClaseVehiculoFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getClaseVehiculos().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addEntidadRemitenteToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.EntidadRemitente e = entidadRemitenteRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addEntidadRemitente(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeEntidadRemitenteFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getEntidadRemitentes().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addTipoCombustibleToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.TipoCombustible e = tipoCombustibleRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addTipoCombustible(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeTipoCombustibleFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getTipoCombustibles().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addColorVehiculoToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.ColorVehiculo e = colorVehiculoRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addColorVehiculo(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeColorVehiculoFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getColorVehiculos().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addTransmisionToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.Transmision e = transmisionRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addTransmision(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeTransmisionFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getTransmisiones().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addPropietarioVehiculoToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.PropietarioVehiculo e = propietarioVehiculoRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addPropietarioVehiculo(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removePropietarioVehiculoFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getPropietarioVehiculos().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addTipoDocumentoVehiculoToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.TipoDocumentoVehiculo e = tipoDocumentoVehiculoRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addTipoDocumentoVehiculo(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeTipoDocumentoVehiculoFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getTipoDocumentoVehiculos().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addUnidadMedidaToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.UnidadMedida e = unidadMedidaRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addUnidadMedida(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeUnidadMedidaFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getUnidadMedidas().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addUbicacionRutaToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.UbicacionRuta e = ubicacionRutaRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addUbicacionRuta(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeUbicacionRutaFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getUbicacionRutas().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addPaisOrigenToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.PaisOrigen e = paisOrigenRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addPaisOrigen(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removePaisOrigenFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getPaisOrigenes().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addNumeroEjeToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.NumeroEje e = numeroEjeRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addNumeroEje(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeNumeroEjeFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getNumeroEjes().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addConfiguracionEjeToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.ConfiguracionEje e = configuracionEjeRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addConfiguracionEje(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeConfiguracionEjeFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getConfiguracionEjes().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    // === GERENCIA DE VIAJES ===
+    @Transactional
+    public void addDistanciaRecorrerToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.DistanciaRecorrer e = distanciaRecorrerRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addDistanciaRecorrer(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeDistanciaRecorrerFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getDistanciaRecorrers().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addTipoViaToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.TipoVia e = tipoViaRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addTipoVia(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeTipoViaFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getTipoVias().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addCondicionClimaticaToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.CondicionClimatica e = condicionClimaticaRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addCondicionClimatica(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeCondicionClimaticaFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getCondicionClimaticas().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addHorarioCirculacionToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.HorarioCirculacion e = horarioCirculacionRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addHorarioCirculacion(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeHorarioCirculacionFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getHorarioCirculaciones().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addEstadoCarreteraToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.EstadoCarretera e = estadoCarreteraRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addEstadoCarretera(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeEstadoCarreteraFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getEstadoCarreteras().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addTipoCargaToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.TipoCarga e = tipoCargaRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addTipoCarga(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeTipoCargaFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getTipoCargas().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addHoraConduccionToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.HoraConduccion e = horaConduccionRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addHoraConduccion(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeHoraConduccionFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getHoraConducciones().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addHoraDescansoToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.HoraDescanso e = horaDescansoRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addHoraDescanso(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeHoraDescansoFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getHoraDescansos().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addMedioComunicacionToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.MedioComunicacion e = medioComunicacionRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addMedioComunicacion(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeMedioComunicacionFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getMedioComunicaciones().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addTransportaPasajeroToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.TransportaPasajero e = transportaPasajeroRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addTransportaPasajero(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeTransportaPasajeroFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getTransportaPasajeros().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addMetodologiaRiesgoToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.MetodologiaRiesgo e = metodologiaRiesgoRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addMetodologiaRiesgo(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+    @Transactional
+    public void removeMetodologiaRiesgoFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getMetodologiaRiesgos().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
     }
 }

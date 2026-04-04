@@ -239,7 +239,7 @@
                       <i class="fas fa-ban me-1"></i> Desactivado
                     </span>
                   </div>
-                  <button class="btn btn-sm mt-auto" [class.btn-outline-secondary]="true" [disabled]="!isModuleActive('mantenimiento')" (click)="goToModule('mantenimiento')">
+                  <button type="button" class="btn btn-sm mt-auto" [class.btn-outline-secondary]="true" [disabled]="!isModuleActive('mantenimiento')" [routerLink]="isModuleActive('mantenimiento') ? ['/usuario', empresaRuc, 'mantenimiento'] : null">
                     <i class="fas fa-arrow-right me-1"></i>
                     Acceder
                   </button>

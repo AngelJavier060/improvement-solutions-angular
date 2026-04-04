@@ -1,0 +1,168 @@
+<div class="doc-page" *ngIf="!loading && !error && vehicle">
+  <nav class="doc-breadcrumb d-flex align-items-center gap-2 mb-3 flex-wrap" aria-label="Miga de pan">
+    <a [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion']">Documentación</a>
+    <i class="fas fa-chevron-right small opacity-50"></i>
+    <span class="text-primary fw-bold">Unidad {{ vehicle.placa }}</span>
+  </nav>
+
+  <section class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <div class="doc-hero d-flex flex-column flex-md-row gap-4 align-items-center">
+        <div class="rounded overflow-hidden bg-light flex-shrink-0" style="width: 100%; max-width: 320px; height: 200px;">
+          <img
+            *ngIf="vehicle.fotoPrincipal"
+            [src]="vehicle.fotoPrincipal"
+            [alt]="vehicle.placa"
+            class="w-100 h-100"
+            style="object-fit: cover;"
+          />
+          <div *ngIf="!vehicle.fotoPrincipal" class="w-100 h-100 d-flex align-items-center justify-content-center text-muted small">
+            Sin foto
+          </div>
+        </div>
+        <div class="flex-grow-1 w-100">
+          <span class="doc-badge doc-badge--vigente mb-2 d-inline-block">Flota activa</span>
+          <h1 class="doc-headline h2 mb-1">{{ vehicle.placa }}</h1>
+          <p class="doc-muted mb-3">{{ vehicle.marca || '—' }} · {{ vehicle.modelo || '—' }}</p>
+          <div class="row g-3 pt-2 border-top">
+            <div class="col-6 col-md-4">
+              <p class="doc-form-label mb-1">Código</p>
+              <p class="fw-bold mb-0 small">{{ vehicle.codigoEquipo || '—' }}</p>
+            </div>
+            <div class="col-6 col-md-4">
+              <p class="doc-form-label mb-1">Clase</p>
+              <p class="fw-bold mb-0 small">{{ vehicle.clase || '—' }}</p>
+            </div>
+            <div class="col-6 col-md-4">
+              <p class="doc-form-label mb-1">Tipo</p>
+              <p class="fw-bold mb-0 small">{{ vehicle.tipoVehiculo || '—' }}</p>
+            </div>
+            <div class="col-md-6">
+              <p class="doc-form-label mb-1">Número motor</p>
+              <p class="fw-bold mb-0 small font-monospace">{{ vehicle.serieMotor || '—' }}</p>
+            </div>
+            <div class="col-md-6">
+              <p class="doc-form-label mb-1">Chasis / VIN</p>
+              <p class="fw-bold mb-0 small font-monospace">{{ vehicle.serieChasis || '—' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="doc-hero-aside h-100 d-flex flex-column justify-content-between">
+        <div>
+          <p class="small fw-bold text-white-50 text-uppercase mb-3" style="font-size: 0.65rem; letter-spacing: 0.08em;">Resumen</p>
+          <p class="doc-form-label text-white-50 mb-1">Documentos registrados</p>
+          <p class="doc-headline h3 text-white mb-0">{{ totalDocsCount() }}</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <button type="button" class="btn btn-light btn-sm fw-bold" (click)="irHistorial()">
+            <i class="fas fa-history me-1"></i>Historial
+          </button>
+          <button type="button" class="btn btn-outline-light btn-sm fw-bold" (click)="irRegistro()">
+            <i class="fas fa-plus me-1"></i>Nuevo
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="doc-table-wrap">
+    <div class="p-4 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+      <div>
+        <h2 class="doc-headline h5 mb-1">Documentación del vehículo</h2>
+        <p class="doc-muted small mb-0">Revise y gestione permisos y fechas de vigencia.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2 w-100 w-md-auto">
+        <div class="position-relative flex-grow-1" style="min-width: 200px;">
+          <i class="fas fa-search position-absolute text-muted" style="left: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.85rem;"></i>
+          <input
+            type="search"
+            class="form-control form-control-sm ps-4"
+            placeholder="Buscar tipo, código o referencia…"
+            [(ngModel)]="search"
+          />
+        </div>
+        <button type="button" class="doc-btn-primary btn-sm px-3 py-2" (click)="irRegistro()">
+          <i class="fas fa-file-upload me-1"></i>Registrar
+        </button>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table doc-table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Entidad remitente</th>
+            <th>Respaldo</th>
+            <th>Estado</th>
+            <th>Expedición</th>
+            <th>Vencimiento</th>
+            <th>Días</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of docs()" [ngClass]="rowClass(d)">
+            <td>
+              <div class="d-flex align-items-center gap-3">
+                <div class="rounded d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary" style="width: 40px; height: 40px;">
+                  <i class="fas fa-file-pdf"></i>
+                </div>
+                <div>
+                  <p class="fw-semibold text-primary mb-0 small">{{ d.typeLabel }}</p>
+                  <p class="text-muted mb-0" style="font-size: 0.7rem;">{{ d.referenceId }}</p>
+                </div>
+              </div>
+            </td>
+            <td class="small">{{ d.entidadRemitenteName || '—' }}</td>
+            <td class="small">
+              <a
+                *ngIf="d.attachedDocumentUrl"
+                [href]="d.attachedDocumentUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary fw-semibold text-nowrap"
+              ><i class="fas fa-file-pdf me-1"></i>PDF</a>
+              <span *ngIf="!d.attachedDocumentUrl" class="text-muted">—</span>
+            </td>
+            <td><span [ngClass]="statusBadgeClass(d)">{{ statusText(d) }}</span></td>
+            <td class="small fw-medium">{{ formatDate(d.issueDate) }}</td>
+            <td class="small fw-medium">{{ d.expiryDate ? formatDate(d.expiryDate) : '—' }}</td>
+            <td>
+              <ng-container *ngIf="d.expiryDate; else noExp">
+                <span class="fw-bold font-monospace" [class.text-danger]="status(d)==='VENCIDO'" [class.text-warning]="status(d)==='PROXIMO'" [class.text-success]="status(d)==='VIGENTE'">
+                  {{ days(d) }}
+                </span>
+              </ng-container>
+              <ng-template #noExp><span class="text-secondary fs-5">∞</span></ng-template>
+            </td>
+            <td class="text-end">
+              <button type="button" class="btn btn-link btn-sm text-primary p-1" title="Editar" (click)="irRegistro(d)">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button type="button" class="btn btn-link btn-sm text-danger p-1" title="Eliminar" (click)="deleteDoc(d)">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="px-4 py-3 bg-light border-top d-flex justify-content-between align-items-center">
+      <p class="small text-muted mb-0 fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.06em;">
+        {{ docs().length }} documento(s) mostrado(s)
+      </p>
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="volverLista()">Volver al listado</button>
+    </div>
+  </section>
+</div>
+
+<div class="doc-page" *ngIf="loading">
+  <p class="text-center text-muted py-5"><i class="fas fa-spinner fa-spin me-2"></i>Cargando unidad…</p>
+</div>
+<div class="doc-page" *ngIf="error && !loading">
+  <div class="alert alert-warning">{{ error }}</div>
+  <button type="button" class="btn btn-outline-primary" (click)="volverLista()">Volver</button>
+</div>

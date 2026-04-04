@@ -95,7 +95,7 @@ export class AuthService {
           password: credentials.password
         };
     
-    console.log('Enviando login request:', JSON.stringify(loginRequest));
+    console.log('Enviando login request para usuario:', credentials.username);
     
     return this.http.post<AuthResponse>(url, loginRequest)
       .pipe(

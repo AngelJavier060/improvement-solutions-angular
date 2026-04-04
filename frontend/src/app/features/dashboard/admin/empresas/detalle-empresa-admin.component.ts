@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { BusinessService } from '../../../../services/business.service';
 import { DepartmentService } from '../../../../services/department.service';
 import { UserService } from '../../../../services/user.service';
@@ -169,7 +170,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   obligationToEdit: any = null;
 
   // Archivos de matrices legales y pendientes
-  matrixFiles: { [matrixId: number]: any[] } = {};
+  matrixFiles: { [matrixId: number]: any[] | undefined } = {};
   matrixPending: { [matrixId: number]: any[] } = {};
   matrixFilesVisible: { [matrixId: number]: boolean } = {};
   matrixFilesLoading: { [matrixId: number]: boolean } = {};
@@ -184,6 +185,154 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   allSystemUsers: User[] = [];
   showAssignAdminModal = false;
   selectedUserIdForAdmin: number | null = null;
+
+  // Configuración de mantenimiento por empresa
+  showMaintenanceModal = false;
+  savingMaintenance = false;
+  maintenanceConfig: any = {
+    enabled: false,
+    serviceIntervalKm: 10000,
+    serviceIntervalMonths: 6,
+    notifyDaysBefore: 7,
+    workshopInternal: false,
+    notificationEmails: '',
+    clases: ['Trailer', 'Cabezal', 'Camión', 'Camioneta']
+  };
+
+  // Tipos de Vehículo asignados a la empresa
+  tipoVehiculos: any[] = [];
+  allTipoVehiculos: any[] = [];
+  showAsignVehicleTypeModal = false;
+  selectedVehicleTypeId: number | null = null;
+  savingVehicleType = false;
+
+  // Estados de Unidad asignados a la empresa
+  estadoUnidades: any[] = [];
+  allEstadoUnidades: any[] = [];
+  showAsignUnitStatusModal = false;
+  selectedUnitStatusId: number | null = null;
+  savingUnitStatus = false;
+
+  // Marcas de Vehículo
+  marcaVehiculos: any[] = [];
+  allMarcaVehiculos: any[] = [];
+  showAsignMarcaModal = false;
+  selectedMarcaId: number | null = null;
+  savingMarca = false;
+
+  claseVehiculos: any[] = [];
+  allClaseVehiculos: any[] = [];
+  showAsignClaseModal = false;
+  selectedClaseId: number | null = null;
+  savingClase = false;
+
+  entidadRemitentes: any[] = [];
+  allEntidadRemitentes: any[] = [];
+  showAsignEntidadRemModal = false;
+  selectedEntidadRemId: number | null = null;
+  savingEntidadRem = false;
+
+  // Tipos de Combustible
+  tipoCombustibles: any[] = [];
+  allTipoCombustibles: any[] = [];
+  showAsignCombustibleModal = false;
+  selectedCombustibleId: number | null = null;
+  savingCombustible = false;
+
+  // Colores de Vehículo
+  colorVehiculos: any[] = [];
+  allColorVehiculos: any[] = [];
+  showAsignColorModal = false;
+  selectedColorId: number | null = null;
+  savingColor = false;
+
+  // Transmisiones
+  transmisiones: any[] = [];
+  allTransmisiones: any[] = [];
+  showAsignTransmisionModal = false;
+  selectedTransmisionId: number | null = null;
+  savingTransmision = false;
+
+  // Propietarios de Vehículo
+  propietarioVehiculos: any[] = [];
+  allPropietarioVehiculos: any[] = [];
+  showAsignPropietarioModal = false;
+  selectedPropietarioId: number | null = null;
+  savingPropietario = false;
+
+  // Tipos de Documento Vehículo
+  tipoDocumentoVehiculos: any[] = [];
+  allTipoDocumentoVehiculos: any[] = [];
+  showAsignTipoDocVehModal = false;
+  selectedTipoDocVehId: number | null = null;
+  savingTipoDocVeh = false;
+
+  // Unidades de Medida
+  unidadMedidas: any[] = [];
+  allUnidadMedidas: any[] = [];
+  showAsignUnidadMedidaModal = false;
+  selectedUnidadMedidaId: number | null = null;
+  savingUnidadMedida = false;
+
+  // Ubicaciones/Rutas
+  ubicacionRutas: any[] = [];
+  allUbicacionRutas: any[] = [];
+  showAsignUbicacionModal = false;
+  selectedUbicacionId: number | null = null;
+  savingUbicacion = false;
+
+  // Países de Origen
+  paisOrigenes: any[] = [];
+  allPaisOrigenes: any[] = [];
+  showAsignPaisModal = false;
+  selectedPaisId: number | null = null;
+  savingPais = false;
+
+  numeroEjes: any[] = [];
+  allNumeroEjes: any[] = [];
+  showAsignNumeroEjeModal = false;
+  selectedNumeroEjeId: number | null = null;
+  savingNumeroEje = false;
+
+  configuracionEjes: any[] = [];
+  allConfiguracionEjes: any[] = [];
+  showAsignConfiguracionEjeModal = false;
+  selectedConfiguracionEjeId: number | null = null;
+  savingConfiguracionEje = false;
+
+  // === GERENCIA DE VIAJES — parámetros por empresa ===
+  distanciaRecorrers: any[] = []; allDistanciaRecorrers: any[] = [];
+  showAsignDistanciaModal = false; selectedDistanciaId: number | null = null; savingDistancia = false;
+
+  tipoVias: any[] = []; allTipoVias: any[] = [];
+  showAsignTipoViaModal = false; selectedTipoViaId: number | null = null; savingTipoVia = false;
+
+  condicionClimaticas: any[] = []; allCondicionClimaticas: any[] = [];
+  showAsignCondicionModal = false; selectedCondicionId: number | null = null; savingCondicion = false;
+
+  horarioCirculaciones: any[] = []; allHorarioCirculaciones: any[] = [];
+  showAsignHorarioCircModal = false; selectedHorarioCircId: number | null = null; savingHorarioCirc = false;
+
+  estadoCarreteras: any[] = []; allEstadoCarreteras: any[] = [];
+  showAsignEstadoCarrModal = false; selectedEstadoCarrId: number | null = null; savingEstadoCarr = false;
+
+  tipoCargas: any[] = []; allTipoCargas: any[] = [];
+  showAsignTipoCargaModal = false; selectedTipoCargaId: number | null = null; savingTipoCarga = false;
+
+  horaConducciones: any[] = []; allHoraConducciones: any[] = [];
+  showAsignHoraCondModal = false; selectedHoraCondId: number | null = null; savingHoraCond = false;
+
+  horaDescansos: any[] = []; allHoraDescansos: any[] = [];
+  showAsignHoraDescModal = false; selectedHoraDescId: number | null = null; savingHoraDesc = false;
+
+  medioComunicaciones: any[] = []; allMedioComunicaciones: any[] = [];
+  showAsignMedioComModal = false; selectedMedioComId: number | null = null; savingMedioCom = false;
+
+  transportaPasajeros: any[] = []; allTransportaPasajeros: any[] = [];
+  showAsignTransportaModal = false; selectedTransportaId: number | null = null; savingTransporta = false;
+
+  metodologiaRiesgos: any[] = []; allMetodologiaRiesgos: any[] = [];
+  showAsignMetodologiaModal = false; selectedMetodologiaId: number | null = null; savingMetodologia = false;
 
   // Modal para editar empresa
   showEditEmpresaModal = false;
@@ -206,20 +355,20 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   };
   editObligation: {
     id: number | null,
-    name: string,
-    description: string,
+    legalRegulation: string,
+    entryDate: string | null,
     dueDate: string | null,
-    status: string | null,
     priority: string | null,
-    responsiblePerson: string | null
+    status: string | null,
+    observations: string
   } = {
     id: null,
-    name: '',
-    description: '',
+    legalRegulation: '',
+    entryDate: null,
     dueDate: null,
-    status: null,
     priority: null,
-    responsiblePerson: null
+    status: null,
+    observations: ''
   };
 
   constructor(
@@ -249,7 +398,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private businessCtx: BusinessContextService,
     private qrLegalDocsService: QrLegalDocsService,
     private authService: AuthService,
-    private userAdminService: UserAdminService
+    private userAdminService: UserAdminService,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -260,6 +410,79 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.loadData();
         this.loadApprovals();
         this.loadBusinessAdmins();
+      }
+    });
+  }
+
+  // === Configuración de Mantenimiento (por empresa) ===
+  private defaultMaintenanceConfig(): any {
+    return {
+      enabled: false,
+      serviceIntervalKm: 10000,
+      serviceIntervalMonths: 6,
+      notifyDaysBefore: 7,
+      workshopInternal: false,
+      notificationEmails: '',
+      /** Clases de vehículo para fichas de flota (ficha técnica); editable en JSON al guardar configuración */
+      clases: ['Trailer', 'Cabezal', 'Camión', 'Camioneta']
+    };
+  }
+
+  loadMaintenanceConfig(): void {
+    if (!this.empresaId) return;
+    this.businessService.getMaintenanceConfig(this.empresaId).subscribe({
+      next: (cfg) => {
+        const def = this.defaultMaintenanceConfig();
+        try {
+          this.maintenanceConfig = { ...def, ...(cfg || {}) };
+          this.maintenanceConfig.enabled = !!this.maintenanceConfig.enabled;
+          this.maintenanceConfig.serviceIntervalKm = Number(this.maintenanceConfig.serviceIntervalKm) || def.serviceIntervalKm;
+          this.maintenanceConfig.serviceIntervalMonths = Number(this.maintenanceConfig.serviceIntervalMonths) || def.serviceIntervalMonths;
+          this.maintenanceConfig.notifyDaysBefore = Number(this.maintenanceConfig.notifyDaysBefore) || def.notifyDaysBefore;
+          this.maintenanceConfig.workshopInternal = !!this.maintenanceConfig.workshopInternal;
+          this.maintenanceConfig.notificationEmails = (this.maintenanceConfig.notificationEmails || '').toString();
+          const rawClases = this.maintenanceConfig.clases;
+          if (Array.isArray(rawClases)) {
+            this.maintenanceConfig.clases = rawClases
+              .map((c: any) => (typeof c === 'string' ? c.trim() : (c && c.name ? String(c.name).trim() : '')))
+              .filter((s: string) => !!s);
+          } else {
+            this.maintenanceConfig.clases = [...def.clases];
+          }
+        } catch {
+          this.maintenanceConfig = def;
+        }
+      },
+      error: () => {
+        this.maintenanceConfig = this.defaultMaintenanceConfig();
+      }
+    });
+  }
+
+  openMaintenanceModal(): void {
+    this.showMaintenanceModal = true;
+  }
+
+  closeMaintenanceModal(): void {
+    this.showMaintenanceModal = false;
+  }
+
+  saveMaintenanceConfig(): void {
+    if (!this.empresaId) return;
+    this.savingMaintenance = true;
+    const cfg = { ...this.maintenanceConfig };
+    if (typeof cfg.notificationEmails === 'string') {
+      cfg.notificationEmails = cfg.notificationEmails.split(',').map((s: string) => s.trim()).filter((s: string) => !!s).join(', ');
+    }
+    this.businessService.updateMaintenanceConfig(this.empresaId, cfg).subscribe({
+      next: () => {
+        this.savingMaintenance = false;
+        this.showMaintenanceModal = false;
+        alert('Configuración de mantenimiento guardada');
+      },
+      error: () => {
+        this.savingMaintenance = false;
+        alert('No se pudo guardar la configuración de mantenimiento');
       }
     });
   }
@@ -681,6 +904,10 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     this.router.navigate(['/dashboard', 'admin', 'usuarios']);
   }
 
+  goToConfig(section: string): void {
+    this.router.navigate(['/dashboard', 'admin', 'configuracion', section]);
+  }
+
   loadCourseCertifications(): void {
     this.courseCertificationService.getAll().subscribe({
       next: (data: any[]) => {
@@ -1092,6 +1319,44 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     return isNaN(relId) ? 0 : relId;
   }
 
+  formatObligationDate(date: any): string {
+    if (!date) return '—';
+    try {
+      // Puede llegar como array [year, month, day, ...], ISO string o timestamp
+      let d: Date;
+      if (Array.isArray(date)) {
+        d = new Date(date[0], date[1] - 1, date[2], date[3] || 0, date[4] || 0, date[5] || 0);
+      } else {
+        d = new Date(date);
+      }
+      if (isNaN(d.getTime())) return String(date);
+      const day = d.getDate().toString().padStart(2, '0');
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      return `${day}/${month}/${d.getFullYear()}`;
+    } catch {
+      return String(date);
+    }
+  }
+
+  toDateInputString(date: any): string | null {
+    if (!date) return null;
+    try {
+      let d: Date;
+      if (Array.isArray(date)) {
+        d = new Date(date[0], date[1] - 1, date[2]);
+      } else {
+        d = new Date(date);
+      }
+      if (isNaN(d.getTime())) return null;
+      const year = d.getFullYear();
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      const day = d.getDate().toString().padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch {
+      return null;
+    }
+  }
+
   deleteMatrixFile(fileId: number, matrixId: number): void {
     if (!fileId) return;
     
@@ -1181,18 +1446,18 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     });
   }
 
-  // Abrir modal para editar la relación de obligación por empresa
+  // Abrir modal para editar los parámetros de la relación de obligación por empresa
   openEditObligationModal(obligation: any): void {
     if (!obligation) return;
     this.obligationToEdit = obligation;
     const relId = Number(obligation?.id);
-    const name = obligation?.name || obligation?.obligationMatrix?.name || '';
-    const description = obligation?.description || obligation?.obligationMatrix?.description || '';
-    const dueDate = obligation?.dueDate ? String(obligation.dueDate).substring(0, 10) : null;
-    const status = obligation?.status || null;
+    const legalRegulation = obligation?.obligationMatrix?.legalRegulation || obligation?.legalRegulation || '—';
+    const entryDate = this.toDateInputString(obligation?.createdAt);
+    const dueDate = this.toDateInputString(obligation?.dueDate);
     const priority = obligation?.priority || null;
-    const responsiblePerson = obligation?.responsiblePerson || null;
-    this.editObligation = { id: relId || null, name, description, dueDate, status, priority, responsiblePerson };
+    const status = obligation?.status || null;
+    const observations = obligation?.observations || obligation?.description || '';
+    this.editObligation = { id: relId || null, legalRegulation, entryDate, dueDate, priority, status, observations };
     this.showEditObligationModal = true;
   }
 
@@ -1275,19 +1540,19 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     const catalogId = this.getObligationCatalogId(this.obligationToEdit);
     const payload: any = {
       obligationMatrix: catalogId ? { id: Number(catalogId) } : undefined,
-      name: this.editObligation.name,
-      description: this.editObligation.description,
+      createdAt: this.editObligation.entryDate ? `${this.editObligation.entryDate}T00:00:00` : undefined,
       dueDate: this.editObligation.dueDate,
-      status: this.editObligation.status,
       priority: this.editObligation.priority,
-      responsiblePerson: this.editObligation.responsiblePerson
+      status: this.editObligation.status,
+      observations: this.editObligation.observations,
+      description: this.editObligation.observations  // compatibilidad backend
     };
     this.savingObligation = true;
     this.bomService.update(relationId, payload).subscribe({
       next: () => {
         this.savingObligation = false;
         this.showEditObligationModal = false;
-        this.loadData();
+        this.loadObligationMatrices();
         alert('Matriz legal actualizada exitosamente');
       },
       error: (e) => {
@@ -1378,6 +1643,45 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     }
   }
 
+  loadObligationMatrices(): void {
+    if (!this.empresaId) return;
+    this.bomService.getByBusiness(this.empresaId).subscribe({
+      next: (relaciones: any[]) => {
+        this.empresa.obligation_matrices = Array.isArray(relaciones) ? relaciones : [];
+        // Precargar conteo de archivos para todos las obligaciones
+        this.preloadMatrixFileCounts(this.empresa.obligation_matrices);
+      },
+      error: (err) => {
+        console.error('Error al cargar matriz legal de empresa:', err);
+      }
+    });
+  }
+
+  private preloadMatrixFileCounts(obligations: any[]): void {
+    if (!Array.isArray(obligations)) return;
+    obligations.forEach(ob => {
+      const matrixId = this.getMatrixRelationId(ob);
+      if (!matrixId || this.matrixFiles[matrixId] !== undefined) return;
+      this.matrixFilesLoading[matrixId] = true;
+      this.bomService.listFiles(matrixId).subscribe({
+        next: (files) => {
+          const list = Array.isArray(files) ? files : [];
+          list.sort((a: any, b: any) => {
+            const da = a?.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+            const db = b?.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+            return db !== da ? db - da : (Number(b?.id) || 0) - (Number(a?.id) || 0);
+          });
+          this.matrixFiles[matrixId] = list;
+          this.matrixFilesLoading[matrixId] = false;
+        },
+        error: () => {
+          this.matrixFiles[matrixId] = [];
+          this.matrixFilesLoading[matrixId] = false;
+        }
+      });
+    });
+  }
+
   loadData(): void {
     this.loading = true;
     this.error = null;
@@ -1463,6 +1767,10 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         if (!this.empresa.users) this.empresa.users = [];
         if (!this.empresa.employees) this.empresa.employees = [];
         if (!this.empresa.obligation_matrices) this.empresa.obligation_matrices = [];
+
+        // Cargar obligaciones desde el mismo endpoint que usa el módulo usuario
+        // garantiza que el admin ve exactamente los mismos datos que /seguridad-industrial/matriz-legal
+        this.loadObligationMatrices();
         
         // Inicializar propiedades de empresas contratistas
         if (!this.empresa.contractor_companies) this.empresa.contractor_companies = [];
@@ -1501,6 +1809,41 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         
         // Cargar datos globales para las listas desplegables de asignación
         this.loadConfigurationData();
+        // Cargar configuración de mantenimiento específica de esta empresa
+        this.loadMaintenanceConfig();
+        
+        // Cargar todos los parámetros de mantenimiento asignados a la empresa
+        this.tipoVehiculos = empresa.tipoVehiculos || [];
+        this.estadoUnidades = empresa.estadoUnidades || [];
+        this.marcaVehiculos = empresa.marcaVehiculos || [];
+        this.claseVehiculos = empresa.claseVehiculos || [];
+        this.entidadRemitentes = empresa.entidadRemitentes || [];
+        this.tipoCombustibles = empresa.tipoCombustibles || [];
+        this.colorVehiculos = empresa.colorVehiculos || [];
+        this.transmisiones = empresa.transmisiones || [];
+        this.propietarioVehiculos = empresa.propietarioVehiculos || [];
+        this.tipoDocumentoVehiculos = empresa.tipoDocumentoVehiculos || [];
+        this.unidadMedidas = empresa.unidadMedidas || [];
+        this.ubicacionRutas = empresa.ubicacionRutas || [];
+        this.paisOrigenes = empresa.paisOrigenes || [];
+        this.numeroEjes = empresa.numeroEjes || [];
+        this.configuracionEjes = empresa.configuracionEjes || [];
+
+        // Gerencia de Viajes
+        this.distanciaRecorrers = empresa.distanciaRecorrers || [];
+        this.tipoVias = empresa.tipoVias || [];
+        this.condicionClimaticas = empresa.condicionClimaticas || [];
+        this.horarioCirculaciones = empresa.horarioCirculaciones || [];
+        this.estadoCarreteras = empresa.estadoCarreteras || [];
+        this.tipoCargas = empresa.tipoCargas || [];
+        this.horaConducciones = empresa.horaConducciones || [];
+        this.horaDescansos = empresa.horaDescansos || [];
+        this.medioComunicaciones = empresa.medioComunicaciones || [];
+        this.transportaPasajeros = empresa.transportaPasajeros || [];
+        this.metodologiaRiesgos = empresa.metodologiaRiesgos || [];
+
+        // Cargar catálogos globales de mantenimiento
+        this.loadMaintenanceCatalogs();
         
         console.log('Datos específicos de la empresa cargados:', empresa);
         console.log('Departamentos de la empresa:', empresa.departments?.length || 0);
@@ -2455,8 +2798,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       this.selectedObligacionesMatriz = [];
       this.showAsignObligationModal = false;
       this.editingContext = null;
-      // Recargar desde backend para reflejar el objeto relación (BusinessObligationMatrix)
-      this.loadData();
+      // Recargar obligaciones desde el mismo endpoint que usa el módulo usuario
+      this.loadObligationMatrices();
       alert('Matrices de obligación asignadas/actualizadas exitosamente');
     }).catch(error => {
       console.error('Error al asignar/actualizar matrices de obligación:', error);
@@ -2490,10 +2833,10 @@ export class DetalleEmpresaAdminComponent implements OnInit {
             return Number(id) !== Number(obligationId);
           });
 
-          // Verificación: recargar detalles admin para confirmar que persistió
-          this.businessService.getBusinessAdminDetails(this.empresa.id).subscribe({
-            next: (empresaDet: any) => {
-              const stillThere = (empresaDet?.obligation_matrices || []).some((o: any) => {
+          // Verificación: recargar obligaciones desde endpoint directo para confirmar que persistió
+          this.bomService.getByBusiness(this.empresa.id).subscribe({
+            next: (relaciones: any[]) => {
+              const stillThere = (relaciones || []).some((o: any) => {
                 const id = this.getObligationCatalogId(o);
                 return Number(id) === Number(obligationId);
               });
@@ -2503,7 +2846,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
                 if (relationId) {
                   this.bomService.delete(relationId).subscribe({
                     next: () => {
-                      this.loadData();
+                      this.loadObligationMatrices();
                       alert('Matriz de obligación eliminada exitosamente (por relación).');
                       this.deletingObligationIds.delete(Number(obligationId));
                     },
@@ -2514,13 +2857,13 @@ export class DetalleEmpresaAdminComponent implements OnInit {
                     }
                   });
                 } else {
-                  this.loadData();
+                  this.empresa.obligation_matrices = relaciones;
                   alert('La obligación sigue presente tras eliminar. Es posible que el backend espere otro ID.');
                   this.deletingObligationIds.delete(Number(obligationId));
                 }
               } else {
-                // Todo bien: refrescar desde backend para mantener consistencia
-                this.loadData();
+                // Todo bien: aplicar datos frescos directamente
+                this.empresa.obligation_matrices = relaciones;
                 alert('Matriz de obligación eliminada exitosamente');
                 this.deletingObligationIds.delete(Number(obligationId));
               }
@@ -3597,4 +3940,440 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     const id = Number(item?.id);
     return isNaN(id) ? index : id;
   }
+
+  // === MÉTODOS PARA MANTENIMIENTO: CATÁLOGOS GLOBALES ===
+  loadMaintenanceCatalogs(): void {
+    const endpoints: {url: string, prop: string}[] = [
+      { url: '/api/public/tipo-vehiculos', prop: 'allTipoVehiculos' },
+      { url: '/api/public/estado-unidades', prop: 'allEstadoUnidades' },
+      { url: '/api/public/marca-vehiculos', prop: 'allMarcaVehiculos' },
+      { url: '/api/public/clase-vehiculos', prop: 'allClaseVehiculos' },
+      { url: '/api/public/entidades-remitente', prop: 'allEntidadRemitentes' },
+      { url: '/api/public/tipo-combustibles', prop: 'allTipoCombustibles' },
+      { url: '/api/public/color-vehiculos', prop: 'allColorVehiculos' },
+      { url: '/api/public/transmisiones', prop: 'allTransmisiones' },
+      { url: '/api/public/propietario-vehiculos', prop: 'allPropietarioVehiculos' },
+      { url: '/api/public/tipo-documento-vehiculos', prop: 'allTipoDocumentoVehiculos' },
+      { url: '/api/public/unidad-medidas', prop: 'allUnidadMedidas' },
+      { url: '/api/public/ubicacion-rutas', prop: 'allUbicacionRutas' },
+      { url: '/api/public/pais-origenes', prop: 'allPaisOrigenes' },
+      { url: '/api/public/numero-ejes', prop: 'allNumeroEjes' },
+      { url: '/api/public/configuracion-ejes', prop: 'allConfiguracionEjes' },
+      // Gerencia de Viajes
+      { url: '/api/public/distancia-recorrer', prop: 'allDistanciaRecorrers' },
+      { url: '/api/public/tipo-vias', prop: 'allTipoVias' },
+      { url: '/api/public/condicion-climaticas', prop: 'allCondicionClimaticas' },
+      { url: '/api/public/horario-circulaciones', prop: 'allHorarioCirculaciones' },
+      { url: '/api/public/estado-carreteras', prop: 'allEstadoCarreteras' },
+      { url: '/api/public/tipo-cargas', prop: 'allTipoCargas' },
+      { url: '/api/public/hora-conducciones', prop: 'allHoraConducciones' },
+      { url: '/api/public/hora-descansos', prop: 'allHoraDescansos' },
+      { url: '/api/public/medio-comunicaciones', prop: 'allMedioComunicaciones' },
+      { url: '/api/public/transporta-pasajeros', prop: 'allTransportaPasajeros' },
+      { url: '/api/public/metodologia-riesgo', prop: 'allMetodologiaRiesgos' },
+    ];
+    endpoints.forEach(ep => {
+      this.http.get<any[]>(ep.url).subscribe({
+        next: (data: any[]) => { (this as any)[ep.prop] = data || []; },
+        error: (err: any) => console.error(`Error cargando ${ep.url}:`, err)
+      });
+    });
+  }
+
+  openAsignVehicleTypeModal(): void {
+    this.showAsignVehicleTypeModal = true;
+    this.selectedVehicleTypeId = null;
+  }
+
+  closeAsignVehicleTypeModal(): void {
+    this.showAsignVehicleTypeModal = false;
+    this.selectedVehicleTypeId = null;
+  }
+
+  assignVehicleType(): void {
+    if (!this.selectedVehicleTypeId) return;
+    this.savingVehicleType = true;
+    this.http.post(`/api/businesses/${this.empresaId}/tipo-vehiculo/${this.selectedVehicleTypeId}`, {}).subscribe({
+      next: () => {
+        this.savingVehicleType = false;
+        this.closeAsignVehicleTypeModal();
+        this.loadData(); // Recargar datos de la empresa
+      },
+      error: (err) => {
+        this.savingVehicleType = false;
+        console.error('Error asignando tipo de vehículo:', err);
+        alert('Error al asignar tipo de vehículo');
+      }
+    });
+  }
+
+  removeVehicleType(tipoVehiculoId: number): void {
+    if (!confirm('¿Desea eliminar este tipo de vehículo de la empresa?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/tipo-vehiculo/${tipoVehiculoId}`).subscribe({
+      next: () => {
+        this.loadData(); // Recargar datos de la empresa
+      },
+      error: (err) => {
+        console.error('Error eliminando tipo de vehículo:', err);
+        alert('Error al eliminar tipo de vehículo');
+      }
+    });
+  }
+
+  availableVehicleTypes(): any[] {
+    const assignedIds = this.tipoVehiculos.map(tv => tv.id);
+    return this.allTipoVehiculos.filter(tv => !assignedIds.includes(tv.id));
+  }
+
+  // === MÉTODOS PARA MANTENIMIENTO: ESTADOS DE UNIDAD ===
+  openAsignUnitStatusModal(): void {
+    this.showAsignUnitStatusModal = true;
+    this.selectedUnitStatusId = null;
+  }
+
+  closeAsignUnitStatusModal(): void {
+    this.showAsignUnitStatusModal = false;
+    this.selectedUnitStatusId = null;
+  }
+
+  assignUnitStatus(): void {
+    if (!this.selectedUnitStatusId) return;
+    this.savingUnitStatus = true;
+    this.http.post(`/api/businesses/${this.empresaId}/estado-unidad/${this.selectedUnitStatusId}`, {}).subscribe({
+      next: () => {
+        this.savingUnitStatus = false;
+        this.closeAsignUnitStatusModal();
+        this.loadData(); // Recargar datos de la empresa
+      },
+      error: (err) => {
+        this.savingUnitStatus = false;
+        console.error('Error asignando estado de unidad:', err);
+        alert('Error al asignar estado de unidad');
+      }
+    });
+  }
+
+  removeUnitStatus(estadoUnidadId: number): void {
+    if (!confirm('¿Desea eliminar este estado de unidad de la empresa?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/estado-unidad/${estadoUnidadId}`).subscribe({
+      next: () => { this.loadData(); },
+      error: (err) => { console.error('Error eliminando estado de unidad:', err); alert('Error al eliminar estado de unidad'); }
+    });
+  }
+
+  availableUnitStatuses(): any[] {
+    const ids = this.estadoUnidades.map((e: any) => e.id);
+    return this.allEstadoUnidades.filter((e: any) => !ids.includes(e.id));
+  }
+
+  // === MARCA VEHÍCULO ===
+  openAsignMarcaModal(): void { this.showAsignMarcaModal = true; this.selectedMarcaId = null; }
+  closeAsignMarcaModal(): void { this.showAsignMarcaModal = false; }
+  availableMarcas(): any[] { const ids = this.marcaVehiculos.map((e:any)=>e.id); return this.allMarcaVehiculos.filter((e:any)=>!ids.includes(e.id)); }
+  assignMarca(): void {
+    if (!this.selectedMarcaId) return;
+    this.savingMarca = true;
+    this.http.post(`/api/businesses/${this.empresaId}/marca-vehiculo/${this.selectedMarcaId}`, {}).subscribe({
+      next: () => { this.savingMarca = false; this.showAsignMarcaModal = false; this.loadData(); },
+      error: (err: any) => { this.savingMarca = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removeMarca(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/marca-vehiculo/${id}`).subscribe({
+      next: () => this.loadData(),
+      error: (err: any) => { console.error(err); alert('Error al eliminar'); }
+    });
+  }
+
+  openAsignClaseModal(): void { this.showAsignClaseModal = true; this.selectedClaseId = null; }
+  closeAsignClaseModal(): void { this.showAsignClaseModal = false; }
+  availableClases(): any[] {
+    const ids = this.claseVehiculos.map((e: any) => e.id);
+    return this.allClaseVehiculos.filter((e: any) => !ids.includes(e.id));
+  }
+  assignClase(): void {
+    if (!this.selectedClaseId) return;
+    this.savingClase = true;
+    this.http.post(`/api/businesses/${this.empresaId}/clase-vehiculo/${this.selectedClaseId}`, {}).subscribe({
+      next: () => { this.savingClase = false; this.showAsignClaseModal = false; this.loadData(); },
+      error: (err: any) => { this.savingClase = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removeClase(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/clase-vehiculo/${id}`).subscribe({
+      next: () => this.loadData(),
+      error: (err: any) => { console.error(err); alert('Error al eliminar'); }
+    });
+  }
+
+  openAsignEntidadRemModal(): void { this.showAsignEntidadRemModal = true; this.selectedEntidadRemId = null; }
+  closeAsignEntidadRemModal(): void { this.showAsignEntidadRemModal = false; }
+  availableEntidadRems(): any[] {
+    const ids = this.entidadRemitentes.map((e: any) => e.id);
+    return this.allEntidadRemitentes.filter((e: any) => !ids.includes(e.id));
+  }
+  assignEntidadRem(): void {
+    if (!this.selectedEntidadRemId) return;
+    this.savingEntidadRem = true;
+    this.http.post(`/api/businesses/${this.empresaId}/entidad-remitente/${this.selectedEntidadRemId}`, {}).subscribe({
+      next: () => { this.savingEntidadRem = false; this.showAsignEntidadRemModal = false; this.loadData(); },
+      error: (err: any) => { this.savingEntidadRem = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removeEntidadRem(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/entidad-remitente/${id}`).subscribe({
+      next: () => this.loadData(),
+      error: (err: any) => { console.error(err); alert('Error al eliminar'); }
+    });
+  }
+
+  // === TIPO COMBUSTIBLE ===
+  openAsignCombustibleModal(): void { this.showAsignCombustibleModal = true; this.selectedCombustibleId = null; }
+  closeAsignCombustibleModal(): void { this.showAsignCombustibleModal = false; }
+  availableCombustibles(): any[] { const ids = this.tipoCombustibles.map((e:any)=>e.id); return this.allTipoCombustibles.filter((e:any)=>!ids.includes(e.id)); }
+  assignCombustible(): void {
+    if (!this.selectedCombustibleId) return;
+    this.savingCombustible = true;
+    this.http.post(`/api/businesses/${this.empresaId}/tipo-combustible/${this.selectedCombustibleId}`, {}).subscribe({
+      next: () => { this.savingCombustible = false; this.showAsignCombustibleModal = false; this.loadData(); },
+      error: (err: any) => { this.savingCombustible = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removeCombustible(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/tipo-combustible/${id}`).subscribe({ next: () => this.loadData(), error: (err:any) => { console.error(err); alert('Error'); } });
+  }
+
+  // === COLOR VEHÍCULO ===
+  openAsignColorModal(): void { this.showAsignColorModal = true; this.selectedColorId = null; }
+  closeAsignColorModal(): void { this.showAsignColorModal = false; }
+  availableColors(): any[] { const ids = this.colorVehiculos.map((e:any)=>e.id); return this.allColorVehiculos.filter((e:any)=>!ids.includes(e.id)); }
+  assignColor(): void {
+    if (!this.selectedColorId) return;
+    this.savingColor = true;
+    this.http.post(`/api/businesses/${this.empresaId}/color-vehiculo/${this.selectedColorId}`, {}).subscribe({
+      next: () => { this.savingColor = false; this.showAsignColorModal = false; this.loadData(); },
+      error: (err: any) => { this.savingColor = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removeColor(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/color-vehiculo/${id}`).subscribe({ next: () => this.loadData(), error: (err:any) => { console.error(err); alert('Error'); } });
+  }
+
+  // === TRANSMISIÓN ===
+  openAsignTransmisionModal(): void { this.showAsignTransmisionModal = true; this.selectedTransmisionId = null; }
+  closeAsignTransmisionModal(): void { this.showAsignTransmisionModal = false; }
+  availableTransmisiones(): any[] { const ids = this.transmisiones.map((e:any)=>e.id); return this.allTransmisiones.filter((e:any)=>!ids.includes(e.id)); }
+  assignTransmision(): void {
+    if (!this.selectedTransmisionId) return;
+    this.savingTransmision = true;
+    this.http.post(`/api/businesses/${this.empresaId}/transmision/${this.selectedTransmisionId}`, {}).subscribe({
+      next: () => { this.savingTransmision = false; this.showAsignTransmisionModal = false; this.loadData(); },
+      error: (err: any) => { this.savingTransmision = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removeTransmision(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/transmision/${id}`).subscribe({ next: () => this.loadData(), error: (err:any) => { console.error(err); alert('Error'); } });
+  }
+
+  // === PROPIETARIO VEHÍCULO ===
+  openAsignPropietarioModal(): void { this.showAsignPropietarioModal = true; this.selectedPropietarioId = null; }
+  closeAsignPropietarioModal(): void { this.showAsignPropietarioModal = false; }
+  availablePropietarios(): any[] { const ids = this.propietarioVehiculos.map((e:any)=>e.id); return this.allPropietarioVehiculos.filter((e:any)=>!ids.includes(e.id)); }
+  assignPropietario(): void {
+    if (!this.selectedPropietarioId) return;
+    this.savingPropietario = true;
+    this.http.post(`/api/businesses/${this.empresaId}/propietario-vehiculo/${this.selectedPropietarioId}`, {}).subscribe({
+      next: () => { this.savingPropietario = false; this.showAsignPropietarioModal = false; this.loadData(); },
+      error: (err: any) => { this.savingPropietario = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removePropietario(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/propietario-vehiculo/${id}`).subscribe({ next: () => this.loadData(), error: (err:any) => { console.error(err); alert('Error'); } });
+  }
+
+  // === TIPO DOCUMENTO VEHÍCULO ===
+  openAsignTipoDocVehModal(): void { this.showAsignTipoDocVehModal = true; this.selectedTipoDocVehId = null; }
+  closeAsignTipoDocVehModal(): void { this.showAsignTipoDocVehModal = false; }
+  availableTipoDocVeh(): any[] { const ids = this.tipoDocumentoVehiculos.map((e:any)=>e.id); return this.allTipoDocumentoVehiculos.filter((e:any)=>!ids.includes(e.id)); }
+  assignTipoDocVeh(): void {
+    if (!this.selectedTipoDocVehId) return;
+    this.savingTipoDocVeh = true;
+    this.http.post(`/api/businesses/${this.empresaId}/tipo-documento-vehiculo/${this.selectedTipoDocVehId}`, {}).subscribe({
+      next: () => { this.savingTipoDocVeh = false; this.showAsignTipoDocVehModal = false; this.loadData(); },
+      error: (err: any) => { this.savingTipoDocVeh = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removeTipoDocVeh(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/tipo-documento-vehiculo/${id}`).subscribe({ next: () => this.loadData(), error: (err:any) => { console.error(err); alert('Error'); } });
+  }
+
+  // === UNIDAD MEDIDA ===
+  openAsignUnidadMedidaModal(): void { this.showAsignUnidadMedidaModal = true; this.selectedUnidadMedidaId = null; }
+  closeAsignUnidadMedidaModal(): void { this.showAsignUnidadMedidaModal = false; }
+  availableUnidadMedidas(): any[] { const ids = this.unidadMedidas.map((e:any)=>e.id); return this.allUnidadMedidas.filter((e:any)=>!ids.includes(e.id)); }
+  assignUnidadMedida(): void {
+    if (!this.selectedUnidadMedidaId) return;
+    this.savingUnidadMedida = true;
+    this.http.post(`/api/businesses/${this.empresaId}/unidad-medida/${this.selectedUnidadMedidaId}`, {}).subscribe({
+      next: () => { this.savingUnidadMedida = false; this.showAsignUnidadMedidaModal = false; this.loadData(); },
+      error: (err: any) => { this.savingUnidadMedida = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removeUnidadMedida(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/unidad-medida/${id}`).subscribe({ next: () => this.loadData(), error: (err:any) => { console.error(err); alert('Error'); } });
+  }
+
+  // === UBICACIÓN RUTA ===
+  openAsignUbicacionModal(): void { this.showAsignUbicacionModal = true; this.selectedUbicacionId = null; }
+  closeAsignUbicacionModal(): void { this.showAsignUbicacionModal = false; }
+  availableUbicaciones(): any[] { const ids = this.ubicacionRutas.map((e:any)=>e.id); return this.allUbicacionRutas.filter((e:any)=>!ids.includes(e.id)); }
+  assignUbicacion(): void {
+    if (!this.selectedUbicacionId) return;
+    this.savingUbicacion = true;
+    this.http.post(`/api/businesses/${this.empresaId}/ubicacion-ruta/${this.selectedUbicacionId}`, {}).subscribe({
+      next: () => { this.savingUbicacion = false; this.showAsignUbicacionModal = false; this.loadData(); },
+      error: (err: any) => { this.savingUbicacion = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removeUbicacion(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/ubicacion-ruta/${id}`).subscribe({ next: () => this.loadData(), error: (err:any) => { console.error(err); alert('Error'); } });
+  }
+
+  // === PAÍS ORIGEN ===
+  openAsignPaisModal(): void { this.showAsignPaisModal = true; this.selectedPaisId = null; }
+  closeAsignPaisModal(): void { this.showAsignPaisModal = false; }
+  availablePaises(): any[] { const ids = this.paisOrigenes.map((e:any)=>e.id); return this.allPaisOrigenes.filter((e:any)=>!ids.includes(e.id)); }
+  assignPais(): void {
+    if (!this.selectedPaisId) return;
+    this.savingPais = true;
+    this.http.post(`/api/businesses/${this.empresaId}/pais-origen/${this.selectedPaisId}`, {}).subscribe({
+      next: () => { this.savingPais = false; this.showAsignPaisModal = false; this.loadData(); },
+      error: (err: any) => { this.savingPais = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removePais(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/pais-origen/${id}`).subscribe({ next: () => this.loadData(), error: (err:any) => { console.error(err); alert('Error'); } });
+  }
+
+  openAsignNumeroEjeModal(): void { this.showAsignNumeroEjeModal = true; this.selectedNumeroEjeId = null; }
+  closeAsignNumeroEjeModal(): void { this.showAsignNumeroEjeModal = false; }
+  availableNumeroEjes(): any[] {
+    const ids = this.numeroEjes.map((e: any) => e.id);
+    return this.allNumeroEjes.filter((e: any) => !ids.includes(e.id));
+  }
+  assignNumeroEje(): void {
+    if (!this.selectedNumeroEjeId) return;
+    this.savingNumeroEje = true;
+    this.http.post(`/api/businesses/${this.empresaId}/numero-eje/${this.selectedNumeroEjeId}`, {}).subscribe({
+      next: () => { this.savingNumeroEje = false; this.showAsignNumeroEjeModal = false; this.loadData(); },
+      error: (err: any) => { this.savingNumeroEje = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removeNumeroEje(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/numero-eje/${id}`).subscribe({ next: () => this.loadData(), error: (err: any) => { console.error(err); alert('Error'); } });
+  }
+
+  openAsignConfiguracionEjeModal(): void { this.showAsignConfiguracionEjeModal = true; this.selectedConfiguracionEjeId = null; }
+  closeAsignConfiguracionEjeModal(): void { this.showAsignConfiguracionEjeModal = false; }
+  availableConfiguracionEjes(): any[] {
+    const ids = this.configuracionEjes.map((e: any) => e.id);
+    return this.allConfiguracionEjes.filter((e: any) => !ids.includes(e.id));
+  }
+  assignConfiguracionEje(): void {
+    if (!this.selectedConfiguracionEjeId) return;
+    this.savingConfiguracionEje = true;
+    this.http.post(`/api/businesses/${this.empresaId}/configuracion-eje/${this.selectedConfiguracionEjeId}`, {}).subscribe({
+      next: () => { this.savingConfiguracionEje = false; this.showAsignConfiguracionEjeModal = false; this.loadData(); },
+      error: (err: any) => { this.savingConfiguracionEje = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  removeConfiguracionEje(id: number): void {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/configuracion-eje/${id}`).subscribe({ next: () => this.loadData(), error: (err: any) => { console.error(err); alert('Error'); } });
+  }
+
+  // === GERENCIA DE VIAJES ===
+  private viajesAssign(endpoint: string, id: number | null, prop: string, savingProp: string, modalProp: string) {
+    if (!id) return;
+    (this as any)[savingProp] = true;
+    this.http.post(`/api/businesses/${this.empresaId}/${endpoint}/${id}`, {}).subscribe({
+      next: () => { (this as any)[savingProp] = false; (this as any)[modalProp] = false; this.loadData(); },
+      error: (err: any) => { (this as any)[savingProp] = false; console.error(err); alert('Error al asignar'); }
+    });
+  }
+  private viajesRemove(endpoint: string, id: number) {
+    if (!confirm('¿Eliminar?')) return;
+    this.http.delete(`/api/businesses/${this.empresaId}/${endpoint}/${id}`).subscribe({ next: () => this.loadData(), error: (err: any) => { console.error(err); alert('Error'); } });
+  }
+  availableViajes(allProp: string, assignedProp: string): any[] {
+    const assigned = ((this as any)[assignedProp] as any[]).map((x: any) => x.id);
+    return ((this as any)[allProp] as any[]).filter((x: any) => !assigned.includes(x.id));
+  }
+
+  openAsignDistanciaModal() { this.showAsignDistanciaModal = true; this.selectedDistanciaId = null; }
+  closeAsignDistanciaModal() { this.showAsignDistanciaModal = false; }
+  assignDistancia() { this.viajesAssign('distancia-recorrer', this.selectedDistanciaId, 'distanciaRecorrers', 'savingDistancia', 'showAsignDistanciaModal'); }
+  removeDistancia(id: number) { this.viajesRemove('distancia-recorrer', id); }
+
+  openAsignTipoViaModal() { this.showAsignTipoViaModal = true; this.selectedTipoViaId = null; }
+  closeAsignTipoViaModal() { this.showAsignTipoViaModal = false; }
+  assignTipoVia() { this.viajesAssign('tipo-via', this.selectedTipoViaId, 'tipoVias', 'savingTipoVia', 'showAsignTipoViaModal'); }
+  removeTipoVia(id: number) { this.viajesRemove('tipo-via', id); }
+
+  openAsignCondicionModal() { this.showAsignCondicionModal = true; this.selectedCondicionId = null; }
+  closeAsignCondicionModal() { this.showAsignCondicionModal = false; }
+  assignCondicion() { this.viajesAssign('condicion-climatica', this.selectedCondicionId, 'condicionClimaticas', 'savingCondicion', 'showAsignCondicionModal'); }
+  removeCondicion(id: number) { this.viajesRemove('condicion-climatica', id); }
+
+  openAsignHorarioCircModal() { this.showAsignHorarioCircModal = true; this.selectedHorarioCircId = null; }
+  closeAsignHorarioCircModal() { this.showAsignHorarioCircModal = false; }
+  assignHorarioCirc() { this.viajesAssign('horario-circulacion', this.selectedHorarioCircId, 'horarioCirculaciones', 'savingHorarioCirc', 'showAsignHorarioCircModal'); }
+  removeHorarioCirc(id: number) { this.viajesRemove('horario-circulacion', id); }
+
+  openAsignEstadoCarrModal() { this.showAsignEstadoCarrModal = true; this.selectedEstadoCarrId = null; }
+  closeAsignEstadoCarrModal() { this.showAsignEstadoCarrModal = false; }
+  assignEstadoCarr() { this.viajesAssign('estado-carretera', this.selectedEstadoCarrId, 'estadoCarreteras', 'savingEstadoCarr', 'showAsignEstadoCarrModal'); }
+  removeEstadoCarr(id: number) { this.viajesRemove('estado-carretera', id); }
+
+  openAsignTipoCargaModal() { this.showAsignTipoCargaModal = true; this.selectedTipoCargaId = null; }
+  closeAsignTipoCargaModal() { this.showAsignTipoCargaModal = false; }
+  assignTipoCarga() { this.viajesAssign('tipo-carga', this.selectedTipoCargaId, 'tipoCargas', 'savingTipoCarga', 'showAsignTipoCargaModal'); }
+  removeTipoCarga(id: number) { this.viajesRemove('tipo-carga', id); }
+
+  openAsignHoraCondModal() { this.showAsignHoraCondModal = true; this.selectedHoraCondId = null; }
+  closeAsignHoraCondModal() { this.showAsignHoraCondModal = false; }
+  assignHoraCond() { this.viajesAssign('hora-conduccion', this.selectedHoraCondId, 'horaConducciones', 'savingHoraCond', 'showAsignHoraCondModal'); }
+  removeHoraCond(id: number) { this.viajesRemove('hora-conduccion', id); }
+
+  openAsignHoraDescModal() { this.showAsignHoraDescModal = true; this.selectedHoraDescId = null; }
+  closeAsignHoraDescModal() { this.showAsignHoraDescModal = false; }
+  assignHoraDesc() { this.viajesAssign('hora-descanso', this.selectedHoraDescId, 'horaDescansos', 'savingHoraDesc', 'showAsignHoraDescModal'); }
+  removeHoraDesc(id: number) { this.viajesRemove('hora-descanso', id); }
+
+  openAsignMedioComModal() { this.showAsignMedioComModal = true; this.selectedMedioComId = null; }
+  closeAsignMedioComModal() { this.showAsignMedioComModal = false; }
+  assignMedioCom() { this.viajesAssign('medio-comunicacion', this.selectedMedioComId, 'medioComunicaciones', 'savingMedioCom', 'showAsignMedioComModal'); }
+  removeMedioCom(id: number) { this.viajesRemove('medio-comunicacion', id); }
+
+  openAsignTransportaModal() { this.showAsignTransportaModal = true; this.selectedTransportaId = null; }
+  closeAsignTransportaModal() { this.showAsignTransportaModal = false; }
+  assignTransporta() { this.viajesAssign('transporta-pasajero', this.selectedTransportaId, 'transportaPasajeros', 'savingTransporta', 'showAsignTransportaModal'); }
+  removeTransporta(id: number) { this.viajesRemove('transporta-pasajero', id); }
+
+  openAsignMetodologiaModal() { this.showAsignMetodologiaModal = true; this.selectedMetodologiaId = null; }
+  closeAsignMetodologiaModal() { this.showAsignMetodologiaModal = false; }
+  assignMetodologia() { this.viajesAssign('metodologia-riesgo', this.selectedMetodologiaId, 'metodologiaRiesgos', 'savingMetodologia', 'showAsignMetodologiaModal'); }
+  removeMetodologia(id: number) { this.viajesRemove('metodologia-riesgo', id); }
 }

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { FileService } from '../../../services/file.service';
 import { BusinessModuleService, BusinessModuleDto } from '../../../services/business-module.service';
@@ -9,7 +9,7 @@ import { BusinessModuleService, BusinessModuleDto } from '../../../services/busi
 @Component({
   selector: 'app-usuario-welcome',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './usuario-welcome.component.html',
   styleUrls: ['./usuario-welcome.component.scss']
 })
@@ -250,15 +250,18 @@ export class UsuarioWelcomeComponent implements OnInit {
       return;
     }
     
-    // Rutas implementadas: inventario, talento-humano, seguridad-industrial
+    // Rutas implementadas: inventario, talento-humano, seguridad-industrial, mantenimiento
     if (moduleName === 'inventario') {
-      this.router.navigate([`/usuario/${this.empresaRuc}/inventario`]);
+      this.router.navigateByUrl(`/usuario/${this.empresaRuc}/inventario`);
       return;
     } else if (moduleName === 'talento-humano') {
-      this.router.navigate([`/usuario/${this.empresaRuc}/talento-humano`]);
+      this.router.navigateByUrl(`/usuario/${this.empresaRuc}/talento-humano`);
       return;
     } else if (moduleName === 'seguridad-industrial') {
-      this.router.navigate([`/usuario/${this.empresaRuc}/seguridad-industrial`]);
+      this.router.navigateByUrl(`/usuario/${this.empresaRuc}/seguridad-industrial`);
+      return;
+    } else if (moduleName === 'mantenimiento') {
+      this.router.navigateByUrl(`/usuario/${this.empresaRuc}/mantenimiento`);
       return;
     }
     

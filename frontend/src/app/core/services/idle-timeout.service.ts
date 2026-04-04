@@ -6,8 +6,8 @@ import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class IdleTimeoutService implements OnDestroy {
-  private readonly TIMEOUT_MS = 15 * 60 * 1000; // 15 minutos
-  private readonly WARNING_MS = 60 * 1000;       // Aviso 1 minuto antes
+  private readonly TIMEOUT_MS = 5 * 60 * 1000;  // 5 minutos
+  private readonly WARNING_MS = 60 * 1000;       // Aviso 1 minuto antes (a los 4 min de inactividad)
 
   private idleTimer: any = null;
   private warningTimer: any = null;

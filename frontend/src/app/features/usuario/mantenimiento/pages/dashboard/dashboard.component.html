@@ -1,0 +1,87 @@
+<div class="container-fluid py-4">
+  <h2 class="h4 fw-bold mb-4">Dashboard de Mantenimiento</h2>
+  
+  <!-- KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted text-uppercase fw-bold">Vehículos Activos</small>
+          <h3 class="display-6 fw-bold text-primary mt-2">{{ kpis.vehiculosActivos }}</h3>
+          <small class="text-muted">Unidades operativas</small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted text-uppercase fw-bold">Mantenimientos Hoy</small>
+          <h3 class="display-6 fw-bold text-warning mt-2">{{ kpis.mantenimientosHoy }}</h3>
+          <small class="text-muted">Programados</small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100 border-start border-danger border-4">
+        <div class="card-body">
+          <small class="text-muted text-uppercase fw-bold">Alertas Críticas</small>
+          <h3 class="display-6 fw-bold text-danger mt-2">{{ kpis.alertasCriticas }}</h3>
+          <small class="text-muted">Requieren atención</small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
+        <div class="card-body">
+          <small class="text-muted text-uppercase fw-bold">Salud Operativa</small>
+          <h3 class="display-6 fw-bold text-success mt-2">{{ kpis.saludOperativa }}%</h3>
+          <small class="text-success"><i class="fas fa-arrow-up"></i> +2.4%</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title fw-bold">Acciones Rápidas</h5>
+          <div class="d-grid gap-2">
+            <a [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'nueva-ficha']" class="btn btn-outline-primary text-start">
+              <i class="fas fa-plus-circle me-2"></i>Registrar Nuevo Vehículo
+            </a>
+            <a [routerLink]="['/usuario', businessRuc, 'mantenimiento']" class="btn btn-outline-secondary text-start">
+              <i class="fas fa-list me-2"></i>Ver Lista de Vehículos
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title fw-bold">Resumen de Actividad</h5>
+          <ul class="list-unstyled mb-0">
+            <li class="mb-2">
+              <i class="fas fa-check-circle text-success me-2"></i>
+              <strong>12</strong> mantenimientos completados esta semana
+            </li>
+            <li class="mb-2">
+              <i class="fas fa-clock text-warning me-2"></i>
+              <strong>5</strong> mantenimientos pendientes
+            </li>
+            <li>
+              <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+              <strong>3</strong> vehículos requieren atención urgente
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

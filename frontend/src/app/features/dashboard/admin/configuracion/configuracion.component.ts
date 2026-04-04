@@ -197,6 +197,8 @@ export class ConfiguracionComponent implements OnInit {
       colorClase: 'seccion-automotriz',
       categorias: [
         { nombre: 'Marca de vehículo', descripcion: 'Catálogo de fabricantes y marcas soportadas', ruta: 'marca-vehiculo', icono: 'fas fa-copyright', proximamente: false },
+        { nombre: 'Clase', descripcion: 'Clases de unidad (trailer, cabezal, etc.) asignables por empresa', ruta: 'clase-vehiculo', icono: 'fas fa-layer-group', proximamente: false },
+        { nombre: 'Entidad remitente', descripcion: 'Origen remitente para trazabilidad operativa', ruta: 'entidad-remitente', icono: 'fas fa-building', proximamente: false },
         { nombre: 'Tipos de vehículo', descripcion: 'Clasificación (SUV, Sedán, Camión, etc)', ruta: 'tipo-vehiculo', icono: 'fas fa-truck', proximamente: false },
         { nombre: 'Tipos de combustible', descripcion: 'Gestión de Gasolina, Diesel, Eléctrico', ruta: 'tipo-combustible', icono: 'fas fa-gas-pump', proximamente: false },
         { nombre: 'Colores', descripcion: 'Paleta de colores oficiales de la flota', ruta: 'color-vehiculo', icono: 'fas fa-palette', proximamente: false },
@@ -207,6 +209,8 @@ export class ConfiguracionComponent implements OnInit {
         { nombre: 'Unidades de medida', descripcion: 'Km, Millas, Litros, Galones', ruta: 'unidad-medida', icono: 'fas fa-ruler', proximamente: false },
         { nombre: 'Ubicación/Rutas', descripcion: 'Asignación de zonas geográficas', ruta: 'ubicacion-ruta', icono: 'fas fa-route', proximamente: false },
         { nombre: 'País de origen', descripcion: 'Regulación por origen de fabricación', ruta: 'pais-origen', icono: 'fas fa-globe', proximamente: false },
+        { nombre: 'Número de ejes', descripcion: 'Catálogo de ejes (2, 3, 4+ ejes, etc.)', ruta: 'numero-eje', icono: 'fas fa-grip-lines', proximamente: false },
+        { nombre: 'Configuración de ejes', descripcion: 'Distribución y tipo de configuración de ejes', ruta: 'configuracion-eje', icono: 'fas fa-truck-monster', proximamente: false },
       ]
     },
     {

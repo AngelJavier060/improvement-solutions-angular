@@ -1,0 +1,258 @@
+<main class="container-fluid py-4">
+  <!-- Header Section -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="h3 fw-bold text-primary mb-1">Control de Activos de Flota</h2>
+      <p class="text-muted">Gestione el ciclo de vida de mantenimiento ({{ totalCount }} registro(s) en flota).</p>
+    </div>
+    <button 
+      (click)="navigateToNewVehicle()"
+      class="btn btn-primary btn-lg">
+      <i class="fas fa-plus-circle me-2"></i>
+      Agregar Nuevo Vehículo
+    </button>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted text-uppercase fw-bold">Salud Operativa</small>
+          <h3 class="display-6 fw-bold text-primary mt-2">{{ kpis.saludOperativa }}%</h3>
+          <small class="text-success"><i class="fas fa-arrow-up"></i> +{{ kpis.saludOperativaTendencia }}%</small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted text-uppercase fw-bold">Programados Hoy</small>
+          <h3 class="display-6 fw-bold text-primary mt-2">{{ kpis.programadosHoy }}</h3>
+          <small class="text-muted">Unidades</small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
+        <div class="card-body">
+          <small class="text-muted text-uppercase fw-bold">Estado Activo</small>
+          <h3 class="display-6 fw-bold text-success mt-2">{{ kpis.estadoActivo }}</h3>
+          <small class="text-muted">Autorizados</small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100 border-start border-danger border-4">
+        <div class="card-body">
+          <small class="text-muted text-uppercase fw-bold">Alertas Críticas</small>
+          <h3 class="display-6 fw-bold text-danger mt-2">{{ kpis.alertasCriticas }}</h3>
+          <small class="text-muted">En Tierra</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="alert alert-warning">{{ error }}</div>
+
+  <!-- Data Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" *ngIf="!loading && vehicles.length > 0">
+        <thead class="table-light">
+          <tr>
+            <th class="text-uppercase small fw-bold">Foto</th>
+            <th class="text-uppercase small fw-bold">Identidad</th>
+            <th class="text-uppercase small fw-bold">Especificaciones</th>
+            <th class="text-uppercase small fw-bold">Último Servicio</th>
+            <th class="text-uppercase small fw-bold">Próximo Mant.</th>
+            <th class="text-uppercase small fw-bold text-center">Estado</th>
+            <th class="text-uppercase small fw-bold text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let vehicle of vehicles" class="fleet-row-click" (click)="openVehicleDetail(vehicle)">
+            <!-- Foto -->
+            <td class="p-3">
+              <img 
+                *ngIf="vehicle.fotoPrincipal" 
+                [src]="vehicle.fotoPrincipal" 
+                [alt]="vehicle.placa"
+                class="rounded"
+                style="width: 80px; height: 50px; object-fit: cover;">
+              <div *ngIf="!vehicle.fotoPrincipal" class="rounded bg-light d-flex align-items-center justify-content-center text-muted small" style="width: 80px; height: 50px;">Sin foto</div>
+            </td>
+            
+            <!-- Identidad -->
+            <td class="p-3">
+              <div class="fw-bold text-primary">{{ vehicle.placa }}</div>
+              <small class="text-muted">VIN: {{ vehicle.serieChasis || '—' }}</small>
+            </td>
+            
+            <!-- Especificaciones: solo marca -->
+            <td class="p-3">
+              <div class="fw-semibold">{{ vehicle.marca || '—' }}</div>
+            </td>
+            
+            <!-- Último Servicio -->
+            <td class="p-3">
+              <div [class.text-danger]="isUrgent(vehicle)">
+                <i [class]="isUrgent(vehicle) ? 'fas fa-exclamation-triangle' : 'fas fa-history'" class="me-1"></i>
+                {{ vehicle.ultimoServicio || 'Sin registro' }}
+              </div>
+              <small [class.text-danger]="isUrgent(vehicle)" [class.text-muted]="!isUrgent(vehicle)">
+                {{ vehicle.ultimoServicioDescripcion || '' }}
+              </small>
+            </td>
+            
+            <!-- Próximo Mantenimiento (planificación pendiente de configurar en backend) -->
+            <td class="p-3">
+              <div [class.text-danger]="isUrgent(vehicle)" [class.text-primary]="!isUrgent(vehicle)" class="fw-semibold">
+                <i [class]="isUrgent(vehicle) ? 'fas fa-bell' : 'fas fa-calendar-alt'" class="me-1"></i>
+                {{ vehicle.proximoMantenimiento || '—' }}
+              </div>
+              <small class="text-muted d-block" *ngIf="vehicle.kmRestantes || vehicle.proximoMantenimientoDescripcion">
+                {{ vehicle.kmRestantes || vehicle.proximoMantenimientoDescripcion }}
+              </small>
+            </td>
+            
+            <!-- Estado -->
+            <td class="p-3 text-center">
+              <span 
+                class="badge"
+                [ngClass]="{
+                  'bg-success': vehicle.estadoActivo === 'ACTIVO',
+                  'bg-warning text-dark': vehicle.estadoActivo === 'EN_TALLER',
+                  'bg-danger': vehicle.estadoActivo === 'DADO_DE_BAJA'
+                }">
+                {{ getStatusLabel(vehicle.estadoActivo) }}
+              </span>
+            </td>
+
+            <!-- Acciones -->
+            <td class="p-3 text-end" (click)="$event.stopPropagation()">
+              <div class="d-flex flex-wrap gap-1 justify-content-end" *ngIf="vehicle.id != null">
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="editarFicha(vehicle)" title="Editar ficha técnica">
+                  <i class="fas fa-edit me-1"></i>Editar
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" (click)="eliminarVehiculo(vehicle)" title="Eliminar de la flota">
+                  <i class="fas fa-trash-alt me-1"></i>Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div *ngIf="loading" class="p-5 text-center text-muted">
+        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+        <p class="mb-0">Cargando flota…</p>
+      </div>
+      <div *ngIf="!loading && vehicles.length === 0" class="p-5 text-center text-muted">
+        <i class="fas fa-truck fa-2x mb-3 opacity-50"></i>
+        <p class="mb-0">No hay vehículos registrados. Use <strong>Agregar Nuevo Vehículo</strong> para crear la primera ficha.</p>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="card-footer bg-light" *ngIf="totalCount > 0">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <small class="text-muted">
+          Mostrando <strong>{{ totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, totalCount) }}</strong> de {{ totalCount }} vehículos
+        </small>
+        <nav *ngIf="totalPages > 1">
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <button type="button" class="page-link" (click)="previousPage()" [disabled]="currentPage === 1">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+            </li>
+            <li class="page-item" *ngFor="let page of pages" [class.active]="currentPage === page">
+              <button type="button" class="page-link" (click)="goToPage(page)">{{ page }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <button type="button" class="page-link" (click)="nextPage()" [disabled]="currentPage === totalPages">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel resumen ficha + documentos -->
+  <div *ngIf="selectedVehicle" class="fleet-detail-overlay" (click)="closeVehicleDetail()">
+    <div class="fleet-detail-card card shadow-lg border-0" (click)="$event.stopPropagation()">
+      <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white py-2">
+        <div>
+          <strong class="me-2">{{ selectedVehicle.placa }}</strong>
+          <small class="opacity-75">{{ selectedVehicle.codigoEquipo }}</small>
+        </div>
+        <button type="button" class="btn btn-sm btn-light" (click)="closeVehicleDetail()" aria-label="Cerrar">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="row g-2 small mb-3">
+          <div class="col-6 col-md-4"><span class="text-muted">Clase</span><div class="fw-semibold text-break">{{ selectedVehicle.clase || '—' }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Marca</span><div class="fw-semibold">{{ selectedVehicle.marca || '—' }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Tipo</span><div class="fw-semibold">{{ selectedVehicle.tipoVehiculo || '—' }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Serie chasis</span><div class="fw-semibold text-break">{{ selectedVehicle.serieChasis || '—' }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Serie motor</span><div class="fw-semibold text-break">{{ selectedVehicle.serieMotor || '—' }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Modelo</span><div class="fw-semibold">{{ selectedVehicle.modelo || '—' }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Año</span><div class="fw-semibold">{{ selectedVehicle.anio ?? '—' }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Color</span><div class="fw-semibold">{{ selectedVehicle.color || '—' }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Combustible</span><div class="fw-semibold">{{ selectedVehicle.tipoCombustible || '—' }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Estado unidad</span><div class="fw-semibold">{{ selectedVehicle.estadoUnidad || '—' }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Estado activo</span><div class="fw-semibold">{{ getStatusLabel(selectedVehicle.estadoActivo) }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Proyecto asignado</span><div class="fw-semibold text-break">{{ selectedVehicle.proyectoAsignado || '—' }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Km inicio</span><div class="fw-semibold">{{ selectedVehicle.kmInicio != null ? selectedVehicle.kmInicio : '—' }}</div></div>
+          <div class="col-6 col-md-4"><span class="text-muted">Tonelaje</span><div class="fw-semibold">{{ selectedVehicle.tonelaje || '—' }}</div></div>
+        </div>
+
+        <button type="button" class="btn btn-outline-primary btn-sm w-100 mb-2" (click)="toggleDocsSection()">
+          <i class="fas fa-folder-open me-1"></i>
+          {{ docsSectionOpen ? 'Ocultar documentos' : 'Administrar documentos' }}
+        </button>
+
+        <div *ngIf="docsSectionOpen" class="fleet-docs-panel border rounded p-2 bg-light">
+          <div *ngIf="detailDocError" class="alert alert-warning py-1 small mb-2">{{ detailDocError }}</div>
+          <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
+            <div class="flex-grow-1" style="min-width: 140px;">
+              <label class="form-label small mb-0 text-muted">Descripción (opcional)</label>
+              <input type="text" class="form-control form-control-sm" [(ngModel)]="docDescription" placeholder="Ej. Revisión técnica">
+            </div>
+            <div>
+              <label class="btn btn-sm btn-primary mb-0" [class.disabled]="docUploading">
+                <i class="fas fa-upload me-1"></i>Subir archivo
+                <input type="file" class="d-none" (change)="onDocumentFileSelected($event)" [disabled]="docUploading">
+              </label>
+            </div>
+          </div>
+          <div *ngIf="detailDocsLoading" class="text-muted small py-2"><i class="fas fa-spinner fa-spin me-1"></i>Cargando…</div>
+          <ul class="list-group list-group-flush small" *ngIf="!detailDocsLoading && detailDocs.length > 0">
+            <li *ngFor="let d of detailDocs" class="list-group-item d-flex justify-content-between align-items-center px-2 py-2">
+              <div class="me-2 text-truncate" style="max-width: 55%;">
+                <a [href]="d.url" target="_blank" rel="noopener" class="fw-semibold text-decoration-none">{{ d.originalFilename }}</a>
+                <div class="text-muted" *ngIf="d.description">{{ d.description }}</div>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0" (click)="deleteDocument(d)" title="Eliminar">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </li>
+          </ul>
+          <p *ngIf="!detailDocsLoading && detailDocs.length === 0" class="text-muted small mb-0 py-2">No hay documentos adjuntos.</p>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+          <button type="button" class="btn btn-primary btn-sm" *ngIf="selectedVehicle.id != null" (click)="editarFicha(selectedVehicle); closeVehicleDetail()">
+            <i class="fas fa-edit me-1"></i>Editar ficha completa
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

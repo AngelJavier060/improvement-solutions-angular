@@ -133,6 +133,8 @@ export class LoginComponent implements OnInit {
       this.errorMessage = '';
 
       const { username, password } = this.loginForm.value;
+      // Limpiar contraseña del formulario para no dejarla expuesta en memoria
+      this.loginForm.patchValue({ password: '' });
 
       this.authService.login(username, password).subscribe({
         next: (response) => {

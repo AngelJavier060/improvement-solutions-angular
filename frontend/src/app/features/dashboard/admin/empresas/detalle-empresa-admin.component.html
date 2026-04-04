@@ -102,6 +102,17 @@
     </div>
   </div>
   
+  <!-- ═══════════════════════ SECCIÓN: TALENTO HUMANO ═══════════════════════ -->
+  <div class="d-flex align-items-center gap-3 mb-3 pb-2" style="border-bottom: 2px solid #e9ecef;">
+    <div class="p-2 rounded-2" style="background: rgba(0,6,102,0.08);">
+      <i class="fas fa-users text-primary" style="font-size: 18px;"></i>
+    </div>
+    <div>
+      <h5 class="mb-0 fw-bold" style="color: #000666;">Talento Humano</h5>
+      <small class="text-muted">Gestión administrativa integral de personal y estructura organizacional</small>
+    </div>
+  </div>
+
   <!-- Grid responsivo para las secciones de configuración -->
   <div class="row g-2 mb-4">
     <!-- 1. Sección Departamentos -->
@@ -551,23 +562,26 @@
     <div class="col-lg-6 col-xl-3">
       <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.obligation_matrices?.length > 0}">
         <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #ff7b54 0%, #ff9068 100%);">
-          <div class="d-flex align-items-center h-100">
-            <div class="me-3">
-              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
-                <i class="fas fa-balance-scale text-dark" style="font-size: 14px;"></i>
+          <div class="d-flex align-items-center justify-content-between h-100">
+            <div class="d-flex align-items-center">
+              <div class="me-3">
+                <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                  <i class="fas fa-balance-scale text-dark" style="font-size: 14px;"></i>
+                </div>
+              </div>
+              <div>
+                <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Matriz Legal</h6>
               </div>
             </div>
-            <div>
-              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Matriz Legal</h6>
-            </div>
-          </div>
-        </div>
-        <div class="card-body p-2">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <button class="btn btn-warning btn-sm w-100" (click)="openAsignObligationModal()">
+            <button class="btn btn-sm btn-dark bg-opacity-25 border-0 px-2 py-1"
+                    style="font-size:11px; background:rgba(0,0,0,0.15)!important;"
+                    (click)="showAsignObligationModal = true; editingContext = null; selectedObligacionesMatriz = []"
+                    title="Asignar obligación desde catálogo">
               <i class="fas fa-plus me-1"></i>Agregar
             </button>
           </div>
+        </div>
+        <div class="card-body p-2">
           <div class="border rounded p-2 mb-2 d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-2">
               <img *ngIf="qrPreviewToken && getQrImageUrl()" [src]="getQrImageUrl()" alt="QR" style="width:200px;height:200px;border:1px solid #eee;border-radius:6px;"/>
@@ -605,7 +619,7 @@
                           style="font-size: 8px;">
                     <i class="fas" [ngClass]="rowEyeIcon(obligation)"></i>
                   </button>
-                  <button class="btn btn-outline-primary btn-sm p-1" (click)="replaceObligation(obligation)" title="Editar (reemplazar)" style="font-size: 8px;">
+                  <button class="btn btn-outline-primary btn-sm p-1" (click)="openEditObligationModal(obligation)" title="Editar" style="font-size: 8px;">
                     <i class="fas fa-edit"></i>
                   </button>
                   <button class="btn btn-outline-secondary btn-sm p-1"
@@ -671,9 +685,14 @@
             </div>
           </div>
 
-          <div *ngIf="empresa.obligation_matrices?.length === 0" class="text-center py-2">
-            <i class="fas fa-balance-scale fa-lg text-muted opacity-50"></i>
-            <p class="text-muted small mb-0" style="font-size: 10px;">Sin obligaciones legales</p>
+          <div *ngIf="empresa.obligation_matrices?.length === 0" class="text-center py-3">
+            <i class="fas fa-balance-scale fa-lg text-muted opacity-50 d-block mb-1"></i>
+            <p class="text-muted mb-2" style="font-size: 10px;">Sin obligaciones legales</p>
+            <button class="btn btn-sm btn-outline-primary py-1 px-2"
+                    style="font-size:10px;"
+                    (click)="showAsignObligationModal = true; editingContext = null; selectedObligacionesMatriz = []">
+              <i class="fas fa-plus me-1"></i>Agregar desde catálogo
+            </button>
           </div>
         </div>
       </div>
@@ -947,6 +966,18 @@
       </div>
     </div>
 
+    <!-- ── Separador: Inventario y Bodega ── -->
+    <div class="col-12 mt-3 mb-1">
+      <div class="d-flex align-items-center gap-3 pb-2" style="border-bottom: 2px solid #e9ecef;">
+        <div class="p-2 rounded-2" style="background: rgba(139,92,246,0.1);">
+          <i class="fas fa-boxes" style="font-size: 18px; color: #7c3aed;"></i>
+        </div>
+        <div>
+          <h5 class="mb-0 fw-bold text-dark">Inventario y Bodega</h5>
+          <small class="text-muted">Gestión de categorías y proveedores de inventario</small>
+        </div>
+      </div>
+    </div>
     <!-- Categorías de Inventario -->
     <div class="col-lg-6 col-xl-3">
       <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': (inventoryCategories.length || 0) > 0}">
@@ -1130,38 +1161,834 @@
     </div>
   </div>
 
-  <!-- Sección Configuración Matriz Legal (admin) -->
-  <div class="row g-4 mb-4">
-    <div class="col-12">
-      <div class="card shadow border-0 h-100">
-        <div class="card-header bg-gradient" style="background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);">
-          <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-              <div class="me-3">
-                <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 40px; height: 40px;">
-                  <i class="fas fa-bell text-white"></i>
-                </div>
-              </div>
-              <div>
-                <h5 class="text-white mb-0 fw-bold">Configuración matriz legal</h5>
-                <small class="text-white-50">Empresa #{{ empresaId }}</small>
-              </div>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-              <a class="btn btn-outline-light btn-sm" [routerLink]="['/dashboard','admin','empresas','configuracion-matriz', empresaId]">
-                <i class="fas fa-cog me-1"></i> Abrir en pantalla completa
-              </a>
+  <!-- SECCIÓN: MANTENIMIENTO AUTOMOTRIZ -->
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-header py-3 px-3" style="background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);">
+      <div class="d-flex align-items-center">
+        <i class="fas fa-car text-white me-2" style="font-size: 18px;"></i>
+        <div>
+          <h5 class="text-white mb-0 fw-bold">Mantenimiento Automotriz</h5>
+          <small class="text-white-50">Configuración técnica de flota, vehículos y logística de transporte — {{ empresa.name }}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row g-3 mb-3">
+
+    <!-- 1. Marca de vehículo -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #ff6b6b 0%, #ee5a6f 100%);">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-registered text-white me-2"></i>
+            <h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Marca de vehículo</h6>
+          </div>
+          <button class="btn btn-sm btn-light btn-light px-2 py-0" (click)="openAsignMarcaModal()" title="Agregar">
+            <i class="fas fa-plus" style="font-size: 11px;"></i>
+          </button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="marcaVehiculos && marcaVehiculos.length > 0">
+            <div *ngFor="let item of marcaVehiculos" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeMarca(item.id)" title="Eliminar" style="font-size: 10px; line-height: 1.4;">
+                <i class="fas fa-times"></i>
+              </button>
             </div>
           </div>
+          <div *ngIf="!marcaVehiculos || marcaVehiculos.length === 0" class="text-center py-2">
+            <i class="fas fa-registered text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin marcas asignadas</p>
+          </div>
         </div>
-        <div class="card-body p-3">
-          <app-matrix-config [businessId]="empresaId"></app-matrix-config>
+      </div>
+    </div>
+
+    <!-- 1b. Clase de vehículo -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-layer-group text-white me-2"></i>
+            <h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Clase</h6>
+          </div>
+          <button class="btn btn-sm btn-light btn-light px-2 py-0" (click)="openAsignClaseModal()" title="Agregar">
+            <i class="fas fa-plus" style="font-size: 11px;"></i>
+          </button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="claseVehiculos && claseVehiculos.length > 0">
+            <div *ngFor="let item of claseVehiculos" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeClase(item.id)" title="Eliminar" style="font-size: 10px; line-height: 1.4;">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+          <div *ngIf="!claseVehiculos || claseVehiculos.length === 0" class="text-center py-2">
+            <i class="fas fa-layer-group text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin clases asignadas</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1c. Entidad remitente -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-building text-white me-2"></i>
+            <h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Entidad remitente</h6>
+          </div>
+          <button class="btn btn-sm btn-light btn-light px-2 py-0" (click)="openAsignEntidadRemModal()" title="Agregar">
+            <i class="fas fa-plus" style="font-size: 11px;"></i>
+          </button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="entidadRemitentes && entidadRemitentes.length > 0">
+            <div *ngFor="let item of entidadRemitentes" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeEntidadRem(item.id)" title="Eliminar" style="font-size: 10px; line-height: 1.4;">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+          <div *ngIf="!entidadRemitentes || entidadRemitentes.length === 0" class="text-center py-2">
+            <i class="fas fa-building text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin entidades asignadas</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Tipos de vehículo -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #0ea5e9 0%, #22d3ee 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-truck text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Tipos de vehículo</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignVehicleTypeModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="tipoVehiculos && tipoVehiculos.length > 0">
+            <div *ngFor="let item of tipoVehiculos" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeVehicleType(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!tipoVehiculos || tipoVehiculos.length === 0" class="text-center py-2">
+            <i class="fas fa-truck text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin tipos asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Tipos de combustible -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #22c55e 0%, #86efac 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-gas-pump text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Tipos de combustible</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignCombustibleModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="tipoCombustibles && tipoCombustibles.length > 0">
+            <div *ngFor="let item of tipoCombustibles" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeCombustible(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!tipoCombustibles || tipoCombustibles.length === 0" class="text-center py-2">
+            <i class="fas fa-gas-pump text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin combustibles asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Colores -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #a78bfa 0%, #c4b5fd 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-palette text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Colores</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignColorModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="colorVehiculos && colorVehiculos.length > 0">
+            <div *ngFor="let item of colorVehiculos" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeColor(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!colorVehiculos || colorVehiculos.length === 0" class="text-center py-2">
+            <i class="fas fa-palette text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin colores asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Estado de unidad -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-clipboard-check text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Estado de unidad</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignUnitStatusModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="estadoUnidades && estadoUnidades.length > 0">
+            <div *ngFor="let item of estadoUnidades" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeUnitStatus(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!estadoUnidades || estadoUnidades.length === 0" class="text-center py-2">
+            <i class="fas fa-clipboard-check text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin estados asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Transmisión -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-cogs text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Transmisión</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignTransmisionModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="transmisiones && transmisiones.length > 0">
+            <div *ngFor="let item of transmisiones" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeTransmision(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!transmisiones || transmisiones.length === 0" class="text-center py-2">
+            <i class="fas fa-cogs text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin transmisiones asignadas</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Propietario/Empresa -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #10b981 0%, #34d399 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-user-tie text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Propietario/Empresa</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignPropietarioModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="propietarioVehiculos && propietarioVehiculos.length > 0">
+            <div *ngFor="let item of propietarioVehiculos" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removePropietario(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!propietarioVehiculos || propietarioVehiculos.length === 0" class="text-center py-2">
+            <i class="fas fa-user-tie text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin propietarios asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. Unidades de medida -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #06b6d4 0%, #67e8f9 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-ruler text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Unidades de medida</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignUnidadMedidaModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="unidadMedidas && unidadMedidas.length > 0">
+            <div *ngFor="let item of unidadMedidas" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeUnidadMedida(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!unidadMedidas || unidadMedidas.length === 0" class="text-center py-2">
+            <i class="fas fa-ruler text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin unidades asignadas</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. Ubicación/Rutas -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #60a5fa 0%, #93c5fd 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-road text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Ubicación/Rutas</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignUbicacionModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="ubicacionRutas && ubicacionRutas.length > 0">
+            <div *ngFor="let item of ubicacionRutas" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeUbicacion(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!ubicacionRutas || ubicacionRutas.length === 0" class="text-center py-2">
+            <i class="fas fa-road text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin rutas asignadas</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. País de origen -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #f472b6 0%, #fda4af 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-globe text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">País de origen</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignPaisModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="paisOrigenes && paisOrigenes.length > 0">
+            <div *ngFor="let item of paisOrigenes" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removePais(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!paisOrigenes || paisOrigenes.length === 0" class="text-center py-2">
+            <i class="fas fa-globe text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin países asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Número de ejes -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #64748b 0%, #94a3b8 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-grip-lines text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Número de ejes</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignNumeroEjeModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="numeroEjes && numeroEjes.length > 0">
+            <div *ngFor="let item of numeroEjes" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeNumeroEje(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!numeroEjes || numeroEjes.length === 0" class="text-center py-2">
+            <i class="fas fa-grip-lines text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin valores asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuración de ejes -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #475569 0%, #64748b 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-truck-monster text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Configuración de ejes</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignConfiguracionEjeModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="configuracionEjes && configuracionEjes.length > 0">
+            <div *ngFor="let item of configuracionEjes" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeConfiguracionEje(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!configuracionEjes || configuracionEjes.length === 0" class="text-center py-2">
+            <i class="fas fa-truck-monster text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin valores asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 11. Tipo de documentos -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-file-alt text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Tipo de documentos</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignTipoDocVehModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="tipoDocumentoVehiculos && tipoDocumentoVehiculos.length > 0">
+            <div *ngFor="let item of tipoDocumentoVehiculos" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeTipoDocVeh(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!tipoDocumentoVehiculos || tipoDocumentoVehiculos.length === 0" class="text-center py-2">
+            <i class="fas fa-file-alt text-muted opacity-50" style="font-size: 16px;"></i>
+            <p class="text-muted mb-0" style="font-size: 10px;">Sin tipos de documento asignados</p>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Sección Personal (al final como solicitaste) -->
+  <!-- Configuración de Mantenimiento por Empresa (intervalos, notificaciones) -->
+  <div class="row g-2 mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-header py-2 px-3 bg-secondary">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-sliders-h text-white me-2"></i>
+              <h6 class="text-white mb-0 fw-bold">Parámetros técnicos de mantenimiento</h6>
+            </div>
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" id="mc-enabled" [(ngModel)]="maintenanceConfig.enabled">
+              <label class="form-check-label text-white" for="mc-enabled">Activar módulo</label>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-3">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label fw-semibold small">Intervalo de servicio (Km)</label>
+              <input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="maintenanceConfig.serviceIntervalKm" [disabled]="!maintenanceConfig.enabled">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold small">Intervalo de servicio (Meses)</label>
+              <input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="maintenanceConfig.serviceIntervalMonths" [disabled]="!maintenanceConfig.enabled">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold small">Avisar con (días) de anticipación</label>
+              <input type="number" min="0" class="form-control form-control-sm" [(ngModel)]="maintenanceConfig.notifyDaysBefore" [disabled]="!maintenanceConfig.enabled">
+            </div>
+            <div class="col-md-3">
+              <div class="form-check mt-4">
+                <input class="form-check-input" type="checkbox" id="mc-workshop" [(ngModel)]="maintenanceConfig.workshopInternal" [disabled]="!maintenanceConfig.enabled">
+                <label class="form-check-label fw-semibold small" for="mc-workshop">Taller interno</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold small">Correos para notificaciones</label>
+              <input type="text" class="form-control form-control-sm" placeholder="correo1@dominio.com, correo2@dominio.com" [(ngModel)]="maintenanceConfig.notificationEmails" [disabled]="!maintenanceConfig.enabled">
+              <div class="form-text"><i class="fas fa-info-circle me-1"></i>Separar múltiples correos por coma</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer bg-light d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="loadMaintenanceConfig()" [disabled]="savingMaintenance">
+            <i class="fas fa-undo me-1"></i>Restablecer
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" (click)="saveMaintenanceConfig()" [disabled]="savingMaintenance">
+            <i class="fas" [ngClass]="savingMaintenance ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+            <span class="ms-1">Guardar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ SECCIÓN: EVALUACIÓN DE RIESGO — GERENCIA DE VIAJES ═══════════════════════ -->
+  <div class="d-flex align-items-center gap-3 mb-3 mt-4 pb-2" style="border-bottom: 2px solid #e9ecef;">
+    <div class="p-2 rounded-2" style="background: rgba(0,6,102,0.08);">
+      <i class="fas fa-road text-primary" style="font-size: 18px;"></i>
+    </div>
+    <div>
+      <h5 class="mb-0 fw-bold" style="color: #000666;">Evaluación de Riesgo — Gerencia de Viajes</h5>
+      <small class="text-muted">Parámetros asignados a {{ empresa.name }} desde el catálogo global</small>
+    </div>
+  </div>
+  <div class="row g-3 mb-4">
+
+    <!-- 1. Distancia a recorrer -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-ruler-combined text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Distancia a recorrer</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignDistanciaModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="distanciaRecorrers && distanciaRecorrers.length > 0">
+            <div *ngFor="let item of distanciaRecorrers" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeDistancia(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!distanciaRecorrers || distanciaRecorrers.length === 0" class="text-center py-2">
+            <i class="fas fa-ruler-combined text-muted opacity-50" style="font-size:16px;"></i>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Tipo de vía -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-road text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Tipo de vía</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignTipoViaModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="tipoVias && tipoVias.length > 0">
+            <div *ngFor="let item of tipoVias" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeTipoVia(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!tipoVias || tipoVias.length === 0" class="text-center py-2">
+            <i class="fas fa-road text-muted opacity-50" style="font-size:16px;"></i>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Condiciones climáticas -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #06b6d4 0%, #67e8f9 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-cloud-rain text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Condiciones climáticas</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignCondicionModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="condicionClimaticas && condicionClimaticas.length > 0">
+            <div *ngFor="let item of condicionClimaticas" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeCondicion(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!condicionClimaticas || condicionClimaticas.length === 0" class="text-center py-2">
+            <i class="fas fa-cloud-rain text-muted opacity-50" style="font-size:16px;"></i>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Horario de circulación -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-clock text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Horario circulación</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignHorarioCircModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="horarioCirculaciones && horarioCirculaciones.length > 0">
+            <div *ngFor="let item of horarioCirculaciones" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeHorarioCirc(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!horarioCirculaciones || horarioCirculaciones.length === 0" class="text-center py-2">
+            <i class="fas fa-clock text-muted opacity-50" style="font-size:16px;"></i>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Estado de carretera -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-exclamation-triangle text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Estado de carretera</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignEstadoCarrModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="estadoCarreteras && estadoCarreteras.length > 0">
+            <div *ngFor="let item of estadoCarreteras" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeEstadoCarr(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!estadoCarreteras || estadoCarreteras.length === 0" class="text-center py-2">
+            <i class="fas fa-exclamation-triangle text-muted opacity-50" style="font-size:16px;"></i>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Tipo de carga -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-boxes text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Tipo de carga</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignTipoCargaModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="tipoCargas && tipoCargas.length > 0">
+            <div *ngFor="let item of tipoCargas" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeTipoCarga(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!tipoCargas || tipoCargas.length === 0" class="text-center py-2">
+            <i class="fas fa-boxes text-muted opacity-50" style="font-size:16px;"></i>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Horas de conducción -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #10b981 0%, #34d399 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-user-clock text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Horas conducción</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignHoraCondModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="horaConducciones && horaConducciones.length > 0">
+            <div *ngFor="let item of horaConducciones" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeHoraCond(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!horaConducciones || horaConducciones.length === 0" class="text-center py-2">
+            <i class="fas fa-user-clock text-muted opacity-50" style="font-size:16px;"></i>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. Horas de descanso -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-moon text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Horas descanso</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignHoraDescModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="horaDescansos && horaDescansos.length > 0">
+            <div *ngFor="let item of horaDescansos" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeHoraDesc(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!horaDescansos || horaDescansos.length === 0" class="text-center py-2">
+            <i class="fas fa-moon text-muted opacity-50" style="font-size:16px;"></i>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. Medio de comunicación -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-phone-alt text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Medio comunicación</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignMedioComModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="medioComunicaciones && medioComunicaciones.length > 0">
+            <div *ngFor="let item of medioComunicaciones" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeMedioCom(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!medioComunicaciones || medioComunicaciones.length === 0" class="text-center py-2">
+            <i class="fas fa-phone-alt text-muted opacity-50" style="font-size:16px;"></i>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. Transporta pasajeros -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #ec4899 0%, #f472b6 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-users text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Transporta pasajeros</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignTransportaModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="transportaPasajeros && transportaPasajeros.length > 0">
+            <div *ngFor="let item of transportaPasajeros" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeTransporta(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!transportaPasajeros || transportaPasajeros.length === 0" class="text-center py-2">
+            <i class="fas fa-users text-muted opacity-50" style="font-size:16px;"></i>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 11. Metodologías de Riesgo -->
+    <div class="col-lg-4 col-xl-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #000666 0%, #3b4abf 100%);">
+          <div class="d-flex align-items-center"><i class="fas fa-shield-alt text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Metodologías Riesgo</h6></div>
+          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignMetodologiaModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+        </div>
+        <div class="card-body p-2">
+          <div *ngIf="metodologiaRiesgos && metodologiaRiesgos.length > 0">
+            <div *ngFor="let item of metodologiaRiesgos" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
+              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeMetodologia(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div *ngIf="!metodologiaRiesgos || metodologiaRiesgos.length === 0" class="text-center py-2">
+            <i class="fas fa-shield-alt text-muted opacity-50" style="font-size:16px;"></i>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════ SECCIÓN: CONFIGURACIÓN MATRIZ LEGAL ═══════════════════════ -->
+  <div class="d-flex justify-content-between align-items-center mb-3 mt-4 pb-2" style="border-bottom: 2px solid #e9ecef;">
+    <div class="d-flex align-items-center gap-3">
+      <div class="p-2 rounded-2" style="background: rgba(26,115,232,0.08);">
+        <i class="fas fa-gavel" style="font-size: 18px; color: #1a73e8;"></i>
+      </div>
+      <div>
+        <h5 class="mb-0 fw-bold" style="color: #1a73e8;">Configuración matriz legal</h5>
+        <small class="text-muted">{{ empresa.name }}</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-4" *ngIf="empresa.obligation_matrices && empresa.obligation_matrices.length > 0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead style="background: #d2e3fc;">
+          <tr style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">
+            <th class="px-3 py-2">#</th>
+            <th class="px-3 py-2"><i class="fas fa-edit me-1"></i>Cumplimiento Legal</th>
+            <th class="px-3 py-2"><i class="fas fa-book me-1"></i>Regulación Legal</th>
+            <th class="px-3 py-2"><i class="fas fa-calendar me-1"></i>Fecha Ingreso</th>
+            <th class="px-3 py-2"><i class="fas fa-calendar-times me-1"></i>Fecha Vencimiento</th>
+            <th class="px-3 py-2"><i class="fas fa-clock me-1"></i>Prioridad</th>
+            <th class="px-3 py-2"><i class="fas fa-comment me-1"></i>Observación</th>
+            <th class="px-3 py-2"><i class="fas fa-paperclip me-1"></i>Archivos</th>
+            <th class="px-3 py-2 text-center"><i class="fas fa-info-circle me-1"></i>Estado</th>
+            <th class="px-3 py-2"><i class="fas fa-cogs me-1"></i>Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          <ng-container *ngFor="let obligation of empresa.obligation_matrices; let i = index; trackBy: trackById">
+            <tr style="font-size: 13px;" class="border-bottom">
+              <td class="px-3 py-2 fw-medium">{{ i + 1 }}</td>
+              <td class="px-3 py-2">
+                <div class="d-flex align-items-center gap-1 flex-wrap">
+                  <span class="badge rounded px-1" style="background:#e0f0ff;color:#1565c0;font-size:11px;">v{{ obligation.currentVersion || 1 }}</span>
+                  <span class="fw-bold text-uppercase" style="font-size:13px;line-height:1.4;">{{ obligation.name || obligation.obligationMatrix?.name }}</span>
+                </div>
+              </td>
+              <td class="px-3 py-2 text-muted" style="font-size:12px;">{{ obligation.obligationMatrix?.legalRegulation || '—' }}</td>
+              <td class="px-3 py-2" style="font-size:13px;">{{ formatObligationDate(obligation.createdAt) }}</td>
+              <td class="px-3 py-2" style="font-size:13px;">{{ formatObligationDate(obligation.dueDate) }}</td>
+              <td class="px-3 py-2">
+                <span class="fw-semibold" style="font-size:13px;"
+                      [ngClass]="obligation.priority === 'ALTA' ? 'text-danger' : obligation.priority === 'BAJA' ? 'text-success' : 'text-warning'">
+                  <i class="fas me-1" [ngClass]="obligation.priority === 'ALTA' ? 'fa-exclamation-triangle' : 'fa-question-circle'"></i>
+                  {{ obligation.priority || 'MEDIA' }}
+                </span>
+              </td>
+              <td class="px-3 py-2 text-muted" style="font-size:13px;">{{ obligation.observations || obligation.description || '—' }}</td>
+              <td class="px-3 py-2">
+                <button class="btn btn-link btn-sm p-0" (click)="toggleMatrixFiles(obligation)" style="font-size:13px;">
+                  <i class="fas fa-paperclip me-1"></i>
+                  <ng-container *ngIf="matrixFilesLoading[getMatrixRelationId(obligation)]; else fileCountBadge">
+                    <span class="spinner-border spinner-border-sm" style="width:10px;height:10px;"></span>
+                  </ng-container>
+                  <ng-template #fileCountBadge>
+                    <span class="badge rounded-pill" style="font-size:11px;"
+                          [ngClass]="(matrixFiles[getMatrixRelationId(obligation)]?.length ?? 0) > 0 ? 'bg-primary' : 'bg-secondary'">
+                      {{ matrixFiles[getMatrixRelationId(obligation)]?.length ?? 0 }}
+                    </span>
+                  </ng-template>
+                </button>
+              </td>
+              <td class="px-3 py-2 text-center">
+                <div class="d-flex flex-column align-items-center" style="gap:3px;">
+                  <ng-container *ngIf="obligation.status; else statusFromCompleted">
+                    <i class="fas fa-lg"
+                       [ngClass]="obligation.status === 'CUMPLIDO' ? 'fa-check-circle text-success' : obligation.status === 'EN_PROCESO' ? 'fa-spinner text-info' : obligation.status === 'VENCIDO' ? 'fa-exclamation-circle text-danger' : 'fa-pause-circle text-secondary'"></i>
+                    <span class="badge" style="font-size:11px;"
+                          [ngClass]="obligation.status === 'CUMPLIDO' ? 'bg-success' : obligation.status === 'EN_PROCESO' ? 'bg-info' : obligation.status === 'VENCIDO' ? 'bg-danger' : 'bg-secondary'">
+                      {{ obligation.status === 'EN_PROCESO' ? 'EN PROCESO' : obligation.status }}
+                    </span>
+                  </ng-container>
+                  <ng-template #statusFromCompleted>
+                    <i class="fas fa-lg"
+                       [ngClass]="obligation.completed ? 'fa-check-circle text-success' : 'fa-pause-circle text-secondary'"></i>
+                    <span class="badge" style="font-size:11px;"
+                          [ngClass]="obligation.completed ? 'bg-success' : 'bg-secondary'">
+                      {{ obligation.completed ? 'CUMPLIDO' : 'PENDIENTE' }}
+                    </span>
+                  </ng-template>
+                </div>
+              </td>
+              <td class="px-3 py-2">
+                <div class="d-flex flex-column gap-1">
+                  <button class="btn btn-outline-primary btn-sm py-1 px-2" (click)="openEditObligationModal(obligation)" style="font-size:12px;">
+                    <i class="fas fa-edit me-1"></i>Editar
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                          (click)="removeObligation(obligation)"
+                          [disabled]="isDeletingObligation(obligation)"
+                          style="font-size:12px;">
+                    <i class="fas me-1" [ngClass]="isDeletingObligation(obligation) ? 'fa-spinner fa-spin' : 'fa-times'"></i>Remover
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <!-- Files panel (expandible) -->
+            <tr *ngIf="matrixFilesVisible[getMatrixRelationId(obligation)]">
+              <td colspan="10" class="p-0">
+                <div class="px-4 py-3 bg-light border-top">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="small fw-bold">Archivos de matriz legal</span>
+                    <div class="d-flex gap-1 align-items-center">
+                      <small class="text-muted">Visibles al usuario (PDF): {{ countPublicFor(getMatrixRelationId(obligation)) }}/3</small>
+                      <input type="file" class="d-none" accept=".pdf,.doc,.docx"
+                             [id]="'upload-matrix-tbl-' + getMatrixRelationId(obligation)"
+                             (change)="uploadMatrixFile(obligation, $event)">
+                      <label class="btn btn-sm btn-outline-primary py-0 px-2"
+                             [for]="'upload-matrix-tbl-' + getMatrixRelationId(obligation)"
+                             style="font-size:10px;">
+                        <i class="fas fa-upload me-1"></i>Subir
+                      </label>
+                    </div>
+                  </div>
+                  <div *ngIf="matrixFilesLoading[getMatrixRelationId(obligation)]" class="text-muted small">Cargando archivos...</div>
+                  <div *ngIf="!matrixFilesLoading[getMatrixRelationId(obligation)] && (matrixFiles[getMatrixRelationId(obligation)]?.length || 0) === 0" class="text-muted small">Sin archivos.</div>
+                  <div *ngFor="let f of (matrixFiles[getMatrixRelationId(obligation)] || [])" class="d-flex align-items-center justify-content-between py-1 border-bottom">
+                    <span class="small">{{ f.name || ('Archivo #' + f.id) }}
+                      <span class="badge bg-success-subtle text-success ms-1" *ngIf="isPublicFile(f)"><i class="fas fa-eye me-1"></i>Visible</span>
+                    </span>
+                    <div class="d-flex gap-1">
+                      <button class="btn btn-sm btn-outline-success p-1"
+                              [disabled]="!isPdf(f) || (!isPublicFile(f) && countPublicFor(getMatrixRelationId(obligation)) >= 3)"
+                              (click)="togglePublic(f, getMatrixRelationId(obligation))"
+                              style="font-size:9px;">
+                        <i class="fas" [ngClass]="isPublicFile(f) ? 'fa-eye' : 'fa-eye-slash'"></i>
+                      </button>
+                      <a class="btn btn-sm btn-outline-secondary p-1" [href]="getMatrixFileUrl(f)" target="_blank" style="font-size:9px;"><i class="fas fa-download"></i></a>
+                      <button class="btn btn-sm btn-outline-danger p-1" (click)="deleteMatrixFile(f.id, getMatrixRelationId(obligation))" style="font-size:9px;"><i class="fas fa-trash"></i></button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div *ngIf="!empresa.obligation_matrices?.length" class="card shadow-sm border-0 mb-4">
+    <div class="card-body text-center py-4">
+      <i class="fas fa-gavel fa-2x text-muted opacity-50 mb-2"></i>
+      <p class="text-muted mb-0">Sin obligaciones legales configuradas. Las obligaciones se asignan desde la tarjeta Matriz Legal en la parte superior.</p>
+    </div>
+  </div>
+
+  <!-- Sección Personal (MOVIDA AL FINAL DESPUÉS DE MANTENIMIENTO) -->
   <div class="row g-4 mb-4">
     <div class="col-12">
       <div class="card shadow border-0 h-100">
@@ -1531,55 +2358,72 @@
   </div>
 </div>
 
-<!-- Modal para editar obligación (relación de empresa) - ubicado al final para evitar flicker -->
+<!-- Modal para editar obligación (relación de empresa) -->
 <div *ngIf="showEditObligationModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
       <div class="modal-header bg-primary text-white border-0">
         <div class="d-flex align-items-center">
-          <i class="fas fa-edit me-2"></i>
+          <i class="fas fa-gavel me-2"></i>
           <h5 class="modal-title mb-0">Editar Matriz Legal</h5>
         </div>
         <button type="button" class="btn-close btn-close-white" (click)="closeEditObligationModal()"></button>
       </div>
       <div class="modal-body p-4">
+        <!-- Regulación Legal (solo lectura, proviene del catálogo) -->
         <div class="mb-3">
-          <label class="form-label fw-semibold">Nombre</label>
-          <input type="text" class="form-control" [(ngModel)]="editObligation.name" [ngModelOptions]="{updateOn: 'blur'}" placeholder="Nombre" />
+          <label class="form-label fw-semibold">
+            <i class="fas fa-book me-1 text-primary"></i>Regulación Legal
+          </label>
+          <p class="form-control-plaintext border rounded px-3 py-2 bg-light mb-0" style="font-size:13px;">
+            {{ editObligation.legalRegulation || '—' }}
+          </p>
         </div>
+        <!-- Fecha de Ingreso (editable) -->
         <div class="mb-3">
-          <label class="form-label fw-semibold">Descripción</label>
-          <textarea class="form-control" [(ngModel)]="editObligation.description" [ngModelOptions]="{updateOn: 'blur'}" rows="3" placeholder="Descripción"></textarea>
+          <label class="form-label fw-semibold">
+            <i class="fas fa-calendar me-1 text-primary"></i>Fecha de Ingreso
+          </label>
+          <input type="date" class="form-control" [(ngModel)]="editObligation.entryDate" [ngModelOptions]="{updateOn: 'blur'}" />
         </div>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label fw-semibold">Fecha de vencimiento</label>
-            <input type="date" class="form-control" [(ngModel)]="editObligation.dueDate" [ngModelOptions]="{updateOn: 'blur'}" />
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label fw-semibold">Estado</label>
-            <select class="form-select" [(ngModel)]="editObligation.status" [ngModelOptions]="{updateOn: 'blur'}">
-              <option [ngValue]="null">—</option>
-              <option value="PENDING">PENDIENTE</option>
-              <option value="IN_PROGRESS">EN PROCESO</option>
-              <option value="COMPLETED">COMPLETADO</option>
-            </select>
-          </div>
+        <!-- Fecha de Vencimiento (editable) -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            <i class="fas fa-calendar-times me-1 text-danger"></i>Fecha de Vencimiento
+          </label>
+          <input type="date" class="form-control" [(ngModel)]="editObligation.dueDate" [ngModelOptions]="{updateOn: 'blur'}" />
         </div>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label fw-semibold">Prioridad</label>
-            <select class="form-select" [(ngModel)]="editObligation.priority" [ngModelOptions]="{updateOn: 'blur'}">
-              <option [ngValue]="null">—</option>
-              <option value="LOW">BAJA</option>
-              <option value="MEDIUM">MEDIA</option>
-              <option value="HIGH">ALTA</option>
-            </select>
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label fw-semibold">Responsable</label>
-            <input type="text" class="form-control" [(ngModel)]="editObligation.responsiblePerson" [ngModelOptions]="{updateOn: 'blur'}" placeholder="Responsable" />
-          </div>
+        <!-- Prioridad (editable) -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            <i class="fas fa-flag me-1 text-warning"></i>Prioridad
+          </label>
+          <select class="form-select" [(ngModel)]="editObligation.priority" [ngModelOptions]="{updateOn: 'blur'}">
+            <option [ngValue]="null">— Sin prioridad —</option>
+            <option value="BAJA">BAJA</option>
+            <option value="MEDIA">MEDIA</option>
+            <option value="ALTA">ALTA</option>
+          </select>
+        </div>
+        <!-- Estado (editable) -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            <i class="fas fa-tasks me-1 text-info"></i>Estado
+          </label>
+          <select class="form-select" [(ngModel)]="editObligation.status" [ngModelOptions]="{updateOn: 'blur'}">
+            <option [ngValue]="null">— Sin estado —</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="EN_PROCESO">En proceso</option>
+            <option value="CUMPLIDO">Cumplido</option>
+            <option value="VENCIDO">Vencido</option>
+          </select>
+        </div>
+        <!-- Observación (editable) -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            <i class="fas fa-comment me-1 text-secondary"></i>Observación
+          </label>
+          <textarea class="form-control" [(ngModel)]="editObligation.observations" [ngModelOptions]="{updateOn: 'blur'}" rows="3" placeholder="Ingrese observaciones..."></textarea>
         </div>
       </div>
       <div class="modal-footer border-0 bg-light">
@@ -1588,12 +2432,12 @@
         </button>
         <button type="button" class="btn btn-primary" (click)="saveObligationEdit()" [disabled]="savingObligation">
           <i class="fas" [ngClass]="savingObligation ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-          <span class="ms-1">Guardar</span>
+          <span class="ms-1">Guardar cambios</span>
         </button>
       </div>
     </div>
   </div>
-  </div>
+</div>
 
 <!-- Modal para asignar departamento -->
 <div *ngIf="showAsignDepartmentModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
@@ -1817,6 +2661,7 @@
     </div>
   </div>
 </div>
+
 
 <!-- Modal para asignar Jornadas de Trabajo -->
 <div *ngIf="showAsignWorkScheduleModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
@@ -2356,4 +3201,659 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Modal para asignar Tipo de Vehículo -->
+<div *ngIf="showAsignVehicleTypeModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-info text-white border-0">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-truck me-2"></i>
+          <h5 class="modal-title mb-0">Asignar Tipo de Vehículo</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignVehicleTypeModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-muted small mb-3">
+          Seleccione un tipo de vehículo del catálogo global para asignarlo a <strong>{{ empresa?.name }}</strong>.
+        </p>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Tipo de Vehículo:</label>
+          <select class="form-select" [(ngModel)]="selectedVehicleTypeId">
+            <option [ngValue]="null" disabled>-- Seleccione un tipo de vehículo --</option>
+            <option *ngFor="let tv of availableVehicleTypes()" [ngValue]="tv.id">
+              {{ tv.name }} {{ tv.description ? '- ' + tv.description : '' }}
+            </option>
+          </select>
+        </div>
+        <div *ngIf="availableVehicleTypes().length === 0" class="alert alert-info small py-2">
+          <i class="fas fa-info-circle me-1"></i>No hay tipos de vehículo disponibles para asignar.
+        </div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeAsignVehicleTypeModal()">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-info" 
+                (click)="assignVehicleType()" 
+                [disabled]="!selectedVehicleTypeId || savingVehicleType">
+          <i class="fas" [ngClass]="savingVehicleType ? 'fa-spinner fa-spin' : 'fa-check'"></i>
+          <span class="ms-1">{{ savingVehicleType ? 'Asignando...' : 'Asignar' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para asignar Estado de Unidad -->
+<div *ngIf="showAsignUnitStatusModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-warning text-dark border-0">
+        <div class="d-flex align-items-center"><i class="fas fa-clipboard-check me-2"></i><h5 class="modal-title mb-0">Asignar Estado de Unidad</h5></div>
+        <button type="button" class="btn-close" (click)="closeAsignUnitStatusModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-muted small mb-3">Seleccione un estado del catálogo global para asignarlo a <strong>{{ empresa?.name }}</strong>.</p>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Estado de Unidad:</label>
+          <select class="form-select" [(ngModel)]="selectedUnitStatusId">
+            <option [ngValue]="null" disabled>-- Seleccione --</option>
+            <option *ngFor="let eu of availableUnitStatuses()" [ngValue]="eu.id">{{ eu.name }} {{ eu.description ? '- ' + eu.description : '' }}</option>
+          </select>
+        </div>
+        <div *ngIf="availableUnitStatuses().length === 0" class="alert alert-info small py-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeAsignUnitStatusModal()"><i class="fas fa-times me-1"></i>Cancelar</button>
+        <button type="button" class="btn btn-warning" (click)="assignUnitStatus()" [disabled]="!selectedUnitStatusId || savingUnitStatus">
+          <i class="fas" [ngClass]="savingUnitStatus ? 'fa-spinner fa-spin' : 'fa-check'"></i><span class="ms-1">{{ savingUnitStatus ? 'Asignando...' : 'Asignar' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Marca de Vehículo -->
+<div *ngIf="showAsignMarcaModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #ff6b6b 0%, #ee5a6f 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-registered text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Marca de Vehículo</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignMarcaModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-muted small mb-3">Seleccione del catálogo global para asignarlo a <strong>{{ empresa?.name }}</strong>.</p>
+        <select class="form-select" [(ngModel)]="selectedMarcaId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availableMarcas()" [ngValue]="item.id">{{ item.name }} {{ item.description ? '- ' + item.description : '' }}</option>
+        </select>
+        <div *ngIf="availableMarcas().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignMarcaModal()">Cancelar</button>
+        <button class="btn btn-danger" (click)="assignMarca()" [disabled]="!selectedMarcaId || savingMarca">
+          <i class="fas" [ngClass]="savingMarca ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Clase de vehículo -->
+<div *ngIf="showAsignClaseModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-layer-group text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar clase</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignClaseModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-muted small mb-3">Seleccione del catálogo global para asignarlo a <strong>{{ empresa?.name }}</strong>.</p>
+        <select class="form-select" [(ngModel)]="selectedClaseId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availableClases()" [ngValue]="item.id">{{ item.name }} {{ item.description ? '- ' + item.description : '' }}</option>
+        </select>
+        <div *ngIf="availableClases().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignClaseModal()">Cancelar</button>
+        <button class="btn text-white" style="background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);" (click)="assignClase()" [disabled]="!selectedClaseId || savingClase">
+          <i class="fas" [ngClass]="savingClase ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Entidad remitente -->
+<div *ngIf="showAsignEntidadRemModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-building text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar entidad remitente</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignEntidadRemModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-muted small mb-3">Seleccione del catálogo global para asignarlo a <strong>{{ empresa?.name }}</strong>.</p>
+        <select class="form-select" [(ngModel)]="selectedEntidadRemId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availableEntidadRems()" [ngValue]="item.id">{{ item.name }} {{ item.description ? '- ' + item.description : '' }}</option>
+        </select>
+        <div *ngIf="availableEntidadRems().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignEntidadRemModal()">Cancelar</button>
+        <button class="btn text-white" style="background: linear-gradient(90deg, #0d9488 0%, #14b8a6 100%);" (click)="assignEntidadRem()" [disabled]="!selectedEntidadRemId || savingEntidadRem">
+          <i class="fas" [ngClass]="savingEntidadRem ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Tipo de Combustible -->
+<div *ngIf="showAsignCombustibleModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #22c55e 0%, #86efac 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-gas-pump text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Tipo de Combustible</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignCombustibleModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <select class="form-select" [(ngModel)]="selectedCombustibleId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availableCombustibles()" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <div *ngIf="availableCombustibles().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignCombustibleModal()">Cancelar</button>
+        <button class="btn btn-success" (click)="assignCombustible()" [disabled]="!selectedCombustibleId || savingCombustible">
+          <i class="fas" [ngClass]="savingCombustible ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Color de Vehículo -->
+<div *ngIf="showAsignColorModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #a78bfa 0%, #c4b5fd 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-palette text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Color</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignColorModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <select class="form-select" [(ngModel)]="selectedColorId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availableColors()" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <div *ngIf="availableColors().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignColorModal()">Cancelar</button>
+        <button class="btn btn-secondary" (click)="assignColor()" [disabled]="!selectedColorId || savingColor">
+          <i class="fas" [ngClass]="savingColor ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Transmisión -->
+<div *ngIf="showAsignTransmisionModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-cogs text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Transmisión</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignTransmisionModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <select class="form-select" [(ngModel)]="selectedTransmisionId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availableTransmisiones()" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <div *ngIf="availableTransmisiones().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignTransmisionModal()">Cancelar</button>
+        <button class="btn btn-danger" (click)="assignTransmision()" [disabled]="!selectedTransmisionId || savingTransmision">
+          <i class="fas" [ngClass]="savingTransmision ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Propietario de Vehículo -->
+<div *ngIf="showAsignPropietarioModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #10b981 0%, #34d399 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-user-tie text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Propietario/Empresa</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignPropietarioModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <select class="form-select" [(ngModel)]="selectedPropietarioId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availablePropietarios()" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <div *ngIf="availablePropietarios().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignPropietarioModal()">Cancelar</button>
+        <button class="btn btn-success" (click)="assignPropietario()" [disabled]="!selectedPropietarioId || savingPropietario">
+          <i class="fas" [ngClass]="savingPropietario ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Tipo de Documento Vehículo -->
+<div *ngIf="showAsignTipoDocVehModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-file-alt text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Tipo de Documento</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignTipoDocVehModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <select class="form-select" [(ngModel)]="selectedTipoDocVehId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availableTipoDocVeh()" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <div *ngIf="availableTipoDocVeh().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignTipoDocVehModal()">Cancelar</button>
+        <button class="btn btn-warning" (click)="assignTipoDocVeh()" [disabled]="!selectedTipoDocVehId || savingTipoDocVeh">
+          <i class="fas" [ngClass]="savingTipoDocVeh ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Unidad de Medida -->
+<div *ngIf="showAsignUnidadMedidaModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #06b6d4 0%, #67e8f9 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-ruler text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Unidad de Medida</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignUnidadMedidaModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <select class="form-select" [(ngModel)]="selectedUnidadMedidaId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availableUnidadMedidas()" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <div *ngIf="availableUnidadMedidas().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignUnidadMedidaModal()">Cancelar</button>
+        <button class="btn btn-info" (click)="assignUnidadMedida()" [disabled]="!selectedUnidadMedidaId || savingUnidadMedida">
+          <i class="fas" [ngClass]="savingUnidadMedida ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Ubicación/Ruta -->
+<div *ngIf="showAsignUbicacionModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #60a5fa 0%, #93c5fd 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-road text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Ubicación/Ruta</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignUbicacionModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <select class="form-select" [(ngModel)]="selectedUbicacionId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availableUbicaciones()" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <div *ngIf="availableUbicaciones().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignUbicacionModal()">Cancelar</button>
+        <button class="btn btn-primary" (click)="assignUbicacion()" [disabled]="!selectedUbicacionId || savingUbicacion">
+          <i class="fas" [ngClass]="savingUbicacion ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar País de Origen -->
+<div *ngIf="showAsignPaisModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #f472b6 0%, #fda4af 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-globe text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar País de Origen</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignPaisModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <select class="form-select" [(ngModel)]="selectedPaisId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availablePaises()" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <div *ngIf="availablePaises().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignPaisModal()">Cancelar</button>
+        <button class="btn btn-primary" (click)="assignPais()" [disabled]="!selectedPaisId || savingPais">
+          <i class="fas" [ngClass]="savingPais ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Número de ejes -->
+<div *ngIf="showAsignNumeroEjeModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #64748b 0%, #94a3b8 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-grip-lines text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Número de ejes</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignNumeroEjeModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <select class="form-select" [(ngModel)]="selectedNumeroEjeId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availableNumeroEjes()" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <div *ngIf="availableNumeroEjes().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignNumeroEjeModal()">Cancelar</button>
+        <button class="btn btn-secondary" (click)="assignNumeroEje()" [disabled]="!selectedNumeroEjeId || savingNumeroEje">
+          <i class="fas" [ngClass]="savingNumeroEje ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Asignar Configuración de ejes -->
+<div *ngIf="showAsignConfiguracionEjeModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0" style="background: linear-gradient(90deg, #475569 0%, #64748b 100%);">
+        <div class="d-flex align-items-center"><i class="fas fa-truck-monster text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Configuración de ejes</h5></div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignConfiguracionEjeModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <select class="form-select" [(ngModel)]="selectedConfiguracionEjeId">
+          <option [ngValue]="null" disabled>-- Seleccione --</option>
+          <option *ngFor="let item of availableConfiguracionEjes()" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <div *ngIf="availableConfiguracionEjes().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button class="btn btn-outline-secondary" (click)="closeAsignConfiguracionEjeModal()">Cancelar</button>
+        <button class="btn btn-secondary" (click)="assignConfiguracionEje()" [disabled]="!selectedConfiguracionEjeId || savingConfiguracionEje">
+          <i class="fas" [ngClass]="savingConfiguracionEje ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODALES GERENCIA DE VIAJES ═══ -->
+
+<!-- Modal: Distancia a Recorrer -->
+<div *ngIf="showAsignDistanciaModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-ruler-combined text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Distancia a Recorrer</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignDistanciaModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedDistanciaId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allDistanciaRecorrers','distanciaRecorrers')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allDistanciaRecorrers','distanciaRecorrers').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignDistanciaModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignDistancia()" [disabled]="!selectedDistanciaId || savingDistancia">
+        <i class="fas" [ngClass]="savingDistancia ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Tipo de Vía -->
+<div *ngIf="showAsignTipoViaModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-road text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Tipo de Vía</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignTipoViaModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedTipoViaId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allTipoVias','tipoVias')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allTipoVias','tipoVias').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignTipoViaModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignTipoVia()" [disabled]="!selectedTipoViaId || savingTipoVia">
+        <i class="fas" [ngClass]="savingTipoVia ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Condición Climática -->
+<div *ngIf="showAsignCondicionModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #06b6d4 0%, #67e8f9 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-cloud-rain text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Condición Climática</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignCondicionModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedCondicionId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allCondicionClimaticas','condicionClimaticas')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allCondicionClimaticas','condicionClimaticas').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignCondicionModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignCondicion()" [disabled]="!selectedCondicionId || savingCondicion">
+        <i class="fas" [ngClass]="savingCondicion ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Horario de Circulación -->
+<div *ngIf="showAsignHorarioCircModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-clock text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Horario de Circulación</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignHorarioCircModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedHorarioCircId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allHorarioCirculaciones','horarioCirculaciones')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allHorarioCirculaciones','horarioCirculaciones').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignHorarioCircModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignHorarioCirc()" [disabled]="!selectedHorarioCircId || savingHorarioCirc">
+        <i class="fas" [ngClass]="savingHorarioCirc ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Estado de Carretera -->
+<div *ngIf="showAsignEstadoCarrModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-exclamation-triangle text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Estado de Carretera</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignEstadoCarrModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedEstadoCarrId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allEstadoCarreteras','estadoCarreteras')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allEstadoCarreteras','estadoCarreteras').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignEstadoCarrModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignEstadoCarr()" [disabled]="!selectedEstadoCarrId || savingEstadoCarr">
+        <i class="fas" [ngClass]="savingEstadoCarr ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Tipo de Carga -->
+<div *ngIf="showAsignTipoCargaModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-boxes text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Tipo de Carga</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignTipoCargaModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedTipoCargaId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allTipoCargas','tipoCargas')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allTipoCargas','tipoCargas').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignTipoCargaModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignTipoCarga()" [disabled]="!selectedTipoCargaId || savingTipoCarga">
+        <i class="fas" [ngClass]="savingTipoCarga ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Horas de Conducción -->
+<div *ngIf="showAsignHoraCondModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #10b981 0%, #34d399 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-user-clock text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Horas de Conducción</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignHoraCondModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedHoraCondId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allHoraConducciones','horaConducciones')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allHoraConducciones','horaConducciones').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignHoraCondModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignHoraCond()" [disabled]="!selectedHoraCondId || savingHoraCond">
+        <i class="fas" [ngClass]="savingHoraCond ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Horas de Descanso -->
+<div *ngIf="showAsignHoraDescModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-moon text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Horas de Descanso</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignHoraDescModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedHoraDescId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allHoraDescansos','horaDescansos')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allHoraDescansos','horaDescansos').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignHoraDescModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignHoraDesc()" [disabled]="!selectedHoraDescId || savingHoraDesc">
+        <i class="fas" [ngClass]="savingHoraDesc ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Medio de Comunicación -->
+<div *ngIf="showAsignMedioComModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-phone-alt text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Medio de Comunicación</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignMedioComModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedMedioComId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allMedioComunicaciones','medioComunicaciones')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allMedioComunicaciones','medioComunicaciones').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignMedioComModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignMedioCom()" [disabled]="!selectedMedioComId || savingMedioCom">
+        <i class="fas" [ngClass]="savingMedioCom ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Transporta Pasajeros -->
+<div *ngIf="showAsignTransportaModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #ec4899 0%, #f472b6 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-users text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Transporta Pasajeros</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignTransportaModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedTransportaId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allTransportaPasajeros','transportaPasajeros')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allTransportaPasajeros','transportaPasajeros').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignTransportaModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignTransporta()" [disabled]="!selectedTransportaId || savingTransporta">
+        <i class="fas" [ngClass]="savingTransporta ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Metodología de Riesgo -->
+<div *ngIf="showAsignMetodologiaModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #000666 0%, #3b4abf 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-shield-alt text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Metodología de Riesgo</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignMetodologiaModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedMetodologiaId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allMetodologiaRiesgos','metodologiaRiesgos')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allMetodologiaRiesgos','metodologiaRiesgos').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignMetodologiaModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignMetodologia()" [disabled]="!selectedMetodologiaId || savingMetodologia">
+        <i class="fas" [ngClass]="savingMetodologia ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
 </div>

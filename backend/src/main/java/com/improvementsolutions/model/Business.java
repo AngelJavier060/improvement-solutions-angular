@@ -17,8 +17,8 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts"})
-@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts"})
+@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "tipoDocumentoVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos"})
+@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "tipoDocumentoVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos"})
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Business {
     @Id
@@ -189,6 +189,201 @@ public class Business {
 
     @Column(name = "qr_legal_docs_token_version")
     private Integer qrLegalDocsTokenVersion;
+
+    // Configuración de Mantenimiento Automotriz por empresa (JSON string)
+    @Column(name = "maintenance_config", columnDefinition = "TEXT")
+    private String maintenanceConfig;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_tipo_vehiculo",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "tipo_vehiculo_id")
+    )
+    @JsonIgnore
+    private Set<TipoVehiculo> tipoVehiculos = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_estado_unidad",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "estado_unidad_id")
+    )
+    @JsonIgnore
+    private Set<EstadoUnidad> estadoUnidades = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_marca_vehiculo",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "marca_vehiculo_id")
+    )
+    @JsonIgnore
+    private Set<MarcaVehiculo> marcaVehiculos = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_clase_vehiculo",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "clase_vehiculo_id")
+    )
+    @JsonIgnore
+    private Set<ClaseVehiculo> claseVehiculos = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_entidad_remitente",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "entidad_remitente_id")
+    )
+    @JsonIgnore
+    private Set<EntidadRemitente> entidadRemitentes = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_tipo_combustible",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "tipo_combustible_id")
+    )
+    @JsonIgnore
+    private Set<TipoCombustible> tipoCombustibles = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_color_vehiculo",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "color_vehiculo_id")
+    )
+    @JsonIgnore
+    private Set<ColorVehiculo> colorVehiculos = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_transmision",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "transmision_id")
+    )
+    @JsonIgnore
+    private Set<Transmision> transmisiones = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_propietario_vehiculo",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "propietario_vehiculo_id")
+    )
+    @JsonIgnore
+    private Set<PropietarioVehiculo> propietarioVehiculos = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_tipo_documento_vehiculo",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "tipo_documento_vehiculo_id")
+    )
+    @JsonIgnore
+    private Set<TipoDocumentoVehiculo> tipoDocumentoVehiculos = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_unidad_medida",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "unidad_medida_id")
+    )
+    @JsonIgnore
+    private Set<UnidadMedida> unidadMedidas = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_ubicacion_ruta",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "ubicacion_ruta_id")
+    )
+    @JsonIgnore
+    private Set<UbicacionRuta> ubicacionRutas = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_pais_origen",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "pais_origen_id")
+    )
+    @JsonIgnore
+    private Set<PaisOrigen> paisOrigenes = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_numero_eje",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "numero_eje_id")
+    )
+    @JsonIgnore
+    private Set<NumeroEje> numeroEjes = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_configuracion_eje",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "configuracion_eje_id")
+    )
+    @JsonIgnore
+    private Set<ConfiguracionEje> configuracionEjes = new HashSet<>();
+
+    // === GERENCIA DE VIAJES — parámetros por empresa ===
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "business_distancia_recorrer", joinColumns = @JoinColumn(name = "business_id"), inverseJoinColumns = @JoinColumn(name = "distancia_recorrer_id"))
+    @JsonIgnore
+    private Set<DistanciaRecorrer> distanciaRecorrers = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "business_tipo_via", joinColumns = @JoinColumn(name = "business_id"), inverseJoinColumns = @JoinColumn(name = "tipo_via_id"))
+    @JsonIgnore
+    private Set<TipoVia> tipoVias = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "business_condicion_climatica", joinColumns = @JoinColumn(name = "business_id"), inverseJoinColumns = @JoinColumn(name = "condicion_climatica_id"))
+    @JsonIgnore
+    private Set<CondicionClimatica> condicionClimaticas = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "business_horario_circulacion", joinColumns = @JoinColumn(name = "business_id"), inverseJoinColumns = @JoinColumn(name = "horario_circulacion_id"))
+    @JsonIgnore
+    private Set<HorarioCirculacion> horarioCirculaciones = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "business_estado_carretera", joinColumns = @JoinColumn(name = "business_id"), inverseJoinColumns = @JoinColumn(name = "estado_carretera_id"))
+    @JsonIgnore
+    private Set<EstadoCarretera> estadoCarreteras = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "business_tipo_carga", joinColumns = @JoinColumn(name = "business_id"), inverseJoinColumns = @JoinColumn(name = "tipo_carga_id"))
+    @JsonIgnore
+    private Set<TipoCarga> tipoCargas = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "business_hora_conduccion", joinColumns = @JoinColumn(name = "business_id"), inverseJoinColumns = @JoinColumn(name = "hora_conduccion_id"))
+    @JsonIgnore
+    private Set<HoraConduccion> horaConducciones = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "business_hora_descanso", joinColumns = @JoinColumn(name = "business_id"), inverseJoinColumns = @JoinColumn(name = "hora_descanso_id"))
+    @JsonIgnore
+    private Set<HoraDescanso> horaDescansos = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "business_medio_comunicacion", joinColumns = @JoinColumn(name = "business_id"), inverseJoinColumns = @JoinColumn(name = "medio_comunicacion_id"))
+    @JsonIgnore
+    private Set<MedioComunicacion> medioComunicaciones = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "business_transporta_pasajero", joinColumns = @JoinColumn(name = "business_id"), inverseJoinColumns = @JoinColumn(name = "transporta_pasajero_id"))
+    @JsonIgnore
+    private Set<TransportaPasajero> transportaPasajeros = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "business_metodologia_riesgo", joinColumns = @JoinColumn(name = "business_id"), inverseJoinColumns = @JoinColumn(name = "metodologia_riesgo_id"))
+    @JsonIgnore
+    private Set<MetodologiaRiesgo> metodologiaRiesgos = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {
@@ -371,4 +566,95 @@ public class Business {
     public void removeWorkShift(WorkShift wsh) {
         workShifts.remove(wsh);
     }
+
+    // Métodos para tipos de vehículo
+    public void addTipoVehiculo(TipoVehiculo tv) {
+        tipoVehiculos.add(tv);
+    }
+
+    public void removeTipoVehiculo(TipoVehiculo tv) {
+        tipoVehiculos.remove(tv);
+    }
+
+    // Métodos para estados de unidad
+    public void addEstadoUnidad(EstadoUnidad eu) {
+        estadoUnidades.add(eu);
+    }
+
+    public void removeEstadoUnidad(EstadoUnidad eu) {
+        estadoUnidades.remove(eu);
+    }
+
+    public void addMarcaVehiculo(MarcaVehiculo m) { marcaVehiculos.add(m); }
+    public void removeMarcaVehiculo(MarcaVehiculo m) { marcaVehiculos.remove(m); }
+
+    public void addClaseVehiculo(ClaseVehiculo c) { claseVehiculos.add(c); }
+    public void removeClaseVehiculo(ClaseVehiculo c) { claseVehiculos.remove(c); }
+
+    public void addEntidadRemitente(EntidadRemitente e) { entidadRemitentes.add(e); }
+    public void removeEntidadRemitente(EntidadRemitente e) { entidadRemitentes.remove(e); }
+
+    public void addTipoCombustible(TipoCombustible t) { tipoCombustibles.add(t); }
+    public void removeTipoCombustible(TipoCombustible t) { tipoCombustibles.remove(t); }
+
+    public void addColorVehiculo(ColorVehiculo c) { colorVehiculos.add(c); }
+    public void removeColorVehiculo(ColorVehiculo c) { colorVehiculos.remove(c); }
+
+    public void addTransmision(Transmision t) { transmisiones.add(t); }
+    public void removeTransmision(Transmision t) { transmisiones.remove(t); }
+
+    public void addPropietarioVehiculo(PropietarioVehiculo p) { propietarioVehiculos.add(p); }
+    public void removePropietarioVehiculo(PropietarioVehiculo p) { propietarioVehiculos.remove(p); }
+
+    public void addTipoDocumentoVehiculo(TipoDocumentoVehiculo t) { tipoDocumentoVehiculos.add(t); }
+    public void removeTipoDocumentoVehiculo(TipoDocumentoVehiculo t) { tipoDocumentoVehiculos.remove(t); }
+
+    public void addUnidadMedida(UnidadMedida u) { unidadMedidas.add(u); }
+    public void removeUnidadMedida(UnidadMedida u) { unidadMedidas.remove(u); }
+
+    public void addUbicacionRuta(UbicacionRuta u) { ubicacionRutas.add(u); }
+    public void removeUbicacionRuta(UbicacionRuta u) { ubicacionRutas.remove(u); }
+
+    public void addPaisOrigen(PaisOrigen p) { paisOrigenes.add(p); }
+    public void removePaisOrigen(PaisOrigen p) { paisOrigenes.remove(p); }
+
+    public void addNumeroEje(NumeroEje n) { numeroEjes.add(n); }
+    public void removeNumeroEje(NumeroEje n) { numeroEjes.remove(n); }
+
+    public void addConfiguracionEje(ConfiguracionEje c) { configuracionEjes.add(c); }
+    public void removeConfiguracionEje(ConfiguracionEje c) { configuracionEjes.remove(c); }
+
+    // === Gerencia de Viajes helpers ===
+    public void addDistanciaRecorrer(DistanciaRecorrer d) { distanciaRecorrers.add(d); }
+    public void removeDistanciaRecorrer(DistanciaRecorrer d) { distanciaRecorrers.remove(d); }
+
+    public void addTipoVia(TipoVia t) { tipoVias.add(t); }
+    public void removeTipoVia(TipoVia t) { tipoVias.remove(t); }
+
+    public void addCondicionClimatica(CondicionClimatica c) { condicionClimaticas.add(c); }
+    public void removeCondicionClimatica(CondicionClimatica c) { condicionClimaticas.remove(c); }
+
+    public void addHorarioCirculacion(HorarioCirculacion h) { horarioCirculaciones.add(h); }
+    public void removeHorarioCirculacion(HorarioCirculacion h) { horarioCirculaciones.remove(h); }
+
+    public void addEstadoCarretera(EstadoCarretera e) { estadoCarreteras.add(e); }
+    public void removeEstadoCarretera(EstadoCarretera e) { estadoCarreteras.remove(e); }
+
+    public void addTipoCarga(TipoCarga t) { tipoCargas.add(t); }
+    public void removeTipoCarga(TipoCarga t) { tipoCargas.remove(t); }
+
+    public void addHoraConduccion(HoraConduccion h) { horaConducciones.add(h); }
+    public void removeHoraConduccion(HoraConduccion h) { horaConducciones.remove(h); }
+
+    public void addHoraDescanso(HoraDescanso h) { horaDescansos.add(h); }
+    public void removeHoraDescanso(HoraDescanso h) { horaDescansos.remove(h); }
+
+    public void addMedioComunicacion(MedioComunicacion m) { medioComunicaciones.add(m); }
+    public void removeMedioComunicacion(MedioComunicacion m) { medioComunicaciones.remove(m); }
+
+    public void addTransportaPasajero(TransportaPasajero t) { transportaPasajeros.add(t); }
+    public void removeTransportaPasajero(TransportaPasajero t) { transportaPasajeros.remove(t); }
+
+    public void addMetodologiaRiesgo(MetodologiaRiesgo m) { metodologiaRiesgos.add(m); }
+    public void removeMetodologiaRiesgo(MetodologiaRiesgo m) { metodologiaRiesgos.remove(m); }
 }
