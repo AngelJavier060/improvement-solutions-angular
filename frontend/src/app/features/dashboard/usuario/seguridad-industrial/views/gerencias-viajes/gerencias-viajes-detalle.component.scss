@@ -1,0 +1,108 @@
+.print-wrapper {
+  background-color: #f3f4f6;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.action-bar {
+  background-color: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.print-container {
+  background-color: white;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 15px;
+  border: 1px solid #ccc;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  font-size: 9px;
+  font-family: 'Manrope', sans-serif;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.table-bordered {
+  border: 1px solid black;
+
+  td {
+    border: 1px solid black;
+    vertical-align: middle;
+  }
+}
+
+.bg-primary {
+  background-color: #001736 !important;
+}
+
+.text-primary {
+  color: #001736 !important;
+}
+
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: white;
+  }
+
+  .print-wrapper {
+    background-color: white;
+    padding: 0;
+  }
+
+  .print-container {
+    width: 210mm;
+    height: 297mm;
+    padding: 10mm;
+    margin: auto;
+    box-shadow: none;
+    border: none;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .action-bar {
+    display: none !important;
+  }
+
+  table {
+    page-break-inside: avoid;
+  }
+
+  section {
+    page-break-inside: avoid;
+  }
+}
+
+// Color utilities for risk levels
+.bg-orient-blue {
+  background-color: #002B5B;
+}
+
+.bg-orient-light-blue {
+  background-color: #3ABEF9;
+}
+
+.bg-orient-yellow {
+  background-color: #FFD700;
+}
+
+.bg-orient-green {
+  background-color: #90EE90;
+}
+
+.bg-orient-orange {
+  background-color: #FFA500;
+}
+
+.bg-orient-red {
+  background-color: #FF4C4C;
+}

@@ -1,0 +1,277 @@
+.gerencias-viajes-container {
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  min-height: 100vh;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+// Sticky columns for horizontal scroll
+.sticky-col {
+  position: sticky;
+  background: #fff;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.sticky-col-right {
+  position: sticky;
+  background: #fff;
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+thead .sticky-col,
+thead .sticky-col-right {
+  background: #cfe2ff !important;
+}
+
+tbody tr:hover .sticky-col,
+tbody tr:hover .sticky-col-right {
+  background: #f8f9fa;
+}
+
+// Solo la matriz: scroll horizontal; no afecta a .stats-cards (fuera de este bloque)
+.table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  max-height: initial;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  position: relative;
+  scrollbar-gutter: stable;
+  display: block;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 2px;
+
+  .table-inner {
+    display: block;
+    width: max-content;
+    min-width: 100%;
+  }
+  
+  &::-webkit-scrollbar {
+    height: 14px;
+    width: 14px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #e9ecef;
+    border-radius: 10px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #6c757d;
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    
+    &:hover {
+      background: #495057;
+    }
+  }
+  
+  &::-webkit-scrollbar-corner {
+    background: #e9ecef;
+  }
+}
+
+.table.gv-table,
+.gv-table {
+  width: auto;
+  min-width: 100%;
+  margin-bottom: 0;
+  table-layout: auto;
+  
+  th, td {
+    white-space: nowrap;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  th {
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+}
+
+/* Tabla al ancho de sus columnas; crece con nuevos campos sin ancho fijo artificial */
+.gv-table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.page-header {
+  .breadcrumb-nav {
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  h1 {
+    color: #001736;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Tarjeta de la matriz: puede encogerse en el flex padre para activar scroll interno */
+.gerencias-viajes-container > .card.shadow-lg {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.card {
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.icon-box {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* KPI compactos (riesgo, flota, mapa) */
+.stats-cards {
+  .card-body { padding: 0.75rem 1rem; }
+  .display-6 { font-size: 1.5rem; }
+  .badge { font-size: 0.7rem; padding: 0.25rem 0.5rem; }
+  .progress { height: 6px; }
+}
+
+/* KPI superiores: sticky para seguir visibles al desplazar la matriz; sin animación hover que distraiga */
+.stats-cards--superior {
+  position: sticky;
+  top: 0;
+  z-index: 21;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  margin-top: -0.15rem;
+  background: linear-gradient(180deg, rgba(248, 249, 250, 0.98) 0%, rgba(233, 236, 239, 0.96) 100%);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 16px rgba(0, 23, 54, 0.07);
+
+  .card:hover {
+    transform: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+  }
+}
+
+.table-responsive {
+  scrollbar-width: thin;
+  scrollbar-color: #002b5b #e1e2e4;
+
+  &::-webkit-scrollbar {
+    height: 10px;
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #e1e2e4;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #002b5b;
+    border-radius: 5px;
+  }
+}
+
+.table {
+  thead {
+    th {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #001736;
+      white-space: nowrap;
+      padding: 1rem 0.75rem;
+      border-bottom: 2px solid #dee2e6;
+    }
+  }
+
+  tbody {
+    tr {
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: rgba(0, 23, 54, 0.03);
+        cursor: pointer;
+      }
+
+      td {
+        font-size: 0.875rem;
+        padding: 0.875rem 0.75rem;
+        vertical-align: middle;
+      }
+    }
+  }
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.avatar-group {
+  .avatar {
+    margin-left: -8px;
+    box-shadow: 0 0 0 2px #fff;
+
+    &:first-child {
+      margin-left: 0;
+    }
+  }
+}
+
+.badge {
+  font-weight: 600;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.badge-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.badge-primary {
+  background-color: #001736;
+  color: white;
+}
+
+.badge-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.badge-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-group-sm > .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+@media print {
+  .gerencias-viajes-container {
+    padding: 0;
+  }
+
+  .page-header,
+  .card-footer,
+  .btn,
+  .stats-cards {
+    display: none !important;
+  }
+}

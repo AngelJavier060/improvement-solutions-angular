@@ -104,6 +104,122 @@ public class BusinessEmployeeService {
     }
 
     /**
+     * Devuelve la composición de cargos (job roles) para una empresa (por RUC).
+     * Retorna lista de cargos con cantidad y porcentaje.
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<com.improvementsolutions.dto.JobRoleDto> getJobRoleCompositionByCompany(String codigoEmpresa) {
+        log.info("Calculando composición de cargos para la empresa: {}", codigoEmpresa);
+        Long businessId = getBusinessIdFromRuc(codigoEmpresa);
+        java.util.List<BusinessEmployee> employees = businessEmployeeRepository.findWithRelationsByBusinessId(businessId);
+        
+        // Solo activos
+        java.util.List<BusinessEmployee> activeEmployees = employees.stream()
+            .filter(this::isActive)
+            .collect(java.util.stream.Collectors.toList());
+        
+        int totalActive = activeEmployees.size();
+        if (totalActive == 0) {
+            return new java.util.ArrayList<>();
+        }
+        
+        // Agrupar por cargo
+        java.util.Map<String, Long> cargoCount = activeEmployees.stream()
+            .filter(emp -> emp.getPositionEntity() != null && emp.getPositionEntity().getName() != null)
+            .collect(java.util.stream.Collectors.groupingBy(
+                emp -> emp.getPositionEntity().getName().trim(),
+                java.util.stream.Collectors.counting()
+            ));
+        
+        // Convertir a DTOs con porcentaje
+        java.util.List<com.improvementsolutions.dto.JobRoleDto> result = cargoCount.entrySet().stream()
+            .map(entry -> {
+                String cargo = entry.getKey();
+                int cantidad = entry.getValue().intValue();
+                double porcentaje = (cantidad * 100.0) / totalActive;
+                
+                // Determinar categoría basada en el nombre del cargo
+                String categoria = determinarCategoria(cargo);
+                
+                return new com.improvementsolutions.dto.JobRoleDto(cargo, categoria, cantidad, porcentaje);
+            })
+            .sorted((a, b) -> Integer.compare(b.getCantidad(), a.getCantidad()))
+            .collect(java.util.stream.Collectors.toList());
+        
+        return result;
+    }
+    
+    private String determinarCategoria(String cargo) {
+        if (cargo == null) return "General";
+        String cargoLower = cargo.toLowerCase();
+        
+        if (cargoLower.contains("gerente") || cargoLower.contains("director") || cargoLower.contains("jefe")) {
+            return "Executive Leadership";
+        } else if (cargoLower.contains("admin") || cargoLower.contains("asistente") || cargoLower.contains("secretar")) {
+            return "Support & Logistics";
+        } else if (cargoLower.contains("técnico") || cargoLower.contains("tecnico") || cargoLower.contains("mantenimiento")) {
+            return "Technical Operations";
+        } else if (cargoLower.contains("conductor") || cargoLower.contains("chofer") || cargoLower.contains("operador")) {
+            return "Operational Unit";
+        } else if (cargoLower.contains("logística") || cargoLower.contains("logistica") || cargoLower.contains("coordinador")) {
+            return "Fleet & Safety";
+        } else if (cargoLower.contains("contador") || cargoLower.contains("financ") || cargoLower.contains("tesor")) {
+            return "Finance";
+        } else if (cargoLower.contains("recursos humanos") || cargoLower.contains("rrhh") || cargoLower.contains("talento")) {
+            return "Human Capital";
+        } else if (cargoLower.contains("seguridad") || cargoLower.contains("salud") || cargoLower.contains("sst")) {
+            return "Safety & Health";
+        } else if (cargoLower.contains("compras") || cargoLower.contains("adquisiciones") || cargoLower.contains("procurement")) {
+            return "Supply Chain";
+        } else if (cargoLower.contains("sistemas") || cargoLower.contains("ti ") || cargoLower.contains("informática")) {
+            return "Information Tech";
+        } else {
+            return "General";
+        }
+    }
+
+    /**
+     * Devuelve la distribución por nivel de educación para una empresa (por RUC).
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<com.improvementsolutions.dto.EducationLevelDto> getEducationLevelsByCompany(String codigoEmpresa) {
+        log.info("Calculando distribución de nivel de educación para la empresa: {}", codigoEmpresa);
+        Long businessId = getBusinessIdFromRuc(codigoEmpresa);
+        java.util.List<BusinessEmployee> employees = businessEmployeeRepository.findWithRelationsByBusinessId(businessId);
+        
+        // Solo activos
+        java.util.List<BusinessEmployee> activeEmployees = employees.stream()
+            .filter(this::isActive)
+            .collect(java.util.stream.Collectors.toList());
+        
+        int totalActive = activeEmployees.size();
+        if (totalActive == 0) {
+            return new java.util.ArrayList<>();
+        }
+        
+        // Agrupar por nivel de educación
+        java.util.Map<String, Long> educationCount = activeEmployees.stream()
+            .filter(emp -> emp.getDegree() != null && emp.getDegree().getName() != null)
+            .collect(java.util.stream.Collectors.groupingBy(
+                emp -> emp.getDegree().getName().trim(),
+                java.util.stream.Collectors.counting()
+            ));
+        
+        // Convertir a DTOs con porcentaje
+        java.util.List<com.improvementsolutions.dto.EducationLevelDto> result = educationCount.entrySet().stream()
+            .map(entry -> {
+                String nivel = entry.getKey();
+                int cantidad = entry.getValue().intValue();
+                double porcentaje = (cantidad * 100.0) / totalActive;
+                return new com.improvementsolutions.dto.EducationLevelDto(nivel, cantidad, porcentaje);
+            })
+            .sorted((a, b) -> Integer.compare(b.getCantidad(), a.getCantidad()))
+            .collect(java.util.stream.Collectors.toList());
+        
+        return result;
+    }
+
+    /**
      * Devuelve la distribución por Edad y Género (piramide) para una empresa (por RUC).
      * Rangos: <18, 19-25, 26-35, 36-50, >50
      */

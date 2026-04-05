@@ -164,21 +164,78 @@
       </div>
     </div>
 
-    <!-- Tile 3: Género (Donut) -->
+    <!-- Tile 3: Nivel de Educación (Donut) -->
     <div class="th-tile">
       <div class="tile-header">
-        <div class="tile-title">GÉNERO</div>
-        <div class="tile-total"><i class="fas fa-venus-mars me-1"></i>{{ getCurrentStats().total }}</div>
+        <div class="tile-title">NIVEL DE EDUCACIÓN</div>
+        <div class="tile-total"><i class="fas fa-graduation-cap me-1"></i>{{ educationLevels.length }} niveles</div>
       </div>
       <div class="tile-body">
-        <div echarts [options]="donutGeneroOptions" [autoResize]="true" class="tile-chart donut"></div>
+        <!-- Loading state -->
+        <div *ngIf="educationLoading" class="text-center py-5">
+          <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="text-muted small mt-2 mb-0">Cargando niveles de educación...</p>
+        </div>
+        
+        <!-- Chart -->
+        <div *ngIf="!educationLoading && educationLevels.length > 0" echarts [options]="donutEducationOptions" [autoResize]="true" class="tile-chart donut"></div>
+        
+        <!-- Empty state -->
+        <div *ngIf="!educationLoading && educationLevels.length === 0" class="text-center py-5">
+          <i class="fas fa-graduation-cap fa-2x text-muted mb-2"></i>
+          <p class="text-muted small mb-0">No hay datos de educación</p>
+        </div>
       </div>
     </div>
 
-    <!-- Placeholder temporal (solo uno) -->
-    <div class="th-tile" *ngFor="let _ of [1]">
-      <div class="tile-header"><div class="tile-title">&nbsp;</div></div>
-      <div class="tile-body placeholder"></div>
+    <!-- Tile 4: Composición de Cargos -->
+    <div class="th-tile job-roles-tile">
+      <div class="tile-header">
+        <div class="tile-title">COMPOSICIÓN DE CARGOS</div>
+        <div class="tile-total"><i class="fas fa-briefcase me-1"></i>{{ jobRoles.length }} roles</div>
+      </div>
+      <div class="tile-body">
+        <!-- Loading state -->
+        <div *ngIf="jobRolesLoading" class="text-center py-4">
+          <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="text-muted small mt-2 mb-0">Cargando cargos...</p>
+        </div>
+
+        <!-- Job roles list -->
+        <div *ngIf="!jobRolesLoading && jobRoles.length > 0" class="job-roles-list">
+          <div *ngFor="let role of jobRoles; let i = index" class="job-role-item">
+            <div class="role-info">
+              <div class="role-header">
+                <span class="role-category">{{ role.categoria || 'General' }}</span>
+                <div class="role-stats">
+                  <span class="role-count">{{ role.cantidad }}</span>
+                  <span class="role-percentage">{{ role.porcentaje.toFixed(1) }}%</span>
+                </div>
+              </div>
+              <h4 class="role-name">{{ role.cargo }}</h4>
+            </div>
+            <div class="role-progress">
+              <div class="progress-bar" 
+                   [style.width.%]="role.porcentaje"
+                   [ngClass]="{
+                     'high-concentration': role.porcentaje >= 20,
+                     'standard': role.porcentaje < 20
+                   }">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div *ngIf="!jobRolesLoading && jobRoles.length === 0" class="text-center py-4">
+          <i class="fas fa-briefcase fa-2x text-muted mb-2"></i>
+          <p class="text-muted small mb-0">No hay cargos registrados</p>
+        </div>
+      </div>
     </div>
   </div>
 

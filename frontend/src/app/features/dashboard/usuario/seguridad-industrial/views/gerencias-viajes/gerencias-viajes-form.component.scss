@@ -1,0 +1,146 @@
+.gerencias-form-container {
+  background-color: #f8f9fb;
+  min-height: 100vh;
+  padding: 2rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.form-header {
+  background-color: #f8f9fb;
+  padding: 1rem 0;
+}
+
+h1, h2, h3 {
+  font-family: 'Manrope', sans-serif;
+}
+
+.card {
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+  }
+}
+
+.form-control,
+.form-select {
+  transition: all 0.2s ease;
+
+  &:focus {
+    border-color: #001736;
+    box-shadow: 0 0 0 0.2rem rgba(0, 23, 54, 0.1);
+  }
+}
+
+.form-control-lg {
+  font-weight: 500;
+  color: #001736;
+
+  &::placeholder {
+    color: #6c757d;
+    font-weight: 400;
+  }
+}
+
+.border-bottom {
+  border-color: #dee2e6 !important;
+
+  &:focus {
+    border-color: #001736 !important;
+  }
+}
+
+.btn-group {
+  .btn {
+    min-width: 50px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+
+    &.btn-primary {
+      background-color: #001736;
+      border-color: #001736;
+
+      &:hover {
+        background-color: #002b5b;
+        border-color: #002b5b;
+      }
+    }
+
+    &.btn-outline-secondary {
+      &:hover {
+        background-color: #f8f9fa;
+      }
+    }
+  }
+}
+
+.bg-primary {
+  background-color: #001736 !important;
+}
+
+.text-primary {
+  color: #001736 !important;
+}
+
+.nav-link {
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  &.active {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+  }
+}
+
+.form-check-input {
+  cursor: pointer;
+
+  &:checked {
+    background-color: #001736;
+    border-color: #001736;
+  }
+
+  &:focus {
+    border-color: #001736;
+    box-shadow: 0 0 0 0.2rem rgba(0, 23, 54, 0.25);
+  }
+}
+
+.progress {
+  background-color: rgba(255, 255, 255, 0.1);
+
+  .progress-bar {
+    transition: width 0.6s ease;
+  }
+}
+
+.badge {
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 991.98px) {
+  .gerencias-form-container {
+    padding: 1rem;
+  }
+
+  aside {
+    margin-bottom: 2rem;
+  }
+}
+
+@media print {
+  .gerencias-form-container {
+    padding: 0;
+  }
+
+  .form-header,
+  aside,
+  .btn {
+    display: none !important;
+  }
+}

@@ -326,3 +326,154 @@
   .gender-pct { font-size: 2rem; }
   .gender-progress { height: 42px; }
 }
+
+/* ==========================
+   Job Roles Composition Tile
+   ========================== */
+.job-roles-tile {
+  .tile-body {
+    padding: 16px;
+    overflow-y: auto;
+    max-height: 420px;
+  }
+}
+
+.job-roles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+}
+
+.job-role-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+  padding: 4px 0;
+
+  &:hover {
+    .role-name {
+      color: #8B5CF6;
+    }
+    .role-progress .progress-bar {
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+    }
+  }
+}
+
+.role-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.role-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.role-category {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #64748B;
+  background: #F1F5F9;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.role-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.role-count {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-family: 'Manrope', sans-serif;
+  color: #0F172A;
+  line-height: 1;
+}
+
+.role-percentage {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #8B5CF6;
+}
+
+.role-name {
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: 'Manrope', sans-serif;
+  color: #1E293B;
+  margin: 0;
+  transition: color 0.2s ease;
+}
+
+.role-progress {
+  width: 100%;
+  height: 12px;
+  background: #F1F5F9;
+  border-radius: 9999px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  .progress-bar {
+    height: 100%;
+    border-radius: 9999px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+
+    &.high-concentration {
+      background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 50%, #C4B5FD 100%);
+      box-shadow: 0 2px 6px rgba(139, 92, 246, 0.25);
+    }
+
+    &.standard {
+      background: linear-gradient(135deg, #0EA5E9 0%, #38BDF8 50%, #7DD3FC 100%);
+      box-shadow: 0 2px 6px rgba(14, 165, 233, 0.25);
+    }
+  }
+}
+
+// Scrollbar styling for job roles list
+.job-roles-list {
+  scrollbar-width: thin;
+  scrollbar-color: #c3c6d4 #f2f4f7;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f2f4f7;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c3c6d4;
+    border-radius: 3px;
+
+    &:hover {
+      background: #737783;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .job-role-item {
+    gap: 6px;
+  }
+
+  .role-count {
+    font-size: 1.25rem;
+  }
+
+  .role-name {
+    font-size: 0.9rem;
+  }
+}

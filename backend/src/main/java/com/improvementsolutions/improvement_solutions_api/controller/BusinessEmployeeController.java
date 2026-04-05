@@ -307,6 +307,30 @@ public class BusinessEmployeeController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @GetMapping("/business-employees/company/{codigoEmpresa}/job-roles")
+    public ResponseEntity<java.util.List<com.improvementsolutions.dto.JobRoleDto>> getJobRoleCompositionByCompany(@PathVariable String codigoEmpresa) {
+        try {
+            log.info("Obteniendo composición de cargos para la empresa: {}", codigoEmpresa);
+            java.util.List<com.improvementsolutions.dto.JobRoleDto> data = businessEmployeeService.getJobRoleCompositionByCompany(codigoEmpresa);
+            return ResponseEntity.ok(data);
+        } catch (Exception e) {
+            log.error("Error al obtener composición de cargos para la empresa {}: {}", codigoEmpresa, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/business-employees/company/{codigoEmpresa}/education-levels")
+    public ResponseEntity<java.util.List<com.improvementsolutions.dto.EducationLevelDto>> getEducationLevelsByCompany(@PathVariable String codigoEmpresa) {
+        try {
+            log.info("Obteniendo distribución de nivel de educación para la empresa: {}", codigoEmpresa);
+            java.util.List<com.improvementsolutions.dto.EducationLevelDto> data = businessEmployeeService.getEducationLevelsByCompany(codigoEmpresa);
+            return ResponseEntity.ok(data);
+        } catch (Exception e) {
+            log.error("Error al obtener distribución de nivel de educación para la empresa {}: {}", codigoEmpresa, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
     
     @GetMapping("/business-employees/{id}")
     public ResponseEntity<BusinessEmployeeResponseDto> getEmployeeById(@PathVariable Long id) {

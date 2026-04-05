@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { TalentoHumanoStatsService, StatsAggregationDto, AgeGenderRangeDto } from '../services/talento-humano-stats.service';
+import { TalentoHumanoStatsService, StatsAggregationDto, AgeGenderRangeDto, JobRoleDto, EducationLevelDto } from '../services/talento-humano-stats.service';
 import { AuthService } from '../../../../../core/services/auth.service';
 
 @Component({
@@ -27,8 +27,12 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
   private rucParam: string = '';
   private currentBusinessName: string = '';
   donutDiscapOptions: any = {};
-  donutGeneroOptions: any = {};
+  donutEducationOptions: any = {};
   pyramidOptions: any = {};
+  jobRoles: JobRoleDto[] = [];
+  jobRolesLoading = false;
+  educationLevels: EducationLevelDto[] = [];
+  educationLoading = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -52,6 +56,43 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
         this.loadBusinessIds();
       }
     });
+  }
+
+  private loadJobRoleComposition(): void {
+    if (!this.rucParam) return;
+    this.jobRolesLoading = true;
+    this.statsService.getJobRoleCompositionByRuc(this.rucParam)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (roles: JobRoleDto[]) => {
+          this.jobRoles = roles.sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
+          this.jobRolesLoading = false;
+        },
+        error: (err) => {
+          console.error('Error cargando composición de cargos:', err);
+          this.jobRoles = [];
+          this.jobRolesLoading = false;
+        }
+      });
+  }
+
+  private loadEducationLevels(): void {
+    if (!this.rucParam) return;
+    this.educationLoading = true;
+    this.statsService.getEducationLevelsByRuc(this.rucParam)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (levels: EducationLevelDto[]) => {
+          this.educationLevels = levels;
+          this.updateEducationChart();
+          this.educationLoading = false;
+        },
+        error: (err) => {
+          console.error('Error cargando niveles de educación:', err);
+          this.educationLevels = [];
+          this.educationLoading = false;
+        }
+      });
   }
 
   private loadAgeGenderPyramid(): void {
@@ -97,8 +138,8 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
                 stack: 'total',
                 data: women,
                 barWidth: 22,
-                itemStyle: { color: '#ec4899' },
-                label: { show: true, position: 'insideLeft', formatter: (p: any) => { const v = Math.abs(p.value || 0); return v === 0 ? '' : String(v); } }
+                itemStyle: { color: '#EC4899', borderRadius: [4, 0, 0, 4] }, // Rosa profesional
+                label: { show: true, position: 'insideLeft', formatter: (p: any) => { const v = Math.abs(p.value || 0); return v === 0 ? '' : String(v); }, color: '#fff', fontWeight: 'bold' }
               },
               { 
                 name: 'Hombres',
@@ -106,9 +147,9 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
                 stack: 'total',
                 data: men,
                 barWidth: 22,
-                itemStyle: { color: '#1d4ed8' },
-                label: { show: true, position: 'insideRight', formatter: (p: any) => { const v = Math.abs(p.value || 0); return v === 0 ? '' : String(v); } },
-                markLine: { silent: true, symbol: 'none', data: [{ xAxis: 0 }], lineStyle: { color: '#111827', width: 1 } }
+                itemStyle: { color: '#0EA5E9', borderRadius: [0, 4, 4, 0] }, // Sky blue profesional
+                label: { show: true, position: 'insideRight', formatter: (p: any) => { const v = Math.abs(p.value || 0); return v === 0 ? '' : String(v); }, color: '#fff', fontWeight: 'bold' },
+                markLine: { silent: true, symbol: 'none', data: [{ xAxis: 0 }], lineStyle: { color: '#64748B', width: 2 } }
               }
             ]
           };
@@ -209,8 +250,10 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
             } as any;
             this.loading = false;
             this.scheduleRender();
-            // cargar pirámide edad/género en paralelo
+            // cargar pirámide edad/género, composición de cargos y niveles de educación en paralelo
             this.loadAgeGenderPyramid();
+            this.loadJobRoleComposition();
+            this.loadEducationLevels();
           },
           error: (error) => {
             console.error('Error cargando estadísticas por RUC:', error);
@@ -325,7 +368,8 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
       chartData.data.mujeres,
       chartData.data.discapacidad
     ];
-    const colors = ['#3b82f6', '#ec4899', '#10b981'];
+    // Paleta profesional mejorada
+    const colors = ['#0EA5E9', '#EC4899', '#8B5CF6']; // Sky blue, Rosa, Violeta
 
     // Compute percentages: Mujeres, Hombres, Discapacidad (otros)
     const total = Number(chartData.data.total) || 0;
@@ -391,7 +435,7 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
       ]
     };
 
-    // --- Tile 2: Donut Discapacidad ---
+    // --- Tile 2: Donut Discapacidad (Paleta profesional mejorada) ---
     const disc = Number(chartData.data.discapacidad) || 0;
     const totalDiscBase = Math.max(0, Number(chartData.data.total) || 0);
     const noDisc = Math.max(0, totalDiscBase - disc);
@@ -411,7 +455,7 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
             {
               value: disc,
               name: 'Con discapacidad',
-              itemStyle: { color: '#10b981' },
+              itemStyle: { color: '#8B5CF6' }, // Violeta profesional
               label: {
                 show: true,
                 position: 'center',
@@ -421,29 +465,87 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
                 color: '#111827'
               }
             },
-            { value: noDisc, name: 'Sin discapacidad', itemStyle: { color: '#e5e7eb' } }
+            { value: noDisc, name: 'Sin discapacidad', itemStyle: { color: '#E0E7FF' } }
           ]
         }
       ]
     };
+  }
 
-    // --- Tile 3: Donut Género (H vs M) ---
-    const hombres = Number(chartData.data.hombres) || 0;
-    const mujeres = Number(chartData.data.mujeres) || 0;
-    this.donutGeneroOptions = {
-      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-      legend: { bottom: 0, icon: 'circle', textStyle: { color: '#374151' } },
+  private updateEducationChart(): void {
+    if (!this.educationLevels || this.educationLevels.length === 0) {
+      this.donutEducationOptions = {};
+      return;
+    }
+
+    // Paleta de colores profesional para educación
+    const educationColors = [
+      '#0EA5E9', // Sky blue - Postgrado
+      '#8B5CF6', // Violeta - Maestría
+      '#EC4899', // Rosa - Universitario
+      '#F59E0B', // Ámbar - Técnico/Tecnólogo
+      '#10B981', // Esmeralda - Bachiller
+      '#6366F1', // Índigo - Primaria
+      '#64748B'  // Slate - Otros
+    ];
+
+    const data = this.educationLevels.map((level, index) => ({
+      value: level.cantidad,
+      name: level.nivel,
+      itemStyle: { color: educationColors[index % educationColors.length] }
+    }));
+
+    this.donutEducationOptions = {
+      tooltip: { 
+        trigger: 'item', 
+        formatter: '{b}: {c} ({d}%)',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderColor: '#E5E7EB',
+        borderWidth: 1,
+        textStyle: { color: '#1F2937' }
+      },
+      legend: { 
+        bottom: 8,
+        left: 'center',
+        icon: 'circle',
+        itemWidth: 10,
+        itemHeight: 10,
+        textStyle: { 
+          color: '#374151',
+          fontSize: 11,
+          fontWeight: 500
+        },
+        itemGap: 12
+      },
       series: [
         {
-          name: 'Género',
+          name: 'Nivel de Educación',
           type: 'pie',
-          radius: ['50%', '72%'],
-          label: { show: false },
-          labelLine: { show: false },
-          data: [
-            { value: hombres, name: 'Hombres', itemStyle: { color: '#1d4ed8' } },
-            { value: mujeres, name: 'Mujeres', itemStyle: { color: '#ec4899' } }
-          ]
+          radius: ['45%', '70%'],
+          center: ['50%', '42%'],
+          avoidLabelOverlap: true,
+          label: { 
+            show: true,
+            position: 'outside',
+            formatter: '{d}%',
+            fontSize: 11,
+            fontWeight: 'bold',
+            color: '#1F2937'
+          },
+          labelLine: { 
+            show: true,
+            length: 8,
+            length2: 8,
+            lineStyle: { color: '#D1D5DB' }
+          },
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.3)'
+            }
+          },
+          data: data
         }
       ]
     };

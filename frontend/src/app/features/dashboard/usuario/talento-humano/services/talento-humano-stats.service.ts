@@ -32,6 +32,19 @@ export interface AgeGenderRangeDto {
   men: number;
 }
 
+export interface JobRoleDto {
+  cargo: string;
+  categoria: string;
+  cantidad: number;
+  porcentaje: number;
+}
+
+export interface EducationLevelDto {
+  nivel: string;
+  cantidad: number;
+  porcentaje: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TalentoHumanoStatsService {
   private readonly baseUrl = `${environment.apiUrl}/api`;
@@ -96,5 +109,27 @@ export class TalentoHumanoStatsService {
   // Agregado por usuario
   getAggregatedStatsByUser(userId: number): Observable<StatsAggregationDto> {
     return this.http.get<StatsAggregationDto>(`${this.baseUrl}/users/${userId}/businesses/stats`, this.getHttpOptions());
+  }
+
+  // Composición de cargos por RUC
+  getJobRoleCompositionByRuc(ruc: string): Observable<JobRoleDto[]> {
+    return this.http.get<JobRoleDto[]>(`${this.baseUrl}/business-employees/company/${ruc}/job-roles`, this.getHttpOptions())
+      .pipe(
+        catchError(err => {
+          console.error('Error obteniendo composición de cargos:', err);
+          return of([]);
+        })
+      );
+  }
+
+  // Distribución de nivel de educación por RUC
+  getEducationLevelsByRuc(ruc: string): Observable<EducationLevelDto[]> {
+    return this.http.get<EducationLevelDto[]>(`${this.baseUrl}/business-employees/company/${ruc}/education-levels`, this.getHttpOptions())
+      .pipe(
+        catchError(err => {
+          console.error('Error obteniendo niveles de educación:', err);
+          return of([]);
+        })
+      );
   }
 }

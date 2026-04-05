@@ -17,6 +17,9 @@ import { IndiceTrifComponent } from './views/indicadores-reactivos/indice-trif/i
 import { IndiceGravedadComponent } from './views/indicadores-reactivos/indice-gravedad/indice-gravedad.component';
 import { IndiceRiesgoComponent } from './views/indicadores-reactivos/indice-riesgo/indice-riesgo.component';
 import { IndicadoresReactivosDashboardComponent } from './views/indicadores-reactivos/indicadores-reactivos-dashboard.component';
+import { GerenciasViajesListaComponent } from './views/gerencias-viajes/gerencias-viajes-lista.component';
+import { GerenciasViajesFormComponent } from './views/gerencias-viajes/gerencias-viajes-form.component';
+import { GerenciasViajesDetalleComponent } from './views/gerencias-viajes/gerencias-viajes-detalle.component';
 
 @NgModule({
   declarations: [
@@ -31,7 +34,10 @@ import { IndicadoresReactivosDashboardComponent } from './views/indicadores-reac
     IndiceFrecuenciaComponent,
     IndiceTrifComponent,
     IndiceGravedadComponent,
-    IndiceRiesgoComponent
+    IndiceRiesgoComponent,
+    GerenciasViajesListaComponent,
+    GerenciasViajesFormComponent,
+    GerenciasViajesDetalleComponent
   ],
   imports: [
     CommonModule,
