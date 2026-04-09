@@ -51,8 +51,8 @@ export class EditarMetodologiaComponent implements OnInit {
     { value: 'tipo-carga', label: 'Tipo de carga', icono: 'fas fa-boxes', ayuda: 'Puede modificar la exposición o deficiencia según el tipo transportado.' },
     { value: 'hora-conduccion', label: 'Horas de conducción', icono: 'fas fa-stopwatch', ayuda: 'Permite asociar fatiga o exposición por duración.' },
     { value: 'hora-descanso', label: 'Horas de descanso previo', icono: 'fas fa-bed', ayuda: 'Permite modelar descanso insuficiente o adecuado.' },
-    { value: 'medio-comunicacion', label: 'Medios de comunicación', icono: 'fas fa-broadcast-tower', ayuda: 'Puede impactar el nivel de control y monitoreo del viaje.' },
-    { value: 'transporta-pasajero', label: 'Transporta pasajeros', icono: 'fas fa-user-friends', ayuda: 'Puede afectar la consecuencia o criticidad del evento.' },
+    { value: 'medio-comunicacion', label: 'Otros peligros', icono: 'fas fa-exclamation-circle', ayuda: 'Otros peligros presentes en ruta.' },
+    { value: 'transporta-pasajero', label: 'Medidas de Control para el viaje', icono: 'fas fa-clipboard-check', ayuda: 'Medidas de control aplicables al viaje y criticidad operativa.' },
   ];
 
   constructor(

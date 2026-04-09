@@ -53,4 +53,7 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
            "LEFT JOIN FETCH cb.contractorCompany " +
            "WHERE b.id = :id")
     Optional<Business> findByIdWithContractorBlocksAndCompany(@Param("id") Long id);
+
+    @Query("SELECT m.id FROM Business b JOIN b.metodologiaRiesgos m WHERE b.id = :businessId ORDER BY m.id ASC")
+    List<Long> findMetodologiaRiesgoIdsByBusinessId(@Param("businessId") Long businessId);
 }

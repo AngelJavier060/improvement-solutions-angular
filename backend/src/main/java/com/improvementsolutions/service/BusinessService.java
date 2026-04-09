@@ -57,6 +57,7 @@ public class BusinessService {
     private final com.improvementsolutions.repository.MedioComunicacionRepository medioComunicacionRepository;
     private final com.improvementsolutions.repository.TransportaPasajeroRepository transportaPasajeroRepository;
     private final com.improvementsolutions.repository.MetodologiaRiesgoRepository metodologiaRiesgoRepository;
+    private final com.improvementsolutions.repository.PosibleRiesgoViaRepository posibleRiesgoViaRepository;
 
     public List<Business> findAll() {
         return businessRepository.findAll();
@@ -152,6 +153,7 @@ public class BusinessService {
                 if (business.getMedioComunicaciones() != null) business.getMedioComunicaciones().size();
                 if (business.getTransportaPasajeros() != null) business.getTransportaPasajeros().size();
                 if (business.getMetodologiaRiesgos() != null) business.getMetodologiaRiesgos().size();
+                if (business.getPosiblesRiesgosVia() != null) business.getPosiblesRiesgosVia().size();
             } catch (Exception e) {
                 log.warn("[BusinessService] Could not initialize obligation matrices for business {}: {}", id, e.getMessage());
             }
@@ -1174,5 +1176,22 @@ public class BusinessService {
     public void removeMetodologiaRiesgoFromBusiness(Long bId, Long id) {
         Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
         b.getMetodologiaRiesgos().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addPosibleRiesgoViaToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        com.improvementsolutions.model.PosibleRiesgoVia e = posibleRiesgoViaRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addPosibleRiesgoVia(e);
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void removePosibleRiesgoViaFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getPosiblesRiesgosVia().removeIf(e -> e.getId().equals(id));
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
     }
 }

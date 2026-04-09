@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { GerenciaViajeService, GerenciaViajeDto } from '../../services/gerencia-viaje.service';
 
 @Component({
   selector: 'app-gerencias-viajes-lista',
@@ -11,83 +12,48 @@ export class GerenciasViajesListaComponent implements OnInit {
   readonly registrosPorHoja = 20;
 
   businessRuc: string = '';
-  gerencias: any[] = [];
+  gerencias: GerenciaViajeDto[] = [];
   loading: boolean = false;
+  error: string = '';
   paginaActual = 1;
 
   constructor(
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private gerenciaService: GerenciaViajeService
   ) {}
 
   ngOnInit(): void {
-    this.route.parent?.parent?.params.subscribe(params => {
-      this.businessRuc = params['businessRuc'];
+    // Buscar el parámetro 'ruc' en la cadena de rutas ascendente
+    let parent: ActivatedRoute | null = this.route;
+    while (parent) {
+      const found = parent.snapshot.paramMap.get('ruc');
+      if (found) { this.businessRuc = found; break; }
+      parent = parent.parent;
+    }
+    if (this.businessRuc) {
       this.loadGerencias();
-    });
+    } else {
+      this.error = 'No se pudo obtener el RUC de la empresa.';
+    }
   }
 
   loadGerencias(): void {
     this.loading = true;
-    // TODO: Implement API call
-    setTimeout(() => {
-      this.gerencias = [
-        {
-          id: 1,
-          gerencia: 'GV-001',
-          fechaHora: '2026-03-31T19:18:33',
-          conductor: 'Francisco Jaramillo',
-          cedula: '2100469531',
-          vehiculoInicio: 'QAA-2913',
-          kmInicial: 45230,
-          telefono: '+593 99 123 4567',
-          cargo: 'Conductor Profesional',
-          area: 'Logística',
-          proyecto: 'Proyecto Enap Sipec',
-          motivo: 'Transporte de personal',
-          origen: 'Base OrientOil Joya de los Sachas',
-          destino: 'Pambil',
-          fechaSalida: '2026-03-31',
-          horaSalida: '19:30',
-          licenciaVigente: 'SÍ',
-          manejoDefensivo: 'SÍ',
-          inspeccionVehiculo: 'APROBADA',
-          mediosComunicacion: 'Radio, Celular',
-          testAlcohol: 'NEGATIVO',
-          llevaPasajeros: 'SÍ',
-          pasajeros: '3 personas',
-          tipoVehiculo: 'Camioneta 4x4',
-          convoy: 'NO',
-          unidadesConvoy: 'N/A',
-          tipoCarretera: 'Asfaltada',
-          estadoVia: 'Bueno',
-          clima: 'Despejado',
-          distancia: '85 km',
-          tipoCarga: 'Pasajeros',
-          otrosPeligros: 'Ninguno',
-          horasConduccion: '2.5 horas',
-          horarioViaje: 'Diurno',
-          descansoConduc: 'Adecuado',
-          riesgosVia: 'Curvas pronunciadas',
-          medidasControl: 'Velocidad controlada',
-          paradasPlanificadas: '1 parada',
-          kmFinal: 45315,
-          a: 10,
-          b: 8,
-          c: 9,
-          d: 10,
-          e: 7,
-          f: 8,
-          g: 9,
-          h: 10,
-          i: 8,
-          j: 9,
-          total: 142
-        }
-      ];
-      this.ajustarPaginaTrasCambioListado();
-      this.loading = false;
-    }, 500);
+    this.error = '';
+    this.gerenciaService.getByRuc(this.businessRuc).subscribe({
+      next: (data) => {
+        this.gerencias = data;
+        this.ajustarPaginaTrasCambioListado();
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('[GerenciasViajes] Error al cargar:', err);
+        this.error = 'Error al cargar las gerencias de viaje';
+        this.gerencias = [];
+        this.loading = false;
+      }
+    });
   }
 
   get totalRegistros(): number {
@@ -164,11 +130,96 @@ export class GerenciasViajesListaComponent implements OnInit {
     this.router.navigate([id, 'editar'], { relativeTo: this.route });
   }
 
+  mostrarModalCierre = false;
+  cierreGerenciaId?: number;
+  cierreCodigo = '';
+  cierreKmFinal: number | null = null;
+  cierreFecha = '';
+  cierreSaving = false;
+
+  abrirCerrar($event: Event, g: GerenciaViajeDto): void {
+    $event.stopPropagation();
+    if (g.id == null) return;
+    const estado = (g.estado || '').toUpperCase();
+    if (estado !== 'ACTIVO') {
+      alert('Solo se pueden cerrar gerencias abiertas.');
+      return;
+    }
+    this.cierreGerenciaId = g.id;
+    this.cierreCodigo = g.codigo || `#${g.id}`;
+    this.cierreKmFinal = g.kmInicial != null ? Number(g.kmInicial) : null;
+    this.cierreFecha = new Date().toISOString().slice(0, 10);
+    this.mostrarModalCierre = true;
+  }
+
+  cerrarModalCierre(): void {
+    this.mostrarModalCierre = false;
+    this.cierreGerenciaId = undefined;
+    this.cierreSaving = false;
+  }
+
+  confirmarCierre(): void {
+    if (this.cierreGerenciaId == null || this.cierreKmFinal == null || !this.cierreFecha) {
+      alert('Indique kilometraje final y fecha de cierre.');
+      return;
+    }
+    const km = Number(this.cierreKmFinal);
+    if (Number.isNaN(km)) {
+      alert('Kilometraje final no válido.');
+      return;
+    }
+    this.cierreSaving = true;
+    this.gerenciaService.cerrarViaje(this.cierreGerenciaId, {
+      kmFinal: km,
+      fechaCierre: this.cierreFecha
+    }).subscribe({
+      next: (actualizada) => {
+        const idx = this.gerencias.findIndex((x) => x.id === actualizada.id);
+        if (idx >= 0) this.gerencias[idx] = actualizada;
+        this.cierreSaving = false;
+        this.cerrarModalCierre();
+        alert('Gerencia cerrada correctamente.');
+      },
+      error: (err) => {
+        this.cierreSaving = false;
+        const msg =
+          err?.error?.message ||
+          err?.error?.detail ||
+          err?.message ||
+          'Error al cerrar la gerencia';
+        alert(msg);
+      }
+    });
+  }
+
+  etiquetaEstadoViaje(estado?: string): string {
+    const u = (estado || '').toUpperCase();
+    if (u === 'ACTIVO') return 'Abierta';
+    if (u === 'COMPLETADO') return 'Cerrada';
+    if (u === 'CANCELADO') return 'Cancelada';
+    return estado || '—';
+  }
+
+  claseEstadoViaje(estado?: string): string {
+    const u = (estado || '').toUpperCase();
+    if (u === 'ACTIVO') return 'bg-warning text-dark';
+    if (u === 'COMPLETADO') return 'bg-success';
+    if (u === 'CANCELADO') return 'bg-secondary';
+    return 'bg-secondary';
+  }
+
   eliminarGerencia(id: number): void {
     if (confirm('¿Está seguro de eliminar esta gerencia de viaje?')) {
-      // TODO: Implement delete
-      this.gerencias = this.gerencias.filter(g => g.id !== id);
-      this.ajustarPaginaTrasCambioListado();
+      this.gerenciaService.delete(id).subscribe({
+        next: () => {
+          this.gerencias = this.gerencias.filter(g => g.id !== id);
+          this.ajustarPaginaTrasCambioListado();
+        },
+        error: (err) => {
+          console.error('[GerenciasViajes] Error al eliminar:', err);
+          alert('Error al eliminar la gerencia de viaje');
+        }
+      });
     }
   }
 

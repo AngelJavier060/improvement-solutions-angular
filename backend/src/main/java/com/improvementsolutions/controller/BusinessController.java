@@ -379,6 +379,7 @@ public class BusinessController {
         response.put("medioComunicaciones", business.getMedioComunicaciones().stream().map(viajesDto).collect(Collectors.toList()));
         response.put("transportaPasajeros", business.getTransportaPasajeros().stream().map(viajesDto).collect(Collectors.toList()));
         response.put("metodologiaRiesgos", business.getMetodologiaRiesgos().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("posiblesRiesgosVia", business.getPosiblesRiesgosVia().stream().map(viajesDto).collect(Collectors.toList()));
 
         // Configuración de mantenimiento (JSON plano almacenado en la entidad)
         response.put("maintenanceConfig", business.getMaintenanceConfig());
@@ -484,9 +485,10 @@ public class BusinessController {
         return ResponseEntity.ok(response);
     }
 
-    // Detalles accesibles para ADMIN y USER: incluye contratistas y bloques
+    // Detalles accesibles para ADMIN y USER: incluye contratistas, bloques y catálogos de gerencia de viajes
     @GetMapping("/{id}/details")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @Transactional(readOnly = true)
     public ResponseEntity<Map<String, Object>> getBusinessDetails(@PathVariable Long id) {
         Business business = businessService.findByIdWithAllRelations(id)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
@@ -555,6 +557,33 @@ public class BusinessController {
         } else {
             response.put("contractor_company", null);
         }
+
+        // Gerencia de viajes: catálogos por empresa (misma forma que GET /{id}/admin) para usuarios USER en formularios.
+        java.util.function.Function<Object, Map<String, Object>> viajesDetailsDto = e -> {
+            Map<String, Object> m = new HashMap<>();
+            try {
+                m.put("id", e.getClass().getMethod("getId").invoke(e));
+            } catch (Exception ex) { /* ignore */ }
+            try {
+                m.put("name", e.getClass().getMethod("getName").invoke(e));
+            } catch (Exception ex) { /* ignore */ }
+            try {
+                m.put("description", e.getClass().getMethod("getDescription").invoke(e));
+            } catch (Exception ex) { /* ignore */ }
+            return m;
+        };
+        response.put("distanciaRecorrers", business.getDistanciaRecorrers().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("tipoVias", business.getTipoVias().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("condicionClimaticas", business.getCondicionClimaticas().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("horarioCirculaciones", business.getHorarioCirculaciones().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("estadoCarreteras", business.getEstadoCarreteras().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("tipoCargas", business.getTipoCargas().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("horaConducciones", business.getHoraConducciones().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("horaDescansos", business.getHoraDescansos().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("medioComunicaciones", business.getMedioComunicaciones().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("transportaPasajeros", business.getTransportaPasajeros().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("metodologiaRiesgos", business.getMetodologiaRiesgos().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("posiblesRiesgosVia", business.getPosiblesRiesgosVia().stream().map(viajesDetailsDto).collect(Collectors.toList()));
 
         log.debug("[BusinessController] getBusinessDetails id={} companies={} blocks={}", id,
                 contractorCompaniesDto.size(), contractorBlocksDto.size());
@@ -1507,6 +1536,20 @@ public class BusinessController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> removeMetodologiaRiesgo(@PathVariable Long businessId, @PathVariable Long id) {
         businessService.removeMetodologiaRiesgoFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/posible-riesgo-via/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addPosibleRiesgoVia(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addPosibleRiesgoViaToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+
+    @DeleteMapping("/{businessId}/posible-riesgo-via/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removePosibleRiesgoVia(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removePosibleRiesgoViaFromBusiness(businessId, id);
         return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
     }
 }

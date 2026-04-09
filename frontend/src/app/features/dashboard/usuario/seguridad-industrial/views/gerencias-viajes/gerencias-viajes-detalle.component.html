@@ -30,313 +30,308 @@
   </div>
 
   <!-- Document Page -->
-  <main class="print-container" *ngIf="!loading && gerencia">
+  <main class="print-container gv-form" *ngIf="!loading && gerencia">
     <!-- Main Header -->
-    <header class="mb-2">
-      <table class="table-bordered w-100">
+    <header class="mb-0">
+      <table class="gv-table w-100">
         <tr>
-          <td class="text-center fw-bold p-2" colspan="2" style="width: 25%;">
-            ORIENTOIL s.a. ORIENFLUVIAL s.a.
+          <td class="text-center gv-brands p-2" style="width: 22%; vertical-align: middle;">
+            ORIENTOIL S.A.<br />ORIENFLUVIAL S.A.
           </td>
-          <td class="text-center align-middle" colspan="6" style="width: 50%;">
-            <h1 class="fs-3 fw-bold mb-0">
-              <span class="text-danger me-3">1</span>GERENCIA DE VIAJE
+          <td class="text-center align-middle p-2" style="width: 53%;">
+            <h1 class="gv-doc-title mb-0 text-uppercase">
+              <span class="gv-doc-code">{{ gerencia.codigo || gerencia.id }}</span>GERENCIA DE VIAJE
             </h1>
           </td>
-          <td class="p-2" colspan="2" style="width: 25%; font-size: 8px;">
-            <p class="mb-0">Código: ORT-SST-PRO-09-F1</p>
-            <p class="mb-0">Fecha de Revisión: 25/11/2024</p>
-            <p class="mb-0">Versión: 02 Página: 1 de 1</p>
+          <td class="gv-doc-control p-2" style="width: 25%; vertical-align: top;">
+            <p class="mb-1"><strong>Código:</strong> ORT-SST-PRO-09-F1</p>
+            <p class="mb-1"><strong>Fecha de Revisión:</strong> 25/11/2024</p>
+            <p class="mb-0"><strong>Versión:</strong> 02 &nbsp; <strong>Página:</strong> 1 de 1</p>
           </td>
         </tr>
       </table>
+      <div class="gv-creation-banner">
+        <span class="gv-creation-label">Fecha de creación de la gerencia</span>
+        <span class="gv-creation-value">{{ gerencia.fechaHora | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+      </div>
     </header>
 
-    <!-- Metadata Section -->
-    <section class="mb-2">
-      <table class="table-bordered w-100">
-        <tr class="bg-light" style="font-size: 8px;">
-          <td class="p-1">1. Fecha de creación de la gerencia</td>
-          <td class="bg-white text-danger fw-bold p-1">{{ gerencia.fechaCreacion | date:'dd/MM/yyyy HH:mm:ss' }}</td>
-          <td class="p-1">Motivo del viaje</td>
-          <td class="bg-white p-1">{{ gerencia.motivoViaje }}</td>
-          <td class="p-1">Área a la que pertenece</td>
-          <td class="bg-white p-1">{{ gerencia.area }}</td>
-          <td class="p-1">Proyecto al que pertenece</td>
-          <td class="bg-white p-1">{{ gerencia.proyecto }}</td>
+    <!-- Metadata Section (rejilla tipo imagen 2) -->
+    <section class="mb-2 mt-0">
+      <table class="gv-table gv-flush-top w-100">
+        <tr>
+          <td class="gv-label" style="width: 12%;">Motivo del viaje</td>
+          <td class="gv-data-cell text-start" style="width: 29%;">{{ gerencia.motivo }}</td>
+          <td class="gv-label" style="width: 14%;">Área a la que pertenece</td>
+          <td class="gv-data-cell" style="width: 17%;">{{ gerencia.area }}</td>
+          <td class="gv-label" style="width: 14%;">Proyecto al que pertenece</td>
+          <td class="gv-data-cell text-start" style="width: 14%;">{{ gerencia.proyecto }}</td>
         </tr>
-      </table>
-      <table class="table-bordered w-100 border-top-0">
-        <tr style="font-size: 8px;">
-          <td class="bg-light p-1">Lugar de Salida</td>
-          <td class="p-1">{{ gerencia.lugarSalida }}</td>
-          <td class="bg-light p-1">Tipo de Carga</td>
-          <td class="p-1" style="font-size: 7px;">{{ gerencia.tipoCarga }}</td>
-          <td class="bg-primary text-white fw-bold p-1" style="width: 120px;">Fecha de salida</td>
-          <td class="fw-bold text-center p-1" style="width: 120px;">{{ gerencia.fechaSalida | date:'dd/MM/yyyy' }}</td>
-          <td class="bg-primary text-white fw-bold text-center p-1" style="width: 100px;">{{ gerencia.horaSalida }}</td>
+        <tr>
+          <td class="gv-label">Lugar de Salida</td>
+          <td class="gv-data-cell text-start">{{ gerencia.origen }}</td>
+          <td class="gv-label">Tipo de Carga</td>
+          <td class="gv-data-cell text-start">{{ gerencia.tipoCarga }}</td>
+          <td class="gv-salida-highlight">Fecha y hora de salida</td>
+          <td class="gv-data-cell-strong">{{ gerencia.fechaSalida | date:'dd/MM/yyyy' }}<span *ngIf="gerencia.horaSalida"> {{ gerencia.horaSalida }}</span></td>
         </tr>
-        <tr style="font-size: 8px;">
-          <td class="bg-light p-1">Destino</td>
-          <td class="p-1">{{ gerencia.destino }}</td>
-          <td class="bg-light p-1" colspan="2"></td>
-          <td class="bg-light p-1">Fecha de retorno</td>
-          <td class="p-1"></td>
-          <td class="bg-light p-1"></td>
+        <tr>
+          <td class="gv-label">Destino</td>
+          <td class="gv-data-cell text-start" colspan="3">{{ gerencia.destino }}</td>
+          <td class="gv-label">Fecha de retorno</td>
+          <td class="gv-data-cell">{{ gerencia.fechaCierre ? (gerencia.fechaCierre | date:'dd/MM/yyyy') : '—' }}</td>
         </tr>
       </table>
     </section>
 
     <!-- Personnel Section -->
     <section class="mb-2">
-      <table class="table-bordered w-100 text-center" style="font-size: 8px;">
-        <tr class="bg-light fw-bold">
-          <td colspan="2" class="p-1">Nombre del Conductor de Apertura de Gerencia</td>
-          <td class="p-1">Número de Cédula</td>
-          <td class="p-1">Número de Teléfono</td>
-          <td class="p-1">Firma del Conductor</td>
-          <td class="p-1">Placa</td>
-          <td class="p-1">Licencia vigente tipo veh.</td>
-          <td class="p-1">Manejo Def.</td>
-          <td class="p-1">Alcoholtest</td>
-          <td class="p-1">Transp. Pas.</td>
-          <td class="p-1">Veh. Insp.</td>
-          <td class="p-1">Med. Comunic.</td>
-          <td class="p-1">Km Inicio</td>
-          <td class="p-1">Final</td>
+      <table class="gv-table w-100 text-center" style="font-size: 8px;">
+        <tr>
+          <td colspan="2" class="gv-label-tan">Nombre del Conductor de Apertura de Gerencia</td>
+          <td class="gv-label-tan">Número de Cédula</td>
+          <td class="gv-label-tan">Número de Teléfono</td>
+          <td class="gv-label-tan">Firma del Conductor</td>
+          <td class="gv-label-tan">Placa</td>
+          <td class="gv-label-tan">Licencia vigente tipo veh.</td>
+          <td class="gv-label-tan">Manejo Def.</td>
+          <td class="gv-label-tan">Alcoholtest</td>
+          <td class="gv-label-tan">Transp. Pas.</td>
+          <td class="gv-label-tan">Veh. Insp.</td>
+          <td class="gv-label-tan">Med. Comunic.</td>
+          <td class="gv-label-tan">Km Inicio</td>
+          <td class="gv-label-tan">Final</td>
         </tr>
         <tr>
-          <td colspan="2" class="p-1">{{ gerencia.nombreConductor }}</td>
-          <td class="p-1">{{ gerencia.cedula }}</td>
-          <td class="p-1">{{ gerencia.telefono }}</td>
-          <td class="p-1"></td>
-          <td class="p-1">{{ gerencia.vehiculo }}</td>
-          <td class="p-1">{{ gerencia.tipoVehiculo }}</td>
-          <td class="p-1">{{ gerencia.licenciaVigente ? 'SI' : 'NO' }}</td>
-          <td class="p-1">{{ gerencia.manejoDefensivo ? 'SI' : 'NO' }}</td>
-          <td class="p-1">{{ gerencia.resultadoAlcoholtest }}</td>
-          <td class="p-1">{{ gerencia.transportaPasajeros ? 'SI' : 'NO' }}</td>
-          <td class="p-1">{{ gerencia.inspeccionPrevia ? 'SI' : 'NO' }}</td>
-          <td class="p-1">{{ gerencia.mediosComunicacion ? 'SI' : 'NO' }}</td>
-          <td class="p-1">{{ gerencia.kilometrajeInicial }}</td>
-          <td class="p-1"></td>
+          <td colspan="2" class="gv-data-cell text-start px-2">{{ gerencia.conductor }}</td>
+          <td class="gv-data-cell">{{ gerencia.cedula }}</td>
+          <td class="gv-data-cell">{{ gerencia.telefono }}</td>
+          <td class="gv-data-cell" style="min-width: 56px;"></td>
+          <td class="gv-data-cell-strong">{{ gerencia.vehiculoInicio }}</td>
+          <td class="gv-data-cell">{{ gerencia.licenciaVigente }}</td>
+          <td class="gv-data-cell">{{ gerencia.manejoDefensivo }}</td>
+          <td class="gv-data-cell">{{ gerencia.testAlcohol }}</td>
+          <td class="gv-data-cell">{{ gerencia.llevaPasajeros }}</td>
+          <td class="gv-data-cell">{{ gerencia.inspeccionVehiculo }}</td>
+          <td class="gv-data-cell">{{ gerencia.mediosComunicacion }}</td>
+          <td class="gv-data-cell">{{ gerencia.kmInicial }}</td>
+          <td class="gv-data-cell">{{ gerencia.kmFinal != null ? gerencia.kmFinal : '' }}</td>
         </tr>
       </table>
     </section>
 
     <!-- Logistics Section -->
     <section class="mb-2">
-      <table class="table-bordered w-100 text-center" style="font-size: 8px;">
-        <tr class="bg-light fw-bold">
-          <td class="p-1">HORAS DE CONDUCCIÓN QUE DURA EL VIAJE</td>
-          <td class="p-1">HORARIO DE CIRCULACIÓN</td>
-          <td class="p-1">HORAS DE DESCANSO</td>
-          <td class="p-1">PASAJEROS</td>
-          <td class="p-1">TIPO DE VEHÍCULO</td>
-          <td class="p-1">UNIDADES DEL CONVOY</td>
+      <table class="gv-table w-100 text-center" style="font-size: 8px;">
+        <tr>
+          <td class="gv-label-tan">HORAS DE CONDUCCIÓN QUE DURA EL VIAJE</td>
+          <td class="gv-label-tan">HORARIO DE CIRCULACIÓN</td>
+          <td class="gv-label-tan">HORAS DE DESCANSO</td>
+          <td class="gv-label-tan">PASAJEROS</td>
+          <td class="gv-label-tan">TIPO DE VEHÍCULO</td>
+          <td class="gv-label-tan">UNIDADES DEL CONVOY</td>
         </tr>
-        <tr style="height: 30px;">
-          <td class="p-1">{{ gerencia.horasConduccion }}</td>
-          <td class="p-1">{{ gerencia.horarioCirculacion }}</td>
-          <td class="p-1">{{ gerencia.horasDescanso }}</td>
-          <td class="p-1">{{ gerencia.nombresPasajeros }}</td>
-          <td class="p-1">{{ gerencia.enConvoy ? 'SI' : 'NO' }}</td>
-          <td class="p-1">{{ gerencia.tipoCarretera }}</td>
+        <tr style="min-height: 34px;">
+          <td class="gv-data-cell text-start px-2">{{ gerencia.horasConduccion }}</td>
+          <td class="gv-data-cell">{{ gerencia.horarioViaje }}</td>
+          <td class="gv-data-cell text-start px-2">{{ gerencia.descansoConduc }}</td>
+          <td class="gv-data-cell text-start px-2">{{ gerencia.pasajeros }}</td>
+          <td class="gv-data-cell">{{ gerencia.tipoVehiculo }}</td>
+          <td class="gv-data-cell">{{ gerencia.convoy }}<span *ngIf="gerencia.unidadesConvoy"> {{ gerencia.unidadesConvoy }}</span></td>
         </tr>
       </table>
     </section>
 
     <!-- Hazard Risk Scoring Section -->
-    <section class="d-flex gap-1 mb-2">
+    <section class="gv-risk-section d-flex gap-2 mb-2 align-items-stretch flex-wrap">
       <!-- Left Hazard Identification (Yellow) -->
-      <div style="width: 25%;">
-        <table class="table-bordered w-100" style="font-size: 8px;">
-          <tr class="text-center fw-bold" style="background-color: #FFD700;">
-            <td colspan="3" class="p-1">Identificación de peligros</td>
+      <div class="gv-hazards-col flex-shrink-0">
+        <table class="gv-table w-100 h-100" style="font-size: 8px;">
+          <tr>
+            <td colspan="3" class="gv-header-yellow p-1">Identificación de peligros</td>
           </tr>
-          <tr class="text-center" style="background-color: #FFD700; font-size: 7px;">
-            <td class="p-1">Tipo de carretera</td>
-            <td class="p-1">Estado de Carretera</td>
-            <td class="p-1">Condiciones climáticas</td>
+          <tr>
+            <td class="gv-header-yellow-sub p-1">Tipo de vía / carretera</td>
+            <td class="gv-header-yellow-sub p-1">Estado de Carretera</td>
+            <td class="gv-header-yellow-sub p-1">Condiciones climáticas</td>
           </tr>
-          <tr class="text-center" style="height: 30px;">
-            <td class="p-1">{{ gerencia.tipoCarretera }}</td>
-            <td class="p-1">{{ gerencia.estadoCarretera }}</td>
-            <td class="p-1">{{ gerencia.condicionClimatica }}</td>
+          <tr class="text-center" style="min-height: 32px;">
+            <td class="gv-data-cell p-1">{{ gerencia.tipoCarretera }}</td>
+            <td class="gv-data-cell p-1">{{ gerencia.estadoVia }}</td>
+            <td class="gv-data-cell p-1">{{ gerencia.clima }}</td>
           </tr>
-          <tr class="text-center fw-bold" style="background-color: #FFD700;">
-            <td colspan="3" class="p-1">OTROS PELIGROS</td>
+          <tr>
+            <td colspan="3" class="gv-header-yellow p-1">OTROS PELIGROS</td>
           </tr>
-          <tr class="text-center" style="height: 30px;">
-            <td colspan="3" class="p-1">{{ gerencia.distanciaRuta }}</td>
+          <tr>
+            <td colspan="3" class="gv-text-block p-2" style="min-height: 48px;">{{ gerencia.otrosPeligros }}</td>
           </tr>
-          <tr class="text-center fw-bold" style="background-color: #FFD700;">
-            <td colspan="3" class="p-1">POSIBLES RIESGOS EN LA VÍA</td>
+          <tr>
+            <td colspan="3" class="gv-header-yellow p-1">POSIBLES RIESGOS EN LA VÍA</td>
           </tr>
-          <tr style="height: 50px; font-size: 7px;">
-            <td colspan="3" class="p-1">{{ gerencia.peligrosVia }}</td>
+          <tr>
+            <td colspan="3" class="gv-text-block p-2" style="min-height: 56px;">{{ gerencia.riesgosVia }}</td>
           </tr>
-          <tr class="text-center fw-bold" style="background-color: #FFD700;">
-            <td colspan="3" class="p-1">MEDIDAS DE CONTROL TOMADAS PARA EL VIAJE</td>
+          <tr>
+            <td colspan="3" class="gv-header-yellow p-1">MEDIDAS DE CONTROL TOMADAS PARA EL VIAJE</td>
           </tr>
-          <tr style="height: 30px;">
-            <td colspan="3" class="p-1">{{ gerencia.medidasControl }}</td>
+          <tr>
+            <td colspan="3" class="gv-text-block p-2" style="min-height: 48px;">{{ gerencia.medidasControl }}</td>
           </tr>
         </table>
       </div>
 
-      <!-- Center Scoring (Blue) -->
-      <div style="width: 50%;">
-        <table class="table-bordered w-100" style="font-size: 8px;">
-          <tr class="text-center fw-bold" style="background-color: #FFD700;">
-            <td colspan="3" class="p-1">ESPECIFIQUE LOS PUNTOS DE PARADAS</td>
-          </tr>
-          <tr class="text-center fw-bold bg-primary text-white">
-            <td colspan="3" class="p-1" style="font-size: 10px;">CONDICIONES PARA DETERMINAR LA VALORACIÓN DEL NIVEL DE RIESGO</td>
-          </tr>
-          <!-- Distancia -->
-          <tr class="bg-primary text-white" style="font-size: 9px;">
-            <td class="p-1" style="width: 75%;">DISTANCIA A RECORRER</td>
-            <td class="text-center p-1" style="width: 25%;">Pts.</td>
+      <!-- Tabla central: paradas + factores A–J -->
+      <div class="gv-risk-center flex-grow-1" style="min-width: 220px;">
+        <table class="gv-table w-100" style="font-size: 8px;">
+          <tr>
+            <td colspan="2" class="gv-header-yellow p-1">ESPECIFIQUE LOS PUNTOS DE PARADAS</td>
           </tr>
           <tr>
-            <td class="p-1">{{ gerencia.tipoCarga }}</td>
-            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreA)" [style.color]="gerencia.scoreA > 200 ? 'white' : 'black'">{{ gerencia.scoreA }}</td>
-          </tr>
-          <!-- Tipos de vía -->
-          <tr class="bg-primary text-white" style="font-size: 9px;">
-            <td class="p-1">TIPOS DE VÍA</td>
-            <td class="text-center p-1">Pts.</td>
+            <td colspan="2" class="gv-paradas-cell">{{ gerencia.paradasPlanificadas }}</td>
           </tr>
           <tr>
-            <td class="p-1">{{ gerencia.estadoCarretera }}</td>
-            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreB)" [style.color]="gerencia.scoreB > 200 ? 'white' : 'black'">{{ gerencia.scoreB }}</td>
-          </tr>
-          <!-- Pasajeros -->
-          <tr class="bg-primary text-white" style="font-size: 9px;">
-            <td class="p-1">PASAJEROS</td>
-            <td class="text-center p-1">Pts.</td>
+            <td colspan="2" class="gv-header-blue p-1" style="font-size: 9px; line-height: 1.25;">CONDICIONES PARA DETERMINAR LA VALORACIÓN DEL NIVEL DE RIESGO</td>
           </tr>
           <tr>
-            <td class="p-1">{{ gerencia.transportaPasajeros ? 'SI' : 'NO' }}</td>
-            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreC)" [style.color]="gerencia.scoreC > 200 ? 'white' : 'black'">{{ gerencia.scoreC }}</td>
-          </tr>
-          <!-- Tipo de carga -->
-          <tr class="bg-primary text-white" style="font-size: 9px;">
-            <td class="p-1">TIPO DE CARGA</td>
-            <td class="text-center p-1">Pts.</td>
+            <td class="gv-header-blue-sm text-start ps-2" style="width: 78%;">A. DISTANCIA A RECORRER</td>
+            <td class="gv-header-blue-sm" style="width: 22%;">Pts.</td>
           </tr>
           <tr>
-            <td class="p-1" style="font-size: 7px;">{{ gerencia.peligrosVia }}</td>
-            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreD)" [style.color]="gerencia.scoreD > 200 ? 'white' : 'black'">{{ gerencia.scoreD }}</td>
+            <td class="gv-text-block p-2">{{ gerencia.distancia }}</td>
+            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreA)" [style.color]="scoreFg(gerencia.scoreA)">{{ fmtScore(gerencia.scoreA) }}</td>
+          </tr>
+          <tr>
+            <td class="gv-header-blue-sm text-start ps-2">B. TIPOS DE VÍA</td>
+            <td class="gv-header-blue-sm">Pts.</td>
+          </tr>
+          <tr>
+            <td class="gv-text-block p-2">{{ gerencia.tipoCarretera }}</td>
+            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreB)" [style.color]="scoreFg(gerencia.scoreB)">{{ fmtScore(gerencia.scoreB) }}</td>
+          </tr>
+          <tr>
+            <td class="gv-header-blue-sm text-start ps-2">C. CONDICIONES CLIMÁTICAS</td>
+            <td class="gv-header-blue-sm">Pts.</td>
+          </tr>
+          <tr>
+            <td class="gv-text-block p-2">{{ gerencia.clima }}</td>
+            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreC)" [style.color]="scoreFg(gerencia.scoreC)">{{ fmtScore(gerencia.scoreC) }}</td>
+          </tr>
+          <tr>
+            <td class="gv-header-blue-sm text-start ps-2">D. HORARIO DE CIRCULACIÓN</td>
+            <td class="gv-header-blue-sm">Pts.</td>
+          </tr>
+          <tr>
+            <td class="gv-text-block p-2">{{ gerencia.horarioViaje }}</td>
+            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreD)" [style.color]="scoreFg(gerencia.scoreD)">{{ fmtScore(gerencia.scoreD) }}</td>
+          </tr>
+          <tr>
+            <td class="gv-header-blue-sm text-start ps-2">E. ESTADOS DE CARRETERAS</td>
+            <td class="gv-header-blue-sm">Pts.</td>
+          </tr>
+          <tr>
+            <td class="gv-text-block p-2">{{ gerencia.estadoVia }}</td>
+            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreE)" [style.color]="scoreFg(gerencia.scoreE)">{{ fmtScore(gerencia.scoreE) }}</td>
+          </tr>
+          <tr>
+            <td class="gv-header-blue-sm text-start ps-2">F. TIPO DE CARGA</td>
+            <td class="gv-header-blue-sm">Pts.</td>
+          </tr>
+          <tr>
+            <td class="gv-text-block p-2">{{ gerencia.tipoCarga }}</td>
+            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreF)" [style.color]="scoreFg(gerencia.scoreF)">{{ fmtScore(gerencia.scoreF) }}</td>
+          </tr>
+          <tr>
+            <td class="gv-header-blue-sm text-start ps-2">G. HORAS DE CONDUCCIÓN DURANTE EL VIAJE</td>
+            <td class="gv-header-blue-sm">Pts.</td>
+          </tr>
+          <tr>
+            <td class="gv-text-block p-2">{{ gerencia.horasConduccion }}</td>
+            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreG)" [style.color]="scoreFg(gerencia.scoreG)">{{ fmtScore(gerencia.scoreG) }}</td>
+          </tr>
+          <tr>
+            <td class="gv-header-blue-sm text-start ps-2">H. HORAS DE DESCANSO PREVIO AL VIAJE</td>
+            <td class="gv-header-blue-sm">Pts.</td>
+          </tr>
+          <tr>
+            <td class="gv-text-block p-2">{{ gerencia.descansoConduc }}</td>
+            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreH)" [style.color]="scoreFg(gerencia.scoreH)">{{ fmtScore(gerencia.scoreH) }}</td>
+          </tr>
+          <tr>
+            <td class="gv-header-blue-sm text-start ps-2">I. MEDIOS DE COMUNICACIÓN</td>
+            <td class="gv-header-blue-sm">Pts.</td>
+          </tr>
+          <tr>
+            <td class="gv-text-block p-2">{{ gerencia.mediosComunicacion }}</td>
+            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreI)" [style.color]="scoreFg(gerencia.scoreI)">{{ fmtScore(gerencia.scoreI) }}</td>
+          </tr>
+          <tr>
+            <td class="gv-header-blue-sm text-start ps-2">J. PASAJEROS</td>
+            <td class="gv-header-blue-sm">Pts.</td>
+          </tr>
+          <tr>
+            <td class="gv-text-block p-2">{{ gerencia.llevaPasajeros }}</td>
+            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreJ)" [style.color]="scoreFg(gerencia.scoreJ)">{{ fmtScore(gerencia.scoreJ) }}</td>
           </tr>
         </table>
       </div>
 
-      <!-- Right Conditions -->
-      <div style="width: 25%;">
-        <table class="table-bordered w-100 mb-1" style="font-size: 8px;">
-          <tr class="fw-bold" style="background-color: #3ABEF9; color: white;">
-            <td class="text-center p-1" style="width: 75%;">ESTADOS DE CARRETERAS</td>
-            <td class="text-center p-1" style="width: 25%;">Pts.</td>
+      <!-- Resumen A–J y nivel -->
+      <div class="gv-risk-summary">
+        <table class="gv-table w-100 h-100" style="font-size: 8px;">
+          <tr>
+            <td colspan="2" class="gv-header-blue p-1">EVALUACIÓN DEL VIAJE</td>
+          </tr>
+          <tr><td class="gv-label text-center p-1" style="width: 28%;">A</td><td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreA)" [style.color]="scoreFg(gerencia.scoreA)">{{ fmtScore(gerencia.scoreA) }}</td></tr>
+          <tr><td class="gv-label text-center p-1">B</td><td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreB)" [style.color]="scoreFg(gerencia.scoreB)">{{ fmtScore(gerencia.scoreB) }}</td></tr>
+          <tr><td class="gv-label text-center p-1">C</td><td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreC)" [style.color]="scoreFg(gerencia.scoreC)">{{ fmtScore(gerencia.scoreC) }}</td></tr>
+          <tr><td class="gv-label text-center p-1">D</td><td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreD)" [style.color]="scoreFg(gerencia.scoreD)">{{ fmtScore(gerencia.scoreD) }}</td></tr>
+          <tr><td class="gv-label text-center p-1">E</td><td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreE)" [style.color]="scoreFg(gerencia.scoreE)">{{ fmtScore(gerencia.scoreE) }}</td></tr>
+          <tr><td class="gv-label text-center p-1">F</td><td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreF)" [style.color]="scoreFg(gerencia.scoreF)">{{ fmtScore(gerencia.scoreF) }}</td></tr>
+          <tr><td class="gv-label text-center p-1">G</td><td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreG)" [style.color]="scoreFg(gerencia.scoreG)">{{ fmtScore(gerencia.scoreG) }}</td></tr>
+          <tr><td class="gv-label text-center p-1">H</td><td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreH)" [style.color]="scoreFg(gerencia.scoreH)">{{ fmtScore(gerencia.scoreH) }}</td></tr>
+          <tr><td class="gv-label text-center p-1">I</td><td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreI)" [style.color]="scoreFg(gerencia.scoreI)">{{ fmtScore(gerencia.scoreI) }}</td></tr>
+          <tr><td class="gv-label text-center p-1">J</td><td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreJ)" [style.color]="scoreFg(gerencia.scoreJ)">{{ fmtScore(gerencia.scoreJ) }}</td></tr>
+          <tr class="align-middle">
+            <td class="gv-label fw-bold p-1" style="font-size: 7px;">NIVEL DE RIESGO</td>
+            <td class="text-center fw-bold gv-nivel-celda p-1" [style.background-color]="getRiskColor(gerencia.nivelRiesgo)" [style.color]="gerencia.nivelRiesgo === 'ALTO' ? 'white' : 'black'">
+              <span class="d-block" style="font-size: 14px; line-height: 1.1;">{{ gerencia.nivelRiesgoRomano || '—' }}</span>
+              <span class="d-block mt-1" style="font-size: 6px; font-weight: 600;" *ngIf="gerencia.scoreTotal != null">Pts. {{ gerencia.scoreTotal }}</span>
+            </td>
           </tr>
           <tr>
-            <td class="p-1" style="font-size: 7px;">{{ gerencia.condicionClimatica }}</td>
-            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreE)" [style.color]="gerencia.scoreE > 200 ? 'white' : 'black'">{{ gerencia.scoreE }}</td>
+            <td class="gv-label fw-bold p-1" style="font-size: 7px;">ACEPTACIÓN GERENCIA</td>
+            <td class="text-center fw-bold p-1 gv-text-block" style="font-size: 6px; vertical-align: middle !important;">{{ gerencia.aceptacionGerencia || '—' }}</td>
           </tr>
-          <tr class="fw-bold" style="background-color: #3ABEF9; color: white;">
-            <td class="text-center p-1">HORARIO DE CIRCULACIÓN</td>
-            <td class="text-center p-1">Pts.</td>
-          </tr>
-          <tr>
-            <td class="p-1" style="font-size: 7px;">{{ gerencia.horasDescanso }}</td>
-            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreF)" [style.color]="gerencia.scoreF > 200 ? 'white' : 'black'">{{ gerencia.scoreF }}</td>
-          </tr>
-          <tr class="fw-bold" style="background-color: #3ABEF9; color: white;">
-            <td class="text-center p-1">HORAS DE CONDUCCIÓN DURANTE EL VIAJE</td>
-            <td class="text-center p-1">Pts.</td>
-          </tr>
-          <tr>
-            <td class="p-1" style="font-size: 7px;">{{ gerencia.horarioCirculacion }}</td>
-            <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreG)" [style.color]="gerencia.scoreG > 200 ? 'white' : 'black'">{{ gerencia.scoreG }}</td>
-          </tr>
-          <tr class="fw-bold" style="background-color: #3ABEF9; color: white;">
-            <td class="text-center p-1">HORAS DE DESCANSO PREVIO AL VIAJE</td>
-            <td class="text-center p-1">Pts.</td>
-          </tr>
-          <tr style="height: 40px;">
-            <td class="p-1" style="font-size: 7px;">{{ gerencia.riesgosEspecificos }}</td>
-            <td class="text-center fw-bold p-1 bg-light">{{ gerencia.scoreH }}</td>
-          </tr>
-        </table>
-        <div class="d-flex gap-1 mb-1">
-          <table class="table-bordered" style="font-size: 7px; width: 50%;">
-            <tr class="fw-bold" style="background-color: #3ABEF9; color: white;">
-              <td class="text-center p-1">CONDICIONES CLIMÁTICAS</td>
-              <td class="p-1">Pts.</td>
-            </tr>
-            <tr>
-              <td class="p-1">{{ gerencia.distanciaRuta }}</td>
-              <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreI)" [style.color]="gerencia.scoreI > 200 ? 'white' : 'black'">{{ gerencia.scoreI }}</td>
-            </tr>
-          </table>
-          <table class="table-bordered" style="font-size: 7px; width: 50%;">
-            <tr class="fw-bold" style="background-color: #3ABEF9; color: white;">
-              <td class="text-center p-1">MEDIOS DE COMUNICACIÓN</td>
-              <td class="p-1">Pts.</td>
-            </tr>
-            <tr>
-              <td class="p-1">{{ gerencia.mediosComunicacion ? 'SI' : 'NO' }}</td>
-              <td class="text-center fw-bold p-1" [style.background-color]="getScoreColor(gerencia.scoreJ)" [style.color]="gerencia.scoreJ > 200 ? 'white' : 'black'">{{ gerencia.scoreJ }}</td>
-            </tr>
-          </table>
-        </div>
-        <table class="table-bordered w-100" style="font-size: 8px;">
-          <tr class="fw-bold text-center" style="background-color: #3ABEF9; color: white;">
-            <td colspan="2" class="p-1">DEPARTAMENTO MÉDICO</td>
-          </tr>
-          <tr class="text-center">
-            <td class="p-1" style="width: 50%;">APTO</td>
-            <td class="p-1" style="width: 50%;">NO APTO</td>
-          </tr>
-          <tr style="height: 20px;">
-            <td class="p-1"></td>
-            <td class="p-1"></td>
-          </tr>
-        </table>
-      </div>
-
-      <!-- Far Right Score Index -->
-      <div style="width: 120px;">
-        <table class="table-bordered w-100" style="font-size: 8px;">
-          <tr class="bg-primary text-white fw-bold text-center">
-            <td colspan="2" class="p-1">EVALUACIÓN DEL VIAJE</td>
-          </tr>
-          <tr><td class="bg-light text-center p-1" style="width: 30px;">A</td><td class="text-center p-1" [style.background-color]="getScoreColor(gerencia.scoreA)" [style.color]="gerencia.scoreA > 200 ? 'white' : 'black'">{{ gerencia.scoreA }}</td></tr>
-          <tr><td class="bg-light text-center p-1">B</td><td class="text-center p-1" [style.background-color]="getScoreColor(gerencia.scoreB)" [style.color]="gerencia.scoreB > 200 ? 'white' : 'black'">{{ gerencia.scoreB }}</td></tr>
-          <tr><td class="bg-light text-center p-1">C</td><td class="text-center p-1" [style.background-color]="getScoreColor(gerencia.scoreC)" [style.color]="gerencia.scoreC > 200 ? 'white' : 'black'">{{ gerencia.scoreC }}</td></tr>
-          <tr><td class="bg-light text-center p-1">D</td><td class="text-center p-1" [style.background-color]="getScoreColor(gerencia.scoreD)" [style.color]="gerencia.scoreD > 200 ? 'white' : 'black'">{{ gerencia.scoreD }}</td></tr>
-          <tr><td class="bg-light text-center p-1">E</td><td class="text-center p-1" [style.background-color]="getScoreColor(gerencia.scoreE)" [style.color]="gerencia.scoreE > 200 ? 'white' : 'black'">{{ gerencia.scoreE }}</td></tr>
-          <tr><td class="bg-light text-center p-1">F</td><td class="text-center p-1" [style.background-color]="getScoreColor(gerencia.scoreF)" [style.color]="gerencia.scoreF > 200 ? 'white' : 'black'">{{ gerencia.scoreF }}</td></tr>
-          <tr><td class="bg-light text-center p-1">G</td><td class="text-center p-1" [style.background-color]="getScoreColor(gerencia.scoreG)" [style.color]="gerencia.scoreG > 200 ? 'white' : 'black'">{{ gerencia.scoreG }}</td></tr>
-          <tr><td class="bg-light text-center p-1">H</td><td class="text-center p-1 bg-light">{{ gerencia.scoreH }}</td></tr>
-          <tr><td class="bg-light text-center p-1">I</td><td class="text-center p-1" [style.background-color]="getScoreColor(gerencia.scoreI)" [style.color]="gerencia.scoreI > 200 ? 'white' : 'black'">{{ gerencia.scoreI }}</td></tr>
-          <tr><td class="bg-light text-center p-1">J</td><td class="text-center p-1" [style.background-color]="getScoreColor(gerencia.scoreJ)" [style.color]="gerencia.scoreJ > 200 ? 'white' : 'black'">{{ gerencia.scoreJ }}</td></tr>
-          <tr style="height: 30px; font-size: 7px;"><td class="bg-light fw-bold p-1">NIVEL DE RIESGO</td><td class="text-center fw-bold p-1" [style.background-color]="getRiskColor(gerencia.nivelRiesgo)" [style.color]="gerencia.nivelRiesgo === 'ALTO' ? 'white' : 'black'">{{ gerencia.scoreTotal }}</td></tr>
-          <tr style="height: 30px; font-size: 7px;"><td class="bg-light fw-bold p-1">ACEPTACIÓN GERENCIA</td><td class="text-center fw-bold p-1" style="font-size: 6px;">{{ gerencia.aceptacionGerencia }}</td></tr>
         </table>
       </div>
     </section>
 
+    <section class="mb-2">
+      <table class="gv-table gv-medical w-100" style="font-size: 8px;">
+        <tr>
+          <td colspan="2" class="gv-medical-head p-1">DEPARTAMENTO MÉDICO</td>
+        </tr>
+        <tr class="text-center gv-label-tan">
+          <td class="p-1" style="width: 50%;">APTO</td>
+          <td class="p-1" style="width: 50%;">NO APTO</td>
+        </tr>
+        <tr style="min-height: 28px;">
+          <td class="p-1"></td>
+          <td class="p-1"></td>
+        </tr>
+      </table>
+    </section>
+
     <!-- Authorization Section -->
     <section class="mt-2">
-      <div class="bg-primary text-white text-center fw-bold py-1 border border-dark text-uppercase" style="font-size: 12px; letter-spacing: 0.1em;">Autorizaciones</div>
-      <table class="table-bordered w-100" style="font-size: 7px;">
-        <tr class="bg-primary text-white fw-bold text-center text-uppercase">
-          <td class="p-1 border-end border-white" style="width: 35%;">Contactos de Emergencia "Grupo Atlas Cia. Ltda."</td>
-          <td class="p-1 border-end border-white" style="width: 21.6%;">Firma Gerente General</td>
-          <td class="p-1 border-end border-white" style="width: 21.6%;">Firma de SST</td>
-          <td class="p-1" style="width: 21.6%;">Firma del Coordinador / Supervisor</td>
+      <div class="gv-auth-banner">Autorizaciones</div>
+      <table class="gv-table gv-flush-top w-100" style="font-size: 7px;">
+        <tr class="text-uppercase">
+          <td class="gv-header-blue p-1 border-end border-white" style="width: 35%;">Contactos de Emergencia "Grupo Atlas Cia. Ltda."</td>
+          <td class="gv-header-blue p-1 border-end border-white" style="width: 21.6%;">Firma Gerente General</td>
+          <td class="gv-header-blue p-1 border-end border-white" style="width: 21.6%;">Firma de SST</td>
+          <td class="gv-header-blue p-1" style="width: 21.6%;">Firma del Coordinador / Supervisor</td>
         </tr>
         <tr>
           <td class="p-0 align-top">
@@ -381,11 +376,11 @@
     </section>
 
     <!-- Footer Section -->
-    <section class="mt-1 d-flex gap-1">
-      <div style="width: 35%;">
-        <table class="table-bordered w-100" style="font-size: 6.5px;">
-          <tr class="bg-primary text-white fw-bold text-center text-uppercase">
-            <td class="p-1" colspan="2">Que debo reportar en caso de una emergencia</td>
+    <section class="mt-1 d-flex gap-1 flex-wrap">
+      <div style="width: 35%; min-width: 200px;">
+        <table class="gv-table w-100" style="font-size: 6.5px;">
+          <tr>
+            <td class="gv-header-blue p-1 text-center text-uppercase" colspan="2">Que debo reportar en caso de una emergencia</td>
           </tr>
           <tr>
             <td class="fw-bold text-center p-1" style="background-color: #FFD700; width: 25%;">¿QUÉ PASÓ?</td>
@@ -401,22 +396,22 @@
           </tr>
         </table>
       </div>
-      <div style="width: 21.6%;">
-        <table class="table-bordered w-100" style="font-size: 6px;">
+      <div style="width: 21.6%; min-width: 140px;">
+        <table class="gv-table w-100" style="font-size: 6px;">
           <tr><td class="p-1 border-bottom-0" style="width: 75%;">Aceptable con Controles</td><td class="p-1 border-bottom-0" style="background-color: #FFD700; width: 25%;"></td></tr>
           <tr><td class="p-1 border-top">No aceptable</td><td class="p-1" style="background-color: #FF4C4C;"></td></tr>
         </table>
         <p class="fst-italic mt-1 px-1 mb-0" style="font-size: 5px;">Guía Técnica Colombiana TG45</p>
       </div>
-      <div style="width: 21.6%;">
-        <table class="table-bordered w-100" style="font-size: 6px;">
+      <div style="width: 21.6%; min-width: 140px;">
+        <table class="gv-table w-100" style="font-size: 6px;">
           <tr><td class="p-1" style="width: 75%;">Mejorable</td><td class="p-1" style="background-color: #90EE90; width: 25%;"></td></tr>
           <tr><td class="p-1">Aceptable con Controles</td><td class="p-1" style="background-color: #FFA500;"></td></tr>
           <tr><td class="p-1">No aceptable</td><td class="p-1" style="background-color: #FF4C4C;"></td></tr>
         </table>
       </div>
-      <div style="width: 21.6%;">
-        <table class="table-bordered w-100" style="font-size: 6px;">
+      <div style="width: 21.6%; min-width: 140px;">
+        <table class="gv-table w-100" style="font-size: 6px;">
           <tr><td class="p-1" style="width: 75%;">Aceptable</td><td class="p-1" style="background-color: #90EE90; width: 25%;"></td></tr>
           <tr><td class="p-1">Mejorable</td><td class="p-1" style="background-color: #FFD700;"></td></tr>
           <tr><td class="p-1">Aceptable con Controles</td><td class="p-1" style="background-color: #FFA500;"></td></tr>

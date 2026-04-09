@@ -3,13 +3,12 @@
     <button class="btn-back" (click)="goBack()">
       <i class="fas fa-arrow-left"></i>
     </button>
-    <h2>Editar — Otros peligros</h2>
+    <h2>Nuevo — Posibles riesgos en la vía</h2>
   </div>
 
   <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-  <div *ngIf="loading" class="loading">Cargando...</div>
 
-  <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="onSubmit()" class="config-form">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="config-form">
     <div class="form-group">
       <label for="name">Nombre *</label>
       <input id="name" type="text" formControlName="name" class="form-control"
@@ -26,9 +25,9 @@
 
     <div class="form-actions">
       <button type="button" class="btn-secondary" (click)="goBack()">Cancelar</button>
-      <button type="submit" class="btn-primary" [disabled]="form.invalid || saving">
-        <span *ngIf="saving">Guardando...</span>
-        <span *ngIf="!saving">Actualizar</span>
+      <button type="submit" class="btn-primary" [disabled]="form.invalid || loading">
+        <span *ngIf="loading">Guardando...</span>
+        <span *ngIf="!loading">Guardar</span>
       </button>
     </div>
   </form>

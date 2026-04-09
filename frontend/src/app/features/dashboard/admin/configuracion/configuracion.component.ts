@@ -227,11 +227,18 @@ export class ConfiguracionComponent implements OnInit {
         { nombre: 'Tipo de carga', descripcion: 'Clasificar tipos de carga para evaluación de riesgo', ruta: 'tipo-carga', icono: 'fas fa-boxes', proximamente: false },
         { nombre: 'Horas de conducción', descripcion: 'Parámetros de horas máximas de conducción', ruta: 'hora-conduccion', icono: 'fas fa-steering-wheel', proximamente: false },
         { nombre: 'Horas de descanso', descripcion: 'Parámetros de descanso obligatorio para conductores', ruta: 'hora-descanso', icono: 'fas fa-bed', proximamente: false },
-        { nombre: 'Medio de comunicación', descripcion: 'Medios de comunicación disponibles en ruta', ruta: 'medio-comunicacion', icono: 'fas fa-satellite-dish', proximamente: false },
-        { nombre: 'Transporta pasajeros', descripcion: 'Configurar si el vehículo transporta pasajeros', ruta: 'transporta-pasajero', icono: 'fas fa-users', proximamente: false },
+        { nombre: 'Otros peligros', descripcion: 'Parámetros de otros peligros presentes en ruta (catálogo operativo)', ruta: 'medio-comunicacion', icono: 'fas fa-exclamation-circle', proximamente: false },
+        { nombre: 'Medidas de Control para el viaje', descripcion: 'Opciones de medidas de control aplicables al viaje', ruta: 'transporta-pasajero', icono: 'fas fa-clipboard-check', proximamente: false },
+        {
+          nombre: 'Posibles riesgos en la vía',
+          descripcion: 'Catálogo de posibles riesgos en la vía (parametrizable por empresa en administración)',
+          ruta: 'posible-riesgo-via',
+          icono: 'fas fa-exclamation-triangle',
+          proximamente: false
+        },
         {
           nombre: 'Metodologías de Riesgo',
-          descripcion: 'Configurar parámetros GTC-45, IPER y otras metodologías de evaluación de riesgo de viaje',
+          descripcion: 'Plantillas y parámetros IPER, GTC-45 y otras metodologías (distancias, matrices, etc.)',
           ruta: 'aceptacion-riesgo',
           icono: 'fas fa-shield-alt',
           proximamente: false

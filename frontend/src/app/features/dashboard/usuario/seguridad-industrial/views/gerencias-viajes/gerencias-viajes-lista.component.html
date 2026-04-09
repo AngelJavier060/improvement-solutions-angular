@@ -98,6 +98,7 @@
         <thead class="table-primary sticky-top">
           <tr>
             <th style="width: 120px;">Gerencia</th>
+            <th class="text-center" style="width: 100px;">Estado viaje</th>
             <th style="width: 160px;">Fecha y Hora</th>
             <th style="width: 200px;">Conductor</th>
             <th class="text-center" style="width: 120px;">Cédula</th>
@@ -122,7 +123,7 @@
             <th style="width: 140px;">Tipo Vehículo</th>
             <th class="text-center" style="width: 90px;">¿Convoy?</th>
             <th style="width: 130px;">Unidades Convoy</th>
-            <th style="width: 130px;">Tipo Carretera</th>
+            <th style="width: 130px;">Tipo vía</th>
             <th style="width: 110px;">Estado Vía</th>
             <th style="width: 110px;">Clima</th>
             <th style="width: 100px;">Distancia</th>
@@ -140,7 +141,7 @@
         </thead>
         <tbody>
           <tr *ngIf="loading">
-            <td colspan="39" class="text-center py-5">
+            <td colspan="40" class="text-center py-5">
               <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Cargando...</span>
               </div>
@@ -148,7 +149,7 @@
             </td>
           </tr>
           <tr *ngIf="!loading && gerencias.length === 0">
-            <td colspan="39" class="text-center py-5">
+            <td colspan="40" class="text-center py-5">
               <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
               <p class="text-muted mb-0">No hay gerencias de viaje registradas</p>
               <button class="btn btn-primary btn-sm mt-3" (click)="crearGerencia()">
@@ -158,7 +159,10 @@
             </td>
           </tr>
           <tr *ngFor="let gerencia of gerenciasHojaActual" class="cursor-pointer" (click)="verDetalle(gerencia.id)">
-            <td><small class="fw-semibold text-primary">{{ gerencia.gerencia }}</small></td>
+            <td><small class="fw-semibold text-primary">{{ gerencia.codigo || '—' }}</small></td>
+            <td class="text-center" (click)="$event.stopPropagation()">
+              <span class="badge" [ngClass]="claseEstadoViaje(gerencia.estado)">{{ etiquetaEstadoViaje(gerencia.estado) }}</span>
+            </td>
             <td><small>{{ gerencia.fechaHora | date:'dd/MM/yyyy HH:mm' }}</small></td>
             <td class="fw-semibold">{{ gerencia.conductor }}</td>
             <td class="text-center">{{ gerencia.cedula }}</td>
@@ -203,6 +207,9 @@
                 </button>
                 <button class="btn btn-outline-secondary" (click)="editarGerencia(gerencia.id)" title="Editar">
                   <i class="fas fa-edit"></i>
+                </button>
+                <button *ngIf="(gerencia.estado || '').toUpperCase() === 'ACTIVO'" class="btn btn-outline-success" (click)="abrirCerrar($event, gerencia)" title="Cerrar viaje">
+                  <i class="fas fa-flag-checkered"></i>
                 </button>
                 <button class="btn btn-outline-danger" (click)="eliminarGerencia(gerencia.id)" title="Eliminar">
                   <i class="fas fa-trash"></i>
@@ -257,6 +264,35 @@
           <span class="badge bg-primary fs-6">
             Total: {{ gerencias.length }} {{ gerencias.length === 1 ? 'registro' : 'registros' }}
           </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: cierre de gerencia (km final + fecha) -->
+  <div *ngIf="mostrarModalCierre" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-0 bg-primary text-white">
+          <h5 class="modal-title"><i class="fas fa-flag-checkered me-2"></i>Cerrar gerencia {{ cierreCodigo }}</h5>
+          <button type="button" class="btn-close btn-close-white" (click)="cerrarModalCierre()" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small">Registre el kilometraje final y la fecha de cierre. El viaje quedará como <strong>Cerrada</strong>.</p>
+          <div class="mb-3">
+            <label class="form-label">Kilometraje final</label>
+            <input type="number" class="form-control" [(ngModel)]="cierreKmFinal" min="0" step="0.01">
+          </div>
+          <div class="mb-0">
+            <label class="form-label">Fecha de cierre</label>
+            <input type="date" class="form-control" [(ngModel)]="cierreFecha">
+          </div>
+        </div>
+        <div class="modal-footer border-0 bg-light">
+          <button type="button" class="btn btn-outline-secondary" (click)="cerrarModalCierre()">Cancelar</button>
+          <button type="button" class="btn btn-primary" (click)="confirmarCierre()" [disabled]="cierreSaving">
+            <i class="fas" [ngClass]="cierreSaving ? 'fa-spinner fa-spin' : 'fa-check'"></i> Confirmar cierre
+          </button>
         </div>
       </div>
     </div>

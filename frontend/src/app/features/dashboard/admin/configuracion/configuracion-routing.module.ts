@@ -182,6 +182,10 @@ const routes: Routes = [
         loadChildren: () => import('./transporta-pasajero/transporta-pasajero.module').then(m => m.TransportaPasajeroModule)
       },
       {
+        path: 'posible-riesgo-via',
+        loadChildren: () => import('./posible-riesgo-via/posible-riesgo-via.module').then(m => m.PosibleRiesgoViaModule)
+      },
+      {
         path: 'aceptacion-riesgo',
         loadChildren: () => import('./aceptacion-riesgo/aceptacion-riesgo.module').then(m => m.AceptacionRiesgoModule)
       }

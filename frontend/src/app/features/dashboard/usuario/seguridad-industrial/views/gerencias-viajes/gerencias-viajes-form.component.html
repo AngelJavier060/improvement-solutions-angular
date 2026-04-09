@@ -75,34 +75,67 @@
               <i class="fas fa-id-badge text-primary fs-4"></i>
               <h2 class="h5 fw-bold text-primary mb-0">Gerencia, personal y vehículo (inicio)</h2>
             </div>
-            <div class="row g-3">
+            <div class="row g-3 position-relative">
               <div class="col-md-4">
                 <label class="form-label small fw-bold text-uppercase text-muted">Gerencia</label>
-                <input type="text" class="form-control" formControlName="gerencia" placeholder="Ej. GV-2024-0001">
+                <input type="text" class="form-control" formControlName="codigo" placeholder="GV-2026-0001" [disabled]="true">
               </div>
-              <div class="col-md-4">
-                <label class="form-label small fw-bold text-uppercase text-muted">Fecha y Hora</label>
-                <input type="datetime-local" class="form-control" formControlName="fechaHora">
-              </div>
-              <div class="col-md-4">
+              <div class="col-md-4 position-relative">
                 <label class="form-label small fw-bold text-uppercase text-muted">Conductor</label>
-                <input type="text" class="form-control" formControlName="conductor" placeholder="Nombre completo">
+                <input type="text" class="form-control" formControlName="conductor" placeholder="Nombre completo" autocomplete="off"
+                       (input)="onConductorInput($event)" (change)="onConductorChange($event)">
+                <div *ngIf="conductorSuggestions.length" class="list-group position-absolute w-100" style="z-index: 1000; max-height: 220px; overflow:auto;">
+                  <button type="button" class="list-group-item list-group-item-action"
+                          *ngFor="let s of conductorSuggestions"
+                          (click)="selectEmployee(s)">
+                    {{ (s.nombres || '') + ' ' + (s.apellidos || '') }} — {{ s.cedula }}
+                  </button>
+                </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-3 position-relative">
                 <label class="form-label small fw-bold text-uppercase text-muted">Cédula</label>
-                <input type="text" class="form-control" formControlName="cedula" placeholder="10 dígitos" maxlength="10">
+                <input type="text" class="form-control" formControlName="cedula" placeholder="10 dígitos" maxlength="10" autocomplete="off"
+                       (input)="onCedulaInput($event)">
+                <div *ngIf="cedulaSuggestions.length" class="list-group position-absolute w-100" style="z-index: 1000; max-height: 220px; overflow:auto;">
+                  <button type="button" class="list-group-item list-group-item-action"
+                          *ngFor="let s of cedulaSuggestions"
+                          (click)="selectEmployee(s)">
+                    {{ s.cedula }} — {{ (s.nombres || '') + ' ' + (s.apellidos || '') }}
+                  </button>
+                </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-3 position-relative">
                 <label class="form-label small fw-bold text-uppercase text-muted">Vehículo (Inicio)</label>
-                <input type="text" class="form-control" formControlName="vehiculoInicio" placeholder="Placa">
+                <input type="text" class="form-control" formControlName="vehiculoInicio" placeholder="Placa" autocomplete="off"
+                       (input)="onVehiculoInput($event)" (blur)="onVehiculoBlur()">
+                <div *ngIf="vehicleSuggestions.length" class="list-group position-absolute w-100" style="z-index: 1000; max-height: 220px; overflow:auto;">
+                  <button type="button" class="list-group-item list-group-item-action"
+                          *ngFor="let v of vehicleSuggestions"
+                          (click)="selectVehicle(v)">
+                    {{ v.placa || v.codigoEquipo }} — {{ v.tipoVehiculo || v.clase }}
+                  </button>
+                </div>
               </div>
               <div class="col-md-3">
                 <label class="form-label small fw-bold text-uppercase text-muted">Km Inicial</label>
                 <input type="number" class="form-control" formControlName="kmInicial" placeholder="0" min="0">
               </div>
-              <div class="col-md-3">
+              <div class="col-md-3" *ngIf="isEditMode">
                 <label class="form-label small fw-bold text-uppercase text-muted">Km Final</label>
-                <input type="number" class="form-control" formControlName="kmFinal" placeholder="Opcional" min="0">
+                <input type="number" class="form-control" formControlName="kmFinal" placeholder="—" min="0" readonly>
+              </div>
+              <div class="col-12" *ngIf="!isEditMode">
+                <p class="small text-muted mb-0"><i class="fas fa-info-circle me-1"></i>El <strong>kilometraje final</strong> y la <strong>fecha de cierre</strong> se registran al <strong>cerrar</strong> la gerencia desde el listado.</p>
+              </div>
+              <div class="col-12" *ngIf="gerenciaAbiertaMsg && !isEditMode">
+                <div class="alert alert-warning py-2 mb-0"><i class="fas fa-exclamation-triangle me-2"></i>{{ gerenciaAbiertaMsg }}</div>
+              </div>
+              <div class="col-12" *ngIf="ultimoKmPlaca && !isEditMode">
+                <div class="alert alert-info py-2 mb-0">
+                  <i class="fas fa-tachometer-alt me-2"></i>
+                  Último km registrado para la placa <strong>{{ ultimoKmPlaca }}</strong>:
+                  <strong>{{ ultimoKmRegistrado != null ? (ultimoKmRegistrado | number) + ' km' : 'sin viajes cerrados aún' }}</strong>
+                </div>
               </div>
               <div class="col-md-4">
                 <label class="form-label small fw-bold text-uppercase text-muted">Teléfono</label>
@@ -116,13 +149,7 @@
                 <label class="form-label small fw-bold text-uppercase text-muted">Área</label>
                 <input type="text" class="form-control" formControlName="area">
               </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-bold text-uppercase text-muted">Proyecto</label>
-                <select class="form-select" formControlName="proyecto">
-                  <option value="">Seleccione…</option>
-                  <option *ngFor="let p of proyectos" [value]="p">{{ p }}</option>
-                </select>
-              </div>
+              
             </div>
           </div>
         </div>
@@ -190,17 +217,29 @@
                             (click)="toggleSiNo('manejoDefensivo', $event)">NO</button>
                   </div>
                 </div>
-                <div class="mt-3">
-                  <label class="form-label small fw-bold text-muted">Inspección vehículo</label>
-                  <select class="form-select form-select-sm" formControlName="inspeccionVehiculo">
-                    <option *ngFor="let o of inspeccionVehiculoOpts" [value]="o">{{ o }}</option>
-                  </select>
+                <div class="d-flex align-items-center justify-content-between py-2 border-bottom mt-3">
+                  <span class="small fw-medium">Inspección vehículo</span>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn"
+                            [ngClass]="valorSiNo('inspeccionVehiculo') ? 'btn-primary' : 'btn-outline-secondary'"
+                            (click)="toggleSiNo('inspeccionVehiculo', $event)">SI</button>
+                    <button type="button" class="btn"
+                            [ngClass]="!valorSiNo('inspeccionVehiculo') ? 'btn-primary' : 'btn-outline-secondary'"
+                            (click)="toggleSiNo('inspeccionVehiculo', $event)">NO</button>
+                  </div>
                 </div>
               </div>
               <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label small fw-bold text-muted">Medios comunicación</label>
-                  <input type="text" class="form-control" formControlName="mediosComunicacion" placeholder="Ej. Radio, celular">
+                <div class="d-flex align-items-center justify-content-between py-2 border rounded px-3 bg-light mb-3">
+                  <span class="small fw-medium">Medios comunicación</span>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn"
+                            [ngClass]="valorSiNo('mediosComunicacion') ? 'btn-primary' : 'btn-outline-secondary'"
+                            (click)="toggleSiNo('mediosComunicacion', $event)">SI</button>
+                    <button type="button" class="btn"
+                            [ngClass]="!valorSiNo('mediosComunicacion') ? 'btn-primary' : 'btn-outline-secondary'"
+                            (click)="toggleSiNo('mediosComunicacion', $event)">NO</button>
+                  </div>
                 </div>
                 <div class="mb-3">
                   <label class="form-label small fw-bold text-muted">Test alcohol</label>
@@ -219,7 +258,7 @@
                             (click)="toggleSiNo('llevaPasajeros', $event)">NO</button>
                   </div>
                 </div>
-                <div class="mt-3">
+                <div class="mt-3" *ngIf="valorSiNo('llevaPasajeros')">
                   <label class="form-label small fw-bold text-muted">Pasajeros</label>
                   <input type="text" class="form-control" formControlName="pasajeros" placeholder="Cantidad o nombres; N/A si no aplica">
                 </div>
@@ -234,6 +273,10 @@
             <div class="d-flex align-items-center gap-3 border-bottom pb-3 mb-4">
               <i class="fas fa-truck text-primary fs-4"></i>
               <h2 class="h5 fw-bold text-primary mb-0">Tipo de vehículo, convoy y carga</h2>
+            </div>
+            <div *ngIf="businessRuc && catalogsLoaded && !tiposCarretera.length" class="alert alert-warning py-2 mb-3">
+              <i class="fas fa-cog me-2"></i>No hay <strong>tipos de vía</strong> configurados para esta empresa. Defínalos en
+              <strong>Administración → Empresas → detalle de la empresa</strong> (sección de parámetros de viaje) para habilitar el formulario.
             </div>
             <div class="row g-3">
               <div class="col-md-4">
@@ -255,34 +298,40 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-4" *ngIf="valorSiNo('convoy')">
                 <label class="form-label small fw-bold text-muted">Unidades convoy</label>
                 <input type="text" class="form-control" formControlName="unidadesConvoy" placeholder="Placas o N/A">
               </div>
               <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted">Tipo carretera</label>
+                <label class="form-label small fw-bold text-muted">Tipo de vía</label>
                 <select class="form-select" formControlName="tipoCarretera">
+                  <option value="">Seleccione…</option>
                   <option *ngFor="let t of tiposCarretera" [value]="t">{{ t }}</option>
                 </select>
               </div>
               <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted">Estado vía</label>
+                <label class="form-label small fw-bold text-muted">Estado de la vía</label>
                 <select class="form-select" formControlName="estadoVia">
+                  <option value="">Seleccione…</option>
                   <option *ngFor="let e of estadosVia" [value]="e">{{ e }}</option>
                 </select>
               </div>
               <div class="col-md-4">
                 <label class="form-label small fw-bold text-muted">Clima</label>
                 <select class="form-select" formControlName="clima">
+                  <option value="">Seleccione…</option>
                   <option *ngFor="let c of condicionesClimaticas" [value]="c">{{ c }}</option>
                 </select>
               </div>
               <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted">Distancia</label>
-                <input type="text" class="form-control" formControlName="distancia" placeholder="Ej. 85 km">
+                <label class="form-label small fw-bold text-muted">Distancia a recorrer</label>
+                <select class="form-select" formControlName="distancia">
+                  <option value="">Seleccione…</option>
+                  <option *ngFor="let d of distanciaOptions" [value]="d">{{ d }}</option>
+                </select>
               </div>
               <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted">Tipo carga</label>
+                <label class="form-label small fw-bold text-muted">Tipo de carga</label>
                 <select class="form-select" formControlName="tipoCarga">
                   <option value="">Seleccione…</option>
                   <option *ngFor="let tc of tiposCarga" [value]="tc">{{ tc }}</option>
@@ -305,33 +354,46 @@
             <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label small fw-bold text-muted">Otros peligros</label>
-                <input type="text" class="form-control" formControlName="otrosPeligros" placeholder="Ninguno / detalle">
+                <select class="form-select" formControlName="otrosPeligros">
+                  <option value="">Seleccione…</option>
+                  <option *ngFor="let p of otrosPeligrosOpts" [value]="p">{{ p }}</option>
+                </select>
               </div>
               <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted">Horas conducción</label>
+                <label class="form-label small fw-bold text-muted">Horas de conducción</label>
                 <select class="form-select" formControlName="horasConduccion">
+                  <option value="">Seleccione…</option>
                   <option *ngFor="let h of horasConduccionOpts" [value]="h">{{ h }}</option>
                 </select>
               </div>
               <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted">Horario viaje</label>
+                <label class="form-label small fw-bold text-muted">Horario de circulación del viaje</label>
                 <select class="form-select" formControlName="horarioViaje">
+                  <option value="">Seleccione…</option>
                   <option *ngFor="let h of horariosViajeOpts" [value]="h">{{ h }}</option>
                 </select>
               </div>
               <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted">Descanso conductor</label>
+                <label class="form-label small fw-bold text-muted">Horas de descanso del conductor</label>
                 <select class="form-select" formControlName="descansoConductor">
+                  <option value="">Seleccione…</option>
                   <option *ngFor="let d of descansoConductorOpts" [value]="d">{{ d }}</option>
                 </select>
               </div>
               <div class="col-12">
-                <label class="form-label small fw-bold text-muted">Riesgos vía</label>
-                <input type="text" class="form-control" formControlName="riesgosVia" placeholder="Curvas, tráfico, derrumbes…">
+                <label class="form-label small fw-bold text-muted">Posibles riesgos en la vía</label>
+                <select class="form-select" formControlName="riesgosVia">
+                  <option value="">Seleccione…</option>
+                  <option *ngFor="let r of riesgosViaOpts" [value]="r">{{ r }}</option>
+                </select>
+                <p class="form-text small text-muted mb-0">Opciones definidas en <strong>Administración de empresa</strong> → Posibles riesgos en la vía (mismo catálogo que en Configuración global).</p>
               </div>
-              <div class="col-12">
-                <label class="form-label small fw-bold text-muted">Medidas control</label>
-                <textarea class="form-control" formControlName="medidasControl" rows="2" placeholder="Reducción de velocidad, paradas…"></textarea>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted">Medidas de Control para el viaje</label>
+                <select class="form-select" formControlName="medidasControl">
+                  <option value="">Seleccione…</option>
+                  <option *ngFor="let m of transportaPasajerosOpts" [value]="m">{{ m }}</option>
+                </select>
               </div>
               <div class="col-md-6">
                 <label class="form-label small fw-bold text-muted">Paradas planificadas</label>

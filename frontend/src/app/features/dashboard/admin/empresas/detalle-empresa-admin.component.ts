@@ -334,6 +334,9 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   metodologiaRiesgos: any[] = []; allMetodologiaRiesgos: any[] = [];
   showAsignMetodologiaModal = false; selectedMetodologiaId: number | null = null; savingMetodologia = false;
 
+  posiblesRiesgosVia: any[] = []; allPosiblesRiesgosVia: any[] = [];
+  showAsignPosibleRiesgoViaModal = false; selectedPosibleRiesgoViaId: number | null = null; savingPosibleRiesgoVia = false;
+
   // Modal para editar empresa
   showEditEmpresaModal = false;
   savingEmpresa = false;
@@ -1841,6 +1844,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.medioComunicaciones = empresa.medioComunicaciones || [];
         this.transportaPasajeros = empresa.transportaPasajeros || [];
         this.metodologiaRiesgos = empresa.metodologiaRiesgos || [];
+        this.posiblesRiesgosVia = empresa.posiblesRiesgosVia || [];
 
         // Cargar catálogos globales de mantenimiento
         this.loadMaintenanceCatalogs();
@@ -3970,6 +3974,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       { url: '/api/public/hora-descansos', prop: 'allHoraDescansos' },
       { url: '/api/public/medio-comunicaciones', prop: 'allMedioComunicaciones' },
       { url: '/api/public/transporta-pasajeros', prop: 'allTransportaPasajeros' },
+      { url: '/api/public/posibles-riesgos-via', prop: 'allPosiblesRiesgosVia' },
       { url: '/api/public/metodologia-riesgo', prop: 'allMetodologiaRiesgos' },
     ];
     endpoints.forEach(ep => {
@@ -4376,4 +4381,11 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   closeAsignMetodologiaModal() { this.showAsignMetodologiaModal = false; }
   assignMetodologia() { this.viajesAssign('metodologia-riesgo', this.selectedMetodologiaId, 'metodologiaRiesgos', 'savingMetodologia', 'showAsignMetodologiaModal'); }
   removeMetodologia(id: number) { this.viajesRemove('metodologia-riesgo', id); }
+
+  openAsignPosibleRiesgoViaModal() { this.showAsignPosibleRiesgoViaModal = true; this.selectedPosibleRiesgoViaId = null; }
+  closeAsignPosibleRiesgoViaModal() { this.showAsignPosibleRiesgoViaModal = false; }
+  assignPosibleRiesgoVia() {
+    this.viajesAssign('posible-riesgo-via', this.selectedPosibleRiesgoViaId, 'posiblesRiesgosVia', 'savingPosibleRiesgoVia', 'showAsignPosibleRiesgoViaModal');
+  }
+  removePosibleRiesgoVia(id: number) { this.viajesRemove('posible-riesgo-via', id); }
 }
