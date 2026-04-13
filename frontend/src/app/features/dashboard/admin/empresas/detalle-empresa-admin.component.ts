@@ -33,6 +33,9 @@ import { InventorySupplierService, InventorySupplier } from '../../../../service
 import { BusinessContextService } from '../../../../core/services/business-context.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { UserAdminService } from '../usuarios/user-admin.service';
+import { MetodologiaRiesgo } from '../../../../models/metodologia-riesgo.model';
+import { MetodologiaRiesgoService } from '../../../../services/metodologia-riesgo.service';
+import { parametroFactorParaCatalogo } from '../configuracion/shared/metodologia-factor-viaje.util';
 
 @Component({
   selector: 'app-detalle-empresa-admin',
@@ -302,40 +305,64 @@ export class DetalleEmpresaAdminComponent implements OnInit {
 
   // === GERENCIA DE VIAJES — parámetros por empresa ===
   distanciaRecorrers: any[] = []; allDistanciaRecorrers: any[] = [];
-  showAsignDistanciaModal = false; selectedDistanciaId: number | null = null; savingDistancia = false;
+  showAsignDistanciaModal = false; selectedDistanciaIds: number[] = []; savingDistancia = false;
 
   tipoVias: any[] = []; allTipoVias: any[] = [];
-  showAsignTipoViaModal = false; selectedTipoViaId: number | null = null; savingTipoVia = false;
+  showAsignTipoViaModal = false; selectedTipoViaIds: number[] = []; savingTipoVia = false;
 
   condicionClimaticas: any[] = []; allCondicionClimaticas: any[] = [];
-  showAsignCondicionModal = false; selectedCondicionId: number | null = null; savingCondicion = false;
+  showAsignCondicionModal = false; selectedCondicionIds: number[] = []; savingCondicion = false;
 
   horarioCirculaciones: any[] = []; allHorarioCirculaciones: any[] = [];
-  showAsignHorarioCircModal = false; selectedHorarioCircId: number | null = null; savingHorarioCirc = false;
+  showAsignHorarioCircModal = false; selectedHorarioCircIds: number[] = []; savingHorarioCirc = false;
 
   estadoCarreteras: any[] = []; allEstadoCarreteras: any[] = [];
-  showAsignEstadoCarrModal = false; selectedEstadoCarrId: number | null = null; savingEstadoCarr = false;
+  showAsignEstadoCarrModal = false; selectedEstadoCarrIds: number[] = []; savingEstadoCarr = false;
 
   tipoCargas: any[] = []; allTipoCargas: any[] = [];
-  showAsignTipoCargaModal = false; selectedTipoCargaId: number | null = null; savingTipoCarga = false;
+  showAsignTipoCargaModal = false; selectedTipoCargaIds: number[] = []; savingTipoCarga = false;
 
   horaConducciones: any[] = []; allHoraConducciones: any[] = [];
-  showAsignHoraCondModal = false; selectedHoraCondId: number | null = null; savingHoraCond = false;
+  showAsignHoraCondModal = false; selectedHoraCondIds: number[] = []; savingHoraCond = false;
 
   horaDescansos: any[] = []; allHoraDescansos: any[] = [];
-  showAsignHoraDescModal = false; selectedHoraDescId: number | null = null; savingHoraDesc = false;
+  showAsignHoraDescModal = false; selectedHoraDescIds: number[] = []; savingHoraDesc = false;
 
   medioComunicaciones: any[] = []; allMedioComunicaciones: any[] = [];
-  showAsignMedioComModal = false; selectedMedioComId: number | null = null; savingMedioCom = false;
+  showAsignMedioComModal = false; selectedMedioComIds: number[] = []; savingMedioCom = false;
 
   transportaPasajeros: any[] = []; allTransportaPasajeros: any[] = [];
-  showAsignTransportaModal = false; selectedTransportaId: number | null = null; savingTransporta = false;
+  showAsignTransportaModal = false; selectedTransportaIds: number[] = []; savingTransporta = false;
 
   metodologiaRiesgos: any[] = []; allMetodologiaRiesgos: any[] = [];
   showAsignMetodologiaModal = false; selectedMetodologiaId: number | null = null; savingMetodologia = false;
 
+  /** Metodología cuya definición (parámetros A–J) filtra las tarjetas de catálogo. */
+  gerenciaMetodologiaVistaId: number | null = null;
+  gerenciaMetodologiaDetalle: MetodologiaRiesgo | null = null;
+  gerenciaMetodologiaCargando = false;
+  gerenciaMetodologiaError: string | null = null;
+  readonly gerenciaCatalogoSlugs: readonly string[] = [
+    'distancia-recorrer',
+    'tipo-via',
+    'condicion-climatica',
+    'horario-circulacion',
+    'estado-carretera',
+    'tipo-carga',
+    'hora-conduccion',
+    'hora-descanso',
+    'medio-comunicacion',
+    'transporta-pasajero'
+  ];
+
   posiblesRiesgosVia: any[] = []; allPosiblesRiesgosVia: any[] = [];
   showAsignPosibleRiesgoViaModal = false; selectedPosibleRiesgoViaId: number | null = null; savingPosibleRiesgoVia = false;
+
+  otrosPeligrosViajeCatalogo: any[] = []; allOtrosPeligrosViaje: any[] = [];
+  showAsignOtrosPeligrosViajeModal = false; selectedOtrosPeligrosViajeId: number | null = null; savingOtrosPeligrosViaje = false;
+
+  medidasControlTomadasViajeCatalogo: any[] = []; allMedidasControlTomadasViaje: any[] = [];
+  showAsignMedidaControlTomadaModal = false; selectedMedidaControlTomadaId: number | null = null; savingMedidaControlTomada = false;
 
   // Modal para editar empresa
   showEditEmpresaModal = false;
@@ -402,7 +429,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private qrLegalDocsService: QrLegalDocsService,
     private authService: AuthService,
     private userAdminService: UserAdminService,
-    private http: HttpClient
+    private http: HttpClient,
+    private metodologiaRiesgoService: MetodologiaRiesgoService
   ) {}
 
   ngOnInit(): void {
@@ -1844,7 +1872,10 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.medioComunicaciones = empresa.medioComunicaciones || [];
         this.transportaPasajeros = empresa.transportaPasajeros || [];
         this.metodologiaRiesgos = empresa.metodologiaRiesgos || [];
+        this.initGerenciaMetodologiaVista();
         this.posiblesRiesgosVia = empresa.posiblesRiesgosVia || [];
+        this.otrosPeligrosViajeCatalogo = empresa.otrosPeligrosViajeCatalogo || [];
+        this.medidasControlTomadasViajeCatalogo = empresa.medidasControlTomadasViajeCatalogo || [];
 
         // Cargar catálogos globales de mantenimiento
         this.loadMaintenanceCatalogs();
@@ -3975,6 +4006,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       { url: '/api/public/medio-comunicaciones', prop: 'allMedioComunicaciones' },
       { url: '/api/public/transporta-pasajeros', prop: 'allTransportaPasajeros' },
       { url: '/api/public/posibles-riesgos-via', prop: 'allPosiblesRiesgosVia' },
+      { url: '/api/public/otros-peligros-viaje', prop: 'allOtrosPeligrosViaje' },
+      { url: '/api/public/medidas-control-tomadas-viaje', prop: 'allMedidasControlTomadasViaje' },
       { url: '/api/public/metodologia-riesgo', prop: 'allMetodologiaRiesgos' },
     ];
     endpoints.forEach(ep => {
@@ -4318,63 +4351,386 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       error: (err: any) => { (this as any)[savingProp] = false; console.error(err); alert('Error al asignar'); }
     });
   }
+
+  /** Asigna varios ítems de catálogo a la empresa en una sola acción (misma metodología en cada fila del catálogo). */
+  private viajesAssignMultiple(endpoint: string, ids: number[], savingProp: string, modalProp: string): void {
+    const uniq = [...new Set(ids.filter((id) => id != null))];
+    if (!uniq.length) return;
+    (this as any)[savingProp] = true;
+    forkJoin(uniq.map((id) => this.http.post(`/api/businesses/${this.empresaId}/${endpoint}/${id}`, {}))).subscribe({
+      next: () => {
+        (this as any)[savingProp] = false;
+        (this as any)[modalProp] = false;
+        this.loadData();
+      },
+      error: (err: any) => {
+        (this as any)[savingProp] = false;
+        console.error(err);
+        alert('Error al asignar uno o más elementos');
+      }
+    });
+  }
+
+  gerenciaMultiGetArray(kind: string): number[] {
+    switch (kind) {
+      case 'distancia':
+        return this.selectedDistanciaIds;
+      case 'tipoVia':
+        return this.selectedTipoViaIds;
+      case 'condicion':
+        return this.selectedCondicionIds;
+      case 'horario':
+        return this.selectedHorarioCircIds;
+      case 'estadoCarr':
+        return this.selectedEstadoCarrIds;
+      case 'tipoCarga':
+        return this.selectedTipoCargaIds;
+      case 'horaCond':
+        return this.selectedHoraCondIds;
+      case 'horaDesc':
+        return this.selectedHoraDescIds;
+      case 'medioCom':
+        return this.selectedMedioComIds;
+      case 'transporta':
+        return this.selectedTransportaIds;
+      default:
+        return [];
+    }
+  }
+
+  gerenciaMultiToggle(kind: string, id: number, checked: boolean): void {
+    const arr = this.gerenciaMultiGetArray(kind);
+    const i = arr.indexOf(id);
+    if (checked && i < 0) {
+      arr.push(id);
+    }
+    if (!checked && i >= 0) {
+      arr.splice(i, 1);
+    }
+  }
+
+  gerenciaMultiIsSelected(kind: string, id: number): boolean {
+    return this.gerenciaMultiGetArray(kind).includes(id);
+  }
+
+  gerenciaMultiSelectAll(kind: string, items: any[]): void {
+    const arr = this.gerenciaMultiGetArray(kind);
+    arr.length = 0;
+    (items || []).forEach((x: any) => {
+      if (x?.id != null) {
+        arr.push(x.id);
+      }
+    });
+  }
+
+  gerenciaMultiClear(kind: string): void {
+    this.gerenciaMultiGetArray(kind).length = 0;
+  }
+
+  trackByGerenciaCatId(_index: number, item: { id?: number }): number {
+    return item?.id ?? _index;
+  }
+
   private viajesRemove(endpoint: string, id: number) {
     if (!confirm('¿Eliminar?')) return;
     this.http.delete(`/api/businesses/${this.empresaId}/${endpoint}/${id}`).subscribe({ next: () => this.loadData(), error: (err: any) => { console.error(err); alert('Error'); } });
   }
   availableViajes(allProp: string, assignedProp: string): any[] {
-    const assigned = ((this as any)[assignedProp] as any[]).map((x: any) => x.id);
-    return ((this as any)[allProp] as any[]).filter((x: any) => !assigned.includes(x.id));
+    const assigned = ((this as any)[assignedProp] as any[]).map((x: any) => Number(x.id));
+    return ((this as any)[allProp] as any[]).filter((x: any) => !assigned.includes(Number(x.id)));
   }
 
-  openAsignDistanciaModal() { this.showAsignDistanciaModal = true; this.selectedDistanciaId = null; }
-  closeAsignDistanciaModal() { this.showAsignDistanciaModal = false; }
-  assignDistancia() { this.viajesAssign('distancia-recorrer', this.selectedDistanciaId, 'distanciaRecorrers', 'savingDistancia', 'showAsignDistanciaModal'); }
+  /** ID de metodología en un ítem del catálogo (público o enriquecido desde GET empresa). */
+  private catalogItemMetodologiaId(item: any): number | null {
+    if (!item) {
+      return null;
+    }
+    const nested = item.metodologiaRiesgo?.id ?? item.metodologiaRiesgoId;
+    if (nested !== undefined && nested !== null && nested !== '') {
+      const n = Number(nested);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  }
+
+  private catalogItemMatchesMetodologia(item: any, metId: number | null): boolean {
+    if (metId == null) {
+      return false;
+    }
+    const mid = this.catalogItemMetodologiaId(item);
+    return mid != null && mid === Number(metId);
+  }
+
+  /** Ítems del catálogo global que pertenecen a la metodología activa (misma lógica que Configuración → Gerencia de Viajes). */
+  gerenciaCatalogFactorItemsForMetodologia(allProp: string): any[] {
+    const metId = this.gerenciaMetodologiaVistaId;
+    if (!metId) {
+      return [];
+    }
+    const allRaw = ((this as any)[allProp] as any[]) || [];
+    return allRaw.filter((x: any) => this.catalogItemMatchesMetodologia(x, metId));
+  }
+
+  /**
+   * Catálogo global filtrado por la metodología seleccionada (campo metodologiaRiesgo en cada ítem).
+   * Excluye ya asignados a la empresa.
+   */
+  availableViajesMetodologiaFactores(allProp: string, assignedProp: string): any[] {
+    const metId = this.gerenciaMetodologiaVistaId;
+    if (!metId) {
+      return [];
+    }
+    const all = this.gerenciaCatalogFactorItemsForMetodologia(allProp);
+    const assigned = (((this as any)[assignedProp] as any[]) || []).map((x: any) => Number(x.id));
+    return all.filter((x: any) => !assigned.includes(Number(x.id)));
+  }
+
+  /** Ítems ya asignados a la empresa para la metodología activa en el desplegable. */
+  gerenciaItemsPorMetodologia(items: any[] | null | undefined): any[] {
+    const metId = this.gerenciaMetodologiaVistaId;
+    if (!metId || !items?.length) {
+      return [];
+    }
+    return items.filter((item: any) => this.catalogItemMatchesMetodologia(item, metId));
+  }
+
+  /** Recarga un catálogo desde la API pública (misma fuente que /dashboard/admin/configuracion/...). */
+  private refreshGerenciaPublicCatalog(url: string, prop: string): void {
+    this.http.get<any[]>(url).subscribe({
+      next: (data) => {
+        (this as any)[prop] = data || [];
+      },
+      error: (err: any) => console.error(`Error recargando catálogo ${url}:`, err)
+    });
+  }
+
+  /** No existe ningún ítem en el catálogo global con la metodología del desplegable (p. ej. aún no creado en Configuración). */
+  gerenciaFactorSinCatalogoParaMetodologia(allProp: string): boolean {
+    return this.gerenciaMetodologiaVistaId != null && this.gerenciaCatalogFactorItemsForMetodologia(allProp).length === 0;
+  }
+
+  /** Hay ítems en el catálogo para esa metodología pero ya están todos vinculados a la empresa. */
+  gerenciaFactorTodoAsignadoParaMetodologia(allProp: string, assignedProp: string): boolean {
+    const forMet = this.gerenciaCatalogFactorItemsForMetodologia(allProp).length;
+    const avail = this.availableViajesMetodologiaFactores(allProp, assignedProp).length;
+    return forMet > 0 && avail === 0;
+  }
+
+  /**
+   * Texto en listados/modales de gerencia de viajes: muestra el nombre del ítem del catálogo
+   * (p. ej. "Menor (<) a 100 Km"). Solo si no hay nombre se usan NE/ND/NC como respaldo.
+   */
+  gerenciaEtiquetaOpcionCatalogoViaje(item: any): string {
+    if (!item) {
+      return '';
+    }
+    const n = (item.name || '').trim();
+    if (n) {
+      return n;
+    }
+    const bits: string[] = [];
+    if (item.neNivel?.nombre) {
+      bits.push(`NE: ${item.neNivel.nombre}`);
+    }
+    if (item.ndNivel?.nombre) {
+      bits.push(`ND: ${item.ndNivel.nombre}`);
+    }
+    if (item.ncNivel?.nombre) {
+      bits.push(`NC: ${item.ncNivel.nombre}`);
+    }
+    if (bits.length) {
+      return bits.join(' · ');
+    }
+    return '—';
+  }
+
+  /** Si la metodología no mapea ningún factor A–J en Aceptación de riesgo, se muestran los 10 recuadros (GTC-45, IPER, etc.). */
+  gerenciaMetodologiaMuestraTodosLosFactoresViaje(): boolean {
+    const m = this.gerenciaMetodologiaDetalle;
+    if (!m?.parametros?.length) {
+      return true;
+    }
+    return !this.gerenciaCatalogoSlugs.some((s) => parametroFactorParaCatalogo(m, s) != null);
+  }
+
+  openAsignDistanciaModal() {
+    if (!this.gerenciaMetodologiaVistaId) {
+      alert('Seleccione primero una metodología de configuración.');
+      return;
+    }
+    this.refreshGerenciaPublicCatalog('/api/public/distancia-recorrer', 'allDistanciaRecorrers');
+    this.selectedDistanciaIds = [];
+    this.showAsignDistanciaModal = true;
+  }
+  closeAsignDistanciaModal() {
+    this.showAsignDistanciaModal = false;
+    this.selectedDistanciaIds = [];
+  }
+  assignDistancia() {
+    this.viajesAssignMultiple('distancia-recorrer', this.selectedDistanciaIds, 'savingDistancia', 'showAsignDistanciaModal');
+  }
   removeDistancia(id: number) { this.viajesRemove('distancia-recorrer', id); }
 
-  openAsignTipoViaModal() { this.showAsignTipoViaModal = true; this.selectedTipoViaId = null; }
-  closeAsignTipoViaModal() { this.showAsignTipoViaModal = false; }
-  assignTipoVia() { this.viajesAssign('tipo-via', this.selectedTipoViaId, 'tipoVias', 'savingTipoVia', 'showAsignTipoViaModal'); }
+  openAsignTipoViaModal() {
+    if (!this.gerenciaMetodologiaVistaId) {
+      alert('Seleccione primero una metodología de configuración.');
+      return;
+    }
+    this.refreshGerenciaPublicCatalog('/api/public/tipo-vias', 'allTipoVias');
+    this.selectedTipoViaIds = [];
+    this.showAsignTipoViaModal = true;
+  }
+  closeAsignTipoViaModal() {
+    this.showAsignTipoViaModal = false;
+    this.selectedTipoViaIds = [];
+  }
+  assignTipoVia() {
+    this.viajesAssignMultiple('tipo-via', this.selectedTipoViaIds, 'savingTipoVia', 'showAsignTipoViaModal');
+  }
   removeTipoVia(id: number) { this.viajesRemove('tipo-via', id); }
 
-  openAsignCondicionModal() { this.showAsignCondicionModal = true; this.selectedCondicionId = null; }
-  closeAsignCondicionModal() { this.showAsignCondicionModal = false; }
-  assignCondicion() { this.viajesAssign('condicion-climatica', this.selectedCondicionId, 'condicionClimaticas', 'savingCondicion', 'showAsignCondicionModal'); }
+  openAsignCondicionModal() {
+    if (!this.gerenciaMetodologiaVistaId) {
+      alert('Seleccione primero una metodología de configuración.');
+      return;
+    }
+    this.refreshGerenciaPublicCatalog('/api/public/condicion-climaticas', 'allCondicionClimaticas');
+    this.selectedCondicionIds = [];
+    this.showAsignCondicionModal = true;
+  }
+  closeAsignCondicionModal() {
+    this.showAsignCondicionModal = false;
+    this.selectedCondicionIds = [];
+  }
+  assignCondicion() {
+    this.viajesAssignMultiple('condicion-climatica', this.selectedCondicionIds, 'savingCondicion', 'showAsignCondicionModal');
+  }
   removeCondicion(id: number) { this.viajesRemove('condicion-climatica', id); }
 
-  openAsignHorarioCircModal() { this.showAsignHorarioCircModal = true; this.selectedHorarioCircId = null; }
-  closeAsignHorarioCircModal() { this.showAsignHorarioCircModal = false; }
-  assignHorarioCirc() { this.viajesAssign('horario-circulacion', this.selectedHorarioCircId, 'horarioCirculaciones', 'savingHorarioCirc', 'showAsignHorarioCircModal'); }
+  openAsignHorarioCircModal() {
+    if (!this.gerenciaMetodologiaVistaId) {
+      alert('Seleccione primero una metodología de configuración.');
+      return;
+    }
+    this.refreshGerenciaPublicCatalog('/api/public/horario-circulaciones', 'allHorarioCirculaciones');
+    this.selectedHorarioCircIds = [];
+    this.showAsignHorarioCircModal = true;
+  }
+  closeAsignHorarioCircModal() {
+    this.showAsignHorarioCircModal = false;
+    this.selectedHorarioCircIds = [];
+  }
+  assignHorarioCirc() {
+    this.viajesAssignMultiple('horario-circulacion', this.selectedHorarioCircIds, 'savingHorarioCirc', 'showAsignHorarioCircModal');
+  }
   removeHorarioCirc(id: number) { this.viajesRemove('horario-circulacion', id); }
 
-  openAsignEstadoCarrModal() { this.showAsignEstadoCarrModal = true; this.selectedEstadoCarrId = null; }
-  closeAsignEstadoCarrModal() { this.showAsignEstadoCarrModal = false; }
-  assignEstadoCarr() { this.viajesAssign('estado-carretera', this.selectedEstadoCarrId, 'estadoCarreteras', 'savingEstadoCarr', 'showAsignEstadoCarrModal'); }
+  openAsignEstadoCarrModal() {
+    if (!this.gerenciaMetodologiaVistaId) {
+      alert('Seleccione primero una metodología de configuración.');
+      return;
+    }
+    this.refreshGerenciaPublicCatalog('/api/public/estado-carreteras', 'allEstadoCarreteras');
+    this.selectedEstadoCarrIds = [];
+    this.showAsignEstadoCarrModal = true;
+  }
+  closeAsignEstadoCarrModal() {
+    this.showAsignEstadoCarrModal = false;
+    this.selectedEstadoCarrIds = [];
+  }
+  assignEstadoCarr() {
+    this.viajesAssignMultiple('estado-carretera', this.selectedEstadoCarrIds, 'savingEstadoCarr', 'showAsignEstadoCarrModal');
+  }
   removeEstadoCarr(id: number) { this.viajesRemove('estado-carretera', id); }
 
-  openAsignTipoCargaModal() { this.showAsignTipoCargaModal = true; this.selectedTipoCargaId = null; }
-  closeAsignTipoCargaModal() { this.showAsignTipoCargaModal = false; }
-  assignTipoCarga() { this.viajesAssign('tipo-carga', this.selectedTipoCargaId, 'tipoCargas', 'savingTipoCarga', 'showAsignTipoCargaModal'); }
+  openAsignTipoCargaModal() {
+    if (!this.gerenciaMetodologiaVistaId) {
+      alert('Seleccione primero una metodología de configuración.');
+      return;
+    }
+    this.refreshGerenciaPublicCatalog('/api/public/tipo-cargas', 'allTipoCargas');
+    this.selectedTipoCargaIds = [];
+    this.showAsignTipoCargaModal = true;
+  }
+  closeAsignTipoCargaModal() {
+    this.showAsignTipoCargaModal = false;
+    this.selectedTipoCargaIds = [];
+  }
+  assignTipoCarga() {
+    this.viajesAssignMultiple('tipo-carga', this.selectedTipoCargaIds, 'savingTipoCarga', 'showAsignTipoCargaModal');
+  }
   removeTipoCarga(id: number) { this.viajesRemove('tipo-carga', id); }
 
-  openAsignHoraCondModal() { this.showAsignHoraCondModal = true; this.selectedHoraCondId = null; }
-  closeAsignHoraCondModal() { this.showAsignHoraCondModal = false; }
-  assignHoraCond() { this.viajesAssign('hora-conduccion', this.selectedHoraCondId, 'horaConducciones', 'savingHoraCond', 'showAsignHoraCondModal'); }
+  openAsignHoraCondModal() {
+    if (!this.gerenciaMetodologiaVistaId) {
+      alert('Seleccione primero una metodología de configuración.');
+      return;
+    }
+    this.refreshGerenciaPublicCatalog('/api/public/hora-conducciones', 'allHoraConducciones');
+    this.selectedHoraCondIds = [];
+    this.showAsignHoraCondModal = true;
+  }
+  closeAsignHoraCondModal() {
+    this.showAsignHoraCondModal = false;
+    this.selectedHoraCondIds = [];
+  }
+  assignHoraCond() {
+    this.viajesAssignMultiple('hora-conduccion', this.selectedHoraCondIds, 'savingHoraCond', 'showAsignHoraCondModal');
+  }
   removeHoraCond(id: number) { this.viajesRemove('hora-conduccion', id); }
 
-  openAsignHoraDescModal() { this.showAsignHoraDescModal = true; this.selectedHoraDescId = null; }
-  closeAsignHoraDescModal() { this.showAsignHoraDescModal = false; }
-  assignHoraDesc() { this.viajesAssign('hora-descanso', this.selectedHoraDescId, 'horaDescansos', 'savingHoraDesc', 'showAsignHoraDescModal'); }
+  openAsignHoraDescModal() {
+    if (!this.gerenciaMetodologiaVistaId) {
+      alert('Seleccione primero una metodología de configuración.');
+      return;
+    }
+    this.refreshGerenciaPublicCatalog('/api/public/hora-descansos', 'allHoraDescansos');
+    this.selectedHoraDescIds = [];
+    this.showAsignHoraDescModal = true;
+  }
+  closeAsignHoraDescModal() {
+    this.showAsignHoraDescModal = false;
+    this.selectedHoraDescIds = [];
+  }
+  assignHoraDesc() {
+    this.viajesAssignMultiple('hora-descanso', this.selectedHoraDescIds, 'savingHoraDesc', 'showAsignHoraDescModal');
+  }
   removeHoraDesc(id: number) { this.viajesRemove('hora-descanso', id); }
 
-  openAsignMedioComModal() { this.showAsignMedioComModal = true; this.selectedMedioComId = null; }
-  closeAsignMedioComModal() { this.showAsignMedioComModal = false; }
-  assignMedioCom() { this.viajesAssign('medio-comunicacion', this.selectedMedioComId, 'medioComunicaciones', 'savingMedioCom', 'showAsignMedioComModal'); }
+  openAsignMedioComModal() {
+    if (!this.gerenciaMetodologiaVistaId) {
+      alert('Seleccione primero una metodología de configuración.');
+      return;
+    }
+    this.refreshGerenciaPublicCatalog('/api/public/medio-comunicaciones', 'allMedioComunicaciones');
+    this.selectedMedioComIds = [];
+    this.showAsignMedioComModal = true;
+  }
+  closeAsignMedioComModal() {
+    this.showAsignMedioComModal = false;
+    this.selectedMedioComIds = [];
+  }
+  assignMedioCom() {
+    this.viajesAssignMultiple('medio-comunicacion', this.selectedMedioComIds, 'savingMedioCom', 'showAsignMedioComModal');
+  }
   removeMedioCom(id: number) { this.viajesRemove('medio-comunicacion', id); }
 
-  openAsignTransportaModal() { this.showAsignTransportaModal = true; this.selectedTransportaId = null; }
-  closeAsignTransportaModal() { this.showAsignTransportaModal = false; }
-  assignTransporta() { this.viajesAssign('transporta-pasajero', this.selectedTransportaId, 'transportaPasajeros', 'savingTransporta', 'showAsignTransportaModal'); }
+  openAsignTransportaModal() {
+    if (!this.gerenciaMetodologiaVistaId) {
+      alert('Seleccione primero una metodología de configuración.');
+      return;
+    }
+    this.refreshGerenciaPublicCatalog('/api/public/transporta-pasajeros', 'allTransportaPasajeros');
+    this.selectedTransportaIds = [];
+    this.showAsignTransportaModal = true;
+  }
+  closeAsignTransportaModal() {
+    this.showAsignTransportaModal = false;
+    this.selectedTransportaIds = [];
+  }
+  assignTransporta() {
+    this.viajesAssignMultiple('transporta-pasajero', this.selectedTransportaIds, 'savingTransporta', 'showAsignTransportaModal');
+  }
   removeTransporta(id: number) { this.viajesRemove('transporta-pasajero', id); }
 
   openAsignMetodologiaModal() { this.showAsignMetodologiaModal = true; this.selectedMetodologiaId = null; }
@@ -4388,4 +4744,81 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     this.viajesAssign('posible-riesgo-via', this.selectedPosibleRiesgoViaId, 'posiblesRiesgosVia', 'savingPosibleRiesgoVia', 'showAsignPosibleRiesgoViaModal');
   }
   removePosibleRiesgoVia(id: number) { this.viajesRemove('posible-riesgo-via', id); }
+
+  openAsignOtrosPeligrosViajeModal() { this.showAsignOtrosPeligrosViajeModal = true; this.selectedOtrosPeligrosViajeId = null; }
+  closeAsignOtrosPeligrosViajeModal() { this.showAsignOtrosPeligrosViajeModal = false; }
+  assignOtrosPeligrosViaje() {
+    this.viajesAssign('otros-peligros-viaje', this.selectedOtrosPeligrosViajeId, 'otrosPeligrosViajeCatalogo', 'savingOtrosPeligrosViaje', 'showAsignOtrosPeligrosViajeModal');
+  }
+  removeOtrosPeligrosViaje(id: number) { this.viajesRemove('otros-peligros-viaje', id); }
+
+  openAsignMedidaControlTomadaModal() { this.showAsignMedidaControlTomadaModal = true; this.selectedMedidaControlTomadaId = null; }
+  closeAsignMedidaControlTomadaModal() { this.showAsignMedidaControlTomadaModal = false; }
+  assignMedidaControlTomadaViaje() {
+    this.viajesAssign('medida-control-tomada-viaje', this.selectedMedidaControlTomadaId, 'medidasControlTomadasViajeCatalogo', 'savingMedidaControlTomada', 'showAsignMedidaControlTomadaModal');
+  }
+  removeMedidaControlTomadaViaje(id: number) { this.viajesRemove('medida-control-tomada-viaje', id); }
+
+  gerenciaFactorVisible(slug: string): boolean {
+    if (!this.gerenciaMetodologiaVistaId || !this.gerenciaMetodologiaDetalle) {
+      return false;
+    }
+    if (parametroFactorParaCatalogo(this.gerenciaMetodologiaDetalle, slug) != null) {
+      return true;
+    }
+    return this.gerenciaMetodologiaMuestraTodosLosFactoresViaje();
+  }
+
+  private gerenciaViajesStorageKey(): string {
+    return `gerenciaViajesMetodologiaVista_${this.empresaId}`;
+  }
+
+  onGerenciaMetodologiaVistaChange(): void {
+    const id = this.gerenciaMetodologiaVistaId;
+    if (id != null) {
+      sessionStorage.setItem(this.gerenciaViajesStorageKey(), String(id));
+    } else {
+      sessionStorage.removeItem(this.gerenciaViajesStorageKey());
+    }
+    this.loadGerenciaMetodologiaDetalle();
+  }
+
+  private initGerenciaMetodologiaVista(): void {
+    const list = this.metodologiaRiesgos || [];
+    const saved = sessionStorage.getItem(this.gerenciaViajesStorageKey());
+    let id: number | null = null;
+    if (saved) {
+      const parsed = +saved;
+      if (list.some((m) => m.id === parsed)) {
+        id = parsed;
+      }
+    }
+    if (id == null && list.length > 0) {
+      id = list[0].id;
+    }
+    this.gerenciaMetodologiaVistaId = id;
+    this.loadGerenciaMetodologiaDetalle();
+  }
+
+  private loadGerenciaMetodologiaDetalle(): void {
+    if (!this.gerenciaMetodologiaVistaId) {
+      this.gerenciaMetodologiaDetalle = null;
+      this.gerenciaMetodologiaError = null;
+      this.gerenciaMetodologiaCargando = false;
+      return;
+    }
+    this.gerenciaMetodologiaCargando = true;
+    this.gerenciaMetodologiaError = null;
+    this.metodologiaRiesgoService.getById(this.gerenciaMetodologiaVistaId).subscribe({
+      next: (m) => {
+        this.gerenciaMetodologiaDetalle = m;
+        this.gerenciaMetodologiaCargando = false;
+      },
+      error: () => {
+        this.gerenciaMetodologiaDetalle = null;
+        this.gerenciaMetodologiaCargando = false;
+        this.gerenciaMetodologiaError = 'No se pudo cargar la metodología seleccionada.';
+      }
+    });
+  }
 }

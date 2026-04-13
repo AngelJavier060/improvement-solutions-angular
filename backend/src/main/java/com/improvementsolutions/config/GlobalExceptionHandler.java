@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -122,6 +123,45 @@ public class GlobalExceptionHandler {
         body.put("message", "El archivo excede el límite permitido (20 MB).");
         body.put("code", "UPLOAD_TOO_LARGE");
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(body);
+    }
+
+    /**
+     * Propaga el código HTTP y el mensaje de {@link ResponseStatusException}
+     * (p. ej. 409 al crear gerencia con conductor que ya tiene viaje abierto).
+     * Sin este manejador, cae en {@link #handleAny(Exception)} y el cliente recibe 500.
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(ResponseStatusException ex) {
+        int code = ex.getStatusCode().value();
+        HttpStatus status = HttpStatus.resolve(code);
+        if (status == null) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        String reason = ex.getReason();
+        String message = reason != null && !reason.isBlank() ? reason : status.getReasonPhrase();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("title", responseStatusTitle(status));
+        body.put("message", message);
+        body.put("code", status.name());
+
+        if (status.is4xxClientError()) {
+            log.warn("[ResponseStatus] {} - {}", status.value(), message);
+        } else {
+            log.error("[ResponseStatus] {} - {}", status.value(), message);
+        }
+        return ResponseEntity.status(status).body(body);
+    }
+
+    private static String responseStatusTitle(HttpStatus status) {
+        return switch (status) {
+            case BAD_REQUEST -> "Datos inválidos";
+            case CONFLICT -> "Conflicto";
+            case NOT_FOUND -> "No encontrado";
+            case FORBIDDEN -> "Acceso denegado";
+            case UNAUTHORIZED -> "No autorizado";
+            default -> status.is4xxClientError() ? "Solicitud no procesada" : "Error";
+        };
     }
 
     @ExceptionHandler(MultipartException.class)

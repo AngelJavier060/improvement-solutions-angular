@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { GerenciaViajeService, GerenciaViajeDto } from '../../services/gerencia-viaje.service';
+import { GerenciaViajeService, GerenciaViajeDto, GerenciaViajeStats } from '../../services/gerencia-viaje.service';
 
 @Component({
   selector: 'app-gerencias-viajes-lista',
@@ -16,6 +16,13 @@ export class GerenciasViajesListaComponent implements OnInit {
   loading: boolean = false;
   error: string = '';
   paginaActual = 1;
+  stats: GerenciaViajeStats = { total: 0, activos: 0, completados: 0 };
+  ingresosHoy = 0;
+  abiertasHoy = 0;
+  cerradasHoy = 0;
+
+  /** Desde formulario nuevo: `?cerrar=id` abre el modal de cierre al cargar. */
+  private pendingCerrarId: number | null = null;
 
   constructor(
     private router: Router,
@@ -31,11 +38,50 @@ export class GerenciasViajesListaComponent implements OnInit {
       if (found) { this.businessRuc = found; break; }
       parent = parent.parent;
     }
+    const cerrarRaw = this.route.snapshot.queryParamMap.get('cerrar');
+    if (cerrarRaw) {
+      const n = Number(cerrarRaw);
+      if (Number.isFinite(n)) {
+        this.pendingCerrarId = n;
+      }
+    }
     if (this.businessRuc) {
       this.loadGerencias();
+      this.loadStats();
     } else {
       this.error = 'No se pudo obtener el RUC de la empresa.';
     }
+  }
+
+  private limpiarQueryParamCerrar(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { cerrar: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
+
+  private intentarAbrirCierreDesdeQueryParam(): void {
+    if (this.pendingCerrarId == null) {
+      return;
+    }
+    const id = this.pendingCerrarId;
+    this.pendingCerrarId = null;
+    const g = this.gerencias.find((x) => x.id === id);
+    if (!g) {
+      alert('No se encontró la gerencia en el listado. Actualice la página o verifique el identificador.');
+      this.limpiarQueryParamCerrar();
+      return;
+    }
+    const estado = (g.estado || '').toUpperCase();
+    if (estado !== 'ACTIVO') {
+      alert('La gerencia ya no está en estado abierto; no requiere cierre desde aquí.');
+      this.limpiarQueryParamCerrar();
+      return;
+    }
+    this.abrirModalCierreParaGerencia(g);
+    this.limpiarQueryParamCerrar();
   }
 
   loadGerencias(): void {
@@ -44,8 +90,12 @@ export class GerenciasViajesListaComponent implements OnInit {
     this.gerenciaService.getByRuc(this.businessRuc).subscribe({
       next: (data) => {
         this.gerencias = data;
+        this.ingresosHoy = this.gerencias.filter(g => this.esDeHoy(g.fechaHora)).length;
+        this.abiertasHoy = this.gerencias.filter(g => this.esDeHoy(g.fechaHora) && ((g.estado || '').toUpperCase() === 'ACTIVO')).length;
+        this.cerradasHoy = this.gerencias.filter(g => this.esLocalDateHoy(g.fechaCierre)).length;
         this.ajustarPaginaTrasCambioListado();
         this.loading = false;
+        this.intentarAbrirCierreDesdeQueryParam();
       },
       error: (err) => {
         console.error('[GerenciasViajes] Error al cargar:', err);
@@ -54,6 +104,42 @@ export class GerenciasViajesListaComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  reloadAll(): void {
+    this.loadGerencias();
+    this.loadStats();
+  }
+
+  private loadStats(): void {
+    if (!this.businessRuc) return;
+    this.gerenciaService.getStats(this.businessRuc).subscribe({
+      next: (s) => this.stats = s || { total: 0, activos: 0, completados: 0 },
+      error: () => this.stats = { total: 0, activos: 0, completados: 0 }
+    });
+  }
+
+  private esDeHoy(fechaHora?: string): boolean {
+    if (!fechaHora) return false;
+    try {
+      const d = new Date(fechaHora);
+      const hoy = new Date();
+      return d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth() && d.getDate() === hoy.getDate();
+    } catch {
+      return false;
+    }
+  }
+
+  private esLocalDateHoy(fecha?: string): boolean {
+    if (!fecha) return false;
+    try {
+      // fecha viene como 'YYYY-MM-DD'
+      const d = new Date(`${fecha}T00:00:00`);
+      const hoy = new Date();
+      return d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth() && d.getDate() === hoy.getDate();
+    } catch {
+      return false;
+    }
   }
 
   get totalRegistros(): number {
@@ -139,6 +225,10 @@ export class GerenciasViajesListaComponent implements OnInit {
 
   abrirCerrar($event: Event, g: GerenciaViajeDto): void {
     $event.stopPropagation();
+    this.abrirModalCierreParaGerencia(g);
+  }
+
+  private abrirModalCierreParaGerencia(g: GerenciaViajeDto): void {
     if (g.id == null) return;
     const estado = (g.estado || '').toUpperCase();
     if (estado !== 'ACTIVO') {

@@ -58,6 +58,8 @@ public class BusinessService {
     private final com.improvementsolutions.repository.TransportaPasajeroRepository transportaPasajeroRepository;
     private final com.improvementsolutions.repository.MetodologiaRiesgoRepository metodologiaRiesgoRepository;
     private final com.improvementsolutions.repository.PosibleRiesgoViaRepository posibleRiesgoViaRepository;
+    private final com.improvementsolutions.repository.OtrosPeligrosViajeRepository otrosPeligrosViajeRepository;
+    private final com.improvementsolutions.repository.MedidaControlTomadaViajeRepository medidaControlTomadaViajeRepository;
 
     public List<Business> findAll() {
         return businessRepository.findAll();
@@ -154,6 +156,8 @@ public class BusinessService {
                 if (business.getTransportaPasajeros() != null) business.getTransportaPasajeros().size();
                 if (business.getMetodologiaRiesgos() != null) business.getMetodologiaRiesgos().size();
                 if (business.getPosiblesRiesgosVia() != null) business.getPosiblesRiesgosVia().size();
+                if (business.getOtrosPeligrosViajeCatalogo() != null) business.getOtrosPeligrosViajeCatalogo().size();
+                if (business.getMedidasControlTomadasViajeCatalogo() != null) business.getMedidasControlTomadasViajeCatalogo().size();
             } catch (Exception e) {
                 log.warn("[BusinessService] Could not initialize obligation matrices for business {}: {}", id, e.getMessage());
             }
@@ -1191,6 +1195,40 @@ public class BusinessService {
     public void removePosibleRiesgoViaFromBusiness(Long bId, Long id) {
         Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
         b.getPosiblesRiesgosVia().removeIf(e -> e.getId().equals(id));
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addOtrosPeligrosViajeToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        OtrosPeligrosViaje e = otrosPeligrosViajeRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addOtrosPeligrosViaje(e);
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void removeOtrosPeligrosViajeFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getOtrosPeligrosViajeCatalogo().removeIf(e -> e.getId().equals(id));
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addMedidaControlTomadaViajeToBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        MedidaControlTomadaViaje e = medidaControlTomadaViajeRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addMedidaControlTomadaViaje(e);
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void removeMedidaControlTomadaViajeFromBusiness(Long bId, Long id) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getMedidasControlTomadasViajeCatalogo().removeIf(e -> e.getId().equals(id));
         b.setUpdatedAt(LocalDateTime.now());
         businessRepository.save(b);
     }

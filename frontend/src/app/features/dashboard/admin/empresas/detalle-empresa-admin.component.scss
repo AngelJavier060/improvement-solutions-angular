@@ -251,3 +251,52 @@
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
 }
+
+/* —— Gerencia de Viajes: layout tipo mockup (rejilla 5 col, tarjetas planas) —— */
+.gerencia-viajes-section {
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+}
+
+.gerencia-viajes-param-grid .gv-card {
+  border-radius: 0.75rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gerencia-viajes-param-grid .gv-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.08) !important;
+}
+
+.gerencia-viajes-section .gv-card .card-header {
+  border-radius: 0 !important;
+}
+
+/* Anular reglas globales de título en cabeceras para estas tarjetas compactas */
+.gerencia-viajes-section .gv-card .card-header h6.gv-card-title {
+  font-size: 0.8125rem !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+}
+
+.gv-hd-distancia { background: #2563eb !important; }
+.gv-hd-tipo-via { background: #7b9cff !important; }
+.gerencia-viajes-section .gv-hd-tipo-via .gv-card-title { color: #001e5a !important; }
+.gv-hd-tipo-via-btn { color: #001e5a !important; opacity: 0.85; }
+.gv-hd-clima { background: #00675e !important; }
+.gv-hd-horario { background: #702ae1 !important; }
+.gv-hd-estado { background: #f97316 !important; }
+.gv-hd-carga { background: #b31b25 !important; }
+.gv-hd-hcond { background: #059669 !important; }
+.gv-hd-hdesc { background: #60a5fa !important; }
+.gerencia-viajes-section .gv-hd-hdesc .gv-card-title { color: #001e5a !important; }
+.gv-hd-hdesc-btn { color: #001e5a !important; opacity: 0.85; }
+.gv-hd-medio { background: #c2410c !important; }
+.gv-hd-pasajero { background: #ec4899 !important; }
+
+.gerencia-meta-badge-remove {
+  line-height: 1;
+  min-width: 1rem;
+}

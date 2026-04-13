@@ -2,6 +2,7 @@ package com.improvementsolutions.controller;
 
 import com.improvementsolutions.model.HorarioCirculacion;
 import com.improvementsolutions.repository.HorarioCirculacionRepository;
+import com.improvementsolutions.service.BusinessViajeCatalogJoinCleanupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +16,14 @@ import java.util.Optional;
 public class PublicHorarioCirculacionController {
 
     private final HorarioCirculacionRepository repository;
+    private final BusinessViajeCatalogJoinCleanupService businessViajeCatalogJoinCleanupService;
 
     @Autowired
-    public PublicHorarioCirculacionController(HorarioCirculacionRepository repository) {
+    public PublicHorarioCirculacionController(
+            HorarioCirculacionRepository repository,
+            BusinessViajeCatalogJoinCleanupService businessViajeCatalogJoinCleanupService) {
         this.repository = repository;
+        this.businessViajeCatalogJoinCleanupService = businessViajeCatalogJoinCleanupService;
     }
 
     @GetMapping
@@ -46,6 +51,10 @@ public class PublicHorarioCirculacionController {
             HorarioCirculacion toUpdate = existing.get();
             toUpdate.setName(entity.getName());
             toUpdate.setDescription(entity.getDescription());
+            toUpdate.setMetodologiaRiesgo(entity.getMetodologiaRiesgo());
+            toUpdate.setNeNivel(entity.getNeNivel());
+            toUpdate.setNdNivel(entity.getNdNivel());
+            toUpdate.setNcNivel(entity.getNcNivel());
             return ResponseEntity.ok(repository.save(toUpdate));
         }
         return ResponseEntity.notFound().build();
@@ -57,6 +66,7 @@ public class PublicHorarioCirculacionController {
             return ResponseEntity.notFound().build();
         }
         try {
+            businessViajeCatalogJoinCleanupService.unlinkHorarioCirculacion(id);
             repository.deleteById(id);
             return ResponseEntity.noContent().build();
         } catch (Exception e) {

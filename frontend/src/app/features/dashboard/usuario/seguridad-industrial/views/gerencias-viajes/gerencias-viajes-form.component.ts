@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { combineLatest, of } from 'rxjs';
@@ -16,15 +16,20 @@ import { BusinessService } from '../../../../../../services/business.service';
   templateUrl: './gerencias-viajes-form.component.html',
   styleUrls: ['./gerencias-viajes-form.component.scss']
 })
-export class GerenciasViajesFormComponent implements OnInit {
+export class GerenciasViajesFormComponent implements OnInit, OnDestroy {
   gerenciaForm!: FormGroup;
   businessRuc: string = '';
   isEditMode: boolean = false;
   gerenciaId?: number;
   saving: boolean = false;
-  gerenciaAbiertaMsg = '';
+  /** Viaje ACTIVO del mismo conductor (no puede crear otra hasta cerrar). */
+  gerenciaAbiertaConductor: GerenciaViajeDto | null = null;
+  /** Viaje ACTIVO de la misma placa. */
+  gerenciaAbiertaVehiculo: GerenciaViajeDto | null = null;
   ultimoKmRegistrado: number | null = null;
   ultimoKmPlaca = '';
+
+  private placaDebounceHandle: ReturnType<typeof setTimeout> | null = null;
 
   private requiredFieldLabels: Record<string, string> = {
     conductor: 'Conductor',
@@ -45,6 +50,7 @@ export class GerenciasViajesFormComponent implements OnInit {
     mediosComunicacion: 'Medios de comunicación',
     testAlcohol: 'Test de alcohol',
     llevaPasajeros: '¿Lleva pasajeros?',
+    pasajeros: 'Nombres de pasajeros',
     tipoVehiculo: 'Tipo de vehículo',
     convoy: '¿Convoy?',
     tipoCarretera: 'Tipo de vía',
@@ -72,9 +78,17 @@ export class GerenciasViajesFormComponent implements OnInit {
   inspeccionVehiculoOpts: string[] = ['APROBADA', 'PENDIENTE', 'OBSERVACIONES', 'RECHAZADA'];
   distanciaOptions: string[] = [];
   transportaPasajerosOpts: string[] = [];
+  /** Opciones del catálogo «Medios de comunicación» (medio_comunicaciones). */
   otrosPeligrosOpts: string[] = [];
+  catalogoOtrosPeligrosOpts: string[] = [];
   /** Catálogo asignado en administración de empresa: Posibles riesgos en la vía. */
   riesgosViaOpts: string[] = [];
+  medidasControlTomadasViajeOpts: string[] = [];
+
+  selectedMetodologiaId: number | null = null;
+  baseTiposCarretera: string[] = [];
+  baseDistanciaOptions: string[] = [];
+  baseEstadosVia: string[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -89,31 +103,43 @@ export class GerenciasViajesFormComponent implements OnInit {
   ngOnInit(): void {
     this.initForm();
 
-    const ruc$ = this.route.parent?.parent?.paramMap.pipe(map(pm => pm.get('ruc') || '')) ?? of('');
+    const ruc = this.resolveRucFromRouteSnapshot();
+    const idStr = this.route.snapshot.paramMap.get('id') || '';
 
-    combineLatest([ruc$, this.route.paramMap])
-      .pipe(
-        map(([ruc, pm]) => [ruc, pm.get('id') || ''] as const),
-        distinctUntilChanged((a, b) => a[0] === b[0] && a[1] === b[1])
-      )
-      .subscribe(([ruc, idStr]) => {
-        this.businessRuc = ruc;
-        this.isEditMode = !!idStr;
-        this.gerenciaId = idStr ? +idStr : undefined;
+    this.businessRuc = ruc;
+    this.isEditMode = !!idStr;
+    this.gerenciaId = idStr ? +idStr : undefined;
 
-        if (!ruc) return;
+    if (!ruc) return;
 
-        if (!this.isEditMode) {
-          this.gerenciaService.getNextCodigo(ruc).subscribe({
-            next: (res) => {
-              if (this.gerenciaForm) this.gerenciaForm.patchValue({ codigo: res.codigo });
-            },
-            error: () => {}
-          });
-        }
-
-        this.loadCompanyParams(ruc, this.isEditMode && this.gerenciaId != null ? this.gerenciaId : undefined);
+    if (!this.isEditMode) {
+      this.gerenciaService.getNextCodigo(ruc).subscribe({
+        next: (res) => {
+          if (this.gerenciaForm) this.gerenciaForm.patchValue({ codigo: res.codigo });
+        },
+        error: () => {}
       });
+    }
+    this.loadCompanyParams(ruc, this.isEditMode && this.gerenciaId != null ? this.gerenciaId : undefined);
+  }
+
+  private resolveRucFromRouteSnapshot(): string {
+    let p: ActivatedRoute | null = this.route;
+    while (p) {
+      const v = p.snapshot.paramMap.get('ruc');
+      if (v) return v;
+      p = p.parent as ActivatedRoute | null;
+    }
+    return '';
+  }
+
+  /** Permite refrescar manualmente los catálogos de la empresa sin recargar la página. */
+  refreshCompanyParams(): void {
+    if (!this.businessRuc) {
+      return;
+    }
+    const id = this.isEditMode && this.gerenciaId != null ? this.gerenciaId : undefined;
+    this.loadCompanyParams(this.businessRuc, id);
   }
 
   /**
@@ -137,31 +163,48 @@ export class GerenciasViajesFormComponent implements OnInit {
               if (n) return n;
               return (x.description ?? x.descripcion ?? '').toString().trim();
             };
-            const names = (arr: any[]) =>
-              Array.isArray(arr) ? arr.map((x: any) => itemLabel(x)).filter((s: string) => !!s) : [];
-            const tipoVias = names(det?.tipoVias);
-            const estadoCarreteras = names(det?.estadoCarreteras);
-            const condicionClimaticas = names(det?.condicionClimaticas);
-            const horarioCirculaciones = names(det?.horarioCirculaciones);
-            const tipoCargas = names(det?.tipoCargas);
-            const horaConducciones = names(det?.horaConducciones);
-            const horaDescansos = names(det?.horaDescansos);
-            const distanciaRecorrers = names(det?.distanciaRecorrers);
-            const transportaPasajeros = names(det?.transportaPasajeros);
-            const medioComunicaciones = names(det?.medioComunicaciones);
-            const posiblesRiesgosVia = names(det?.posiblesRiesgosVia);
+            const names = (arr: any[]) => Array.isArray(arr) ? arr.map((x: any) => itemLabel(x)).filter((s: string) => !!s) : [];
 
-            if (tipoVias.length) this.tiposCarretera = tipoVias;
-            if (estadoCarreteras.length) this.estadosVia = estadoCarreteras;
-            if (condicionClimaticas.length) this.condicionesClimaticas = condicionClimaticas;
-            if (horarioCirculaciones.length) this.horariosViajeOpts = horarioCirculaciones;
-            if (tipoCargas.length) this.tiposCarga = tipoCargas;
-            if (horaConducciones.length) this.horasConduccionOpts = horaConducciones;
-            if (horaDescansos.length) this.descansoConductorOpts = horaDescansos;
-            if (distanciaRecorrers.length) this.distanciaOptions = distanciaRecorrers;
-            if (transportaPasajeros.length) this.transportaPasajerosOpts = transportaPasajeros;
-            if (medioComunicaciones.length) this.otrosPeligrosOpts = medioComunicaciones;
-            if (posiblesRiesgosVia.length) this.riesgosViaOpts = posiblesRiesgosVia;
+            const preferredMet = this.readMetodologiaFromSessionStorage(id, det?.metodologiaRiesgos);
+            this.selectedMetodologiaId = preferredMet != null ? preferredMet : this.pickMetodologiaId(det);
+            // Filtrar por metodología; si no queda nada, usar el listado completo (compatibilidad)
+            const f = (arr: any[]) => {
+              const all = Array.isArray(arr) ? arr : [];
+              const byMet = this.filterByMet(all, this.selectedMetodologiaId);
+              return byMet.length ? byMet : all;
+            };
+
+            const tipoVias = names(f(det?.tipoVias || []));
+            const estadoCarreteras = names(f(det?.estadoCarreteras || []));
+            const condicionClimaticas = names(f(det?.condicionClimaticas || []));
+            const horarioCirculaciones = names(f(det?.horarioCirculaciones || []));
+            const tipoCargas = names(f(det?.tipoCargas || []));
+            const horaConducciones = names(f(det?.horaConducciones || []));
+            const horaDescansos = names(f(det?.horaDescansos || []));
+            const distanciaRecorrers = names(f(det?.distanciaRecorrers || []));
+            const transportaPasajeros = names(f(det?.transportaPasajeros || []));
+            const medioComunicaciones = names(f(det?.medioComunicaciones || []));
+            const posiblesRiesgosVia = names(f(det?.posiblesRiesgosVia || []));
+            const otrosPeligrosCat = names(f(det?.otrosPeligrosViajeCatalogo || []));
+            const medidasTomadasCat = names(f(det?.medidasControlTomadasViajeCatalogo || []));
+
+            this.tiposCarretera = tipoVias;
+            this.estadosVia = estadoCarreteras;
+            this.condicionesClimaticas = condicionClimaticas;
+            this.horariosViajeOpts = horarioCirculaciones;
+            this.tiposCarga = tipoCargas;
+            this.horasConduccionOpts = horaConducciones;
+            this.descansoConductorOpts = horaDescansos;
+            this.distanciaOptions = distanciaRecorrers;
+            this.transportaPasajerosOpts = transportaPasajeros;
+            this.otrosPeligrosOpts = medioComunicaciones;
+            this.riesgosViaOpts = posiblesRiesgosVia;
+            this.catalogoOtrosPeligrosOpts = otrosPeligrosCat;
+            this.medidasControlTomadasViajeOpts = medidasTomadasCat;
+
+            this.baseTiposCarretera = [...tipoVias];
+            this.baseDistanciaOptions = [...distanciaRecorrers];
+            this.baseEstadosVia = [...estadoCarreteras];
 
             if (gerenciaIdAfterLoad != null) {
               this.loadGerencia(gerenciaIdAfterLoad);
@@ -187,6 +230,78 @@ export class GerenciasViajesFormComponent implements OnInit {
     return [v, ...list];
   }
 
+  private metodoIdFrom(item: any): number | null {
+    const nested = item?.metodologiaRiesgo?.id ?? item?.metodologiaRiesgoId;
+    const n = nested != null ? Number(nested) : NaN;
+    return Number.isFinite(n) ? n : null;
+  }
+
+  private readMetodologiaFromSessionStorage(businessId: number, metodologias?: any[]): number | null {
+    try {
+      const key = `gerenciaViajesMetodologiaVista_${businessId}`;
+      const raw = sessionStorage.getItem(key);
+      if (!raw) return null;
+      const id = Number(raw);
+      if (!Number.isFinite(id)) return null;
+      const list = Array.isArray(metodologias) ? metodologias : [];
+      if (list.some((m: any) => Number(m?.id) === id)) return id;
+      return id; // si el backend aún no envía metodologías, conservar preferencia
+    } catch {
+      return null;
+    }
+  }
+
+  private pickMetodologiaId(det: any): number | null {
+    const mids = Array.isArray(det?.metodologiaRiesgos) ? det.metodologiaRiesgos : [];
+    if (mids.length === 1 && mids[0]?.id != null) return Number(mids[0].id);
+    const buckets: Record<string, number> = {};
+    const arrays = [
+      det?.distanciaRecorrers, det?.tipoVias, det?.condicionClimaticas, det?.horarioCirculaciones,
+      det?.estadoCarreteras, det?.tipoCargas, det?.horaConducciones, det?.horaDescansos,
+      det?.medioComunicaciones, det?.transportaPasajeros, det?.posiblesRiesgosVia,
+      det?.otrosPeligrosViajeCatalogo, det?.medidasControlTomadasViajeCatalogo
+    ];
+    arrays.forEach((arr: any[]) => {
+      (Array.isArray(arr) ? arr : []).forEach((x: any) => {
+        const mid = this.metodoIdFrom(x);
+        if (mid != null) {
+          const k = String(mid);
+          buckets[k] = (buckets[k] || 0) + 1;
+        }
+      });
+    });
+    let best: number | null = null;
+    let bestCount = 0;
+    Object.keys(buckets).forEach(k => {
+      const c = buckets[k];
+      if (c > bestCount) {
+        bestCount = c;
+        best = Number(k);
+      }
+    });
+    return best;
+  }
+
+  private filterByMet(arr: any[], metId: number | null): any[] {
+    if (!Array.isArray(arr)) return [];
+    // Si no hay metodología seleccionada, no filtrar.
+    if (metId == null) return arr;
+    // Incluir ítems sin metodología explícita (compatibilidad) y los que coincidan con la metodología activa.
+    return arr.filter((x: any) => {
+      const mid = this.metodoIdFrom(x);
+      return mid == null || mid === metId;
+    });
+  }
+
+  labelFor(field: string, value: string): string {
+    const v = (value ?? '').toString();
+    if (!v) return v;
+    if (field === 'tipoCarretera') return this.baseTiposCarretera.includes(v) ? v : `${v} — fuera de catálogo`;
+    if (field === 'distancia') return this.baseDistanciaOptions.includes(v) ? v : `${v} — fuera de catálogo`;
+    if (field === 'estadoVia') return this.baseEstadosVia.includes(v) ? v : `${v} — fuera de catálogo`;
+    return v;
+  }
+
   initForm(): void {
     this.gerenciaForm = this.fb.group({
       codigo: new FormControl({ value: '', disabled: true }),
@@ -206,7 +321,7 @@ export class GerenciasViajesFormComponent implements OnInit {
       licenciaVigente: ['SÍ', Validators.required],
       manejoDefensivo: ['SÍ', Validators.required],
       inspeccionVehiculo: ['SÍ', Validators.required],
-      mediosComunicacion: ['SÍ', Validators.required],
+      mediosComunicacion: ['', Validators.required],
       testAlcohol: ['Negativo', Validators.required],
       llevaPasajeros: ['NO', Validators.required],
       pasajeros: [''],
@@ -219,24 +334,80 @@ export class GerenciasViajesFormComponent implements OnInit {
       distancia: [''],
       tipoCarga: ['', Validators.required],
       otrosPeligros: [''],
+      catalogoOtrosPeligros: [''],
       horasConduccion: ['', Validators.required],
       horarioViaje: ['', Validators.required],
       descansoConductor: ['', Validators.required],
       riesgosVia: [''],
       medidasControl: [''],
+      medidasControlTomadasViaje: [''],
       paradasPlanificadas: [''],
       kmFinal: [null as number | null, Validators.min(0)]
     });
 
     this.gerenciaForm.get('llevaPasajeros')?.valueChanges.subscribe(v => {
-      if (v !== 'SÍ') {
+      const nombresCtrl = this.gerenciaForm.get('pasajeros');
+      if (v === 'SÍ') {
+        nombresCtrl?.setValidators([Validators.required]);
+      } else {
+        nombresCtrl?.clearValidators();
         this.gerenciaForm.patchValue({ pasajeros: '' });
       }
+      nombresCtrl?.updateValueAndValidity({ emitEvent: false });
     });
     this.gerenciaForm.get('convoy')?.valueChanges.subscribe(v => {
       if (v !== 'SÍ') {
         this.gerenciaForm.patchValue({ unidadesConvoy: '' });
       }
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.placaDebounceHandle) {
+      clearTimeout(this.placaDebounceHandle);
+      this.placaDebounceHandle = null;
+    }
+  }
+
+  /** KM inicial numérico estrictamente menor al último km de cierres previos (misma placa). */
+  get kmInicialMenorQueUltimoRegistrado(): boolean {
+    if (this.isEditMode) return false;
+    const u = this.ultimoKmRegistrado;
+    if (u == null) return false;
+    const raw = this.gerenciaForm.get('kmInicial')?.value;
+    const v = raw === '' || raw === null || raw === undefined ? NaN : Number(raw);
+    if (Number.isNaN(v)) return false;
+    return v < u;
+  }
+
+  get bloqueoPorGerenciaAbierta(): boolean {
+    if (this.isEditMode) return false;
+    return this.gerenciaAbiertaConductor != null || this.gerenciaAbiertaVehiculo != null;
+  }
+
+  /** Bloquea el resto del formulario (como en la app): gerencia abierta o km inválido. */
+  get formularioBloqueadoResto(): boolean {
+    if (this.isEditMode) return false;
+    return this.kmInicialMenorQueUltimoRegistrado || this.bloqueoPorGerenciaAbierta;
+  }
+
+  get mensajeGerenciaConductor(): string {
+    const g = this.gerenciaAbiertaConductor;
+    if (g?.id == null) return '';
+    return `El conductor tiene la gerencia ${g.codigo || '#' + g.id} abierta. Debe cerrarla antes de crear una nueva.`;
+  }
+
+  get mensajeGerenciaVehiculo(): string {
+    const g = this.gerenciaAbiertaVehiculo;
+    if (g?.id == null) return '';
+    return `Este vehículo tiene la gerencia ${g.codigo || '#' + g.id} abierta. Debe cerrarla antes de crear una nueva.`;
+  }
+
+  irACerrarGerencia(g: GerenciaViajeDto): void {
+    if (g.id == null) return;
+    this.router.navigate(['..'], {
+      relativeTo: this.route,
+      queryParams: { cerrar: g.id }
     });
   }
 
@@ -251,8 +422,16 @@ export class GerenciasViajesFormComponent implements OnInit {
         this.horariosViajeOpts = this.ensureOptionInList(this.horariosViajeOpts, data.horarioViaje);
         this.descansoConductorOpts = this.ensureOptionInList(this.descansoConductorOpts, data.descansoConduc);
         this.distanciaOptions = this.ensureOptionInList(this.distanciaOptions, data.distancia);
-        this.otrosPeligrosOpts = this.ensureOptionInList(this.otrosPeligrosOpts, data.otrosPeligros);
+        // Asegurar que el valor guardado de Medios de comunicación esté en el combo
+        this.otrosPeligrosOpts = this.ensureOptionInList(this.otrosPeligrosOpts, data.mediosComunicacion);
+        this.catalogoOtrosPeligrosOpts = this.ensureOptionInList(this.catalogoOtrosPeligrosOpts, data.catalogoOtrosPeligros);
+        // El select "Pasajeros" usa el catálogo asignado en administración (transportaPasajerosOpts)
+        // y su valor persistido se guarda en el campo medidasControl por compatibilidad.
         this.transportaPasajerosOpts = this.ensureOptionInList(this.transportaPasajerosOpts, data.medidasControl);
+        this.medidasControlTomadasViajeOpts = this.ensureOptionInList(
+          this.medidasControlTomadasViajeOpts,
+          data.medidasControlTomadasViaje
+        );
         this.riesgosViaOpts = this.ensureOptionInList(this.riesgosViaOpts, data.riesgosVia);
 
         this.gerenciaForm.patchValue({
@@ -273,7 +452,7 @@ export class GerenciasViajesFormComponent implements OnInit {
           licenciaVigente: data.licenciaVigente || 'SÍ',
           manejoDefensivo: data.manejoDefensivo || 'SÍ',
           inspeccionVehiculo: data.inspeccionVehiculo || 'SÍ',
-          mediosComunicacion: data.mediosComunicacion || 'SÍ',
+          mediosComunicacion: data.mediosComunicacion || '',
           testAlcohol: data.testAlcohol || 'Negativo',
           llevaPasajeros: data.llevaPasajeros || 'NO',
           pasajeros: data.pasajeros,
@@ -286,11 +465,13 @@ export class GerenciasViajesFormComponent implements OnInit {
           distancia: data.distancia ?? '',
           tipoCarga: data.tipoCarga || '',
           otrosPeligros: data.otrosPeligros ?? '',
+          catalogoOtrosPeligros: data.catalogoOtrosPeligros ?? '',
           horasConduccion: data.horasConduccion || '',
           horarioViaje: data.horarioViaje || '',
           descansoConductor: data.descansoConduc || '',
           riesgosVia: data.riesgosVia ?? '',
           medidasControl: data.medidasControl ?? '',
+          medidasControlTomadasViaje: data.medidasControlTomadasViaje ?? '',
           paradasPlanificadas: data.paradasPlanificadas,
           kmFinal: data.kmFinal
         });
@@ -319,13 +500,32 @@ export class GerenciasViajesFormComponent implements OnInit {
       return;
     }
 
-    if (!this.isEditMode && this.gerenciaAbiertaMsg) {
-      alert(this.gerenciaAbiertaMsg);
+    if (!this.isEditMode && this.bloqueoPorGerenciaAbierta) {
+      const partes = [this.mensajeGerenciaConductor, this.mensajeGerenciaVehiculo].filter(Boolean);
+      alert(partes.join('\n\n'));
+      return;
+    }
+
+    if (!this.isEditMode && this.kmInicialMenorQueUltimoRegistrado && this.ultimoKmRegistrado != null) {
+      alert(
+        `No es posible guardar: el KM inicial es menor al último kilometraje registrado para esta placa (${this.ultimoKmRegistrado} km). Corrija el valor para continuar.`
+      );
+      return;
+    }
+
+    const formData = this.gerenciaForm.value;
+
+    const outErrors: string[] = [];
+    const tipoVal = (formData?.tipoCarretera || '').toString().trim();
+    const distVal = (formData?.distancia || '').toString().trim();
+    if (tipoVal && !this.baseTiposCarretera.includes(tipoVal)) outErrors.push('Tipo de vía');
+    if (distVal && !this.baseDistanciaOptions.includes(distVal)) outErrors.push('Distancia a recorrer');
+    if (outErrors.length) {
+      alert(`Actualice los siguientes campos con opciones del catálogo:\n- ${outErrors.join('\n- ')}`);
       return;
     }
 
     this.saving = true;
-    const formData = this.gerenciaForm.value;
 
     const dto: GerenciaViajeDto = {
       conductor: formData.conductor,
@@ -357,11 +557,13 @@ export class GerenciasViajesFormComponent implements OnInit {
       distancia: formData.distancia,
       tipoCarga: formData.tipoCarga,
       otrosPeligros: formData.otrosPeligros,
+      catalogoOtrosPeligros: formData.catalogoOtrosPeligros,
       horasConduccion: formData.horasConduccion,
       horarioViaje: formData.horarioViaje,
       descansoConduc: formData.descansoConductor,
       riesgosVia: formData.riesgosVia,
       medidasControl: formData.medidasControl,
+      medidasControlTomadasViaje: formData.medidasControlTomadasViaje,
       paradasPlanificadas: formData.paradasPlanificadas
     };
 
@@ -464,7 +666,7 @@ export class GerenciasViajesFormComponent implements OnInit {
       });
     } else {
       this.cedulaSuggestions = [];
-      this.gerenciaAbiertaMsg = '';
+      this.gerenciaAbiertaConductor = null;
     }
   }
 
@@ -487,33 +689,43 @@ export class GerenciasViajesFormComponent implements OnInit {
 
   private verificarGerenciaAbierta(cedula: string): void {
     if (this.isEditMode || !this.businessRuc || !cedula || cedula.length !== 10) {
-      this.gerenciaAbiertaMsg = '';
+      this.gerenciaAbiertaConductor = null;
       return;
     }
     this.gerenciaService.getAbiertaPorConductor(this.businessRuc, cedula).subscribe({
       next: (g) => {
-        if (g?.id != null) {
-          this.gerenciaAbiertaMsg =
-            `El conductor tiene la gerencia ${g.codigo || '#' + g.id} abierta. Debe cerrarla antes de crear una nueva.`;
-        } else {
-          this.gerenciaAbiertaMsg = '';
-        }
+        this.gerenciaAbiertaConductor = g?.id != null ? g : null;
       },
       error: () => {
-        this.gerenciaAbiertaMsg = '';
+        this.gerenciaAbiertaConductor = null;
       }
     });
   }
 
-  private cargarUltimoKmPlaca(placa: string): void {
-    if (!this.businessRuc || !placa?.trim()) {
-      this.ultimoKmRegistrado = null;
-      this.ultimoKmPlaca = '';
+  private programarVerificacionPlaca(placaRaw: string): void {
+    if (this.placaDebounceHandle) {
+      clearTimeout(this.placaDebounceHandle);
+      this.placaDebounceHandle = null;
+    }
+    this.placaDebounceHandle = setTimeout(() => {
+      this.placaDebounceHandle = null;
+      this.ejecutarVerificacionPlaca(placaRaw);
+    }, 550);
+  }
+
+  private ejecutarVerificacionPlaca(placaRaw: string): void {
+    if (this.isEditMode || !this.businessRuc) {
       return;
     }
-    const p = placa.trim();
-    this.ultimoKmPlaca = p;
-    this.gerenciaService.getUltimoKmPorPlaca(this.businessRuc, p).subscribe({
+    const placa = (placaRaw || '').trim();
+    if (placa.length < 2) {
+      this.ultimoKmRegistrado = null;
+      this.ultimoKmPlaca = '';
+      this.gerenciaAbiertaVehiculo = null;
+      return;
+    }
+    this.ultimoKmPlaca = placa;
+    this.gerenciaService.getUltimoKmPorPlaca(this.businessRuc, placa).subscribe({
       next: (km) => {
         this.ultimoKmRegistrado = km;
       },
@@ -521,13 +733,34 @@ export class GerenciasViajesFormComponent implements OnInit {
         this.ultimoKmRegistrado = null;
       }
     });
+    this.gerenciaService.getAbiertaPorVehiculo(this.businessRuc, placa).subscribe({
+      next: (g) => {
+        this.gerenciaAbiertaVehiculo = g?.id != null ? g : null;
+      },
+      error: () => {
+        this.gerenciaAbiertaVehiculo = null;
+      }
+    });
+  }
+
+  private verificarPlacaInmediato(): void {
+    if (this.placaDebounceHandle) {
+      clearTimeout(this.placaDebounceHandle);
+      this.placaDebounceHandle = null;
+    }
+    const placa = (this.gerenciaForm.get('vehiculoInicio')?.value || '').toString();
+    this.ejecutarVerificacionPlaca(placa);
   }
 
   // ───── Autocomplete Vehículos ────────────────────────────────────────
   vehicleSuggestions: Vehicle[] = [];
 
   onVehiculoInput(event: Event): void {
-    const term = (event.target as HTMLInputElement).value.trim().toLowerCase();
+    const raw = (event.target as HTMLInputElement).value;
+    const term = raw.trim().toLowerCase();
+    if (!this.isEditMode && this.businessRuc) {
+      this.programarVerificacionPlaca(raw);
+    }
     if (!this.businessRuc || term.length < 2) {
       this.vehicleSuggestions = [];
       return;
@@ -548,7 +781,7 @@ export class GerenciasViajesFormComponent implements OnInit {
       this.gerenciaForm.patchValue({ tipoVehiculo: match.tipoVehiculo || match.clase || '' });
     }
     if (!this.isEditMode) {
-      this.cargarUltimoKmPlaca(placa);
+      this.verificarPlacaInmediato();
     }
   }
 
@@ -559,7 +792,7 @@ export class GerenciasViajesFormComponent implements OnInit {
     });
     this.vehicleSuggestions = [];
     if (!this.isEditMode) {
-      this.cargarUltimoKmPlaca(v.placa || v.codigoEquipo || '');
+      this.verificarPlacaInmediato();
     }
   }
 

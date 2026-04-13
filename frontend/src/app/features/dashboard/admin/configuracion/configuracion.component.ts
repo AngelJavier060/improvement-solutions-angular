@@ -227,13 +227,27 @@ export class ConfiguracionComponent implements OnInit {
         { nombre: 'Tipo de carga', descripcion: 'Clasificar tipos de carga para evaluación de riesgo', ruta: 'tipo-carga', icono: 'fas fa-boxes', proximamente: false },
         { nombre: 'Horas de conducción', descripcion: 'Parámetros de horas máximas de conducción', ruta: 'hora-conduccion', icono: 'fas fa-steering-wheel', proximamente: false },
         { nombre: 'Horas de descanso', descripcion: 'Parámetros de descanso obligatorio para conductores', ruta: 'hora-descanso', icono: 'fas fa-bed', proximamente: false },
-        { nombre: 'Otros peligros', descripcion: 'Parámetros de otros peligros presentes en ruta (catálogo operativo)', ruta: 'medio-comunicacion', icono: 'fas fa-exclamation-circle', proximamente: false },
-        { nombre: 'Medidas de Control para el viaje', descripcion: 'Opciones de medidas de control aplicables al viaje', ruta: 'transporta-pasajero', icono: 'fas fa-clipboard-check', proximamente: false },
+        { nombre: 'Medios de comunicación', descripcion: 'Catálogo de medios de comunicación para la evaluación (con metodología de riesgo)', ruta: 'medio-comunicacion', icono: 'fas fa-broadcast-tower', proximamente: false },
+        { nombre: 'Pasajeros', descripcion: 'Catálogo asociado al factor pasajeros en la metodología de riesgo', ruta: 'transporta-pasajero', icono: 'fas fa-user-friends', proximamente: false },
+        {
+          nombre: 'Otros peligros',
+          descripcion: 'Registro descriptivo de otros peligros (nombre y descripción, sin metodología)',
+          ruta: 'otros-peligros-viaje',
+          icono: 'fas fa-exclamation-circle',
+          proximamente: false
+        },
         {
           nombre: 'Posibles riesgos en la vía',
-          descripcion: 'Catálogo de posibles riesgos en la vía (parametrizable por empresa en administración)',
+          descripcion: 'Catálogo descriptivo de riesgos en la vía (nombre y descripción, sin metodología)',
           ruta: 'posible-riesgo-via',
           icono: 'fas fa-exclamation-triangle',
+          proximamente: false
+        },
+        {
+          nombre: 'Medidas de control tomadas para el viaje',
+          descripcion: 'Registro descriptivo de medidas de control aplicadas (nombre y descripción, sin metodología)',
+          ruta: 'medidas-control-tomadas-viaje',
+          icono: 'fas fa-clipboard-list',
           proximamente: false
         },
         {

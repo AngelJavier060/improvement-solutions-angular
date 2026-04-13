@@ -6,7 +6,7 @@ import { PosibleRiesgoViaService } from '../../../../../services/posible-riesgo-
 @Component({
   selector: 'app-nueva-posible-riesgo-via',
   templateUrl: './nueva-posible-riesgo-via.component.html',
-  styleUrls: ['../hora-conduccion/nueva-hora-conduccion.component.scss']
+  styleUrls: ['./nueva-posible-riesgo-via.component.scss']
 })
 export class NuevaPosibleRiesgoViaComponent {
   form: FormGroup;
@@ -24,18 +24,15 @@ export class NuevaPosibleRiesgoViaComponent {
     if (this.form.invalid) return;
     this.loading = true;
     this.service.create(this.form.value).subscribe({
-      next: () => {
-        this.router.navigate(['dashboard/admin/configuracion/posible-riesgo-via']);
-      },
-      error: (err) => {
+      next: () => void this.router.navigate(['/dashboard/admin/configuracion/posible-riesgo-via']),
+      error: () => {
         this.error = 'Error al crear el registro';
         this.loading = false;
-        console.error(err);
       }
     });
   }
 
   goBack(): void {
-    this.router.navigate(['dashboard/admin/configuracion/posible-riesgo-via']);
+    void this.router.navigate(['/dashboard/admin/configuracion/posible-riesgo-via']);
   }
 }

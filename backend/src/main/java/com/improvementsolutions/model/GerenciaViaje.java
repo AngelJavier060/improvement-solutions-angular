@@ -134,6 +134,10 @@ public class GerenciaViaje {
     @Column(name = "otros_peligros", length = 300)
     private String otrosPeligros;
 
+    /** Catálogo simple «Otros peligros» (texto elegido). */
+    @Column(name = "catalogo_otros_peligros", length = 300)
+    private String catalogoOtrosPeligros;
+
     // ── Jornada del conductor ───────────────────────────────────────────────
 
     @Column(name = "horas_conduccion", length = 50)
@@ -152,6 +156,10 @@ public class GerenciaViaje {
 
     @Column(name = "medidas_control", length = 500)
     private String medidasControl;
+
+    /** Catálogo simple «Medidas de control tomadas para el viaje». */
+    @Column(name = "medidas_control_tomadas_viaje", length = 500)
+    private String medidasControlTomadasViaje;
 
     @Column(name = "paradas_planificadas", length = 300)
     private String paradasPlanificadas;

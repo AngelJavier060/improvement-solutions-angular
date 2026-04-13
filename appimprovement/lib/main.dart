@@ -9,6 +9,11 @@ import 'services/business_service.dart';
 import 'security_legal_screen.dart';
 import 'legal_compliance_page.dart';
 import 'pdf_viewer_page.dart';
+import 'seguridad_industrial_screen.dart';
+import 'gerencias_viajes_list_screen.dart';
+import 'gerencias_viajes_form_screen.dart';
+import 'cerrar_gerencia_screen.dart';
+import 'services/gerencia_viaje_service.dart';
 import 'services/biometric_auth_service.dart';
 import 'package:flutter/services.dart';
 
@@ -58,6 +63,19 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const MyHomePage(title: 'Improvements Solutions'),
         '/employees': (context) => const EmployeesListScreen(),
         '/security-legal': (context) => const SecurityLegalScreen(),
+        '/seguridad-industrial': (context) => const SeguridadIndustrialScreen(),
+        '/gerencias-viajes': (context) => const GerenciasViajesListScreen(),
+        '/gerencias-viajes-form': (context) => const GerenciasViajesFormScreen(),
+        '/gerencias-viajes/cerrar': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is! GerenciaViajeDto) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Error')),
+              body: const Center(child: Text('No se recibieron datos de la gerencia.')),
+            );
+          }
+          return CerrarGerenciaScreen(gerencia: args);
+        },
         '/legal-compliance': (context) => const LegalCompliancePage(),
         '/pdf-viewer': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
@@ -277,7 +295,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: _FeatureCard(
                           icon: Icons.gavel,
                           label: 'Seguridad Industrial',
-                          onTap: () => Navigator.pushNamed(context, '/security-legal'),
+                          onTap: () => Navigator.pushNamed(context, '/seguridad-industrial'),
                         ),
                       ),
                     ],

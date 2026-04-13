@@ -110,6 +110,18 @@ public class GerenciaViajeController {
         return ResponseEntity.ok(gerenciaService.findByRucAndCedula(ruc, cedula));
     }
 
+    // ── GET /api/gerencias-viajes/business/{ruc}/vehiculo/{placa}/abierta
+    /**
+     * Sin gerencia abierta para esa placa devuelve 200 con cuerpo JSON {@code null}.
+     */
+    @GetMapping("/business/{ruc}/vehiculo/{placa}/abierta")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    public ResponseEntity<GerenciaViajeDto> getAbiertaPorVehiculo(
+            @PathVariable String ruc,
+            @PathVariable String placa) {
+        return ResponseEntity.ok(gerenciaService.findAbiertaByRucAndPlaca(ruc, placa).orElse(null));
+    }
+
     // ── GET /api/gerencias-viajes/business/{ruc}/vehiculo/{placa}/ultimo-km
     @GetMapping("/business/{ruc}/vehiculo/{placa}/ultimo-km")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")

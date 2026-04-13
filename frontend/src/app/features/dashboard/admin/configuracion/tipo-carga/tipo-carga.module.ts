@@ -6,6 +6,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { ListaTipoCargaComponent } from './lista-tipo-carga.component';
 import { NuevaTipoCargaComponent } from './nueva-tipo-carga.component';
 import { EditarTipoCargaComponent } from './editar-tipo-carga.component';
+import { ConfiguracionViajeSharedModule } from '../shared/configuracion-viaje-shared.module';
 
 const routes: Routes = [
   { path: '', component: ListaTipoCargaComponent },
@@ -22,7 +23,8 @@ const routes: Routes = [
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    RouterModule.forChild(routes)
+    RouterModule.forChild(routes),
+    ConfiguracionViajeSharedModule
   ]
 })
 export class TipoCargaModule { }

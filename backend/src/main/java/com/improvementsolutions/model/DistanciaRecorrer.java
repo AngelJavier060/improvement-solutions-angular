@@ -25,22 +25,22 @@ public class DistanciaRecorrer {
     private String description;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "metodologia_riesgo_id")
+    @JoinColumn(name = "metodologia_riesgo_id", nullable = true)
     @JsonIgnoreProperties({"parametros"})
     private MetodologiaRiesgo metodologiaRiesgo;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "ne_nivel_id")
+    @JoinColumn(name = "ne_nivel_id", nullable = true)
     @JsonIgnoreProperties({"parametroMetodologia"})
     private NivelParametro neNivel;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "nd_nivel_id")
+    @JoinColumn(name = "nd_nivel_id", nullable = true)
     @JsonIgnoreProperties({"parametroMetodologia"})
     private NivelParametro ndNivel;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "nc_nivel_id")
+    @JoinColumn(name = "nc_nivel_id", nullable = true)
     @JsonIgnoreProperties({"parametroMetodologia"})
     private NivelParametro ncNivel;
 

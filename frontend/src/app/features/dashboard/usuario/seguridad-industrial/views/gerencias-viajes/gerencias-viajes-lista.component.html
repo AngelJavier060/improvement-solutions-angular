@@ -13,51 +13,73 @@
   </div>
 
   <!-- KPI superiores: visibles al inicio y al hacer scroll (sticky) -->
-  <div class="row g-4 mb-4 stats-cards stats-cards--superior">
-    <div class="col-md-4">
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 row-cols-xl-5 g-4 mb-4 stats-cards stats-cards--superior">
+    <div class="col">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start mb-3">
-            <span class="badge bg-danger bg-opacity-10 text-danger text-uppercase fw-bold small">Indicador Riesgo</span>
-            <i class="fas fa-exclamation-triangle text-danger fs-4"></i>
+            <span class="badge bg-primary bg-opacity-10 text-primary text-uppercase fw-bold small">Ingresos hoy</span>
+            <i class="fas fa-plus-circle text-primary fs-4"></i>
           </div>
-          <div class="d-flex align-items-baseline gap-2 mb-3">
-            <h4 class="display-6 fw-bold text-primary mb-0">142</h4>
-            <span class="text-muted small text-uppercase">Promedio Regional</span>
-          </div>
-          <div class="progress" style="height: 8px;">
-            <div class="progress-bar bg-danger" role="progressbar" style="width: 65%"></div>
+          <div class="d-flex align-items-baseline gap-2 mb-0">
+            <h1 class="display-4 fw-bold text-primary mb-0">{{ ingresosHoy }}</h1>
+            <span class="text-muted small text-uppercase">Registros creados hoy</span>
           </div>
         </div>
       </div>
     </div>
-    <div class="col-md-4">
+    <div class="col">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start mb-3">
-            <span class="badge bg-primary bg-opacity-10 text-primary text-uppercase fw-bold small">Estado de Flota</span>
-            <i class="fas fa-truck text-primary fs-4"></i>
+            <span class="badge bg-success bg-opacity-10 text-success text-uppercase fw-bold small">Gerencias activas</span>
+            <i class="fas fa-play-circle text-success fs-4"></i>
           </div>
-          <div class="d-flex align-items-baseline gap-2 mb-3">
-            <h4 class="display-6 fw-bold text-primary mb-0">24/30</h4>
-            <span class="text-muted small text-uppercase">Vehículos Activos</span>
+          <div class="d-flex align-items-baseline gap-2 mb-0">
+            <h1 class="display-4 fw-bold text-primary mb-0">{{ stats.activos }}/{{ stats.total }}</h1>
+            <span class="text-muted small text-uppercase">Activas / Total</span>
           </div>
-          <p class="text-muted small fst-italic mb-0">80% de utilización proyectada para el turno nocturno.</p>
         </div>
       </div>
     </div>
-    <div class="col-md-4">
+    <div class="col">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start mb-3">
-            <span class="badge bg-info bg-opacity-10 text-info text-uppercase fw-bold small">Monitoreo Satelital</span>
-            <i class="fas fa-map-marked-alt text-info fs-4"></i>
+            <span class="badge bg-info bg-opacity-10 text-info text-uppercase fw-bold small">Gerencias completadas</span>
+            <i class="fas fa-check-circle text-info fs-4"></i>
           </div>
-          <div class="position-relative rounded overflow-hidden" style="height: 80px;">
-            <div class="position-absolute w-100 h-100 bg-primary bg-opacity-25"></div>
-            <div class="position-absolute top-50 start-50 translate-middle">
-              <span class="badge bg-white text-primary fw-bold small text-uppercase shadow-sm">Vista Mapa Activa</span>
-            </div>
+          <div class="d-flex align-items-baseline gap-2 mb-0">
+            <h1 class="display-4 fw-bold text-primary mb-0">{{ stats.completados }}/{{ stats.total }}</h1>
+            <span class="text-muted small text-uppercase">Completadas / Total</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <span class="badge bg-warning bg-opacity-10 text-warning text-uppercase fw-bold small">Abiertas hoy</span>
+            <i class="fas fa-hourglass-start text-warning fs-4"></i>
+          </div>
+          <div class="d-flex align-items-baseline gap-2 mb-0">
+            <h1 class="display-4 fw-bold text-primary mb-0">{{ abiertasHoy }}</h1>
+            <span class="text-muted small text-uppercase">Nuevas en estado ACTIVO</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <span class="badge bg-secondary bg-opacity-10 text-secondary text-uppercase fw-bold small">Cerradas hoy</span>
+            <i class="fas fa-flag-checkered text-secondary fs-4"></i>
+          </div>
+          <div class="d-flex align-items-baseline gap-2 mb-0">
+            <h1 class="display-4 fw-bold text-primary mb-0">{{ cerradasHoy }}</h1>
+            <span class="text-muted small text-uppercase">Con fecha de cierre hoy</span>
           </div>
         </div>
       </div>
@@ -79,7 +101,7 @@
           </div>
         </div>
         <div class="d-flex gap-2">
-          <button class="btn btn-outline-primary btn-sm" (click)="loadGerencias()">
+          <button class="btn btn-outline-primary btn-sm" (click)="reloadAll()">
             <i class="fas fa-sync-alt me-1"></i>
             Actualizar
           </button>
@@ -128,12 +150,13 @@
             <th style="width: 110px;">Clima</th>
             <th style="width: 100px;">Distancia</th>
             <th style="width: 130px;">Tipo Carga</th>
-            <th style="width: 150px;">Otros Peligros</th>
+            <th style="width: 150px;">Medios comunicación (cat.)</th>
             <th style="width: 130px;">Horas Conducción</th>
             <th style="width: 120px;">Horario Viaje</th>
             <th style="width: 150px;">Descanso Conductor</th>
             <th style="width: 180px;">Riesgos Vía</th>
-            <th style="width: 180px;">Medidas Control</th>
+            <th style="width: 140px;">Otros peligros (cat.)</th>
+            <th style="width: 180px;">Med. control tomadas</th>
             <th style="width: 160px;">Paradas Planificadas</th>
             <th class="text-center" style="width: 100px;">Km Final</th>
             <th class="text-center sticky-col-right" style="width: 150px; right: 0; z-index: 3;">Acciones</th>
@@ -141,7 +164,7 @@
         </thead>
         <tbody>
           <tr *ngIf="loading">
-            <td colspan="40" class="text-center py-5">
+            <td colspan="42" class="text-center py-5">
               <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Cargando...</span>
               </div>
@@ -149,7 +172,7 @@
             </td>
           </tr>
           <tr *ngIf="!loading && gerencias.length === 0">
-            <td colspan="40" class="text-center py-5">
+            <td colspan="42" class="text-center py-5">
               <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
               <p class="text-muted mb-0">No hay gerencias de viaje registradas</p>
               <button class="btn btn-primary btn-sm mt-3" (click)="crearGerencia()">
@@ -192,12 +215,13 @@
             <td><small>{{ gerencia.clima }}</small></td>
             <td><small>{{ gerencia.distancia }}</small></td>
             <td><small>{{ gerencia.tipoCarga }}</small></td>
-            <td><small>{{ gerencia.otrosPeligros }}</small></td>
+            <td><small>{{ gerencia.mediosComunicacion }}</small></td>
             <td><small>{{ gerencia.horasConduccion }}</small></td>
             <td><small>{{ gerencia.horarioViaje }}</small></td>
             <td><small>{{ gerencia.descansoConduc }}</small></td>
             <td><small>{{ gerencia.riesgosVia }}</small></td>
-            <td><small>{{ gerencia.medidasControl }}</small></td>
+            <td><small>{{ gerencia.catalogoOtrosPeligros }}</small></td>
+            <td><small>{{ gerencia.medidasControlTomadasViaje }}</small></td>
             <td><small>{{ gerencia.paradasPlanificadas }}</small></td>
             <td class="text-center">{{ gerencia.kmFinal | number }}</td>
             <td class="text-center sticky-col-right" style="right: 0; z-index: 2;" (click)="$event.stopPropagation()">

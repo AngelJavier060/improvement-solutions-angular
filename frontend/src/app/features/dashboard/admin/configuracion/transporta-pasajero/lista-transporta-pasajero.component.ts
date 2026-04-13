@@ -1,60 +1,91 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { TransportaPasajero } from '../../../../../models/transporta-pasajero.model';
 import { TransportaPasajeroService } from '../../../../../services/transporta-pasajero.service';
+import { MetodologiaRiesgo } from '../../../../../models/metodologia-riesgo.model';
+import { MetodologiaRiesgoService } from '../../../../../services/metodologia-riesgo.service';
+import {
+  CatalogoViajeFactorItem,
+  CatalogoViajeMetodologiaSection,
+  rebuildCatalogoSections
+} from '../shared/catalogo-viaje-lista.logic';
 
 @Component({
   selector: 'app-lista-transporta-pasajero',
-  templateUrl: './lista-transporta-pasajero.component.html',
-  styleUrls: ['./lista-transporta-pasajero.component.scss']
+  templateUrl: './lista-transporta-pasajero.component.html'
 })
 export class ListaTransportaPasajeroComponent implements OnInit {
   items: TransportaPasajero[] = [];
+  metodologias: MetodologiaRiesgo[] = [];
+  sections: CatalogoViajeMetodologiaSection<TransportaPasajero>[] = [];
   loading = true;
   error = '';
 
-  constructor(private service: TransportaPasajeroService, private router: Router) {}
+  constructor(
+    private service: TransportaPasajeroService,
+    private metodologiaService: MetodologiaRiesgoService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    this.loadItems();
+    this.loadData();
   }
 
-  loadItems(): void {
+  loadData(): void {
     this.loading = true;
-    this.service.getAll().subscribe({
-      next: (data) => {
-        this.items = data;
+    forkJoin({
+      items: this.service.getAll(),
+      metodologias: this.metodologiaService.getAll()
+    }).subscribe({
+      next: ({ items, metodologias }) => {
+        this.items = items;
+        this.metodologias = metodologias;
+        this.sections = rebuildCatalogoSections(items, metodologias);
         this.loading = false;
       },
-      error: (err) => {
+      error: () => {
         this.error = 'Error al cargar los datos';
         this.loading = false;
-        console.error(err);
       }
     });
   }
 
-  deleteItem(id: number): void {
-    if (confirm('¿Está seguro de eliminar este registro?')) {
+  confirmDelete(item: CatalogoViajeFactorItem): void {
+    const id = item.id != null ? Number(item.id) : NaN;
+    if (!Number.isFinite(id)) {
+      return;
+    }
+    if (confirm(`¿Está seguro de eliminar "${item.name}"?`)) {
       this.service.delete(id).subscribe({
-        next: () => this.loadItems(),
-        error: (err) => {
+        next: () => this.loadData(),
+        error: () => {
           this.error = 'Error al eliminar el registro';
-          console.error(err);
         }
       });
     }
   }
 
-  goToNew(): void {
-    this.router.navigate(['dashboard/admin/configuracion/transporta-pasajero/nuevo']);
+  openEdit(item: CatalogoViajeFactorItem): void {
+    const id = item?.id != null ? Number(item.id) : NaN;
+    if (!Number.isFinite(id)) {
+      return;
+    }
+    void this.router.navigate([
+      '/dashboard',
+      'admin',
+      'configuracion',
+      'transporta-pasajero',
+      'editar',
+      id
+    ]);
   }
 
-  goToEdit(id: number): void {
-    this.router.navigate(['dashboard/admin/configuracion/transporta-pasajero/editar', id]);
+  goToNew(): void {
+    void this.router.navigate(['/dashboard/admin/configuracion/transporta-pasajero/nuevo']);
   }
 
   goBack(): void {
-    this.router.navigate(['dashboard/admin/configuracion']);
+    void this.router.navigate(['/dashboard/admin/configuracion']);
   }
 }

@@ -1,34 +1,57 @@
-<div class="config-form-container">
-  <div class="config-form-header">
-    <button class="btn-back" (click)="goBack()">
+<div class="form-container">
+  <div class="page-header">
+    <button type="button" class="btn-back" (click)="goBack()">
       <i class="fas fa-arrow-left"></i>
     </button>
-    <h2>Editar — Otros peligros</h2>
+    <div>
+      <h2><i class="fas fa-edit"></i> Editar medio de comunicación</h2>
+      <p>Actualice el registro y los niveles metodológicos.</p>
+    </div>
   </div>
 
-  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-  <div *ngIf="loading" class="loading">Cargando...</div>
+  <div class="alert-danger" *ngIf="error">
+    <i class="fas fa-exclamation-circle"></i> {{ error }}
+  </div>
 
-  <form *ngIf="!loading" [formGroup]="form" (ngSubmit)="onSubmit()" class="config-form">
-    <div class="form-group">
-      <label for="name">Nombre *</label>
-      <input id="name" type="text" formControlName="name" class="form-control"
-             [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched">
-      <span class="invalid-feedback" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
-        El nombre es requerido
-      </span>
+  <div class="loading-state" *ngIf="loading">
+    <i class="fas fa-spinner fa-spin"></i> Cargando...
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" *ngIf="!loading">
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-exclamation-circle"></i> Información básica
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label>Nombre *</label>
+            <input type="text" formControlName="name" class="form-control">
+            <span class="field-error" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
+              El nombre es requerido
+            </span>
+          </div>
+          <div class="form-group flex-1">
+            <label>Descripción (opcional)</label>
+            <input type="text" formControlName="description" class="form-control">
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label for="description">Descripción</label>
-      <textarea id="description" formControlName="description" class="form-control" rows="3"></textarea>
-    </div>
+    <app-catalogo-viaje-niveles-metodologia
+      [form]="form"
+      [metodologias]="metodologias"
+      [loadingMetodologias]="false"
+    />
 
     <div class="form-actions">
-      <button type="button" class="btn-secondary" (click)="goBack()">Cancelar</button>
+      <button type="button" class="btn-secondary" (click)="goBack()">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
       <button type="submit" class="btn-primary" [disabled]="form.invalid || saving">
-        <span *ngIf="saving">Guardando...</span>
-        <span *ngIf="!saving">Actualizar</span>
+        <span *ngIf="saving"><i class="fas fa-spinner fa-spin"></i> Guardando...</span>
+        <span *ngIf="!saving"><i class="fas fa-save"></i> Guardar cambios</span>
       </button>
     </div>
   </form>

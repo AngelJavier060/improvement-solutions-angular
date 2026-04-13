@@ -1,0 +1,240 @@
+<div class="lista-container">
+  <div class="page-header">
+    <div class="header-left">
+      <button type="button" class="btn-back" (click)="onBack()">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <div>
+        <h2><i [class]="pageIcon"></i> {{ pageTitle }}</h2>
+        <p>{{ pageSubtitle }}</p>
+      </div>
+    </div>
+    <button type="button" class="btn-primary" (click)="onNuevo()">
+      <i class="fas fa-plus"></i> {{ newButtonLabel }}
+    </button>
+  </div>
+
+  <div class="alert-danger" *ngIf="error">
+    <i class="fas fa-exclamation-circle"></i> {{ error }}
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <i class="fas fa-spinner fa-spin"></i> Cargando...
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && items.length === 0">
+    <i [class]="emptyIcon"></i>
+    <h3>{{ emptyTitle }}</h3>
+    <p>{{ emptyText }}</p>
+    <button type="button" class="btn-primary" (click)="onNuevo()">
+      <i class="fas fa-plus"></i> {{ emptyButtonLabel }}
+    </button>
+  </div>
+
+  <ng-container *ngIf="!loading && items.length > 0">
+    <div class="legend-premium">
+      <span class="legend-premium-title">Niveles de riesgo (NR / matriz GTC)</span>
+      <div class="legend-items">
+        <span class="legend-item"><span class="legend-dot low"></span> Bajo (&lt; 40)</span>
+        <span class="legend-item"><span class="legend-dot medium"></span> Medio (40 - 149)</span>
+        <span class="legend-item"><span class="legend-dot high"></span> Alto (150 - 500)</span>
+        <span class="legend-item"><span class="legend-dot critical"></span> Crítico (&gt; 500)</span>
+      </div>
+      <span class="legend-premium-hint">IPER (NP×NS) usa escala propia en cada bloque.</span>
+    </div>
+
+    <section class="metodologia-section" *ngFor="let section of sections; trackBy: trackSection">
+      <div class="section-head">
+        <h3 class="section-title">
+          <i class="fas fa-flask"></i> {{ sectionTitle(section) }}
+        </h3>
+        <div class="section-rule"></div>
+        <p class="section-desc">{{ sectionSubtitle(section) }}</p>
+      </div>
+
+      <div class="group-card section-table-card">
+        <div class="group-header" [class.warning]="section.key === 'sin'">
+          <div class="metodologia-info">
+            <i class="fas fa-layer-group"></i>
+            <strong>{{ section.items.length }} registro(s)</strong>
+            <span class="item-count">{{ sectionBadge(section.profile) }}</span>
+          </div>
+        </div>
+
+        <div class="table-wrapper" *ngIf="section.profile === 'gtc'">
+          <table class="risk-table">
+            <thead>
+              <tr>
+                <th class="col-index">#</th>
+                <th class="col-nombre">{{ nameColumnLabel }}</th>
+                <th class="col-value">NE</th>
+                <th class="col-value">ND</th>
+                <th class="col-value">NP</th>
+                <th class="col-value">NC</th>
+                <th class="col-value">NR</th>
+                <th class="col-actions">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of section.items; let i = index; trackBy: trackItem">
+                <td class="col-index">
+                  <span class="row-index">{{ rowIndex(section, i) }}</span>
+                </td>
+                <td class="col-nombre">
+                  <span class="item-name">{{ item.name }}</span>
+                  <span class="item-desc">{{ item.description || '—' }}</span>
+                </td>
+                <td class="col-value">{{ getNe(item) ?? '—' }}</td>
+                <td class="col-value">{{ getNd(item) ?? '—' }}</td>
+                <td class="col-value">{{ getNpGtc(item) ?? '—' }}</td>
+                <td class="col-value">{{ getNc(item) ?? '—' }}</td>
+                <td class="col-value">
+                  <span class="risk-badge" [ngClass]="getRiskClass(getNrGtc(item), 'gtc')">
+                    {{ getNrGtc(item) ?? '—' }}
+                  </span>
+                  <span class="nr-label" *ngIf="getNrGtc(item) !== null">{{ getRiskLabel(getNrGtc(item), 'gtc') }}</span>
+                </td>
+                <td class="col-actions">
+                  <button type="button" class="btn-icon btn-edit" (click)="onEdit(item)" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button type="button" class="btn-icon btn-delete" (click)="onDelete(item)" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-wrapper" *ngIf="section.profile === 'iper'">
+          <table class="risk-table">
+            <thead>
+              <tr>
+                <th class="col-index">#</th>
+                <th class="col-nombre">{{ nameColumnLabel }}</th>
+                <th class="col-value">NP</th>
+                <th class="col-value">NS</th>
+                <th class="col-value">Riesgo (NP×NS)</th>
+                <th class="col-actions">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of section.items; let i = index; trackBy: trackItem">
+                <td class="col-index">
+                  <span class="row-index">{{ rowIndex(section, i) }}</span>
+                </td>
+                <td class="col-nombre">
+                  <span class="item-name">{{ item.name }}</span>
+                  <span class="item-desc">{{ item.description || '—' }}</span>
+                </td>
+                <td class="col-value">{{ getIperNpValor(item) ?? '—' }}</td>
+                <td class="col-value">{{ getIperNsValor(item) ?? '—' }}</td>
+                <td class="col-value">
+                  <span class="risk-badge" [ngClass]="getRiskClass(getIperRiesgo(item), 'iper')">
+                    {{ getIperRiesgo(item) ?? '—' }}
+                  </span>
+                  <span class="nr-label" *ngIf="getIperRiesgo(item) !== null">{{ getRiskLabel(getIperRiesgo(item), 'iper') }}</span>
+                </td>
+                <td class="col-actions">
+                  <button type="button" class="btn-icon btn-edit" (click)="onEdit(item)" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button type="button" class="btn-icon btn-delete" (click)="onDelete(item)" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-wrapper" *ngIf="section.profile === 'generic'">
+          <table class="risk-table">
+            <thead>
+              <tr>
+                <th class="col-index">#</th>
+                <th class="col-nombre">{{ nameColumnLabel }}</th>
+                <th class="col-value">Factor 1</th>
+                <th class="col-value">Factor 2</th>
+                <th class="col-value">Factor 3</th>
+                <th class="col-value">Riesgo</th>
+                <th class="col-actions">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of section.items; let i = index; trackBy: trackItem">
+                <td class="col-index">
+                  <span class="row-index">{{ rowIndex(section, i) }}</span>
+                </td>
+                <td class="col-nombre">
+                  <span class="item-name">{{ item.name }}</span>
+                  <span class="item-desc">{{ item.description || '—' }}</span>
+                </td>
+                <td class="col-value">{{ getNe(item) ?? '—' }}</td>
+                <td class="col-value">{{ getNd(item) ?? '—' }}</td>
+                <td class="col-value">{{ getNc(item) ?? '—' }}</td>
+                <td class="col-value">
+                  <span class="risk-badge" [ngClass]="getRiskClass(getRiesgoPrincipal(item), section.profile)">
+                    {{ getRiesgoPrincipal(item) ?? '—' }}
+                  </span>
+                  <span class="nr-label" *ngIf="getRiesgoPrincipal(item) !== null">{{ getRiskLabel(getRiesgoPrincipal(item), section.profile) }}</span>
+                </td>
+                <td class="col-actions">
+                  <button type="button" class="btn-icon btn-edit" (click)="onEdit(item)" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button type="button" class="btn-icon btn-delete" (click)="onDelete(item)" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-bento">
+        <div class="metric-card primary">
+          <h3>Rangos · {{ section.metodologia?.name || 'Sin metodología' }}</h3>
+          <strong>{{ section.items.length }}</strong>
+          <span>registros en este bloque</span>
+        </div>
+        <div class="metric-card tertiary">
+          <h3>Pico de riesgo · bloque</h3>
+          <strong>{{ peakRiesgoSection(section) }}</strong>
+          <span>máximo en esta metodología</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="metrics-grid global-metrics">
+      <div class="metric-card primary">
+        <h3>{{ globalTotalLabel }}</h3>
+        <strong>{{ items.length }}</strong>
+        <span>registros activos</span>
+      </div>
+      <div class="metric-card tertiary">
+        <h3>Pico de riesgo global</h3>
+        <strong>{{ getPeakRiskGlobal() }}</strong>
+        <span>todas las metodologías</span>
+      </div>
+      <div class="metric-card success">
+        <h3>Estado del sistema</h3>
+        <strong>{{ getSystemStatus() }}</strong>
+        <span>resumen general</span>
+      </div>
+    </div>
+
+    <div class="consolidated-strip">
+      <div class="consolidated-inner">
+        <i class="fas fa-shield-alt"></i>
+        <div>
+          <strong>Vista consolidada</strong>
+          <p>Cada bloque usa los parámetros definidos en <strong>Configuración → Aceptación de riesgo → Editar metodología</strong>.
+            Para IPER cree parámetros con código <code>NP</code> y <code>NS</code> (con niveles) para ver columnas y guardar correctamente.</p>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

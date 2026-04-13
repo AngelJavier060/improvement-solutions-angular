@@ -2,6 +2,7 @@ package com.improvementsolutions.controller;
 
 import com.improvementsolutions.model.PosibleRiesgoVia;
 import com.improvementsolutions.repository.PosibleRiesgoViaRepository;
+import com.improvementsolutions.service.BusinessViajeCatalogJoinCleanupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +16,14 @@ import java.util.Optional;
 public class PublicPosibleRiesgoViaController {
 
     private final PosibleRiesgoViaRepository repository;
+    private final BusinessViajeCatalogJoinCleanupService businessViajeCatalogJoinCleanupService;
 
     @Autowired
-    public PublicPosibleRiesgoViaController(PosibleRiesgoViaRepository repository) {
+    public PublicPosibleRiesgoViaController(
+            PosibleRiesgoViaRepository repository,
+            BusinessViajeCatalogJoinCleanupService businessViajeCatalogJoinCleanupService) {
         this.repository = repository;
+        this.businessViajeCatalogJoinCleanupService = businessViajeCatalogJoinCleanupService;
     }
 
     @GetMapping
@@ -36,6 +41,10 @@ public class PublicPosibleRiesgoViaController {
     @PostMapping
     public ResponseEntity<PosibleRiesgoVia> create(@RequestBody PosibleRiesgoVia entity) {
         entity.setId(null);
+        entity.setMetodologiaRiesgo(null);
+        entity.setNeNivel(null);
+        entity.setNdNivel(null);
+        entity.setNcNivel(null);
         return new ResponseEntity<>(repository.save(entity), HttpStatus.CREATED);
     }
 
@@ -46,6 +55,10 @@ public class PublicPosibleRiesgoViaController {
             PosibleRiesgoVia toUpdate = existing.get();
             toUpdate.setName(entity.getName());
             toUpdate.setDescription(entity.getDescription());
+            toUpdate.setMetodologiaRiesgo(null);
+            toUpdate.setNeNivel(null);
+            toUpdate.setNdNivel(null);
+            toUpdate.setNcNivel(null);
             return ResponseEntity.ok(repository.save(toUpdate));
         }
         return ResponseEntity.notFound().build();
@@ -57,6 +70,7 @@ public class PublicPosibleRiesgoViaController {
             return ResponseEntity.notFound().build();
         }
         try {
+            businessViajeCatalogJoinCleanupService.unlinkPosibleRiesgoVia(id);
             repository.deleteById(id);
             return ResponseEntity.noContent().build();
         } catch (Exception e) {

@@ -346,8 +346,7 @@ public class BusinessEmployeeService {
 
         List<BusinessEmployee> filtered = all.stream()
                 .filter(be -> fc == null || (be.getCedula() != null && be.getCedula().toLowerCase().contains(fc)))
-                .filter(be -> fn == null || (be.getNombres() != null && be.getNombres().toLowerCase().contains(fn)))
-                .filter(be -> fa == null || (be.getApellidos() != null && be.getApellidos().toLowerCase().contains(fa)))
+                .filter(be -> filterNombreApellidosOTextoLibre(be, fn, fa))
                 .filter(be -> fco == null || (be.getCodigoEmpresa() != null
                         && be.getCodigoEmpresa().toLowerCase().contains(fco)))
                 .sorted(comparatorForBusinessEmployeeList(pageable))
@@ -408,6 +407,43 @@ public class BusinessEmployeeService {
         if (s == null) return null;
         String t = s.trim();
         return t.isEmpty() ? null : t.toLowerCase();
+    }
+
+    /**
+     * Filtro de nombres/apellidos para listados paginados.
+     * Si el cliente envía el mismo término en ambos (p. ej. autocompletado de conductor en gerencias de viaje),
+     * se interpreta como una sola caja de búsqueda: coincide con nombre, apellido, nombre compuesto o cédula (OR).
+     * Si son distintos, se mantiene el criterio AND (p. ej. filtros separados en administración).
+     */
+    private static boolean filterNombreApellidosOTextoLibre(BusinessEmployee be, String fn, String fa) {
+        if (fn == null && fa == null) {
+            return true;
+        }
+        if (fn != null && fa != null && fn.equals(fa)) {
+            return empleadoCoincideTextoLibre(be, fn);
+        }
+        boolean okN = fn == null || (be.getNombres() != null && be.getNombres().toLowerCase().contains(fn));
+        boolean okA = fa == null || (be.getApellidos() != null && be.getApellidos().toLowerCase().contains(fa));
+        return okN && okA;
+    }
+
+    private static boolean empleadoCoincideTextoLibre(BusinessEmployee be, String term) {
+        if (term == null || term.isEmpty()) {
+            return true;
+        }
+        if (be.getCedula() != null && be.getCedula().toLowerCase().contains(term)) {
+            return true;
+        }
+        if (be.getNombres() != null && be.getNombres().toLowerCase().contains(term)) {
+            return true;
+        }
+        if (be.getApellidos() != null && be.getApellidos().toLowerCase().contains(term)) {
+            return true;
+        }
+        if (be.getName() != null && be.getName().toLowerCase().contains(term)) {
+            return true;
+        }
+        return false;
     }
     
     @Transactional(readOnly = true)

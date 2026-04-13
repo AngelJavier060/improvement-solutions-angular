@@ -1,0 +1,35 @@
+<div class="card metodologia-card">
+  <div class="card-header">
+    <i class="fas fa-shield-alt"></i> Metodología y parámetro (solo esta metodología)
+  </div>
+  <div class="card-body">
+    <div class="form-group">
+      <label>Metodología (opcional)</label>
+      <select
+        class="form-control"
+        [formControl]="$any(form.get('metodologiaId'))"
+        (change)="onMetodologiaChange()"
+      >
+        <option [ngValue]="null">Sin metodología / asignar después</option>
+        <option *ngFor="let m of metodologias" [ngValue]="m.id">{{ m.name }}</option>
+      </select>
+      <small class="field-hint">Si elige metodología, puede vincular un nivel del parámetro correspondiente (tipo de vía, clima, etc.).</small>
+    </div>
+
+    <div class="alert-warn" *ngIf="selectedMetodologia && !hasFactorEnMetodologia">
+      <i class="fas fa-info-circle"></i>
+      No se detectó un parámetro de esta metodología para este catálogo (por nombre, código B–J o factor automático en aceptación de riesgo).
+      <strong>Puede guardar igual</strong> y completar la vinculación cuando configure la metodología.
+    </div>
+
+    <div class="form-group" *ngIf="selectedMetodologia && hasFactorEnMetodologia">
+      <label>{{ tituloParametro }} (recomendado)</label>
+      <select class="form-control" [formControl]="$any(form.get('nivelParametroId'))">
+        <option [ngValue]="null">Sin nivel / asignar después</option>
+        <option *ngFor="let n of niveles" [ngValue]="n.id">
+          {{ n.nombre }} · {{ n.valor }}
+        </option>
+      </select>
+    </div>
+  </div>
+</div>

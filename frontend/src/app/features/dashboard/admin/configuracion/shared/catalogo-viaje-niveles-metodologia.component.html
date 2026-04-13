@@ -1,0 +1,163 @@
+<div class="card" [formGroup]="form">
+  <div class="card-header">
+    <i class="fas fa-shield-alt"></i> Metodología y Parámetros
+  </div>
+  <div class="card-body">
+    <div class="loading-inline" *ngIf="loadingMetodologias">
+      <i class="fas fa-spinner fa-spin"></i> Cargando metodologías...
+    </div>
+
+    <div class="form-group" *ngIf="!loadingMetodologias">
+      <label>Metodología (opcional)</label>
+      <select class="form-control metodologia-select" formControlName="metodologiaId" (change)="onMetodologiaChange()">
+        <option [ngValue]="null">Sin metodología / definir después</option>
+        <option *ngFor="let metodologia of metodologias" [ngValue]="metodologia.id">
+          {{ metodologia.name }}
+        </option>
+      </select>
+    </div>
+
+    <p class="table-hint" *ngIf="selectedMetodologia && hasRequiredParams">
+      Los niveles `NE`, `ND` y `NC` se consumen desde `aceptacion-riesgo`. `NP` y `NR`
+      se calculan automáticamente a partir de la metodología.
+    </p>
+
+    <p class="table-hint" *ngIf="selectedMetodologia && parametrosModoGenerico.length > 0">
+      Esta metodología no usa códigos `NE`/`ND`/`NC`; se muestran los primeros parámetros con niveles (orden de aceptación de riesgo).
+      Los tres valores se guardan como factores del catálogo; `NP` y `NR` usan la misma fórmula (1×2 y ×3).
+    </p>
+
+    <div class="alert-warn" *ngIf="showAvisoSinParametrosNiveles">
+      <i class="fas fa-info-circle"></i>
+      Esta metodología no tiene parámetros con niveles configurados en aceptación de riesgo (o solo tiene calculados NP/NR).
+      <strong>Puede guardar igual</strong>; defina parámetros y niveles en la metodología y luego complete aquí.
+    </div>
+
+    <p class="table-hint" *ngIf="selectedMetodologia && parametrosIper && !hasRequiredParams">
+      <strong>IPER:</strong> se usan los parámetros con código <code>NP</code> y <code>NS</code> creados en
+      <em>Aceptación de riesgo → Editar metodología</em>. El riesgo mostrado es <strong>NP × NS</strong>.
+    </p>
+
+    <div class="param-grid" *ngIf="selectedMetodologia && parametrosIper && !hasRequiredParams">
+      <div class="param-card">
+        <div class="param-head">
+          <span class="param-code ne">NP</span>
+          <strong>{{ parametrosIper.np.name }}</strong>
+        </div>
+        <select class="form-control" formControlName="neNivelId">
+          <option [ngValue]="null">Seleccione nivel NP</option>
+          <option *ngFor="let nivel of getNivelesIperNp()" [ngValue]="nivel.id">
+            {{ nivel.nombre }} · {{ nivel.valor }}
+          </option>
+        </select>
+        <small class="nivel-preview" *ngIf="getNivelSeleccionadoIperNp() as nivel">
+          {{ nivel.description || nivel.nombre }}
+        </small>
+      </div>
+      <div class="param-card">
+        <div class="param-head">
+          <span class="param-code nd">NS</span>
+          <strong>{{ parametrosIper.ns.name }}</strong>
+        </div>
+        <select class="form-control" formControlName="ndNivelId">
+          <option [ngValue]="null">Seleccione nivel NS</option>
+          <option *ngFor="let nivel of getNivelesIperNs()" [ngValue]="nivel.id">
+            {{ nivel.nombre }} · {{ nivel.valor }}
+          </option>
+        </select>
+        <small class="nivel-preview" *ngIf="getNivelSeleccionadoIperNs() as nivel">
+          {{ nivel.description || nivel.nombre }}
+        </small>
+      </div>
+    </div>
+
+    <div class="param-grid" *ngIf="selectedMetodologia && hasRequiredParams">
+      <div class="param-card">
+        <div class="param-head">
+          <span class="param-code ne">NE</span>
+          <strong>Nivel de Exposición</strong>
+        </div>
+        <select class="form-control" formControlName="neNivelId">
+          <option [ngValue]="null">Seleccione NE</option>
+          <option *ngFor="let nivel of getNiveles('NE')" [ngValue]="nivel.id">
+            {{ nivel.nombre }} · {{ nivel.valor }}
+          </option>
+        </select>
+        <small class="nivel-preview" *ngIf="getNivelSeleccionado('NE') as nivel">
+          {{ nivel.description || nivel.nombre }}
+        </small>
+      </div>
+
+      <div class="param-card">
+        <div class="param-head">
+          <span class="param-code nd">ND</span>
+          <strong>Nivel de Deficiencia</strong>
+        </div>
+        <select class="form-control" formControlName="ndNivelId">
+          <option [ngValue]="null">Seleccione ND</option>
+          <option *ngFor="let nivel of getNiveles('ND')" [ngValue]="nivel.id">
+            {{ nivel.nombre }} · {{ nivel.valor }}
+          </option>
+        </select>
+        <small class="nivel-preview" *ngIf="getNivelSeleccionado('ND') as nivel">
+          {{ nivel.description || nivel.nombre }}
+        </small>
+      </div>
+
+      <div class="param-card">
+        <div class="param-head">
+          <span class="param-code nc">NC</span>
+          <strong>Nivel de Consecuencia</strong>
+        </div>
+        <select class="form-control" formControlName="ncNivelId">
+          <option [ngValue]="null">Seleccione NC</option>
+          <option *ngFor="let nivel of getNiveles('NC')" [ngValue]="nivel.id">
+            {{ nivel.nombre }} · {{ nivel.valor }}
+          </option>
+        </select>
+        <small class="nivel-preview" *ngIf="getNivelSeleccionado('NC') as nivel">
+          {{ nivel.description || nivel.nombre }}
+        </small>
+      </div>
+    </div>
+
+    <div class="param-grid" *ngIf="selectedMetodologia && parametrosModoGenerico.length > 0">
+      <div class="param-card" *ngFor="let p of parametrosModoGenerico; let i = index">
+        <div class="param-head">
+          <span class="param-code" [ngClass]="paramCodeClass(i)">{{ (p.code || '').trim() || ('P' + (i + 1)) }}</span>
+          <strong>{{ p.name }}</strong>
+        </div>
+        <select class="form-control" [formControlName]="nivelControlAt(i)">
+          <option [ngValue]="null">Seleccione nivel</option>
+          <option *ngFor="let nivel of getNivelesGenericoSlot(i)" [ngValue]="nivel.id">
+            {{ nivel.nombre }} · {{ nivel.valor }}
+          </option>
+        </select>
+        <small class="nivel-preview" *ngIf="getNivelSeleccionadoGenerico(i) as nivel">
+          {{ nivel.description || nivel.nombre }}
+        </small>
+      </div>
+    </div>
+
+    <div class="calc-grid" *ngIf="showGtcGenericoCalc">
+      <div class="calc-card">
+        <span class="calc-label">NP</span>
+        <strong>{{ npValue !== null ? npValue : '—' }}</strong>
+        <small>{{ hasRequiredParams ? 'ND × NE' : 'Factor 2 × Factor 1' }}</small>
+      </div>
+      <div class="calc-card" [ngClass]="nrClass">
+        <span class="calc-label">NR</span>
+        <strong>{{ nrValue !== null ? nrValue : '—' }}</strong>
+        <small>{{ nrLabel }}</small>
+      </div>
+    </div>
+
+    <div class="calc-grid calc-grid-iper" *ngIf="parametrosIper && !hasRequiredParams">
+      <div class="calc-card" [ngClass]="iperRiesgoClass">
+        <span class="calc-label">Riesgo</span>
+        <strong>{{ riesgoIperProducto !== null ? riesgoIperProducto : '—' }}</strong>
+        <small>NP × NS · {{ iperRiesgoLabel }}</small>
+      </div>
+    </div>
+  </div>
+</div>

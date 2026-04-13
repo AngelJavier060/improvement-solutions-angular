@@ -6,6 +6,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { ListaCondicionClimaticaComponent } from './lista-condicion-climatica.component';
 import { NuevaCondicionClimaticaComponent } from './nueva-condicion-climatica.component';
 import { EditarCondicionClimaticaComponent } from './editar-condicion-climatica.component';
+import { ConfiguracionViajeSharedModule } from '../shared/configuracion-viaje-shared.module';
 
 const routes: Routes = [
   { path: '', component: ListaCondicionClimaticaComponent },
@@ -22,7 +23,8 @@ const routes: Routes = [
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    RouterModule.forChild(routes)
+    RouterModule.forChild(routes),
+    ConfiguracionViajeSharedModule
   ]
 })
 export class CondicionClimaticaModule { }

@@ -3,15 +3,18 @@ package com.improvementsolutions.service;
 import com.improvementsolutions.dto.GerenciaViajeCierreRequest;
 import com.improvementsolutions.dto.GerenciaViajeDto;
 import com.improvementsolutions.model.Business;
+import com.improvementsolutions.model.FleetVehicle;
 import com.improvementsolutions.model.GerenciaViaje;
 import com.improvementsolutions.model.MetodologiaRiesgo;
 import com.improvementsolutions.model.NivelParametro;
 import com.improvementsolutions.model.ParametroMetodologia;
 import com.improvementsolutions.repository.GerenciaViajeRepository;
 import com.improvementsolutions.repository.BusinessRepository;
+import com.improvementsolutions.repository.FleetVehicleRepository;
 import com.improvementsolutions.repository.MetodologiaRiesgoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +38,7 @@ public class GerenciaViajeService {
     private final GerenciaViajeRepository gerenciaRepository;
     private final BusinessRepository businessRepository;
     private final MetodologiaRiesgoRepository metodologiaRiesgoRepository;
+    private final FleetVehicleRepository fleetVehicleRepository;
 
     // ── Listar por RUC ───────────────────────────────────────────────────
     @Transactional(readOnly = true)
@@ -85,6 +89,7 @@ public class GerenciaViajeService {
                         "Empresa no encontrada con RUC: " + ruc));
 
         assertNoOpenGerenciaForConductor(business.getId(), dto.getCedula());
+        assertNoOpenGerenciaForVehiculo(business.getId(), dto.getVehiculoInicio());
         assertKmInicialValid(business.getId(), dto.getVehiculoInicio(), dto.getKmInicial(), null);
 
         GerenciaViaje gv = fromDto(dto, business);
@@ -133,10 +138,7 @@ public class GerenciaViajeService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Solo se puede cerrar una gerencia que esté abierta (ACTIVO).");
         }
-        if (gv.getKmInicial() != null && req.getKmFinal().compareTo(gv.getKmInicial()) < 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "El kilometraje final no puede ser menor que el kilometraje inicial.");
-        }
+        assertKmFinalValidOnClose(gv, req.getKmFinal());
         gv.setKmFinal(req.getKmFinal());
         gv.setFechaCierre(req.getFechaCierre());
         gv.setEstado("COMPLETADO");
@@ -153,6 +155,25 @@ public class GerenciaViajeService {
         return gerenciaRepository
                 .findFirstByBusiness_RucAndCedulaAndEstadoOrderByFechaHoraDesc(ruc, cedula.trim(), "ACTIVO")
                 .map(this::toDto);
+    }
+
+    /**
+     * Gerencia abierta (ACTIVO) para la placa indicada en la empresa del RUC, si existe.
+     */
+    @Transactional(readOnly = true)
+    public Optional<GerenciaViajeDto> findAbiertaByRucAndPlaca(String ruc, String placa) {
+        if (placa == null || placa.isBlank()) {
+            return Optional.empty();
+        }
+        Business business = businessRepository.findByRuc(ruc)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Empresa no encontrada con RUC: " + ruc));
+        return firstAbiertaForPlaca(business.getId(), placa.trim()).map(this::toDto);
+    }
+
+    private Optional<GerenciaViaje> firstAbiertaForPlaca(Long businessId, String placa) {
+        var page = gerenciaRepository.findAbiertasByPlaca(businessId, placa, PageRequest.of(0, 1));
+        return page.isEmpty() ? Optional.empty() : Optional.of(page.get(0));
     }
 
     @Transactional(readOnly = true)
@@ -176,6 +197,16 @@ public class GerenciaViajeService {
         }
     }
 
+    private void assertNoOpenGerenciaForVehiculo(Long businessId, String placa) {
+        if (placa == null || placa.isBlank()) {
+            return;
+        }
+        if (firstAbiertaForPlaca(businessId, placa.trim()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Este vehículo ya tiene una gerencia de viaje abierta. Debe cerrarla antes de crear una nueva.");
+        }
+    }
+
     private void assertKmInicialValid(Long businessId, String placa, BigDecimal kmInicial, Long excludeGerenciaId) {
         if (placa == null || placa.isBlank() || kmInicial == null) {
             return;
@@ -191,6 +222,38 @@ public class GerenciaViajeService {
                                 + maxKm + " km).");
             }
         });
+    }
+
+    /**
+     * Al cerrar: el km final no puede ser menor que el mayor entre
+     * el km inicial del viaje, el último km de cierre en gerencias (misma placa)
+     * y el km de inicio registrado en la ficha de flota (si existe).
+     */
+    private void assertKmFinalValidOnClose(GerenciaViaje gv, BigDecimal kmFinal) {
+        BigDecimal min = null;
+        if (gv.getKmInicial() != null) {
+            min = gv.getKmInicial();
+        }
+        Long businessId = gv.getBusiness() != null ? gv.getBusiness().getId() : null;
+        String placa = gv.getVehiculoInicio();
+        if (businessId != null && placa != null && !placa.isBlank()) {
+            String p = placa.trim();
+            Optional<BigDecimal> maxClosed = gerenciaRepository.findMaxKmFinalClosedForPlaca(businessId, p);
+            if (maxClosed.isPresent()) {
+                BigDecimal mc = maxClosed.get();
+                min = min == null ? mc : min.max(mc);
+            }
+            Optional<FleetVehicle> fv = fleetVehicleRepository.findFirstByBusiness_IdAndPlacaIgnoreCase(businessId, p);
+            if (fv.isPresent() && fv.get().getKmInicio() != null) {
+                BigDecimal fleetKm = BigDecimal.valueOf(fv.get().getKmInicio());
+                min = min == null ? fleetKm : min.max(fleetKm);
+            }
+        }
+        if (min != null && kmFinal.compareTo(min) < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El kilometraje final debe ser mayor o igual a " + min.stripTrailingZeros().toPlainString()
+                            + " km (referencia: inicio del viaje, último cierre de gerencia o km de la ficha de flota).");
+        }
     }
 
     // ── Cambiar estado ───────────────────────────────────────────────────
@@ -265,11 +328,13 @@ public class GerenciaViajeService {
                 .distancia(e.getDistancia())
                 .tipoCarga(e.getTipoCarga())
                 .otrosPeligros(e.getOtrosPeligros())
+                .catalogoOtrosPeligros(e.getCatalogoOtrosPeligros())
                 .horasConduccion(e.getHorasConduccion())
                 .horarioViaje(e.getHorarioViaje())
                 .descansoConduc(e.getDescansoConduc())
                 .riesgosVia(e.getRiesgosVia())
                 .medidasControl(e.getMedidasControl())
+                .medidasControlTomadasViaje(e.getMedidasControlTomadasViaje())
                 .paradasPlanificadas(e.getParadasPlanificadas())
                 .kmFinal(e.getKmFinal())
                 .fechaCierre(e.getFechaCierre())
@@ -322,11 +387,13 @@ public class GerenciaViajeService {
         if (dto.getDistancia()           != null) e.setDistancia(dto.getDistancia());
         if (dto.getTipoCarga()           != null) e.setTipoCarga(dto.getTipoCarga());
         if (dto.getOtrosPeligros()       != null) e.setOtrosPeligros(dto.getOtrosPeligros());
+        if (dto.getCatalogoOtrosPeligros() != null) e.setCatalogoOtrosPeligros(dto.getCatalogoOtrosPeligros());
         if (dto.getHorasConduccion()     != null) e.setHorasConduccion(dto.getHorasConduccion());
         if (dto.getHorarioViaje()        != null) e.setHorarioViaje(dto.getHorarioViaje());
         if (dto.getDescansoConduc()      != null) e.setDescansoConduc(dto.getDescansoConduc());
         if (dto.getRiesgosVia()          != null) e.setRiesgosVia(dto.getRiesgosVia());
         if (dto.getMedidasControl()      != null) e.setMedidasControl(dto.getMedidasControl());
+        if (dto.getMedidasControlTomadasViaje() != null) e.setMedidasControlTomadasViaje(dto.getMedidasControlTomadasViaje());
         if (dto.getParadasPlanificadas() != null) e.setParadasPlanificadas(dto.getParadasPlanificadas());
         if (dto.getCreatedBy()           != null) e.setCreatedBy(dto.getCreatedBy());
     }

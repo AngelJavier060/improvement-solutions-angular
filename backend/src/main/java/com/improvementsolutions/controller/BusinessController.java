@@ -360,14 +360,8 @@ public class BusinessController {
         response.put("numeroEjes", business.getNumeroEjes().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
         response.put("configuracionEjes", business.getConfiguracionEjes().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
 
-        // === Gerencia de Viajes ===
-        java.util.function.Function<Object, Map<String, Object>> viajesDto = e -> {
-            Map<String, Object> m = new HashMap<>();
-            try { m.put("id", e.getClass().getMethod("getId").invoke(e)); } catch (Exception ex) {}
-            try { m.put("name", e.getClass().getMethod("getName").invoke(e)); } catch (Exception ex) {}
-            try { m.put("description", e.getClass().getMethod("getDescription").invoke(e)); } catch (Exception ex) {}
-            return m;
-        };
+        // === Gerencia de Viajes === (metodología + niveles como en /api/public/* para filtrar en el front)
+        java.util.function.Function<Object, Map<String, Object>> viajesDto = this::toGerenciaViajeCatalogItemDto;
         response.put("distanciaRecorrers", business.getDistanciaRecorrers().stream().map(viajesDto).collect(Collectors.toList()));
         response.put("tipoVias", business.getTipoVias().stream().map(viajesDto).collect(Collectors.toList()));
         response.put("condicionClimaticas", business.getCondicionClimaticas().stream().map(viajesDto).collect(Collectors.toList()));
@@ -380,6 +374,8 @@ public class BusinessController {
         response.put("transportaPasajeros", business.getTransportaPasajeros().stream().map(viajesDto).collect(Collectors.toList()));
         response.put("metodologiaRiesgos", business.getMetodologiaRiesgos().stream().map(viajesDto).collect(Collectors.toList()));
         response.put("posiblesRiesgosVia", business.getPosiblesRiesgosVia().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("otrosPeligrosViajeCatalogo", business.getOtrosPeligrosViajeCatalogo().stream().map(viajesDto).collect(Collectors.toList()));
+        response.put("medidasControlTomadasViajeCatalogo", business.getMedidasControlTomadasViajeCatalogo().stream().map(viajesDto).collect(Collectors.toList()));
 
         // Configuración de mantenimiento (JSON plano almacenado en la entidad)
         response.put("maintenanceConfig", business.getMaintenanceConfig());
@@ -559,19 +555,7 @@ public class BusinessController {
         }
 
         // Gerencia de viajes: catálogos por empresa (misma forma que GET /{id}/admin) para usuarios USER en formularios.
-        java.util.function.Function<Object, Map<String, Object>> viajesDetailsDto = e -> {
-            Map<String, Object> m = new HashMap<>();
-            try {
-                m.put("id", e.getClass().getMethod("getId").invoke(e));
-            } catch (Exception ex) { /* ignore */ }
-            try {
-                m.put("name", e.getClass().getMethod("getName").invoke(e));
-            } catch (Exception ex) { /* ignore */ }
-            try {
-                m.put("description", e.getClass().getMethod("getDescription").invoke(e));
-            } catch (Exception ex) { /* ignore */ }
-            return m;
-        };
+        java.util.function.Function<Object, Map<String, Object>> viajesDetailsDto = this::toGerenciaViajeCatalogItemDto;
         response.put("distanciaRecorrers", business.getDistanciaRecorrers().stream().map(viajesDetailsDto).collect(Collectors.toList()));
         response.put("tipoVias", business.getTipoVias().stream().map(viajesDetailsDto).collect(Collectors.toList()));
         response.put("condicionClimaticas", business.getCondicionClimaticas().stream().map(viajesDetailsDto).collect(Collectors.toList()));
@@ -584,6 +568,8 @@ public class BusinessController {
         response.put("transportaPasajeros", business.getTransportaPasajeros().stream().map(viajesDetailsDto).collect(Collectors.toList()));
         response.put("metodologiaRiesgos", business.getMetodologiaRiesgos().stream().map(viajesDetailsDto).collect(Collectors.toList()));
         response.put("posiblesRiesgosVia", business.getPosiblesRiesgosVia().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("otrosPeligrosViajeCatalogo", business.getOtrosPeligrosViajeCatalogo().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("medidasControlTomadasViajeCatalogo", business.getMedidasControlTomadasViajeCatalogo().stream().map(viajesDetailsDto).collect(Collectors.toList()));
 
         log.debug("[BusinessController] getBusinessDetails id={} companies={} blocks={}", id,
                 contractorCompaniesDto.size(), contractorBlocksDto.size());
@@ -1551,5 +1537,118 @@ public class BusinessController {
     public ResponseEntity<Map<String, String>> removePosibleRiesgoVia(@PathVariable Long businessId, @PathVariable Long id) {
         businessService.removePosibleRiesgoViaFromBusiness(businessId, id);
         return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/otros-peligros-viaje/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addOtrosPeligrosViaje(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addOtrosPeligrosViajeToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+
+    @DeleteMapping("/{businessId}/otros-peligros-viaje/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeOtrosPeligrosViaje(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeOtrosPeligrosViajeFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    @PostMapping("/{businessId}/medida-control-tomada-viaje/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addMedidaControlTomadaViaje(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.addMedidaControlTomadaViajeToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+
+    @DeleteMapping("/{businessId}/medida-control-tomada-viaje/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeMedidaControlTomadaViaje(@PathVariable Long businessId, @PathVariable Long id) {
+        businessService.removeMedidaControlTomadaViajeFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    /**
+     * Serializa ítems de catálogo de gerencia de viajes con metodología y niveles NE/ND/NC,
+     * alineado con lo que devuelve la API pública para que el administrador filtre por metodología en la empresa.
+     */
+    private Map<String, Object> toGerenciaViajeCatalogItemDto(Object e) {
+        Map<String, Object> m = new HashMap<>();
+        if (e == null) {
+            return m;
+        }
+        Class<?> c = e.getClass();
+        try {
+            m.put("id", c.getMethod("getId").invoke(e));
+        } catch (Exception ignored) {
+        }
+        try {
+            m.put("name", c.getMethod("getName").invoke(e));
+        } catch (Exception ignored) {
+        }
+        // Fallback: algunas entidades usan 'getNombre' en lugar de 'getName'
+        try {
+            Object nombre = c.getMethod("getNombre").invoke(e);
+            if (nombre != null) {
+                Object existing = m.get("name");
+                if (existing == null || existing.toString().trim().isEmpty()) {
+                    m.put("name", nombre);
+                }
+                m.put("nombre", nombre);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            m.put("description", c.getMethod("getDescription").invoke(e));
+        } catch (Exception ignored) {
+        }
+        // Fallback: algunas entidades usan 'getDescripcion' en lugar de 'getDescription'
+        try {
+            Object descripcion = c.getMethod("getDescripcion").invoke(e);
+            if (descripcion != null) {
+                Object existing = m.get("description");
+                if (existing == null || existing.toString().trim().isEmpty()) {
+                    m.put("description", descripcion);
+                }
+                m.put("descripcion", descripcion);
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            Object met = c.getMethod("getMetodologiaRiesgo").invoke(e);
+            if (met != null) {
+                Map<String, Object> mm = new HashMap<>();
+                Class<?> mc = met.getClass();
+                mm.put("id", mc.getMethod("getId").invoke(met));
+                mm.put("name", mc.getMethod("getName").invoke(met));
+                m.put("metodologiaRiesgo", mm);
+            }
+        } catch (Exception ignored) {
+        }
+        putNivelParametroIfPresent(m, e, "getNeNivel", "neNivel");
+        putNivelParametroIfPresent(m, e, "getNdNivel", "ndNivel");
+        putNivelParametroIfPresent(m, e, "getNcNivel", "ncNivel");
+        return m;
+    }
+
+    private void putNivelParametroIfPresent(Map<String, Object> parent, Object entity, String getter, String jsonKey) {
+        try {
+            Object n = entity.getClass().getMethod(getter).invoke(entity);
+            if (n == null) {
+                return;
+            }
+            Map<String, Object> nm = new HashMap<>();
+            Class<?> nc = n.getClass();
+            nm.put("id", nc.getMethod("getId").invoke(n));
+            try {
+                nm.put("valor", nc.getMethod("getValor").invoke(n));
+            } catch (Exception ignored) {
+            }
+            try {
+                nm.put("nombre", nc.getMethod("getNombre").invoke(n));
+            } catch (Exception ignored) {
+            }
+            parent.put(jsonKey, nm);
+        } catch (Exception ignored) {
+        }
     }
 }

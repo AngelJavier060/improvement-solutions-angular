@@ -6,6 +6,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { ListaDistanciaRecorrerComponent } from './lista-distancia-recorrer.component';
 import { NuevaDistanciaRecorrerComponent } from './nueva-distancia-recorrer.component';
 import { EditarDistanciaRecorrerComponent } from './editar-distancia-recorrer.component';
+import { ConfiguracionViajeSharedModule } from '../shared/configuracion-viaje-shared.module';
 
 const routes: Routes = [
   { path: '', component: ListaDistanciaRecorrerComponent },
@@ -22,7 +23,8 @@ const routes: Routes = [
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    RouterModule.forChild(routes)
+    RouterModule.forChild(routes),
+    ConfiguracionViajeSharedModule
   ]
 })
 export class DistanciaRecorrerModule { }

@@ -6,7 +6,7 @@ import { PosibleRiesgoViaService } from '../../../../../services/posible-riesgo-
 @Component({
   selector: 'app-editar-posible-riesgo-via',
   templateUrl: './editar-posible-riesgo-via.component.html',
-  styleUrls: ['../hora-conduccion/editar-hora-conduccion.component.scss']
+  styleUrls: ['./editar-posible-riesgo-via.component.scss']
 })
 export class EditarPosibleRiesgoViaComponent implements OnInit {
   form: FormGroup;
@@ -34,10 +34,9 @@ export class EditarPosibleRiesgoViaComponent implements OnInit {
         this.form.patchValue({ name: data.name, description: data.description });
         this.loading = false;
       },
-      error: (err) => {
+      error: () => {
         this.error = 'Error al cargar el registro';
         this.loading = false;
-        console.error(err);
       }
     });
   }
@@ -46,18 +45,15 @@ export class EditarPosibleRiesgoViaComponent implements OnInit {
     if (this.form.invalid) return;
     this.saving = true;
     this.service.update(this.id, this.form.value).subscribe({
-      next: () => {
-        this.router.navigate(['dashboard/admin/configuracion/posible-riesgo-via']);
-      },
-      error: (err) => {
+      next: () => void this.router.navigate(['/dashboard/admin/configuracion/posible-riesgo-via']),
+      error: () => {
         this.error = 'Error al actualizar el registro';
         this.saving = false;
-        console.error(err);
       }
     });
   }
 
   goBack(): void {
-    this.router.navigate(['dashboard/admin/configuracion/posible-riesgo-via']);
+    void this.router.navigate(['/dashboard/admin/configuracion/posible-riesgo-via']);
   }
 }

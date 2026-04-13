@@ -1,8 +1,22 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
+
+String? _parseApiErrorMessage(String body) {
+  try {
+    final dynamic j = jsonDecode(body);
+    if (j is Map<String, dynamic>) {
+      final m = j['message'];
+      if (m != null && m.toString().trim().isNotEmpty) {
+        return m.toString();
+      }
+    }
+  } catch (_) {}
+  return null;
+}
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -25,12 +39,13 @@ class AuthService {
 
   Future<Map<String, dynamic>> login({required String username, required String password}) async {
     final String url = '${AppConfig.baseUrl}/api/auth/login';
+    final user = username.trim();
 
     // Detectar si es email o username, como en Angular
-    final bool isEmail = RegExp(r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(username);
+    final bool isEmail = RegExp(r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(user);
     final Map<String, String> body = isEmail
-        ? { 'email': username, 'password': password }
-        : { 'username': username, 'password': password };
+        ? {'email': user, 'password': password}
+        : {'username': user, 'password': password};
 
     final response = await http.post(
       Uri.parse(url),
@@ -40,6 +55,10 @@ class AuthService {
       },
       body: jsonEncode(body),
     );
+
+    if (kDebugMode && response.statusCode != 200) {
+      debugPrint('[Auth] POST $url → ${response.statusCode}');
+    }
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -79,14 +98,25 @@ class AuthService {
       return payload;
     }
 
+    final serverMsg = _parseApiErrorMessage(response.body);
+
+    if (response.statusCode == 404) {
+      throw Exception(
+        serverMsg ??
+            'Usuario no encontrado en este servidor. Compruebe el usuario o que la app apunte al entorno correcto: en depuración suele usarse el backend local (emulador), no producción.',
+      );
+    }
     if (response.statusCode == 401) {
-      throw Exception('Usuario o contraseña incorrectos');
+      throw Exception(serverMsg ?? 'Usuario o contraseña incorrectos');
     }
     if (response.statusCode == 403) {
-      throw Exception('Usuario inactivo o sin permisos');
+      throw Exception(serverMsg ?? 'Usuario inactivo o sin permisos');
+    }
+    if (response.statusCode == 400) {
+      throw Exception(serverMsg ?? 'Datos de acceso no válidos');
     }
 
-    throw Exception('Error al autenticar (${response.statusCode})');
+    throw Exception(serverMsg ?? 'Error al autenticar (${response.statusCode})');
   }
 
   Future<Map<String, dynamic>> refreshLogin({required String refreshToken}) async {
@@ -132,9 +162,9 @@ class AuthService {
     }
 
     if (response.statusCode == 401) {
-      throw Exception('Refresh token inválido o expirado');
+      throw Exception(_parseApiErrorMessage(response.body) ?? 'Refresh token inválido o expirado');
     }
-    throw Exception('Error al refrescar token (${response.statusCode})');
+    throw Exception(_parseApiErrorMessage(response.body) ?? 'Error al refrescar token (${response.statusCode})');
   }
 
   String? getPrimaryBusinessName() {

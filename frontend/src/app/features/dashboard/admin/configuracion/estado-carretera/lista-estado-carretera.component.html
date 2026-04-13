@@ -1,45 +1,21 @@
-<div class="config-list-container">
-  <div class="config-list-header">
-    <div class="header-left">
-      <button class="btn-back" (click)="goBack()">
-        <i class="fas fa-arrow-left"></i>
-      </button>
-      <h2>Estados de Carretera</h2>
-    </div>
-    <button class="btn-primary" (click)="goToNew()">
-      <i class="fas fa-plus"></i> Nuevo
-    </button>
-  </div>
-
-  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-  <div *ngIf="loading" class="loading">Cargando...</div>
-
-  <div *ngIf="!loading && items.length === 0" class="empty-state">
-    <i class="fas fa-inbox"></i>
-    <p>No hay registros disponibles</p>
-  </div>
-
-  <table *ngIf="!loading && items.length > 0" class="config-table">
-    <thead>
-      <tr>
-        <th>Nombre</th>
-        <th>Descripción</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let item of items">
-        <td>{{ item.name }}</td>
-        <td>{{ item.description || '-' }}</td>
-        <td class="actions">
-          <button class="btn-icon btn-edit" (click)="goToEdit(item.id!)" title="Editar">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn-icon btn-delete" (click)="deleteItem(item.id!)" title="Eliminar">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
+<app-catalogo-viaje-lista-shell
+  [sections]="sections"
+  [items]="items"
+  [metodologias]="metodologias"
+  [loading]="loading"
+  [error]="error"
+  pageIcon="fas fa-road"
+  pageTitle="Estados de carretera"
+  pageSubtitle="Catálogo agrupado por metodología (GTC-45, IPER u otros), alineado con aceptación de riesgo."
+  nameColumnLabel="Estado de carretera"
+  newButtonLabel="Nuevo estado"
+  emptyIcon="fas fa-road"
+  emptyTitle="Sin estados de carretera"
+  emptyText="Agregue estados y asocie metodología; los niveles se definen en aceptación de riesgo."
+  emptyButtonLabel="Agregar primer estado"
+  globalTotalLabel="Total de registros"
+  (back)="goBack()"
+  (nuevo)="goToNew()"
+  (edit)="openEdit($event)"
+  (delete)="confirmDelete($event)"
+/>

@@ -60,6 +60,7 @@ public class GerenciaViajeDto {
     // Carga y peligros
     private String tipoCarga;
     private String otrosPeligros;
+    private String catalogoOtrosPeligros;
 
     // Jornada del conductor
     private String horasConduccion;
@@ -69,6 +70,7 @@ public class GerenciaViajeDto {
     // Riesgos y control
     private String riesgosVia;
     private String medidasControl;
+    private String medidasControlTomadasViaje;
     private String paradasPlanificadas;
 
     // Km final

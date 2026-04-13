@@ -6,6 +6,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { ListaEstadoCarreteraComponent } from './lista-estado-carretera.component';
 import { NuevaEstadoCarreteraComponent } from './nueva-estado-carretera.component';
 import { EditarEstadoCarreteraComponent } from './editar-estado-carretera.component';
+import { ConfiguracionViajeSharedModule } from '../shared/configuracion-viaje-shared.module';
 
 const routes: Routes = [
   { path: '', component: ListaEstadoCarreteraComponent },
@@ -22,7 +23,8 @@ const routes: Routes = [
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    RouterModule.forChild(routes)
+    RouterModule.forChild(routes),
+    ConfiguracionViajeSharedModule
   ]
 })
 export class EstadoCarreteraModule { }

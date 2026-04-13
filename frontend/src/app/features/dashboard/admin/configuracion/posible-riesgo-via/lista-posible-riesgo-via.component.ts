@@ -6,7 +6,7 @@ import { PosibleRiesgoViaService } from '../../../../../services/posible-riesgo-
 @Component({
   selector: 'app-lista-posible-riesgo-via',
   templateUrl: './lista-posible-riesgo-via.component.html',
-  styleUrls: ['../hora-conduccion/lista-hora-conduccion.component.scss']
+  styleUrls: ['./lista-posible-riesgo-via.component.scss']
 })
 export class ListaPosibleRiesgoViaComponent implements OnInit {
   items: PosibleRiesgoVia[] = [];
@@ -16,44 +16,43 @@ export class ListaPosibleRiesgoViaComponent implements OnInit {
   constructor(private service: PosibleRiesgoViaService, private router: Router) {}
 
   ngOnInit(): void {
-    this.load();
+    this.loadItems();
   }
 
-  load(): void {
+  loadItems(): void {
     this.loading = true;
     this.service.getAll().subscribe({
       next: (data) => {
-        this.items = data || [];
+        this.items = data;
         this.loading = false;
       },
-      error: (err) => {
-        this.error = 'Error al cargar el catálogo';
+      error: () => {
+        this.error = 'Error al cargar los datos';
         this.loading = false;
-        console.error(err);
       }
     });
   }
 
   deleteItem(id: number): void {
-    if (!confirm('¿Eliminar este registro?')) return;
-    this.service.delete(id).subscribe({
-      next: () => this.load(),
-      error: (err) => {
-        console.error(err);
-        alert('No se pudo eliminar (puede estar asignado a empresas).');
-      }
-    });
+    if (confirm('¿Está seguro de eliminar este registro?')) {
+      this.service.delete(id).subscribe({
+        next: () => this.loadItems(),
+        error: () => {
+          this.error = 'Error al eliminar el registro';
+        }
+      });
+    }
   }
 
   goToNew(): void {
-    this.router.navigate(['dashboard/admin/configuracion/posible-riesgo-via/nueva']);
+    void this.router.navigate(['/dashboard/admin/configuracion/posible-riesgo-via/nuevo']);
   }
 
   goToEdit(id: number): void {
-    this.router.navigate(['dashboard/admin/configuracion/posible-riesgo-via/editar', id]);
+    void this.router.navigate(['/dashboard/admin/configuracion/posible-riesgo-via/editar', id]);
   }
 
   goBack(): void {
-    this.router.navigate(['dashboard/admin/configuracion']);
+    void this.router.navigate(['/dashboard/admin/configuracion']);
   }
 }

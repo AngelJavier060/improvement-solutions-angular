@@ -6,6 +6,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { ListaTransportaPasajeroComponent } from './lista-transporta-pasajero.component';
 import { NuevaTransportaPasajeroComponent } from './nueva-transporta-pasajero.component';
 import { EditarTransportaPasajeroComponent } from './editar-transporta-pasajero.component';
+import { ConfiguracionViajeSharedModule } from '../shared/configuracion-viaje-shared.module';
 
 const routes: Routes = [
   { path: '', component: ListaTransportaPasajeroComponent },
@@ -22,7 +23,8 @@ const routes: Routes = [
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    RouterModule.forChild(routes)
+    RouterModule.forChild(routes),
+    ConfiguracionViajeSharedModule
   ]
 })
 export class TransportaPasajeroModule { }

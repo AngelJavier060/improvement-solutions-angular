@@ -6,10 +6,11 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { ListaHoraDescansoComponent } from './lista-hora-descanso.component';
 import { NuevaHoraDescansoComponent } from './nueva-hora-descanso.component';
 import { EditarHoraDescansoComponent } from './editar-hora-descanso.component';
+import { ConfiguracionViajeSharedModule } from '../shared/configuracion-viaje-shared.module';
 
 const routes: Routes = [
   { path: '', component: ListaHoraDescansoComponent },
-  { path: 'nueva', component: NuevaHoraDescansoComponent },
+  { path: 'nuevo', component: NuevaHoraDescansoComponent },
   { path: 'editar/:id', component: EditarHoraDescansoComponent }
 ];
 
@@ -22,7 +23,8 @@ const routes: Routes = [
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    RouterModule.forChild(routes)
+    RouterModule.forChild(routes),
+    ConfiguracionViajeSharedModule
   ]
 })
 export class HoraDescansoModule { }

@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'config/app_config.dart';
 import 'services/auth_service.dart';
 import 'services/biometric_auth_service.dart';
 
@@ -46,7 +48,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() async {
     final username = _usernameController.text.trim();
-    final password = _passwordController.text.trim();
+    // No hacer trim a la contraseña: algunos usuarios pueden tener espacios significativos.
+    final password = _passwordController.text;
 
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -364,6 +367,19 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ),
                                   ),
                                 ),
+
+                                if (kDebugMode) ...[
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    'Depuración · API: ${AppConfig.baseUrl}',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.white.withOpacity(0.55),
+                                      height: 1.25,
+                                    ),
+                                  ),
+                                ],
 
                                 const SizedBox(height: 16),
 

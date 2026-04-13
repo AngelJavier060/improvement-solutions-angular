@@ -1,359 +1,757 @@
-// Gerencia de viaje — estilo alineado a formato impreso corporativo (referencia imagen 2)
-$gv-blue: #1f4e79;
-$gv-blue-dark: #163a5c;
-$gv-yellow: #ffeb3b;
-$gv-yellow-deep: #fdd835;
-$gv-tan-header: #e8dfd0;
-$gv-border: #000;
-$gv-text: #1a1a1a;
+// Gerencia de viaje — Nuevo diseño corporativo estilo documento impreso
+$doc-blue: #002046;
+$doc-header-blue: #1b365d;
+$doc-light-blue: #d3e4fe;
+$doc-yellow: #ffeb3b;
+$doc-danger: #f44336;
+$doc-success: #4caf50;
+$doc-warning: #ffc107;
+$doc-risk-orange: #ff9800;
+$doc-matrix-blue: #03a9f4;
+$doc-matrix-dark-blue: #01579b;
+$doc-bg-input: #f8f9fa;
+$doc-border: #000;
 
-.print-wrapper {
-  background-color: #eef1f5;
+// Host container
+:host {
+  display: block;
+  background-color: #f0f2f5;
   min-height: 100vh;
-  padding: 1.25rem;
+  padding: 1rem;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
+// Action bar
 .action-bar {
   background-color: #fff;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-bottom: 1rem;
 }
 
-.print-container {
-  background-color: #fff;
-  max-width: 1320px;
+// Loading state
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+}
+
+// Print canvas - main document container
+.print-canvas {
+  width: 297mm;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 1rem 1.25rem 1.25rem;
-  border: 1px solid #c5cad3;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  font-size: 10px;
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 6mm 8mm;
+  font-size: 8px;
   line-height: 1.35;
-  color: $gv-text;
-  font-family: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: #000;
 }
 
-.gv-form {
-  table {
-    border-collapse: collapse;
-    width: 100%;
-  }
+// Document Header
+.doc-header {
+  display: grid;
+  grid-template-columns: 3fr 6fr 3fr;
+  border: 1.5px solid $doc-border;
+  margin-bottom: 2px;
+}
 
-  .gv-table {
-    border: 1px solid $gv-border;
+.header-brands {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid $doc-border;
+  font-weight: 800;
+  font-size: 10px;
+  line-height: 1.3;
+  color: $doc-blue;
+}
 
-    td {
-      border: 1px solid $gv-border;
-      vertical-align: middle;
-      padding: 5px 7px;
-    }
-
-    &.gv-flush-top {
-      border-top: none;
-    }
-  }
-
-  .gv-label {
-    font-size: 9px;
-    font-weight: 600;
-    color: #333;
-    background-color: #f0f2f5;
-    white-space: nowrap;
-  }
-
-  .gv-label-tan {
-    font-size: 8px;
-    font-weight: 700;
-    color: #333;
-    background-color: $gv-tan-header;
-    text-align: center;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-  }
-
-  .gv-hazards-col {
-    width: 26%;
-    min-width: 210px;
-  }
-
-  @media (max-width: 991.98px) {
-    .gv-hazards-col {
-      width: 100%;
-      min-width: 0;
-    }
-
-    .gv-risk-summary {
-      width: 100% !important;
-      max-width: none;
-    }
-
-    .gv-risk-center {
-      width: 100%;
-    }
-  }
-
-  .gv-header-blue {
-    background: linear-gradient(180deg, $gv-blue 0%, $gv-blue-dark 100%);
-    color: #fff !important;
-    font-weight: 700;
-    text-align: center;
-    font-size: 9px;
-    letter-spacing: 0.03em;
-  }
-
-  .gv-header-blue-sm {
-    @extend .gv-header-blue;
-    font-size: 8px;
-    padding: 4px 6px !important;
-  }
-
-  .gv-header-yellow {
-    background-color: $gv-yellow;
-    color: #1a1a1a !important;
-    font-weight: 700;
-    text-align: center;
-    font-size: 8px;
-  }
-
-  .gv-header-yellow-sub {
-    background-color: $gv-yellow-deep;
-    color: #1a1a1a;
-    font-weight: 600;
-    text-align: center;
-    font-size: 7px;
-  }
-
-  .gv-doc-title {
-    font-size: clamp(1.1rem, 2.2vw, 1.45rem);
+.header-title {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid $doc-border;
+  
+  h1 {
+    font-size: 18px;
     font-weight: 800;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.5px;
+    color: $doc-blue;
     margin: 0;
-    line-height: 1.2;
-    color: $gv-text;
   }
+}
 
-  .gv-doc-code {
-    color: #c62828;
+.header-meta {
+  font-size: 7.5px;
+  font-weight: 700;
+  
+  .meta-row {
+    padding: 2px 8px;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid $doc-border;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+// Creation info bar
+.creation-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 7.5px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  
+  .creation-date {
+    color: $doc-danger;
+  }
+  
+  .doc-code {
+    font-size: 9px;
     font-weight: 800;
-    margin-right: 0.5rem;
+    color: $doc-danger;
   }
+}
 
-  .gv-brands {
-    font-size: 9px;
-    font-weight: 700;
-    line-height: 1.3;
-    color: $gv-blue;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-  }
-
-  .gv-doc-control {
-    font-size: 8px;
-    line-height: 1.45;
+// Data tables
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8px;
+  table-layout: fixed;
+  
+  th, td {
+    border: 1px solid $doc-border;
+    padding: 2px 4px;
     text-align: left;
-    background: #f8f9fb;
+    word-wrap: break-word;
+  }
+}
 
-    p {
-      margin: 0 0 2px;
-    }
+.label-cell {
+  font-weight: 700;
+  font-size: 7px;
+  text-transform: uppercase;
+  background-color: #f9f9f9;
+}
 
-    strong {
-      font-weight: 700;
-      color: $gv-blue;
+.input-cell {
+  font-weight: 500;
+  font-size: 9px;
+  background-color: $doc-bg-input;
+}
+
+.highlight-blue {
+  background-color: $doc-blue !important;
+  color: white !important;
+}
+
+.header-blue {
+  background-color: $doc-blue;
+  color: white;
+  font-weight: 700;
+  font-size: 7px;
+  
+  td {
+    padding: 3px 4px;
+  }
+}
+
+.row-height {
+  td {
+    height: 20px;
+  }
+}
+
+.small-text {
+  font-size: 7px;
+}
+
+// Section headers
+.section-header {
+  font-weight: 800;
+  font-size: 9px;
+  text-align: center;
+  padding: 4px;
+  border: 1px solid $doc-border;
+  text-transform: uppercase;
+}
+
+.small-header {
+  font-size: 6.5px;
+  text-align: left;
+  padding: 2px 8px;
+}
+
+// Background colors
+.bg-yellow {
+  background-color: $doc-yellow;
+  color: #000;
+}
+
+.bg-blue {
+  background-color: $doc-blue;
+  color: white;
+}
+
+.bg-light-blue {
+  background-color: $doc-light-blue;
+  color: #000;
+}
+
+.bg-orange {
+  background-color: $doc-risk-orange;
+}
+
+.bg-success {
+  background-color: $doc-success;
+}
+
+.bg-warning {
+  background-color: $doc-warning;
+}
+
+.bg-danger {
+  background-color: $doc-danger;
+}
+
+// Risk section layout
+.risk-section {
+  display: grid;
+  grid-template-columns: 3fr 8fr 1fr;
+  gap: 4px;
+  margin-bottom: 4px;
+  height: 250px;
+}
+
+// Hazards column (left)
+.hazards-col {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $doc-border;
+  overflow: hidden;
+}
+
+.hazard-grid-header {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  font-size: 6.5px;
+  text-align: center;
+  font-weight: 700;
+  border-bottom: 1px solid $doc-border;
+  background-color: #f5f5f5;
+  
+  > div {
+    padding: 2px;
+    border-right: 1px solid $doc-border;
+    
+    &:last-child {
+      border-right: none;
     }
   }
+}
 
-  .gv-creation-banner {
-    border: 1px solid $gv-border;
-    border-top: none;
-    padding: 6px 10px;
-    font-size: 9px;
-    background: #fff;
-
-    .gv-creation-label {
-      font-weight: 600;
-      color: #444;
-      margin-right: 8px;
-    }
-
-    .gv-creation-value {
-      color: #c62828;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
+.hazard-grid-values {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  font-size: 7.5px;
+  text-align: center;
+  border-bottom: 1px solid $doc-border;
+  background-color: $doc-bg-input;
+  
+  > div {
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid $doc-border;
+    
+    &:last-child {
+      border-right: none;
     }
   }
+}
 
-  .gv-salida-highlight {
-    background: $gv-blue !important;
-    color: #fff !important;
+.text-block {
+  padding: 4px;
+  font-size: 7px;
+  background-color: $doc-bg-input;
+  border-bottom: 1px solid $doc-border;
+}
+
+.hazard-text {
+  height: 45px;
+  overflow: hidden;
+}
+
+// Conditions column (center)
+.conditions-col {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $doc-border;
+  overflow: hidden;
+}
+
+.stops-row {
+  display: flex;
+  border-bottom: 1px solid $doc-border;
+  
+  .stops-label {
+    width: 35%;
+    padding: 4px 8px;
     font-weight: 700;
     font-size: 8px;
-    text-align: center;
+    border-right: 1px solid $doc-border;
   }
-
-  .gv-data-cell {
-    font-size: 9px;
-    text-align: center;
-  }
-
-  .gv-data-cell-strong {
-    @extend .gv-data-cell;
-    font-weight: 700;
-  }
-
-  .gv-text-block {
-    text-align: left !important;
+  
+  .stops-value {
+    flex-grow: 1;
+    padding: 4px;
     font-size: 8px;
-    line-height: 1.4;
-    vertical-align: top !important;
-    word-break: break-word;
+    background-color: $doc-bg-input;
+    font-weight: 500;
+    font-style: italic;
   }
+}
 
-  .gv-paradas-cell {
-    min-height: 36px;
-    vertical-align: top !important;
-    text-align: left;
-    font-size: 8px;
-    padding: 6px 8px !important;
-  }
+.conditions-grid {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
 
-  .gv-risk-summary {
-    width: 132px;
-    flex-shrink: 0;
-
-    .gv-nivel-celda {
-      min-height: 48px;
-      vertical-align: middle !important;
-    }
-  }
-
-  .gv-medical {
-    max-width: 340px;
-
-    .gv-medical-head {
-      background-color: #3abef9 !important;
-      color: #fff !important;
-      font-weight: 700;
-      text-align: center;
-      font-size: 9px;
-    }
-  }
-
-  .gv-auth-banner {
-    background: linear-gradient(180deg, $gv-blue 0%, $gv-blue-dark 100%);
-    color: #fff;
-    text-align: center;
-    font-weight: 700;
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    padding: 8px 10px;
-    border: 1px solid $gv-border;
+.condition-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 1;
+  border-bottom: 1px solid $doc-border;
+  
+  &:last-child {
     border-bottom: none;
   }
 }
 
-// Bootstrap bg-primary override dentro del documento
-.print-container .bg-primary {
-  background-color: $gv-blue !important;
-}
-
-table {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.table-bordered {
-  border: 1px solid $gv-border;
-
-  td {
-    border: 1px solid $gv-border;
-    vertical-align: middle;
+.condition-item {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid $doc-border;
+  
+  &:last-child {
+    border-right: none;
   }
 }
 
-.bg-primary {
-  background-color: $gv-blue !important;
+.risk-item-header {
+  background-color: $doc-matrix-blue;
+  color: white;
+  font-weight: 700;
+  text-align: center;
+  font-size: 6.5px;
+  padding: 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+  span:first-child {
+    font-size: 8px;
+  }
 }
 
-.text-primary {
-  color: $gv-blue !important;
+.risk-item-content {
+  display: grid;
+  grid-template-columns: 4fr 2fr;
+  flex-grow: 1;
+  background-color: white;
 }
 
+.risk-value {
+  font-size: 7px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.risk-score {
+  font-size: 9px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Evaluation column (right)
+.evaluation-col {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $doc-border;
+  background-color: white;
+  overflow: hidden;
+}
+
+.eval-header {
+  background-color: $doc-blue;
+  color: white;
+  padding: 4px;
+  font-size: 7px;
+  text-align: center;
+  font-weight: 700;
+  text-transform: uppercase;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eval-scores {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: 7px;
+  font-weight: 700;
+}
+
+.eval-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 4px;
+  border-bottom: 1px solid $doc-border;
+}
+
+.eval-badge {
+  width: 16px;
+  text-align: center;
+  font-size: 8px;
+}
+
+.eval-summary {
+  margin-top: auto;
+  border-top: 1px solid $doc-border;
+  background-color: #f5f5f5;
+}
+
+.eval-label {
+  padding: 2px;
+  font-size: 6px;
+  text-transform: uppercase;
+  font-weight: 700;
+  text-align: center;
+}
+
+.eval-level {
+  padding: 4px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 800;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eval-acceptance {
+  padding: 4px;
+  text-align: center;
+  font-size: 7px;
+  font-weight: 700;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+}
+
+// Bottom section
+.bottom-section {
+  display: grid;
+  grid-template-columns: 4fr 8fr;
+  gap: 4px;
+  flex-grow: 1;
+  margin-top: 4px;
+}
+
+// Emergency column
+.emergency-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.contact-box {
+  border: 1px solid $doc-border;
+  overflow: hidden;
+}
+
+.contact-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 6.5px;
+  font-weight: 700;
+  text-align: center;
+  
+  td {
+    padding: 2px 4px;
+    border: 1px solid $doc-border;
+  }
+}
+
+.report-box {
+  border: 1px solid $doc-border;
+  overflow: hidden;
+}
+
+.report-content {
+  background-color: $doc-bg-input;
+  padding: 4px;
+}
+
+.report-item {
+  display: flex;
+  gap: 4px;
+  align-items: flex-start;
+  margin-bottom: 2px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.report-label {
+  font-size: 6px;
+  font-weight: 800;
+  padding: 1px 4px;
+  white-space: nowrap;
+}
+
+.report-text {
+  font-size: 6px;
+  font-style: italic;
+  color: #666;
+  line-height: 1.3;
+}
+
+// Medical box
+.medical-box {
+  border: 1px solid $doc-border;
+  display: flex;
+  flex-direction: column;
+}
+
+.medical-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background-color: $doc-bg-input;
+}
+
+.medical-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 16px;
+  border-right: 1px solid $doc-border;
+  
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.option-label {
+  font-size: 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.option-checkbox {
+  width: 14px;
+  height: 14px;
+  border: 1px solid $doc-border;
+  background-color: white;
+}
+
+.medical-signature {
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 35px;
+  
+  span {
+    font-size: 5.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+}
+
+.signature-line {
+  flex-grow: 1;
+  border-bottom: 1px dotted $doc-border;
+  margin-left: 4px;
+}
+
+// Signatures column
+.signatures-col {
+  border: 1px solid $doc-border;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.signatures-grid {
+  flex-grow: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background-color: white;
+}
+
+.signature-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 12px 12px 24px;
+  border-right: 1px solid $doc-border;
+  
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.signature-line-bottom {
+  width: 85%;
+  border-bottom: 1px solid $doc-border;
+  margin-bottom: 4px;
+}
+
+.signature-title {
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 7.5px;
+}
+
+.signature-name {
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-top: 24px;
+}
+
+// Legend row
+.legend-row {
+  border-top: 1px solid $doc-border;
+  background-color: white;
+  padding: 4px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.legend-items {
+  display: flex;
+  gap: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  
+  span {
+    font-size: 6.5px;
+    font-weight: 700;
+  }
+}
+
+.legend-color {
+  width: 24px;
+  height: 12px;
+}
+
+.legend-note {
+  font-size: 6px;
+  font-style: italic;
+  color: #666;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+// Document footer
+.doc-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 6px;
+  font-weight: 500;
+  padding-top: 2px;
+  margin-top: 4px;
+  border-top: 1px solid #e0e0e0;
+  color: #999;
+}
+
+// Utility classes
+.mb-1 { margin-bottom: 4px; }
+.text-center { text-align: center; }
+.text-uppercase { text-transform: uppercase; }
+.fw-bold { font-weight: 700; }
+.fw-normal { font-weight: 400; }
+.text-white { color: white; }
+
+// Print styles
 @media print {
   @page {
     size: A4 landscape;
-    margin: 6mm;
-  }
-
-  body {
     margin: 0;
-    padding: 0;
-    background-color: #fff;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
   }
-
-  .print-wrapper {
-    background-color: #fff;
+  
+  :host {
+    background: white;
     padding: 0;
   }
-
-  .print-container {
-    max-width: none;
-    width: 100%;
-    min-height: auto;
-    padding: 4mm 5mm;
-    margin: 0;
-    box-shadow: none;
-    border: none;
-    font-size: 8.5px;
-  }
-
-  .gv-form .gv-doc-title {
-    font-size: 14pt;
-  }
-
+  
   .no-print,
   .action-bar {
     display: none !important;
   }
-
-  .gv-form {
-    .gv-risk-section {
-      page-break-inside: avoid;
-    }
-  }
-
-  table {
-    page-break-inside: avoid;
-  }
-
-  section {
-    page-break-inside: avoid;
+  
+  .print-canvas {
+    box-shadow: none;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    padding: 5mm;
   }
 }
 
-.bg-orient-blue {
-  background-color: $gv-blue;
-}
-
-.bg-orient-light-blue {
-  background-color: #3abef9;
-}
-
-.bg-orient-yellow {
-  background-color: $gv-yellow;
-}
-
-.bg-orient-green {
-  background-color: #90ee90;
-}
-
-.bg-orient-orange {
-  background-color: #ffa500;
-}
-
-.bg-orient-red {
-  background-color: #ff4c4c;
+// Responsive adjustments
+@media (max-width: 1200px) {
+  .print-canvas {
+    width: 100%;
+    padding: 4mm;
+  }
+  
+  .risk-section {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  
+  .hazards-col,
+  .conditions-col,
+  .evaluation-col {
+    width: 100%;
+  }
+  
+  .bottom-section {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1584,282 +1584,332 @@
   </div>
 
   <!-- ═══════════════════════ SECCIÓN: EVALUACIÓN DE RIESGO — GERENCIA DE VIAJES ═══════════════════════ -->
-  <div class="d-flex align-items-center gap-3 mb-3 mt-4 pb-2" style="border-bottom: 2px solid #e9ecef;">
-    <div class="p-2 rounded-2" style="background: rgba(0,6,102,0.08);">
-      <i class="fas fa-road text-primary" style="font-size: 18px;"></i>
+  <section class="gerencia-viajes-section mt-4">
+    <div class="d-flex flex-column flex-md-row flex-wrap justify-content-between align-items-md-end gap-4 mb-4">
+      <div class="gerencia-viajes-brand">
+        <span class="text-primary fw-bold text-uppercase small d-block mb-1" style="letter-spacing: 0.08em;">{{ empresa.name }}</span>
+        <h3 class="h3 fw-bold mb-1" style="color: #2c2f31;">Configuración de Gerencias de Viajes</h3>
+        <p class="small text-muted mb-0">Parámetros definidos en <strong>Configuración</strong> → Evaluación de Riesgo — Gerencia de Viajes; aquí se eligen los que usa esta empresa según la metodología.</p>
+      </div>
+      <div class="gerencia-viajes-select-wrap" style="width: 100%; max-width: 20rem;">
+        <label class="form-label small fw-bold text-secondary text-uppercase mb-2" style="letter-spacing: 0.04em;">Seleccionar metodología de configuración</label>
+        <select class="form-select border-0 rounded-3 py-2 px-3 shadow-sm" [(ngModel)]="gerenciaMetodologiaVistaId" (ngModelChange)="onGerenciaMetodologiaVistaChange()" [disabled]="!metodologiaRiesgos.length">
+          <option [ngValue]="null">—</option>
+          <option *ngFor="let m of metodologiaRiesgos" [ngValue]="m.id">{{ m.name }}</option>
+        </select>
+        <div class="d-flex flex-wrap align-items-center gap-1 mt-2" *ngIf="metodologiaRiesgos.length">
+          <span *ngFor="let m of metodologiaRiesgos" class="badge rounded-pill bg-white text-dark border px-2 py-1 d-inline-flex align-items-center gap-1 gerencia-meta-badge">
+            <span class="small">{{ m.name }}</span>
+            <button type="button" class="btn btn-link text-danger p-0 lh-1 gerencia-meta-badge-remove" (click)="removeMetodologia(m.id)" title="Quitar metodología"><i class="fas fa-times" style="font-size: 0.65rem;"></i></button>
+          </span>
+          <button type="button" class="btn btn-sm btn-link text-primary py-0 px-1 small" (click)="openAsignMetodologiaModal()">+ Agregar</button>
+        </div>
+      </div>
     </div>
-    <div>
-      <h5 class="mb-0 fw-bold" style="color: #000666;">Evaluación de Riesgo — Gerencia de Viajes</h5>
-      <small class="text-muted">Parámetros asignados a {{ empresa.name }} desde el catálogo global</small>
-    </div>
+
+  <div class="alert alert-light border mb-3" *ngIf="!metodologiaRiesgos.length">
+    <i class="fas fa-info-circle me-2 text-primary"></i>
+    Asigne al menos una metodología para esta empresa para poder configurar los parámetros.
+    <button type="button" class="btn btn-sm btn-primary ms-2" (click)="openAsignMetodologiaModal()">Asignar metodología</button>
   </div>
-  <div class="row g-3 mb-4">
+
+  <div *ngIf="gerenciaMetodologiaCargando && gerenciaMetodologiaVistaId" class="text-center py-3 mb-3">
+    <span class="spinner-border spinner-border-sm text-primary"></span>
+    <span class="ms-2 small text-muted">Cargando definición de la metodología…</span>
+  </div>
+  <div class="alert alert-warning" *ngIf="gerenciaMetodologiaError">{{ gerenciaMetodologiaError }}</div>
+
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-5 g-4 mb-4 gerencia-viajes-param-grid">
 
     <!-- 1. Distancia a recorrer -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-ruler-combined text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Distancia a recorrer</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignDistanciaModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+    <div class="col" *ngIf="gerenciaFactorVisible('distancia-recorrer')">
+      <div class="card gv-card border-0 shadow-sm h-100 overflow-hidden">
+        <div class="card-header py-3 px-3 d-flex align-items-center justify-content-between border-0 gv-hd-distancia">
+          <h6 class="mb-0 fw-bold small gv-card-title text-white">Distancia a recorrer</h6>
+          <button type="button" class="btn btn-sm btn-link text-white p-0 opacity-90" (click)="openAsignDistanciaModal()" [disabled]="!gerenciaMetodologiaVistaId" title="Agregar"><i class="fas fa-plus"></i></button>
         </div>
-        <div class="card-body p-2">
-          <div *ngIf="distanciaRecorrers && distanciaRecorrers.length > 0">
-            <div *ngFor="let item of distanciaRecorrers" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+        <div class="card-body p-3 gv-card-body">
+          <div *ngIf="gerenciaItemsPorMetodologia(distanciaRecorrers).length > 0">
+            <div *ngFor="let item of gerenciaItemsPorMetodologia(distanciaRecorrers)" class="d-flex align-items-center justify-content-between mb-2 px-2 py-2 bg-light rounded-3 gv-tag-row">
+              <span class="small text-dark">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
               <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeDistancia(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
             </div>
           </div>
-          <div *ngIf="!distanciaRecorrers || distanciaRecorrers.length === 0" class="text-center py-2">
+          <div *ngIf="gerenciaItemsPorMetodologia(distanciaRecorrers).length === 0" class="text-center py-2">
             <i class="fas fa-ruler-combined text-muted opacity-50" style="font-size:16px;"></i>
-            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin valores para esta metodología</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 2. Tipo de vía -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-road text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Tipo de vía</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignTipoViaModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+    <div class="col" *ngIf="gerenciaFactorVisible('tipo-via')">
+      <div class="card gv-card border-0 shadow-sm h-100 overflow-hidden">
+        <div class="card-header py-3 px-3 d-flex align-items-center justify-content-between border-0 gv-hd-tipo-via">
+          <h6 class="mb-0 fw-bold small gv-card-title">Tipo de vía</h6>
+          <button type="button" class="btn btn-sm btn-link p-0 gv-hd-tipo-via-btn" (click)="openAsignTipoViaModal()" [disabled]="!gerenciaMetodologiaVistaId" title="Agregar"><i class="fas fa-plus"></i></button>
         </div>
-        <div class="card-body p-2">
-          <div *ngIf="tipoVias && tipoVias.length > 0">
-            <div *ngFor="let item of tipoVias" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+        <div class="card-body p-3 gv-card-body">
+          <div *ngIf="gerenciaItemsPorMetodologia(tipoVias).length > 0">
+            <div *ngFor="let item of gerenciaItemsPorMetodologia(tipoVias)" class="d-flex align-items-center justify-content-between mb-2 px-2 py-2 bg-light rounded-3 gv-tag-row">
+              <span class="small text-dark">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
               <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeTipoVia(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
             </div>
           </div>
-          <div *ngIf="!tipoVias || tipoVias.length === 0" class="text-center py-2">
+          <div *ngIf="gerenciaItemsPorMetodologia(tipoVias).length === 0" class="text-center py-2">
             <i class="fas fa-road text-muted opacity-50" style="font-size:16px;"></i>
-            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin valores para esta metodología</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 3. Condiciones climáticas -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #06b6d4 0%, #67e8f9 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-cloud-rain text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Condiciones climáticas</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignCondicionModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+    <div class="col" *ngIf="gerenciaFactorVisible('condicion-climatica')">
+      <div class="card gv-card border-0 shadow-sm h-100 overflow-hidden">
+        <div class="card-header py-3 px-3 d-flex align-items-center justify-content-between border-0 gv-hd-clima">
+          <h6 class="mb-0 fw-bold small gv-card-title text-white">Condiciones climáticas</h6>
+          <button type="button" class="btn btn-sm btn-link text-white p-0 opacity-90" (click)="openAsignCondicionModal()" [disabled]="!gerenciaMetodologiaVistaId" title="Agregar"><i class="fas fa-plus"></i></button>
         </div>
-        <div class="card-body p-2">
-          <div *ngIf="condicionClimaticas && condicionClimaticas.length > 0">
-            <div *ngFor="let item of condicionClimaticas" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+        <div class="card-body p-3 gv-card-body">
+          <div *ngIf="gerenciaItemsPorMetodologia(condicionClimaticas).length > 0">
+            <div *ngFor="let item of gerenciaItemsPorMetodologia(condicionClimaticas)" class="d-flex align-items-center justify-content-between mb-2 px-2 py-2 bg-light rounded-3 gv-tag-row border-start border-3 border-secondary">
+              <span class="small text-dark">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
               <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeCondicion(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
             </div>
           </div>
-          <div *ngIf="!condicionClimaticas || condicionClimaticas.length === 0" class="text-center py-2">
+          <div *ngIf="gerenciaItemsPorMetodologia(condicionClimaticas).length === 0" class="text-center py-2">
             <i class="fas fa-cloud-rain text-muted opacity-50" style="font-size:16px;"></i>
-            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin valores para esta metodología</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 4. Horario de circulación -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #8b5cf6 0%, #a78bfa 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-clock text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Horario circulación</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignHorarioCircModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+    <div class="col" *ngIf="gerenciaFactorVisible('horario-circulacion')">
+      <div class="card gv-card border-0 shadow-sm h-100 overflow-hidden">
+        <div class="card-header py-3 px-3 d-flex align-items-center justify-content-between border-0 gv-hd-horario">
+          <h6 class="mb-0 fw-bold small gv-card-title text-white">Horario de circulación</h6>
+          <button type="button" class="btn btn-sm btn-link text-white p-0 opacity-90" (click)="openAsignHorarioCircModal()" [disabled]="!gerenciaMetodologiaVistaId" title="Agregar"><i class="fas fa-plus"></i></button>
         </div>
-        <div class="card-body p-2">
-          <div *ngIf="horarioCirculaciones && horarioCirculaciones.length > 0">
-            <div *ngFor="let item of horarioCirculaciones" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+        <div class="card-body p-3 gv-card-body">
+          <div *ngIf="gerenciaItemsPorMetodologia(horarioCirculaciones).length > 0">
+            <div *ngFor="let item of gerenciaItemsPorMetodologia(horarioCirculaciones)" class="d-flex align-items-center justify-content-between mb-2 px-2 py-2 bg-light rounded-3 gv-tag-row">
+              <span class="small text-dark">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
               <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeHorarioCirc(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
             </div>
           </div>
-          <div *ngIf="!horarioCirculaciones || horarioCirculaciones.length === 0" class="text-center py-2">
+          <div *ngIf="gerenciaItemsPorMetodologia(horarioCirculaciones).length === 0" class="text-center py-2">
             <i class="fas fa-clock text-muted opacity-50" style="font-size:16px;"></i>
-            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin valores para esta metodología</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 5. Estado de carretera -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-exclamation-triangle text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Estado de carretera</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignEstadoCarrModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+    <div class="col" *ngIf="gerenciaFactorVisible('estado-carretera')">
+      <div class="card gv-card border-0 shadow-sm h-100 overflow-hidden">
+        <div class="card-header py-3 px-3 d-flex align-items-center justify-content-between border-0 gv-hd-estado">
+          <h6 class="mb-0 fw-bold small gv-card-title text-white">Estado de carretera</h6>
+          <button type="button" class="btn btn-sm btn-link text-white p-0 opacity-90" (click)="openAsignEstadoCarrModal()" [disabled]="!gerenciaMetodologiaVistaId" title="Agregar"><i class="fas fa-plus"></i></button>
         </div>
-        <div class="card-body p-2">
-          <div *ngIf="estadoCarreteras && estadoCarreteras.length > 0">
-            <div *ngFor="let item of estadoCarreteras" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+        <div class="card-body p-3 gv-card-body">
+          <div *ngIf="gerenciaItemsPorMetodologia(estadoCarreteras).length > 0">
+            <div *ngFor="let item of gerenciaItemsPorMetodologia(estadoCarreteras)" class="d-flex align-items-center justify-content-between mb-2 px-2 py-2 bg-light rounded-3 gv-tag-row">
+              <span class="small text-dark">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
               <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeEstadoCarr(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
             </div>
           </div>
-          <div *ngIf="!estadoCarreteras || estadoCarreteras.length === 0" class="text-center py-2">
+          <div *ngIf="gerenciaItemsPorMetodologia(estadoCarreteras).length === 0" class="text-center py-2">
             <i class="fas fa-exclamation-triangle text-muted opacity-50" style="font-size:16px;"></i>
-            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin valores para esta metodología</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 6. Tipo de carga -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-boxes text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Tipo de carga</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignTipoCargaModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+    <div class="col" *ngIf="gerenciaFactorVisible('tipo-carga')">
+      <div class="card gv-card border-0 shadow-sm h-100 overflow-hidden">
+        <div class="card-header py-3 px-3 d-flex align-items-center justify-content-between border-0 gv-hd-carga">
+          <h6 class="mb-0 fw-bold small gv-card-title text-white">Tipo de carga</h6>
+          <button type="button" class="btn btn-sm btn-link text-white p-0 opacity-90" (click)="openAsignTipoCargaModal()" [disabled]="!gerenciaMetodologiaVistaId" title="Agregar"><i class="fas fa-plus"></i></button>
         </div>
-        <div class="card-body p-2">
-          <div *ngIf="tipoCargas && tipoCargas.length > 0">
-            <div *ngFor="let item of tipoCargas" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+        <div class="card-body p-3 gv-card-body">
+          <div *ngIf="gerenciaItemsPorMetodologia(tipoCargas).length > 0">
+            <div *ngFor="let item of gerenciaItemsPorMetodologia(tipoCargas)" class="d-flex align-items-center justify-content-between mb-2 px-2 py-2 bg-light rounded-3 gv-tag-row border-start border-3 border-danger">
+              <span class="small text-dark">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
               <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeTipoCarga(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
             </div>
           </div>
-          <div *ngIf="!tipoCargas || tipoCargas.length === 0" class="text-center py-2">
+          <div *ngIf="gerenciaItemsPorMetodologia(tipoCargas).length === 0" class="text-center py-2">
             <i class="fas fa-boxes text-muted opacity-50" style="font-size:16px;"></i>
-            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin valores para esta metodología</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 7. Horas de conducción -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #10b981 0%, #34d399 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-user-clock text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Horas conducción</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignHoraCondModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+    <div class="col" *ngIf="gerenciaFactorVisible('hora-conduccion')">
+      <div class="card gv-card border-0 shadow-sm h-100 overflow-hidden">
+        <div class="card-header py-3 px-3 d-flex align-items-center justify-content-between border-0 gv-hd-hcond">
+          <h6 class="mb-0 fw-bold small gv-card-title text-white">Horas de conducción</h6>
+          <button type="button" class="btn btn-sm btn-link text-white p-0 opacity-90" (click)="openAsignHoraCondModal()" [disabled]="!gerenciaMetodologiaVistaId" title="Agregar"><i class="fas fa-plus"></i></button>
         </div>
-        <div class="card-body p-2">
-          <div *ngIf="horaConducciones && horaConducciones.length > 0">
-            <div *ngFor="let item of horaConducciones" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+        <div class="card-body p-3 gv-card-body">
+          <div *ngIf="gerenciaItemsPorMetodologia(horaConducciones).length > 0">
+            <div *ngFor="let item of gerenciaItemsPorMetodologia(horaConducciones)" class="d-flex align-items-center justify-content-between mb-2 px-2 py-2 bg-light rounded-3 gv-tag-row">
+              <span class="small text-dark">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
               <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeHoraCond(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
             </div>
           </div>
-          <div *ngIf="!horaConducciones || horaConducciones.length === 0" class="text-center py-2">
+          <div *ngIf="gerenciaItemsPorMetodologia(horaConducciones).length === 0" class="text-center py-2">
             <i class="fas fa-user-clock text-muted opacity-50" style="font-size:16px;"></i>
-            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin valores para esta metodología</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 8. Horas de descanso -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-moon text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Horas descanso</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignHoraDescModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+    <div class="col" *ngIf="gerenciaFactorVisible('hora-descanso')">
+      <div class="card gv-card border-0 shadow-sm h-100 overflow-hidden">
+        <div class="card-header py-3 px-3 d-flex align-items-center justify-content-between border-0 gv-hd-hdesc">
+          <h6 class="mb-0 fw-bold small gv-card-title">Horas de descanso</h6>
+          <button type="button" class="btn btn-sm btn-link p-0 gv-hd-hdesc-btn" (click)="openAsignHoraDescModal()" [disabled]="!gerenciaMetodologiaVistaId" title="Agregar"><i class="fas fa-plus"></i></button>
         </div>
-        <div class="card-body p-2">
-          <div *ngIf="horaDescansos && horaDescansos.length > 0">
-            <div *ngFor="let item of horaDescansos" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+        <div class="card-body p-3 gv-card-body">
+          <div *ngIf="gerenciaItemsPorMetodologia(horaDescansos).length > 0">
+            <div *ngFor="let item of gerenciaItemsPorMetodologia(horaDescansos)" class="d-flex align-items-center justify-content-between mb-2 px-2 py-2 bg-light rounded-3 gv-tag-row">
+              <span class="small text-dark">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
               <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeHoraDesc(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
             </div>
           </div>
-          <div *ngIf="!horaDescansos || horaDescansos.length === 0" class="text-center py-2">
+          <div *ngIf="gerenciaItemsPorMetodologia(horaDescansos).length === 0" class="text-center py-2">
             <i class="fas fa-moon text-muted opacity-50" style="font-size:16px;"></i>
-            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin valores para esta metodología</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 9. Otros peligros -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-exclamation-circle text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Otros peligros</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignMedioComModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+    <!-- 9. Medios de comunicación -->
+    <div class="col" *ngIf="gerenciaFactorVisible('medio-comunicacion')">
+      <div class="card gv-card border-0 shadow-sm h-100 overflow-hidden">
+        <div class="card-header py-3 px-3 d-flex align-items-center justify-content-between border-0 gv-hd-medio">
+          <h6 class="mb-0 fw-bold small gv-card-title text-white">Medios de comunicación</h6>
+          <button type="button" class="btn btn-sm btn-link text-white p-0 opacity-90" (click)="openAsignMedioComModal()" [disabled]="!gerenciaMetodologiaVistaId" title="Agregar"><i class="fas fa-plus"></i></button>
         </div>
-        <div class="card-body p-2">
-          <div *ngIf="medioComunicaciones && medioComunicaciones.length > 0">
-            <div *ngFor="let item of medioComunicaciones" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+        <div class="card-body p-3 gv-card-body">
+          <div *ngIf="gerenciaItemsPorMetodologia(medioComunicaciones).length > 0">
+            <div *ngFor="let item of gerenciaItemsPorMetodologia(medioComunicaciones)" class="d-flex align-items-center justify-content-between mb-2 px-2 py-2 bg-light rounded-3 gv-tag-row">
+              <span class="small text-dark">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
               <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeMedioCom(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
             </div>
           </div>
-          <div *ngIf="!medioComunicaciones || medioComunicaciones.length === 0" class="text-center py-2">
+          <div *ngIf="gerenciaItemsPorMetodologia(medioComunicaciones).length === 0" class="text-center py-2">
             <i class="fas fa-exclamation-circle text-muted opacity-50" style="font-size:16px;"></i>
-            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin valores para esta metodología</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 10. Medidas de Control para el viaje -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #ec4899 0%, #f472b6 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-clipboard-check text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Medidas de Control para el viaje</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignTransportaModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
+    <!-- 10. Pasajeros (catálogo) -->
+    <div class="col" *ngIf="gerenciaFactorVisible('transporta-pasajero')">
+      <div class="card gv-card border-0 shadow-sm h-100 overflow-hidden">
+        <div class="card-header py-3 px-3 d-flex align-items-center justify-content-between border-0 gv-hd-pasajero">
+          <h6 class="mb-0 fw-bold small gv-card-title text-white">Pasajeros</h6>
+          <button type="button" class="btn btn-sm btn-link text-white p-0 opacity-90" (click)="openAsignTransportaModal()" [disabled]="!gerenciaMetodologiaVistaId" title="Agregar"><i class="fas fa-plus"></i></button>
         </div>
-        <div class="card-body p-2">
-          <div *ngIf="transportaPasajeros && transportaPasajeros.length > 0">
-            <div *ngFor="let item of transportaPasajeros" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
+        <div class="card-body p-3 gv-card-body">
+          <div *ngIf="gerenciaItemsPorMetodologia(transportaPasajeros).length > 0">
+            <div *ngFor="let item of gerenciaItemsPorMetodologia(transportaPasajeros)" class="d-flex align-items-center justify-content-between mb-2 px-2 py-2 bg-light rounded-3 gv-tag-row">
+              <span class="small text-dark">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
               <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeTransporta(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
             </div>
           </div>
-          <div *ngIf="!transportaPasajeros || transportaPasajeros.length === 0" class="text-center py-2">
+          <div *ngIf="gerenciaItemsPorMetodologia(transportaPasajeros).length === 0" class="text-center py-2">
             <i class="fas fa-clipboard-check text-muted opacity-50" style="font-size:16px;"></i>
-            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 11. Posibles riesgos en la vía -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #b45309 0%, #d97706 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-exclamation-triangle text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Posibles riesgos en la vía</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignPosibleRiesgoViaModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
-        </div>
-        <div class="card-body p-2">
-          <div *ngIf="posiblesRiesgosVia && posiblesRiesgosVia.length > 0">
-            <div *ngFor="let item of posiblesRiesgosVia" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
-              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removePosibleRiesgoVia(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
-            </div>
-          </div>
-          <div *ngIf="!posiblesRiesgosVia || posiblesRiesgosVia.length === 0" class="text-center py-2">
-            <i class="fas fa-exclamation-triangle text-muted opacity-50" style="font-size:16px;"></i>
-            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 12. Metodologías de evaluación (IPER, GTC-45, etc.) -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #000666 0%, #3b4abf 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-shield-alt text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size:13px;">Metodologías (IPER, GTC-45…)</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignMetodologiaModal()" title="Agregar"><i class="fas fa-plus" style="font-size:11px;"></i></button>
-        </div>
-        <div class="card-body p-2">
-          <div *ngIf="metodologiaRiesgos && metodologiaRiesgos.length > 0">
-            <div *ngFor="let item of metodologiaRiesgos" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size:11px;" class="fw-semibold">{{ item.name }}</span>
-              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeMetodologia(item.id)" style="font-size:10px; line-height:1.4;"><i class="fas fa-times"></i></button>
-            </div>
-          </div>
-          <div *ngIf="!metodologiaRiesgos || metodologiaRiesgos.length === 0" class="text-center py-2">
-            <i class="fas fa-shield-alt text-muted opacity-50" style="font-size:16px;"></i>
-            <p class="text-muted mb-0" style="font-size:10px;">Sin registros asignados</p>
+            <p class="text-muted mb-0" style="font-size:10px;">Sin valores para esta metodología</p>
           </div>
         </div>
       </div>
     </div>
 
   </div>
+
+  <div class="d-flex align-items-center gap-3 mb-4 mt-5">
+    <h3 class="h5 mb-0 fw-bold" style="color: #2c2f31;">Parámetros fijos de empresa</h3>
+    <div class="flex-grow-1" style="height: 2px; background: #e5e9eb;"></div>
+  </div>
+
+  <div class="row row-cols-1 row-cols-md-3 g-4 mb-4 gerencia-viajes-fijos">
+
+    <!-- 11. Otros peligros (catálogo descriptivo) -->
+    <div class="col">
+      <div class="gv-fijo-box h-100 p-4 rounded-4 shadow-sm position-relative" style="background: #eef1f3; border-left: 8px solid #795548;">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <h4 class="mb-0 fw-bold text-uppercase small tracking-wide" style="color: #795548; letter-spacing: 0.06em;">Otros peligros</h4>
+          <button type="button" class="btn rounded-circle bg-white shadow-sm p-0 d-flex align-items-center justify-content-center" style="width: 2rem; height: 2rem; color: #795548;" (click)="openAsignOtrosPeligrosViajeModal()" title="Agregar"><i class="fas fa-plus small"></i></button>
+        </div>
+        <div class="d-flex flex-column gap-2">
+          <ng-container *ngIf="otrosPeligrosViajeCatalogo && otrosPeligrosViajeCatalogo.length > 0">
+            <div *ngFor="let item of otrosPeligrosViajeCatalogo" class="d-flex align-items-start justify-content-between p-3 rounded-3 bg-white bg-opacity-50">
+              <span class="small text-secondary">{{ item.name }}</span>
+              <button type="button" class="btn btn-link text-danger p-0 ms-1 flex-shrink-0" (click)="removeOtrosPeligrosViaje(item.id)"><i class="fas fa-times"></i></button>
+            </div>
+          </ng-container>
+          <p *ngIf="!otrosPeligrosViajeCatalogo || otrosPeligrosViajeCatalogo.length === 0" class="small text-muted mb-0 text-center py-2">Sin registros</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 12. Posibles riesgos en la vía -->
+    <div class="col">
+      <div class="gv-fijo-box h-100 p-4 rounded-4 shadow-sm position-relative" style="background: #eef1f3; border-left: 8px solid #ef6c00;">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <h4 class="mb-0 fw-bold text-uppercase small tracking-wide" style="color: #ef6c00; letter-spacing: 0.06em;">Posibles riesgos en la vía</h4>
+          <button type="button" class="btn rounded-circle bg-white shadow-sm p-0 d-flex align-items-center justify-content-center" style="width: 2rem; height: 2rem; color: #ef6c00;" (click)="openAsignPosibleRiesgoViaModal()" title="Agregar"><i class="fas fa-plus small"></i></button>
+        </div>
+        <div class="d-flex flex-column gap-2">
+          <ng-container *ngIf="posiblesRiesgosVia && posiblesRiesgosVia.length > 0">
+            <div *ngFor="let item of posiblesRiesgosVia" class="d-flex align-items-start justify-content-between p-3 rounded-3 bg-white bg-opacity-50">
+              <span class="small text-secondary">{{ item.name }}</span>
+              <button type="button" class="btn btn-link text-danger p-0 ms-1 flex-shrink-0" (click)="removePosibleRiesgoVia(item.id)"><i class="fas fa-times"></i></button>
+            </div>
+          </ng-container>
+          <p *ngIf="!posiblesRiesgosVia || posiblesRiesgosVia.length === 0" class="small text-muted mb-0 text-center py-2">Sin registros</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 13. Medidas de control tomadas para el viaje -->
+    <div class="col">
+      <div class="gv-fijo-box h-100 p-4 rounded-4 shadow-sm position-relative" style="background: #eef1f3; border-left: 8px solid #004d40;">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <h4 class="mb-0 fw-bold text-uppercase small tracking-wide" style="color: #004d40; letter-spacing: 0.06em;">Medidas de control tomadas</h4>
+          <button type="button" class="btn rounded-circle bg-white shadow-sm p-0 d-flex align-items-center justify-content-center" style="width: 2rem; height: 2rem; color: #004d40;" (click)="openAsignMedidaControlTomadaModal()" title="Agregar"><i class="fas fa-plus small"></i></button>
+        </div>
+        <div class="d-flex flex-column gap-2">
+          <ng-container *ngIf="medidasControlTomadasViajeCatalogo && medidasControlTomadasViajeCatalogo.length > 0">
+            <div *ngFor="let item of medidasControlTomadasViajeCatalogo" class="d-flex align-items-start justify-content-between p-3 rounded-3 bg-white bg-opacity-50">
+              <span class="small text-secondary">{{ item.name }}</span>
+              <button type="button" class="btn btn-link text-danger p-0 ms-1 flex-shrink-0" (click)="removeMedidaControlTomadaViaje(item.id)"><i class="fas fa-times"></i></button>
+            </div>
+          </ng-container>
+          <p *ngIf="!medidasControlTomadasViajeCatalogo || medidasControlTomadasViajeCatalogo.length === 0" class="small text-muted mb-0 text-center py-2">Sin registros</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  </section>
 
   <!-- ═══════════════════════ SECCIÓN: CONFIGURACIÓN MATRIZ LEGAL ═══════════════════════ -->
   <div class="d-flex justify-content-between align-items-center mb-3 mt-4 pb-2" style="border-bottom: 2px solid #e9ecef;">
@@ -3635,16 +3685,25 @@
       <button type="button" class="btn-close btn-close-white" (click)="closeAsignDistanciaModal()"></button>
     </div>
     <div class="modal-body p-4">
-      <select class="form-select" [(ngModel)]="selectedDistanciaId">
-        <option [ngValue]="null" disabled>-- Seleccione --</option>
-        <option *ngFor="let item of availableViajes('allDistanciaRecorrers','distanciaRecorrers')" [ngValue]="item.id">{{ item.name }}</option>
-      </select>
-      <div *ngIf="availableViajes('allDistanciaRecorrers','distanciaRecorrers').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      <p class="small text-muted mb-2">Marque uno o varios registros del catálogo global (metodología seleccionada en la pantalla de empresa).</p>
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiSelectAll('distancia', availableViajesMetodologiaFactores('allDistanciaRecorrers','distanciaRecorrers'))">Seleccionar todos</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiClear('distancia')">Ninguno</button>
+        <span class="small text-muted align-self-center ms-auto" *ngIf="selectedDistanciaIds.length">{{ selectedDistanciaIds.length }} seleccionado(s)</span>
+      </div>
+      <div class="border rounded p-2 gerencia-multi-pick" style="max-height: 280px; overflow-y: auto;">
+        <label *ngFor="let item of availableViajesMetodologiaFactores('allDistanciaRecorrers','distanciaRecorrers'); trackBy: trackByGerenciaCatId" class="d-flex align-items-start gap-2 py-2 px-2 border-bottom mb-0 gerencia-multi-pick__row">
+          <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" [checked]="gerenciaMultiIsSelected('distancia', item.id)" (change)="gerenciaMultiToggle('distancia', item.id, $any($event.target).checked)">
+          <span class="small">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
+        </label>
+      </div>
+      <div *ngIf="gerenciaFactorSinCatalogoParaMetodologia('allDistanciaRecorrers')" class="alert alert-info small py-2 mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>No hay ítems en el catálogo global para la metodología seleccionada (p. ej. GTC45 frente a IPER). Créelos en <strong>Configuración</strong> → Evaluación de riesgo → Gerencia de Viajes → <em>Distancia a recorrer</em>, asociando cada registro a esa metodología.</div>
+      <div *ngIf="gerenciaFactorTodoAsignadoParaMetodologia('allDistanciaRecorrers','distanciaRecorrers')" class="alert alert-warning small py-2 mt-2 mb-0"><i class="fas fa-check-double me-1"></i>Ya están asignados a esta empresa todos los ítems de distancia disponibles para la metodología seleccionada.</div>
     </div>
     <div class="modal-footer border-0 bg-light">
       <button class="btn btn-outline-secondary" (click)="closeAsignDistanciaModal()">Cancelar</button>
-      <button class="btn btn-primary" (click)="assignDistancia()" [disabled]="!selectedDistanciaId || savingDistancia">
-        <i class="fas" [ngClass]="savingDistancia ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      <button class="btn btn-primary" (click)="assignDistancia()" [disabled]="!selectedDistanciaIds.length || savingDistancia">
+        <i class="fas" [ngClass]="savingDistancia ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar<span *ngIf="selectedDistanciaIds.length"> ({{ selectedDistanciaIds.length }})</span>
       </button>
     </div>
   </div></div>
@@ -3658,16 +3717,25 @@
       <button type="button" class="btn-close btn-close-white" (click)="closeAsignTipoViaModal()"></button>
     </div>
     <div class="modal-body p-4">
-      <select class="form-select" [(ngModel)]="selectedTipoViaId">
-        <option [ngValue]="null" disabled>-- Seleccione --</option>
-        <option *ngFor="let item of availableViajes('allTipoVias','tipoVias')" [ngValue]="item.id">{{ item.name }}</option>
-      </select>
-      <div *ngIf="availableViajes('allTipoVias','tipoVias').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      <p class="small text-muted mb-2">Marque uno o varios registros del catálogo global (metodología seleccionada en la pantalla de empresa).</p>
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiSelectAll('tipoVia', availableViajesMetodologiaFactores('allTipoVias','tipoVias'))">Seleccionar todos</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiClear('tipoVia')">Ninguno</button>
+        <span class="small text-muted align-self-center ms-auto" *ngIf="selectedTipoViaIds.length">{{ selectedTipoViaIds.length }} seleccionado(s)</span>
+      </div>
+      <div class="border rounded p-2 gerencia-multi-pick" style="max-height: 280px; overflow-y: auto;">
+        <label *ngFor="let item of availableViajesMetodologiaFactores('allTipoVias','tipoVias'); trackBy: trackByGerenciaCatId" class="d-flex align-items-start gap-2 py-2 px-2 border-bottom mb-0 gerencia-multi-pick__row">
+          <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" [checked]="gerenciaMultiIsSelected('tipoVia', item.id)" (change)="gerenciaMultiToggle('tipoVia', item.id, $any($event.target).checked)">
+          <span class="small">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
+        </label>
+      </div>
+      <div *ngIf="gerenciaFactorSinCatalogoParaMetodologia('allTipoVias')" class="alert alert-info small py-2 mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>No hay ítems en el catálogo global para la metodología seleccionada. Créelos en <strong>Configuración</strong> → Evaluación de riesgo → Gerencia de Viajes, con la misma metodología.</div>
+      <div *ngIf="gerenciaFactorTodoAsignadoParaMetodologia('allTipoVias','tipoVias')" class="alert alert-warning small py-2 mt-2 mb-0"><i class="fas fa-check-double me-1"></i>Ya están asignados a esta empresa todos los ítems disponibles de este catálogo para la metodología seleccionada.</div>
     </div>
     <div class="modal-footer border-0 bg-light">
       <button class="btn btn-outline-secondary" (click)="closeAsignTipoViaModal()">Cancelar</button>
-      <button class="btn btn-primary" (click)="assignTipoVia()" [disabled]="!selectedTipoViaId || savingTipoVia">
-        <i class="fas" [ngClass]="savingTipoVia ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      <button class="btn btn-primary" (click)="assignTipoVia()" [disabled]="!selectedTipoViaIds.length || savingTipoVia">
+        <i class="fas" [ngClass]="savingTipoVia ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar<span *ngIf="selectedTipoViaIds.length"> ({{ selectedTipoViaIds.length }})</span>
       </button>
     </div>
   </div></div>
@@ -3681,16 +3749,25 @@
       <button type="button" class="btn-close btn-close-white" (click)="closeAsignCondicionModal()"></button>
     </div>
     <div class="modal-body p-4">
-      <select class="form-select" [(ngModel)]="selectedCondicionId">
-        <option [ngValue]="null" disabled>-- Seleccione --</option>
-        <option *ngFor="let item of availableViajes('allCondicionClimaticas','condicionClimaticas')" [ngValue]="item.id">{{ item.name }}</option>
-      </select>
-      <div *ngIf="availableViajes('allCondicionClimaticas','condicionClimaticas').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      <p class="small text-muted mb-2">Marque uno o varios registros del catálogo global (metodología seleccionada en la pantalla de empresa).</p>
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiSelectAll('condicion', availableViajesMetodologiaFactores('allCondicionClimaticas','condicionClimaticas'))">Seleccionar todos</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiClear('condicion')">Ninguno</button>
+        <span class="small text-muted align-self-center ms-auto" *ngIf="selectedCondicionIds.length">{{ selectedCondicionIds.length }} seleccionado(s)</span>
+      </div>
+      <div class="border rounded p-2 gerencia-multi-pick" style="max-height: 280px; overflow-y: auto;">
+        <label *ngFor="let item of availableViajesMetodologiaFactores('allCondicionClimaticas','condicionClimaticas'); trackBy: trackByGerenciaCatId" class="d-flex align-items-start gap-2 py-2 px-2 border-bottom mb-0 gerencia-multi-pick__row">
+          <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" [checked]="gerenciaMultiIsSelected('condicion', item.id)" (change)="gerenciaMultiToggle('condicion', item.id, $any($event.target).checked)">
+          <span class="small">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
+        </label>
+      </div>
+      <div *ngIf="gerenciaFactorSinCatalogoParaMetodologia('allCondicionClimaticas')" class="alert alert-info small py-2 mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>No hay ítems en el catálogo global para la metodología seleccionada. Créelos en <strong>Configuración</strong> → Evaluación de riesgo → Gerencia de Viajes, con la misma metodología.</div>
+      <div *ngIf="gerenciaFactorTodoAsignadoParaMetodologia('allCondicionClimaticas','condicionClimaticas')" class="alert alert-warning small py-2 mt-2 mb-0"><i class="fas fa-check-double me-1"></i>Ya están asignados a esta empresa todos los ítems disponibles de este catálogo para la metodología seleccionada.</div>
     </div>
     <div class="modal-footer border-0 bg-light">
       <button class="btn btn-outline-secondary" (click)="closeAsignCondicionModal()">Cancelar</button>
-      <button class="btn btn-primary" (click)="assignCondicion()" [disabled]="!selectedCondicionId || savingCondicion">
-        <i class="fas" [ngClass]="savingCondicion ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      <button class="btn btn-primary" (click)="assignCondicion()" [disabled]="!selectedCondicionIds.length || savingCondicion">
+        <i class="fas" [ngClass]="savingCondicion ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar<span *ngIf="selectedCondicionIds.length"> ({{ selectedCondicionIds.length }})</span>
       </button>
     </div>
   </div></div>
@@ -3704,16 +3781,25 @@
       <button type="button" class="btn-close btn-close-white" (click)="closeAsignHorarioCircModal()"></button>
     </div>
     <div class="modal-body p-4">
-      <select class="form-select" [(ngModel)]="selectedHorarioCircId">
-        <option [ngValue]="null" disabled>-- Seleccione --</option>
-        <option *ngFor="let item of availableViajes('allHorarioCirculaciones','horarioCirculaciones')" [ngValue]="item.id">{{ item.name }}</option>
-      </select>
-      <div *ngIf="availableViajes('allHorarioCirculaciones','horarioCirculaciones').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      <p class="small text-muted mb-2">Marque uno o varios registros del catálogo global (metodología seleccionada en la pantalla de empresa).</p>
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiSelectAll('horario', availableViajesMetodologiaFactores('allHorarioCirculaciones','horarioCirculaciones'))">Seleccionar todos</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiClear('horario')">Ninguno</button>
+        <span class="small text-muted align-self-center ms-auto" *ngIf="selectedHorarioCircIds.length">{{ selectedHorarioCircIds.length }} seleccionado(s)</span>
+      </div>
+      <div class="border rounded p-2 gerencia-multi-pick" style="max-height: 280px; overflow-y: auto;">
+        <label *ngFor="let item of availableViajesMetodologiaFactores('allHorarioCirculaciones','horarioCirculaciones'); trackBy: trackByGerenciaCatId" class="d-flex align-items-start gap-2 py-2 px-2 border-bottom mb-0 gerencia-multi-pick__row">
+          <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" [checked]="gerenciaMultiIsSelected('horario', item.id)" (change)="gerenciaMultiToggle('horario', item.id, $any($event.target).checked)">
+          <span class="small">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
+        </label>
+      </div>
+      <div *ngIf="gerenciaFactorSinCatalogoParaMetodologia('allHorarioCirculaciones')" class="alert alert-info small py-2 mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>No hay ítems en el catálogo global para la metodología seleccionada. Créelos en <strong>Configuración</strong> → Evaluación de riesgo → Gerencia de Viajes, con la misma metodología.</div>
+      <div *ngIf="gerenciaFactorTodoAsignadoParaMetodologia('allHorarioCirculaciones','horarioCirculaciones')" class="alert alert-warning small py-2 mt-2 mb-0"><i class="fas fa-check-double me-1"></i>Ya están asignados a esta empresa todos los ítems disponibles de este catálogo para la metodología seleccionada.</div>
     </div>
     <div class="modal-footer border-0 bg-light">
       <button class="btn btn-outline-secondary" (click)="closeAsignHorarioCircModal()">Cancelar</button>
-      <button class="btn btn-primary" (click)="assignHorarioCirc()" [disabled]="!selectedHorarioCircId || savingHorarioCirc">
-        <i class="fas" [ngClass]="savingHorarioCirc ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      <button class="btn btn-primary" (click)="assignHorarioCirc()" [disabled]="!selectedHorarioCircIds.length || savingHorarioCirc">
+        <i class="fas" [ngClass]="savingHorarioCirc ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar<span *ngIf="selectedHorarioCircIds.length"> ({{ selectedHorarioCircIds.length }})</span>
       </button>
     </div>
   </div></div>
@@ -3727,16 +3813,25 @@
       <button type="button" class="btn-close btn-close-white" (click)="closeAsignEstadoCarrModal()"></button>
     </div>
     <div class="modal-body p-4">
-      <select class="form-select" [(ngModel)]="selectedEstadoCarrId">
-        <option [ngValue]="null" disabled>-- Seleccione --</option>
-        <option *ngFor="let item of availableViajes('allEstadoCarreteras','estadoCarreteras')" [ngValue]="item.id">{{ item.name }}</option>
-      </select>
-      <div *ngIf="availableViajes('allEstadoCarreteras','estadoCarreteras').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      <p class="small text-muted mb-2">Marque uno o varios registros del catálogo global (metodología seleccionada en la pantalla de empresa).</p>
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiSelectAll('estadoCarr', availableViajesMetodologiaFactores('allEstadoCarreteras','estadoCarreteras'))">Seleccionar todos</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiClear('estadoCarr')">Ninguno</button>
+        <span class="small text-muted align-self-center ms-auto" *ngIf="selectedEstadoCarrIds.length">{{ selectedEstadoCarrIds.length }} seleccionado(s)</span>
+      </div>
+      <div class="border rounded p-2 gerencia-multi-pick" style="max-height: 280px; overflow-y: auto;">
+        <label *ngFor="let item of availableViajesMetodologiaFactores('allEstadoCarreteras','estadoCarreteras'); trackBy: trackByGerenciaCatId" class="d-flex align-items-start gap-2 py-2 px-2 border-bottom mb-0 gerencia-multi-pick__row">
+          <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" [checked]="gerenciaMultiIsSelected('estadoCarr', item.id)" (change)="gerenciaMultiToggle('estadoCarr', item.id, $any($event.target).checked)">
+          <span class="small">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
+        </label>
+      </div>
+      <div *ngIf="gerenciaFactorSinCatalogoParaMetodologia('allEstadoCarreteras')" class="alert alert-info small py-2 mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>No hay ítems en el catálogo global para la metodología seleccionada. Créelos en <strong>Configuración</strong> → Evaluación de riesgo → Gerencia de Viajes, con la misma metodología.</div>
+      <div *ngIf="gerenciaFactorTodoAsignadoParaMetodologia('allEstadoCarreteras','estadoCarreteras')" class="alert alert-warning small py-2 mt-2 mb-0"><i class="fas fa-check-double me-1"></i>Ya están asignados a esta empresa todos los ítems disponibles de este catálogo para la metodología seleccionada.</div>
     </div>
     <div class="modal-footer border-0 bg-light">
       <button class="btn btn-outline-secondary" (click)="closeAsignEstadoCarrModal()">Cancelar</button>
-      <button class="btn btn-primary" (click)="assignEstadoCarr()" [disabled]="!selectedEstadoCarrId || savingEstadoCarr">
-        <i class="fas" [ngClass]="savingEstadoCarr ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      <button class="btn btn-primary" (click)="assignEstadoCarr()" [disabled]="!selectedEstadoCarrIds.length || savingEstadoCarr">
+        <i class="fas" [ngClass]="savingEstadoCarr ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar<span *ngIf="selectedEstadoCarrIds.length"> ({{ selectedEstadoCarrIds.length }})</span>
       </button>
     </div>
   </div></div>
@@ -3750,16 +3845,25 @@
       <button type="button" class="btn-close btn-close-white" (click)="closeAsignTipoCargaModal()"></button>
     </div>
     <div class="modal-body p-4">
-      <select class="form-select" [(ngModel)]="selectedTipoCargaId">
-        <option [ngValue]="null" disabled>-- Seleccione --</option>
-        <option *ngFor="let item of availableViajes('allTipoCargas','tipoCargas')" [ngValue]="item.id">{{ item.name }}</option>
-      </select>
-      <div *ngIf="availableViajes('allTipoCargas','tipoCargas').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      <p class="small text-muted mb-2">Marque uno o varios registros del catálogo global (metodología seleccionada en la pantalla de empresa).</p>
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiSelectAll('tipoCarga', availableViajesMetodologiaFactores('allTipoCargas','tipoCargas'))">Seleccionar todos</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiClear('tipoCarga')">Ninguno</button>
+        <span class="small text-muted align-self-center ms-auto" *ngIf="selectedTipoCargaIds.length">{{ selectedTipoCargaIds.length }} seleccionado(s)</span>
+      </div>
+      <div class="border rounded p-2 gerencia-multi-pick" style="max-height: 280px; overflow-y: auto;">
+        <label *ngFor="let item of availableViajesMetodologiaFactores('allTipoCargas','tipoCargas'); trackBy: trackByGerenciaCatId" class="d-flex align-items-start gap-2 py-2 px-2 border-bottom mb-0 gerencia-multi-pick__row">
+          <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" [checked]="gerenciaMultiIsSelected('tipoCarga', item.id)" (change)="gerenciaMultiToggle('tipoCarga', item.id, $any($event.target).checked)">
+          <span class="small">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
+        </label>
+      </div>
+      <div *ngIf="gerenciaFactorSinCatalogoParaMetodologia('allTipoCargas')" class="alert alert-info small py-2 mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>No hay ítems en el catálogo global para la metodología seleccionada. Créelos en <strong>Configuración</strong> → Evaluación de riesgo → Gerencia de Viajes, con la misma metodología.</div>
+      <div *ngIf="gerenciaFactorTodoAsignadoParaMetodologia('allTipoCargas','tipoCargas')" class="alert alert-warning small py-2 mt-2 mb-0"><i class="fas fa-check-double me-1"></i>Ya están asignados a esta empresa todos los ítems disponibles de este catálogo para la metodología seleccionada.</div>
     </div>
     <div class="modal-footer border-0 bg-light">
       <button class="btn btn-outline-secondary" (click)="closeAsignTipoCargaModal()">Cancelar</button>
-      <button class="btn btn-primary" (click)="assignTipoCarga()" [disabled]="!selectedTipoCargaId || savingTipoCarga">
-        <i class="fas" [ngClass]="savingTipoCarga ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      <button class="btn btn-primary" (click)="assignTipoCarga()" [disabled]="!selectedTipoCargaIds.length || savingTipoCarga">
+        <i class="fas" [ngClass]="savingTipoCarga ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar<span *ngIf="selectedTipoCargaIds.length"> ({{ selectedTipoCargaIds.length }})</span>
       </button>
     </div>
   </div></div>
@@ -3773,16 +3877,25 @@
       <button type="button" class="btn-close btn-close-white" (click)="closeAsignHoraCondModal()"></button>
     </div>
     <div class="modal-body p-4">
-      <select class="form-select" [(ngModel)]="selectedHoraCondId">
-        <option [ngValue]="null" disabled>-- Seleccione --</option>
-        <option *ngFor="let item of availableViajes('allHoraConducciones','horaConducciones')" [ngValue]="item.id">{{ item.name }}</option>
-      </select>
-      <div *ngIf="availableViajes('allHoraConducciones','horaConducciones').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      <p class="small text-muted mb-2">Marque uno o varios registros del catálogo global (metodología seleccionada en la pantalla de empresa).</p>
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiSelectAll('horaCond', availableViajesMetodologiaFactores('allHoraConducciones','horaConducciones'))">Seleccionar todos</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiClear('horaCond')">Ninguno</button>
+        <span class="small text-muted align-self-center ms-auto" *ngIf="selectedHoraCondIds.length">{{ selectedHoraCondIds.length }} seleccionado(s)</span>
+      </div>
+      <div class="border rounded p-2 gerencia-multi-pick" style="max-height: 280px; overflow-y: auto;">
+        <label *ngFor="let item of availableViajesMetodologiaFactores('allHoraConducciones','horaConducciones'); trackBy: trackByGerenciaCatId" class="d-flex align-items-start gap-2 py-2 px-2 border-bottom mb-0 gerencia-multi-pick__row">
+          <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" [checked]="gerenciaMultiIsSelected('horaCond', item.id)" (change)="gerenciaMultiToggle('horaCond', item.id, $any($event.target).checked)">
+          <span class="small">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
+        </label>
+      </div>
+      <div *ngIf="gerenciaFactorSinCatalogoParaMetodologia('allHoraConducciones')" class="alert alert-info small py-2 mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>No hay ítems en el catálogo global para la metodología seleccionada. Créelos en <strong>Configuración</strong> → Evaluación de riesgo → Gerencia de Viajes, con la misma metodología.</div>
+      <div *ngIf="gerenciaFactorTodoAsignadoParaMetodologia('allHoraConducciones','horaConducciones')" class="alert alert-warning small py-2 mt-2 mb-0"><i class="fas fa-check-double me-1"></i>Ya están asignados a esta empresa todos los ítems disponibles de este catálogo para la metodología seleccionada.</div>
     </div>
     <div class="modal-footer border-0 bg-light">
       <button class="btn btn-outline-secondary" (click)="closeAsignHoraCondModal()">Cancelar</button>
-      <button class="btn btn-primary" (click)="assignHoraCond()" [disabled]="!selectedHoraCondId || savingHoraCond">
-        <i class="fas" [ngClass]="savingHoraCond ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      <button class="btn btn-primary" (click)="assignHoraCond()" [disabled]="!selectedHoraCondIds.length || savingHoraCond">
+        <i class="fas" [ngClass]="savingHoraCond ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar<span *ngIf="selectedHoraCondIds.length"> ({{ selectedHoraCondIds.length }})</span>
       </button>
     </div>
   </div></div>
@@ -3796,62 +3909,89 @@
       <button type="button" class="btn-close btn-close-white" (click)="closeAsignHoraDescModal()"></button>
     </div>
     <div class="modal-body p-4">
-      <select class="form-select" [(ngModel)]="selectedHoraDescId">
-        <option [ngValue]="null" disabled>-- Seleccione --</option>
-        <option *ngFor="let item of availableViajes('allHoraDescansos','horaDescansos')" [ngValue]="item.id">{{ item.name }}</option>
-      </select>
-      <div *ngIf="availableViajes('allHoraDescansos','horaDescansos').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      <p class="small text-muted mb-2">Marque uno o varios registros del catálogo global (metodología seleccionada en la pantalla de empresa).</p>
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiSelectAll('horaDesc', availableViajesMetodologiaFactores('allHoraDescansos','horaDescansos'))">Seleccionar todos</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiClear('horaDesc')">Ninguno</button>
+        <span class="small text-muted align-self-center ms-auto" *ngIf="selectedHoraDescIds.length">{{ selectedHoraDescIds.length }} seleccionado(s)</span>
+      </div>
+      <div class="border rounded p-2 gerencia-multi-pick" style="max-height: 280px; overflow-y: auto;">
+        <label *ngFor="let item of availableViajesMetodologiaFactores('allHoraDescansos','horaDescansos'); trackBy: trackByGerenciaCatId" class="d-flex align-items-start gap-2 py-2 px-2 border-bottom mb-0 gerencia-multi-pick__row">
+          <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" [checked]="gerenciaMultiIsSelected('horaDesc', item.id)" (change)="gerenciaMultiToggle('horaDesc', item.id, $any($event.target).checked)">
+          <span class="small">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
+        </label>
+      </div>
+      <div *ngIf="gerenciaFactorSinCatalogoParaMetodologia('allHoraDescansos')" class="alert alert-info small py-2 mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>No hay ítems en el catálogo global para la metodología seleccionada. Créelos en <strong>Configuración</strong> → Evaluación de riesgo → Gerencia de Viajes, con la misma metodología.</div>
+      <div *ngIf="gerenciaFactorTodoAsignadoParaMetodologia('allHoraDescansos','horaDescansos')" class="alert alert-warning small py-2 mt-2 mb-0"><i class="fas fa-check-double me-1"></i>Ya están asignados a esta empresa todos los ítems disponibles de este catálogo para la metodología seleccionada.</div>
     </div>
     <div class="modal-footer border-0 bg-light">
       <button class="btn btn-outline-secondary" (click)="closeAsignHoraDescModal()">Cancelar</button>
-      <button class="btn btn-primary" (click)="assignHoraDesc()" [disabled]="!selectedHoraDescId || savingHoraDesc">
-        <i class="fas" [ngClass]="savingHoraDesc ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      <button class="btn btn-primary" (click)="assignHoraDesc()" [disabled]="!selectedHoraDescIds.length || savingHoraDesc">
+        <i class="fas" [ngClass]="savingHoraDesc ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar<span *ngIf="selectedHoraDescIds.length"> ({{ selectedHoraDescIds.length }})</span>
       </button>
     </div>
   </div></div>
 </div>
 
-<!-- Modal: Otros peligros -->
+<!-- Modal: Medios de comunicación -->
 <div *ngIf="showAsignMedioComModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
   <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
     <div class="modal-header border-0" style="background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);">
-      <div class="d-flex align-items-center"><i class="fas fa-exclamation-circle text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Otros peligros</h5></div>
+      <div class="d-flex align-items-center"><i class="fas fa-broadcast-tower text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar medios de comunicación</h5></div>
       <button type="button" class="btn-close btn-close-white" (click)="closeAsignMedioComModal()"></button>
     </div>
     <div class="modal-body p-4">
-      <select class="form-select" [(ngModel)]="selectedMedioComId">
-        <option [ngValue]="null" disabled>-- Seleccione --</option>
-        <option *ngFor="let item of availableViajes('allMedioComunicaciones','medioComunicaciones')" [ngValue]="item.id">{{ item.name }}</option>
-      </select>
-      <div *ngIf="availableViajes('allMedioComunicaciones','medioComunicaciones').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      <p class="small text-muted mb-2">Marque uno o varios registros del catálogo global (metodología seleccionada en la pantalla de empresa).</p>
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiSelectAll('medioCom', availableViajesMetodologiaFactores('allMedioComunicaciones','medioComunicaciones'))">Seleccionar todos</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiClear('medioCom')">Ninguno</button>
+        <span class="small text-muted align-self-center ms-auto" *ngIf="selectedMedioComIds.length">{{ selectedMedioComIds.length }} seleccionado(s)</span>
+      </div>
+      <div class="border rounded p-2 gerencia-multi-pick" style="max-height: 280px; overflow-y: auto;">
+        <label *ngFor="let item of availableViajesMetodologiaFactores('allMedioComunicaciones','medioComunicaciones'); trackBy: trackByGerenciaCatId" class="d-flex align-items-start gap-2 py-2 px-2 border-bottom mb-0 gerencia-multi-pick__row">
+          <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" [checked]="gerenciaMultiIsSelected('medioCom', item.id)" (change)="gerenciaMultiToggle('medioCom', item.id, $any($event.target).checked)">
+          <span class="small">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
+        </label>
+      </div>
+      <div *ngIf="gerenciaFactorSinCatalogoParaMetodologia('allMedioComunicaciones')" class="alert alert-info small py-2 mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>No hay ítems en el catálogo global para la metodología seleccionada. Créelos en <strong>Configuración</strong> → Evaluación de riesgo → Gerencia de Viajes, con la misma metodología.</div>
+      <div *ngIf="gerenciaFactorTodoAsignadoParaMetodologia('allMedioComunicaciones','medioComunicaciones')" class="alert alert-warning small py-2 mt-2 mb-0"><i class="fas fa-check-double me-1"></i>Ya están asignados a esta empresa todos los ítems disponibles de este catálogo para la metodología seleccionada.</div>
     </div>
     <div class="modal-footer border-0 bg-light">
       <button class="btn btn-outline-secondary" (click)="closeAsignMedioComModal()">Cancelar</button>
-      <button class="btn btn-primary" (click)="assignMedioCom()" [disabled]="!selectedMedioComId || savingMedioCom">
-        <i class="fas" [ngClass]="savingMedioCom ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      <button class="btn btn-primary" (click)="assignMedioCom()" [disabled]="!selectedMedioComIds.length || savingMedioCom">
+        <i class="fas" [ngClass]="savingMedioCom ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar<span *ngIf="selectedMedioComIds.length"> ({{ selectedMedioComIds.length }})</span>
       </button>
     </div>
   </div></div>
 </div>
 
-<!-- Modal: Medidas de Control para el viaje -->
+<!-- Modal: Pasajeros -->
 <div *ngIf="showAsignTransportaModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
   <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
     <div class="modal-header border-0" style="background: linear-gradient(90deg, #ec4899 0%, #f472b6 100%);">
-      <div class="d-flex align-items-center"><i class="fas fa-clipboard-check text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Medidas de Control para el viaje</h5></div>
+      <div class="d-flex align-items-center"><i class="fas fa-user-friends text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar pasajeros</h5></div>
       <button type="button" class="btn-close btn-close-white" (click)="closeAsignTransportaModal()"></button>
     </div>
     <div class="modal-body p-4">
-      <select class="form-select" [(ngModel)]="selectedTransportaId">
-        <option [ngValue]="null" disabled>-- Seleccione --</option>
-        <option *ngFor="let item of availableViajes('allTransportaPasajeros','transportaPasajeros')" [ngValue]="item.id">{{ item.name }}</option>
-      </select>
-      <div *ngIf="availableViajes('allTransportaPasajeros','transportaPasajeros').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
+      <p class="small text-muted mb-2">Marque uno o varios registros del catálogo global (metodología seleccionada en la pantalla de empresa).</p>
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiSelectAll('transporta', availableViajesMetodologiaFactores('allTransportaPasajeros','transportaPasajeros'))">Seleccionar todos</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="gerenciaMultiClear('transporta')">Ninguno</button>
+        <span class="small text-muted align-self-center ms-auto" *ngIf="selectedTransportaIds.length">{{ selectedTransportaIds.length }} seleccionado(s)</span>
+      </div>
+      <div class="border rounded p-2 gerencia-multi-pick" style="max-height: 280px; overflow-y: auto;">
+        <label *ngFor="let item of availableViajesMetodologiaFactores('allTransportaPasajeros','transportaPasajeros'); trackBy: trackByGerenciaCatId" class="d-flex align-items-start gap-2 py-2 px-2 border-bottom mb-0 gerencia-multi-pick__row">
+          <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" [checked]="gerenciaMultiIsSelected('transporta', item.id)" (change)="gerenciaMultiToggle('transporta', item.id, $any($event.target).checked)">
+          <span class="small">{{ gerenciaEtiquetaOpcionCatalogoViaje(item) }}</span>
+        </label>
+      </div>
+      <div *ngIf="gerenciaFactorSinCatalogoParaMetodologia('allTransportaPasajeros')" class="alert alert-info small py-2 mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>No hay ítems en el catálogo global para la metodología seleccionada. Créelos en <strong>Configuración</strong> → Evaluación de riesgo → Gerencia de Viajes, con la misma metodología.</div>
+      <div *ngIf="gerenciaFactorTodoAsignadoParaMetodologia('allTransportaPasajeros','transportaPasajeros')" class="alert alert-warning small py-2 mt-2 mb-0"><i class="fas fa-check-double me-1"></i>Ya están asignados a esta empresa todos los ítems disponibles de este catálogo para la metodología seleccionada.</div>
     </div>
     <div class="modal-footer border-0 bg-light">
       <button class="btn btn-outline-secondary" (click)="closeAsignTransportaModal()">Cancelar</button>
-      <button class="btn btn-primary" (click)="assignTransporta()" [disabled]="!selectedTransportaId || savingTransporta">
-        <i class="fas" [ngClass]="savingTransporta ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      <button class="btn btn-primary" (click)="assignTransporta()" [disabled]="!selectedTransportaIds.length || savingTransporta">
+        <i class="fas" [ngClass]="savingTransporta ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar<span *ngIf="selectedTransportaIds.length"> ({{ selectedTransportaIds.length }})</span>
       </button>
     </div>
   </div></div>
@@ -3875,6 +4015,52 @@
       <button class="btn btn-outline-secondary" (click)="closeAsignPosibleRiesgoViaModal()">Cancelar</button>
       <button class="btn btn-primary" (click)="assignPosibleRiesgoVia()" [disabled]="!selectedPosibleRiesgoViaId || savingPosibleRiesgoVia">
         <i class="fas" [ngClass]="savingPosibleRiesgoVia ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Otros peligros (catálogo) -->
+<div *ngIf="showAsignOtrosPeligrosViajeModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #7c2d12 0%, #9a3412 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-exclamation-circle text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar otros peligros</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignOtrosPeligrosViajeModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedOtrosPeligrosViajeId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allOtrosPeligrosViaje','otrosPeligrosViajeCatalogo')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allOtrosPeligrosViaje','otrosPeligrosViajeCatalogo').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles. Créelos en Configuración → Otros peligros.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignOtrosPeligrosViajeModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignOtrosPeligrosViaje()" [disabled]="!selectedOtrosPeligrosViajeId || savingOtrosPeligrosViaje">
+        <i class="fas" [ngClass]="savingOtrosPeligrosViaje ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Modal: Medidas de control tomadas para el viaje -->
+<div *ngIf="showAsignMedidaControlTomadaModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow-lg">
+    <div class="modal-header border-0" style="background: linear-gradient(90deg, #0f766e 0%, #14b8a6 100%);">
+      <div class="d-flex align-items-center"><i class="fas fa-clipboard-list text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar medidas de control tomadas</h5></div>
+      <button type="button" class="btn-close btn-close-white" (click)="closeAsignMedidaControlTomadaModal()"></button>
+    </div>
+    <div class="modal-body p-4">
+      <select class="form-select" [(ngModel)]="selectedMedidaControlTomadaId">
+        <option [ngValue]="null" disabled>-- Seleccione --</option>
+        <option *ngFor="let item of availableViajes('allMedidasControlTomadasViaje','medidasControlTomadasViajeCatalogo')" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+      <div *ngIf="availableViajes('allMedidasControlTomadasViaje','medidasControlTomadasViajeCatalogo').length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles. Créelos en Configuración → Medidas de control tomadas para el viaje.</div>
+    </div>
+    <div class="modal-footer border-0 bg-light">
+      <button class="btn btn-outline-secondary" (click)="closeAsignMedidaControlTomadaModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="assignMedidaControlTomadaViaje()" [disabled]="!selectedMedidaControlTomadaId || savingMedidaControlTomada">
+        <i class="fas" [ngClass]="savingMedidaControlTomada ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
       </button>
     </div>
   </div></div>

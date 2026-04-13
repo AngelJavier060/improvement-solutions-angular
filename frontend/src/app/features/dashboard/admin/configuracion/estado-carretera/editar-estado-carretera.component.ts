@@ -1,7 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
+import { EstadoCarretera } from '../../../../../models/estado-carretera.model';
 import { EstadoCarreteraService } from '../../../../../services/estado-carretera.service';
+import { MetodologiaRiesgo } from '../../../../../models/metodologia-riesgo.model';
+import { MetodologiaRiesgoService } from '../../../../../services/metodologia-riesgo.service';
+import { parametrosIperNpNs } from '../shared/metodologia-catalogo-niveles.util';
 
 @Component({
   selector: 'app-editar-estado-carretera',
@@ -14,50 +19,91 @@ export class EditarEstadoCarreteraComponent implements OnInit {
   saving = false;
   error = '';
   id!: number;
+  metodologias: MetodologiaRiesgo[] = [];
 
   constructor(
     private fb: FormBuilder,
     private service: EstadoCarreteraService,
+    private metodologiaService: MetodologiaRiesgoService,
     private router: Router,
     private route: ActivatedRoute
   ) {
     this.form = this.fb.group({
       name: ['', Validators.required],
-      description: ['']
+      description: [''],
+      metodologiaId: [null],
+      neNivelId: [null],
+      ndNivelId: [null],
+      ncNivelId: [null]
     });
   }
 
   ngOnInit(): void {
     this.id = Number(this.route.snapshot.paramMap.get('id'));
-    this.service.getById(this.id).subscribe({
-      next: (data) => {
-        this.form.patchValue({ name: data.name, description: data.description });
+    this.loadData();
+  }
+
+  loadData(): void {
+    forkJoin({
+      metodologias: this.metodologiaService.getAll(),
+      item: this.service.getById(this.id)
+    }).subscribe({
+      next: ({ metodologias, item }) => {
+        this.metodologias = metodologias;
+        this.form.patchValue({
+          name: item.name,
+          description: item.description,
+          metodologiaId: item.metodologiaRiesgo?.id ?? null,
+          neNivelId: item.neNivel?.id ?? null,
+          ndNivelId: item.ndNivel?.id ?? null,
+          ncNivelId: item.ncNivel?.id ?? null
+        });
         this.loading = false;
       },
-      error: (err) => {
+      error: () => {
         this.error = 'Error al cargar el registro';
         this.loading = false;
-        console.error(err);
       }
     });
   }
 
   onSubmit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
     this.saving = true;
-    this.service.update(this.id, this.form.value).subscribe({
-      next: () => {
-        this.router.navigate(['dashboard/admin/configuracion/estado-carretera']);
-      },
+    this.error = '';
+    const mid = Number(this.form.value.metodologiaId) || null;
+    const selected =
+      this.metodologias.find((item) => Number(item.id) === mid) || null;
+    const iper = parametrosIperNpNs(selected);
+    const entity: EstadoCarretera = {
+      name: this.form.value.name,
+      description: this.form.value.description,
+      metodologiaRiesgo: mid ? { id: mid, name: '' } : null,
+      neNivel: this.nivelPayload(this.form.value.neNivelId),
+      ndNivel: this.nivelPayload(this.form.value.ndNivelId),
+      ncNivel: iper ? null : this.nivelPayload(this.form.value.ncNivelId)
+    };
+    this.service.update(this.id, entity).subscribe({
+      next: () => this.router.navigate(['/dashboard/admin/configuracion/estado-carretera']),
       error: (err) => {
-        this.error = 'Error al actualizar el registro';
+        this.error = err?.error?.message || 'Error al actualizar. Intente nuevamente.';
         this.saving = false;
-        console.error(err);
       }
     });
   }
 
   goBack(): void {
-    this.router.navigate(['dashboard/admin/configuracion/estado-carretera']);
+    this.router.navigate(['/dashboard/admin/configuracion/estado-carretera']);
+  }
+
+  private nivelPayload(id: unknown): { id: number; valor: number; nombre: string } | null {
+    const n = Number(id);
+    if (!Number.isFinite(n) || n <= 0) {
+      return null;
+    }
+    return { id: n, valor: 0, nombre: '' };
   }
 }

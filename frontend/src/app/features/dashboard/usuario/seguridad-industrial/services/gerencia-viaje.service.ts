@@ -38,11 +38,13 @@ export interface GerenciaViajeDto {
   distancia?: string;
   tipoCarga?: string;
   otrosPeligros?: string;
+  catalogoOtrosPeligros?: string;
   horasConduccion?: string;
   horarioViaje?: string;
   descansoConduc?: string;
   riesgosVia?: string;
   medidasControl?: string;
+  medidasControlTomadasViaje?: string;
   paradasPlanificadas?: string;
   kmFinal?: number;
   fechaCierre?: string;
@@ -122,6 +124,18 @@ export class GerenciaViajeService {
   /** Gerencia abierta del conductor, o null si no hay (API devuelve 200 + JSON null; 404 se trata como null por compatibilidad). */
   getAbiertaPorConductor(ruc: string, cedula: string): Observable<GerenciaViajeDto | null> {
     const url = `${this.baseUrl}/business/${encodeURIComponent(ruc)}/conductor/${encodeURIComponent(cedula)}/abierta`;
+    return this.http.get<GerenciaViajeDto | null>(url).pipe(
+      map((body) => (body == null ? null : body)),
+      catchError((err) => {
+        if (err.status === 404) return of(null);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  /** Gerencia abierta para la placa (misma empresa), o null. Alineado con la app móvil. */
+  getAbiertaPorVehiculo(ruc: string, placa: string): Observable<GerenciaViajeDto | null> {
+    const url = `${this.baseUrl}/business/${encodeURIComponent(ruc)}/vehiculo/${encodeURIComponent(placa.trim())}/abierta`;
     return this.http.get<GerenciaViajeDto | null>(url).pipe(
       map((body) => (body == null ? null : body)),
       catchError((err) => {

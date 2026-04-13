@@ -186,6 +186,14 @@ const routes: Routes = [
         loadChildren: () => import('./posible-riesgo-via/posible-riesgo-via.module').then(m => m.PosibleRiesgoViaModule)
       },
       {
+        path: 'otros-peligros-viaje',
+        loadChildren: () => import('./otros-peligros-viaje/otros-peligros-viaje.module').then(m => m.OtrosPeligrosViajeModule)
+      },
+      {
+        path: 'medidas-control-tomadas-viaje',
+        loadChildren: () => import('./medidas-control-tomadas-viaje/medidas-control-tomadas-viaje.module').then(m => m.MedidasControlTomadasViajeModule)
+      },
+      {
         path: 'aceptacion-riesgo',
         loadChildren: () => import('./aceptacion-riesgo/aceptacion-riesgo.module').then(m => m.AceptacionRiesgoModule)
       }

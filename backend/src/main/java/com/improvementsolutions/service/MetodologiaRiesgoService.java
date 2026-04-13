@@ -23,13 +23,13 @@ public class MetodologiaRiesgoService {
     @Transactional(readOnly = true)
     public List<MetodologiaRiesgo> listAllForPublic() {
         List<MetodologiaRiesgo> list = repository.findAllWithParametros();
-        // Inicializar niveles para evitar LazyInitializationException con open-in-view=false
+        // Inicializar niveles dentro de la transacción para evitar LazyInitializationException
         if (list != null) {
             for (MetodologiaRiesgo m : list) {
                 if (m.getParametros() != null) {
                     for (ParametroMetodologia p : m.getParametros()) {
                         if (p.getNiveles() != null) {
-                            p.getNiveles().size();
+                            p.getNiveles().size(); // Force initialization
                         }
                     }
                 }
@@ -45,7 +45,7 @@ public class MetodologiaRiesgoService {
             if (m.getParametros() != null) {
                 for (ParametroMetodologia p : m.getParametros()) {
                     if (p.getNiveles() != null) {
-                        p.getNiveles().size();
+                        p.getNiveles().size(); // Force initialization
                     }
                 }
             }

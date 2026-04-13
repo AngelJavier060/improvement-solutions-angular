@@ -6,10 +6,9 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { ListaPosibleRiesgoViaComponent } from './lista-posible-riesgo-via.component';
 import { NuevaPosibleRiesgoViaComponent } from './nueva-posible-riesgo-via.component';
 import { EditarPosibleRiesgoViaComponent } from './editar-posible-riesgo-via.component';
-
 const routes: Routes = [
   { path: '', component: ListaPosibleRiesgoViaComponent },
-  { path: 'nueva', component: NuevaPosibleRiesgoViaComponent },
+  { path: 'nuevo', component: NuevaPosibleRiesgoViaComponent },
   { path: 'editar/:id', component: EditarPosibleRiesgoViaComponent }
 ];
 

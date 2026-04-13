@@ -9,7 +9,11 @@
           <i class="fas fa-times me-2"></i>
           Cancelar
         </button>
-        <button type="button" class="btn btn-primary" (click)="onSubmit()" [disabled]="saving">
+        <button type="button" class="btn btn-outline-primary" (click)="refreshCompanyParams()" [disabled]="saving">
+          <i class="fas fa-rotate me-2"></i>
+          Actualizar catálogos
+        </button>
+        <button type="button" class="btn btn-primary" (click)="onSubmit()" [disabled]="saving || (!isEditMode && formularioBloqueadoResto)">
           <i class="fas" [ngClass]="saving ? 'fa-spinner fa-spin' : 'fa-save'" class="me-2"></i>
           {{ saving ? 'Guardando...' : 'Guardar Registro' }}
         </button>
@@ -68,6 +72,19 @@
           <p class="text-muted mb-0">Parámetros alineados con la matriz maestra de gerencias de viaje.</p>
         </div>
 
+        <div *ngIf="!isEditMode && formularioBloqueadoResto" class="alert alert-danger border mb-4" role="alert">
+          <div class="d-flex align-items-start gap-2">
+            <i class="fas fa-ban mt-1"></i>
+            <div class="flex-grow-1">
+              <strong>No puede continuar con el registro</strong> hasta resolver lo siguiente (misma validación que en la app móvil):
+              <ul class="mb-0 mt-2 small">
+                <li *ngIf="bloqueoPorGerenciaAbierta">Existe una gerencia de viaje <strong>abierta</strong> para el conductor o el vehículo; debe cerrarla primero.</li>
+                <li *ngIf="kmInicialMenorQueUltimoRegistrado">El <strong>KM inicial</strong> no puede ser menor al último kilometraje registrado para esta placa.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         <!-- Identificación y personal -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-body p-4">
@@ -118,7 +135,8 @@
               </div>
               <div class="col-md-3">
                 <label class="form-label small fw-bold text-uppercase text-muted">Km Inicial</label>
-                <input type="number" class="form-control" formControlName="kmInicial" placeholder="0" min="0">
+                <input type="number" class="form-control" formControlName="kmInicial" placeholder="0" min="0"
+                       [class.is-invalid]="!isEditMode && kmInicialMenorQueUltimoRegistrado">
               </div>
               <div class="col-md-3" *ngIf="isEditMode">
                 <label class="form-label small fw-bold text-uppercase text-muted">Km Final</label>
@@ -127,16 +145,42 @@
               <div class="col-12" *ngIf="!isEditMode">
                 <p class="small text-muted mb-0"><i class="fas fa-info-circle me-1"></i>El <strong>kilometraje final</strong> y la <strong>fecha de cierre</strong> se registran al <strong>cerrar</strong> la gerencia desde el listado.</p>
               </div>
-              <div class="col-12" *ngIf="gerenciaAbiertaMsg && !isEditMode">
-                <div class="alert alert-warning py-2 mb-0"><i class="fas fa-exclamation-triangle me-2"></i>{{ gerenciaAbiertaMsg }}</div>
+              <div class="col-12" *ngIf="mensajeGerenciaConductor && !isEditMode">
+                <div class="alert alert-warning py-2 mb-2">
+                  <i class="fas fa-exclamation-triangle me-2"></i>{{ mensajeGerenciaConductor }}
+                  <button type="button" class="btn btn-sm btn-dark ms-2" *ngIf="gerenciaAbiertaConductor?.id != null"
+                          (click)="irACerrarGerencia(gerenciaAbiertaConductor!)">
+                    <i class="fas fa-door-closed me-1"></i>Ir a cerrar gerencia
+                  </button>
+                </div>
+              </div>
+              <div class="col-12" *ngIf="mensajeGerenciaVehiculo && !isEditMode">
+                <div class="alert alert-warning py-2 mb-2">
+                  <i class="fas fa-truck me-2"></i>{{ mensajeGerenciaVehiculo }}
+                  <button type="button" class="btn btn-sm btn-dark ms-2" *ngIf="gerenciaAbiertaVehiculo?.id != null"
+                          (click)="irACerrarGerencia(gerenciaAbiertaVehiculo!)">
+                    <i class="fas fa-door-closed me-1"></i>Ir a cerrar gerencia
+                  </button>
+                </div>
               </div>
               <div class="col-12" *ngIf="ultimoKmPlaca && !isEditMode">
-                <div class="alert alert-info py-2 mb-0">
-                  <i class="fas fa-tachometer-alt me-2"></i>
+                <div class="alert border py-2 mb-0 gerencia-km-info">
+                  <i class="fas fa-tachometer-alt me-2 text-warning"></i>
                   Último km registrado para la placa <strong>{{ ultimoKmPlaca }}</strong>:
                   <strong>{{ ultimoKmRegistrado != null ? (ultimoKmRegistrado | number) + ' km' : 'sin viajes cerrados aún' }}</strong>
                 </div>
               </div>
+              <div class="col-12" *ngIf="!isEditMode && kmInicialMenorQueUltimoRegistrado && ultimoKmRegistrado != null">
+                <div class="alert alert-danger py-2 mb-0">
+                  <i class="fas fa-times-circle me-2"></i>
+                  No es posible usar este valor: el <strong>KM inicial</strong> no puede ser menor al último kilometraje registrado
+                  (<strong>{{ ultimoKmRegistrado | number }} km</strong>). Ajuste el dato para poder guardar.
+                </div>
+              </div>
+            </div>
+
+            <div [class.gerencia-form-bloqueada]="formularioBloqueadoResto">
+              <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label small fw-bold text-uppercase text-muted">Teléfono</label>
                 <input type="text" class="form-control" formControlName="telefono" placeholder="+593 …">
@@ -149,11 +193,12 @@
                 <label class="form-label small fw-bold text-uppercase text-muted">Área</label>
                 <input type="text" class="form-control" formControlName="area">
               </div>
-              
+              </div>
             </div>
           </div>
         </div>
 
+        <div [class.gerencia-form-bloqueada]="formularioBloqueadoResto">
         <!-- Viaje -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-body p-4">
@@ -230,17 +275,7 @@
                 </div>
               </div>
               <div class="col-md-6">
-                <div class="d-flex align-items-center justify-content-between py-2 border rounded px-3 bg-light mb-3">
-                  <span class="small fw-medium">Medios comunicación</span>
-                  <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn"
-                            [ngClass]="valorSiNo('mediosComunicacion') ? 'btn-primary' : 'btn-outline-secondary'"
-                            (click)="toggleSiNo('mediosComunicacion', $event)">SI</button>
-                    <button type="button" class="btn"
-                            [ngClass]="!valorSiNo('mediosComunicacion') ? 'btn-primary' : 'btn-outline-secondary'"
-                            (click)="toggleSiNo('mediosComunicacion', $event)">NO</button>
-                  </div>
-                </div>
+                
                 <div class="mb-3">
                   <label class="form-label small fw-bold text-muted">Test alcohol</label>
                   <select class="form-select" formControlName="testAlcohol">
@@ -259,8 +294,8 @@
                   </div>
                 </div>
                 <div class="mt-3" *ngIf="valorSiNo('llevaPasajeros')">
-                  <label class="form-label small fw-bold text-muted">Pasajeros</label>
-                  <input type="text" class="form-control" formControlName="pasajeros" placeholder="Cantidad o nombres; N/A si no aplica">
+                  <label class="form-label small fw-bold text-muted">Nombres de pasajeros</label>
+                  <input type="text" class="form-control" formControlName="pasajeros" placeholder="Ingrese los nombres de los pasajeros (separados por coma)">
                 </div>
               </div>
             </div>
@@ -306,14 +341,14 @@
                 <label class="form-label small fw-bold text-muted">Tipo de vía</label>
                 <select class="form-select" formControlName="tipoCarretera">
                   <option value="">Seleccione…</option>
-                  <option *ngFor="let t of tiposCarretera" [value]="t">{{ t }}</option>
+                  <option *ngFor="let t of tiposCarretera" [value]="t">{{ labelFor('tipoCarretera', t) }}</option>
                 </select>
               </div>
               <div class="col-md-4">
                 <label class="form-label small fw-bold text-muted">Estado de la vía</label>
                 <select class="form-select" formControlName="estadoVia">
                   <option value="">Seleccione…</option>
-                  <option *ngFor="let e of estadosVia" [value]="e">{{ e }}</option>
+                  <option *ngFor="let e of estadosVia" [value]="e">{{ labelFor('estadoVia', e) }}</option>
                 </select>
               </div>
               <div class="col-md-4">
@@ -327,7 +362,7 @@
                 <label class="form-label small fw-bold text-muted">Distancia a recorrer</label>
                 <select class="form-select" formControlName="distancia">
                   <option value="">Seleccione…</option>
-                  <option *ngFor="let d of distanciaOptions" [value]="d">{{ d }}</option>
+                  <option *ngFor="let d of distanciaOptions" [value]="d">{{ labelFor('distancia', d) }}</option>
                 </select>
               </div>
               <div class="col-md-4">
@@ -353,8 +388,8 @@
             </div>
             <div class="row g-3">
               <div class="col-md-4">
-                <label class="form-label small fw-bold text-muted">Otros peligros</label>
-                <select class="form-select" formControlName="otrosPeligros">
+                <label class="form-label small fw-bold text-muted">Medios de comunicación</label>
+                <select class="form-select" formControlName="mediosComunicacion">
                   <option value="">Seleccione…</option>
                   <option *ngFor="let p of otrosPeligrosOpts" [value]="p">{{ p }}</option>
                 </select>
@@ -389,10 +424,17 @@
                 <p class="form-text small text-muted mb-0">Opciones definidas en <strong>Administración de empresa</strong> → Posibles riesgos en la vía (mismo catálogo que en Configuración global).</p>
               </div>
               <div class="col-md-6">
-                <label class="form-label small fw-bold text-muted">Medidas de Control para el viaje</label>
-                <select class="form-select" formControlName="medidasControl">
+                <label class="form-label small fw-bold text-muted">Otros peligros</label>
+                <select class="form-select" formControlName="catalogoOtrosPeligros">
                   <option value="">Seleccione…</option>
-                  <option *ngFor="let m of transportaPasajerosOpts" [value]="m">{{ m }}</option>
+                  <option *ngFor="let o of catalogoOtrosPeligrosOpts" [value]="o">{{ o }}</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted">Medidas de control tomadas para el viaje</label>
+                <select class="form-select" formControlName="medidasControlTomadasViaje">
+                  <option value="">Seleccione…</option>
+                  <option *ngFor="let m of medidasControlTomadasViajeOpts" [value]="m">{{ m }}</option>
                 </select>
               </div>
               <div class="col-md-6">
@@ -401,6 +443,7 @@
               </div>
             </div>
           </div>
+        </div>
         </div>
       </form>
     </section>

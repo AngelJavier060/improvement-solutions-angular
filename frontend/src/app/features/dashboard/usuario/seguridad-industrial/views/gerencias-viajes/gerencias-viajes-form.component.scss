@@ -5,6 +5,20 @@
   font-family: 'Inter', sans-serif;
 }
 
+/** Misma idea que en la app: no interactuar con el resto del formulario hasta corregir placa/km o cerrar gerencia. */
+.gerencia-form-bloqueada {
+  pointer-events: none;
+  opacity: 0.42;
+  user-select: none;
+  transition: opacity 0.2s ease;
+}
+
+.gerencia-km-info {
+  background-color: #fff7ed;
+  border-color: #fed7aa !important;
+  color: #9a3412;
+}
+
 .form-header {
   background-color: #f8f9fb;
   padding: 1rem 0;

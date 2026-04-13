@@ -4,12 +4,14 @@ import com.improvementsolutions.model.MetodologiaRiesgo;
 import com.improvementsolutions.model.ParametroMetodologia;
 import com.improvementsolutions.model.NivelParametro;
 import com.improvementsolutions.repository.MetodologiaRiesgoRepository;
+import com.improvementsolutions.service.MetodologiaRiesgoCatalogFkService;
 import com.improvementsolutions.service.MetodologiaRiesgoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -25,11 +27,15 @@ public class PublicMetodologiaRiesgoController {
 
     private final MetodologiaRiesgoRepository repository;
     private final MetodologiaRiesgoService service;
+    private final MetodologiaRiesgoCatalogFkService catalogFkService;
 
     @Autowired
-    public PublicMetodologiaRiesgoController(MetodologiaRiesgoRepository repository, MetodologiaRiesgoService service) {
+    public PublicMetodologiaRiesgoController(MetodologiaRiesgoRepository repository,
+                                            MetodologiaRiesgoService service,
+                                            MetodologiaRiesgoCatalogFkService catalogFkService) {
         this.repository = repository;
         this.service = service;
+        this.catalogFkService = catalogFkService;
     }
 
     @GetMapping
@@ -82,6 +88,7 @@ public class PublicMetodologiaRiesgoController {
     }
 
     @PutMapping("/{id}")
+    @Transactional
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody MetodologiaRiesgo entity) {
         Optional<MetodologiaRiesgo> existingOpt = repository.findByIdWithParametrosAndNiveles(id);
         if (!existingOpt.isPresent()) {
@@ -101,6 +108,8 @@ public class PublicMetodologiaRiesgoController {
         MetodologiaRiesgo toUpdate = existingOpt.get();
         toUpdate.setName(entity.getName());
         toUpdate.setDescription(entity.getDescription());
+
+        catalogFkService.clearCatalogNivelLinks(id);
 
         // Estrategia segura: limpiar la lista interna y reasignar
         toUpdate.getParametros().clear();

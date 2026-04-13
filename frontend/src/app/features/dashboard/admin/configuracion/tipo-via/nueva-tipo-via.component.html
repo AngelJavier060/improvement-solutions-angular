@@ -1,33 +1,53 @@
-<div class="config-form-container">
-  <div class="config-form-header">
-    <button class="btn-back" (click)="goBack()">
+<div class="form-container">
+  <div class="page-header">
+    <button type="button" class="btn-back" (click)="goBack()">
       <i class="fas fa-arrow-left"></i>
     </button>
-    <h2>Nueva Tipo de Vía</h2>
+    <div>
+      <h2><i class="fas fa-plus-circle"></i> Nuevo tipo de vía</h2>
+      <p>Defina el tipo de vía y los niveles según la metodología de riesgo.</p>
+    </div>
   </div>
 
-  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+  <div class="alert-danger" *ngIf="error">
+    <i class="fas fa-exclamation-circle"></i> {{ error }}
+  </div>
 
-  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="config-form">
-    <div class="form-group">
-      <label for="name">Nombre *</label>
-      <input id="name" type="text" formControlName="name" class="form-control"
-             [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched">
-      <span class="invalid-feedback" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
-        El nombre es requerido
-      </span>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-map-signs"></i> Información básica
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label>Nombre *</label>
+            <input type="text" formControlName="name" class="form-control" placeholder="Ej: Autopista">
+            <span class="field-error" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
+              El nombre es requerido
+            </span>
+          </div>
+          <div class="form-group flex-1">
+            <label>Descripción (opcional)</label>
+            <input type="text" formControlName="description" class="form-control">
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label for="description">Descripción</label>
-      <textarea id="description" formControlName="description" class="form-control" rows="3"></textarea>
-    </div>
+    <app-catalogo-viaje-niveles-metodologia
+      [form]="form"
+      [metodologias]="metodologias"
+      [loadingMetodologias]="loadingMetodologias"
+    />
 
     <div class="form-actions">
-      <button type="button" class="btn-secondary" (click)="goBack()">Cancelar</button>
+      <button type="button" class="btn-secondary" (click)="goBack()">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
       <button type="submit" class="btn-primary" [disabled]="form.invalid || loading">
-        <span *ngIf="loading">Guardando...</span>
-        <span *ngIf="!loading">Guardar</span>
+        <span *ngIf="loading"><i class="fas fa-spinner fa-spin"></i> Guardando...</span>
+        <span *ngIf="!loading"><i class="fas fa-save"></i> Guardar</span>
       </button>
     </div>
   </form>

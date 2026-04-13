@@ -37,4 +37,6 @@ public interface FleetVehicleRepository extends JpaRepository<FleetVehicle, Long
     long countByBusiness_IdAndEstadoActivo(Long businessId, String estadoActivo);
 
     long countByBusiness_Id(Long businessId);
+
+    Optional<FleetVehicle> findFirstByBusiness_IdAndPlacaIgnoreCase(Long businessId, String placa);
 }

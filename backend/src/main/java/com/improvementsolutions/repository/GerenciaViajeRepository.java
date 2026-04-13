@@ -1,6 +1,7 @@
 package com.improvementsolutions.repository;
 
 import com.improvementsolutions.model.GerenciaViaje;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -37,6 +38,14 @@ public interface GerenciaViajeRepository extends JpaRepository<GerenciaViaje, Lo
     long countByBusinessId(@Param("businessId") Long businessId);
 
     boolean existsByBusiness_IdAndCedulaAndEstado(Long businessId, String cedula, String estado);
+
+    /**
+     * Gerencias ACTIVO para la misma unidad (placa), comparando sin distinguir mayúsculas ni espacios extremos.
+     */
+    @Query("SELECT g FROM GerenciaViaje g WHERE g.business.id = :bid "
+            + "AND lower(trim(g.vehiculoInicio)) = lower(trim(:placa)) AND g.estado = 'ACTIVO' "
+            + "ORDER BY g.fechaHora DESC")
+    List<GerenciaViaje> findAbiertasByPlaca(@Param("bid") Long businessId, @Param("placa") String placa, Pageable pageable);
 
     Optional<GerenciaViaje> findFirstByBusiness_RucAndCedulaAndEstadoOrderByFechaHoraDesc(
             String ruc, String cedula, String estado);
