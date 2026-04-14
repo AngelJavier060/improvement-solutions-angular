@@ -1,15 +1,18 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { BusinessContextService } from '../../../../../core/services/business-context.service';
 import { BusinessService } from '../../../../../services/business.service';
 import { BusinessIncidentService, BusinessIncidentDto } from '../../../../../services/business-incident.service';
+import { Subject } from 'rxjs';
+import { filter, map, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { extractUsuarioRucFromRoute, resolveThBusinessFromRoute } from '../utils/th-business-from-route';
 
 @Component({
   selector: 'app-accidentes',
   templateUrl: './accidentes.component.html',
   styleUrls: ['./accidentes.component.scss']
 })
-export class AccidentesComponent implements OnInit {
+export class AccidentesComponent implements OnInit, OnDestroy {
 
   businessId: number | null = null;
   businessRuc: string | null = null;
@@ -26,6 +29,8 @@ export class AccidentesComponent implements OnInit {
   // Detalle del incidente seleccionado
   selectedIncident: BusinessIncidentDto | null = null;
 
+  private readonly destroy$ = new Subject<void>();
+
   readonly tabs = ['Todos', 'Seguridad'];
 
   constructor(
@@ -36,37 +41,38 @@ export class AccidentesComponent implements OnInit {
     private incidentService: BusinessIncidentService
   ) {}
 
-  ngOnInit(): void {
-    this.extractParams();
+  get displayBusinessName(): string {
+    return (this.businessName || '').trim() || 'Empresa';
   }
 
-  private extractParams(): void {
-    let r: any = this.route;
-    while (r) {
-      const ruc = r.snapshot?.params?.['ruc'] || r.snapshot?.params?.['businessRuc'];
-      if (ruc) { this.businessRuc = ruc; break; }
-      r = r.parent;
-    }
-    if (!this.businessRuc && typeof window !== 'undefined') {
-      const m = window.location.pathname.match(/\/usuario\/([^/]+)\//);
-      if (m?.[1]) this.businessRuc = m[1];
-    }
-    const active = this.businessContext.getActiveBusiness();
-    if (active) {
-      this.businessId = active.id;
-      this.businessName = active.name ?? '';
-      if (!this.businessRuc) this.businessRuc = active.ruc;
+  ngOnInit(): void {
+    this.initFromRoute();
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(() => extractUsuarioRucFromRoute(this.route)),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(() => this.initFromRoute());
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private initFromRoute(): void {
+    resolveThBusinessFromRoute(this.route, this.businessService, this.businessContext).subscribe(b => {
+      if (!b) {
+        this.businessId = null;
+        this.businessRuc = null;
+        this.businessName = '';
+        return;
+      }
+      this.businessId = b.id;
+      this.businessRuc = b.ruc;
+      this.businessName = b.name;
       this.loadRecords();
-    } else if (this.businessRuc) {
-      this.businessService.getAll().subscribe({
-        next: (list: any[]) => {
-          const found = list.find((b: any) => b.ruc === this.businessRuc);
-          if (found) { this.businessId = found.id; this.businessName = found.name ?? ''; }
-          this.loadRecords();
-        },
-        error: () => { this.loadRecords(); }
-      });
-    }
+    });
   }
 
   loadRecords(): void {

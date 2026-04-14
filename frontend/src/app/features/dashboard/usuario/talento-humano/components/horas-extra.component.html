@@ -77,7 +77,7 @@
   <div class="he-page-header">
     <div class="he-page-header-left">
       <h1 class="he-page-title">Reporte de Días &amp; Horas Extras</h1>
-      <p class="he-page-sub">Seguimiento detallado de jornadas adicionales — {{ businessName }}</p>
+      <p class="he-page-sub">Seguimiento detallado de jornadas adicionales — {{ displayBusinessName }}</p>
     </div>
     <div class="he-page-actions">
       <button class="he-btn-secondary" (click)="loadRequests()">
@@ -286,7 +286,7 @@
           <span class="material-symbols-outlined">more_time</span>
           Control de Días &amp; Horas Extras
         </h2>
-        <p class="he-modal-sub">Registro oficial de jornada suplementaria</p>
+        <p class="he-modal-sub">Registro oficial de jornada suplementaria — {{ displayBusinessName }}</p>
       </div>
       <button class="he-modal-close" (click)="cancelForm()">
         <span class="material-symbols-outlined">close</span>

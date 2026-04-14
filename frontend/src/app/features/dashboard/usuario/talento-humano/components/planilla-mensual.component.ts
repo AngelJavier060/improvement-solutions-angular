@@ -65,6 +65,7 @@ export class PlanillaMensualComponent implements OnInit {
 
   searchTerm: string = '';
   filterDayType: string = '';
+  showOnlySaved: boolean = true;
 
   loading = false;
   loadingKpis = false;
@@ -92,6 +93,10 @@ export class PlanillaMensualComponent implements OnInit {
   closureError: string | null = null;
   uploadingPdf = false;
   uploadPdfError: string | null = null;
+
+  // Autocomplete month (save T/D based on schedule for this month)
+  autocompleting = false;
+  autocompleteError: string | null = null;
 
   // Historial de cierres (todos los meses)
   closures: MonthlyClosureEntry[] = [];
@@ -170,6 +175,27 @@ export class PlanillaMensualComponent implements OnInit {
     this.extractParams();
     this.buildCalendar();
     this.loadData();
+  }
+
+  autocompleteMonth(): void {
+    if (!this.businessId) return;
+    if (this.isMonthClosed) {
+      alert('Este mes no está ABIERTO. Reabra el mes para poder autocompletar.');
+      return;
+    }
+    if (!confirm('Autocompletar T/D para todos los trabajadores con base en su jornada vigente para este mes? Solo se guardarán días que no tengan registro previo.')) return;
+    this.autocompleting = true;
+    this.autocompleteError = null;
+    this.attendanceService.autocompleteMonth(this.businessId, this.year, this.month).subscribe({
+      next: () => {
+        this.autocompleting = false;
+        this.loadData();
+      },
+      error: err => {
+        this.autocompleting = false;
+        this.autocompleteError = err?.error?.error || 'No se pudo autocompletar el mes.';
+      }
+    });
   }
 
   private loadAvailableSchedules(): void {
@@ -277,7 +303,7 @@ export class PlanillaMensualComponent implements OnInit {
       error: () => { this.loadingKpis = false; }
     });
 
-    this.attendanceService.getMonthlySheet(this.businessId, this.year, this.month).subscribe({
+    this.attendanceService.getMonthlySheet(this.businessId, this.year, this.month, !this.showOnlySaved).subscribe({
       next: rows => {
         this.sheet = rows;
         this.applyAccidentOverlay();
@@ -302,6 +328,10 @@ export class PlanillaMensualComponent implements OnInit {
     this.loadClosures();
     this.loadHolidays();
     this.loadSafetyIncidents();
+  }
+
+  onShowOnlySavedChange(): void {
+    this.loadData();
   }
 
   loadHolidays(): void {
@@ -408,6 +438,10 @@ export class PlanillaMensualComponent implements OnInit {
     if (!this.businessId || !this.selectedRow) return;
     if (!this.historyDraft.workScheduleId || !this.historyDraft.startDate) {
       this.historyFormError = 'La jornada y la fecha de inicio son obligatorias.';
+      return;
+    }
+    if (this.historyDraft.endDate && this.historyDraft.endDate < this.historyDraft.startDate) {
+      this.historyFormError = 'La fecha de fin de vigencia no puede ser anterior al inicio.';
       return;
     }
     this.savingHistory = true;
@@ -817,7 +851,9 @@ export class PlanillaMensualComponent implements OnInit {
   closePermPopover(): void { this.permPopover = null; }
 
   getMonthLabel(): string {
-    return this.months.find(m => m.v === this.month)?.l ?? '';
+    const mo = typeof this.month === 'string' ? parseInt(this.month, 10) : this.month;
+    if (!Number.isFinite(mo) || mo < 1 || mo > 12) return '';
+    return this.months.find(m => m.v === mo)?.l ?? '';
   }
 
   getTotalForKey(key: string): number {

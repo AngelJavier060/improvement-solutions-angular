@@ -252,6 +252,8 @@ public class BusinessController {
         response.put("registrationDate", business.getRegistrationDate());
         response.put("createdAt", business.getCreatedAt());
         response.put("updatedAt", business.getUpdatedAt());
+        // Contactos de emergencia (JSON plano)
+        response.put("emergencyContacts", business.getEmergencyContacts());
         
         // Incluir relaciones mapeadas a DTOs ligeros para evitar proxys/lazy en JSON
         java.util.function.Function<com.improvementsolutions.model.Department, Map<String, Object>> deptDto = d -> {
@@ -379,6 +381,8 @@ public class BusinessController {
 
         // Configuración de mantenimiento (JSON plano almacenado en la entidad)
         response.put("maintenanceConfig", business.getMaintenanceConfig());
+        // Contactos de emergencia (JSON plano almacenado en la entidad)
+        response.put("emergencyContacts", business.getEmergencyContacts());
         // Filtrar duplicados: solo una relación activa por matriz de obligación (por catalog id)
         java.util.Map<Long, com.improvementsolutions.model.BusinessObligationMatrix> obligationMap = new java.util.LinkedHashMap<>();
         for (com.improvementsolutions.model.BusinessObligationMatrix bom : business.getBusinessObligationMatrices()) {
@@ -508,6 +512,7 @@ public class BusinessController {
         response.put("registrationDate", business.getRegistrationDate());
         response.put("createdAt", business.getCreatedAt());
         response.put("updatedAt", business.getUpdatedAt());
+        response.put("emergencyContacts", business.getEmergencyContacts());
 
         // Mapear relaciones a DTOs ligeros para evitar problemas de serialización LAZY
         List<Map<String, Object>> contractorCompaniesDto = new ArrayList<>();
@@ -1163,6 +1168,26 @@ public class BusinessController {
             @PathVariable Long businessId,
             @RequestBody String maintenanceJson) {
         String saved = businessService.updateMaintenanceConfig(businessId, maintenanceJson);
+        return ResponseEntity.ok(saved);
+    }
+
+    // === ENDPOINTS DE CONTACTOS DE EMERGENCIA (por empresa) ===
+    @GetMapping("/{businessId}/emergency-contacts")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<String> getEmergencyContacts(@PathVariable Long businessId) {
+        String json = businessService.getEmergencyContacts(businessId);
+        if (json == null || json.trim().isEmpty()) {
+            json = "[]";
+        }
+        return ResponseEntity.ok(json);
+    }
+
+    @PutMapping("/{businessId}/emergency-contacts")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<String> updateEmergencyContacts(
+            @PathVariable Long businessId,
+            @RequestBody String contactsJson) {
+        String saved = businessService.updateEmergencyContacts(businessId, contactsJson);
         return ResponseEntity.ok(saved);
     }
 

@@ -38,6 +38,14 @@
           <span class="material-symbols-outlined">download</span> Descargar PDF
         </button>
 
+        <!-- Autocompletar trabajadores (T/D por jornada) -->
+        <button class="pm-btn pm-btn--primary" [disabled]="autocompleting || !businessId" (click)="autocompleteMonth()">
+          <span *ngIf="!autocompleting" class="material-symbols-outlined">auto_mode</span>
+          <span *ngIf="autocompleting" class="pm-spinner-sm"></span>
+          <span *ngIf="!autocompleting">Autocompletar trabajadores</span>
+          <span *ngIf="autocompleting">Autocompletando…</span>
+        </button>
+
         <!-- Subir PDF firmado → cierra y aprueba automáticamente -->
         <label class="pm-btn pm-btn--upload"
                [class.pm-btn--loading]="uploadingPdf"
@@ -61,6 +69,12 @@
     <div class="pm-alert pm-alert--error" *ngIf="uploadPdfError">
       <span class="material-symbols-outlined">error</span> {{ uploadPdfError }}
       <button (click)="uploadPdfError=null">✕</button>
+    </div>
+
+    <!-- Error autocompletar -->
+    <div class="pm-alert pm-alert--error" *ngIf="autocompleteError">
+      <span class="material-symbols-outlined">error</span> {{ autocompleteError }}
+      <button (click)="autocompleteError=null">✕</button>
     </div>
 
     <!-- PDF aprobado: info -->
@@ -156,7 +170,7 @@
         <div class="pm-fgroup">
           <label>MES DE GESTIÓN</label>
           <select [(ngModel)]="month" (change)="onMonthChange()">
-            <option *ngFor="let m of months" [value]="m.v">{{ m.l }}</option>
+            <option *ngFor="let m of months" [ngValue]="m.v">{{ m.l }}</option>
           </select>
         </div>
         <div class="pm-fgroup">
@@ -169,6 +183,15 @@
             <option value="E">Con enfermedad</option>
             <option value="A">Con accidentes</option>
           </select>
+        </div>
+      </div>
+      <div class="pm-filters-row" style="margin-top:8px; align-items:center;">
+        <div class="pm-fgroup">
+          <label>VISUALIZACIÓN</label>
+          <label style="display:flex; gap:8px; align-items:center; font-weight:500;">
+            <input type="checkbox" [(ngModel)]="showOnlySaved" (change)="onShowOnlySavedChange()" />
+            Mostrar solo guardados
+          </label>
         </div>
       </div>
       <div class="pm-legend">
@@ -415,6 +438,25 @@
           </div>
         </div>
 
+        <div class="pm-history-inline">
+          <div class="pm-field">
+            <label>INICIO DE JORNADA (DIRECTO)</label>
+            <input type="date" [(ngModel)]="scheduleStartDraft" />
+          </div>
+          <div class="pm-field-actions">
+            <button class="pm-btn pm-btn--primary pm-btn--sm"
+                    (click)="saveWorkScheduleStartDate()" [disabled]="savingScheduleStart">
+              <span *ngIf="savingScheduleStart" class="pm-spinner-sm"></span>
+              Guardar inicio
+            </button>
+            <button class="pm-btn pm-btn--outline pm-btn--sm"
+                    (click)="scheduleStartDraft=''; saveWorkScheduleStartDate()" [disabled]="savingScheduleStart">
+              Limpiar
+            </button>
+          </div>
+          <div class="pm-form-error" *ngIf="scheduleStartError">{{ scheduleStartError }}</div>
+        </div>
+
         <!-- Formulario nuevo periodo -->
         <div class="pm-history-form" *ngIf="showHistoryForm">
           <div class="pm-history-form-title">Registrar cambio de jornada</div>
@@ -433,6 +475,10 @@
             <div class="pm-field">
               <label>FIN VIGENCIA</label>
               <input type="date" [(ngModel)]="historyDraft.endDate" />
+              <div class="pm-field-hint">
+                Vacío = vigente sin fecha fin (equivale a “hasta nuevo aviso” y exige que no choque con otros periodos).
+                Para un bloque anterior, acote el fin para que no comparta días con jornadas ya listadas.
+              </div>
             </div>
             <div class="pm-field">
               <label>INICIO CICLO</label>
@@ -626,7 +672,7 @@
           <label>
             <span>Mes</span>
             <select [(ngModel)]="month" (ngModelChange)="onDetailPeriodChange()">
-              <option *ngFor="let m of months" [value]="m.v">{{ m.l }}</option>
+              <option *ngFor="let m of months" [ngValue]="m.v">{{ m.l }}</option>
             </select>
           </label>
         </div>

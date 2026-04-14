@@ -379,6 +379,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                       height: 1.25,
                                     ),
                                   ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    AppConfig.baseUrl.startsWith('https')
+                                        ? 'Mismos usuarios que en la web (producción).'
+                                        : 'API en tu PC: aquí no existen los usuarios de producción. Para producción, quita LOCAL_API o usa HTTPS.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      color: Colors.white.withOpacity(0.48),
+                                      height: 1.2,
+                                    ),
+                                  ),
                                 ],
 
                                 const SizedBox(height: 16),

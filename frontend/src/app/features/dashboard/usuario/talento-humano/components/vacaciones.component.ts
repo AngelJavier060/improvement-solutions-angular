@@ -1,11 +1,14 @@
-import { Component, OnInit, AfterViewInit, HostListener } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit, OnDestroy, AfterViewInit, HostListener } from '@angular/core';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AttendanceService, VacationRecord } from '../services/attendance.service';
 import { EmployeeService } from '../services/employee.service';
 import { BusinessContextService } from '../../../../../core/services/business-context.service';
 import { BusinessService } from '../../../../../services/business.service';
 import { EmployeeResponse } from '../models/employee.model';
+import { Subject } from 'rxjs';
+import { filter, map, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { extractUsuarioRucFromRoute, resolveThBusinessFromRoute } from '../utils/th-business-from-route';
 
 export interface AnnualPlanRow {
   employeeId: number;
@@ -24,7 +27,7 @@ export interface AnnualPlanRow {
   templateUrl: './vacaciones.component.html',
   styleUrls: ['./vacaciones.component.scss']
 })
-export class VacacionesComponent implements OnInit, AfterViewInit {
+export class VacacionesComponent implements OnInit, OnDestroy, AfterViewInit {
 
   activeTab: 'solicitudes' | 'planificacion' = 'solicitudes';
 
@@ -68,6 +71,8 @@ export class VacacionesComponent implements OnInit, AfterViewInit {
   planDeptFilter: string = '';
   private chartRetries = 0;
 
+  private readonly destroy$ = new Subject<void>();
+
   // Approval section
   elaboradoNombre = '';
   elaboradoCargo  = '';
@@ -100,11 +105,50 @@ export class VacacionesComponent implements OnInit, AfterViewInit {
     private businessService: BusinessService
   ) {}
 
+  get displayBusinessName(): string {
+    return (this.businessName || '').trim() || 'Empresa';
+  }
+
   ngOnInit(): void {
     this.buildForm();
-    this.extractParams();
     this.setDefaultSignatures();
     this.docRevisionDate = this.getTodayDateStr();
+    this.initFromRoute();
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(() => extractUsuarioRucFromRoute(this.route)),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(() => this.initFromRoute());
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private initFromRoute(): void {
+    resolveThBusinessFromRoute(this.route, this.businessService, this.businessContext).subscribe(b => {
+      if (!b) {
+        this.businessId = null;
+        this.businessRuc = null;
+        this.businessName = '';
+        this.businessLogoUrl = null;
+        return;
+      }
+      this.businessId = b.id;
+      this.businessRuc = b.ruc;
+      this.businessName = b.name;
+      this.businessLogoUrl = this.resolveLogoUrl(b.logo || '');
+      this.businessService.getById(b.id).subscribe({
+        next: (x: any) => {
+          this.businessLogoUrl = this.resolveLogoUrl(x?.logo || x?.logoUrl || '');
+        },
+        error: () => { /* ignore */ }
+      });
+      this.loadEmployees();
+      this.loadRecords();
+    });
   }
 
   // Top meses por carga (empleados)
@@ -148,42 +192,6 @@ export class VacacionesComponent implements OnInit, AfterViewInit {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
-  }
-
-  private extractParams(): void {
-    let r: any = this.route;
-    while (r) {
-      const ruc = r.snapshot?.params?.['ruc'] || r.snapshot?.params?.['businessRuc'];
-      if (ruc) { this.businessRuc = ruc; break; }
-      r = r.parent;
-    }
-    if (!this.businessRuc && typeof window !== 'undefined') {
-      const m = window.location.pathname.match(/\/usuario\/([^/]+)\//);
-      if (m?.[1]) this.businessRuc = m[1];
-    }
-    const active = this.businessContext.getActiveBusiness();
-    if (active) {
-      this.businessId   = active.id;
-      this.businessName = active.name ?? '';
-      if (!this.businessRuc) this.businessRuc = active.ruc;
-      // Cargar detalles para obtener logo
-      this.businessService.getById(active.id).subscribe({
-        next: (b: any) => { this.businessLogoUrl = this.resolveLogoUrl(b?.logo || b?.logoUrl || ''); },
-        error: () => { /* ignore */ }
-      });
-      this.loadEmployees();
-      this.loadRecords();
-    } else if (this.businessRuc) {
-      this.businessService.getAll().subscribe({
-        next: (list: any[]) => {
-          const found = list.find((b: any) => b.ruc === this.businessRuc);
-          if (found) { this.businessId = found.id; this.businessName = found.name ?? ''; this.businessLogoUrl = this.resolveLogoUrl(found.logo || found.logoUrl || ''); }
-          this.loadEmployees();
-          this.loadRecords();
-        },
-        error: () => { this.loadEmployees(); this.loadRecords(); }
-      });
-    }
   }
 
   loadEmployees(): void {

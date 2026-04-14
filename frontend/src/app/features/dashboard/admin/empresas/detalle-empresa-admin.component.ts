@@ -364,6 +364,11 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   medidasControlTomadasViajeCatalogo: any[] = []; allMedidasControlTomadasViaje: any[] = [];
   showAsignMedidaControlTomadaModal = false; selectedMedidaControlTomadaId: number | null = null; savingMedidaControlTomada = false;
 
+  // Contactos de emergencia (parámetros fijos por empresa)
+  emergencyContacts: Array<{ area: string; phone: string }> = [];
+  savingEmergencyContacts = false;
+  emergencyEditIndex: number | null = null;
+
   // Modal para editar empresa
   showEditEmpresaModal = false;
   savingEmpresa = false;
@@ -444,6 +449,43 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       }
     });
   }
+
+  // === Contactos de Emergencia ===
+  addEmergencyContact(): void {
+    if (this.emergencyContacts.length >= 4) return;
+    this.emergencyContacts = [...this.emergencyContacts, { area: '', phone: '' }];
+  }
+
+  removeEmergencyContact(idx: number): void {
+    if (idx < 0 || idx >= this.emergencyContacts.length) return;
+    const copy = [...this.emergencyContacts];
+    copy.splice(idx, 1);
+    this.emergencyContacts = copy;
+  }
+
+  saveEmergencyContacts(): void {
+    if (!this.empresaId) return;
+    // Sanitizar, máximo 4
+    const sanitized = (Array.isArray(this.emergencyContacts) ? this.emergencyContacts : [])
+      .map(c => ({ area: (c.area || '').toString().trim(), phone: (c.phone || '').toString().trim() }))
+      .filter(c => c.area || c.phone)
+      .slice(0, 4);
+    this.savingEmergencyContacts = true;
+    this.businessService.updateEmergencyContacts(this.empresaId, sanitized).subscribe({
+      next: (saved) => {
+        this.savingEmergencyContacts = false;
+        // Persistir en memoria también en la estructura empresa
+        try { (this.empresa as any).emergencyContacts = JSON.stringify(saved || []); } catch {}
+        alert('Contactos de emergencia guardados');
+      },
+      error: () => {
+        this.savingEmergencyContacts = false;
+        alert('No se pudo guardar los contactos de emergencia');
+      }
+    });
+  }
+
+  trackByIndex(i: number): number { return i; }
 
   // === Configuración de Mantenimiento (por empresa) ===
   private defaultMaintenanceConfig(): any {
@@ -1888,6 +1930,22 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.loading = false;
         // Cargar listado de personal de esta empresa
         this.loadCompanyEmployees();
+
+        // Parsear contactos de emergencia (JSON plano en empresa.emergencyContacts)
+        try {
+          const raw = (empresa as any).emergencyContacts;
+          if (raw) {
+            const arr = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            this.emergencyContacts = (Array.isArray(arr) ? arr : [])
+              .map((x: any) => ({ area: (x?.area || '').toString(), phone: (x?.phone || x?.numero || '').toString() }))
+              .filter((x: any) => x.area || x.phone)
+              .slice(0, 4);
+          } else {
+            this.emergencyContacts = [];
+          }
+        } catch {
+          this.emergencyContacts = [];
+        }
       },
       error: (error: any) => {
         console.error('Error al cargar empresa:', error);

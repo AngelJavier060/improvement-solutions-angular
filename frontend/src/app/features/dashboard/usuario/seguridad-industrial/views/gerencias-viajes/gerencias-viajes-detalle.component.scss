@@ -4,6 +4,7 @@ $doc-header-blue: #1b365d;
 $doc-light-blue: #d3e4fe;
 $doc-yellow: #ffeb3b;
 $doc-danger: #f44336;
+$doc-meta-maroon: #8b2222;
 $doc-success: #4caf50;
 $doc-warning: #ffc107;
 $doc-risk-orange: #ff9800;
@@ -12,12 +13,13 @@ $doc-matrix-dark-blue: #01579b;
 $doc-bg-input: #f8f9fa;
 $doc-border: #000;
 
-// Host container
+// Host: scroll horizontal si el lienzo A4 apaisado no cabe en el área del módulo
 :host {
   display: block;
   background-color: #f0f2f5;
   min-height: 100vh;
   padding: 1rem;
+  overflow-x: auto;
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
@@ -36,92 +38,238 @@ $doc-border: #000;
   padding: 3rem;
 }
 
-// Print canvas - main document container
+// Lienzo = hoja A4 horizontal (297×210 mm). No usar max-width:100% aquí: en columnas estrechas colapsa a “vertical”.
 .print-canvas {
+  box-sizing: border-box;
   width: 297mm;
-  max-width: 100%;
+  min-width: 297mm;
+  max-width: none;
   margin: 0 auto;
   background-color: white;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
   display: flex;
   flex-direction: column;
-  padding: 6mm 8mm;
+  padding: 4mm 6mm;
   font-size: 8px;
   line-height: 1.35;
   color: #000;
 }
 
-// Document Header
+// Document Header — 25% | 50% | 25%, borde fino, panel logo fondo blanco
 .doc-header {
   display: grid;
-  grid-template-columns: 3fr 6fr 3fr;
-  border: 1.5px solid $doc-border;
-  margin-bottom: 2px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  align-items: stretch;
+  border: 1px solid $doc-border;
+  margin-bottom: 6px;
+  min-height: 96px;
+  font-family: Arial, Helvetica, 'Segoe UI', sans-serif;
 }
 
-.header-brands {
-  padding: 8px;
+.header-brand-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  border-right: 1px solid $doc-border;
+  background: #fff;
+  min-height: 96px;
+
+  .brand-logo {
+    max-height: 72px;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+  }
+}
+
+.brand-fallback {
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
-  border-right: 1px solid $doc-border;
-  font-weight: 800;
-  font-size: 10px;
-  line-height: 1.3;
-  color: $doc-blue;
+  gap: 4px;
+  text-align: center;
+  padding: 4px;
+  width: 100%;
+}
+
+.brand-fallback-mark {
+  width: 36px;
+  height: 14px;
+  border-radius: 2px;
+  background: linear-gradient(
+    180deg,
+    #7ec8e8 0%,
+    #7ec8e8 45%,
+    transparent 45%,
+    transparent 55%,
+    #7ec8e8 55%,
+    #7ec8e8 100%
+  );
+  opacity: 0.95;
+}
+
+.brand-fallback-text {
+  line-height: 1.15;
+}
+
+.brand-fallback-line1 {
+  display: block;
+  font-size: 7px;
+  font-weight: 700;
+  color: #00204a;
+  letter-spacing: 0.02em;
+  word-break: break-word;
+}
+
+@media print {
+  .doc-header {
+    min-height: 78px;
+  }
+
+  .header-brand-panel {
+    min-height: 78px;
+    padding: 4px 6px;
+
+    .brand-logo {
+      max-height: 60px;
+    }
+  }
+
+  .header-meta {
+    font-size: 8px;
+
+    .meta-label {
+      font-size: 8px;
+    }
+
+    .meta-value {
+      font-size: 9px;
+    }
+  }
+
+  .creation-info {
+    font-size: 9px;
+
+    .creation-date {
+      font-size: 9px;
+    }
+
+    .doc-code {
+      font-size: 10px;
+    }
+  }
+
+  .print-canvas {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    min-height: 0;
+    height: auto;
+    padding: 0;
+    font-size: 7px;
+    line-height: 1.25;
+  }
 }
 
 .header-title {
-  padding: 8px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-right: 1px solid $doc-border;
-  
+  background: #fff;
+
   h1 {
-    font-size: 18px;
+    font-size: clamp(14px, 2.1vw, 20px);
     font-weight: 800;
-    letter-spacing: 0.5px;
-    color: $doc-blue;
+    letter-spacing: 0.04em;
+    color: #00204a;
     margin: 0;
+    text-align: center;
+    line-height: 1.2;
   }
 }
 
 .header-meta {
-  font-size: 7.5px;
-  font-weight: 700;
-  
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  font-size: 9px;
+  background: #fff;
+
   .meta-row {
-    padding: 2px 8px;
+    flex: 1;
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
     border-bottom: 1px solid $doc-border;
-    
+    min-height: 0;
+
     &:last-child {
       border-bottom: none;
     }
   }
+
+  .meta-label {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #00204a;
+    text-align: left;
+    flex-shrink: 0;
+    max-width: 58%;
+    line-height: 1.25;
+  }
+
+  .meta-value {
+    font-weight: 700;
+    color: #0f172a;
+    text-align: right;
+    font-size: 10px;
+    line-height: 1.25;
+    word-break: break-word;
+  }
 }
 
-// Creation info bar
+// Creation info bar (fuera del recuadro — texto granate como referencia)
 .creation-info {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  font-size: 7.5px;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 10px;
   font-weight: 700;
-  margin-bottom: 4px;
-  
-  .creation-date {
-    color: $doc-danger;
+  margin-top: 6px;
+  margin-bottom: 8px;
+  color: $doc-meta-maroon;
+
+  .creation-info-left {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.4;
   }
-  
-  .doc-code {
-    font-size: 9px;
+
+  .creation-date {
+    color: $doc-meta-maroon;
     font-weight: 800;
-    color: $doc-danger;
+    font-size: 10px;
+  }
+
+  .doc-code {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 800;
+    color: $doc-meta-maroon;
+    text-align: right;
   }
 }
 
@@ -129,7 +277,7 @@ $doc-border: #000;
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 8px;
+  font-size: 8.5px;
   table-layout: fixed;
   
   th, td {
@@ -142,14 +290,14 @@ $doc-border: #000;
 
 .label-cell {
   font-weight: 700;
-  font-size: 7px;
+  font-size: 7.5px;
   text-transform: uppercase;
   background-color: #f9f9f9;
 }
 
 .input-cell {
   font-weight: 500;
-  font-size: 9px;
+  font-size: 9.5px;
   background-color: $doc-bg-input;
 }
 
@@ -424,15 +572,21 @@ $doc-border: #000;
 
 .eval-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 6px;
   padding: 2px 4px;
   border-bottom: 1px solid $doc-border;
 }
 
 .eval-badge {
-  width: 16px;
+  min-width: 28px;
+  padding: 0 4px;
   text-align: center;
   font-size: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .eval-summary {
@@ -707,16 +861,15 @@ $doc-border: #000;
 .fw-normal { font-weight: 400; }
 .text-white { color: white; }
 
-// Print styles
+// Print styles (@page y modo solo-gerencia están en styles.scss)
 @media print {
-  @page {
-    size: A4 landscape;
-    margin: 0;
-  }
-  
   :host {
     background: white;
     padding: 0;
+    margin: 0;
+    display: block;
+    width: 100%;
+    max-width: none;
   }
   
   .no-print,
@@ -727,30 +880,46 @@ $doc-border: #000;
   .print-canvas {
     box-shadow: none;
     margin: 0;
-    width: 100%;
-    height: 100%;
-    padding: 5mm;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    min-height: 0;
+    height: auto;
+    padding: 0;
+    transform: none;
+    font-size: 6.5px;
+    line-height: 1.2;
+  }
+  
+  .doc-header {
+    min-height: 78px;
+    margin-bottom: 8px;
+  }
+
+  .header-brand-panel {
+    min-height: 78px;
   }
 }
 
-// Responsive adjustments
-@media (max-width: 1200px) {
+// Solo pantallas muy estrechas: apilar; el diseño “oficial” es siempre apaisado como la matriz impresa
+@media (max-width: 520px) {
   .print-canvas {
+    min-width: 0;
     width: 100%;
-    padding: 4mm;
+    padding: 3mm;
   }
-  
+
   .risk-section {
     grid-template-columns: 1fr;
     height: auto;
   }
-  
+
   .hazards-col,
   .conditions-col,
   .evaluation-col {
     width: 100%;
   }
-  
+
   .bottom-section {
     grid-template-columns: 1fr;
   }

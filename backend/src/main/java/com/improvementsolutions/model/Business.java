@@ -194,6 +194,10 @@ public class Business {
     @Column(name = "maintenance_config", columnDefinition = "TEXT")
     private String maintenanceConfig;
 
+    // Contactos de emergencia por empresa (JSON string de una lista de objetos {area, phone})
+    @Column(name = "emergency_contacts", columnDefinition = "TEXT")
+    private String emergencyContacts;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "business_tipo_vehiculo",

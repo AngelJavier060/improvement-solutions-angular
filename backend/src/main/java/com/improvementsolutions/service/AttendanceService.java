@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.DayOfWeek;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,6 +20,9 @@ import java.text.Normalizer;
 @RequiredArgsConstructor
 @Slf4j
 public class AttendanceService {
+
+    private static final DateTimeFormatter ES_DATE_FMT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy").withLocale(java.util.Locale.forLanguageTag("es"));
 
     private final BusinessRepository businessRepository;
     private final BusinessEmployeeRepository employeeRepository;
@@ -47,6 +51,29 @@ public class AttendanceService {
             throw new SecurityException("El empleado no pertenece a la empresa indicada");
         }
         return emp;
+    }
+
+    private static String formatScheduleHistoryOverlap(EmployeeWorkScheduleHistory h) {
+        String name = h.getWorkSchedule() != null ? h.getWorkSchedule().getName() : "—";
+        String end = h.getEndDate() != null ? h.getEndDate().format(ES_DATE_FMT) : "actualidad";
+        return String.format("%s (%s → %s)",
+                name,
+                h.getStartDate().format(ES_DATE_FMT),
+                end);
+    }
+
+    /** Lanza excepción si el mes correspondiente a 'date' no está en estado OPEN. */
+    private void assertMonthOpenOrThrow(Long businessId, LocalDate date) {
+        if (date == null) return;
+        Optional<MonthlySheetClosure> opt = closureRepository
+                .findByBusiness_IdAndYearAndMonth(businessId, date.getYear(), date.getMonthValue());
+        if (opt.isPresent()) {
+            String st = opt.get().getStatus();
+            if (!"OPEN".equals(st)) {
+                throw new IllegalStateException("El mes " + date.getYear() + "/" + date.getMonthValue() +
+                        " está " + st + " y no admite modificaciones.");
+            }
+        }
     }
 
     // ─────────────────── DATE CONFLICT LOOKUPS (for controller) ───────────────────
@@ -271,6 +298,12 @@ public class AttendanceService {
      */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getMonthlySheet(Long businessId, int year, int month) {
+        // Compatibilidad: por defecto incluye auto-cálculo (comportamiento previo)
+        return getMonthlySheet(businessId, year, month, true);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getMonthlySheet(Long businessId, int year, int month, boolean includeAuto) {
         requireBusiness(businessId);
 
         YearMonth ym = YearMonth.of(year, month);
@@ -342,10 +375,17 @@ public class AttendanceService {
                 String notes = notesMap.get(key);
                 boolean isOvertimeSaved = (savedType != null && "EX".equalsIgnoreCase(savedType))
                         || (notes != null && notes.trim().toUpperCase().startsWith("HE:"));
-                // Si hay un registro guardado explícitamente, siempre se muestra (sin importar scheduleStartDate)
-                String type = (beforeStart && !isOvertimeSaved && !hasSaved)
-                        ? null
-                        : (hasSaved ? savedType : getAutoDayType(emp, date));
+                // Si hay registro guardado, usarlo. Si no hay y includeAuto=true, calcular; si includeAuto=false, dejar null.
+                String type;
+                if (hasSaved) {
+                    type = savedType;
+                } else if (beforeStart && !isOvertimeSaved) {
+                    type = null;
+                } else if (includeAuto) {
+                    type = getAutoDayType(emp, date);
+                } else {
+                    type = null;
+                }
 
                 Map<String, Object> dayInfo = new LinkedHashMap<>();
                 dayInfo.put("day",  d);
@@ -383,6 +423,7 @@ public class AttendanceService {
     public EmployeeWorkDay saveWorkDay(Long businessId, Long employeeId, LocalDate date, String dayType, String notes) {
         Business biz = requireBusiness(businessId);
         BusinessEmployee emp = requireEmployee(businessId, employeeId);
+        assertMonthOpenOrThrow(businessId, date);
 
         Optional<EmployeeWorkDay> existing = workDayRepository.findByEmployee_IdAndWorkDate(employeeId, date);
         if (existing.isPresent()) {
@@ -412,6 +453,7 @@ public class AttendanceService {
     public void deleteWorkDay(Long businessId, Long employeeId, LocalDate date) {
         requireBusiness(businessId);
         requireEmployee(businessId, employeeId);
+        assertMonthOpenOrThrow(businessId, date);
         Optional<EmployeeWorkDay> existing = workDayRepository.findByEmployee_IdAndWorkDate(employeeId, date);
         if (existing.isPresent()) {
             EmployeeWorkDay wd = existing.get();
@@ -448,6 +490,7 @@ public class AttendanceService {
         int count = 0;
         for (Map<String, String> entry : dayEntries) {
             LocalDate date = LocalDate.parse(entry.get("date"));
+            assertMonthOpenOrThrow(businessId, date);
             String type = entry.getOrDefault("dayType", "D");
             String notes = entry.get("notes");
             Optional<EmployeeWorkDay> existing = workDayRepository.findByEmployee_IdAndWorkDate(employeeId, date);
@@ -471,6 +514,121 @@ public class AttendanceService {
             count++;
         }
         return count;
+    }
+
+    /**
+     * Autocompleta la planilla del mes para todos los empleados activos:
+     * guarda en BD únicamente los días T/D no guardados, calculados desde la jornada vigente.
+     */
+    @Transactional
+    public Map<String, Object> autocompleteMonth(Long businessId, int year, int month) {
+        Business biz = requireBusiness(businessId);
+        java.time.YearMonth ym = java.time.YearMonth.of(year, month);
+        LocalDate from = ym.atDay(1);
+        LocalDate to   = ym.atEndOfMonth();
+
+        // Bloquear si el mes no está OPEN
+        Optional<MonthlySheetClosure> closure = closureRepository.findByBusiness_IdAndYearAndMonth(businessId, year, month);
+        if (closure.isPresent() && !"OPEN".equals(closure.get().getStatus())) {
+            throw new IllegalStateException("El mes " + year + "/" + month + " está " + closure.get().getStatus() + ", no se puede autocompletar.");
+        }
+
+        // Empleados activos
+        List<BusinessEmployee> employees = employeeRepository.findWithRelationsByBusinessId(businessId)
+                .stream()
+                .filter(e -> Boolean.TRUE.equals(e.getActive()))
+                .collect(Collectors.toList());
+
+        // Registros ya guardados en el mes actual (para no sobrescribir)
+        List<EmployeeWorkDay> currentSavedDays = workDayRepository
+                .findByBusiness_IdAndWorkDateBetweenOrderByEmployeeIdAscWorkDateAsc(businessId, from, to);
+        java.util.Set<String> savedKeys = new java.util.HashSet<>();
+        for (EmployeeWorkDay wd : currentSavedDays) {
+            savedKeys.add(wd.getEmployee().getId() + "_" + wd.getWorkDate());
+        }
+
+        // Construir patrón desde el mes anterior (solo T/D guardados)
+        java.time.YearMonth prevYm = ym.minusMonths(1);
+        LocalDate pFrom = prevYm.atDay(1);
+        LocalDate pTo   = prevYm.atEndOfMonth();
+        List<EmployeeWorkDay> prevSavedDays = workDayRepository
+                .findByBusiness_IdAndWorkDateBetweenOrderByEmployeeIdAscWorkDateAsc(businessId, pFrom, pTo);
+        Map<Long, String[]> prevSeqMap = new HashMap<>(); // employeeId -> array de T/D por día (longitud mes previo)
+        for (BusinessEmployee emp : employees) {
+            String[] seq = new String[prevYm.lengthOfMonth()];
+            Arrays.fill(seq, null);
+            prevSeqMap.put(emp.getId(), seq);
+        }
+        for (EmployeeWorkDay wd : prevSavedDays) {
+            Long eid = wd.getEmployee() != null ? wd.getEmployee().getId() : null;
+            if (eid == null) continue;
+            String dt = wd.getDayType() != null ? wd.getDayType().trim().toUpperCase(Locale.ROOT) : null;
+            if (!"T".equals(dt) && !"D".equals(dt)) continue; // ignorar EX/V/P/E/A
+            String[] seq = prevSeqMap.get(eid);
+            if (seq == null) continue;
+            int dayIdx = wd.getWorkDate().getDayOfMonth() - 1;
+            if (dayIdx >= 0 && dayIdx < seq.length) seq[dayIdx] = dt;
+        }
+
+        int savedCount = 0;
+        int employeesAffected = 0;
+        for (BusinessEmployee emp : employees) {
+            boolean anySavedForEmp = false;
+            String[] seq = prevSeqMap.get(emp.getId());
+
+            // Si no hay patrón previo utilizable, se usará fallback por jornada vigente día a día
+            boolean hasPrevPattern = false;
+            if (seq != null) {
+                for (String s : seq) { if (s != null) { hasPrevPattern = true; break; } }
+            }
+
+            int seqLen = (seq != null ? seq.length : 0);
+            int startIdx = 0;
+            if (hasPrevPattern) {
+                // Continuar secuencia desde el día siguiente al último del mes anterior
+                // Buscar el último índice no nulo hacia atrás
+                int last = seqLen - 1;
+                while (last >= 0 && seq[last] == null) last--;
+                startIdx = (last >= 0) ? (last + 1) % seqLen : 0;
+            }
+
+            for (int d = 1; d <= ym.lengthOfMonth(); d++) {
+                LocalDate date = LocalDate.of(year, month, d);
+                String key = emp.getId() + "_" + date;
+                if (savedKeys.contains(key)) continue; // ya guardado manualmente o por otro módulo
+
+                String type = null;
+                if (hasPrevPattern && seqLen > 0) {
+                    String cand = seq[(startIdx + (d - 1)) % seqLen];
+                    if ("T".equals(cand) || "D".equals(cand)) type = cand;
+                }
+                // Fallback: usar jornada vigente solo si no se pudo derivar desde el mes anterior
+                if (type == null) {
+                    String auto = getAutoDayType(emp, date);
+                    if ("T".equalsIgnoreCase(auto) || "D".equalsIgnoreCase(auto)) type = auto.toUpperCase(Locale.ROOT);
+                }
+                if (type == null) continue; // no guardar si no hay definición
+
+                EmployeeWorkDay wd = new EmployeeWorkDay();
+                wd.setBusiness(biz);
+                wd.setEmployee(emp);
+                wd.setWorkDate(date);
+                wd.setDayType(type);
+                wd.setNotes(null);
+                workDayRepository.save(wd);
+                savedKeys.add(key);
+                savedCount++;
+                anySavedForEmp = true;
+            }
+            if (anySavedForEmp) employeesAffected++;
+        }
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("saved", savedCount);
+        out.put("employees", employeesAffected);
+        out.put("year", year);
+        out.put("month", month);
+        return out;
     }
 
     // ─────────────────── HORAS EXTRA ───────────────────
@@ -614,13 +772,40 @@ public class AttendanceService {
         dto.setEmployee(emp);
         dto.setId(null);
         EmployeePermission saved = permissionRepository.save(dto);
-        // No marcar planilla aquí: sólo cuando el permiso esté APROBADO
-        // Si se requiere, marcar únicamente si ya viene aprobado
+        // Marcar planilla sólo si ya está aprobado (misma lógica que al aprobar por estado)
         if ("APROBADO".equalsIgnoreCase(saved.getStatus())) {
-            saveWorkDay(businessId, employeeId, saved.getPermissionDate(), "P",
-                    "Permiso: " + saved.getPermissionType());
+            syncApprovedPermissionToWorkSheet(businessId, saved);
         }
         return saved;
+    }
+
+    /**
+     * Marca en la planilla los días P vinculados al permiso (nota PERM:{id}), según horas solicitadas / 8.
+     * Usa {@link LocalDate} del permiso sin conversiones de huso horario.
+     */
+    private void syncApprovedPermissionToWorkSheet(Long businessId, EmployeePermission p) {
+        if (p == null || p.getId() == null || p.getPermissionDate() == null) {
+            return;
+        }
+        BusinessEmployee emp = p.getEmployee();
+        if (emp == null) {
+            return;
+        }
+        Long employeeId = emp.getId();
+        LocalDate start = p.getPermissionDate();
+        double hours = 8.0;
+        if (p.getHoursRequested() != null) {
+            hours = p.getHoursRequested().doubleValue();
+        }
+        if (hours <= 0) {
+            hours = 8.0;
+        }
+        int daySpan = Math.max(1, (int) Math.round(hours / 8.0));
+        String notes = "PERM:" + p.getId();
+        for (int i = 0; i < daySpan; i++) {
+            LocalDate d = start.plusDays(i);
+            saveWorkDay(businessId, employeeId, d, "P", notes);
+        }
     }
 
     @Transactional
@@ -652,6 +837,7 @@ public class AttendanceService {
         if (!cur.getBusiness().getId().equals(businessId)) {
             throw new SecurityException("Acceso denegado");
         }
+        String prevStatus = cur.getStatus();
         // Actualizar campos editables
         if (body.getPermissionDate() != null) cur.setPermissionDate(body.getPermissionDate());
         if (body.getPermissionType() != null) cur.setPermissionType(body.getPermissionType());
@@ -659,7 +845,11 @@ public class AttendanceService {
         if (body.getReason() != null) cur.setReason(body.getReason());
         cur.setNotes(body.getNotes());
         if (body.getStatus() != null && !body.getStatus().isBlank()) cur.setStatus(body.getStatus());
-        return permissionRepository.save(cur);
+        EmployeePermission saved = permissionRepository.save(cur);
+        if (!"APROBADO".equalsIgnoreCase(prevStatus) && "APROBADO".equalsIgnoreCase(saved.getStatus())) {
+            syncApprovedPermissionToWorkSheet(businessId, saved);
+        }
+        return saved;
     }
 
     @Transactional
@@ -675,7 +865,11 @@ public class AttendanceService {
             throw new IllegalArgumentException("Estado inválido: " + status);
         }
         cur.setStatus(up);
-        return permissionRepository.save(cur);
+        EmployeePermission saved = permissionRepository.save(cur);
+        if ("APROBADO".equals(up)) {
+            syncApprovedPermissionToWorkSheet(businessId, saved);
+        }
+        return saved;
     }
 
     @Transactional
@@ -1317,24 +1511,38 @@ public class AttendanceService {
         WorkSchedule ws = workScheduleRepository.findById(workScheduleId)
                 .orElseThrow(() -> new NoSuchElementException("Jornada no encontrada: " + workScheduleId));
 
-        // Validar solapamiento
+        if (endDate != null && endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("La fecha de fin de vigencia no puede ser anterior al inicio.");
+        }
+
+        // Validar solapamiento: dos intervalos [a,b] y [c,d] se cruzan ssi a<=d y c<=b (fin null = abierto).
         LocalDate effectiveEnd = endDate != null ? endDate : LocalDate.of(9999, 12, 31);
         List<EmployeeWorkScheduleHistory> overlaps = scheduleHistoryRepository
                 .findOverlappingNew(employeeId, startDate, effectiveEnd);
         if (!overlaps.isEmpty()) {
-            // Auto-cerrar el periodo vigente si su endDate es null
+            // Auto-cerrar periodos vigentes (fin null) que empiezan ANTES del inicio del nuevo periodo:
+            // el nuevo periodo sustituye a partir de startDate.
             overlaps.stream()
-                .filter(h -> h.getEndDate() == null)
+                .filter(h -> h.getEndDate() == null && h.getStartDate().isBefore(startDate))
                 .forEach(h -> {
-                    h.setEndDate(startDate.minusDays(1));
-                    scheduleHistoryRepository.save(h);
+                    LocalDate closeAt = startDate.minusDays(1);
+                    if (!closeAt.isBefore(h.getStartDate())) {
+                        h.setEndDate(closeAt);
+                        scheduleHistoryRepository.save(h);
+                    }
                 });
-            // Re-verificar si quedan solapamientos reales (no sólo el que fue cerrado)
+            // Si el nuevo periodo empieza antes o el mismo día que un vigente, no se auto-cierra:
+            // seguiría habiendo solape real hasta que el usuario acote fechas o edite el vigente.
             List<EmployeeWorkScheduleHistory> stillOverlapping = scheduleHistoryRepository
                     .findOverlappingNew(employeeId, startDate, effectiveEnd);
             if (!stillOverlapping.isEmpty()) {
+                String conflicts = stillOverlapping.stream()
+                        .map(AttendanceService::formatScheduleHistoryOverlap)
+                        .collect(Collectors.joining("; "));
                 throw new IllegalArgumentException(
-                    "Ya existe una jornada registrada para ese rango de fechas.");
+                        "El rango se cruza con periodos ya registrados (las fechas son inclusivas). "
+                                + "Ajuste el fin de vigencia o las fechas existentes para que no compartan días. "
+                                + "Detalle: " + conflicts);
             }
         }
 

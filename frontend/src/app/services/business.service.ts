@@ -123,6 +123,35 @@ export class BusinessService {
       }));
   }
 
+  // === CONTACTOS DE EMERGENCIA (por empresa) ===
+  getEmergencyContacts(businessId: number): Observable<Array<{ area: string; phone: string }>> {
+    return this.http.get(`${this.apiUrl}/${businessId}/emergency-contacts`, { responseType: 'text' })
+      .pipe(map(raw => {
+        try {
+          const parsed = raw ? JSON.parse(raw as any) : [];
+          if (Array.isArray(parsed)) {
+            return parsed
+              .map((x: any) => ({ area: (x?.area || '').toString(), phone: (x?.phone || x?.numero || x?.contact || '').toString() }))
+              .filter((x: any) => x.area || x.phone)
+              .slice(0, 4);
+          }
+          return [];
+        } catch { return []; }
+      }));
+  }
+
+  updateEmergencyContacts(businessId: number, contacts: Array<{ area: string; phone: string }>): Observable<Array<{ area: string; phone: string }>> {
+    const sanitized = (Array.isArray(contacts) ? contacts : [])
+      .map(c => ({ area: (c.area || '').toString().trim(), phone: (c.phone || '').toString().trim() }))
+      .filter(c => c.area || c.phone)
+      .slice(0, 4);
+    const body = JSON.stringify(sanitized);
+    return this.http.put(`${this.apiUrl}/${businessId}/emergency-contacts`, body, { responseType: 'text' })
+      .pipe(map(raw => {
+        try { const arr = raw ? JSON.parse(raw as any) : []; return Array.isArray(arr) ? arr : []; } catch { return []; }
+      }));
+  }
+
   // === MÉTODOS PARA IESS ===
   addIessToBusiness(businessId: number, iessId: number): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/${businessId}/iess/${iessId}`, {});

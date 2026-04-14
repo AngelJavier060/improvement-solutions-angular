@@ -1,12 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AttendanceService, PermissionRecord, DayType } from '../services/attendance.service';
 import { EmployeeService } from '../services/employee.service';
 import { BusinessContextService } from '../../../../../core/services/business-context.service';
 import { BusinessService } from '../../../../../services/business.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subject } from 'rxjs';
+import { filter, map, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { extractUsuarioRucFromRoute, resolveThBusinessFromRoute } from '../utils/th-business-from-route';
 import { EmployeeResponse } from '../models/employee.model';
 
 export interface PermissionTypeRow {
@@ -21,7 +23,7 @@ export interface PermissionTypeRow {
   templateUrl: './permisos.component.html',
   styleUrls: ['./permisos.component.scss']
 })
-export class PermisosComponent implements OnInit {
+export class PermisosComponent implements OnInit, OnDestroy {
 
   businessId: number | null = null;
   businessRuc: string | null = null;
@@ -94,6 +96,11 @@ export class PermisosComponent implements OnInit {
   // Storage key prefix for per-company default signers
   private readonly SIGNERS_KEY_PREFIX = 'perm_signers_';
 
+  /** Código de documento (PDF solicitud de permiso) */
+  readonly docCode = 'GTH-PRO-01-F5';
+
+  private readonly destroy$ = new Subject<void>();
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -105,9 +112,41 @@ export class PermisosComponent implements OnInit {
     private sanitizer: DomSanitizer
   ) {}
 
+  /** Nombre de la empresa en gestión (URL / RUC), para encabezados y PDF */
+  get displayBusinessName(): string {
+    return (this.businessName || '').trim() || 'Empresa';
+  }
+
   ngOnInit(): void {
     this.buildForm();
-    this.extractParams();
+    this.initFromRoute();
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(() => extractUsuarioRucFromRoute(this.route)),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(() => this.initFromRoute());
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private initFromRoute(): void {
+    resolveThBusinessFromRoute(this.route, this.businessService, this.businessContext).subscribe(b => {
+      if (!b) {
+        this.businessId = null;
+        this.businessRuc = null;
+        this.businessName = '';
+        return;
+      }
+      this.businessId = b.id;
+      this.businessRuc = b.ruc;
+      this.businessName = b.name;
+      this.loadEmployees();
+      this.loadRecords();
+    });
   }
 
   private buildForm(): void {
@@ -119,37 +158,6 @@ export class PermisosComponent implements OnInit {
       notes:           [''],
       status:          ['PENDIENTE']
     });
-  }
-
-  private extractParams(): void {
-    let r: any = this.route;
-    while (r) {
-      const ruc = r.snapshot?.params?.['ruc'] || r.snapshot?.params?.['businessRuc'];
-      if (ruc) { this.businessRuc = ruc; break; }
-      r = r.parent;
-    }
-    if (!this.businessRuc && typeof window !== 'undefined') {
-      const m = window.location.pathname.match(/\/usuario\/([^/]+)\//);
-      if (m?.[1]) this.businessRuc = m[1];
-    }
-    const active = this.businessContext.getActiveBusiness();
-    if (active) {
-      this.businessId   = active.id;
-      this.businessName = active.name ?? '';
-      if (!this.businessRuc) this.businessRuc = active.ruc;
-      this.loadEmployees();
-      this.loadRecords();
-    } else if (this.businessRuc) {
-      this.businessService.getAll().subscribe({
-        next: (list: any[]) => {
-          const found = list.find((b: any) => b.ruc === this.businessRuc);
-          if (found) { this.businessId = found.id; this.businessName = found.name ?? ''; }
-          this.loadEmployees();
-          this.loadRecords();
-        },
-        error: () => { this.loadEmployees(); this.loadRecords(); }
-      });
-    }
   }
 
   loadEmployees(): void {
@@ -317,10 +325,24 @@ export class PermisosComponent implements OnInit {
 
   calcDays(row: PermissionTypeRow): number {
     if (!row.startDate || !row.endDate) return 0;
-    const d1 = new Date(row.startDate);
-    const d2 = new Date(row.endDate);
-    const diff = Math.ceil((d2.getTime() - d1.getTime()) / 86400000) + 1;
+    const a = this.parseIsoDateOnly(row.startDate);
+    const b = this.parseIsoDateOnly(row.endDate);
+    if (!a || !b) return 0;
+    const t0 = new Date(a.y, a.m - 1, a.d).getTime();
+    const t1 = new Date(b.y, b.m - 1, b.d).getTime();
+    const diff = Math.ceil((t1 - t0) / 86400000) + 1;
     return diff > 0 ? diff : 0;
+  }
+
+  /**
+   * Fecha calendario yyyy-MM-dd sin interpretación UTC (evita desfase de un día al aprobar permisos).
+   */
+  private parseIsoDateOnly(iso: string | undefined | null): { y: number; m: number; d: number } | null {
+    if (!iso) return null;
+    // Aceptar "yyyy-MM-dd" o prefijo "yyyy-MM-ddTHH..." (evita fallar si el API envía instante)
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso.trim());
+    if (!m) return null;
+    return { y: +m[1], m: +m[2], d: +m[3] };
   }
 
   submitForm(): void {
@@ -499,11 +521,8 @@ export class PermisosComponent implements OnInit {
     if (this.filterType) {
       list = list.filter(r => r.permissionType === this.filterType);
     }
-    return list.sort((a, b) => {
-      const ta = Date.parse(a.permissionDate || '');
-      const tb = Date.parse(b.permissionDate || '');
-      return (isNaN(tb) ? 0 : tb) - (isNaN(ta) ? 0 : ta);
-    });
+    return list.sort((a, b) =>
+      (b.permissionDate || '').localeCompare(a.permissionDate || '', 'en-CA'));
   }
 
   get kpiTotal(): number { return this.records.length; }
@@ -556,17 +575,7 @@ export class PermisosComponent implements OnInit {
       next: () => {
         this.attendanceService.updatePermissionStatus(this.businessId!, r.id!, 'APROBADO').subscribe({
           next: () => {
-            const start = new Date(r.permissionDate);
-            const daysCount = Math.max(1, Math.round(((r.hoursRequested || 8) as number) / 8));
-            const batch = Array.from({length: daysCount}, (_, i) => {
-              const d = new Date(start);
-              d.setDate(start.getDate() + i);
-              const y = d.getFullYear();
-              const m = String(d.getMonth() + 1).padStart(2, '0');
-              const dd = String(d.getDate()).padStart(2, '0');
-              return { date: `${y}-${m}-${dd}`, dayType: 'P', notes: `PERM:${r.id}` };
-            });
-            this.attendanceService.saveWorkDaysBatch(this.businessId!, r.employeeId!, batch).subscribe({ next: () => {}, error: () => {} });
+            // La planilla (P + PERM:id) la sincroniza el backend al pasar a APROBADO
             this.saving = false;
             this.successMsg = 'PDF subido y permiso aprobado';
             setTimeout(() => this.successMsg = null, 3000);
@@ -585,18 +594,7 @@ export class PermisosComponent implements OnInit {
     this.saving = true;
     this.attendanceService.updatePermissionStatus(this.businessId!, r.id!, 'APROBADO').subscribe({
       next: () => {
-        // Marcar planilla con 'P' y nota PERM:id en el rango de días
-        const start = new Date(r.permissionDate);
-        const daysCount = Math.max(1, Math.round(((r.hoursRequested || 8) as number) / 8));
-        const batch = Array.from({length: daysCount}, (_, i) => {
-          const d = new Date(start);
-          d.setDate(start.getDate() + i);
-          const y = d.getFullYear();
-          const m = String(d.getMonth() + 1).padStart(2, '0');
-          const dd = String(d.getDate()).padStart(2, '0');
-          return { date: `${y}-${m}-${dd}`, dayType: 'P', notes: `PERM:${r.id}` };
-        });
-        this.attendanceService.saveWorkDaysBatch(this.businessId!, r.employeeId!, batch).subscribe({ next: () => {}, error: () => {} });
+        // La planilla (P + PERM:id) la sincroniza el backend al pasar a APROBADO
         this.saving = false;
         this.successMsg = 'Permiso aprobado y planilla marcada';
         setTimeout(() => this.successMsg = null, 3000);

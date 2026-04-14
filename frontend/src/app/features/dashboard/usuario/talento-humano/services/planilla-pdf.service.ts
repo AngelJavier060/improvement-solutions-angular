@@ -51,12 +51,13 @@ export class PlanillaPdfService {
 
   /** Paleta PDF (sin negro puro): encabezados, pies y bordes */
   private readonly PDF_HEADER_BG: [number, number, number] = [71, 85, 105];   // slate-600
-  private readonly PDF_HEADER_BG2: [number, number, number] = [100, 116, 139]; // slate-500
   private readonly PDF_BORDER_STRONG: [number, number, number] = [71, 85, 105];
   private readonly PDF_GRID_LINE: [number, number, number] = [100, 116, 139];
 
   generate(opts: PdfOptions): void {
-    const { businessName, businessRuc, year, month, monthLabel, sheet, dayTypeKeys } = opts;
+    const { businessName, businessRuc, year, monthLabel, sheet, dayTypeKeys } = opts;
+    const monthNum = typeof opts.month === 'string' ? parseInt(opts.month as unknown as string, 10) : opts.month;
+    const month = Number.isFinite(monthNum) ? Math.max(1, Math.min(12, monthNum)) : new Date().getMonth() + 1;
     const monthClosed = !!opts.monthClosed;
     const daysCount = new Date(year, month, 0).getDate();
 
@@ -67,7 +68,10 @@ export class PlanillaPdfService {
     const margin = 5;
 
     // ── HEADER ────────────────────────────────────────────────────────────
-    this.drawHeader(doc, businessName, businessRuc, year, month, monthLabel, pageW, margin, opts.logoBase64);
+    const resolvedMonthLabel = (monthLabel?.trim()
+      ? monthLabel.trim()
+      : this.MONTH_NAMES[month - 1]) ?? '';
+    this.drawHeader(doc, businessName, businessRuc, year, resolvedMonthLabel, pageW, margin, opts.logoBase64);
 
     // ── LEYENDA (varias filas si hace falta; mes cerrado = texto resumido) ─
     const legendY = 28;
@@ -89,7 +93,7 @@ export class PlanillaPdfService {
     );
 
     // ── PIE DE PÁGINA ─────────────────────────────────────────────────────
-    this.drawFooter(doc, businessName, year, month, monthLabel);
+    this.drawFooter(doc, businessName, year, month, resolvedMonthLabel);
 
     // ── GUARDAR ───────────────────────────────────────────────────────────
     const suffix = monthClosed ? '_cerrada' : '';
@@ -103,7 +107,6 @@ export class PlanillaPdfService {
     businessName: string,
     businessRuc: string | undefined,
     year: number,
-    month: number,
     monthLabel: string,
     pageW: number,
     margin: number,
@@ -164,18 +167,16 @@ export class PlanillaPdfService {
     doc.setLineWidth(0.35);
     doc.line(rightX, margin, rightX, margin + hH);
 
+    // Año y mes con la misma jerarquía visual (texto blanco sobre bloque único)
     doc.setFillColor(...this.PDF_HEADER_BG);
-    doc.rect(rightX, margin, rightW, hH / 2, 'F');
+    doc.rect(rightX, margin, rightW, hH, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
     doc.setTextColor(255, 255, 255);
-    doc.text(String(year), rightX + rightW / 2, margin + hH / 4 + 2, { align: 'center' });
-
-    doc.setFillColor(...this.PDF_HEADER_BG2);
-    doc.rect(rightX, margin + hH / 2, rightW, hH / 2, 'F');
-    doc.setFontSize(8);
-    doc.setTextColor(241, 245, 249);
-    doc.text(monthLabel.toUpperCase(), rightX + rightW / 2, margin + hH * 0.75 + 1, { align: 'center' });
+    const monthUpper = monthLabel.toUpperCase();
+    doc.setFontSize(13);
+    doc.text(String(year), rightX + rightW / 2, margin + 10, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text(monthUpper || '—', rightX + rightW / 2, margin + 18, { align: 'center' });
   }
 
   private drawLogoFallback(doc: jsPDF, name: string, x: number, y: number, w: number): void {

@@ -13,12 +13,86 @@
   --body-color: #f8f9fa;
 }
 
+/* Impresión gerencia de viaje: A4 horizontal, sin sidebar, ancho útil completo.
+   IMPORTANTE: el tamaño de página NO debe ir en @page sin nombre — afectaría TODOS los
+   documentos impresos (permisos, vacaciones, etc.). Usamos página con nombre. */
 @media print {
-  @page {
-    size: auto;
-    margin: 0;
+  @page gerencia_landscape {
+    size: 297mm 210mm;
+    margin: 8mm;
   }
 
+  @page th_form_portrait {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  /* Formularios TH (HTML): solicitud permiso, plan vacaciones, etc. */
+  .th-form-print-root {
+    page: th_form_portrait;
+  }
+
+  html.print-gerencia-only {
+    height: auto !important;
+    background: white !important;
+  }
+
+  body.print-gerencia-only {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+
+  body.print-gerencia-only app-sidebar-seguridad,
+  body.print-gerencia-only .sidebar-seguridad {
+    display: none !important;
+  }
+
+  body.print-gerencia-only .si-content-col {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    flex: 1 1 100% !important;
+  }
+
+  body.print-gerencia-only .si-root {
+    display: block !important;
+    min-height: 0 !important;
+  }
+
+  body.print-gerencia-only * {
+    visibility: hidden !important;
+  }
+
+  body.print-gerencia-only .gerencia-print-target,
+  body.print-gerencia-only .gerencia-print-target * {
+    visibility: visible !important;
+  }
+
+  body.print-gerencia-only .gerencia-print-target {
+    page: gerencia_landscape;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    z-index: 1 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+@media print {
+  /* Credencial: misma orientación de página; el contenido sigue centrado con su propio transform */
   body.print-credential-only {
     margin: 0 !important;
     padding: 0 !important;

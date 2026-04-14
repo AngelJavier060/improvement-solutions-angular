@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import {
   AttendanceService,
   OvertimeRequest,
@@ -11,14 +11,16 @@ import { BusinessService } from '../../../../../services/business.service';
 import { EmployeeResponse } from '../models/employee.model';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subject } from 'rxjs';
+import { filter, map, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { extractUsuarioRucFromRoute, resolveThBusinessFromRoute } from '../utils/th-business-from-route';
 
 @Component({
   selector: 'app-horas-extra',
   templateUrl: './horas-extra.component.html',
   styleUrls: ['./horas-extra.component.scss']
 })
-export class HorasExtraComponent implements OnInit {
+export class HorasExtraComponent implements OnInit, OnDestroy {
 
   businessId: number | null = null;
   businessRuc: string | null = null;
@@ -63,6 +65,8 @@ export class HorasExtraComponent implements OnInit {
   activityConflictWarning: string | null = null;
   private _lastActivityDate: string = '';
 
+  private readonly destroy$ = new Subject<void>();
+
   readonly months = [
     {v:1,l:'Enero'},{v:2,l:'Febrero'},{v:3,l:'Marzo'},{v:4,l:'Abril'},
     {v:5,l:'Mayo'},{v:6,l:'Junio'},{v:7,l:'Julio'},{v:8,l:'Agosto'},
@@ -85,44 +89,41 @@ export class HorasExtraComponent implements OnInit {
     private businessService: BusinessService
   ) {}
 
-  ngOnInit(): void {
-    this.extractParams();
+  get displayBusinessName(): string {
+    return (this.businessName || '').trim() || 'Empresa';
   }
 
-  private extractParams(): void {
-    let r: any = this.route;
-    while (r) {
-      const ruc = r.snapshot?.params?.['ruc'] || r.snapshot?.params?.['businessRuc'];
-      if (ruc) { this.businessRuc = ruc; break; }
-      r = r.parent;
-    }
-    if (!this.businessRuc && typeof window !== 'undefined') {
-      const m = window.location.pathname.match(/\/usuario\/([^/]+)\//);
-      if (m?.[1]) this.businessRuc = m[1];
-    }
-    const active = this.businessContext.getActiveBusiness();
-    if (active) {
-      this.businessId       = active.id;
-      this.businessName     = active.name ?? '';
-      this.businessRucDisplay = active.ruc ?? '';
-      if (!this.businessRuc) this.businessRuc = active.ruc;
+  ngOnInit(): void {
+    this.initFromRoute();
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(() => extractUsuarioRucFromRoute(this.route)),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(() => this.initFromRoute());
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private initFromRoute(): void {
+    resolveThBusinessFromRoute(this.route, this.businessService, this.businessContext).subscribe(b => {
+      if (!b) {
+        this.businessId = null;
+        this.businessRuc = null;
+        this.businessRucDisplay = '';
+        this.businessName = '';
+        return;
+      }
+      this.businessId = b.id;
+      this.businessRuc = b.ruc;
+      this.businessRucDisplay = b.ruc;
+      this.businessName = b.name;
       this.loadBusinessInfo();
       this.loadData();
-    } else if (this.businessRuc) {
-      this.businessService.getAll().subscribe({
-        next: (list: any[]) => {
-          const found = list.find((b: any) => b.ruc === this.businessRuc);
-          if (found) {
-            this.businessId = found.id;
-            this.businessName = found.name ?? '';
-            this.businessRucDisplay = found.ruc ?? '';
-            this.loadBusinessInfo();
-          }
-          this.loadData();
-        },
-        error: () => this.loadData()
-      });
-    }
+    });
   }
 
   private loadBusinessInfo(): void {
@@ -385,7 +386,7 @@ export class HorasExtraComponent implements OnInit {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...DARK);
-        const bizLines = doc.splitTextToSize(this.businessName.toUpperCase(), col1W - 4);
+        const bizLines = doc.splitTextToSize(this.displayBusinessName.toUpperCase(), col1W - 4);
         doc.text(bizLines, m + col1W / 2, y + hdrH / 2, { align: 'center', baseline: 'middle' });
         if (this.businessRucDisplay) {
           doc.setFont('helvetica', 'normal');
@@ -398,7 +399,7 @@ export class HorasExtraComponent implements OnInit {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(...DARK);
-      const bizLines = doc.splitTextToSize(this.businessName.toUpperCase(), col1W - 4);
+      const bizLines = doc.splitTextToSize(this.displayBusinessName.toUpperCase(), col1W - 4);
       doc.text(bizLines, m + col1W / 2, y + hdrH / 2, { align: 'center', baseline: 'middle' });
       if (this.businessRucDisplay) {
         doc.setFont('helvetica', 'normal');
@@ -624,7 +625,7 @@ export class HorasExtraComponent implements OnInit {
     doc.setFontSize(6);
     doc.setTextColor(...GRAY_TXT);
     doc.setFont('helvetica', 'normal');
-    doc.text(`${this.businessName} — Horas Extras ${this.periodLabel(req.reportPeriod)}`, m, fY);
+    doc.text(`${this.displayBusinessName} — Horas Extras ${this.periodLabel(req.reportPeriod)}`, m, fY);
     doc.text(`Generado el ${new Date().toLocaleDateString('es-EC')} | RH-FOR-042`, pageW - m, fY, { align: 'right' });
 
     const fileName = `HorasExtras_${(req.employeeName || 'empleado').replace(/\s+/g,'_')}_${req.reportPeriod}.pdf`;

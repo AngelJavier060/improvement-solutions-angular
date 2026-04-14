@@ -6,7 +6,7 @@
     [employee]="selectedEmployee"
     [employees]="employees"
     [businessId]="businessId"
-    [businessName]="businessName"
+    [businessName]="displayBusinessName"
     [businessLogoUrl]="businessLogoUrl"
     [previewRecord]="previewRecord"
     (closed)="onModalClosed()"
@@ -28,7 +28,7 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════ -->
-  <!-- TAB PRINCIPAL: VACACIONES ANUALES (tabla estilo ORT-GTH-PRO)  -->
+  <!-- TAB PRINCIPAL: VACACIONES ANUALES (tabla estilo GTH-PRO)  -->
   <!-- ══════════════════════════════════════════════════════════════ -->
   <div class="vac-main-container" *ngIf="activeTab === 'solicitudes'">
 
@@ -229,7 +229,7 @@
         </button>
       </div>
       <div class="ms-filters">
-        <span class="ms-filter-badge"><strong>Empresa:</strong> {{ businessName || 'Empresa' }}</span>
+        <span class="ms-filter-badge"><strong>Empresa:</strong> {{ displayBusinessName }}</span>
         <span class="ms-filter-badge"><strong>Periodo:</strong> {{ planYear }}</span>
       </div>
       <div class="ms-cards">
@@ -334,18 +334,18 @@
         </table>
       </div>
       <div class="ms-prepared">
-        <span>Preparado: {{ businessName || 'Empresa' }}</span>
+        <span>Preparado: {{ displayBusinessName }}</span>
         <span>Fecha y hora: {{ printPreparedAt }}</span>
       </div>
     </section>
 
     <!-- Printable form -->
-    <div class="plan-document">
+    <div class="plan-document th-form-print-root">
 
       <!-- Document header -->
       <header class="doc-header">
         <div class="doc-header-logo">
-          <span class="company-logo-text">{{ businessName || 'EMPRESA' }}</span>
+          <span class="company-logo-text">{{ displayBusinessName }}</span>
         </div>
         <div class="doc-header-title">
           <h1>Planificación Anual de Vacaciones</h1>

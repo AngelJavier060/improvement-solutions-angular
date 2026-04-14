@@ -247,9 +247,22 @@ export class AttendanceService {
   }
 
   // Planilla mensual
-  getMonthlySheet(businessId: number, year: number, month: number): Observable<EmployeeSheetRow[]> {
-    const params = new HttpParams().set('year', year).set('month', month);
+  getMonthlySheet(businessId: number, year: number, month: number, includeAuto: boolean = true): Observable<EmployeeSheetRow[]> {
+    let params = new HttpParams().set('year', year).set('month', month);
+    if (includeAuto !== undefined && includeAuto !== null) {
+      params = params.set('includeAuto', String(includeAuto));
+    }
     return this.http.get<EmployeeSheetRow[]>(`${this.apiUrl(businessId)}/sheet`, { params });
+  }
+
+  /** Autocompletar T/D del mes actual en base a jornada (solo meses ABIERTO). */
+  autocompleteMonth(businessId: number, year: number, month: number): Observable<{ saved: number; employees: number; year: number; month: number }> {
+    const params = new HttpParams().set('year', year).set('month', month);
+    return this.http.post<{ saved: number; employees: number; year: number; month: number }>(
+      `${this.apiUrl(businessId)}/sheet/autocomplete`,
+      {},
+      { params }
+    );
   }
 
   /** Consolidado anual HH (misma lógica que planilla mensual + horas extra registradas) */

@@ -35,7 +35,7 @@
           <p class="form-doc-subtitle">GESTIÓN DE TALENTO HUMANO</p>
         </div>
         <div class="form-doc-meta">
-          <div class="form-meta-row"><span class="fm-key">Código:</span><span class="fm-val">ORT-GTH-PRO-01-F4</span></div>
+          <div class="form-meta-row"><span class="fm-key">Código:</span><span class="fm-val">{{ docCode }}</span></div>
           <div class="form-meta-row"><span class="fm-key">Revisión:</span><span class="fm-val">00</span></div>
           <div class="form-meta-row"><span class="fm-key">Fecha:</span><span class="fm-val">01/04/2025</span></div>
           <div class="form-meta-row"><span class="fm-key">Página:</span><span class="fm-val">1 de 1</span></div>
@@ -146,14 +146,12 @@
         </section>
 
         <!-- ── Sección 2: Planificación ── -->
-        <section class="form-section">
+        <section class="form-section form-section--planning">
           <div class="section-title">
             <i class="fas fa-calendar-check section-icon"></i>
             <span>Detalles de Planificación</span>
           </div>
-          <div class="form-grid-4">
-
-            <!-- Se removieron fechas aquí, ya están definidas en la parte superior -->
+          <div class="form-grid-planning">
 
             <div class="field-wrap">
               <label class="field-label">Reemplazo (Colaborador) <span class="req">*</span></label>

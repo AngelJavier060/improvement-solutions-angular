@@ -475,12 +475,30 @@ $shadow-md: 0 4px 16px rgba(0,0,0,.10);
 // ── Print media query ──
 @media print {
   .no-print, .perm-page { display: none !important; }
-  .perm-pdf-overlay     { padding: 0 !important; background: white !important; }
-  .perm-pdf-doc         { box-shadow: none; width: 210mm; min-height: 297mm; }
-  .perm-pdf-actions     { display: none !important; }
+  .perm-pdf-overlay {
+    padding: 0 !important;
+    background: white !important;
+    min-height: 0 !important;
+  }
+  .perm-pdf-doc {
+    box-shadow: none !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    min-height: 297mm;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+  .perm-pdf-actions { display: none !important; }
   body *:not(.perm-pdf-overlay):not(.perm-pdf-doc):not(.perm-pdf-doc *) {
     visibility: hidden;
   }
   .perm-pdf-overlay, .perm-pdf-doc, .perm-pdf-doc * { visibility: visible; }
-  .perm-pdf-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
+  .perm-pdf-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex !important;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .perm-pdf-doc { flex: 0 0 auto; }
 }

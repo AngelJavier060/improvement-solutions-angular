@@ -52,8 +52,12 @@ class _IndicadoresReactivosDashboardScreenState extends State<IndicadoresReactiv
       });
       return;
     }
-    final data = await _svc.getSafetyIndices(id, _year);
-    final active = await _svc.getActiveEmployeesYtd(id, _year);
+    final results = await Future.wait([
+      _svc.getSafetyIndices(id, _year),
+      _svc.getActiveEmployeesYtd(id, _year),
+    ]);
+    final data = results[0] as SafetyIndicesSummary?;
+    final active = results[1] as int?;
     if (!mounted) return;
     setState(() {
       _data = data;

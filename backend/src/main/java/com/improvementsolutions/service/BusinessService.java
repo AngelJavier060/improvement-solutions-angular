@@ -651,6 +651,38 @@ public class BusinessService {
         return maintenanceJson;
     }
 
+    // === CONTACTOS DE EMERGENCIA (por empresa) ===
+    @Transactional(readOnly = true)
+    public String getEmergencyContacts(Long businessId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        return business.getEmergencyContacts();
+    }
+
+    @Transactional
+    public String updateEmergencyContacts(Long businessId, String contactsJson) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        // Enforzar máximo 4 contactos si el JSON es un arreglo
+        try {
+            if (contactsJson != null && !contactsJson.trim().isEmpty()) {
+                com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.databind.JsonNode node = om.readTree(contactsJson);
+                if (node.isArray() && node.size() > 4) {
+                    throw new IllegalArgumentException("Máximo 4 contactos de emergencia por empresa");
+                }
+            }
+        } catch (IllegalArgumentException ex) {
+            throw ex;
+        } catch (Exception ignored) {
+            // Si no es JSON válido, se guardará como texto plano; el front debe enviar JSON correcto
+        }
+        business.setEmergencyContacts(contactsJson);
+        business.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(business);
+        return contactsJson;
+    }
+
     // === MÉTODOS PARA DEPARTAMENTOS ===
     @Transactional
     public Business addDepartmentToBusiness(Long businessId, Long departmentId) {

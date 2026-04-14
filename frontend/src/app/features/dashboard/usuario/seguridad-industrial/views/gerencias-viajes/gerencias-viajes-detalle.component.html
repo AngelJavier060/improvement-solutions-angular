@@ -24,26 +24,46 @@
 </div>
 
 <!-- Document Page - New Design -->
-<div class="print-canvas" *ngIf="!loading && gerencia">
-  <!-- Header Area -->
-  <header class="doc-header">
-    <div class="header-brands">
-      <div class="brand-name">ORIENTOIL S.A.</div>
-      <div class="brand-name">ORIENFLUVIAL S.A.</div>
+<div class="print-canvas gerencia-print-target" *ngIf="!loading && gerencia">
+  <!-- Header Area (estilo documento formal — tres columnas) -->
+  <header class="doc-header" aria-label="Encabezado del documento">
+    <div class="header-brand-panel">
+      <ng-container *ngIf="companyLogoUrl; else brandFallback">
+        <img class="brand-logo" [src]="companyLogoUrl" [alt]="companyName || 'Empresa'" />
+      </ng-container>
+      <ng-template #brandFallback>
+        <div class="brand-fallback" role="img" [attr.aria-label]="companyName || gerencia?.businessName || businessRuc">
+          <span class="brand-fallback-mark" aria-hidden="true"></span>
+          <div class="brand-fallback-text">
+            <span class="brand-fallback-line1">{{ companyName || gerencia?.businessName || businessRuc }}</span>
+          </div>
+        </div>
+      </ng-template>
     </div>
     <div class="header-title">
       <h1>GERENCIA DE VIAJE</h1>
     </div>
-    <div class="header-meta">
-      <div class="meta-row"><span>Código:</span> <span>SST-PRO-09-F1</span></div>
-      <div class="meta-row"><span>Fecha de Revisión:</span> <span>{{ gerencia.fechaHora | date:'dd/MM/yyyy' }}</span></div>
-      <div class="meta-row"><span>Versión:</span> <span>02</span></div>
-      <div class="meta-row"><span>Página:</span> <span>1 de 1</span></div>
+    <div class="header-meta" role="presentation">
+      <div class="meta-row">
+        <span class="meta-label">CÓDIGO:</span>
+        <span class="meta-value">SST-PRO-09-F1</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">FECHA DE REVISIÓN:</span>
+        <span class="meta-value">{{ gerencia.fechaHora | date:'dd/MM/yyyy' }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">VERSIÓN:</span>
+        <span class="meta-value">02</span>
+      </div>
     </div>
   </header>
 
   <div class="creation-info">
-    <div>Fecha de creación de la gerencia: <span class="creation-date">{{ gerencia.fechaHora | date:'dd/MM/yyyy HH:mm:ss' }}</span></div>
+    <div class="creation-info-left">
+      Fecha de creación de la gerencia:
+      <span class="creation-date">{{ gerencia.fechaHora | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+    </div>
     <div class="doc-code">{{ gerencia.codigo || 'GV-' + gerencia.id }}</div>
   </div>
 
@@ -277,7 +297,7 @@
         <div class="eval-row"><span>J</span> <span class="eval-badge" [style.background-color]="getScoreColor(gerencia.scoreJ)" [style.color]="scoreFg(gerencia.scoreJ)">{{ fmtScore(gerencia.scoreJ) }}</span></div>
         <div class="eval-summary">
           <div class="eval-label">Nivel Riesgo</div>
-          <div class="eval-level" [style.background-color]="getRiskColor(gerencia.nivelRiesgo)" [style.color]="gerencia.nivelRiesgo === 'ALTO' ? 'white' : 'black'">
+          <div class="eval-level" [style.background-color]="getRiskColor(gerencia.nivelRiesgo)" [style.color]="gerencia.nivelRiesgo === 'I' ? 'white' : 'black'">
             {{ gerencia.nivelRiesgoRomano || '—' }}
           </div>
           <div class="eval-label">Aceptación</div>
@@ -298,17 +318,15 @@
         <div class="section-header bg-blue small-header">Contactos de Emergencia</div>
         <table class="contact-table">
           <tbody>
-            <tr>
-              <td class="bg-orange">OP.</td>
-              <td>0993873528</td>
-              <td class="bg-success text-white">SSA</td>
-              <td>0993969280</td>
+            <tr *ngFor="let row of rowsEmergency()">
+              <td class="bg-light fw-bold text-uppercase">{{ row[0].area }}</td>
+              <td>{{ row[0].phone }}</td>
+              <td class="bg-light fw-bold text-uppercase" *ngIf="row[1]">{{ row[1].area }}</td>
+              <td *ngIf="row[1]">{{ row[1].phone }}</td>
+              <td *ngIf="!row[1]" colspan="2"></td>
             </tr>
-            <tr>
-              <td class="bg-yellow">RRHH</td>
-              <td>0981925326</td>
-              <td class="bg-orange">MED.</td>
-              <td>0983693976</td>
+            <tr *ngIf="emergencyContacts.length === 0">
+              <td colspan="4" class="text-center text-muted small">Sin contactos de emergencia</td>
             </tr>
           </tbody>
         </table>

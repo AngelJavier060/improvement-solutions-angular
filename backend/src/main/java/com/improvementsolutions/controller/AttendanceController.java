@@ -249,12 +249,31 @@ public class AttendanceController {
     public ResponseEntity<?> getMonthlySheet(
             @PathVariable Long businessId,
             @RequestParam int year,
-            @RequestParam int month) {
+            @RequestParam int month,
+            @RequestParam(required = false) Boolean includeAuto) {
         try {
-            List<Map<String, Object>> sheet = attendanceService.getMonthlySheet(businessId, year, month);
+            boolean useAuto = includeAuto != null ? includeAuto : true;
+            List<Map<String, Object>> sheet = attendanceService.getMonthlySheet(businessId, year, month, useAuto);
             return ResponseEntity.ok(sheet);
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/sheet/autocomplete")
+    public ResponseEntity<?> autocompleteMonth(
+            @PathVariable Long businessId,
+            @RequestParam int year,
+            @RequestParam int month) {
+        try {
+            Map<String, Object> out = attendanceService.autocompleteMonth(businessId, year, month);
+            return ResponseEntity.ok(out);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
         }
     }
 

@@ -78,7 +78,7 @@
         <span>Permisos</span>
       </nav>
       <h2 class="perm-title">Historial de Permisos</h2>
-      <p class="perm-subtitle">Gestione y revise el estado de sus permisos y vacaciones — <strong>{{ businessName }}</strong></p>
+      <p class="perm-subtitle">Gestione y revise el estado de sus permisos y vacaciones — <strong>{{ displayBusinessName }}</strong></p>
     </div>
     <button class="perm-btn-primary" (click)="openNewModal()">
       <i class="fas fa-plus-circle"></i> Nueva Solicitud
@@ -469,15 +469,15 @@
     </button>
   </div>
 
-  <div class="perm-pdf-doc print-area" *ngIf="savedRecord">
+  <div class="perm-pdf-doc print-area th-form-print-root" *ngIf="savedRecord">
     <!-- Encabezado del documento -->
     <header class="pdf-header">
       <div>
-        <h1 class="pdf-company">{{ businessName || 'EMPRESA' }}</h1>
+        <h1 class="pdf-company">{{ displayBusinessName }}</h1>
         <span class="pdf-doc-sub">Formulario de Solicitud de Permiso</span>
       </div>
       <div class="pdf-meta">
-        <div>CÓDIGO: GTH-PRO-01-F5</div>
+        <div>CÓDIGO: {{ docCode }}</div>
         <div>REVISIÓN: {{ requestDate }}</div>
         <div>PÁGINA: 1 de 1</div>
       </div>
@@ -542,7 +542,7 @@
       </div>
       <div class="pdf-cell">
         <label>Empresa</label>
-        <div class="pdf-val">{{ businessName || '—' }}</div>
+        <div class="pdf-val">{{ displayBusinessName }}</div>
       </div>
     </section>
 
@@ -582,7 +582,7 @@
 
     <!-- Footer del documento -->
     <footer class="pdf-footer no-print">
-      <span>© {{ businessName }} — Documento Administrativo Interno</span>
+      <span>© {{ displayBusinessName }} — Documento Administrativo Interno</span>
     </footer>
   </div>
 </div>

@@ -1957,7 +1957,6 @@ class _GerenciasViajesFormScreenState extends State<GerenciasViajesFormScreen> {
         tipoVehiculo: _selectedVehicle?.vehicleType,
         convoy: _enConvoy ? 'SÍ' : 'NO',
         unidadesConvoy: _enConvoy ? _placasConvoyController.text : null,
-        tipoCarretera: _tipoCarretera.isEmpty ? null : _tipoCarretera,
         estadoVia: _estadoVia,
         clima: _condicionClimatica,
         distancia: _distanciaRecorrer,
@@ -1965,7 +1964,9 @@ class _GerenciasViajesFormScreenState extends State<GerenciasViajesFormScreen> {
         horasConduccion: _horasConduccion,
         horarioViaje: _horarioCirculacion,
         descansoConduc: _horasDescanso,
-        mediosComunicacion: _medioComunicacion,
+        mediosComunicacion: _medioComunicacionesSeleccionados.isNotEmpty
+            ? _medioComunicacionesSeleccionados.join(', ')
+            : _medioComunicacion,
         riesgosVia: _riesgosSeleccionados.join(', '),
         catalogoOtrosPeligros: _otrosPeligrosSeleccionados.isNotEmpty ? _otrosPeligrosSeleccionados.join(', ') : null,
         medidasControlTomadasViaje: _medidasControlSeleccionadas.isNotEmpty ? _medidasControlSeleccionadas.join(', ') : null,

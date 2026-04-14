@@ -1841,6 +1841,54 @@
       </div>
     </div>
 
+    <!-- 14. Contactos de emergencia (lista, máx. 4) -->
+    <div class="col d-none">
+      <div class="gv-fijo-box h-100 p-4 rounded-4 shadow-sm position-relative" style="background: #eef1f3; border-left: 8px solid #1a73e8;">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <h4 class="mb-0 fw-bold text-uppercase small tracking-wide" style="color: #1a73e8; letter-spacing: 0.06em;">Contactos de emergencia</h4>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn rounded-circle bg-white shadow-sm p-0 d-flex align-items-center justify-content-center" style="width: 2rem; height: 2rem; color: #1a73e8;" (click)="addEmergencyContact()" [disabled]="emergencyContacts.length >= 4" title="Agregar"><i class="fas fa-plus small"></i></button>
+            <button type="button" class="btn btn-sm btn-primary" (click)="saveEmergencyContacts()" [disabled]="savingEmergencyContacts">
+              <i class="fas" [ngClass]="savingEmergencyContacts ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+              <span class="ms-1">Guardar</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column gap-2">
+          <ng-container *ngIf="emergencyContacts && emergencyContacts.length > 0; else noEmergencyContacts">
+            <div *ngFor="let c of emergencyContacts; let i = index; trackBy: trackByIndex" class="d-flex align-items-start justify-content-between p-2 rounded-3 bg-white bg-opacity-50">
+              <div class="flex-grow-1">
+                <ng-container *ngIf="emergencyEditIndex !== i; else emergencyEditTpl">
+                  <span class="small text-secondary">{{ c.area || '—' }}</span>
+                  <span class="small text-muted ms-2">• {{ c.phone || '—' }}</span>
+                </ng-container>
+                <ng-template #emergencyEditTpl>
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <input type="text" class="form-control form-control-sm" placeholder="Área" [(ngModel)]="emergencyContacts[i].area">
+                    </div>
+                    <div class="col-6">
+                      <input type="text" class="form-control form-control-sm" placeholder="09xxxxxxxx" [(ngModel)]="emergencyContacts[i].phone">
+                    </div>
+                  </div>
+                </ng-template>
+              </div>
+              <div class="d-flex gap-2 flex-shrink-0">
+                <button type="button" class="btn btn-link text-primary p-0" (click)="emergencyEditIndex === i ? emergencyEditIndex = null : emergencyEditIndex = i" title="Editar">
+                  <i class="fas" [ngClass]="emergencyEditIndex === i ? 'fa-check' : 'fa-edit'"></i>
+                </button>
+                <button type="button" class="btn btn-link text-danger p-0" (click)="removeEmergencyContact(i)" title="Eliminar"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #noEmergencyContacts>
+            <p class="small text-muted mb-0 text-center py-2">Sin registros</p>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <div class="d-flex align-items-center gap-3 mb-4 mt-5">
@@ -1848,7 +1896,7 @@
     <div class="flex-grow-1" style="height: 2px; background: #e5e9eb;"></div>
   </div>
 
-  <div class="row row-cols-1 row-cols-md-3 g-4 mb-4 gerencia-viajes-fijos">
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 mb-4 gerencia-viajes-fijos">
 
     <!-- 11. Otros peligros (catálogo descriptivo) -->
     <div class="col">
@@ -1903,6 +1951,54 @@
             </div>
           </ng-container>
           <p *ngIf="!medidasControlTomadasViajeCatalogo || medidasControlTomadasViajeCatalogo.length === 0" class="small text-muted mb-0 text-center py-2">Sin registros</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 14. Contactos de emergencia (lista, máx. 4) -->
+    <div class="col">
+      <div class="gv-fijo-box h-100 p-3 rounded-4 shadow-sm position-relative" style="background: #eef1f3; border-left: 8px solid #1a73e8;">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <h4 class="mb-0 fw-bold text-uppercase small tracking-wide" style="color: #1a73e8; letter-spacing: 0.06em;">Contactos de emergencia</h4>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn rounded-circle bg-white shadow-sm p-0 d-flex align-items-center justify-content-center" style="width: 2rem; height: 2rem; color: #1a73e8;" (click)="addEmergencyContact()" [disabled]="emergencyContacts.length >= 4" title="Agregar"><i class="fas fa-plus small"></i></button>
+            <button type="button" class="btn btn-sm btn-primary" (click)="saveEmergencyContacts()" [disabled]="savingEmergencyContacts">
+              <i class="fas" [ngClass]="savingEmergencyContacts ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+              <span class="ms-1">Guardar</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column gap-2">
+          <ng-container *ngIf="emergencyContacts && emergencyContacts.length > 0; else noEmergencyContactsFijos">
+            <div *ngFor="let c of emergencyContacts; let i = index; trackBy: trackByIndex" class="d-flex align-items-start justify-content-between p-2 rounded-3 bg-white bg-opacity-50">
+              <div class="flex-grow-1">
+                <ng-container *ngIf="emergencyEditIndex !== i; else emergencyEditTplFijos">
+                  <span class="small text-secondary">{{ c.area || '—' }}</span>
+                  <span class="small text-muted ms-2">• {{ c.phone || '—' }}</span>
+                </ng-container>
+                <ng-template #emergencyEditTplFijos>
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <input type="text" class="form-control form-control-sm" placeholder="Área" [(ngModel)]="emergencyContacts[i].area">
+                    </div>
+                    <div class="col-6">
+                      <input type="text" class="form-control form-control-sm" placeholder="09xxxxxxxx" [(ngModel)]="emergencyContacts[i].phone">
+                    </div>
+                  </div>
+                </ng-template>
+              </div>
+              <div class="d-flex gap-2 flex-shrink-0">
+                <button type="button" class="btn btn-link text-primary p-0" (click)="emergencyEditIndex === i ? emergencyEditIndex = null : emergencyEditIndex = i" title="Editar">
+                  <i class="fas" [ngClass]="emergencyEditIndex === i ? 'fa-check' : 'fa-edit'"></i>
+                </button>
+                <button type="button" class="btn btn-link text-danger p-0" (click)="removeEmergencyContact(i)" title="Eliminar"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #noEmergencyContactsFijos>
+            <p class="small text-muted mb-0 text-center py-2">Sin registros</p>
+          </ng-template>
         </div>
       </div>
     </div>

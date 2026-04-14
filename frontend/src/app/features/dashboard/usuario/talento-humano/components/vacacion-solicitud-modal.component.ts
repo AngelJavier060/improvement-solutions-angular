@@ -32,6 +32,9 @@ export class VacacionSolicitudModalComponent implements OnInit, OnChanges {
   pdfBlobUrl: string | null = null;
   dateConflictWarning: string | null = null;
 
+  /** Código de documento (sin prefijo ORT-) */
+  readonly docCode = 'GTH-PRO-01-F4';
+
   readonly approvers = [
     { value: 'gerente_operaciones',   label: 'Gerente de Operaciones' },
     { value: 'jefe_mantenimiento',    label: 'Jefe de Mantenimiento' },
