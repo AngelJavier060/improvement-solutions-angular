@@ -104,6 +104,9 @@ export class PlanillaMensualComponent implements OnInit {
   // Autocomplete month (save T/D based on schedule for this month)
   autocompleting = false;
   autocompleteError: string | null = null;
+  /** Borrar T/D guardados del mes para el empleado seleccionado (recalcular según jornada) */
+  clearingTdMonth = false;
+  clearTdMonthError: string | null = null;
 
   // Historial de cierres (todos los meses)
   closures: MonthlyClosureEntry[] = [];
@@ -190,7 +193,7 @@ export class PlanillaMensualComponent implements OnInit {
       alert('Este mes no está ABIERTO. Reabra el mes para poder autocompletar.');
       return;
     }
-    if (!confirm('Autocompletar T/D para todos los trabajadores con base en su jornada vigente para este mes? Solo se guardarán días que no tengan registro previo.')) return;
+    if (!confirm('Autocompletar T/D para todos los trabajadores según la jornada vigente (prioriza el cálculo por jornada, no la copia del mes anterior). Solo rellena días que aún no tienen registro guardado.')) return;
     this.autocompleting = true;
     this.autocompleteError = null;
     this.attendanceService.autocompleteMonth(this.businessId, this.year, this.month).subscribe({
@@ -203,6 +206,42 @@ export class PlanillaMensualComponent implements OnInit {
         this.autocompleteError = err?.error?.error || 'No se pudo autocompletar el mes.';
       }
     });
+  }
+
+  /**
+   * Elimina T/D persistidos del mes para la fila seleccionada; la grilla vuelve al cálculo automático
+   * (necesario tras cambiar jornada o si quedaron T/D viejos en BD).
+   */
+  clearSelectedEmployeeTdMonth(): void {
+    if (!this.businessId || !this.selectedRow) return;
+    if (this.isMonthClosed) {
+      alert('Este mes no admite edición. Reabra el mes si aplica.');
+      return;
+    }
+    const name = this.selectedRow.fullName || 'el colaborador';
+    if (
+      !confirm(
+        `Se borrarán solo los días T y D guardados en base de datos para ${name} en este mes. ` +
+          'No se eliminan vacaciones, permisos, accidentes ni horas extra. ¿Continuar?'
+      )
+    ) {
+      return;
+    }
+    this.clearingTdMonth = true;
+    this.clearTdMonthError = null;
+    this.attendanceService
+      .clearTdMonthForEmployee(this.businessId, this.selectedRow.employeeId, this.year, this.month)
+      .subscribe({
+        next: () => {
+          this.clearingTdMonth = false;
+          this.loadData();
+        },
+        error: (err) => {
+          this.clearingTdMonth = false;
+          this.clearTdMonthError =
+            err?.error?.error || 'No se pudieron borrar los T/D del mes. Compruebe que el mes esté ABIERTO.';
+        }
+      });
   }
 
   private loadAvailableSchedules(): void {
@@ -410,6 +449,7 @@ export class PlanillaMensualComponent implements OnInit {
     this.showHistoryForm = false;
     this.historyFormError = null;
     this.historyLoadError = null;
+    this.clearTdMonthError = null;
     this.cancelHistoryEdit();
     this.loadScheduleHistory();
   }

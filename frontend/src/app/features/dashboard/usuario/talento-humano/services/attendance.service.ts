@@ -265,6 +265,24 @@ export class AttendanceService {
     );
   }
 
+  /**
+   * Borra T/D guardados en BD para un empleado en el mes (no V, P, EX, etc.).
+   * La planilla pasa a mostrar el cálculo automático según la jornada actual (p. ej. 5×2 con fines de semana).
+   */
+  clearTdMonthForEmployee(
+    businessId: number,
+    employeeId: number,
+    year: number,
+    month: number
+  ): Observable<{ deleted: number; year: number; month: number }> {
+    const params = new HttpParams().set('year', year).set('month', month);
+    return this.http.post<{ deleted: number; year: number; month: number }>(
+      `${this.apiUrl(businessId)}/sheet/${employeeId}/clear-td-month`,
+      {},
+      { params }
+    );
+  }
+
   /** Consolidado anual HH (misma lógica que planilla mensual + horas extra registradas) */
   getConsolidadoHhtt(
     businessId: number,

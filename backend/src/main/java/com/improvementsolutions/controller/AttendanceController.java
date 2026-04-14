@@ -277,6 +277,27 @@ public class AttendanceController {
         }
     }
 
+    /**
+     * Quita T/D persistidos del mes para un colaborador para que se recalculen según la jornada vigente.
+     */
+    @PostMapping("/sheet/{employeeId}/clear-td-month")
+    public ResponseEntity<?> clearTdMonth(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestParam int year,
+            @RequestParam int month) {
+        try {
+            int deleted = attendanceService.clearTdWorkDaysForEmployeeMonth(businessId, employeeId, year, month);
+            return ResponseEntity.ok(Map.of("deleted", deleted, "year", year, "month", month));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PutMapping("/sheet/{employeeId}/day")
     public ResponseEntity<?> saveWorkDay(
             @PathVariable Long businessId,

@@ -1054,6 +1054,26 @@
   }
 }
 
+.pm-recalc-td {
+  margin: 12px 0 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+.pm-recalc-td__text {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #475569;
+}
+.pm-recalc-td__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 /* ═══════════════════════════════════════════
    MINI CALENDAR
    ═══════════════════════════════════════════ */

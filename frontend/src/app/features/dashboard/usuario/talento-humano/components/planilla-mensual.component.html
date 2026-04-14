@@ -598,6 +598,24 @@
         </div>
       </div>
 
+      <div class="pm-recalc-td" *ngIf="!isMonthClosed">
+        <p class="pm-recalc-td__text">
+          Si los T/D no reflejan la jornada actual (p. ej. <strong>5×2</strong> con sábado y domingo en descanso),
+          suele haber <strong>valores guardados antes</strong> de corregir la jornada. Puede borrar solo T/D de este mes
+          para este colaborador y la planilla volverá a calcular según la jornada vigente.
+        </p>
+        <div class="pm-recalc-td__actions">
+          <button type="button" class="pm-btn pm-btn--outline pm-btn--sm"
+                  (click)="clearSelectedEmployeeTdMonth()"
+                  [disabled]="clearingTdMonth || !businessId">
+            <span *ngIf="clearingTdMonth" class="pm-spinner-sm"></span>
+            <span class="material-symbols-outlined">refresh</span>
+            {{ clearingTdMonth ? 'Aplicando…' : 'Borrar T/D del mes y recalcular' }}
+          </button>
+        </div>
+        <div class="pm-form-error" *ngIf="clearTdMonthError" style="margin-top:8px;">{{ clearTdMonthError }}</div>
+      </div>
+
       <!-- Resumen -->
       <div class="pm-summary-bar">
         Trabajados: <strong>{{ selectedRow.totals['T'] || 0 }}</strong> ·

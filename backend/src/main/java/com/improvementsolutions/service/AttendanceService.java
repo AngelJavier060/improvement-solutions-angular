@@ -656,15 +656,18 @@ public class AttendanceService {
                 String key = emp.getId() + "_" + date;
                 if (savedKeys.contains(key)) continue; // ya guardado manualmente o por otro módulo
 
+                // 1) Priorizar siempre la jornada vigente (5×2 calendario, 14×7 cíclico, etc.).
+                //    Antes se copiaba primero el patrón del mes anterior, lo que perpetuaba T/D erróneos
+                //    al cambiar la jornada o al usar 5×2 con fines de semana.
                 String type = null;
-                if (hasPrevPattern && seqLen > 0) {
+                String auto = getAutoDayType(emp, date);
+                if ("T".equalsIgnoreCase(auto) || "D".equalsIgnoreCase(auto)) {
+                    type = auto.toUpperCase(Locale.ROOT);
+                }
+                // 2) Solo si no hay definición por jornada, continuar secuencia desde el mes previo (legacy)
+                if (type == null && hasPrevPattern && seqLen > 0) {
                     String cand = seq[(startIdx + (d - 1)) % seqLen];
                     if ("T".equals(cand) || "D".equals(cand)) type = cand;
-                }
-                // Fallback: usar jornada vigente solo si no se pudo derivar desde el mes anterior
-                if (type == null) {
-                    String auto = getAutoDayType(emp, date);
-                    if ("T".equalsIgnoreCase(auto) || "D".equalsIgnoreCase(auto)) type = auto.toUpperCase(Locale.ROOT);
                 }
                 if (type == null) continue; // no guardar si no hay definición
 
@@ -688,6 +691,21 @@ public class AttendanceService {
         out.put("year", year);
         out.put("month", month);
         return out;
+    }
+
+    /**
+     * Borra T/D guardados en BD para un empleado en un mes (no elimina V, P, EX, E, A).
+     * Así la planilla vuelve a usar {@link #getAutoDayType} (p. ej. 5×2 con sáb/dom en descanso).
+     */
+    @Transactional
+    public int clearTdWorkDaysForEmployeeMonth(Long businessId, Long employeeId, int year, int month) {
+        requireBusiness(businessId);
+        requireEmployee(businessId, employeeId);
+        YearMonth ym = YearMonth.of(year, month);
+        LocalDate from = ym.atDay(1);
+        LocalDate to = ym.atEndOfMonth();
+        assertMonthOpenOrThrow(businessId, from);
+        return workDayRepository.deleteTdByEmployeeAndDateRange(employeeId, from, to);
     }
 
     // ─────────────────── HORAS EXTRA ───────────────────

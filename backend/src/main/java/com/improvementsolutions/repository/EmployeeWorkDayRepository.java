@@ -2,6 +2,7 @@ package com.improvementsolutions.repository;
 
 import com.improvementsolutions.model.EmployeeWorkDay;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -39,4 +40,15 @@ public interface EmployeeWorkDayRepository extends JpaRepository<EmployeeWorkDay
             @Param("businessId") Long businessId,
             @Param("from") LocalDate from,
             @Param("to") LocalDate to);
+
+    /**
+     * Elimina solo T/D guardados (no V, P, EX, etc.) para que la planilla vuelva a usar el cálculo por jornada.
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM EmployeeWorkDay wd WHERE wd.employee.id = :employeeId "
+            + "AND wd.workDate BETWEEN :from AND :to "
+            + "AND UPPER(TRIM(wd.dayType)) IN ('T', 'D')")
+    int deleteTdByEmployeeAndDateRange(@Param("employeeId") Long employeeId,
+                                       @Param("from") LocalDate from,
+                                       @Param("to") LocalDate to);
 }
