@@ -476,14 +476,18 @@ export class AttendanceService {
   }
 
   updateScheduleHistory(businessId: number, historyId: number, dto: {
+    startDate?: string | null;
     endDate?: string | null;
     cycleStartDate?: string | null;
+    workScheduleId?: number | null;
     dailyHours?: number | null;
     notes?: string | null;
   }): Observable<WorkScheduleHistoryEntry> {
     return this.http.put<WorkScheduleHistoryEntry>(`${this.apiUrl(businessId)}/schedule-history/${historyId}`, {
+      startDate: dto.startDate || '',
       endDate: dto.endDate || '',
       cycleStartDate: dto.cycleStartDate || '',
+      workScheduleId: dto.workScheduleId != null && dto.workScheduleId !== undefined ? String(dto.workScheduleId) : '',
       dailyHours: dto.dailyHours != null ? String(dto.dailyHours) : '',
       notes: dto.notes || ''
     });

@@ -181,8 +181,10 @@ public class AttendanceService {
         map.put("sa", DayOfWeek.SATURDAY);map.put("sab", DayOfWeek.SATURDAY); map.put("sabado", DayOfWeek.SATURDAY); map.put("sat", DayOfWeek.SATURDAY);
         map.put("do", DayOfWeek.SUNDAY);  map.put("dom", DayOfWeek.SUNDAY);  map.put("domingo", DayOfWeek.SUNDAY); map.put("sun", DayOfWeek.SUNDAY);
 
-        // 1) '5x2' se interpreta comúnmente como Lun-Vie
-        if (s.contains("5x2")) {
+        // 1) Jornada 5x2 (5 X 2, 5 / 2, etc.): calendario laboral típico Lun–Vie trabajo, Sáb–Dom descanso.
+        //    Importante: sin compactar espacios, "5 X 2" no contenía "5x2" y caía en ciclo 5+2 continuo (incorrecto).
+        String compact = s.replaceAll("\\s+", "");
+        if (java.util.regex.Pattern.compile("(\\W|^)5[xX*/-]2(\\W|$)").matcher(compact).find()) {
             return Optional.of(EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
                     DayOfWeek.THURSDAY, DayOfWeek.FRIDAY));
         }
@@ -242,8 +244,9 @@ public class AttendanceService {
     private String getAutoDayType(BusinessEmployee emp, LocalDate date) {
         if (emp == null || date == null) return null;
         // 1) Buscar en histórico de jornadas para esa fecha
-        Optional<EmployeeWorkScheduleHistory> histOpt =
-                scheduleHistoryRepository.findActiveForDate(emp.getId(), date);
+        Long bid = emp.getBusiness() != null ? emp.getBusiness().getId() : null;
+        Optional<EmployeeWorkScheduleHistory> histOpt = bid == null ? Optional.empty()
+                : scheduleHistoryRepository.findActiveForDate(bid, emp.getId(), date);
         if (histOpt.isPresent()) {
             EmployeeWorkScheduleHistory hist = histOpt.get();
             String wsName = hist.getWorkSchedule() != null ? hist.getWorkSchedule().getName() : null;
@@ -1518,7 +1521,7 @@ public class AttendanceService {
         // Validar solapamiento: dos intervalos [a,b] y [c,d] se cruzan ssi a<=d y c<=b (fin null = abierto).
         LocalDate effectiveEnd = endDate != null ? endDate : LocalDate.of(9999, 12, 31);
         List<EmployeeWorkScheduleHistory> overlaps = scheduleHistoryRepository
-                .findOverlappingNew(employeeId, startDate, effectiveEnd);
+                .findOverlappingNew(businessId, employeeId, startDate, effectiveEnd);
         if (!overlaps.isEmpty()) {
             // Auto-cerrar periodos vigentes (fin null) que empiezan ANTES del inicio del nuevo periodo:
             // el nuevo periodo sustituye a partir de startDate.
@@ -1534,7 +1537,7 @@ public class AttendanceService {
             // Si el nuevo periodo empieza antes o el mismo día que un vigente, no se auto-cierra:
             // seguiría habiendo solape real hasta que el usuario acote fechas o edite el vigente.
             List<EmployeeWorkScheduleHistory> stillOverlapping = scheduleHistoryRepository
-                    .findOverlappingNew(employeeId, startDate, effectiveEnd);
+                    .findOverlappingNew(businessId, employeeId, startDate, effectiveEnd);
             if (!stillOverlapping.isEmpty()) {
                 String conflicts = stillOverlapping.stream()
                         .map(AttendanceService::formatScheduleHistoryOverlap)
@@ -1566,18 +1569,54 @@ public class AttendanceService {
 
     @Transactional
     public EmployeeWorkScheduleHistory updateScheduleHistory(Long businessId, Long historyId,
+                                                              LocalDate startDate,
                                                               LocalDate endDate,
                                                               LocalDate cycleStartDate,
+                                                              Long workScheduleId,
                                                               Double dailyHours,
                                                               String notes) {
         EmployeeWorkScheduleHistory hist = scheduleHistoryRepository.findById(historyId)
                 .orElseThrow(() -> new NoSuchElementException("Historial no encontrado: " + historyId));
         if (!hist.getBusiness().getId().equals(businessId)) throw new SecurityException("Acceso denegado");
+        Long employeeId = hist.getEmployee().getId();
+
+        LocalDate newStart = startDate != null ? startDate : hist.getStartDate();
+        LocalDate newEnd = endDate != null ? endDate : hist.getEndDate();
+        if (newEnd != null && newEnd.isBefore(newStart)) {
+            throw new IllegalArgumentException("La fecha de fin de vigencia no puede ser anterior al inicio.");
+        }
+        LocalDate overlapEnd = newEnd != null ? newEnd : LocalDate.of(9999, 12, 31);
+        List<EmployeeWorkScheduleHistory> conflicts = scheduleHistoryRepository
+                .findOverlapping(businessId, employeeId, newStart, overlapEnd, historyId);
+        if (!conflicts.isEmpty()) {
+            String detail = conflicts.stream()
+                    .map(AttendanceService::formatScheduleHistoryOverlap)
+                    .collect(Collectors.joining("; "));
+            throw new IllegalArgumentException(
+                    "Las fechas se cruzan con otro periodo del mismo empleado. Detalle: " + detail);
+        }
+
+        if (startDate != null) hist.setStartDate(startDate);
         if (endDate != null) hist.setEndDate(endDate);
         if (cycleStartDate != null) hist.setCycleStartDate(cycleStartDate);
+        if (workScheduleId != null) {
+            WorkSchedule ws = workScheduleRepository.findById(workScheduleId)
+                    .orElseThrow(() -> new NoSuchElementException("Jornada no encontrada: " + workScheduleId));
+            hist.setWorkSchedule(ws);
+        }
         if (dailyHours != null) hist.setDailyHours(dailyHours);
         if (notes != null) hist.setNotes(notes);
-        return scheduleHistoryRepository.save(hist);
+        EmployeeWorkScheduleHistory saved = scheduleHistoryRepository.save(hist);
+        // Periodo vigente: alinear jornada e inicio en la ficha del empleado (p. ej. tras corregir fechas)
+        if (saved.getEndDate() == null) {
+            BusinessEmployee emp = saved.getEmployee();
+            if (emp != null) {
+                emp.setWorkSchedule(saved.getWorkSchedule());
+                emp.setWorkScheduleStartDate(saved.getStartDate());
+                employeeRepository.save(emp);
+            }
+        }
+        return saved;
     }
 
     @Transactional

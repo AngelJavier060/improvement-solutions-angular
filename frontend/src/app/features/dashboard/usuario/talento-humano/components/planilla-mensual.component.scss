@@ -1029,6 +1029,31 @@
   text-align: center;
 }
 
+.pm-hist-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.pm-history-item--editing {
+  flex-direction: column;
+  align-items: stretch;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px;
+  border-bottom: none;
+}
+
+.pm-history-edit-form {
+  width: 100%;
+  .pm-history-form-row--wrap {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
+
 /* ═══════════════════════════════════════════
    MINI CALENDAR
    ═══════════════════════════════════════════ */

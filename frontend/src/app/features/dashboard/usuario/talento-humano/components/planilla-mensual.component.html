@@ -497,46 +497,93 @@
           <div class="pm-form-error" *ngIf="historyFormError">{{ historyFormError }}</div>
           <div class="pm-form-hint">
             <strong>Inicio Ciclo:</strong> fecha desde la que comienza el conteo T/D. Si se omite, se usa el inicio de vigencia.
+            Las jornadas denominadas <strong>5 × 2</strong> (5 y 2 separados por x, / o -, con o sin espacios) se tratan como <strong>lun–vie trabajo</strong> y <strong>sáb–dom descanso</strong> según calendario.
           </div>
         </div>
 
+        <div class="pm-form-error" *ngIf="historyLoadError">{{ historyLoadError }}</div>
+
         <!-- Lista periodos -->
         <div class="pm-history-list">
-          <div class="pm-history-empty" *ngIf="!loadingHistory && scheduleHistory.length === 0">
+          <div class="pm-history-empty" *ngIf="!loadingHistory && !historyLoadError && scheduleHistory.length === 0">
             Sin historial registrado.
             <a (click)="openHistoryForm()">Registrar primera jornada</a>
           </div>
-          <div class="pm-history-item" *ngFor="let h of scheduleHistory">
-            <span class="pm-hist-badge" [class.pm-hist-badge--active]="!h.endDate">
-              {{ !h.endDate ? 'VIGENTE' : 'HISTÓRICO' }}
-            </span>
-            <span class="pm-hist-name">{{ h.workScheduleName || '—' }}</span>
-            <span class="pm-hist-range">
-              {{ h.startDate }} → {{ h.endDate || 'actualidad' }}
-            </span>
-            <!-- Horas/día editable solo para el periodo vigente -->
-            <span class="pm-hist-cycle pm-hist-cycle--hours" *ngIf="!h.endDate">
-              Horas/día:
-              <input
-                #dhInput
-                type="number"
-                min="1"
-                max="24"
-                step="0.5"
-                [ngModel]="h.dailyHours"
-                (blur)="onDailyHoursBlur(h, dhInput.value)"
-                [disabled]="updatingDailyHours"
-              />
-            </span>
-            <span class="pm-hist-cycle" *ngIf="h.endDate && h.dailyHours">
-              · {{ h.dailyHours | number:'1.0-1' }} h/día
-            </span>
-            <span class="pm-hist-cycle" *ngIf="h.cycleStartDate && h.cycleStartDate !== h.startDate">
-              (ciclo desde {{ h.cycleStartDate }})
-            </span>
-            <button class="pm-btn pm-btn--danger pm-btn--sm" (click)="deleteHistoryEntry(h.id)">
-              <span class="material-symbols-outlined">delete</span>
-            </button>
+          <div class="pm-history-item" *ngFor="let h of scheduleHistory" [class.pm-history-item--editing]="editingHistoryId === h.id">
+            <ng-container *ngIf="editingHistoryId !== h.id">
+              <span class="pm-hist-badge" [class.pm-hist-badge--active]="!h.endDate">
+                {{ !h.endDate ? 'VIGENTE' : 'HISTÓRICO' }}
+              </span>
+              <span class="pm-hist-name">{{ h.workScheduleName || '—' }}</span>
+              <span class="pm-hist-range">
+                {{ h.startDate }} → {{ h.endDate || 'actualidad' }}
+              </span>
+              <!-- Horas/día editable solo para el periodo vigente -->
+              <span class="pm-hist-cycle pm-hist-cycle--hours" *ngIf="!h.endDate">
+                Horas/día:
+                <input
+                  #dhInput
+                  type="number"
+                  min="1"
+                  max="24"
+                  step="0.5"
+                  [ngModel]="h.dailyHours"
+                  (blur)="onDailyHoursBlur(h, dhInput.value)"
+                  [disabled]="updatingDailyHours"
+                />
+              </span>
+              <span class="pm-hist-cycle" *ngIf="h.endDate && h.dailyHours">
+                · {{ h.dailyHours | number:'1.0-1' }} h/día
+              </span>
+              <span class="pm-hist-cycle" *ngIf="h.cycleStartDate && h.cycleStartDate !== h.startDate">
+                (ciclo desde {{ h.cycleStartDate }})
+              </span>
+              <div class="pm-hist-actions">
+                <button type="button" class="pm-btn pm-btn--outline pm-btn--sm"
+                        (click)="startEditHistoryEntry(h)"
+                        [disabled]="savingHistoryEdit || showHistoryForm">
+                  <span class="material-symbols-outlined">edit</span> Editar periodo
+                </button>
+                <button type="button" class="pm-btn pm-btn--danger pm-btn--sm" (click)="deleteHistoryEntry(h.id)">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </ng-container>
+            <div *ngIf="editingHistoryId === h.id" class="pm-history-edit-form">
+              <div class="pm-history-form-title">Editar periodo de jornada</div>
+              <div class="pm-history-form-row pm-history-form-row--wrap">
+                <div class="pm-field">
+                  <label>JORNADA *</label>
+                  <select [(ngModel)]="historyEditDraft.workScheduleId">
+                    <option value="">— Seleccionar —</option>
+                    <option *ngFor="let s of availableSchedules" [value]="s.id">{{ s.name }}</option>
+                  </select>
+                </div>
+                <div class="pm-field">
+                  <label>INICIO VIGENCIA *</label>
+                  <input type="date" [(ngModel)]="historyEditDraft.startDate" />
+                </div>
+                <div class="pm-field">
+                  <label>FIN VIGENCIA</label>
+                  <input type="date" [(ngModel)]="historyEditDraft.endDate" />
+                  <div class="pm-field-hint">Vacío = vigente hasta nuevo aviso.</div>
+                </div>
+                <div class="pm-field">
+                  <label>INICIO CICLO</label>
+                  <input type="date" [(ngModel)]="historyEditDraft.cycleStartDate" />
+                </div>
+              </div>
+              <div class="pm-form-error" *ngIf="historyEditError">{{ historyEditError }}</div>
+              <div class="pm-field-actions">
+                <button type="button" class="pm-btn pm-btn--primary pm-btn--sm"
+                        (click)="saveHistoryEdit()" [disabled]="savingHistoryEdit">
+                  <span *ngIf="savingHistoryEdit" class="pm-spinner-sm"></span>
+                  Guardar cambios
+                </button>
+                <button type="button" class="pm-btn pm-btn--outline pm-btn--sm"
+                        (click)="cancelHistoryEdit()" [disabled]="savingHistoryEdit">Cancelar</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -730,19 +730,27 @@ public class AttendanceController {
             @PathVariable Long historyId,
             @RequestBody Map<String, String> body) {
         try {
+            LocalDate startDate = body.get("startDate") != null && !body.get("startDate").isBlank()
+                    ? LocalDate.parse(body.get("startDate")) : null;
             LocalDate endDate = body.get("endDate") != null && !body.get("endDate").isBlank()
                     ? LocalDate.parse(body.get("endDate")) : null;
             LocalDate cycleStartDate = body.get("cycleStartDate") != null && !body.get("cycleStartDate").isBlank()
                     ? LocalDate.parse(body.get("cycleStartDate")) : null;
+            Long workScheduleId = null;
+            if (body.get("workScheduleId") != null && !body.get("workScheduleId").isBlank()) {
+                workScheduleId = Long.parseLong(body.get("workScheduleId"));
+            }
             Double dailyHours = null;
             if (body.get("dailyHours") != null && !body.get("dailyHours").isBlank()) {
                 dailyHours = Double.parseDouble(body.get("dailyHours"));
             }
             EmployeeWorkScheduleHistory updated = attendanceService.updateScheduleHistory(
-                    businessId, historyId, endDate, cycleStartDate, dailyHours, body.get("notes"));
+                    businessId, historyId, startDate, endDate, cycleStartDate, workScheduleId, dailyHours, body.get("notes"));
             return ResponseEntity.ok(historyToMap(updated));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
         } catch (SecurityException e) {
             return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
         }

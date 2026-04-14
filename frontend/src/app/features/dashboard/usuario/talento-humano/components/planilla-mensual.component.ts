@@ -80,10 +80,17 @@ export class PlanillaMensualComponent implements OnInit {
   // Histórico de jornadas
   scheduleHistory: WorkScheduleHistoryEntry[] = [];
   loadingHistory = false;
+  /** Error al cargar GET historial (p. ej. 403); distinto de lista vacía legítima */
+  historyLoadError: string | null = null;
   showHistoryForm = false;
   historyFormError: string | null = null;
   savingHistory = false;
   historyDraft = { workScheduleId: '', startDate: '', endDate: '', cycleStartDate: '', dailyHours: '', notes: '' };
+  /** Edición inline de un periodo ya listado (fechas / jornada) */
+  editingHistoryId: number | null = null;
+  historyEditDraft = { workScheduleId: '', startDate: '', endDate: '', cycleStartDate: '' };
+  savingHistoryEdit = false;
+  historyEditError: string | null = null;
   updatingDailyHours = false;
   dailyHoursUpdateError: string | null = null;
 
@@ -402,6 +409,8 @@ export class PlanillaMensualComponent implements OnInit {
     this.scheduleStartError = null;
     this.showHistoryForm = false;
     this.historyFormError = null;
+    this.historyLoadError = null;
+    this.cancelHistoryEdit();
     this.loadScheduleHistory();
   }
 
@@ -409,19 +418,33 @@ export class PlanillaMensualComponent implements OnInit {
     this.selectedRow = null;
     this.scheduleHistory = [];
     this.showHistoryForm = false;
+    this.historyLoadError = null;
+    this.cancelHistoryEdit();
   }
 
   loadScheduleHistory(): void {
     if (!this.businessId || !this.selectedRow) return;
     this.loadingHistory = true;
+    this.historyLoadError = null;
     this.attendanceService.getScheduleHistory(this.businessId, this.selectedRow.employeeId).subscribe({
-      next: list => { this.scheduleHistory = list; this.loadingHistory = false; },
-      error: () => { this.loadingHistory = false; }
+      next: list => {
+        this.scheduleHistory = Array.isArray(list) ? list : [];
+        this.loadingHistory = false;
+      },
+      error: (err) => {
+        this.loadingHistory = false;
+        this.scheduleHistory = [];
+        this.historyLoadError =
+          err?.error?.error ||
+          err?.error?.message ||
+          'No se pudo cargar el historial de jornadas. Si el problema continúa, recargue la página o revise permisos.';
+      }
     });
   }
 
   openHistoryForm(): void {
     this.showHistoryForm = true;
+    this.cancelHistoryEdit();
     this.historyFormError = null;
     this.dailyHoursUpdateError = null;
     this.historyDraft = {
@@ -467,6 +490,70 @@ export class PlanillaMensualComponent implements OnInit {
         this.historyFormError = err?.error?.error || 'Error al guardar el cambio de jornada.';
       }
     });
+  }
+
+  startEditHistoryEntry(h: WorkScheduleHistoryEntry): void {
+    this.showHistoryForm = false;
+    this.historyFormError = null;
+    this.historyEditError = null;
+    this.editingHistoryId = h.id;
+    this.historyEditDraft = {
+      workScheduleId: h.workScheduleId != null ? String(h.workScheduleId) : '',
+      startDate: h.startDate || '',
+      endDate: h.endDate || '',
+      cycleStartDate: h.cycleStartDate || ''
+    };
+  }
+
+  cancelHistoryEdit(): void {
+    this.editingHistoryId = null;
+    this.historyEditError = null;
+    this.historyEditDraft = { workScheduleId: '', startDate: '', endDate: '', cycleStartDate: '' };
+  }
+
+  saveHistoryEdit(): void {
+    if (!this.businessId || !this.editingHistoryId) return;
+    const id = this.editingHistoryId;
+    const wsIdStr = (this.historyEditDraft.workScheduleId || '').trim();
+    if (!this.historyEditDraft.startDate) {
+      this.historyEditError = 'La fecha de inicio de vigencia es obligatoria.';
+      return;
+    }
+    if (!wsIdStr) {
+      this.historyEditError = 'Seleccione la jornada (tipo de periodo).';
+      return;
+    }
+    if (this.historyEditDraft.endDate && this.historyEditDraft.endDate < this.historyEditDraft.startDate) {
+      this.historyEditError = 'La fecha de fin no puede ser anterior al inicio.';
+      return;
+    }
+    this.savingHistoryEdit = true;
+    this.historyEditError = null;
+    const n = Number(wsIdStr);
+    if (isNaN(n)) {
+      this.historyEditError = 'Jornada no válida.';
+      this.savingHistoryEdit = false;
+      return;
+    }
+    const payload = {
+      startDate: this.historyEditDraft.startDate,
+      endDate: this.historyEditDraft.endDate || null,
+      cycleStartDate: this.historyEditDraft.cycleStartDate || null,
+      workScheduleId: n
+    };
+    this.attendanceService.updateScheduleHistory(this.businessId, id, payload)
+      .subscribe({
+        next: () => {
+          this.savingHistoryEdit = false;
+          this.cancelHistoryEdit();
+          this.loadScheduleHistory();
+          this.loadData();
+        },
+        error: (err) => {
+          this.savingHistoryEdit = false;
+          this.historyEditError = err?.error?.error || 'No se pudo guardar los cambios del periodo.';
+        }
+      });
   }
 
   deleteHistoryEntry(id: number): void {

@@ -1014,7 +1014,7 @@ public class BusinessEmployeeService {
         // 1) Cerrar en automático el periodo vigente (si existe)
         java.time.LocalDate today = java.time.LocalDate.now();
         java.util.List<EmployeeWorkScheduleHistory> current =
-                scheduleHistoryRepository.findOverlappingNew(employeeId, today, today);
+                scheduleHistoryRepository.findOverlappingNew(businessId, employeeId, today, today);
         for (EmployeeWorkScheduleHistory h : current) {
             if (h.getEndDate() == null || !h.getEndDate().isBefore(today)) {
                 h.setEndDate(today.minusDays(1));
