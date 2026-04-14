@@ -76,6 +76,35 @@ public class AttendanceService {
         }
     }
 
+    /**
+     * Para historial de jornada: bloquea solo si algún mes del rango tiene planilla <strong>APPROVED</strong>.
+     * CLOSED (cerrada pendiente firma) permite seguir ajustando jornadas hasta la aprobación final.
+     */
+    private void assertNoApprovedMonthInDateRange(Long businessId, LocalDate fromInclusive, LocalDate toInclusive) {
+        if (fromInclusive == null || toInclusive == null) return;
+        LocalDate from = fromInclusive;
+        LocalDate to = toInclusive;
+        if (to.isBefore(from)) {
+            to = from;
+        }
+        YearMonth ym = YearMonth.from(from);
+        YearMonth ymEnd = YearMonth.from(to);
+        while (!ym.isAfter(ymEnd)) {
+            Optional<MonthlySheetClosure> opt = closureRepository
+                    .findByBusiness_IdAndYearAndMonth(businessId, ym.getYear(), ym.getMonthValue());
+            if (opt.isPresent() && "APPROVED".equalsIgnoreCase(opt.get().getStatus())) {
+                throw new IllegalStateException(
+                        "La planilla de " + ym.getMonthValue() + "/" + ym.getYear()
+                                + " está aprobada (firmada). No se pueden alterar jornadas que afectan ese mes.");
+            }
+            ym = ym.plusMonths(1);
+        }
+    }
+
+    private static LocalDate coalesceEndForApprovalScan(LocalDate endInclusive) {
+        return endInclusive != null ? endInclusive : LocalDate.now();
+    }
+
     // ─────────────────── DATE CONFLICT LOOKUPS (for controller) ───────────────────
 
     @Transactional(readOnly = true)
@@ -1518,6 +1547,13 @@ public class AttendanceService {
             throw new IllegalArgumentException("La fecha de fin de vigencia no puede ser anterior al inicio.");
         }
 
+        LocalDate scanFrom = startDate;
+        LocalDate scanTo = coalesceEndForApprovalScan(endDate);
+        if (scanFrom.isAfter(scanTo)) {
+            scanTo = scanFrom;
+        }
+        assertNoApprovedMonthInDateRange(businessId, scanFrom, scanTo);
+
         // Validar solapamiento: dos intervalos [a,b] y [c,d] se cruzan ssi a<=d y c<=b (fin null = abierto).
         LocalDate effectiveEnd = endDate != null ? endDate : LocalDate.of(9999, 12, 31);
         List<EmployeeWorkScheduleHistory> overlaps = scheduleHistoryRepository
@@ -1564,7 +1600,9 @@ public class AttendanceService {
         emp.setWorkScheduleStartDate(startDate);
         employeeRepository.save(emp);
 
-        return scheduleHistoryRepository.save(hist);
+        scheduleHistoryRepository.save(hist);
+        return scheduleHistoryRepository.findByIdWithRelations(hist.getId())
+                .orElseThrow(() -> new NoSuchElementException("Historial guardado no encontrado: " + hist.getId()));
     }
 
     @Transactional
@@ -1580,11 +1618,21 @@ public class AttendanceService {
         if (!hist.getBusiness().getId().equals(businessId)) throw new SecurityException("Acceso denegado");
         Long employeeId = hist.getEmployee().getId();
 
+        LocalDate oldFrom = hist.getStartDate();
+        LocalDate oldTo = coalesceEndForApprovalScan(hist.getEndDate());
         LocalDate newStart = startDate != null ? startDate : hist.getStartDate();
         LocalDate newEnd = endDate != null ? endDate : hist.getEndDate();
         if (newEnd != null && newEnd.isBefore(newStart)) {
             throw new IllegalArgumentException("La fecha de fin de vigencia no puede ser anterior al inicio.");
         }
+        LocalDate newToScan = coalesceEndForApprovalScan(newEnd);
+        LocalDate unionFrom = oldFrom.isBefore(newStart) ? oldFrom : newStart;
+        LocalDate unionTo = oldTo.isAfter(newToScan) ? oldTo : newToScan;
+        if (unionFrom.isAfter(unionTo)) {
+            unionTo = unionFrom;
+        }
+        assertNoApprovedMonthInDateRange(businessId, unionFrom, unionTo);
+
         LocalDate overlapEnd = newEnd != null ? newEnd : LocalDate.of(9999, 12, 31);
         List<EmployeeWorkScheduleHistory> conflicts = scheduleHistoryRepository
                 .findOverlapping(businessId, employeeId, newStart, overlapEnd, historyId);
@@ -1616,7 +1664,8 @@ public class AttendanceService {
                 employeeRepository.save(emp);
             }
         }
-        return saved;
+        return scheduleHistoryRepository.findByIdWithRelations(saved.getId())
+                .orElseThrow(() -> new NoSuchElementException("Historial no encontrado: " + saved.getId()));
     }
 
     @Transactional
@@ -1624,6 +1673,12 @@ public class AttendanceService {
         EmployeeWorkScheduleHistory hist = scheduleHistoryRepository.findById(historyId)
                 .orElseThrow(() -> new NoSuchElementException("Historial no encontrado: " + historyId));
         if (!hist.getBusiness().getId().equals(businessId)) throw new SecurityException("Acceso denegado");
+        LocalDate delFrom = hist.getStartDate();
+        LocalDate delTo = coalesceEndForApprovalScan(hist.getEndDate());
+        if (delFrom.isAfter(delTo)) {
+            delTo = delFrom;
+        }
+        assertNoApprovedMonthInDateRange(businessId, delFrom, delTo);
         scheduleHistoryRepository.delete(hist);
     }
 

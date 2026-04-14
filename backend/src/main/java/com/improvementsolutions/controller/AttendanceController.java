@@ -692,6 +692,12 @@ public class AttendanceController {
             return ResponseEntity.ok(list.stream().map(this::historyToMap).toList());
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("getScheduleHistory businessId={} employeeId={}", businessId, employeeId, e);
+            return ResponseEntity.status(500).body(Map.of("error",
+                    "No se pudo cargar el historial de jornadas. Si persiste, contacte a soporte."));
         }
     }
 
@@ -718,6 +724,8 @@ public class AttendanceController {
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
             return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
         } catch (SecurityException e) {
             return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
@@ -751,6 +759,8 @@ public class AttendanceController {
             return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
         } catch (SecurityException e) {
             return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
         }
@@ -765,6 +775,8 @@ public class AttendanceController {
             return ResponseEntity.ok(Map.of("deleted", historyId));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
         } catch (SecurityException e) {
             return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
         }

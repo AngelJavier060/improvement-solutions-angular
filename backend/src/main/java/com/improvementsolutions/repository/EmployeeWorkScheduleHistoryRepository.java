@@ -15,7 +15,18 @@ public interface EmployeeWorkScheduleHistoryRepository extends JpaRepository<Emp
 
     List<EmployeeWorkScheduleHistory> findByEmployee_IdOrderByStartDateDesc(Long employeeId);
 
-    List<EmployeeWorkScheduleHistory> findByBusiness_IdAndEmployee_IdOrderByStartDateDesc(Long businessId, Long employeeId);
+    /**
+     * Historial por empresa y empleado, con relaciones necesarias para serializar sin LazyInitializationException
+     * (el controlador mapea fuera de la transacción del servicio).
+     */
+    @Query("SELECT h FROM EmployeeWorkScheduleHistory h "
+            + "LEFT JOIN FETCH h.employee "
+            + "LEFT JOIN FETCH h.workSchedule "
+            + "WHERE h.business.id = :businessId AND h.employee.id = :employeeId "
+            + "ORDER BY h.startDate DESC")
+    List<EmployeeWorkScheduleHistory> findByBusiness_IdAndEmployee_IdOrderByStartDateDesc(
+            @Param("businessId") Long businessId,
+            @Param("employeeId") Long employeeId);
 
     @Query("SELECT h FROM EmployeeWorkScheduleHistory h " +
            "WHERE h.business.id = :businessId " +
@@ -48,4 +59,10 @@ public interface EmployeeWorkScheduleHistoryRepository extends JpaRepository<Emp
                                                           @Param("employeeId") Long employeeId,
                                                           @Param("startDate") LocalDate startDate,
                                                           @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT h FROM EmployeeWorkScheduleHistory h "
+            + "LEFT JOIN FETCH h.employee "
+            + "LEFT JOIN FETCH h.workSchedule "
+            + "WHERE h.id = :id")
+    Optional<EmployeeWorkScheduleHistory> findByIdWithRelations(@Param("id") Long id);
 }
