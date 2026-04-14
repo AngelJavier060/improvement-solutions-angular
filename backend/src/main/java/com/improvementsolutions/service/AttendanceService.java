@@ -179,10 +179,12 @@ public class AttendanceService {
 
     private Optional<SchedulePattern> parseSchedulePatternFromName(String name) {
         if (name == null) return Optional.empty();
-        // Formatos: "14x7", "14 X 7", "14*7", "14/7", "14-7" (tolerante)
+        // Normalizar signos de multiplicación tipográficos (p. ej. catálogo en prod. con "5×2")
+        String normalized = name.replace('\u00d7', 'x').replace('\u2715', 'x').replace('\u2716', 'x');
+        // Formatos: "14x7", "14 X 7", "14*7", "14/7", "14-7", "5×2" (tolerante)
         java.util.regex.Matcher m = java.util.regex.Pattern
                 .compile("(\\d+)\\s*[xX\\*/\\-]\\s*(\\d+)")
-                .matcher(name);
+                .matcher(normalized);
         if (!m.find()) return Optional.empty();
         try {
             int work = Integer.parseInt(m.group(1));
@@ -198,6 +200,9 @@ public class AttendanceService {
         if (name == null) return Optional.empty();
         String s = Normalizer.normalize(name, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}+", "")
+                .replace('\u00d7', 'x')
+                .replace('\u2715', 'x')
+                .replace('\u2716', 'x')
                 .toLowerCase(Locale.ROOT);
 
         // Map de tokens a DayOfWeek (ES + EN, abreviados)
@@ -210,9 +215,12 @@ public class AttendanceService {
         map.put("sa", DayOfWeek.SATURDAY);map.put("sab", DayOfWeek.SATURDAY); map.put("sabado", DayOfWeek.SATURDAY); map.put("sat", DayOfWeek.SATURDAY);
         map.put("do", DayOfWeek.SUNDAY);  map.put("dom", DayOfWeek.SUNDAY);  map.put("domingo", DayOfWeek.SUNDAY); map.put("sun", DayOfWeek.SUNDAY);
 
-        // 1) Jornada 5x2 (5 X 2, 5 / 2, etc.): calendario laboral típico Lun–Vie trabajo, Sáb–Dom descanso.
-        //    Importante: sin compactar espacios, "5 X 2" no contenía "5x2" y caía en ciclo 5+2 continuo (incorrecto).
-        String compact = s.replaceAll("\\s+", "");
+        // 1) Jornada 5x2 (5 X 2, 5 / 2, 5×2 Unicode, etc.): Lun–Vie trabajo, Sáb–Dom descanso (calendario).
+        //    compact: quitar espacios y NBSP u otros separadores invisibles que en prod. evitan coincidir "5x2".
+        String compact = s.replaceAll("\\s+", "")
+                .replace("\u00a0", "")
+                .replace("\u202f", "")
+                .replace("\u2009", "");
         if (java.util.regex.Pattern.compile("(\\W|^)5[xX*/-]2(\\W|$)").matcher(compact).find()) {
             return Optional.of(EnumSet.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
                     DayOfWeek.THURSDAY, DayOfWeek.FRIDAY));
@@ -270,6 +278,19 @@ public class AttendanceService {
         return out;
     }
 
+    /** Lun–Vie = trabajo; Sáb–Dom = descanso (oficina estándar). */
+    private static boolean isWeekdayWorkCalendar(LocalDate date) {
+        DayOfWeek dow = date.getDayOfWeek();
+        return dow != DayOfWeek.SATURDAY && dow != DayOfWeek.SUNDAY;
+    }
+
+    /**
+     * Patrón 5+2 en el nombre: siempre calendario (lun–vie / sáb–dom), no ciclo continuo desde el inicio.
+     */
+    private static boolean isCalendarFiveByTwoPattern(SchedulePattern p) {
+        return p.workDays() == 5 && p.restDays() == 2;
+    }
+
     private String getAutoDayType(BusinessEmployee emp, LocalDate date) {
         if (emp == null || date == null) return null;
         // 1) Buscar en histórico de jornadas para esa fecha
@@ -285,12 +306,15 @@ public class AttendanceService {
             }
             Optional<SchedulePattern> p = parseSchedulePatternFromName(wsName);
             if (p.isEmpty()) return null;
+            if (isCalendarFiveByTwoPattern(p.get())) {
+                return isWeekdayWorkCalendar(date) ? "T" : "D";
+            }
             LocalDate cycleOrigin = hist.getCycleStartDate() != null ? hist.getCycleStartDate() : hist.getStartDate();
             long diff = ChronoUnit.DAYS.between(cycleOrigin, date);
             int len = p.get().cycleLength();
             if (len <= 0) return null;
             int idx = (int) Math.floorMod(diff, len);
-            return idx < p.get().workDays ? "T" : "D";
+            return idx < p.get().workDays() ? "T" : "D";
         }
         // 2) Fallback al campo directo del empleado
         String empSchedName = emp.getWorkSchedule() != null ? emp.getWorkSchedule().getName() : null;
@@ -305,11 +329,14 @@ public class AttendanceService {
             return null;
         }
         if (date.isBefore(start)) return null;
+        if (isCalendarFiveByTwoPattern(p.get())) {
+            return isWeekdayWorkCalendar(date) ? "T" : "D";
+        }
         long diff = ChronoUnit.DAYS.between(start, date);
         int len = p.get().cycleLength();
         if (len <= 0) return null;
         int idx = (int) Math.floorMod(diff, len);
-        return idx < p.get().workDays ? "T" : "D";
+        return idx < p.get().workDays() ? "T" : "D";
     }
 
     // Exponer cálculo para otros servicios (p. ej., validación de horas extra)
