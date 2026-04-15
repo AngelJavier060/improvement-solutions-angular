@@ -25,23 +25,23 @@ export class PlanillaPdfService {
   ];
 
   private readonly DAY_COLORS: Record<string, [number,number,number]> = {
-    T:   [219, 234, 254],  // azul claro
-    D:   [226, 232, 240],  // gris
-    EX:  [255, 237, 213],  // naranja claro
-    V:   [219, 234, 254],  // azul
-    P:   [254, 243, 199],  // amarillo
-    E:   [255, 228, 230],  // rojo claro (enfermedad)
-    A:   [254, 215, 215],  // rojo suave (accidente — distinto de E)
+    T:   [219, 234, 254],
+    D:   [248, 250, 252],
+    EX:  [255, 237, 213],
+    V:   [204, 251, 241],
+    P:   [254, 243, 199],
+    E:   [252, 231, 243],
+    A:   [254, 242, 242],
   };
 
   private readonly DAY_TEXT_COLORS: Record<string, [number,number,number]> = {
-    T:   [37,  99,  235],
-    D:   [71,  85,  105],
-    EX:  [234, 88,   12],
-    V:   [37,  99,  235],
-    P:   [217, 119,   6],
-    E:   [225, 29,   72],
-    A:   [127, 29,  29],
+    T:   [29,  78,  216],
+    D:   [100, 116, 139],
+    EX:  [194, 65,   12],
+    V:   [15,  118, 110],
+    P:   [161, 98,    7],
+    E:   [190, 24,   93],
+    A:   [220, 38,   38],
   };
 
   /** Marca visual en PDF de mes cerrado (día efectivo = T o EX) */
@@ -199,25 +199,12 @@ export class PlanillaPdfService {
   ): number {
     const usableW = pageW - margin * 2;
 
-    if (monthClosed) {
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(51, 65, 85);
-      const msg =
-        'Mes cerrado — Resumen de días efectivos: cada “•” es un día trabajado (jornada normal o horas extra). ' +
-        'No se muestran indicadores de descanso, vacaciones, permisos, enfermedad ni accidente. ' +
-        'La última columna es el total de días efectivos del empleado.';
-      const lines = doc.splitTextToSize(msg, usableW);
-      doc.text(lines, margin, y + 3.5);
-      return y + lines.length * 3.6 + 2;
-    }
-
     // Texto compacto en 2 líneas, centrado (más limpio en PDF)
     const labels: Record<string, string> = {
       T: 'T\nTrabajo',
       D: 'D\nDescanso',
       EX: 'EX\nExtra',
-      V: 'V\nVacaciones',
+      V: 'V\nAnuales',
       P: 'P\nPermiso',
       E: 'E\nEnfermedad',
       A: 'A\nAccidente',
@@ -293,8 +280,7 @@ export class PlanillaPdfService {
       ];
       const days = Array.from({ length: daysCount }, (_, i) => {
         const t = (row.days[i]?.dayType ?? '') as string;
-        if (!monthClosed) return t;
-        return t === 'T' || t === 'EX' ? this.EFFECTIVE_DAY_MARK : '';
+        return t;
       });
       const totals = monthClosed
         ? [String((row.totals?.T ?? 0) + (row.totals?.EX ?? 0))]
@@ -305,12 +291,10 @@ export class PlanillaPdfService {
     // ── Fila de TOTALES (solo columnas de días + opcional días efectivos) ─
     const totalRow: string[] = ['', 'TOTALES', ''];
     for (let d = 0; d < daysCount; d++) {
-      const countForDay = monthClosed
-        ? sheet.filter(r => {
-            const t = r.days[d]?.dayType;
-            return t === 'T' || t === 'EX';
-          }).length
-        : sheet.filter(r => r.days[d]?.dayType === 'T').length;
+      const countForDay = sheet.filter(r => {
+        const t = r.days[d]?.dayType;
+        return t === 'T' || t === 'EX';
+      }).length;
       totalRow.push(countForDay > 0 ? String(countForDay) : '');
     }
     if (monthClosed) {
@@ -405,13 +389,6 @@ export class PlanillaPdfService {
         // ── Celdas de días (columna 3 … 3+daysCount-1)
         if (colIdx >= 3 && colIdx < 3 + daysCount) {
           const val = cell.raw as string;
-          if (monthClosed && val === this.EFFECTIVE_DAY_MARK) {
-            cell.styles.fillColor = this.EFFECTIVE_DAY_FILL;
-            cell.styles.textColor = this.EFFECTIVE_DAY_TEXT;
-            cell.styles.fontStyle = 'bold';
-            cell.styles.fontSize = 7;
-            return;
-          }
           if (val && this.DAY_COLORS[val]) {
             const [br, bg, bb] = this.DAY_COLORS[val];
             const [tr, tg, tb] = this.DAY_TEXT_COLORS[val];

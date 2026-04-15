@@ -14,12 +14,12 @@ export interface DayTypeInfo {
 }
 
 export const DAY_TYPES: Record<DayType, DayTypeInfo> = {
-  T:  { label: 'Trabajo',     cls: 'day-T',  dotColor: '#22c55e' },
-  D:  { label: 'Descanso',    cls: 'day-D',  dotColor: '#94a3b8' },
-  EX: { label: 'Extra',       cls: 'day-EX', dotColor: '#f97316' },
-  V:  { label: 'Vacaciones',  cls: 'day-V',  dotColor: '#3b82f6' },
-  P:  { label: 'Permiso',     cls: 'day-P',  dotColor: '#eab308' },
-  E:  { label: 'Enfermedad',  cls: 'day-E',  dotColor: '#ec4899' },
+  T:  { label: 'Trabajo',     cls: 'day-T',  dotColor: '#2563eb' },
+  D:  { label: 'Descanso',    cls: 'day-D',  dotColor: '#64748b' },
+  EX: { label: 'Extra',       cls: 'day-EX', dotColor: '#ea580c' },
+  V:  { label: 'Anuales',     cls: 'day-V',  dotColor: '#0f766e' },
+  P:  { label: 'Permiso',     cls: 'day-P',  dotColor: '#ca8a04' },
+  E:  { label: 'Enfermedad',  cls: 'day-E',  dotColor: '#db2777' },
   A:  { label: 'Accidente',   cls: 'day-A',  dotColor: '#dc2626' },
 };
 

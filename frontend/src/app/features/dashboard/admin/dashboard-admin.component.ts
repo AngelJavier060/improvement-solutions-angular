@@ -1,15 +1,14 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
-import { IdleTimeoutService } from '../../../core/services/idle-timeout.service';
 
 @Component({
   selector: 'app-dashboard-admin',
   templateUrl: './dashboard-admin.component.html',
   styleUrls: ['./dashboard-admin.component.scss']
 })
-export class DashboardAdminComponent implements OnInit, OnDestroy {
+export class DashboardAdminComponent implements OnInit {
   isRootRoute = true;
   username: string = 'Javier'; // Valor por defecto
   // Estado de la barra lateral (true = visible)
@@ -23,8 +22,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
 
   constructor(
     public router: Router,
-    private authService: AuthService,
-    public idleTimeout: IdleTimeoutService
+    private authService: AuthService
   ) { }
 
   ngOnInit(): void {
@@ -50,9 +48,6 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
       this.checkScreenSize();
     });
 
-    // Iniciar vigilancia de inactividad (15 minutos)
-    this.idleTimeout.start();
-    
     // Obtener información del usuario actual
     const user = this.authService.getCurrentUser();
     if (user) {
@@ -105,12 +100,7 @@ export class DashboardAdminComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    this.idleTimeout.stop();
-  }
-
   logout(): void {
-    this.idleTimeout.stop();
     this.authService.logout();
   }
 

@@ -33,9 +33,14 @@
           <span class="material-symbols-outlined">lock_open</span> Reabrir
         </button>
 
-        <!-- Descargar PDF (siempre disponible) -->
-        <button class="pm-btn pm-btn--outline" (click)="downloadPdf()">
-          <span class="material-symbols-outlined">download</span> Descargar PDF
+        <!-- Descargar PDF (siempre disponible): genera el archivo en el navegador -->
+        <button type="button" class="pm-btn pm-btn--outline" (click)="downloadPdf()"
+                [disabled]="pdfDownloading"
+                title="Descarga el PDF de la planilla del mes y empresa mostrados. Si no inicia la descarga, revise bloqueo de ventanas emergentes.">
+          <span *ngIf="!pdfDownloading" class="material-symbols-outlined">download</span>
+          <span *ngIf="pdfDownloading" class="pm-spinner-sm"></span>
+          <span *ngIf="!pdfDownloading">Descargar PDF</span>
+          <span *ngIf="pdfDownloading">Generando…</span>
         </button>
 
         <!-- Autocompletar trabajadores (T/D por jornada) -->
@@ -65,6 +70,12 @@
       </div>
     </div>
 
+    <!-- Error al generar PDF de planilla (descarga) -->
+    <div class="pm-alert pm-alert--error" *ngIf="pdfDownloadError">
+      <span class="material-symbols-outlined">error</span> {{ pdfDownloadError }}
+      <button type="button" (click)="pdfDownloadError=null">✕</button>
+    </div>
+
     <!-- Error upload PDF -->
     <div class="pm-alert pm-alert--error" *ngIf="uploadPdfError">
       <span class="material-symbols-outlined">error</span> {{ uploadPdfError }}
@@ -86,7 +97,7 @@
     <!-- ── KPI CARDS ── -->
     <div class="pm-kpi-grid" *ngIf="kpis">
       <div class="pm-kpi">
-        <div class="pm-kpi-icon" style="background:#10b981;">
+        <div class="pm-kpi-icon" style="background:#2563eb;">
           <span class="material-symbols-outlined">work</span>
         </div>
         <div class="pm-kpi-data">
@@ -95,7 +106,7 @@
         </div>
       </div>
       <div class="pm-kpi">
-        <div class="pm-kpi-icon" style="background:#94a3b8;">
+        <div class="pm-kpi-icon" style="background:#64748b;">
           <span class="material-symbols-outlined">night_shelter</span>
         </div>
         <div class="pm-kpi-data">
@@ -104,7 +115,7 @@
         </div>
       </div>
       <div class="pm-kpi">
-        <div class="pm-kpi-icon" style="background:#f97316;">
+        <div class="pm-kpi-icon" style="background:#ea580c;">
           <span class="material-symbols-outlined">more_time</span>
         </div>
         <div class="pm-kpi-data">
@@ -113,7 +124,7 @@
         </div>
       </div>
       <div class="pm-kpi">
-        <div class="pm-kpi-icon" style="background:#3b82f6;">
+        <div class="pm-kpi-icon" style="background:#0f766e;">
           <span class="material-symbols-outlined">beach_access</span>
         </div>
         <div class="pm-kpi-data">
@@ -122,7 +133,7 @@
         </div>
       </div>
       <div class="pm-kpi">
-        <div class="pm-kpi-icon" style="background:#f59e0b;">
+        <div class="pm-kpi-icon" style="background:#ca8a04;">
           <span class="material-symbols-outlined">edit_note</span>
         </div>
         <div class="pm-kpi-data">
@@ -131,7 +142,7 @@
         </div>
       </div>
       <div class="pm-kpi">
-        <div class="pm-kpi-icon" style="background:#e11d48;">
+        <div class="pm-kpi-icon" style="background:#db2777;">
           <span class="material-symbols-outlined">healing</span>
         </div>
         <div class="pm-kpi-data">

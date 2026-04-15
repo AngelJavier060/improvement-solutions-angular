@@ -100,6 +100,9 @@ export class PlanillaMensualComponent implements OnInit {
   closureError: string | null = null;
   uploadingPdf = false;
   uploadPdfError: string | null = null;
+  /** Generación/descarga del PDF de planilla (no confundir con subida de PDF firmado) */
+  pdfDownloading = false;
+  pdfDownloadError: string | null = null;
 
   // Autocomplete month (save T/D based on schedule for this month)
   autocompleting = false;
@@ -771,23 +774,41 @@ export class PlanillaMensualComponent implements OnInit {
     }
   }
 
-  /** Genera y descarga el PDF de la planilla */
+  /** Genera y descarga el PDF de la planilla (cliente: jsPDF + descarga del archivo). */
   async downloadPdf(): Promise<void> {
-    // Resolver logo a Base64 si hay URL y aún no está convertido
-    if (!this.businessLogoBase64 && this.businessLogoUrl) {
-      try { this.businessLogoBase64 = await this.toDataUrl(this.businessLogoUrl); } catch { /* ignore */ }
+    this.pdfDownloadError = null;
+    if (!this.businessId) {
+      this.pdfDownloadError = 'No hay empresa cargada. Use «Actualizar» o vuelva a entrar al módulo.';
+      return;
     }
-    this.pdfService.generate({
-      businessName : this.businessName || 'Empresa',
-      businessRuc  : this.businessRuc  ?? undefined,
-      year         : this.year,
-      month        : this.month,
-      monthLabel   : this.getMonthLabel(),
-      sheet        : this.filteredSheet.length ? this.filteredSheet : this.sheet,
-      dayTypeKeys  : this.dayTypeKeys,
-      logoBase64   : this.businessLogoBase64 || undefined,
-      monthClosed  : this.isMonthClosed,
-    });
+    const sheetData = this.filteredSheet.length ? this.filteredSheet : this.sheet;
+    if (!sheetData?.length) {
+      this.pdfDownloadError = 'No hay filas de planilla para exportar. Espere a que carguen los datos o cambie de mes.';
+      return;
+    }
+    this.pdfDownloading = true;
+    try {
+      if (!this.businessLogoBase64 && this.businessLogoUrl) {
+        try { this.businessLogoBase64 = await this.toDataUrl(this.businessLogoUrl); } catch { /* ignore */ }
+      }
+      this.pdfService.generate({
+        businessName : this.businessName || 'Empresa',
+        businessRuc  : this.businessRuc  ?? undefined,
+        year         : this.year,
+        month        : this.month,
+        monthLabel   : this.getMonthLabel(),
+        sheet        : sheetData,
+        dayTypeKeys  : this.dayTypeKeys,
+        logoBase64   : this.businessLogoBase64 || undefined,
+        monthClosed  : this.isMonthClosed,
+      });
+    } catch (e) {
+      console.error('downloadPdf', e);
+      this.pdfDownloadError =
+        'No se pudo generar el PDF. Intente de nuevo; si el navegador bloquea descargas automáticas, permita descargas para este sitio.';
+    } finally {
+      this.pdfDownloading = false;
+    }
   }
 
   /** Al seleccionar el PDF firmado: cierra el mes automáticamente y sube el archivo */

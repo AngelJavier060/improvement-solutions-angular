@@ -4,10 +4,17 @@ import { fromEvent, merge, Subscription, Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
+/**
+ * Cierre de sesión por inactividad en el cliente (todas las empresas / roles).
+ * Tras {@link TIMEOUT_MS} sin eventos de usuario se llama a {@link AuthService.logout}.
+ * El aviso empieza {@link WARNING_MS} antes del cierre.
+ */
 @Injectable({ providedIn: 'root' })
 export class IdleTimeoutService implements OnDestroy {
-  private readonly TIMEOUT_MS = 5 * 60 * 1000;  // 5 minutos
-  private readonly WARNING_MS = 60 * 1000;       // Aviso 1 minuto antes (a los 4 min de inactividad)
+  /** Máximo de inactividad antes de cerrar sesión (5 minutos). */
+  private readonly TIMEOUT_MS = 5 * 60 * 1000;
+  /** Aviso fijo 60 s antes del cierre (p. ej. a los 4 min de inactividad con timeout 5 min). */
+  private readonly WARNING_MS = 60 * 1000;
 
   private idleTimer: any = null;
   private warningTimer: any = null;
