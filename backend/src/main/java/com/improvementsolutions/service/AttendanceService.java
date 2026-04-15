@@ -947,12 +947,24 @@ public class AttendanceService {
     @Transactional(readOnly = true)
     public List<EmployeeVacation> getVacationsByBusiness(Long businessId, Integer year, Integer month) {
         requireBusiness(businessId);
+        List<EmployeeVacation> list;
         if (year != null && month != null) {
             YearMonth ym = YearMonth.of(year, month);
-            return vacationRepository.findByBusiness_IdAndStartDateBetweenOrderByStartDateDesc(
+            list = vacationRepository.findByBusiness_IdAndStartDateBetweenOrderByStartDateDesc(
                     businessId, ym.atDay(1), ym.atEndOfMonth());
+        } else {
+            list = vacationRepository.findByBusiness_IdOrderByStartDateDesc(businessId);
         }
-        return vacationRepository.findByBusiness_IdOrderByStartDateDesc(businessId);
+        // Inicializar empleado dentro de la transacción (evita LazyInitializationException en JSON fuera del servicio).
+        for (EmployeeVacation v : list) {
+            BusinessEmployee e = v.getEmployee();
+            if (e != null) {
+                e.getId();
+                e.getFullName();
+                e.getCedula();
+            }
+        }
+        return list;
     }
 
     @Transactional
@@ -1023,12 +1035,23 @@ public class AttendanceService {
     @Transactional(readOnly = true)
     public List<EmployeePermission> getPermissionsByBusiness(Long businessId, Integer year, Integer month) {
         requireBusiness(businessId);
+        List<EmployeePermission> list;
         if (year != null && month != null) {
             YearMonth ym = YearMonth.of(year, month);
-            return permissionRepository.findByBusiness_IdAndPermissionDateBetweenOrderByPermissionDateDesc(
+            list = permissionRepository.findByBusiness_IdAndPermissionDateBetweenOrderByPermissionDateDesc(
                     businessId, ym.atDay(1), ym.atEndOfMonth());
+        } else {
+            list = permissionRepository.findByBusiness_IdOrderByPermissionDateDesc(businessId);
         }
-        return permissionRepository.findByBusiness_IdOrderByPermissionDateDesc(businessId);
+        for (EmployeePermission p : list) {
+            BusinessEmployee e = p.getEmployee();
+            if (e != null) {
+                e.getId();
+                e.getFullName();
+                e.getCedula();
+            }
+        }
+        return list;
     }
 
     @Transactional

@@ -37,7 +37,7 @@
         <div class="form-doc-meta">
           <div class="form-meta-row"><span class="fm-key">Código:</span><span class="fm-val">{{ docCode }}</span></div>
           <div class="form-meta-row"><span class="fm-key">Revisión:</span><span class="fm-val">00</span></div>
-          <div class="form-meta-row"><span class="fm-key">Fecha:</span><span class="fm-val">01/04/2025</span></div>
+          <div class="form-meta-row"><span class="fm-key">Fecha:</span><span class="fm-val">{{ docFormMetaDate }}</span></div>
           <div class="form-meta-row"><span class="fm-key">Página:</span><span class="fm-val">1 de 1</span></div>
         </div>
       </header>
@@ -61,10 +61,11 @@
               </select>
             </div>
 
-            <div class="field-wrap">
+            <div class="field-wrap field-wrap--grow-text">
               <label class="field-label">Nombre y Apellido <span class="req">*</span></label>
-              <input type="text" formControlName="fullName" placeholder="Ej. Juan Pérez"
-                     class="field-input" [ngClass]="{'field-error': form.get('fullName')?.invalid && form.get('fullName')?.touched}" />
+              <textarea formControlName="fullName" rows="2" placeholder="Ej. Juan Pérez"
+                        class="field-input field-textarea field-textarea--form"
+                        [ngClass]="{'field-error': form.get('fullName')?.invalid && form.get('fullName')?.touched}"></textarea>
             </div>
 
             <div class="field-wrap">
@@ -73,10 +74,11 @@
                      class="field-input" [ngClass]="{'field-error': form.get('cedula')?.invalid && form.get('cedula')?.touched}" />
             </div>
 
-            <div class="field-wrap">
+            <div class="field-wrap field-wrap--grow-text">
               <label class="field-label">Cargo <span class="req">*</span></label>
-              <input type="text" formControlName="jobTitle" placeholder="Ej. Técnico de Operaciones"
-                     class="field-input" [ngClass]="{'field-error': form.get('jobTitle')?.invalid && form.get('jobTitle')?.touched}" />
+              <textarea formControlName="jobTitle" rows="2" placeholder="Ej. Técnico de Operaciones"
+                        class="field-input field-textarea field-textarea--form"
+                        [ngClass]="{'field-error': form.get('jobTitle')?.invalid && form.get('jobTitle')?.touched}"></textarea>
             </div>
 
             <div class="field-wrap">

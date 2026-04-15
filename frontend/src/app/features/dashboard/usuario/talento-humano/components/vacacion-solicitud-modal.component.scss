@@ -7,11 +7,16 @@
   backdrop-filter: blur(2px);
 }
 
-// ── Solo para PDF: centrar contenido dentro del bloque capturado ──
+// ── Solo para PDF: sin centrar textos largos (evita recorte en html2canvas en inputs)
 .pdf-center {
-  .field-input { text-align: center; }
-  select.field-input { text-align-last: center; }
-  .field-textarea { text-align: center; }
+  .field-input,
+  .field-textarea {
+    text-align: left;
+  }
+  select.field-input {
+    text-align: left;
+    text-align-last: left;
+  }
 }
 
 // ── Modal shell ────────────────────────────────────────
@@ -74,16 +79,19 @@
   background: #fff;
 }
 
-// ── Document header ────────────────────────────────────
+// ── Document header (recuadros remarcados en negro para PDF / impresión) ──
 .form-doc-header {
   display: flex;
   align-items: stretch;
-  border-bottom: 2px solid #002d72;
+  border: 2px solid #111827;
+  border-radius: 2px;
+  margin-bottom: 4px;
+  overflow: hidden;
 }
 .form-doc-logo {
   width: 148px;
   min-width: 148px;
-  border-right: 1px solid #d1d5db;
+  border-right: 2px solid #111827;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -113,7 +121,7 @@
   align-items: center;
   justify-content: center;
   padding: 14px 20px;
-  border-right: 1px solid #d1d5db;
+  border-right: 2px solid #111827;
 }
 .form-doc-title {
   font-size: 15px;
@@ -146,7 +154,7 @@
   align-items: baseline;
   gap: 8px;
   font-size: 10px;
-  border-bottom: 1px solid #cbd5e1;
+  border-bottom: 1px solid #1e293b;
   padding-bottom: 5px;
   &:last-child { border-bottom: none; padding-bottom: 0; }
 }
@@ -174,7 +182,7 @@
   text-transform: uppercase;
   letter-spacing: .06em;
   color: #002d72;
-  border-bottom: 1px solid #bfdbfe;
+  border-bottom: 2px solid #3b82f6;
   padding-bottom: 10px;
   margin-bottom: 18px;
 }
@@ -205,8 +213,15 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0; // evita desbordamiento en grid
   &.field-wrap-full {
     grid-column: 1 / -1;
+  }
+  &--grow-text {
+    align-self: start;
+    .field-textarea--form {
+      min-height: 52px;
+    }
   }
 }
 .field-label {
@@ -222,7 +237,7 @@
   width: 100%;
   min-height: 38px;
   padding: 8px 12px;
-  border: 1px solid #d1d5db;
+  border: 1.5px solid #64748b;
   border-radius: 4px;
   font-size: 12.5px;
   font-family: inherit;
@@ -231,11 +246,11 @@
   outline: none;
   box-sizing: border-box;
   transition: border-color .15s, box-shadow .15s;
-  text-align: left; // alineación normal en UI
+  text-align: left;
 
   &:focus {
     border-color: #002d72;
-    box-shadow: 0 0 0 2px rgba(0,45,114,.12);
+    box-shadow: 0 0 0 2px rgba(0, 45, 114, 0.15);
   }
   &.field-error {
     border-color: #dc2626;
@@ -249,8 +264,35 @@ select.field-input { cursor: pointer; }
 .field-textarea {
   resize: vertical;
   min-height: 80px;
-  line-height: 1.5;
+  line-height: 1.45;
   text-align: left;
+  border: 1.5px solid #64748b;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-family: inherit;
+  color: #111827;
+  background: #fff;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
+
+  &:focus {
+    border-color: #002d72;
+    box-shadow: 0 0 0 2px rgba(0, 45, 114, 0.15);
+    outline: none;
+  }
+  &.field-error {
+    border-color: #dc2626;
+    background: #fff5f5;
+  }
+}
+
+.field-textarea--form {
+  min-height: 48px;
+  resize: vertical;
+  max-height: 120px;
 }
 
 // ── Addon ─────────────────────────────────────────────
@@ -283,7 +325,7 @@ select.field-input { cursor: pointer; }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0;
-  border: 1px solid #d1d5db;
+  border: 1.5px solid #64748b;
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -294,13 +336,14 @@ select.field-input { cursor: pointer; }
   flex-direction: column;
   align-items: center;
   padding: 12px 10px 10px;
-  border-right: 1px solid #d1d5db;
+  border-right: 1.5px solid #94a3b8;
+  min-width: 0;
   &:last-child { border-right: none; }
 }
 .sig-line {
   height: 60px;
   width: 100%;
-  border-bottom: 1px solid #9ca3af;
+  border-bottom: 1.5px solid #64748b;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -317,6 +360,12 @@ select.field-input { cursor: pointer; }
   font-weight: 700;
   color: #111827;
   margin-bottom: 6px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+  hyphens: auto;
+  padding: 0 4px;
 }
 .sig-label {
   margin: 8px 0 0;

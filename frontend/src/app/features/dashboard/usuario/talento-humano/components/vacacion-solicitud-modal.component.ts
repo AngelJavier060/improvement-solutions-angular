@@ -35,6 +35,13 @@ export class VacacionSolicitudModalComponent implements OnInit, OnChanges {
   /** Código de documento (sin prefijo ORT-) */
   readonly docCode = 'GTH-PRO-01-F4';
 
+  /** Fecha de emisión del documento (hoy, formato dd/MM/yyyy). */
+  get docFormMetaDate(): string {
+    const n = new Date();
+    const p = (x: number) => String(x).padStart(2, '0');
+    return `${p(n.getDate())}/${p(n.getMonth() + 1)}/${n.getFullYear()}`;
+  }
+
   readonly approvers = [
     { value: 'gerente_operaciones',   label: 'Gerente de Operaciones' },
     { value: 'jefe_mantenimiento',    label: 'Jefe de Mantenimiento' },
@@ -358,7 +365,11 @@ export class VacacionSolicitudModalComponent implements OnInit, OnChanges {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
-        logging: false
+        logging: false,
+        scrollX: 0,
+        scrollY: -window.scrollY,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight
       });
 
       const imgData = canvas.toDataURL('image/png');

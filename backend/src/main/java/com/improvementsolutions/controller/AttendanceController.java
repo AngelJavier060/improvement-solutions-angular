@@ -414,6 +414,10 @@ public class AttendanceController {
                     .stream().map(this::vacationToMap).toList());
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("getVacations businessId={} year={} month={}", businessId, year, month, e);
+            String msg = e.getMessage() != null ? e.getMessage() : "Error al listar vacaciones";
+            return ResponseEntity.status(500).body(Map.of("error", msg));
         }
     }
 
@@ -983,9 +987,10 @@ public class AttendanceController {
     private Map<String, Object> vacationToMap(EmployeeVacation v) {
         Map<String, Object> m = new java.util.LinkedHashMap<>();
         m.put("id",             v.getId());
-        m.put("employeeId",     v.getEmployee().getId());
-        m.put("employeeName",   v.getEmployee().getFullName());
-        m.put("cedula",         v.getEmployee().getCedula());
+        BusinessEmployee e = v.getEmployee();
+        m.put("employeeId",     e != null ? e.getId() : null);
+        m.put("employeeName",   e != null ? e.getFullName() : null);
+        m.put("cedula",         e != null ? e.getCedula() : null);
         m.put("startDate",      v.getStartDate() != null ? v.getStartDate().toString() : null);
         m.put("endDate",        v.getEndDate() != null ? v.getEndDate().toString() : null);
         m.put("daysTaken",      v.getDaysTaken());
