@@ -223,6 +223,10 @@
       min-height: 52px;
     }
   }
+  // Nombre y cargo: más ancho en la grilla 4 columnas para lectura e impresión
+  &--span-2 {
+    grid-column: span 2;
+  }
 }
 .field-label {
   font-size: 10px;
@@ -293,6 +297,12 @@ select.field-input { cursor: pointer; }
   min-height: 48px;
   resize: vertical;
   max-height: 120px;
+}
+
+// Nombres y cargos largos: sin tope que recorte en pantalla; el PDF usa además onclone (ver .ts)
+.field-textarea--long-text {
+  max-height: none;
+  min-height: 56px;
 }
 
 // ── Addon ─────────────────────────────────────────────
@@ -478,8 +488,10 @@ select.field-input { cursor: pointer; }
   .form-grid-4 { grid-template-columns: repeat(2, 1fr); }
   .form-grid-planning { grid-template-columns: 1fr; }
   .form-doc-meta { display: none; }
+  .field-wrap--span-2 { grid-column: span 2; }
 }
 @media (max-width: 480px) {
   .form-grid-4 { grid-template-columns: 1fr; }
   .modal-shell { width: 98vw; }
+  .field-wrap--span-2 { grid-column: 1 / -1; }
 }

@@ -61,10 +61,10 @@
               </select>
             </div>
 
-            <div class="field-wrap field-wrap--grow-text">
+            <div class="field-wrap field-wrap--grow-text field-wrap--span-2">
               <label class="field-label">Nombre y Apellido <span class="req">*</span></label>
-              <textarea formControlName="fullName" rows="2" placeholder="Ej. Juan Pérez"
-                        class="field-input field-textarea field-textarea--form"
+              <textarea formControlName="fullName" rows="3" placeholder="Ej. Juan Pérez"
+                        class="field-input field-textarea field-textarea--form field-textarea--long-text"
                         [ngClass]="{'field-error': form.get('fullName')?.invalid && form.get('fullName')?.touched}"></textarea>
             </div>
 
@@ -74,10 +74,10 @@
                      class="field-input" [ngClass]="{'field-error': form.get('cedula')?.invalid && form.get('cedula')?.touched}" />
             </div>
 
-            <div class="field-wrap field-wrap--grow-text">
+            <div class="field-wrap field-wrap--grow-text field-wrap--span-2">
               <label class="field-label">Cargo <span class="req">*</span></label>
-              <textarea formControlName="jobTitle" rows="2" placeholder="Ej. Técnico de Operaciones"
-                        class="field-input field-textarea field-textarea--form"
+              <textarea formControlName="jobTitle" rows="3" placeholder="Ej. Técnico de Operaciones"
+                        class="field-input field-textarea field-textarea--form field-textarea--long-text"
                         [ngClass]="{'field-error': form.get('jobTitle')?.invalid && form.get('jobTitle')?.touched}"></textarea>
             </div>
 

@@ -361,6 +361,7 @@ export class VacacionSolicitudModalComponent implements OnInit, OnChanges {
       const el: HTMLElement = this.pdfContent.nativeElement;
       // Aplicar centrado solo para la captura del PDF
       el.classList.add('pdf-center');
+      // html2canvas recorta mal los <textarea>; en el clon se sustituyen por <div> con el mismo texto.
       const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
@@ -369,7 +370,36 @@ export class VacacionSolicitudModalComponent implements OnInit, OnChanges {
         scrollX: 0,
         scrollY: -window.scrollY,
         windowWidth: el.scrollWidth,
-        windowHeight: el.scrollHeight
+        windowHeight: el.scrollHeight,
+        onclone: (_clonedDoc, clonedRoot) => {
+          clonedRoot.querySelectorAll('textarea.field-textarea').forEach(node => {
+            const ta = node as HTMLTextAreaElement;
+            const div = _clonedDoc.createElement('div');
+            div.textContent = ta.value;
+            div.setAttribute(
+              'style',
+              [
+                'box-sizing:border-box',
+                'width:100%',
+                'min-height:' + Math.max(ta.offsetHeight, 52) + 'px',
+                'padding:8px 12px',
+                'border:1.5px solid #64748b',
+                'border-radius:4px',
+                'font-size:12.5px',
+                'font-family:inherit',
+                'color:#111827',
+                'background:#fff',
+                'white-space:pre-wrap',
+                'overflow-wrap:anywhere',
+                'word-break:break-word',
+                'line-height:1.45',
+                'text-align:left',
+                'overflow:visible'
+              ].join(';')
+            );
+            ta.replaceWith(div);
+          });
+        }
       });
 
       const imgData = canvas.toDataURL('image/png');
