@@ -61,6 +61,10 @@ public class BusinessEmployee {
     
     @Column(name = "fecha_ingreso")
     private LocalDate fechaIngreso;
+
+    /** Último día laboral (inclusive). Después no se registra actividad en planilla. */
+    @Column(name = "fecha_salida")
+    private LocalDate fechaSalida;
     
     private String position;
     

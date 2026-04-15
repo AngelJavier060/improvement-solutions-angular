@@ -8,6 +8,8 @@ import com.improvementsolutions.dto.StatsAggregationDto;
 import com.improvementsolutions.dto.AgeRangeStatsDto;
 import com.improvementsolutions.dto.AgeGenderRangeDto;
 import com.improvementsolutions.dto.EmployeeMovementRequestDto;
+import com.improvementsolutions.dto.EmployeeMovementResponseDto;
+import com.improvementsolutions.dto.CompanyEmployeeMovementRowDto;
 import com.improvementsolutions.improvement_solutions_api.dto.ErrorResponseDto;
 import com.improvementsolutions.improvement_solutions_api.service.BusinessEmployeeService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -268,6 +271,21 @@ public class BusinessEmployeeController {
             return ResponseEntity.ok(employees);
         } catch (Exception e) {
             log.error("Error al obtener empleados activos para la empresa {}: {}", codigoEmpresa, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /** Historial de salidas y reingresos de todos los colaboradores de la empresa. */
+    @GetMapping("/business-employees/company/{codigoEmpresa}/movements")
+    public ResponseEntity<List<CompanyEmployeeMovementRowDto>> getCompanyEmployeeMovements(
+            @PathVariable String codigoEmpresa) {
+        try {
+            return ResponseEntity.ok(businessEmployeeService.getCompanyEmployeeMovementsByRuc(codigoEmpresa));
+        } catch (IllegalArgumentException e) {
+            log.warn("Historial laboral empresa {}: {}", codigoEmpresa, e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error al listar movimientos de la empresa {}: {}", codigoEmpresa, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -588,6 +606,20 @@ public class BusinessEmployeeController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    /** Historial de salidas y reingresos (no se borra al reactivar). */
+    @GetMapping("/employees/{id}/movements")
+    public ResponseEntity<List<EmployeeMovementResponseDto>> getEmployeeMovements(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(businessEmployeeService.getEmployeeMovements(id));
+        } catch (IllegalArgumentException e) {
+            log.warn("Movimientos empleado {}: {}", id, e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error al listar movimientos del empleado {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
     
     /**
      * Activa o desactiva un empleado (campo booleano active) y sincroniza el campo textual status.
@@ -596,10 +628,11 @@ public class BusinessEmployeeController {
     @PatchMapping("/employees/{id}/active")
     public ResponseEntity<BusinessEmployeeResponseDto> setEmployeeActive(
             @PathVariable Long id,
-            @RequestParam(name = "value") boolean active) {
+            @RequestParam(name = "value") boolean active,
+            @RequestParam(name = "exitDate", required = false) LocalDate exitDate) {
         try {
             log.info("[PATCH] Actualizando 'active' del empleado {} => {}", id, active);
-            BusinessEmployeeResponseDto updated = businessEmployeeService.setEmployeeActiveStatus(id, active);
+            BusinessEmployeeResponseDto updated = businessEmployeeService.setEmployeeActiveStatus(id, active, exitDate);
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException e) {
             log.error("Error al actualizar estado activo del empleado {}: {}", id, e.getMessage());

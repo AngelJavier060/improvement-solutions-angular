@@ -153,6 +153,10 @@ export interface EmployeeResponse {
   direccionDomiciliaria?: string;
   residentAddress?: string;
   fechaIngreso?: string;
+  /** Último día laboral (yyyy-MM-dd); ausente si sigue activo */
+  fechaSalida?: string;
+  /** Motivo de baja (último movimiento de desactivación), si existe */
+  motivoSalida?: string | null;
   codigoEmpresa?: string;
   codigoTrabajador?: string; // Código único del trabajador (expuesto por backend)
   businessId?: number;

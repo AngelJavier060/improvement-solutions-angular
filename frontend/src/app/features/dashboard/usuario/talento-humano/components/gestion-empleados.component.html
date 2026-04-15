@@ -272,7 +272,9 @@
               <input
                 type="text"
                 class="form-control"
-                placeholder="Buscar por nombre, cédula, email o cargo..."
+                [placeholder]="filterStatus === 'inactive'
+                  ? 'Buscar por nombre, cédula, cargo, fecha o motivo de salida...'
+                  : 'Buscar por nombre, cédula, email o cargo...'"
                 [(ngModel)]="searchTerm"
                 (input)="onSearchChange()"
                 style="min-width: 300px;">
@@ -287,8 +289,8 @@
           </div>
         </div>
 
-        <!-- Filter Buttons -->
-        <div class="d-flex justify-content-start mt-3">
+        <!-- Filter Buttons + Historial laboral -->
+        <div class="d-flex flex-wrap justify-content-start align-items-center gap-2 mt-3">
           <div class="btn-group" role="group">
             <button
               type="button"
@@ -315,6 +317,14 @@
               Todos ({{ employees.length }})
             </button>
           </div>
+          <button
+            type="button"
+            class="btn btn-outline-info"
+            (click)="openLaborHistoryModal()"
+            title="Ver salidas y reingresos registrados en la empresa">
+            <i class="fas fa-history me-1"></i>
+            Histórico
+          </button>
         </div>
       </div>
       <div class="card-body p-0">
@@ -344,7 +354,7 @@
         <!-- Table -->
         <div *ngIf="filteredEmployees.length > 0" class="table-responsive">
           <table class="table table-hover mb-0">
-            <colgroup>
+            <colgroup *ngIf="filterStatus !== 'inactive'">
               <col style="width:26%">
               <col style="width:13%">
               <col style="width:12%">
@@ -352,6 +362,17 @@
               <col style="width:16%">
               <col style="width:9%">
               <col style="width:6%">
+              <col style="width:3%">
+            </colgroup>
+            <colgroup *ngIf="filterStatus === 'inactive'">
+              <col style="width:22%">
+              <col style="width:11%">
+              <col style="width:10%">
+              <col style="width:13%">
+              <col style="width:11%">
+              <col style="width:16%">
+              <col style="width:9%">
+              <col style="width:5%">
               <col style="width:3%">
             </colgroup>
             <thead class="table-light">
@@ -367,7 +388,9 @@
                 </th>
                 <th>Cédula</th>
                 <th>Cargo</th>
-                <th>Email</th>
+                <th *ngIf="filterStatus !== 'inactive'">Email</th>
+                <th *ngIf="filterStatus === 'inactive'">Fecha de salida</th>
+                <th *ngIf="filterStatus === 'inactive'">Motivo de la salida</th>
                 <th>Teléfono</th>
                 <th>Estado</th>
                 <th>Acciones</th>
@@ -404,10 +427,16 @@
                     {{ getEmployeePosition(employee) }}
                   </span>
                 </td>
-                <td>
+                <td *ngIf="filterStatus !== 'inactive'">
                   <a [href]="'mailto:' + employee.email" class="text-decoration-none">
                     {{ employee.email }}
                   </a>
+                </td>
+                <td *ngIf="filterStatus === 'inactive'">
+                  <span class="text-muted small">{{ formatFechaSalida(employee) }}</span>
+                </td>
+                <td *ngIf="filterStatus === 'inactive'" class="text-break" style="max-width: 220px;">
+                  <span class="small" [title]="employee.motivoSalida || ''">{{ employee.motivoSalida || '—' }}</span>
                 </td>
                 <td>
                   <a [href]="'tel:' + employee.phone" class="text-decoration-none">
@@ -583,7 +612,7 @@
 </div>
 
 <!-- Backdrop para los modales -->
-<div class="modal-backdrop fade show" *ngIf="showCoursesModal || showDocumentsModal || showEmployeeModal || showDeactivateModal || showReactivateModal || showCredentialsModal"></div>
+<div class="modal-backdrop fade show" *ngIf="showCoursesModal || showDocumentsModal || showEmployeeModal || showDeactivateModal || showReactivateModal || showCredentialsModal || showLaborHistoryModal"></div>
 
 <div class="modal fade" [class.show]="showCredentialsModal" [style.display]="showCredentialsModal ? 'block' : 'none'" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -710,6 +739,62 @@
         <button type="button" class="btn btn-success" (click)="confirmReactivate()">
           <i class="fas fa-user-check me-1"></i> Reingresar
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Historial laboral (salidas / reingresos en la empresa) -->
+<div class="modal fade" [class.show]="showLaborHistoryModal" [style.display]="showLaborHistoryModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-history me-2"></i>
+          Historial de salidas y reingresos
+        </h5>
+        <button type="button" class="btn-close" (click)="closeLaborHistoryModal()" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">
+          Registros de desvinculación y reingreso de todos los colaboradores de esta empresa. Los datos no se eliminan al reactivar a alguien.
+        </p>
+        <div *ngIf="loadingLaborHistory" class="py-4 text-center text-muted">
+          <i class="fas fa-spinner fa-spin me-2"></i>Cargando…
+        </div>
+        <div *ngIf="laborHistoryError" class="alert alert-danger mb-0">{{ laborHistoryError }}</div>
+        <div *ngIf="!loadingLaborHistory && !laborHistoryError && companyLaborMovements.length === 0" class="text-muted py-2">
+          No hay movimientos registrados.
+        </div>
+        <div *ngIf="!loadingLaborHistory && companyLaborMovements.length > 0" class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Fecha efectiva</th>
+                <th>Colaborador</th>
+                <th>Cédula</th>
+                <th>Tipo</th>
+                <th>Motivo / notas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of companyLaborMovements">
+                <td>{{ m.effectiveDate || '—' }}</td>
+                <td>{{ m.employeeFullName || '—' }}</td>
+                <td>{{ m.cedula || '—' }}</td>
+                <td>
+                  <span class="badge" [ngClass]="m.movementType === 'DEACTIVATION' ? 'bg-secondary' : 'bg-success'">
+                    {{ movementTypeLabel(m.movementType) }}
+                  </span>
+                </td>
+                <td class="text-break" style="max-width: 320px;">{{ m.reason || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeLaborHistoryModal()">Cerrar</button>
       </div>
     </div>
   </div>

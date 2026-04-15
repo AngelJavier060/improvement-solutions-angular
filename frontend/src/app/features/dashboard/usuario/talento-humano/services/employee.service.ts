@@ -216,10 +216,14 @@ export class EmployeeService {
   }
 
   // Activar/Desactivar empleado
-  setEmployeeActive(id: number, value: boolean): Observable<EmployeeResponse> {
-    const url = `${this.apiUrl}/employees/${id}/active?value=${value}`;
-    console.log('EmployeeService.setEmployeeActive - URL:', url, 'value:', value);
-    return this.http.patch<EmployeeResponse>(url, {});
+  setEmployeeActive(id: number, value: boolean, exitDate?: string): Observable<EmployeeResponse> {
+    let params = new HttpParams().set('value', String(value));
+    if (!value && exitDate) {
+      params = params.set('exitDate', exitDate);
+    }
+    const url = `${this.apiUrl}/employees/${id}/active`;
+    console.log('EmployeeService.setEmployeeActive - URL:', url, 'value:', value, 'exitDate:', exitDate);
+    return this.http.patch<EmployeeResponse>(url, {}, { params });
   }
 
   // Desvincular (inactivar) con motivo y fecha efectiva
@@ -234,6 +238,48 @@ export class EmployeeService {
     const url = `${this.apiUrl}/employees/${id}/reactivate`;
     console.log('EmployeeService.reactivateEmployee - URL:', url, 'body:', body);
     return this.http.post<EmployeeResponse>(url, body);
+  }
+
+  /** Historial de salidas y reingresos (persistido; no se borra al reactivar). */
+  /** Historial laboral de toda la empresa (salidas/reingresos). */
+  getCompanyEmployeeMovements(ruc: string): Observable<Array<{
+    id: number;
+    employeeId: number;
+    employeeFullName: string | null;
+    cedula: string | null;
+    movementType: string;
+    effectiveDate: string;
+    reason?: string | null;
+    createdAt?: string | null;
+  }>> {
+    const url = `${this.apiUrl}/business-employees/company/${encodeURIComponent(ruc)}/movements`;
+    return this.http.get<Array<{
+      id: number;
+      employeeId: number;
+      employeeFullName: string | null;
+      cedula: string | null;
+      movementType: string;
+      effectiveDate: string;
+      reason?: string | null;
+      createdAt?: string | null;
+    }>>(url);
+  }
+
+  getEmployeeMovements(id: number): Observable<Array<{
+    id: number;
+    movementType: string;
+    effectiveDate: string;
+    reason?: string | null;
+    createdAt?: string | null;
+  }>> {
+    const url = `${this.apiUrl}/employees/${id}/movements`;
+    return this.http.get<Array<{
+      id: number;
+      movementType: string;
+      effectiveDate: string;
+      reason?: string | null;
+      createdAt?: string | null;
+    }>>(url);
   }
 
   // Obtener empleado por ID

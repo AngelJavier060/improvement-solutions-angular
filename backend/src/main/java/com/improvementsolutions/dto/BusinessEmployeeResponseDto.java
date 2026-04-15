@@ -53,6 +53,11 @@ public class BusinessEmployeeResponseDto {
     // Información laboral
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate fechaIngreso;
+    /** Último día laboral (inclusive); null si sigue activo o no se registró */
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate fechaSalida;
+    /** Motivo registrado en la última baja (movimiento DEACTIVATION), si existe */
+    private String motivoSalida;
     private String codigoEmpresa;
     // Código único del trabajador en la empresa
     private String codigoTrabajador;

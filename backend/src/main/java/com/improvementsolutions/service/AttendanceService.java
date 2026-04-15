@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.DayOfWeek;
 import java.time.YearMonth;
+import com.improvementsolutions.model.MovementType;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -36,8 +37,75 @@ public class AttendanceService {
     private final WorkScheduleRepository workScheduleRepository;
     private final HolidayRepository holidayRepository;
     private final BusinessIncidentRepository businessIncidentRepository;
+    private final EmployeeMovementRepository employeeMovementRepository;
 
     // ─────────────────── helpers ───────────────────
+
+    /** Fecha fin de relación: columna fecha_salida o última baja en movimientos. */
+    private LocalDate resolveEmploymentEndDate(BusinessEmployee emp, Map<Long, LocalDate> movementExitByEmployeeId) {
+        if (Boolean.TRUE.equals(emp.getActive())) {
+            return null;
+        }
+        if (emp.getFechaSalida() != null) {
+            return emp.getFechaSalida();
+        }
+        if (movementExitByEmployeeId != null) {
+            return movementExitByEmployeeId.get(emp.getId());
+        }
+        return null;
+    }
+
+    private LocalDate resolveEmploymentEndDateForWrite(BusinessEmployee emp) {
+        if (Boolean.TRUE.equals(emp.getActive())) {
+            return null;
+        }
+        if (emp.getFechaSalida() != null) {
+            return emp.getFechaSalida();
+        }
+        return employeeMovementRepository
+                .findLatestDeactivationEffectiveDate(emp.getId(), MovementType.DEACTIVATION)
+                .orElse(null);
+    }
+
+    private void assertDateNotAfterEmploymentEnd(BusinessEmployee emp, LocalDate date) {
+        LocalDate end = resolveEmploymentEndDateForWrite(emp);
+        if (end != null && date.isAfter(end)) {
+            throw new IllegalStateException(
+                    "No se puede registrar actividad después de la fecha de salida (" + end + ").");
+        }
+    }
+
+    /**
+     * Incluye empleados activos y, si están inactivos, quienes deben verse en este mes
+     * (mes que empieza en o antes de la fecha de salida, o con días guardados en el mes si no hay fecha).
+     */
+    private boolean shouldIncludeEmployeeInMonthlySheet(BusinessEmployee e, LocalDate monthStart,
+                                                        Set<Long> employeeIdsWithSavedDaysInMonth,
+                                                        Map<Long, LocalDate> movementExitByEmployeeId) {
+        if (Boolean.TRUE.equals(e.getActive())) {
+            return true;
+        }
+        LocalDate exit = resolveEmploymentEndDate(e, movementExitByEmployeeId);
+        if (exit != null) {
+            return !monthStart.isAfter(exit);
+        }
+        return employeeIdsWithSavedDaysInMonth.contains(e.getId());
+    }
+
+    private Map<Long, LocalDate> loadMovementExitDates(Collection<Long> inactiveIdsWithoutFechaSalida) {
+        if (inactiveIdsWithoutFechaSalida == null || inactiveIdsWithoutFechaSalida.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Object[]> rows = employeeMovementRepository.findMaxDeactivationEffectiveDateByEmployeeIds(
+                inactiveIdsWithoutFechaSalida, MovementType.DEACTIVATION);
+        Map<Long, LocalDate> map = new HashMap<>();
+        for (Object[] row : rows) {
+            if (row[0] != null && row[1] != null) {
+                map.put((Long) row[0], (LocalDate) row[1]);
+            }
+        }
+        return map;
+    }
 
     private Business requireBusiness(Long businessId) {
         return businessRepository.findById(businessId)
@@ -60,6 +128,24 @@ public class AttendanceService {
                 name,
                 h.getStartDate().format(ES_DATE_FMT),
                 end);
+    }
+
+    /**
+     * Libera el intervalo que inicia en {@code startDate} para insertar un nuevo periodo:
+     * recorta los que empiezan antes y elimina los que empiezan el mismo día o después (quedan sustituidos).
+     */
+    private void resolveScheduleHistoryOverlapsForInsert(List<EmployeeWorkScheduleHistory> overlaps, LocalDate startDate) {
+        for (EmployeeWorkScheduleHistory h : overlaps) {
+            if (h.getStartDate().isBefore(startDate)) {
+                LocalDate closeAt = startDate.minusDays(1);
+                if (!closeAt.isBefore(h.getStartDate())) {
+                    h.setEndDate(closeAt);
+                    scheduleHistoryRepository.save(h);
+                }
+            } else {
+                scheduleHistoryRepository.delete(h);
+            }
+        }
     }
 
     /** Lanza excepción si el mes correspondiente a 'date' no está en estado OPEN. */
@@ -291,8 +377,69 @@ public class AttendanceService {
         return p.workDays() == 5 && p.restDays() == 2;
     }
 
+    /**
+     * Jornada de catálogo "No establecido": sin T/D automáticos; la planilla es 100 % manual
+     * (salvo otros módulos que guarden V, P, EX, etc.).
+     */
+    private static boolean isManualScheduleName(String scheduleName) {
+        if (scheduleName == null) return false;
+        String n = scheduleName.trim().toLowerCase(Locale.ROOT);
+        return n.equals("no establecido") || n.startsWith("no establecido ");
+    }
+
+    /**
+     * Si {@code date} cae fuera de un periodo laboral (entre baja y reingreso no hay relación),
+     * no debe generarse T/D automático. {@code movementsAsc} puede venir precargado por mes para rendimiento.
+     */
+    private boolean isEmployedOnDate(BusinessEmployee emp, LocalDate date, List<EmployeeMovement> movementsAsc) {
+        LocalDate ingreso = emp.getFechaIngreso();
+        if (ingreso != null && date.isBefore(ingreso)) {
+            return false;
+        }
+        List<EmployeeMovement> asc = movementsAsc;
+        if (asc == null) {
+            asc = employeeMovementRepository.findByBusinessEmployee_IdOrderByEffectiveDateAscIdAsc(emp.getId());
+        }
+        if (asc.isEmpty()) {
+            if (Boolean.FALSE.equals(emp.getActive())) {
+                LocalDate end = emp.getFechaSalida();
+                if (end == null) {
+                    end = resolveEmploymentEndDateForWrite(emp);
+                }
+                return end == null || !date.isAfter(end);
+            }
+            return true;
+        }
+        LocalDate segStart = ingreso != null ? ingreso : LocalDate.of(1970, 1, 1);
+        boolean endedAfterDeactivation = false;
+        for (EmployeeMovement m : asc) {
+            if (m.getType() == MovementType.DEACTIVATION) {
+                LocalDate d = m.getEffectiveDate();
+                if (!date.isBefore(segStart) && !date.isAfter(d)) {
+                    return true;
+                }
+                segStart = d.plusDays(1);
+                endedAfterDeactivation = true;
+            } else if (m.getType() == MovementType.REACTIVATION) {
+                segStart = m.getEffectiveDate();
+                endedAfterDeactivation = false;
+            }
+        }
+        if (endedAfterDeactivation) {
+            return false;
+        }
+        return !date.isBefore(segStart);
+    }
+
     private String getAutoDayType(BusinessEmployee emp, LocalDate date) {
+        return getAutoDayType(emp, date, null);
+    }
+
+    private String getAutoDayType(BusinessEmployee emp, LocalDate date, List<EmployeeMovement> movementsAsc) {
         if (emp == null || date == null) return null;
+        if (!isEmployedOnDate(emp, date, movementsAsc)) {
+            return null;
+        }
         // 1) Buscar en histórico de jornadas para esa fecha
         Long bid = emp.getBusiness() != null ? emp.getBusiness().getId() : null;
         Optional<EmployeeWorkScheduleHistory> histOpt = bid == null ? Optional.empty()
@@ -300,6 +447,9 @@ public class AttendanceService {
         if (histOpt.isPresent()) {
             EmployeeWorkScheduleHistory hist = histOpt.get();
             String wsName = hist.getWorkSchedule() != null ? hist.getWorkSchedule().getName() : null;
+            if (isManualScheduleName(wsName)) {
+                return null;
+            }
             Optional<Set<DayOfWeek>> weekly = parseWeeklyPatternFromName(wsName);
             if (weekly.isPresent()) {
                 return weekly.get().contains(date.getDayOfWeek()) ? "T" : "D";
@@ -318,6 +468,9 @@ public class AttendanceService {
         }
         // 2) Fallback al campo directo del empleado
         String empSchedName = emp.getWorkSchedule() != null ? emp.getWorkSchedule().getName() : null;
+        if (isManualScheduleName(empSchedName)) {
+            return null;
+        }
         Optional<Set<DayOfWeek>> weekly = parseWeeklyPatternFromName(empSchedName);
         if (weekly.isPresent()) {
             return weekly.get().contains(date.getDayOfWeek()) ? "T" : "D";
@@ -344,7 +497,7 @@ public class AttendanceService {
     public String computeDayType(Long businessId, Long employeeId, LocalDate date) {
         requireBusiness(businessId);
         BusinessEmployee emp = requireEmployee(businessId, employeeId);
-        return getAutoDayType(emp, date);
+        return getAutoDayType(emp, date, null);
     }
 
     /**
@@ -380,13 +533,25 @@ public class AttendanceService {
             for (Holiday h : locals) holidayMap.put(h.getDate(), h.getName()); // override national with company-specific if collides
         } catch (Exception ignore) {}
 
-        List<BusinessEmployee> employees = employeeRepository.findWithRelationsByBusinessId(businessId)
-                .stream()
-                .filter(e -> Boolean.TRUE.equals(e.getActive()))
-                .collect(Collectors.toList());
-
         List<EmployeeWorkDay> savedDays = workDayRepository
                 .findByBusiness_IdAndWorkDateBetweenOrderByEmployeeIdAscWorkDateAsc(businessId, from, to);
+
+        Set<Long> employeeIdsWithSavedDaysInMonth = savedDays.stream()
+                .map(wd -> wd.getEmployee().getId())
+                .collect(Collectors.toSet());
+
+        List<BusinessEmployee> allEmployees = employeeRepository.findWithRelationsByBusinessId(businessId);
+        List<Long> inactiveNeedingMovementExit = allEmployees.stream()
+                .filter(e -> !Boolean.TRUE.equals(e.getActive()))
+                .filter(e -> e.getFechaSalida() == null)
+                .map(BusinessEmployee::getId)
+                .collect(Collectors.toList());
+        Map<Long, LocalDate> movementExitByEmployeeId = loadMovementExitDates(inactiveNeedingMovementExit);
+
+        List<BusinessEmployee> employees = allEmployees.stream()
+                .filter(e -> shouldIncludeEmployeeInMonthlySheet(e, from, employeeIdsWithSavedDaysInMonth, movementExitByEmployeeId))
+                .sorted(Comparator.comparing(BusinessEmployee::getFullName, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .collect(Collectors.toList());
 
         Map<String, String> savedMap = new HashMap<>();
         Map<String, String> notesMap = new HashMap<>();
@@ -400,11 +565,14 @@ public class AttendanceService {
         int daysInMonth = ym.lengthOfMonth();
 
         for (BusinessEmployee emp : employees) {
+            LocalDate employmentEnd = resolveEmploymentEndDate(emp, movementExitByEmployeeId);
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("employeeId",   emp.getId());
             row.put("fullName",     emp.getFullName());
             row.put("position",     emp.getPosition());
             row.put("cedula",       emp.getCedula());
+            row.put("active",       emp.getActive());
+            row.put("fechaSalida",  employmentEnd != null ? employmentEnd.toString() : null);
             row.put("departmentId", emp.getDepartment() != null ? emp.getDepartment().getId() : null);
             row.put("departmentName", emp.getDepartment() != null ? emp.getDepartment().getName() : "Sin departamento");
             row.put("codigoEmpresa", emp.getCodigoEmpresa());
@@ -423,6 +591,9 @@ public class AttendanceService {
             // Contadores solo de días con registro GUARDADO en BD (excluye días auto-generados del horario)
             int savedT = 0, savedEX = 0;
 
+            List<EmployeeMovement> movsAsc = employeeMovementRepository
+                    .findByBusinessEmployee_IdOrderByEffectiveDateAscIdAsc(emp.getId());
+
             for (int d = 1; d <= daysInMonth; d++) {
                 LocalDate date = LocalDate.of(year, month, d);
                 String key = emp.getId() + "_" + date;
@@ -434,14 +605,18 @@ public class AttendanceService {
                 String notes = notesMap.get(key);
                 boolean isOvertimeSaved = (savedType != null && "EX".equalsIgnoreCase(savedType))
                         || (notes != null && notes.trim().toUpperCase().startsWith("HE:"));
+                boolean afterExit = employmentEnd != null && date.isAfter(employmentEnd);
                 // Si hay registro guardado, usarlo. Si no hay y includeAuto=true, calcular; si includeAuto=false, dejar null.
                 String type;
-                if (hasSaved) {
+                if (afterExit) {
+                    // Posterior a la salida: no proyección ni conteo en indicadores (solo histórico hasta fecha de salida)
+                    type = null;
+                } else if (hasSaved) {
                     type = savedType;
                 } else if (beforeStart && !isOvertimeSaved) {
                     type = null;
                 } else if (includeAuto) {
-                    type = getAutoDayType(emp, date);
+                    type = getAutoDayType(emp, date, movsAsc);
                 } else {
                     type = null;
                 }
@@ -450,18 +625,24 @@ public class AttendanceService {
                 dayInfo.put("day",  d);
                 dayInfo.put("date", date.toString());
                 dayInfo.put("dayType", type); // null = sin asignación (antes de startDate)
-                dayInfo.put("saved", hasSaved); // true = registro real en BD, false = auto-generado
-                if (notes != null) dayInfo.put("notes", notes);
-                if (holidayMap.containsKey(date)) {
+                // Tras salida no mostrar como "guardado" en UI (evita confusión con filas huérfanas; purga en BD al fijar salida)
+                dayInfo.put("saved", afterExit ? false : hasSaved);
+                if (afterExit) {
+                    dayInfo.put("afterExit", true);
+                }
+                if (notes != null && !afterExit) dayInfo.put("notes", notes);
+                if (holidayMap.containsKey(date) && !afterExit) {
                     dayInfo.put("holiday", true);
                     dayInfo.put("holidayName", holidayMap.get(date));
                 }
 
                 days.add(dayInfo);
-                if (type != null) totals.merge(type, 1, Integer::sum);
+                if (!afterExit && type != null) {
+                    totals.merge(type, 1, Integer::sum);
+                }
                 // Acumular solo días guardados para HHTT preciso
-                if (hasSaved && "T".equalsIgnoreCase(savedType))  savedT++;
-                if (hasSaved && "EX".equalsIgnoreCase(savedType)) savedEX++;
+                if (!afterExit && hasSaved && "T".equalsIgnoreCase(savedType))  savedT++;
+                if (!afterExit && hasSaved && "EX".equalsIgnoreCase(savedType)) savedEX++;
             }
 
             row.put("days",    days);
@@ -482,6 +663,7 @@ public class AttendanceService {
     public EmployeeWorkDay saveWorkDay(Long businessId, Long employeeId, LocalDate date, String dayType, String notes) {
         Business biz = requireBusiness(businessId);
         BusinessEmployee emp = requireEmployee(businessId, employeeId);
+        assertDateNotAfterEmploymentEnd(emp, date);
         assertMonthOpenOrThrow(businessId, date);
 
         Optional<EmployeeWorkDay> existing = workDayRepository.findByEmployee_IdAndWorkDate(employeeId, date);
@@ -549,6 +731,7 @@ public class AttendanceService {
         int count = 0;
         for (Map<String, String> entry : dayEntries) {
             LocalDate date = LocalDate.parse(entry.get("date"));
+            assertDateNotAfterEmploymentEnd(emp, date);
             assertMonthOpenOrThrow(businessId, date);
             String type = entry.getOrDefault("dayType", "D");
             String notes = entry.get("notes");
@@ -632,6 +815,8 @@ public class AttendanceService {
         int savedCount = 0;
         int employeesAffected = 0;
         for (BusinessEmployee emp : employees) {
+            List<EmployeeMovement> movsAsc = employeeMovementRepository
+                    .findByBusinessEmployee_IdOrderByEffectiveDateAscIdAsc(emp.getId());
             boolean anySavedForEmp = false;
             String[] seq = prevSeqMap.get(emp.getId());
 
@@ -642,6 +827,14 @@ public class AttendanceService {
             }
 
             int seqLen = (seq != null ? seq.length : 0);
+            Long bidEmp = emp.getBusiness() != null ? emp.getBusiness().getId() : null;
+            LocalDate firstOfMonth = ym.atDay(1);
+            boolean manualModeMonth = bidEmp != null
+                    && scheduleHistoryRepository.findActiveForDate(bidEmp, emp.getId(), firstOfMonth)
+                    .map(h -> isManualScheduleName(h.getWorkSchedule() != null ? h.getWorkSchedule().getName() : null))
+                    .orElseGet(() -> isManualScheduleName(
+                            emp.getWorkSchedule() != null ? emp.getWorkSchedule().getName() : null));
+
             int startIdx = 0;
             if (hasPrevPattern) {
                 // Continuar secuencia desde el día siguiente al último del mes anterior
@@ -660,12 +853,13 @@ public class AttendanceService {
                 //    Antes se copiaba primero el patrón del mes anterior, lo que perpetuaba T/D erróneos
                 //    al cambiar la jornada o al usar 5×2 con fines de semana.
                 String type = null;
-                String auto = getAutoDayType(emp, date);
+                String auto = getAutoDayType(emp, date, movsAsc);
                 if ("T".equalsIgnoreCase(auto) || "D".equalsIgnoreCase(auto)) {
                     type = auto.toUpperCase(Locale.ROOT);
                 }
                 // 2) Solo si no hay definición por jornada, continuar secuencia desde el mes previo (legacy)
-                if (type == null && hasPrevPattern && seqLen > 0) {
+                //    No copiar patrón heredado si la jornada del mes es "No establecido" (todo manual).
+                if (type == null && !manualModeMonth && hasPrevPattern && seqLen > 0) {
                     String cand = seq[(startIdx + (d - 1)) % seqLen];
                     if ("T".equals(cand) || "D".equals(cand)) type = cand;
                 }
@@ -1005,8 +1199,35 @@ public class AttendanceService {
         List<EmployeeWorkDay> days = workDayRepository
                 .findByBusiness_IdAndWorkDateBetweenOrderByEmployeeIdAscWorkDateAsc(businessId, from, to);
 
-        Map<String, Long> counts = days.stream()
-                .collect(Collectors.groupingBy(EmployeeWorkDay::getDayType, Collectors.counting()));
+        Map<String, Long> counts = new LinkedHashMap<>();
+        if (!days.isEmpty()) {
+            java.util.Set<Long> empIds = days.stream()
+                    .map(wd -> wd.getEmployee().getId())
+                    .collect(Collectors.toSet());
+            Map<Long, BusinessEmployee> empById = employeeRepository.findAllById(empIds).stream()
+                    .collect(Collectors.toMap(BusinessEmployee::getId, e -> e, (a, b) -> a));
+            List<Long> needMovementExit = empById.values().stream()
+                    .filter(e -> Boolean.FALSE.equals(e.getActive()) && e.getFechaSalida() == null)
+                    .map(BusinessEmployee::getId)
+                    .distinct()
+                    .collect(Collectors.toList());
+            Map<Long, LocalDate> movementExitByEmployeeId = loadMovementExitDates(needMovementExit);
+            for (EmployeeWorkDay wd : days) {
+                BusinessEmployee e = empById.get(wd.getEmployee().getId());
+                if (e == null) {
+                    continue;
+                }
+                LocalDate end = resolveEmploymentEndDate(e, movementExitByEmployeeId);
+                if (end != null && wd.getWorkDate().isAfter(end)) {
+                    continue;
+                }
+                String dt = wd.getDayType();
+                if (dt == null) {
+                    continue;
+                }
+                counts.merge(dt, 1L, Long::sum);
+            }
+        }
 
         long overtimeCount = overtimeRepository
                 .findByBusiness_IdAndOvertimeDateBetweenOrderByOvertimeDateDesc(businessId, from, to).size();
@@ -1053,16 +1274,33 @@ public class AttendanceService {
         List<EmployeeWorkDay> savedDays = workDayRepository
                 .findWithEmployeeByBusinessIdAndDateBetween(businessId, yStart, yEnd);
 
+        java.util.Set<Long> dbgIds = savedDays.stream().map(wd -> wd.getEmployee().getId()).collect(Collectors.toSet());
+        Map<Long, BusinessEmployee> dbgEmpById = dbgIds.isEmpty() ? Map.of()
+                : employeeRepository.findAllById(dbgIds).stream()
+                .collect(Collectors.toMap(BusinessEmployee::getId, e -> e, (a, b) -> a));
+        List<Long> dbgNeedMov = dbgEmpById.values().stream()
+                .filter(e -> Boolean.FALSE.equals(e.getActive()) && e.getFechaSalida() == null)
+                .map(BusinessEmployee::getId).distinct().collect(Collectors.toList());
+        Map<Long, LocalDate> dbgMovExit = loadMovementExitDates(dbgNeedMov);
+
         List<Map<String, Object>> workDayRows = new ArrayList<>();
         double totalOrdH = 0, totalExH = 0;
         for (EmployeeWorkDay wd : savedDays) {
+            BusinessEmployee e = dbgEmpById.get(wd.getEmployee().getId());
+            if (e == null) {
+                e = wd.getEmployee();
+            }
+            LocalDate end = resolveEmploymentEndDate(e, dbgMovExit);
+            if (end != null && wd.getWorkDate().isAfter(end)) {
+                continue;
+            }
             String dt = wd.getDayType();
-            String shiftName = wd.getEmployee().getWorkShift() != null ? wd.getEmployee().getWorkShift().getName() : null;
+            String shiftName = e.getWorkShift() != null ? e.getWorkShift().getName() : null;
             double daily = shiftName != null ? inferDailyHoursFromShiftName(shiftName) : 8.0;
             Map<String, Object> r = new java.util.LinkedHashMap<>();
             r.put("date",      wd.getWorkDate().toString());
             r.put("dayType",   dt);
-            r.put("employee",  wd.getEmployee().getFullName());
+            r.put("employee",  e.getFullName());
             r.put("shift",     shiftName);
             r.put("dailyHours", daily);
             workDayRows.add(r);
@@ -1599,24 +1837,14 @@ public class AttendanceService {
         }
         assertNoApprovedMonthInDateRange(businessId, scanFrom, scanTo);
 
-        // Validar solapamiento: dos intervalos [a,b] y [c,d] se cruzan ssi a<=d y c<=b (fin null = abierto).
+        // Solapamiento: [a,b] y [c,d] con b o d abiertos. Antes de insertar, ajustar periodos existentes
+        // para que el nuevo tramo sea el único vigente desde startDate (incl. mismo día que 5×2 → "No establecido").
         LocalDate effectiveEnd = endDate != null ? endDate : LocalDate.of(9999, 12, 31);
         List<EmployeeWorkScheduleHistory> overlaps = scheduleHistoryRepository
                 .findOverlappingNew(businessId, employeeId, startDate, effectiveEnd);
         if (!overlaps.isEmpty()) {
-            // Auto-cerrar periodos vigentes (fin null) que empiezan ANTES del inicio del nuevo periodo:
-            // el nuevo periodo sustituye a partir de startDate.
-            overlaps.stream()
-                .filter(h -> h.getEndDate() == null && h.getStartDate().isBefore(startDate))
-                .forEach(h -> {
-                    LocalDate closeAt = startDate.minusDays(1);
-                    if (!closeAt.isBefore(h.getStartDate())) {
-                        h.setEndDate(closeAt);
-                        scheduleHistoryRepository.save(h);
-                    }
-                });
-            // Si el nuevo periodo empieza antes o el mismo día que un vigente, no se auto-cierra:
-            // seguiría habiendo solape real hasta que el usuario acote fechas o edite el vigente.
+            resolveScheduleHistoryOverlapsForInsert(overlaps, startDate);
+            scheduleHistoryRepository.flush();
             List<EmployeeWorkScheduleHistory> stillOverlapping = scheduleHistoryRepository
                     .findOverlappingNew(businessId, employeeId, startDate, effectiveEnd);
             if (!stillOverlapping.isEmpty()) {

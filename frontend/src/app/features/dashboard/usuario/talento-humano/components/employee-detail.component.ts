@@ -81,6 +81,16 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   employeeDocsLoading: { [beId: number]: boolean } = {};
   showHistory = false;
 
+  /** Salidas / reingresos desde employee_movements (auditoría). */
+  laborMovements: Array<{
+    id: number;
+    movementType: string;
+    effectiveDate: string;
+    reason?: string | null;
+    createdAt?: string | null;
+  }> = [];
+  loadingLaborMovements = false;
+
   // Expose Math to template (for Math.min / Math.max in HTML)
   Math = Math;
 
@@ -108,6 +118,31 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     if (typeof anyEmp?.id === 'number') return anyEmp.id as number; // BusinessEmployee id
     if (typeof anyEmp?.businessId === 'number') return anyEmp.businessId as number; // fallback
     return -1;
+  }
+
+  movementLabel(type: string | undefined | null): string {
+    if (type === 'DEACTIVATION') return 'Salida / desvinculación';
+    if (type === 'REACTIVATION') return 'Reingreso';
+    return type || '—';
+  }
+
+  loadLaborMovements(): void {
+    const id = (this.employee as any)?.id as number | undefined;
+    if (!id) {
+      this.laborMovements = [];
+      return;
+    }
+    this.loadingLaborMovements = true;
+    this.employeeService.getEmployeeMovements(id).subscribe({
+      next: (rows) => {
+        this.laborMovements = rows || [];
+        this.loadingLaborMovements = false;
+      },
+      error: () => {
+        this.laborMovements = [];
+        this.loadingLaborMovements = false;
+      }
+    });
   }
 
   onHistoryToggle(): void {
@@ -540,6 +575,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
             this.businessId = (this.employee as any).businessId as number;
           }
           this.loading = false;
+          this.loadLaborMovements();
           if (!this.employee) {
             this.tryNavigateToFirstEmployee();
           }
@@ -547,6 +583,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error cargando empleado por cédula y RUC:', error);
           this.employee = null;
+          this.laborMovements = [];
           this.loading = false;
           this.tryNavigateToFirstEmployee();
         }
@@ -562,10 +599,12 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
             this.businessId = (this.employee as any).businessId as number; // fallback
           }
           this.loading = false;
+          this.loadLaborMovements();
         },
         error: (error) => {
           console.error('Error cargando empleado por cédula:', error);
           this.employee = null;
+          this.laborMovements = [];
           this.loading = false;
         }
       });

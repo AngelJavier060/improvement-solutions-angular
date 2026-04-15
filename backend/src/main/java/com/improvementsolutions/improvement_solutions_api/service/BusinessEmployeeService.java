@@ -3,6 +3,8 @@ package com.improvementsolutions.improvement_solutions_api.service;
 import com.improvementsolutions.dto.CreateBusinessEmployeeDto;
 import com.improvementsolutions.dto.UpdateBusinessEmployeeDto;
 import com.improvementsolutions.dto.BusinessEmployeeResponseDto;
+import com.improvementsolutions.dto.EmployeeMovementResponseDto;
+import com.improvementsolutions.dto.CompanyEmployeeMovementRowDto;
 import com.improvementsolutions.dto.EmployeeStatsDto;
 import com.improvementsolutions.dto.AgeRangeStatsDto;
 import com.improvementsolutions.dto.AgeGenderRangeDto;
@@ -23,6 +25,7 @@ import com.improvementsolutions.repository.WorkShiftRepository;
 import com.improvementsolutions.repository.EmployeeWorkScheduleHistoryRepository;
 import com.improvementsolutions.model.EmployeeWorkScheduleHistory;
 import com.improvementsolutions.repository.EmployeeMovementRepository;
+import com.improvementsolutions.repository.EmployeeWorkDayRepository;
 import com.improvementsolutions.repository.BusinessEmployeeDocumentRepository;
 import com.improvementsolutions.repository.BusinessEmployeeCourseRepository;
 import com.improvementsolutions.repository.BusinessEmployeeContractRepository;
@@ -49,6 +52,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -92,6 +96,7 @@ public class BusinessEmployeeService {
     private final BusinessEmployeeCourseRepository businessEmployeeCourseRepository;
     private final BusinessEmployeeContractRepository businessEmployeeContractRepository;
     private final BusinessEmployeeCardRepository businessEmployeeCardRepository;
+    private final EmployeeWorkDayRepository employeeWorkDayRepository;
     
     // Método helper para convertir RUC a Business ID
     private Long getBusinessIdFromRuc(String ruc) {
@@ -607,7 +612,10 @@ public class BusinessEmployeeService {
         
         BusinessEmployee savedEmployee = businessEmployeeRepository.save(existingEmployee);
         log.info("Empleado actualizado exitosamente con ID: {}", savedEmployee.getId());
-        
+        if (savedEmployee.getFechaSalida() != null) {
+            purgeWorkDaysAfterExitDate(savedEmployee.getId(), savedEmployee.getFechaSalida());
+        }
+
         return convertToResponseDto(savedEmployee);
     }
     
@@ -666,14 +674,27 @@ public class BusinessEmployeeService {
     }
     
     @Transactional
-    public BusinessEmployeeResponseDto setEmployeeActiveStatus(Long id, boolean active) {
+    public BusinessEmployeeResponseDto setEmployeeActiveStatus(Long id, boolean active, LocalDate exitDate) {
         log.info("Actualizando estado activo del empleado con ID: {} a {}", id, active);
         BusinessEmployee existingEmployee = businessEmployeeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Empleado no encontrado con ID: " + id));
         existingEmployee.setActive(active);
         existingEmployee.setStatus(active ? "ACTIVO" : "INACTIVO");
+        if (active) {
+            existingEmployee.setFechaSalida(null);
+        } else {
+            if (exitDate != null) {
+                existingEmployee.setFechaSalida(exitDate);
+            } else if (existingEmployee.getFechaSalida() == null) {
+                existingEmployee.setFechaSalida(java.time.LocalDate.now());
+            }
+        }
         existingEmployee.setUpdatedAt(LocalDateTime.now());
         BusinessEmployee saved = businessEmployeeRepository.save(existingEmployee);
+        if (Boolean.FALSE.equals(saved.getActive()) && saved.getFechaSalida() != null) {
+            closeOpenScheduleHistoryAtExit(saved, saved.getFechaSalida());
+            purgeWorkDaysAfterExitDate(saved.getId(), saved.getFechaSalida());
+        }
         return convertToResponseDto(saved);
     }
 
@@ -683,6 +704,8 @@ public class BusinessEmployeeService {
                 .orElseThrow(() -> new IllegalArgumentException("Empleado no encontrado con ID: " + id));
         employee.setActive(false);
         employee.setStatus("INACTIVO");
+        LocalDate salida = effectiveDate != null ? effectiveDate : LocalDate.now();
+        employee.setFechaSalida(salida);
         employee.setUpdatedAt(LocalDateTime.now());
         BusinessEmployee saved = businessEmployeeRepository.save(employee);
 
@@ -695,6 +718,9 @@ public class BusinessEmployeeService {
         mv.setEffectiveDate(effectiveDate != null ? effectiveDate : LocalDate.now());
         employeeMovementRepository.save(mv);
 
+        closeOpenScheduleHistoryAtExit(saved, salida);
+        purgeWorkDaysAfterExitDate(saved.getId(), salida);
+
         return convertToResponseDto(saved);
     }
 
@@ -702,11 +728,12 @@ public class BusinessEmployeeService {
     public BusinessEmployeeResponseDto reactivateEmployee(Long id, LocalDate effectiveDate) {
         BusinessEmployee employee = businessEmployeeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Empleado no encontrado con ID: " + id));
+        LocalDate rehire = effectiveDate != null ? effectiveDate : LocalDate.now();
         employee.setActive(true);
         employee.setStatus("ACTIVO");
-        if (effectiveDate != null) {
-            employee.setFechaIngreso(effectiveDate);
-        }
+        employee.setFechaSalida(null);
+        employee.setFechaIngreso(rehire);
+        employee.setWorkScheduleStartDate(rehire);
         employee.setUpdatedAt(LocalDateTime.now());
         BusinessEmployee saved = businessEmployeeRepository.save(employee);
 
@@ -715,10 +742,56 @@ public class BusinessEmployeeService {
         mv.setBusinessEmployee(saved);
         mv.setBusiness(saved.getBusiness());
         mv.setType(MovementType.REACTIVATION);
-        mv.setEffectiveDate(effectiveDate != null ? effectiveDate : LocalDate.now());
+        mv.setEffectiveDate(rehire);
         employeeMovementRepository.save(mv);
 
+        createRehireScheduleHistory(saved, rehire);
+
         return convertToResponseDto(saved);
+    }
+
+    /**
+     * Todos los movimientos laborales de la empresa (salidas/reingresos), más recientes primero.
+     */
+    @Transactional(readOnly = true)
+    public List<CompanyEmployeeMovementRowDto> getCompanyEmployeeMovementsByRuc(String ruc) {
+        Business business = businessRepository.findByRuc(ruc)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada con RUC: " + ruc));
+        return employeeMovementRepository.findAllByBusinessIdOrderByEffectiveDateDesc(business.getId()).stream()
+                .map(m -> {
+                    BusinessEmployee e = m.getBusinessEmployee();
+                    CompanyEmployeeMovementRowDto d = new CompanyEmployeeMovementRowDto();
+                    d.setId(m.getId());
+                    d.setEmployeeId(e != null ? e.getId() : null);
+                    d.setEmployeeFullName(e != null ? e.getFullName() : null);
+                    d.setCedula(e != null ? e.getCedula() : null);
+                    d.setMovementType(m.getType() != null ? m.getType().name() : null);
+                    d.setEffectiveDate(m.getEffectiveDate());
+                    d.setReason(m.getReason());
+                    d.setCreatedAt(m.getCreatedAt());
+                    return d;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Historial de desvinculaciones y reingresos (tabla {@code employee_movements}), más reciente primero.
+     */
+    @Transactional(readOnly = true)
+    public List<EmployeeMovementResponseDto> getEmployeeMovements(Long employeeId) {
+        BusinessEmployee emp = businessEmployeeRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Empleado no encontrado con ID: " + employeeId));
+        return employeeMovementRepository.findByBusinessEmployeeOrderByEffectiveDateDescIdDesc(emp).stream()
+                .map(m -> {
+                    EmployeeMovementResponseDto d = new EmployeeMovementResponseDto();
+                    d.setId(m.getId());
+                    d.setMovementType(m.getType() != null ? m.getType().name() : null);
+                    d.setEffectiveDate(m.getEffectiveDate());
+                    d.setReason(m.getReason());
+                    d.setCreatedAt(m.getCreatedAt());
+                    return d;
+                })
+                .collect(Collectors.toList());
     }
 
     private BusinessEmployeeResponseDto convertToResponseDto(BusinessEmployee employee) {
@@ -739,6 +812,15 @@ public class BusinessEmployeeService {
         dto.setContactPhone(employee.getContactPhone());
         dto.setContactKinship(employee.getContactKinship());
         dto.setFechaIngreso(employee.getFechaIngreso());
+        dto.setFechaSalida(employee.getFechaSalida());
+        dto.setMotivoSalida(null);
+        if (Boolean.FALSE.equals(employee.getActive())) {
+            List<EmployeeMovement> lastOut = employeeMovementRepository.findDeactivationsForEmployeeNewestFirst(
+                    employee.getId(), MovementType.DEACTIVATION, PageRequest.of(0, 1));
+            if (lastOut != null && !lastOut.isEmpty()) {
+                dto.setMotivoSalida(lastOut.get(0).getReason());
+            }
+        }
         // Mantener RUC de empresa en codigoEmpresa
         dto.setCodigoEmpresa(employee.getBusiness() != null ? employee.getBusiness().getRuc() : null);
         // Exponer código del trabajador almacenado en la entidad (misma columna nombre legado)
@@ -905,6 +987,11 @@ public class BusinessEmployeeService {
         if (updateDto.getContactPhone() != null) employee.setContactPhone(updateDto.getContactPhone());
         if (updateDto.getContactKinship() != null) employee.setContactKinship(updateDto.getContactKinship());
         if (updateDto.getFechaIngreso() != null) employee.setFechaIngreso(updateDto.getFechaIngreso());
+        if (Boolean.TRUE.equals(updateDto.getActive())) {
+            employee.setFechaSalida(null);
+        } else if (updateDto.getFechaSalida() != null) {
+            employee.setFechaSalida(updateDto.getFechaSalida());
+        }
         if (updateDto.getCodigoEmpresa() != null) employee.setCodigoEmpresa(updateDto.getCodigoEmpresa());
         if (updateDto.getTipoSangre() != null) employee.setTipoSangre(updateDto.getTipoSangre());
         if (updateDto.getSalario() != null) employee.setSalario(updateDto.getSalario());
@@ -1070,6 +1157,79 @@ public class BusinessEmployeeService {
             } catch (NumberFormatException ignore) {}
         }
         return null;
+    }
+
+    /** Cierra en la fecha de salida los periodos de jornada aún abiertos para que no proyecten T/D tras la baja. */
+    private void closeOpenScheduleHistoryAtExit(BusinessEmployee emp, LocalDate exitDate) {
+        if (emp == null || exitDate == null || emp.getBusiness() == null) {
+            return;
+        }
+        Long businessId = emp.getBusiness().getId();
+        Long employeeId = emp.getId();
+        List<EmployeeWorkScheduleHistory> rows =
+                scheduleHistoryRepository.findByBusiness_IdAndEmployee_IdOrderByStartDateDesc(businessId, employeeId);
+        for (EmployeeWorkScheduleHistory h : rows) {
+            if (h.getStartDate().isAfter(exitDate)) {
+                continue;
+            }
+            if (h.getEndDate() != null && h.getEndDate().isBefore(exitDate)) {
+                continue;
+            }
+            h.setEndDate(exitDate);
+            scheduleHistoryRepository.save(h);
+        }
+    }
+
+    /**
+     * Tras reingreso: nuevo periodo en historial con ciclo anclado a la fecha de recontratación
+     * (evita continuar el patrón T/D del periodo anterior).
+     */
+    private void createRehireScheduleHistory(BusinessEmployee emp, LocalDate rehireDate) {
+        if (emp == null || rehireDate == null || emp.getBusiness() == null || emp.getWorkSchedule() == null) {
+            return;
+        }
+        Long businessId = emp.getBusiness().getId();
+        Long employeeId = emp.getId();
+        WorkSchedule ws = emp.getWorkSchedule();
+        List<EmployeeWorkScheduleHistory> overlapping =
+                scheduleHistoryRepository.findOverlappingNew(businessId, employeeId, rehireDate, rehireDate);
+        boolean rowAlreadyAtRehire = false;
+        for (EmployeeWorkScheduleHistory h : overlapping) {
+            if (h.getStartDate().isBefore(rehireDate)) {
+                h.setEndDate(rehireDate.minusDays(1));
+                scheduleHistoryRepository.save(h);
+            } else if (h.getStartDate().equals(rehireDate)) {
+                rowAlreadyAtRehire = true;
+            }
+        }
+        Double dailyHours = null;
+        if (emp.getWorkShift() != null) {
+            dailyHours = parseDailyHoursFromShiftName(emp.getWorkShift().getName());
+        }
+        if (rowAlreadyAtRehire) {
+            for (EmployeeWorkScheduleHistory h : overlapping) {
+                if (h.getStartDate().equals(rehireDate)) {
+                    h.setWorkSchedule(ws);
+                    h.setCycleStartDate(rehireDate);
+                    if (dailyHours != null) {
+                        h.setDailyHours(dailyHours);
+                    }
+                    h.setNotes("Reingreso / recontratación.");
+                    scheduleHistoryRepository.save(h);
+                }
+            }
+            return;
+        }
+        EmployeeWorkScheduleHistory hist = new EmployeeWorkScheduleHistory();
+        hist.setBusiness(emp.getBusiness());
+        hist.setEmployee(emp);
+        hist.setWorkSchedule(ws);
+        hist.setStartDate(rehireDate);
+        hist.setCycleStartDate(rehireDate);
+        hist.setEndDate(null);
+        hist.setDailyHours(dailyHours);
+        hist.setNotes("Reingreso / recontratación.");
+        scheduleHistoryRepository.save(hist);
     }
     
     /**
@@ -1336,5 +1496,16 @@ public class BusinessEmployeeService {
         employee.setUpdatedAt(LocalDateTime.now());
         BusinessEmployee saved = businessEmployeeRepository.save(employee);
         return convertToResponseDto(saved);
+    }
+
+    /** Quita de la planilla cualquier día posterior a la fecha de salida (proyección o datos inconsistentes). */
+    private void purgeWorkDaysAfterExitDate(Long employeeId, LocalDate exitDate) {
+        if (employeeId == null || exitDate == null) {
+            return;
+        }
+        int removed = employeeWorkDayRepository.deleteByEmployee_IdAndWorkDateAfter(employeeId, exitDate);
+        if (removed > 0) {
+            log.info("Planilla: eliminados {} días posteriores a {} (empleado {})", removed, exitDate, employeeId);
+        }
     }
 }

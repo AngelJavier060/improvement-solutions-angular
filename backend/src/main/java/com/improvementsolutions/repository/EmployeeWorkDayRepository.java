@@ -51,4 +51,13 @@ public interface EmployeeWorkDayRepository extends JpaRepository<EmployeeWorkDay
     int deleteTdByEmployeeAndDateRange(@Param("employeeId") Long employeeId,
                                        @Param("from") LocalDate from,
                                        @Param("to") LocalDate to);
+
+    /**
+     * Tras definir fecha de salida: elimina días de planilla posteriores (proyección o registros erróneos).
+     * {@code clearAutomatically=false}: si se limpia el contexto, el {@code BusinessEmployee} en memoria queda
+     * desasociado y falla el acceso lazy a {@code Business} al armar el DTO de respuesta.
+     */
+    @Modifying(clearAutomatically = false, flushAutomatically = true)
+    @Query("DELETE FROM EmployeeWorkDay wd WHERE wd.employee.id = :employeeId AND wd.workDate > :exitDate")
+    int deleteByEmployee_IdAndWorkDateAfter(@Param("employeeId") Long employeeId, @Param("exitDate") LocalDate exitDate);
 }

@@ -495,6 +495,32 @@
                 <div>{{ employee.codigoIess || '-' }}</div>
               </div>
             </div>
+
+            <h6 class="profile-section-title mt-4">Historial laboral (salidas y reingresos)</h6>
+            <p class="text-muted small mb-3">
+              Las desvinculaciones y reingresos quedan registrados en el sistema y no se eliminan al reactivar.
+              La fecha de ingreso actual corresponde al último reingreso; el motivo de la última salida solo aparece en la lista de inactivos mientras el colaborador sigue dado de baja.
+            </p>
+            <div *ngIf="loadingLaborMovements" class="text-muted small py-2">Cargando historial…</div>
+            <div *ngIf="!loadingLaborMovements && laborMovements.length === 0" class="text-muted small">No hay movimientos registrados.</div>
+            <div *ngIf="!loadingLaborMovements && laborMovements.length > 0" class="table-responsive">
+              <table class="table table-sm table-bordered align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Fecha efectiva</th>
+                    <th>Tipo</th>
+                    <th>Motivo / notas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let m of laborMovements">
+                    <td>{{ m.effectiveDate || '—' }}</td>
+                    <td><span class="badge" [ngClass]="m.movementType === 'DEACTIVATION' ? 'bg-secondary' : 'bg-success'">{{ movementLabel(m.movementType) }}</span></td>
+                    <td class="text-break">{{ m.reason || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </ng-container>
           <ng-template #profilePlaceholder>
             <div class="profile-skeleton">

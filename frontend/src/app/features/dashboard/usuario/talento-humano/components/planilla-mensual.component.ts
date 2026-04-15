@@ -247,9 +247,32 @@ export class PlanillaMensualComponent implements OnInit {
   private loadAvailableSchedules(): void {
     if (!this.businessId) return;
     this.configService.getWorkSchedulesByCompany(this.businessId).subscribe({
-      next: list => { this.availableSchedules = list; },
+      next: list => {
+        const raw = Array.isArray(list) ? list : [];
+        this.availableSchedules = [...raw].sort((a, b) => {
+          const ma = this.isManualScheduleName(a?.name) ? 0 : 1;
+          const mb = this.isManualScheduleName(b?.name) ? 0 : 1;
+          if (ma !== mb) return ma - mb;
+          return (a.name || '').localeCompare(b.name || '', 'es');
+        });
+      },
       error: () => {}
     });
+  }
+
+  /** Catálogo "No establecido": sin patrón T/D automático en planilla. */
+  isManualScheduleName(name: string | null | undefined): boolean {
+    if (!name) return false;
+    const n = name.trim().toLowerCase();
+    return n === 'no establecido' || n.startsWith('no establecido ');
+  }
+
+  /** Formulario nuevo periodo: jornada elegida es manual. */
+  isHistoryDraftManual(): boolean {
+    const id = Number(this.historyDraft.workScheduleId);
+    if (!id) return false;
+    const s = this.availableSchedules.find(x => x.id === id);
+    return this.isManualScheduleName(s?.name);
   }
 
   private extractParams(): void {
@@ -852,7 +875,7 @@ export class PlanillaMensualComponent implements OnInit {
     });
   }
 
-  clearDay(row: EmployeeSheetRow, dayIdx: number): void {
+  clearDay(row: EmployeeSheetRow, dayIdx: number, options?: { keepPickerOpen?: boolean }): void {
     if (!this.businessId) return;
     const date = this.monthDates[dayIdx];
     this.clearingDay = true;
@@ -870,13 +893,112 @@ export class PlanillaMensualComponent implements OnInit {
           }
         }
         this.clearingDay = false;
-        this.editingCell = null;
+        if (!options?.keepPickerOpen) {
+          this.editingCell = null;
+        }
       },
       error: err => {
         console.error('Error borrando día:', err);
         this.clearingDay = false;
       }
     });
+  }
+
+  /** Fila actual del picker (manual T/D). */
+  private getRowForEditingPicker(): EmployeeSheetRow | null {
+    if (!this.editingCell) return null;
+    const id = this.editingCell.empId;
+    return this.filteredSheet.find(r => r.employeeId === id) || this.sheet.find(r => r.employeeId === id) || null;
+  }
+
+  /** Avanza o retrocede al día editable más cercano (misma fila). */
+  movePickerToAdjacentDay(delta: number): void {
+    if (!this.editingCell || delta === 0) return;
+    const row = this.getRowForEditingPicker();
+    if (!row) {
+      this.cancelEdit();
+      return;
+    }
+    const max = this.monthDates.length - 1;
+    let idx = this.editingCell.dayIdx + delta;
+    const step = delta > 0 ? 1 : -1;
+    while (idx >= 0 && idx <= max) {
+      const entry = row.days[idx];
+      if (entry?.afterExit) {
+        idx += step;
+        continue;
+      }
+      if (this.isLocked(row, idx)) {
+        idx += step;
+        continue;
+      }
+      this.editingCell = { empId: row.employeeId, dayIdx: idx };
+      return;
+    }
+    this.cancelEdit();
+  }
+
+  /** Atajos con el picker manual abierto: T/D, Esc, Supr, flechas, Tab, P (siguiente día). */
+  @HostListener('document:keydown', ['$event'])
+  onPickerKeydown(event: KeyboardEvent): void {
+    if (!this.editingCell) return;
+    const target = event.target as HTMLElement | null;
+    if (target) {
+      const tag = target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) {
+        return;
+      }
+    }
+    const row = this.getRowForEditingPicker();
+    if (!row) {
+      this.cancelEdit();
+      return;
+    }
+    const dayIdx = this.editingCell.dayIdx;
+    const key = event.key;
+
+    if (key === 't' || key === 'T') {
+      event.preventDefault();
+      this.saveDay(row, dayIdx, 'T');
+      return;
+    }
+    if (key === 'd' || key === 'D') {
+      event.preventDefault();
+      this.saveDay(row, dayIdx, 'D');
+      return;
+    }
+    if (key === 'Escape') {
+      event.preventDefault();
+      this.cancelEdit();
+      return;
+    }
+    if (key === 'Delete' || key === 'Backspace') {
+      event.preventDefault();
+      if (!this.clearingDay) {
+        this.clearDay(row, dayIdx, { keepPickerOpen: true });
+      }
+      return;
+    }
+    if (key === 'ArrowLeft') {
+      event.preventDefault();
+      this.movePickerToAdjacentDay(-1);
+      return;
+    }
+    if (key === 'ArrowRight') {
+      event.preventDefault();
+      this.movePickerToAdjacentDay(1);
+      return;
+    }
+    if (key === 'Tab') {
+      event.preventDefault();
+      this.movePickerToAdjacentDay(event.shiftKey ? -1 : 1);
+      return;
+    }
+    if (key === 'p' || key === 'P') {
+      event.preventDefault();
+      this.movePickerToAdjacentDay(1);
+      return;
+    }
   }
 
   startEdit(empId: number, dayIdx: number, event: Event): void {
@@ -895,6 +1017,10 @@ export class PlanillaMensualComponent implements OnInit {
       return;
     }
     const row = this.filteredSheet.find(r => r.employeeId === empId) || this.sheet.find(r => r.employeeId === empId);
+    const entryPre = row?.days[dayIdx];
+    if (entryPre?.afterExit) {
+      return;
+    }
     if (row && this.isLocked(row, dayIdx)) {
       // Si es día de accidente, mostrar popover de accidente
       if (this.isAccidentDay(row, dayIdx)) {
@@ -925,6 +1051,7 @@ export class PlanillaMensualComponent implements OnInit {
   isLocked(row: EmployeeSheetRow, dayIdx: number): boolean {
     const entry = row.days[dayIdx];
     if (!entry) return false;
+    if (entry.afterExit) return true;
     // Bloquear días de accidente de seguridad
     if (this.isAccidentDay(row, dayIdx)) return true;
     // Bloquear días de Vacaciones (V) y Horas Extra con motivo HE

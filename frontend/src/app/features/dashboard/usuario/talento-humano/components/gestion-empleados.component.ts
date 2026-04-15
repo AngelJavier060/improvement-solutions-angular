@@ -1,4 +1,3 @@
-// ...existing code...
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EmployeeService } from '../services/employee.service';
@@ -53,6 +52,20 @@ export class GestionEmpleadosComponent implements OnInit {
   // Desvinculación / Reingreso
   showDeactivateModal = false;
   showReactivateModal = false;
+  /** Modal historial laboral (empresa) */
+  showLaborHistoryModal = false;
+  companyLaborMovements: Array<{
+    id: number;
+    employeeId: number;
+    employeeFullName: string | null;
+    cedula: string | null;
+    movementType: string;
+    effectiveDate: string;
+    reason?: string | null;
+    createdAt?: string | null;
+  }> = [];
+  loadingLaborHistory = false;
+  laborHistoryError: string | null = null;
   movementTarget: EmployeeResponse | null = null;
   movementReason: string = '';
   movementDate: string = '';
@@ -300,12 +313,17 @@ export class GestionEmpleadosComponent implements OnInit {
         const fullName = `${nombres} ${apellidos}`.trim() || employee.name || '';
         const cedula = (employee.cedula || '').toLowerCase();
         const email = (employee.email || '').toLowerCase();
+        const motivo = (employee.motivoSalida || '').toLowerCase();
+        const fechaSal = (employee.fechaSalida || '').toLowerCase();
         const position = this.getEmployeePosition(employee).toLowerCase();
 
-        return fullName.toLowerCase().includes(term) ||
-                cedula.includes(term) ||
-                email.includes(term) ||
-                position.includes(term);
+        const matchBase = fullName.toLowerCase().includes(term) ||
+            cedula.includes(term) ||
+            position.includes(term);
+        const matchEmail = this.filterStatus !== 'inactive' && email.includes(term);
+        const matchSalida = this.filterStatus === 'inactive' &&
+            (motivo.includes(term) || fechaSal.includes(term));
+        return matchBase || matchEmail || matchSalida;
       });
     }
 
@@ -418,6 +436,39 @@ export class GestionEmpleadosComponent implements OnInit {
   setFilterStatus(status: 'active' | 'inactive' | 'all'): void {
     this.filterStatus = status;
     this.filterEmployees();
+  }
+
+  movementTypeLabel(type: string | undefined | null): string {
+    if (type === 'DEACTIVATION') return 'Salida / desvinculación';
+    if (type === 'REACTIVATION') return 'Reingreso';
+    return type || '—';
+  }
+
+  openLaborHistoryModal(): void {
+    if (!this.businessRuc || !this.businessRuc.trim()) {
+      this.showToast('No hay empresa seleccionada para el historial', 'error');
+      return;
+    }
+    this.showLaborHistoryModal = true;
+    this.laborHistoryError = null;
+    this.loadingLaborHistory = true;
+    this.companyLaborMovements = [];
+    this.employeeService.getCompanyEmployeeMovements(this.businessRuc).subscribe({
+      next: (rows) => {
+        this.companyLaborMovements = rows || [];
+        this.loadingLaborHistory = false;
+      },
+      error: () => {
+        this.companyLaborMovements = [];
+        this.loadingLaborHistory = false;
+        this.laborHistoryError = 'No se pudo cargar el historial. Intente de nuevo.';
+      }
+    });
+  }
+
+  closeLaborHistoryModal(): void {
+    this.showLaborHistoryModal = false;
+    this.laborHistoryError = null;
   }
 
   // Método para obtener el nombre completo
@@ -706,6 +757,20 @@ export class GestionEmpleadosComponent implements OnInit {
 
   getStatusClassFor(emp: EmployeeResponse): string {
     return this.isActive(emp) ? 'badge-success' : 'badge-secondary';
+  }
+
+  /** Muestra fecha de salida (yyyy-MM-dd del API) como dd/MM/yyyy */
+  formatFechaSalida(emp: EmployeeResponse): string {
+    const raw = emp?.fechaSalida;
+    if (!raw) {
+      return '—';
+    }
+    const d = String(raw).split('T')[0];
+    const parts = d.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return d;
   }
 
   toggleActive(employee: EmployeeResponse): void {

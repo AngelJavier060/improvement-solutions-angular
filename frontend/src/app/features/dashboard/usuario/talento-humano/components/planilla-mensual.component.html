@@ -273,7 +273,10 @@
                 [class.pm-row-selected]="selectedRow?.employeeId === row.employeeId"
                 (click)="selectRow(row)">
               <td class="pm-td-name">
-                <div class="pm-emp-name">{{ row.fullName }}</div>
+                <div class="pm-emp-name">
+                  {{ row.fullName }}
+                  <span class="pm-badge-inactive" *ngIf="row.active === false" title="Colaborador inactivo (histórico)">Inactivo</span>
+                </div>
                 <div class="pm-emp-cargo">{{ row.position || 'Sin cargo' }}</div>
               </td>
               <td class="pm-td-day"
@@ -282,30 +285,39 @@
                 <!-- Picker -->
                 <div class="pm-picker"
                      *ngIf="isEditing(row.employeeId, i)"
-                     (click)="$event.stopPropagation()">
+                     (click)="$event.stopPropagation()"
+                     role="dialog"
+                     aria-label="Registro manual del día">
                   <!-- Solo T y D desde planilla; resto desde formularios -->
                   <button *ngFor="let k of editableDayTypeKeys"
+                          type="button"
                           class="pm-picker-btn {{ dayTypes[k].cls }}"
-                          [title]="dayTypes[k].label"
+                          [title]="k === 'T' ? (dayTypes[k].label + ' — tecla T') : (dayTypes[k].label + ' — tecla D')"
                           (click)="saveDay(row, i, k)">
                     {{ k }}
                   </button>
                   <!-- Borrar registro -->
-                  <button class="pm-picker-btn pm-picker-btn--clear"
-                          title="Borrar día"
+                  <button type="button"
+                          class="pm-picker-btn pm-picker-btn--clear"
+                          title="Borrar día — Supr o Retroceso"
                           [disabled]="clearingDay"
                           (click)="clearDay(row, i)">
                     <span class="material-symbols-outlined">delete</span>
                   </button>
                   <!-- Cerrar picker -->
-                  <button class="pm-picker-btn pm-picker-btn--close"
-                          title="Cerrar (Esc)"
+                  <button type="button"
+                          class="pm-picker-btn pm-picker-btn--close"
+                          title="Cerrar — Esc"
                           (click)="cancelEdit(); $event.stopPropagation()">
                     <span class="material-symbols-outlined">close</span>
                   </button>
+                  <div class="pm-picker-hint">
+                    <kbd>T</kbd>/<kbd>D</kbd> guardar · <kbd>←</kbd><kbd>→</kbd> o <kbd>P</kbd> día · <kbd>Tab</kbd> · <kbd>Supr</kbd> · <kbd>Esc</kbd>
+                  </div>
                 </div>
                 <!-- Celda -->
                 <div class="pm-day-cell {{ getDayClass(entry.dayType) }}"
+                     [class.pm-day-after-exit]="entry.afterExit"
                      [class.pm-day-accident]="isAccidentDay(row, i)"
                      [title]="(isAccidentDay(row, i) ? 'ACCIDENTE — Clic para ver detalle ' : '') + (entry.holiday ? (entry.holidayName + ' — ') : '') + (entry.dayType ? ((dayTypes[entry.dayType] ? dayTypes[entry.dayType].label : entry.dayType) || entry.dayType) : '') + (entry.notes ? (' — ' + entry.notes) : '')"
                      (click)="startEdit(row.employeeId, i, $event)">
@@ -419,6 +431,10 @@
             <span class="pm-sched-badge" *ngIf="selectedRow.workScheduleName">
               Activa: {{ selectedRow.workScheduleName }}
             </span>
+            <span class="pm-sched-badge pm-sched-badge--manual" *ngIf="isManualScheduleName(selectedRow.workScheduleName)"
+                  title="No se sugiere T/D automático; use la planilla para registrar días.">
+              No establecido
+            </span>
             <span class="pm-sched-badge pm-sched-badge--shift" *ngIf="selectedRow.workShiftName">
               Horario: {{ selectedRow.workShiftName }}
             </span>
@@ -442,6 +458,11 @@
           <div class="pm-field">
             <label>INICIO DE JORNADA (DIRECTO)</label>
             <input type="date" [(ngModel)]="scheduleStartDraft" />
+            <div class="pm-field-hint pm-field-hint--block">
+              Primera fecha desde la que aplican las reglas de la jornada en la planilla: los días <strong>anteriores</strong> quedan en blanco
+              (salvo lo ya guardado). Debe alinearse con el <strong>inicio de vigencia</strong> del periodo en el historial o actualícelo al registrar una nueva jornada.
+              Con <strong>No establecido</strong> no hay sugerencia automática de T/D: el registro es manual desde esa fecha.
+            </div>
           </div>
           <div class="pm-field-actions">
             <button class="pm-btn pm-btn--primary pm-btn--sm"
@@ -467,6 +488,14 @@
                 <option value="">— Seleccionar —</option>
                 <option *ngFor="let s of availableSchedules" [value]="s.id">{{ s.name }}</option>
               </select>
+              <div class="pm-field-hint" *ngIf="availableSchedules.length === 0">
+                No hay jornadas vinculadas a esta empresa. Tras actualizar el sistema debería existir la opción <strong>No establecido</strong> para registro manual;
+                si no aparece, ejecute migraciones de base de datos o cree jornadas en configuración.
+              </div>
+              <div class="pm-field-hint pm-field-hint--manual" *ngIf="isHistoryDraftManual()">
+                <strong>No establecido:</strong> la planilla no calculará T/D automáticamente; ingrese trabajos y descansos en cada celda.
+                Cuando la empresa defina una jornada con patrón (p. ej. 5x2), registre un <strong>nuevo periodo</strong> con esa jornada y las fechas de vigencia; puede usar <strong>Borrar T/D del mes y recalcular</strong> si necesita alinear días con el nuevo patrón.
+              </div>
             </div>
             <div class="pm-field">
               <label>INICIO VIGENCIA *</label>
@@ -496,7 +525,8 @@
           </div>
           <div class="pm-form-error" *ngIf="historyFormError">{{ historyFormError }}</div>
           <div class="pm-form-hint">
-            <strong>Inicio Ciclo:</strong> fecha desde la que comienza el conteo T/D. Si se omite, se usa el inicio de vigencia.
+            <strong>Inicio Ciclo:</strong> fecha desde la que comienza el conteo T/D para jornadas con patrón. Si se omite, se usa el inicio de vigencia.
+            Con <strong>No establecido</strong> no aplica conteo automático (puede dejarlo vacío).
             Las jornadas denominadas <strong>5 × 2</strong> (5 y 2 separados por x, / o -, con o sin espacios) se tratan como <strong>lun–vie trabajo</strong> y <strong>sáb–dom descanso</strong> según calendario.
           </div>
         </div>
@@ -592,7 +622,8 @@
       <div class="pm-detail-section-title">Distribución del mes</div>
       <div class="pm-cal-mini">
         <div *ngFor="let entry of selectedRow.days"
-             class="pm-cal-cell {{ getDayClass(entry.dayType) }}">
+             class="pm-cal-cell {{ getDayClass(entry.dayType) }}"
+             [class.pm-day-after-exit]="entry.afterExit">
           <span class="pm-cal-num">{{ entry.day }}</span>
           <span class="pm-cal-type">{{ entry.dayType || '' }}</span>
         </div>

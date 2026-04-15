@@ -30,6 +30,8 @@ export interface WorkDayEntry {
   notes?: string;
   holiday?: boolean;
   holidayName?: string;
+  /** Posterior a fecha de salida del colaborador: solo lectura */
+  afterExit?: boolean;
 }
 
 export interface DayTotals {
@@ -41,6 +43,9 @@ export interface EmployeeSheetRow {
   fullName: string;
   position: string;
   cedula: string;
+  active?: boolean;
+  /** Fecha fin de relación (yyyy-MM-dd), si aplica */
+  fechaSalida?: string | null;
   codigoEmpresa?: string;
   departmentId?: number | null;
   departmentName?: string | null;
