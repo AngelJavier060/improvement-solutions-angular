@@ -1,0 +1,92 @@
+<div class="sgi-shell" [class.sgi-shell--collapsed]="sidebarCollapsed">
+
+  <!-- ── SIDEBAR ──────────────────────────────────────────────────── -->
+  <aside class="sgi-sidebar" [class.sgi-sidebar--collapsed]="sidebarCollapsed">
+    <div class="sgi-sidebar__brand">
+      <div class="sgi-sidebar__logo-box">
+        <span class="material-symbols-outlined sgi-sidebar__logo-icon">verified</span>
+      </div>
+      <div class="sgi-sidebar__brand-text" *ngIf="!sidebarCollapsed">
+        <h2 class="sgi-sidebar__brand-title">ISO 9001:2015</h2>
+        <p class="sgi-sidebar__brand-sub">Gestión de Calidad</p>
+      </div>
+    </div>
+
+    <nav class="sgi-sidebar__nav">
+      <button
+        *ngFor="let item of navItems"
+        class="sgi-nav-item"
+        [class.sgi-nav-item--active]="activeNav === item.key"
+        [title]="sidebarCollapsed ? item.label : ''"
+        (click)="navigateTo(item)">
+        <span class="material-symbols-outlined sgi-nav-item__icon">{{ item.icon }}</span>
+        <span class="sgi-nav-item__label" *ngIf="!sidebarCollapsed">{{ item.label }}</span>
+      </button>
+    </nav>
+
+    <div class="sgi-sidebar__footer" *ngIf="!sidebarCollapsed">
+      <button class="sgi-btn-new">
+        <span class="material-symbols-outlined" style="font-size:17px;">add</span>
+        Nuevo Registro
+      </button>
+      <div class="sgi-sidebar__footer-links">
+        <button class="sgi-footer-link" (click)="goBack()">
+          <span class="material-symbols-outlined">arrow_back</span>
+          Volver al menú
+        </button>
+        <button class="sgi-footer-link" (click)="logout()">
+          <span class="material-symbols-outlined">logout</span>
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+    <div class="sgi-sidebar__footer-collapsed" *ngIf="sidebarCollapsed">
+      <button class="sgi-footer-icon" (click)="goBack()" title="Volver al menú">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <button class="sgi-footer-icon" (click)="logout()" title="Cerrar sesión">
+        <span class="material-symbols-outlined">logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ─────────────────────────────────────────────────────── -->
+  <div class="sgi-main">
+    <!-- Top header -->
+    <header class="sgi-topbar">
+      <!-- Toggle button -->
+      <button class="sgi-topbar__toggle" (click)="toggleSidebar()" [title]="sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'">
+        <span class="material-symbols-outlined">{{ sidebarCollapsed ? 'menu' : 'menu_open' }}</span>
+      </button>
+      <div class="sgi-topbar__search">
+        <span class="material-symbols-outlined sgi-topbar__search-icon">search</span>
+        <input class="sgi-topbar__input" type="text" placeholder="Buscar en SGI ISO...">
+      </div>
+      <div class="sgi-topbar__right">
+        <button class="sgi-topbar__icon-btn">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="sgi-topbar__badge"></span>
+        </button>
+        <button class="sgi-topbar__icon-btn">
+          <span class="material-symbols-outlined">settings</span>
+        </button>
+        <div class="sgi-topbar__divider"></div>
+        <div class="sgi-topbar__user" *ngIf="currentUser">
+          <div class="sgi-topbar__user-info">
+            <span class="sgi-topbar__user-name">{{ currentUser.name || currentUser.username }}</span>
+            <span class="sgi-topbar__user-role">{{ currentUser.email }}</span>
+          </div>
+          <div class="sgi-topbar__avatar">
+            <span class="material-symbols-outlined">person</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page content (router outlet) -->
+    <div class="sgi-content">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+
+</div>

@@ -235,7 +235,7 @@ export class UsuarioWelcomeComponent implements OnInit {
       'talento-humano': 'Talento Humano',
       'seguridad-industrial': 'Seguridad Industrial',
       'medico': 'Módulo Médico',
-      'calidad': 'Control de Calidad',
+      'calidad': 'Sistema de Gestión SGI - ISO 9001:2018',
       'mantenimiento': 'Mantenimiento',
       'medio-ambiente': 'Medio Ambiente',
       'produccion': 'Producción',
@@ -262,6 +262,9 @@ export class UsuarioWelcomeComponent implements OnInit {
       return;
     } else if (moduleName === 'mantenimiento') {
       this.router.navigateByUrl(`/usuario/${this.empresaRuc}/mantenimiento`);
+      return;
+    } else if (moduleName === 'calidad') {
+      this.router.navigateByUrl(`/usuario/${this.empresaRuc}/calidad`);
       return;
     }
     

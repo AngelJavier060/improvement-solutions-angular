@@ -1,0 +1,169 @@
+<div class="db-root">
+
+  <!-- PAGE HEADER -->
+  <div class="db-header">
+    <div>
+      <span class="db-eyebrow">Resumen Operativo</span>
+      <h1 class="db-title">Desempeño Institucional</h1>
+    </div>
+    <div class="db-header__actions">
+      <button class="db-btn db-btn--outline">Exportar Reporte</button>
+      <button class="db-btn db-btn--dark">Modo Auditoría</button>
+    </div>
+  </div>
+
+  <!-- KPI GRID -->
+  <div class="db-kpi-grid">
+    <!-- Cumplimiento -->
+    <div class="db-kpi db-kpi--green">
+      <div class="db-kpi__top">
+        <span class="db-kpi__label">Estado de Cumplimiento</span>
+        <span class="material-symbols-outlined db-kpi__icon db-kpi__icon--green">task_alt</span>
+      </div>
+      <div class="db-kpi__val">98.4%</div>
+      <div class="db-kpi__trend db-kpi__trend--up">
+        <span class="material-symbols-outlined" style="font-size:14px;">trending_up</span>
+        +2.1% desde T3
+      </div>
+      <p class="db-kpi__meta">Integridad Documental Actual</p>
+    </div>
+    <!-- Revisiones activas -->
+    <div class="db-kpi db-kpi--red">
+      <div class="db-kpi__top">
+        <span class="db-kpi__label">Revisiones Activas</span>
+        <span class="material-symbols-outlined db-kpi__icon db-kpi__icon--red">rate_review</span>
+      </div>
+      <div class="db-kpi__val">14</div>
+      <div class="db-kpi__trend db-kpi__trend--warn">
+        <span class="material-symbols-outlined" style="font-size:14px;">priority_high</span>
+        3 Pendientes de Aprobación
+      </div>
+      <p class="db-kpi__meta">Flujos de trabajo QMS en curso</p>
+    </div>
+    <!-- Preparación auditoría -->
+    <div class="db-kpi db-kpi--slate">
+      <div class="db-kpi__top">
+        <span class="db-kpi__label">Preparación para Auditoría</span>
+        <span class="material-symbols-outlined db-kpi__icon db-kpi__icon--slate">verified_user</span>
+      </div>
+      <div class="db-kpi__val">Óptimo</div>
+      <div class="db-kpi__trend db-kpi__trend--up">
+        <span class="material-symbols-outlined" style="font-size:14px;">check_circle</span>
+        Sistema Validado
+      </div>
+      <p class="db-kpi__meta">Próxima Auditoría: 12 Dic, 2024</p>
+    </div>
+  </div>
+
+  <!-- BODY: 2 columns -->
+  <div class="db-body">
+
+    <!-- LEFT: Department charts -->
+    <div class="db-left">
+      <div class="db-card">
+        <div class="db-card__header">
+          <h3 class="db-card__title">Distribución por Departamento</h3>
+          <select class="db-select">
+            <option>Por Documentación</option>
+            <option>Por Puntaje de Cumplimiento</option>
+          </select>
+        </div>
+        <div class="db-charts">
+          <div class="db-chart-item" *ngFor="let d of departments">
+            <div class="db-chart-item__header">
+              <span class="db-chart-item__name">{{ d.name }}</span>
+              <span class="db-chart-item__docs">{{ d.docs }} Docs</span>
+            </div>
+            <div class="db-bar-track">
+              <div class="db-bar-fill" [style.width.%]="d.pct"></div>
+              <div class="db-bar-review" [style.width.%]="d.rev"></div>
+            </div>
+          </div>
+        </div>
+        <div class="db-legend">
+          <div class="db-legend__item">
+            <div class="db-legend__dot db-legend__dot--primary"></div>
+            <span>Documentos Activos</span>
+          </div>
+          <div class="db-legend__item">
+            <div class="db-legend__dot db-legend__dot--faded"></div>
+            <span>Bajo Revisión</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Feed + Gauge -->
+    <div class="db-right">
+      <!-- Critical updates -->
+      <div class="db-feed">
+        <div class="db-feed__header">
+          <h3 class="db-feed__title">Actualizaciones Críticas</h3>
+          <span class="material-symbols-outlined" style="color:#9b0000;font-size:22px;">bolt</span>
+        </div>
+        <div class="db-feed__list">
+          <div class="db-feed__item" *ngFor="let u of criticalUpdates; let first = first" [class.db-feed__item--first]="first">
+            <div class="db-feed__dot" [class]="'db-feed__dot ' + u.dot"></div>
+            <div class="db-feed__body">
+              <span class="db-feed__tag" [class]="'db-feed__tag ' + u.tagClass">{{ u.tag }}</span>
+              <p class="db-feed__text">{{ u.text }}</p>
+              <span class="db-feed__meta">{{ u.meta }}</span>
+            </div>
+          </div>
+        </div>
+        <button class="db-feed__btn">Ver Historial</button>
+      </div>
+
+      <!-- Compliance gauge -->
+      <div class="db-gauge-card">
+        <h4 class="db-gauge-card__label">Medidor de Preparación</h4>
+        <div class="db-gauge">
+          <div class="db-gauge__track"></div>
+          <div class="db-gauge__arc"></div>
+          <div class="db-gauge__value">
+            <span class="db-gauge__num">94</span>
+            <span class="db-gauge__denom">/100</span>
+          </div>
+        </div>
+        <p class="db-gauge-card__status">Estado Óptimo del Sistema</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCUMENT TABLE -->
+  <div class="db-table-card">
+    <div class="db-table-card__header">
+      <div>
+        <h3 class="db-table-card__title">Estado de Documentos Críticos</h3>
+        <p class="db-table-card__sub">Monitoreo de manuales y procedimientos de calidad de alto nivel</p>
+      </div>
+      <button class="db-link-btn">
+        Explorar Todo
+        <span class="material-symbols-outlined" style="font-size:15px;">arrow_forward</span>
+      </button>
+    </div>
+    <div class="db-table-wrap">
+      <table class="db-table">
+        <thead>
+          <tr>
+            <th>ID Documento</th>
+            <th>Proceso</th>
+            <th>Estado</th>
+            <th>Última Revisión</th>
+            <th>Responsable</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of docTable" class="db-table__row">
+            <td class="db-table__id">{{ r.id }}</td>
+            <td>{{ r.process }}</td>
+            <td><span class="db-badge" [class]="'db-badge ' + r.statusClass">{{ r.status }}</span></td>
+            <td class="db-table__date">{{ r.date }}</td>
+            <td class="db-table__resp">{{ r.resp }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

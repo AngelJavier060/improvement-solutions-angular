@@ -1,0 +1,194 @@
+<div class="doc-root">
+
+  <!-- HEADER -->
+  <div class="doc-header">
+    <div>
+      <span class="doc-eyebrow">SGI ISO 9001:2015</span>
+      <h1 class="doc-title">Lista Maestra de Documentos</h1>
+      <p class="doc-subtitle">Control de Documentos y Gestión del Ciclo de Vida</p>
+    </div>
+    <div class="doc-header__actions">
+      <button class="doc-btn doc-btn--outline">
+        <span class="material-symbols-outlined">download</span>
+        Exportar CSV
+      </button>
+      <button class="doc-btn doc-btn--primary">
+        <span class="material-symbols-outlined">upload_file</span>
+        Nuevo Documento
+      </button>
+    </div>
+  </div>
+
+  <!-- BENTO STATS -->
+  <div class="doc-bento">
+    <div class="doc-stat" [ngClass]="s.border" *ngFor="let s of stats">
+      <span class="doc-stat__label">{{ s.label }}</span>
+      <div class="doc-stat__val-row">
+        <span class="doc-stat__val" [class.doc-stat__val--err]="s.urgent">{{ s.value }}</span>
+        <span *ngIf="s.trendUp" class="doc-stat__trend">
+          <span class="material-symbols-outlined" style="font-size:12px;">trending_up</span>
+          {{ s.trend }}
+        </span>
+        <span *ngIf="s.urgent" class="doc-stat__urgent">URGENTE</span>
+        <span *ngIf="s.sub" class="doc-stat__sub">{{ s.sub }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="doc-filters">
+    <div class="doc-filters__icon-label">
+      <span class="material-symbols-outlined" style="font-size:20px;color:#94a3b8;">filter_list</span>
+      <span class="doc-filters__text">Filtros:</span>
+    </div>
+    <div class="doc-filters__selects">
+      <select class="doc-select">
+        <option>Proceso (Todos)</option>
+        <option>Operaciones</option>
+        <option>Calidad</option>
+        <option>Mantenimiento</option>
+        <option>Logística</option>
+      </select>
+      <select class="doc-select">
+        <option>Estado (Todos)</option>
+        <option>VIGENTE</option>
+        <option>NO PRESENTA</option>
+        <option>EN REVISIÓN</option>
+      </select>
+      <select class="doc-select">
+        <option>Tipo (Todos)</option>
+        <option>Manual</option>
+        <option>Procedimiento</option>
+        <option>Instructivo</option>
+        <option>Formato</option>
+      </select>
+    </div>
+    <span class="doc-filters__count">Mostrando 1,248 registros</span>
+  </div>
+
+  <!-- CARD TABLE (scroll horizontal igual a gerencias-viajes) -->
+  <div class="doc-card shadow-sm">
+
+    <!-- Card header -->
+    <div class="doc-card__header">
+      <div class="d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined" style="font-size:22px;color:#9b0000;">description</span>
+        <div>
+          <h2 class="doc-card__title">Control de Lista Maestra de Documentos</h2>
+          <p class="doc-card__subtitle">Matriz completa de parámetros documentales, estados y gestión del ciclo de vida ISO.</p>
+        </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <button class="doc-btn doc-btn--outline doc-btn--sm">
+          <span class="material-symbols-outlined">refresh</span>
+          Actualizar
+        </button>
+        <button class="doc-btn doc-btn--primary doc-btn--sm">
+          <span class="material-symbols-outlined">add</span>
+          Nuevo Registro
+        </button>
+      </div>
+    </div>
+
+    <!-- Scroll wrapper -->
+    <div class="doc-table-wrapper">
+      <div class="doc-table-inner">
+        <table class="doc-table doc-table--full">
+          <thead>
+            <tr>
+              <th style="width:50px;">N°</th>
+              <th style="width:110px;">Tipo Documento</th>
+              <th style="width:130px;">Proceso</th>
+              <th style="width:110px;">Código</th>
+              <th style="width:280px;">Nombre del Documento</th>
+              <th style="width:130px;">Fecha Elaboración</th>
+              <th style="width:120px;">Fecha Revisión</th>
+              <th style="width:80px;" class="text-center">Versión</th>
+              <th style="width:140px;">Fecha Próx. Revisión</th>
+              <th style="width:110px;" class="text-center">Días Vigencia</th>
+              <th style="width:120px;" class="text-center">Estado</th>
+              <th style="width:140px;">Almacenamiento</th>
+              <th style="width:180px;">Responsable</th>
+              <th style="width:100px;" class="text-center">Vigencia</th>
+              <th style="width:160px;">Disposición Final</th>
+              <th style="width:140px;">Norma Aplicable</th>
+              <th style="width:150px;">Proceso 2</th>
+              <th style="width:170px;">Subproceso</th>
+              <th style="width:200px;">Correo</th>
+              <th style="width:240px;">Enlace al Documento</th>
+              <th style="width:200px;">Observaciones</th>
+              <th class="doc-th-sticky-right text-center" style="width:130px;right:0;z-index:3;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of documents" class="doc-table__row">
+              <td class="doc-td-n">{{ d.n }}</td>
+              <td><span class="doc-chip">{{ d.tipo }}</span></td>
+              <td>{{ d.proceso }}</td>
+              <td class="doc-td-code">{{ d.codigo }}</td>
+              <td class="doc-td-name">{{ d.nombre }}</td>
+              <td>{{ d.elaboracion }}</td>
+              <td>{{ d.revision }}</td>
+              <td class="text-center"><strong>{{ d.version }}</strong></td>
+              <td [class.doc-td-exp]="d.statusClass === 'st--err'">{{ d.proxRevision }}</td>
+              <td class="text-center" [class.doc-td-exp]="d.diasVigencia === 0">{{ d.diasVigencia === 0 ? 'Vencido' : d.diasVigencia }}</td>
+              <td class="text-center">
+                <span class="doc-status" [ngClass]="d.statusClass">{{ d.estado }}</span>
+              </td>
+              <td>{{ d.almacenamiento }}</td>
+              <td>{{ d.responsable }}</td>
+              <td class="text-center">{{ d.vigencia }}</td>
+              <td>{{ d.disposicion }}</td>
+              <td>{{ d.norma }}</td>
+              <td>{{ d.proceso2 }}</td>
+              <td>{{ d.subproceso }}</td>
+              <td><small>{{ d.correo }}</small></td>
+              <td>
+                <a [href]="d.enlace" target="_blank" class="doc-link" title="{{ d.enlace }}">
+                  <span class="material-symbols-outlined" style="font-size:14px;">open_in_new</span>
+                  Ver enlace
+                </a>
+              </td>
+              <td><small class="doc-td-obs">{{ d.observaciones }}</small></td>
+              <td class="doc-td-sticky-right text-center" style="right:0;z-index:2;" (click)="$event.stopPropagation()">
+                <div class="doc-table__actions">
+                  <button class="doc-act-btn" title="Ver"><span class="material-symbols-outlined">visibility</span></button>
+                  <button class="doc-act-btn" title="Editar"><span class="material-symbols-outlined">edit</span></button>
+                  <button class="doc-act-btn doc-act-btn--danger" title="Eliminar"><span class="material-symbols-outlined">delete</span></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="doc-pagination">
+      <span class="doc-pagination__info">
+        Hoja <strong>1</strong> de <strong>52</strong> &nbsp;·&nbsp; Registros <strong>1–20</strong> de 1,248
+      </span>
+      <div class="doc-pagination__btns">
+        <button class="doc-page-btn"><span class="material-symbols-outlined">chevron_left</span></button>
+        <button class="doc-page-btn doc-page-btn--active">1</button>
+        <button class="doc-page-btn">2</button>
+        <button class="doc-page-btn">3</button>
+        <span class="doc-pagination__ellipsis">...</span>
+        <button class="doc-page-btn">52</button>
+        <button class="doc-page-btn"><span class="material-symbols-outlined">chevron_right</span></button>
+      </div>
+    </div>
+
+    <!-- Footer summary -->
+    <div class="doc-card__footer">
+      <span class="doc-card__footer-info">
+        <span class="material-symbols-outlined" style="font-size:16px;">schedule</span>
+        Última actualización: Hace 5 minutos
+      </span>
+      <span class="doc-badge-total">Total: 1,248 documentos</span>
+    </div>
+
+  </div>
+
+
+</div>

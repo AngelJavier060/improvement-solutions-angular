@@ -330,15 +330,18 @@ export class MatrizLegalUsuarioComponent implements OnInit {
   // Estado automático visual
   displayStatus(item: any): string {
     if (item?.completed) return 'CUMPLIDO';
+    const st = (item?.status || '').toString().toUpperCase().trim();
+    if (st.includes('CUMPLID')) return 'CUMPLIDO';
     const days = this.calculateDaysRemaining(item);
-    if (isNaN(days)) return (item?.status || 'PENDIENTE');
+    if (isNaN(days)) return st || 'PENDIENTE';
     if (days < 0) return 'VENCIDA';
     if (days <= 5) return 'URGENTE';
     return 'EN PROCESO';
   }
 
   statusBadgeClass(item: any): string {
-    if (item?.completed) return 'bg-success-subtle text-success';
+    const isCumplido = item?.completed || (item?.status || '').toString().toUpperCase().includes('CUMPLID');
+    if (isCumplido) return 'bg-success-subtle text-success';
     const days = this.calculateDaysRemaining(item);
     if (isNaN(days)) return 'bg-secondary-subtle text-secondary';
     if (days < 0) return 'bg-danger-subtle text-danger';
@@ -832,7 +835,9 @@ export class MatrizLegalUsuarioComponent implements OnInit {
   // Métodos helper para estadísticas del dashboard
   calculateCompliancePercentage(): number {
     if (!this.obligaciones || this.obligaciones.length === 0) return 0;
-    const completed = this.obligaciones.filter(item => item?.completed).length;
+    const completed = this.obligaciones.filter(item =>
+      item?.completed || (item?.status || '').toString().toUpperCase().includes('CUMPLID')
+    ).length;
     return Math.round((completed / this.obligaciones.length) * 100);
   }
 

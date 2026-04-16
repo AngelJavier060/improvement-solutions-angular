@@ -127,6 +127,17 @@ import { FileService } from './services/file.service';
         ]
       },
       
+      {
+        path: 'usuario/:ruc/calidad',
+        loadComponent: () => import('./features/usuario/calidad/calidad-layout.component').then(m => m.CalidadLayoutComponent),
+        canActivate: [AuthGuard],
+        children: [
+          { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+          { path: 'dashboard', loadComponent: () => import('./features/usuario/calidad/pages/dashboard/calidad-dashboard.component').then(m => m.CalidadDashboardComponent) },
+          { path: 'documentos', loadComponent: () => import('./features/usuario/calidad/pages/documentos/calidad-documentos.component').then(m => m.CalidadDocumentosComponent) },
+        ]
+      },
+
       // Rutas del dashboard por RUC (para admin)
       {
         path: ':ruc/dashboard',
