@@ -12,10 +12,154 @@
         <span class="material-symbols-outlined">download</span>
         Exportar CSV
       </button>
-      <button class="doc-btn doc-btn--primary">
+      <button class="doc-btn doc-btn--primary" (click)="openNewRecordForm()">
         <span class="material-symbols-outlined">upload_file</span>
         Nuevo Documento
       </button>
+    </div>
+  </div>
+  <div class="doc-modal" *ngIf="showNewRecordForm" (click)="closeNewRecordForm()">
+    <div class="doc-modal__dialog" (click)="$event.stopPropagation()">
+      <button class="doc-modal__close" type="button" (click)="closeNewRecordForm()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <div class="doc-form-shell">
+        <div class="doc-form-topbar">
+          <nav class="doc-breadcrumbs">
+            <a href="javascript:void(0)">Sistema de Gestión</a>
+            <span class="material-symbols-outlined">chevron_right</span>
+            <a href="javascript:void(0)">Documentos</a>
+            <span class="material-symbols-outlined">chevron_right</span>
+            <span class="is-active">Nuevo Registro</span>
+          </nav>
+        </div>
+
+        <div class="doc-form-heading">
+          <div>
+            <h2 class="doc-form-title">Nuevo Registro de Documento</h2>
+            <p class="doc-form-copy">Complete el formulario para la inscripción de nuevos documentos en el sistema de gestión de calidad ISO 9001:2015.</p>
+          </div>
+          <div class="doc-form-pill">
+            <span class="doc-form-pill__dot"></span>
+            <span>SISTEMA EN LÍNEA</span>
+          </div>
+        </div>
+
+        <div class="doc-form-card">
+          <form class="doc-register-form" (ngSubmit)="saveRecord()">
+            <section class="doc-register-section">
+              <div class="doc-register-section__header">
+                <span class="doc-register-section__step">01</span>
+                <h3 class="doc-register-section__title">Identificación del Documento</h3>
+              </div>
+
+              <div class="doc-register-grid">
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Proceso Principal</label>
+                  <select class="doc-field__control" [(ngModel)]="formModel.procesoPrincipal" name="procesoPrincipal">
+                    <option value="">Seleccione proceso</option>
+                    <option *ngFor="let option of processOptions" [value]="option">{{ option }}</option>
+                  </select>
+                </div>
+
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Tipo de Documento</label>
+                  <select class="doc-field__control" [(ngModel)]="formModel.tipoDocumento" name="tipoDocumento">
+                    <option value="">Seleccione tipo</option>
+                    <option *ngFor="let option of documentTypeOptions" [value]="option">{{ option }}</option>
+                  </select>
+                </div>
+
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Código Interno</label>
+                  <select class="doc-field__control" [(ngModel)]="formModel.codigoInterno" name="codigoInterno">
+                    <option value="">Seleccione código</option>
+                    <option *ngFor="let option of codeOptions" [value]="option">{{ option }}</option>
+                  </select>
+                </div>
+
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Fecha de Elaboración</label>
+                  <input class="doc-field__control" [(ngModel)]="formModel.fechaElaboracion" name="fechaElaboracion" type="date" />
+                </div>
+
+                <div class="doc-field doc-field--wide">
+                  <label class="doc-field__label">Nombre del Documento</label>
+                  <input class="doc-field__control" [(ngModel)]="formModel.nombreDocumento" name="nombreDocumento" placeholder="Ingrese el nombre descriptivo completo" type="text" />
+                </div>
+              </div>
+            </section>
+
+            <section class="doc-register-section">
+              <div class="doc-register-section__header">
+                <span class="doc-register-section__step">02</span>
+                <h3 class="doc-register-section__title">Responsabilidad y Clasificación</h3>
+              </div>
+
+              <div class="doc-register-grid">
+                <div class="doc-field doc-field--full">
+                  <label class="doc-field__label">Responsable del Registro</label>
+                  <div class="doc-field__icon-wrap">
+                    <span class="material-symbols-outlined">person</span>
+                    <select class="doc-field__control doc-field__control--icon" [(ngModel)]="formModel.responsable" name="responsable">
+                      <option value="">Seleccione responsable</option>
+                      <option *ngFor="let option of responsibleOptions" [value]="option">{{ option }}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="doc-register-section">
+              <div class="doc-register-section__header">
+                <span class="doc-register-section__step">03</span>
+                <h3 class="doc-register-section__title">Información Adicional</h3>
+              </div>
+
+              <div class="doc-register-grid">
+                <div class="doc-field doc-field--full">
+                  <label class="doc-field__label">Adjuntar Documento</label>
+                  <label class="doc-upload-box">
+                    <div class="doc-upload-box__content">
+                      <span class="material-symbols-outlined">cloud_upload</span>
+                      <p class="doc-upload-box__title">Cargar Archivo</p>
+                      <p class="doc-upload-box__hint">PDF, DOCX, XLSX (MÁX. 10MB)</p>
+                      <p *ngIf="selectedFileName" class="doc-upload-box__file">{{ selectedFileName }}</p>
+                    </div>
+                    <input class="doc-upload-box__input" type="file" (change)="onFileSelected($event)" />
+                  </label>
+                </div>
+
+                <div class="doc-field doc-field--full">
+                  <label class="doc-field__label">Observaciones Generales</label>
+                  <textarea class="doc-field__control doc-field__control--textarea" [(ngModel)]="formModel.observaciones" name="observaciones" placeholder="Describa el propósito de este documento o cualquier consideración especial para la auditoría..." rows="4"></textarea>
+                </div>
+              </div>
+            </section>
+
+            <div class="doc-register-actions">
+              <button class="doc-btn doc-btn--ghost" type="button" (click)="closeNewRecordForm()">Cancelar</button>
+              <button class="doc-btn doc-btn--primary doc-btn--xl" type="submit">Guardar Registro</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="doc-form-info-grid">
+          <div class="doc-form-note">
+            <h3>Nota Técnica de Cumplimiento</h3>
+            <p>Este registro forma parte del control de información documentada según la cláusula 7.5 de la norma ISO 9001:2015. Al guardar, el documento entrará en estado "En Revisión" y se notificará automáticamente al responsable del proceso para su validación técnica.</p>
+          </div>
+
+          <div class="doc-form-hero">
+            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBS8_cHA4i_OX9xJ5gcOMqj2fEa8EDDzr35HVNR1R6CEk1-jQoTUhoCJkrTljMPgiaYeTckos9oCnUQgSJW8y_coxMyRhSf9mAWcACYPL80qGUxDdNv0RAM-tQ3MmR4lJx6HfSm_LDoLHNGiy7LOp3Fexe-qhSzL6gdB2u0SYKXdz-Dt9_5Hi_3DNsx9pC9dhvrRUs8vqPj355cnjDjyJ3xuaEFDWQ8bRNZ67I8cUCZlzY0CkLS-1TUO2Q9AJXJNXkrGJlqXpYa9H36" alt="Document control background" />
+            <div class="doc-form-hero__overlay"></div>
+            <div class="doc-form-hero__content">
+              <span class="material-symbols-outlined">gavel</span>
+              <p>Garantía de Integridad de Datos Industrial</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -83,7 +227,7 @@
           <span class="material-symbols-outlined">refresh</span>
           Actualizar
         </button>
-        <button class="doc-btn doc-btn--primary doc-btn--sm">
+        <button class="doc-btn doc-btn--primary doc-btn--sm" (click)="openNewRecordForm()">
           <span class="material-symbols-outlined">add</span>
           Nuevo Registro
         </button>
@@ -111,10 +255,6 @@
               <th style="width:180px;">Responsable</th>
               <th style="width:100px;" class="text-center">Vigencia</th>
               <th style="width:160px;">Disposición Final</th>
-              <th style="width:140px;">Norma Aplicable</th>
-              <th style="width:150px;">Proceso 2</th>
-              <th style="width:170px;">Subproceso</th>
-              <th style="width:200px;">Correo</th>
               <th style="width:240px;">Enlace al Documento</th>
               <th style="width:200px;">Observaciones</th>
               <th class="doc-th-sticky-right text-center" style="width:130px;right:0;z-index:3;">Acciones</th>
@@ -139,10 +279,6 @@
               <td>{{ d.responsable }}</td>
               <td class="text-center">{{ d.vigencia }}</td>
               <td>{{ d.disposicion }}</td>
-              <td>{{ d.norma }}</td>
-              <td>{{ d.proceso2 }}</td>
-              <td>{{ d.subproceso }}</td>
-              <td><small>{{ d.correo }}</small></td>
               <td>
                 <a [href]="d.enlace" target="_blank" class="doc-link" title="{{ d.enlace }}">
                   <span class="material-symbols-outlined" style="font-size:14px;">open_in_new</span>

@@ -1,0 +1,67 @@
+<div class="iso-9001-catalog-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>{{ listaTitulo }}</h2>
+      <p>{{ listaSubtitulo }}</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-back" type="button" (click)="volverAConfiguracion()">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
+      <button class="btn btn-new" type="button" (click)="nuevo()">
+        <i class="fas fa-plus"></i> Nuevo registro
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando {{ nombreItemPlural }}...</span>
+    </div>
+
+    <div *ngIf="error && !loading" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button type="button" (click)="cargar()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <div *ngIf="!loading && !error" class="data-table">
+      <table *ngIf="items.length > 0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of items">
+            <td>{{ item.id }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.description }}</td>
+            <td class="actions">
+              <button class="btn btn-icon" type="button" (click)="editar(item.id)" title="Editar" [disabled]="!item.id">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-icon btn-delete" type="button" (click)="eliminar(item.id)" title="Eliminar" [disabled]="!item.id">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="items.length === 0" class="empty-state">
+        <i class="fas fa-folder-open"></i>
+        <p>No hay {{ nombreItemPlural }} registrados</p>
+        <button class="btn btn-new" type="button" (click)="nuevo()">
+          <i class="fas fa-plus"></i> Agregar registro
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

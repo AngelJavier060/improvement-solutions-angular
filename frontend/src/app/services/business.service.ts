@@ -66,6 +66,20 @@ export class BusinessService {
     return this.http.delete<any>(`${this.apiUrl}/${businessId}/departments/${departmentId}`);
   }
 
+  /** Vincula un ítem del catálogo global ISO 9001 (Configuración) a la empresa. */
+  addIso9001CatalogItemToBusiness(businessId: number, catalogItemId: number): Observable<{ message?: string }> {
+    return this.http.post<{ message?: string }>(
+      `${this.apiUrl}/${businessId}/iso-9001-catalog-item/${catalogItemId}`,
+      {}
+    );
+  }
+
+  removeIso9001CatalogItemFromBusiness(businessId: number, catalogItemId: number): Observable<{ message?: string }> {
+    return this.http.delete<{ message?: string }>(
+      `${this.apiUrl}/${businessId}/iso-9001-catalog-item/${catalogItemId}`
+    );
+  }
+
   // === MÉTODOS PARA CARGOS ===
   addPositionToBusiness(businessId: number, positionId: number): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/${businessId}/positions/${positionId}`, {});

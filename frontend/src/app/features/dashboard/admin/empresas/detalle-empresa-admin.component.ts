@@ -36,6 +36,7 @@ import { UserAdminService } from '../usuarios/user-admin.service';
 import { MetodologiaRiesgo } from '../../../../models/metodologia-riesgo.model';
 import { MetodologiaRiesgoService } from '../../../../services/metodologia-riesgo.service';
 import { parametroFactorParaCatalogo } from '../configuracion/shared/metodologia-factor-viaje.util';
+import { Iso9001CatalogKey, Iso9001CatalogService } from '../../../../services/iso-9001-catalog.service';
 
 @Component({
   selector: 'app-detalle-empresa-admin',
@@ -369,6 +370,26 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   savingEmergencyContacts = false;
   emergencyEditIndex: number | null = null;
 
+  // === ISO 9001 — ítems del catálogo global asignados por empresa (mismo patrón que Tipo de vía en Gerencia de Viajes) ===
+  readonly iso9001ParamDefinitions: ReadonlyArray<{
+    catalogCode: string;
+    title: string;
+    icon: string;
+    headerGradient: string;
+  }> = [
+    { catalogCode: 'tipo-documento', title: 'Tipo de Documento', icon: 'fas fa-file-alt', headerGradient: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)' },
+    { catalogCode: 'proceso', title: 'Proceso', icon: 'fas fa-project-diagram', headerGradient: 'linear-gradient(90deg, #11998e 0%, #38ef7d 100%)' },
+    { catalogCode: 'codigo', title: 'Código', icon: 'fas fa-barcode', headerGradient: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)' },
+    { catalogCode: 'almacenamiento', title: 'Almacenamiento', icon: 'fas fa-warehouse', headerGradient: 'linear-gradient(90deg, #f093fb 0%, #f5576c 100%)' },
+    { catalogCode: 'disposicion-final', title: 'Disposición final', icon: 'fas fa-recycle', headerGradient: 'linear-gradient(90deg, #fa709a 0%, #fee140 100%)' },
+  ];
+  showAsignIso9001Modal = false;
+  iso9001AssignCatalogCode: string | null = null;
+  allIso9001GlobalForModal: any[] = [];
+  selectedIso9001CatalogIds: number[] = [];
+  savingIso9001Assign = false;
+  iso9001GlobalCatalogLoading = false;
+
   // Modal para editar empresa
   showEditEmpresaModal = false;
   savingEmpresa = false;
@@ -435,7 +456,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private authService: AuthService,
     private userAdminService: UserAdminService,
     private http: HttpClient,
-    private metodologiaRiesgoService: MetodologiaRiesgoService
+    private metodologiaRiesgoService: MetodologiaRiesgoService,
+    private iso9001CatalogService: Iso9001CatalogService
   ) {}
 
   ngOnInit(): void {
@@ -1804,6 +1826,9 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         if (!this.empresa.type_contracts) this.empresa.type_contracts = [];
         if (!this.empresa.course_certifications) this.empresa.course_certifications = [];
         if (!this.empresa.cards) this.empresa.cards = [];
+        if (!(this.empresa as any).iso9001CatalogItems) {
+          (this.empresa as any).iso9001CatalogItems = [];
+        }
 
         // Normalizar jornadas/horarios (backend suele devolver camelCase: workSchedules/workShifts)
         if (!this.empresa.work_schedules && (this.empresa as any).workSchedules) {
@@ -1926,7 +1951,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         console.log('Departamentos de la empresa:', empresa.departments?.length || 0);
         console.log('Cargos de la empresa:', empresa.positions?.length || 0);
         console.log('Documentos de la empresa:', empresa.type_documents?.length || 0);
-        
+
         this.loading = false;
         // Cargar listado de personal de esta empresa
         this.loadCompanyEmployees();
@@ -2439,6 +2464,113 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         }
       });
     }
+  }
+
+  // === ISO 9001 por empresa (Sistema de Gestión ISO 9001-2018) — catálogo global en Configuración ===
+  getIso9001Items(catalogCode: string): Array<{ id: number; name: string; description?: string; catalogCode?: string }> {
+    const list = ((this.empresa as any)?.iso9001CatalogItems as any[]) || [];
+    return list.filter((x: any) => x && String(x.catalogCode) === catalogCode);
+  }
+
+  iso9001AssignModalTitle(): string {
+    const def = this.iso9001ParamDefinitions.find(d => d.catalogCode === this.iso9001AssignCatalogCode);
+    return def ? `Asignar — ${def.title}` : 'Asignar parámetro ISO 9001';
+  }
+
+  openIso9001AssignModal(catalogCode: string): void {
+    this.iso9001AssignCatalogCode = catalogCode;
+    this.selectedIso9001CatalogIds = [];
+    this.allIso9001GlobalForModal = [];
+    this.showAsignIso9001Modal = true;
+    this.iso9001GlobalCatalogLoading = true;
+    this.iso9001CatalogService.getAll(catalogCode as Iso9001CatalogKey).subscribe({
+      next: (data) => {
+        this.allIso9001GlobalForModal = (data as any[]) || [];
+        this.iso9001GlobalCatalogLoading = false;
+      },
+      error: (err) => {
+        this.iso9001GlobalCatalogLoading = false;
+        console.error(err);
+        alert(
+          'No se pudo cargar el catálogo global. Cree primero los parámetros en Configuración → Sistema de Gestión ISO 9001-2018, o revise la consola (red) si hay error 401/403.'
+        );
+      }
+    });
+  }
+
+  closeAsignIso9001Modal(): void {
+    this.showAsignIso9001Modal = false;
+    this.iso9001AssignCatalogCode = null;
+    this.selectedIso9001CatalogIds = [];
+    this.allIso9001GlobalForModal = [];
+    this.iso9001GlobalCatalogLoading = false;
+  }
+
+  availableIso9001ForAssign(): any[] {
+    const assigned = new Set(
+      (((this.empresa as any)?.iso9001CatalogItems as any[]) || []).map((x: any) => Number(x.id))
+    );
+    return (this.allIso9001GlobalForModal || []).filter((x: any) => x?.id != null && !assigned.has(Number(x.id)));
+  }
+
+  iso9001AssignIsSelected(id: number): boolean {
+    return this.selectedIso9001CatalogIds.includes(id);
+  }
+
+  iso9001AssignToggle(id: number, checked: boolean): void {
+    const i = this.selectedIso9001CatalogIds.indexOf(id);
+    if (checked && i < 0) {
+      this.selectedIso9001CatalogIds.push(id);
+    }
+    if (!checked && i >= 0) {
+      this.selectedIso9001CatalogIds.splice(i, 1);
+    }
+  }
+
+  iso9001AssignSelectAll(): void {
+    this.selectedIso9001CatalogIds.length = 0;
+    this.availableIso9001ForAssign().forEach((x: any) => {
+      if (x?.id != null) {
+        this.selectedIso9001CatalogIds.push(Number(x.id));
+      }
+    });
+  }
+
+  iso9001AssignClear(): void {
+    this.selectedIso9001CatalogIds.length = 0;
+  }
+
+  assignIso9001FromGlobal(): void {
+    const uniq = [...new Set(this.selectedIso9001CatalogIds.filter((id) => id != null))];
+    if (!uniq.length || !this.empresaId) {
+      return;
+    }
+    this.savingIso9001Assign = true;
+    forkJoin(uniq.map((id) => this.businessService.addIso9001CatalogItemToBusiness(this.empresaId, id))).subscribe({
+      next: () => {
+        this.savingIso9001Assign = false;
+        this.closeAsignIso9001Modal();
+        this.loadData();
+      },
+      error: (err: any) => {
+        this.savingIso9001Assign = false;
+        console.error(err);
+        alert('Error al asignar uno o más ítems. Es posible que ya estuvieran vinculados.');
+      }
+    });
+  }
+
+  removeIso9001Item(_catalogCode: string, id: number): void {
+    if (!this.empresaId) {
+      return;
+    }
+    if (!confirm('¿Quitar este ítem de la empresa? (El registro global en Configuración no se elimina.)')) {
+      return;
+    }
+    this.businessService.removeIso9001CatalogItemFromBusiness(this.empresaId, id).subscribe({
+      next: () => this.loadData(),
+      error: () => alert('Error al quitar el ítem.')
+    });
   }
 
   // === CARGOS ===

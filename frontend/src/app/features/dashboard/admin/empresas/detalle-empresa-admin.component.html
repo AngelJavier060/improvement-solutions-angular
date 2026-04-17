@@ -2007,6 +2007,77 @@
 
   </section>
 
+  <!-- ═══════════════════════ SECCIÓN: ISO 9001 — GESTIÓN POR EMPRESA ═══════════════════════ -->
+  <section class="iso9001-empresa-section mt-4 pt-4 border-top">
+    <div class="d-flex flex-column flex-md-row flex-wrap justify-content-between align-items-md-start gap-3 mb-3">
+      <div class="flex-grow-1">
+        <h3 class="h4 fw-bold mb-1" style="color: #2c2f31;">Sistema de Gestión ISO 9001-2018</h3>
+        <p class="small text-muted mb-2">
+          Los parámetros disponibles se definen en <strong>Configuración</strong>. Aquí solo elige cuáles aplica esta empresa (RUC <strong>{{ empresa?.ruc || '—' }}</strong>).
+        </p>
+        <p class="small text-muted mb-0">
+          Use <strong class="text-dark">«Agregar»</strong> o <strong class="text-dark">«Ver opciones del catálogo»</strong> en cada tarjeta. Si la lista sale vacía, cree antes los ítems en Configuración.
+        </p>
+      </div>
+      <div class="flex-shrink-0 d-flex flex-wrap gap-2 align-items-start">
+        <a class="btn btn-outline-primary btn-sm" routerLink="/dashboard/admin/configuracion/iso-9001">
+          <i class="fas fa-external-link-alt me-1"></i>Abrir catálogos en Configuración
+        </a>
+      </div>
+    </div>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-5 g-3 mb-2">
+      <div class="col" *ngFor="let def of iso9001ParamDefinitions">
+        <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': getIso9001Items(def.catalogCode).length > 0}">
+          <div class="card-header bg-gradient py-3 px-3 border-0" [ngStyle]="{ background: def.headerGradient }">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center gap-2">
+                <div class="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                  <i [class]="def.icon + ' text-white'" style="font-size: 14px;"></i>
+                </div>
+                <h6 class="text-white mb-0 fw-bold small">{{ def.title }}</h6>
+              </div>
+              <button type="button" class="btn btn-light btn-sm fw-semibold text-dark shadow-sm px-2 py-1 border-0"
+                      (click)="openIso9001AssignModal(def.catalogCode)" title="Elegir ítems del catálogo global">
+                <i class="fas fa-plus me-1"></i>Agregar
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-2">
+            <div class="small text-muted mb-2">
+              <i class="fas fa-database me-1"></i>
+              Fuente: <strong>Configuración → ISO 9001</strong> → {{ def.title }}
+            </div>
+            <div *ngIf="getIso9001Items(def.catalogCode).length > 0" class="expanded-content">
+              <div class="mb-1" *ngFor="let row of getIso9001Items(def.catalogCode)">
+                <div class="d-flex align-items-start justify-content-between p-1 bg-light rounded">
+                  <div class="flex-grow-1 me-1">
+                    <div class="small fw-semibold text-dark" style="font-size: 11px;">{{ row.name }}</div>
+                    <div class="text-muted" style="font-size: 10px;" *ngIf="row.description">{{ row.description }}</div>
+                  </div>
+                  <div class="d-flex gap-1 flex-shrink-0">
+                    <button type="button" class="btn btn-outline-danger btn-sm p-1" title="Quitar de la empresa" (click)="removeIso9001Item(def.catalogCode, row.id)" style="font-size: 8px;">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline-primary btn-sm w-100 mt-2" (click)="openIso9001AssignModal(def.catalogCode)">
+                <i class="fas fa-plus me-1"></i>Agregar más del catálogo
+              </button>
+            </div>
+            <div *ngIf="getIso9001Items(def.catalogCode).length === 0" class="text-center py-2 px-1">
+              <i [ngClass]="[def.icon, 'fa-lg', 'text-muted', 'opacity-50', 'd-block', 'mb-2']"></i>
+              <p class="text-muted small mb-2" style="font-size: 11px;">Ningún ítem asignado a esta empresa.</p>
+              <button type="button" class="btn btn-primary btn-sm w-100" (click)="openIso9001AssignModal(def.catalogCode)">
+                <i class="fas fa-th-list me-1"></i>Ver opciones del catálogo
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ═══════════════════════ SECCIÓN: CONFIGURACIÓN MATRIZ LEGAL ═══════════════════════ -->
   <div class="d-flex justify-content-between align-items-center mb-3 mt-4 pb-2" style="border-bottom: 2px solid #e9ecef;">
     <div class="d-flex align-items-center gap-3">
@@ -2601,6 +2672,59 @@
         <button type="button" class="btn btn-primary" (click)="saveObligationEdit()" [disabled]="savingObligation">
           <i class="fas" [ngClass]="savingObligation ? 'fa-spinner fa-spin' : 'fa-save'"></i>
           <span class="ms-1">Guardar cambios</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal ISO 9001 — asignar ítems del catálogo global (mismo patrón que Tipo de vía) -->
+<div *ngIf="showAsignIso9001Modal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 text-white" style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-certificate me-2"></i>
+          <h5 class="modal-title mb-0">{{ iso9001AssignModalTitle() }}</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignIso9001Modal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="small text-muted mb-2">Marque uno o varios registros del catálogo global creados en <strong>Configuración</strong> → ISO 9001 (mismo código de parámetro).</p>
+        <p class="small text-muted mb-3">Empresa: <strong>{{ empresa?.name }}</strong> · RUC <strong>{{ empresa?.ruc }}</strong></p>
+        <div *ngIf="iso9001GlobalCatalogLoading" class="text-center py-4 text-muted small">
+          <i class="fas fa-spinner fa-spin fa-2x mb-2 d-block"></i>
+          Cargando opciones del catálogo…
+        </div>
+        <div class="d-flex flex-wrap gap-2 mb-2" *ngIf="!iso9001GlobalCatalogLoading">
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="iso9001AssignSelectAll()">Seleccionar todos</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="iso9001AssignClear()">Ninguno</button>
+          <span class="small text-muted align-self-center ms-auto" *ngIf="selectedIso9001CatalogIds.length">{{ selectedIso9001CatalogIds.length }} seleccionado(s)</span>
+        </div>
+        <ng-container *ngIf="!iso9001GlobalCatalogLoading">
+          <div class="border rounded p-2 gerencia-multi-pick" style="max-height: 280px; overflow-y: auto;">
+            <label *ngFor="let item of availableIso9001ForAssign(); trackBy: trackByGerenciaCatId" class="d-flex align-items-start gap-2 py-2 px-2 border-bottom mb-0 gerencia-multi-pick__row">
+              <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" [checked]="iso9001AssignIsSelected(item.id)" (change)="iso9001AssignToggle(item.id, $any($event.target).checked)">
+              <span class="small">
+                <span class="fw-semibold">{{ item.name }}</span>
+                <span *ngIf="item.description" class="text-muted d-block" style="font-size: 11px;">{{ item.description }}</span>
+              </span>
+            </label>
+          </div>
+          <div *ngIf="!allIso9001GlobalForModal.length && !savingIso9001Assign" class="alert alert-info small py-2 mt-2 mb-0">
+            <i class="fas fa-info-circle me-1"></i>No hay ítems en el catálogo global para este parámetro. Créelos en
+            <a routerLink="/dashboard/admin/configuracion/iso-9001" class="alert-link fw-semibold">Configuración → ISO 9001</a>.
+          </div>
+          <div *ngIf="allIso9001GlobalForModal.length && !availableIso9001ForAssign().length" class="alert alert-warning small py-2 mt-2 mb-0">
+            <i class="fas fa-check-double me-1"></i>Ya están asignados a esta empresa todos los ítems disponibles de este catálogo.
+          </div>
+        </ng-container>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeAsignIso9001Modal()" [disabled]="savingIso9001Assign">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="assignIso9001FromGlobal()" [disabled]="!selectedIso9001CatalogIds.length || savingIso9001Assign">
+          <i class="fas" [ngClass]="savingIso9001Assign ? 'fa-spinner fa-spin' : 'fa-check'"></i>
+          <span class="ms-1">Asignar<span *ngIf="selectedIso9001CatalogIds.length"> ({{ selectedIso9001CatalogIds.length }})</span></span>
         </button>
       </div>
     </div>

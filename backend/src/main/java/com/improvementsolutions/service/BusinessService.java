@@ -7,6 +7,7 @@ import com.improvementsolutions.repository.ObligationMatrixRepository;
 import com.improvementsolutions.repository.BusinessObligationMatrixRepository;
 import com.improvementsolutions.repository.CourseCertificationRepository;
 import com.improvementsolutions.repository.CardCatalogRepository;
+import com.improvementsolutions.repository.Iso9001CatalogItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +61,7 @@ public class BusinessService {
     private final com.improvementsolutions.repository.PosibleRiesgoViaRepository posibleRiesgoViaRepository;
     private final com.improvementsolutions.repository.OtrosPeligrosViajeRepository otrosPeligrosViajeRepository;
     private final com.improvementsolutions.repository.MedidaControlTomadaViajeRepository medidaControlTomadaViajeRepository;
+    private final Iso9001CatalogItemRepository iso9001CatalogItemRepository;
 
     public List<Business> findAll() {
         return businessRepository.findAll();
@@ -158,6 +160,7 @@ public class BusinessService {
                 if (business.getPosiblesRiesgosVia() != null) business.getPosiblesRiesgosVia().size();
                 if (business.getOtrosPeligrosViajeCatalogo() != null) business.getOtrosPeligrosViajeCatalogo().size();
                 if (business.getMedidasControlTomadasViajeCatalogo() != null) business.getMedidasControlTomadasViajeCatalogo().size();
+                if (business.getIso9001CatalogItems() != null) business.getIso9001CatalogItems().size();
             } catch (Exception e) {
                 log.warn("[BusinessService] Could not initialize obligation matrices for business {}: {}", id, e.getMessage());
             }
@@ -1104,6 +1107,24 @@ public class BusinessService {
     public void removeTipoViaFromBusiness(Long bId, Long id) {
         Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
         b.getTipoVias().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addIso9001CatalogItemToBusiness(Long bId, Long catalogItemId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        Iso9001CatalogItem item = iso9001CatalogItemRepository.findById(catalogItemId)
+                .orElseThrow(() -> new RuntimeException("No encontrado"));
+        b.addIso9001CatalogItem(item);
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void removeIso9001CatalogItemFromBusiness(Long bId, Long catalogItemId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getIso9001CatalogItems().removeIf(m -> m.getId().equals(catalogItemId));
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
     }
 
     @Transactional

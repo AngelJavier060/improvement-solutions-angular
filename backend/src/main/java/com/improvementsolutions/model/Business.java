@@ -17,8 +17,8 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "tipoDocumentoVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo"})
-@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "tipoDocumentoVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo"})
+@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "tipoDocumentoVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems"})
+@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "tipoDocumentoVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems"})
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Business {
     @Id
@@ -404,6 +404,16 @@ public class Business {
     @JsonIgnore
     private Set<MedidaControlTomadaViaje> medidasControlTomadasViajeCatalogo = new HashSet<>();
 
+    /** Ítems del catálogo global ISO 9001 asignados a esta empresa (por id de {@link Iso9001CatalogItem}). */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "business_iso_9001_catalog_item",
+            joinColumns = @JoinColumn(name = "business_id"),
+            inverseJoinColumns = @JoinColumn(name = "iso_9001_catalog_item_id")
+    )
+    @JsonIgnore
+    private Set<Iso9001CatalogItem> iso9001CatalogItems = new HashSet<>();
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -685,4 +695,12 @@ public class Business {
 
     public void addMedidaControlTomadaViaje(MedidaControlTomadaViaje m) { medidasControlTomadasViajeCatalogo.add(m); }
     public void removeMedidaControlTomadaViaje(MedidaControlTomadaViaje m) { medidasControlTomadasViajeCatalogo.remove(m); }
+
+    public void addIso9001CatalogItem(Iso9001CatalogItem item) {
+        iso9001CatalogItems.add(item);
+    }
+
+    public void removeIso9001CatalogItem(Iso9001CatalogItem item) {
+        iso9001CatalogItems.remove(item);
+    }
 }

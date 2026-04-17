@@ -196,6 +196,10 @@ const routes: Routes = [
       {
         path: 'aceptacion-riesgo',
         loadChildren: () => import('./aceptacion-riesgo/aceptacion-riesgo.module').then(m => m.AceptacionRiesgoModule)
+      },
+      {
+        path: 'iso-9001',
+        loadChildren: () => import('./iso-9001-gestion/iso-9001-gestion.module').then(m => m.Iso9001GestionModule)
       }
     ]
   }

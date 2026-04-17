@@ -42,7 +42,7 @@ public class BusinessController {
     private final ContractorCompanyRepository contractorCompanyRepository;
     private final ContractorBlockRepository contractorBlockRepository;
     private final RoleRepository roleRepository;
-    
+
     // Endpoints para el administrador
     @GetMapping("/admin/dashboard")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
@@ -379,6 +379,16 @@ public class BusinessController {
         response.put("otrosPeligrosViajeCatalogo", business.getOtrosPeligrosViajeCatalogo().stream().map(viajesDto).collect(Collectors.toList()));
         response.put("medidasControlTomadasViajeCatalogo", business.getMedidasControlTomadasViajeCatalogo().stream().map(viajesDto).collect(Collectors.toList()));
 
+        java.util.function.Function<com.improvementsolutions.model.Iso9001CatalogItem, Map<String, Object>> iso9001Dto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("description", it.getDescription());
+            m.put("catalogCode", it.getCatalogCode());
+            return m;
+        };
+        response.put("iso9001CatalogItems", business.getIso9001CatalogItems().stream().map(iso9001Dto).collect(Collectors.toList()));
+
         // Configuración de mantenimiento (JSON plano almacenado en la entidad)
         response.put("maintenanceConfig", business.getMaintenanceConfig());
         // Contactos de emergencia (JSON plano almacenado en la entidad)
@@ -575,6 +585,16 @@ public class BusinessController {
         response.put("posiblesRiesgosVia", business.getPosiblesRiesgosVia().stream().map(viajesDetailsDto).collect(Collectors.toList()));
         response.put("otrosPeligrosViajeCatalogo", business.getOtrosPeligrosViajeCatalogo().stream().map(viajesDetailsDto).collect(Collectors.toList()));
         response.put("medidasControlTomadasViajeCatalogo", business.getMedidasControlTomadasViajeCatalogo().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.Iso9001CatalogItem, Map<String, Object>> iso9001DetailsDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("description", it.getDescription());
+            m.put("catalogCode", it.getCatalogCode());
+            return m;
+        };
+        response.put("iso9001CatalogItems", business.getIso9001CatalogItems().stream().map(iso9001DetailsDto).collect(Collectors.toList()));
 
         log.debug("[BusinessController] getBusinessDetails id={} companies={} blocks={}", id,
                 contractorCompaniesDto.size(), contractorBlocksDto.size());
@@ -1430,6 +1450,25 @@ public class BusinessController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> removeTipoVia(@PathVariable Long businessId, @PathVariable Long id) {
         businessService.removeTipoViaFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    /** Vincula un ítem del catálogo global ISO 9001 (Configuración) a la empresa. */
+    @PostMapping("/{businessId}/iso-9001-catalog-item/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addIso9001CatalogItemToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.addIso9001CatalogItemToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+
+    @DeleteMapping("/{businessId}/iso-9001-catalog-item/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeIso9001CatalogItemFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.removeIso9001CatalogItemFromBusiness(businessId, id);
         return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
     }
 

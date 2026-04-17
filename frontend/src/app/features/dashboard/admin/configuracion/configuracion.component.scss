@@ -222,6 +222,30 @@
       .icon-container { background-color: #f5f3ff; color: #7c3aed; }
     }
     .categoria-card:hover .arrow { color: #7c3aed; }
+
+    .config-submodulo {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px dashed #c4b5fd;
+    }
+
+    .config-submodulo-header {
+      margin-bottom: 16px;
+    }
+
+    .config-submodulo-titulo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #4c1d95;
+      margin: 0 0 6px;
+    }
+
+    .config-submodulo-desc {
+      font-size: 13px;
+      color: #64748b;
+      margin: 0;
+      max-width: 720px;
+    }
   }
 
   &.seccion-inventario {

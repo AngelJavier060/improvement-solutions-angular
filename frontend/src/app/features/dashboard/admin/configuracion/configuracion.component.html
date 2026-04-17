@@ -23,8 +23,8 @@
 
       <div class="categorias-grid">
         <a *ngFor="let categoria of seccion.categorias"
-          [routerLink]="[categoria.ruta]"
-          (click)="$event.preventDefault(); !categoria.proximamente && navegarA(categoria.ruta)"
+          [routerLink]="linkCommands(categoria)"
+          (click)="$event.preventDefault(); !categoria.proximamente && navegarACategoria(categoria)"
           class="categoria-card"
           [class.disabled]="categoria.proximamente">
           <div class="icon-container">
@@ -39,6 +39,32 @@
             <i class="fas fa-chevron-right"></i>
           </div>
         </a>
+      </div>
+
+      <div *ngFor="let bloque of seccion.modulosAdicionales || []" class="config-submodulo">
+        <div class="config-submodulo-header">
+          <h3 class="config-submodulo-titulo">{{ bloque.titulo }}</h3>
+          <p *ngIf="bloque.descripcion" class="config-submodulo-desc">{{ bloque.descripcion }}</p>
+        </div>
+        <div class="categorias-grid">
+          <a *ngFor="let categoria of bloque.categorias"
+            [routerLink]="linkCommands(categoria)"
+            (click)="$event.preventDefault(); !categoria.proximamente && navegarACategoria(categoria)"
+            class="categoria-card"
+            [class.disabled]="categoria.proximamente">
+            <div class="icon-container">
+              <i [class]="categoria.icono"></i>
+            </div>
+            <div class="content">
+              <h3>{{ categoria.nombre }}</h3>
+              <p>{{ categoria.descripcion }}</p>
+              <small *ngIf="categoria.proximamente" class="proximamente-badge">Próximamente</small>
+            </div>
+            <div class="arrow">
+              <i class="fas fa-chevron-right"></i>
+            </div>
+          </a>
+        </div>
       </div>
     </div>
   </div>

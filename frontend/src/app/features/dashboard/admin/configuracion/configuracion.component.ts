@@ -2,6 +2,17 @@ import { Component, OnInit } from '@angular/core';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
+/** Tarjeta de acceso a un catálogo de configuración (ruta simple o varios segmentos). */
+export interface CategoriaConfiguracionCard {
+  nombre: string;
+  descripcion: string;
+  ruta: string;
+  /** Si existe, navegación relativa multi-segmento (p. ej. ISO 9001). */
+  rutaCommands?: string[];
+  icono: string;
+  proximamente: boolean;
+}
+
 @Component({
   selector: 'app-configuracion',
   templateUrl: './configuracion.component.html',
@@ -257,6 +268,54 @@ export class ConfiguracionComponent implements OnInit {
           icono: 'fas fa-shield-alt',
           proximamente: false
         },
+      ],
+      modulosAdicionales: [
+        {
+          titulo: 'Sistema de Gestión ISO 9001-2018',
+          descripcion: 'Parámetros con nombre y descripción para documentación y estandarización.',
+          categorias: [
+            {
+              nombre: 'Tipo de Documento',
+              descripcion: 'Catálogo de tipos de documento (nombre y descripción).',
+              ruta: 'iso-9001',
+              rutaCommands: ['iso-9001', 'tipo-documento'],
+              icono: 'fas fa-file-alt',
+              proximamente: false
+            },
+            {
+              nombre: 'Proceso',
+              descripcion: 'Catálogo de procesos (nombre y descripción).',
+              ruta: 'iso-9001',
+              rutaCommands: ['iso-9001', 'proceso'],
+              icono: 'fas fa-project-diagram',
+              proximamente: false
+            },
+            {
+              nombre: 'Código',
+              descripcion: 'Catálogo de códigos (nombre y descripción).',
+              ruta: 'iso-9001',
+              rutaCommands: ['iso-9001', 'codigo'],
+              icono: 'fas fa-barcode',
+              proximamente: false
+            },
+            {
+              nombre: 'Almacenamiento',
+              descripcion: 'Catálogo de almacenamiento (nombre y descripción).',
+              ruta: 'iso-9001',
+              rutaCommands: ['iso-9001', 'almacenamiento'],
+              icono: 'fas fa-warehouse',
+              proximamente: false
+            },
+            {
+              nombre: 'Disposición final',
+              descripcion: 'Catálogo de disposición final (nombre y descripción).',
+              ruta: 'iso-9001',
+              rutaCommands: ['iso-9001', 'disposicion-final'],
+              icono: 'fas fa-recycle',
+              proximamente: false
+            }
+          ]
+        }
       ]
     },
   ];
@@ -264,10 +323,24 @@ export class ConfiguracionComponent implements OnInit {
   navegarA(ruta: string): void {
     console.log('Navegando a:', ruta);
     console.log('Ruta completa:', '/dashboard/admin/configuracion/' + ruta);
-    // Método corregido para asegurar una navegación adecuada
     this.router.navigate([ruta], { relativeTo: this.route })
       .then(success => console.log(`Navegación a ${ruta} ${success ? 'exitosa' : 'fallida'}`))
       .catch(error => console.error(`Error al navegar a ${ruta}:`, error));
+  }
+
+  /** Comandos de enlace para `routerLink` (soporta rutas de varios segmentos). */
+  linkCommands(categoria: CategoriaConfiguracionCard): string[] {
+    return categoria.rutaCommands ?? [categoria.ruta];
+  }
+
+  navegarACategoria(categoria: CategoriaConfiguracionCard): void {
+    if (categoria.proximamente) {
+      return;
+    }
+    const parts = this.linkCommands(categoria);
+    this.router.navigate(parts, { relativeTo: this.route })
+      .then(success => console.log(`Navegación ${success ? 'exitosa' : 'fallida'}`, parts))
+      .catch(error => console.error('Error al navegar:', error));
   }
 
   opciones = [
