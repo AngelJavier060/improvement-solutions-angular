@@ -1,3 +1,4 @@
+version: '3.8'
 services:
   postgres:
     image: postgres:16
@@ -33,6 +34,11 @@ services:
     restart: unless-stopped
     volumes:
       - uploads_data:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   frontend:
     build: ./frontend
@@ -45,7 +51,7 @@ services:
       - improvement_network
     restart: unless-stopped
     volumes:
-      - ${LETSENCRYPT_PATH:-/etc/letsencrypt}:/etc/letsencrypt:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
 
 volumes:
   postgres_data:

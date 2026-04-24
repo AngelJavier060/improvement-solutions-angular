@@ -18,10 +18,6 @@ FROM nginx:alpine
 RUN rm -f /usr/share/nginx/html/index.html /usr/share/nginx/html/50x.html
 # Angular con localize=true genera salida en subcarpetas por locale (p.ej., en-US)
 COPY --from=build /app/dist/improvement-solutions/ /usr/share/nginx/html/
-RUN mkdir -p /etc/nginx/conf.available /docker-entrypoint.d
-COPY nginx-http.conf /etc/nginx/conf.available/http.conf
-COPY nginx-ssl.conf /etc/nginx/conf.available/https.conf
-COPY docker-entrypoint.d/99-select-nginx-conf.sh /docker-entrypoint.d/99-select-nginx-conf.sh
-RUN chmod +x /docker-entrypoint.d/99-select-nginx-conf.sh
+COPY nginx-ssl.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80 443
 CMD ["nginx", "-g", "daemon off;"]
