@@ -1,14 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FleetService, FleetVehicleDocumentDto } from '../../../../../services/fleet.service';
+import { FleetService } from '../../../../../services/fleet.service';
 import { Vehicle, VehicleKPIs } from '../../../../../models/vehicle.model';
 
 @Component({
   selector: 'app-lista-vehiculos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   templateUrl: './lista-vehiculos.component.html',
   styleUrls: ['./lista-vehiculos.component.scss']
 })
@@ -33,12 +32,6 @@ export class ListaVehiculosComponent implements OnInit {
   Math = Math;
 
   selectedVehicle: Vehicle | null = null;
-  detailDocs: FleetVehicleDocumentDto[] = [];
-  detailDocsLoading = false;
-  detailDocError = '';
-  docsSectionOpen = false;
-  docDescription = '';
-  docUploading = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -49,76 +42,10 @@ export class ListaVehiculosComponent implements OnInit {
   openVehicleDetail(vehicle: Vehicle): void {
     if (vehicle.id == null) return;
     this.selectedVehicle = vehicle;
-    this.docsSectionOpen = false;
-    this.detailDocs = [];
-    this.detailDocError = '';
-    this.docDescription = '';
   }
 
   closeVehicleDetail(): void {
     this.selectedVehicle = null;
-    this.detailDocs = [];
-    this.docsSectionOpen = false;
-    this.detailDocError = '';
-  }
-
-  toggleDocsSection(): void {
-    this.docsSectionOpen = !this.docsSectionOpen;
-    if (this.docsSectionOpen && this.selectedVehicle?.id != null) {
-      this.loadVehicleDocuments();
-    }
-  }
-
-  loadVehicleDocuments(): void {
-    const id = this.selectedVehicle?.id;
-    if (id == null) return;
-    this.detailDocsLoading = true;
-    this.detailDocError = '';
-    this.fleetService.listVehicleDocuments(this.businessRuc, id).subscribe({
-      next: list => {
-        this.detailDocs = list || [];
-        this.detailDocsLoading = false;
-      },
-      error: err => {
-        console.error(err);
-        this.detailDocError = err?.error?.message || 'No se pudieron cargar los documentos.';
-        this.detailDocsLoading = false;
-      }
-    });
-  }
-
-  onDocumentFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    const vid = this.selectedVehicle?.id;
-    if (!file || vid == null) return;
-    this.docUploading = true;
-    this.detailDocError = '';
-    this.fleetService.uploadVehicleDocument(this.businessRuc, vid, file, this.docDescription || undefined).subscribe({
-      next: () => {
-        this.docUploading = false;
-        this.docDescription = '';
-        input.value = '';
-        this.loadVehicleDocuments();
-      },
-      error: err => {
-        console.error(err);
-        this.docUploading = false;
-        this.detailDocError = err?.error?.message || 'Error al subir el archivo.';
-      }
-    });
-  }
-
-  deleteDocument(doc: FleetVehicleDocumentDto): void {
-    const vid = this.selectedVehicle?.id;
-    if (vid == null || !confirm(`¿Eliminar "${doc.originalFilename}"?`)) return;
-    this.fleetService.deleteVehicleDocument(this.businessRuc, vid, doc.id).subscribe({
-      next: () => this.loadVehicleDocuments(),
-      error: err => {
-        console.error(err);
-        alert(err?.error?.message || 'No se pudo eliminar el archivo.');
-      }
-    });
   }
 
   editarFicha(vehicle: Vehicle): void {

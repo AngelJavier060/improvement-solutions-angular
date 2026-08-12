@@ -187,6 +187,15 @@
     flex-direction: row;
     align-items: center;
   }
+
+  &--end {
+    justify-content: flex-end;
+    align-items: flex-end;
+
+    @media (min-width: 768px) {
+      align-items: center;
+    }
+  }
 }
 
 .fv-link {

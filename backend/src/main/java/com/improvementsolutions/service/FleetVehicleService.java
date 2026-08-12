@@ -49,7 +49,8 @@ public class FleetVehicleService {
         out.put("businessId", full.getId());
         out.put("businessRuc", full.getRuc());
         out.put("claseVehiculos", toIdNameList(full.getClaseVehiculos()));
-        out.put("entidadRemitentes", toIdNameList(full.getEntidadRemitentes()));
+        // Consulta dedicada: lista completa ordenada (misma fuente que ficha-catalogs)
+        out.put("entidadRemitentes", toIdNameList(businessService.listEntidadRemitentesByBusinessId(full.getId())));
         out.put("tipoVehiculos", toIdNameList(full.getTipoVehiculos()));
         out.put("marcaVehiculos", toIdNameList(full.getMarcaVehiculos()));
         out.put("colorVehiculos", toIdNameList(full.getColorVehiculos()));

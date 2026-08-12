@@ -958,6 +958,12 @@ public class BusinessService {
         com.improvementsolutions.model.EntidadRemitente e = entidadRemitenteRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
         b.addEntidadRemitente(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
     }
+
+    @Transactional(readOnly = true)
+    public java.util.List<com.improvementsolutions.model.EntidadRemitente> listEntidadRemitentesByBusinessId(Long businessId) {
+        return entidadRemitenteRepository.findAllAssignedToBusiness(businessId);
+    }
+
     @Transactional
     public void removeEntidadRemitenteFromBusiness(Long bId, Long id) {
         Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));

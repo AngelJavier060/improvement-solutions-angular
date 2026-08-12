@@ -189,12 +189,16 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       v.tipoVehiculoId != null
         ? this.tipoVehiculoService.getById(v.tipoVehiculoId).pipe(catchError(() => of(null)))
         : of(null);
-    const cat$ = this.fleetService.getFichaCatalogs(this.businessRuc).pipe(catchError(() => of(null)));
+    // No tragar errores del catálogo: sin entidades no se puede seleccionar
+    const cat$ = this.fleetService.getFichaCatalogs(this.businessRuc);
 
     forkJoin({ tipo: tipo$, cats: cat$ }).subscribe({
       next: ({ tipo, cats }) => {
         this.applyTipoDocumentosConfig(tipo, v);
-        this.entidadRemitentes = cats?.entidadRemitentes ?? [];
+        const list = Array.isArray(cats?.entidadRemitentes) ? [...cats.entidadRemitentes] : [];
+        this.entidadRemitentes = list
+          .filter(e => e && e.id != null && !!(e.name || '').trim())
+          .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es', { sensitivity: 'base' }));
         this.loadingFleet = false;
         this.patchFormFromDoc();
         this.ensureDefaultTypeCode();
@@ -203,7 +207,8 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       error: err => {
         console.error(err);
         this.loadingFleet = false;
-        this.error = 'No se pudo cargar la configuración del formulario.';
+        this.error =
+          'No se pudo cargar el catálogo de entidades remitentes de la empresa. Verifique la configuración en administración.';
         this.cdr.markForCheck();
       }
     });

@@ -350,7 +350,7 @@ public class BusinessController {
         response.put("claseVehiculos", business.getClaseVehiculos().stream().map(claseDto).collect(Collectors.toList()));
         java.util.function.Function<com.improvementsolutions.model.EntidadRemitente, Map<String, Object>> erDto =
             e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; };
-        response.put("entidadRemitentes", business.getEntidadRemitentes().stream().map(erDto).collect(Collectors.toList()));
+        response.put("entidadRemitentes", businessService.listEntidadRemitentesByBusinessId(business.getId()).stream().map(erDto).collect(Collectors.toList()));
         response.put("tipoCombustibles", business.getTipoCombustibles().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
         response.put("colorVehiculos", business.getColorVehiculos().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
         response.put("transmisiones", business.getTransmisiones().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));

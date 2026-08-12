@@ -305,11 +305,7 @@
 
         <hr class="fv-card__divider" />
 
-        <div class="fv-card__actions">
-          <button type="button" class="fv-link" (click)="toggleDocsSection()">
-            <i class="fas fa-folder"></i>
-            {{ docsSectionOpen ? 'Ocultar documentos' : 'Administrar documentos' }}
-          </button>
+        <div class="fv-card__actions fv-card__actions--end">
           <button
             type="button"
             class="fv-btn-primary"
@@ -318,38 +314,6 @@
             <i class="fas fa-edit"></i>
             Editar ficha completa
           </button>
-        </div>
-
-        <div *ngIf="docsSectionOpen" class="fv-docs">
-          <div *ngIf="detailDocError" class="fv-docs__alert">{{ detailDocError }}</div>
-          <div class="fv-docs__upload">
-            <div class="fv-docs__field">
-              <label>Descripción (opcional)</label>
-              <input type="text" [(ngModel)]="docDescription" placeholder="Ej. Revisión técnica" />
-            </div>
-            <label class="fv-docs__upload-btn" [class.is-disabled]="docUploading">
-              <i class="fas fa-upload"></i>
-              Subir archivo
-              <input type="file" (change)="onDocumentFileSelected($event)" [disabled]="docUploading" />
-            </label>
-          </div>
-          <div *ngIf="detailDocsLoading" class="fv-docs__muted">
-            <i class="fas fa-spinner fa-spin"></i> Cargando…
-          </div>
-          <ul class="fv-docs__list" *ngIf="!detailDocsLoading && detailDocs.length > 0">
-            <li *ngFor="let d of detailDocs">
-              <div class="fv-docs__file">
-                <a [href]="d.url" target="_blank" rel="noopener">{{ d.originalFilename }}</a>
-                <small *ngIf="d.description">{{ d.description }}</small>
-              </div>
-              <button type="button" class="fv-docs__delete" (click)="deleteDocument(d)" title="Eliminar">
-                <i class="fas fa-trash-alt"></i>
-              </button>
-            </li>
-          </ul>
-          <p *ngIf="!detailDocsLoading && detailDocs.length === 0" class="fv-docs__muted">
-            No hay documentos adjuntos.
-          </p>
         </div>
       </div>
     </div>
