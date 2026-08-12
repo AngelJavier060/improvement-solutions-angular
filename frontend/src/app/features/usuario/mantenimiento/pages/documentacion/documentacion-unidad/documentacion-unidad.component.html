@@ -1,54 +1,61 @@
 <div class="du-page" *ngIf="!loading && !error && vehicle">
-  <!-- Vehicle header -->
-  <section class="du-banner">
-    <div class="du-banner__accent"></div>
-    <div class="du-banner__body">
-      <div class="du-banner__identity">
-        <div class="du-banner__photo">
-          <img *ngIf="vehicle.fotoPrincipal" [src]="vehicle.fotoPrincipal" [alt]="vehicle.placa" />
-          <div *ngIf="!vehicle.fotoPrincipal" class="du-banner__photo-fallback">
-            <i class="fas fa-truck"></i>
-          </div>
+  <!-- Header: ficha + resumen (mock) -->
+  <section class="du-top">
+    <article class="du-hero">
+      <div class="du-hero__media">
+        <img *ngIf="vehicle.fotoPrincipal" [src]="vehicle.fotoPrincipal" [alt]="vehicle.placa" />
+        <div *ngIf="!vehicle.fotoPrincipal" class="du-hero__media-fallback">
+          <i class="fas fa-truck"></i>
+          <span>Sin foto</span>
         </div>
-        <div class="du-banner__text">
-          <div class="du-banner__title-row">
-            <h1>{{ vehicle.placa }}</h1>
-            <span class="du-pill">{{ estadoUnidadLabel() }}</span>
+      </div>
+      <div class="du-hero__body">
+        <div class="du-hero__intro">
+          <span class="du-hero__badge">Flota activa</span>
+          <h1 class="du-hero__placa">{{ vehicle.placa }}</h1>
+          <p class="du-hero__sub">{{ vehicleTitle() }}</p>
+        </div>
+        <div class="du-hero__specs">
+          <div>
+            <p class="du-spec__label">Código</p>
+            <p class="du-spec__value">{{ vehicle.codigoEquipo || '—' }}</p>
           </div>
-          <p class="du-banner__sub">
-            <span class="du-banner__sub-icon"><i class="fas fa-truck"></i></span>
-            {{ vehicleTitle() }}
-          </p>
-          <div class="du-banner__actions">
-            <button type="button" class="du-btn du-btn--ghost" (click)="irHistorial()">
-              <i class="fas fa-history"></i> Historial
-            </button>
-            <button type="button" class="du-btn du-btn--ghost" (click)="volverLista()">
-              <i class="fas fa-arrow-left"></i> Volver
-            </button>
+          <div>
+            <p class="du-spec__label">Clase</p>
+            <p class="du-spec__value">{{ vehicle.clase || '—' }}</p>
+          </div>
+          <div>
+            <p class="du-spec__label">Tipo</p>
+            <p class="du-spec__value">{{ vehicle.tipoVehiculo || '—' }}</p>
+          </div>
+          <div>
+            <p class="du-spec__label">Número motor</p>
+            <p class="du-spec__value">{{ vehicle.serieMotor || '—' }}</p>
+          </div>
+          <div class="du-spec--wide">
+            <p class="du-spec__label">Chasis / VIN</p>
+            <p class="du-spec__value" [title]="vehicle.serieChasis || ''">{{ vehicle.serieChasis || '—' }}</p>
           </div>
         </div>
       </div>
+    </article>
 
-      <div class="du-banner__meta">
-        <div class="du-meta-card">
-          <p class="du-meta-card__label">Marca</p>
-          <p class="du-meta-card__value">{{ vehicle.marca || '—' }}</p>
-        </div>
-        <div class="du-meta-card">
-          <p class="du-meta-card__label">Motor</p>
-          <p class="du-meta-card__value">{{ vehicle.serieMotor || '—' }}</p>
-        </div>
-        <div class="du-meta-card">
-          <p class="du-meta-card__label">Chasis</p>
-          <p class="du-meta-card__value" [title]="vehicle.serieChasis || ''">{{ vehicle.serieChasis || '—' }}</p>
-        </div>
-        <div class="du-meta-card">
-          <p class="du-meta-card__label">Clase</p>
-          <p class="du-meta-card__value">{{ vehicle.clase || '—' }}</p>
-        </div>
+    <aside class="du-resumen">
+      <p class="du-resumen__eyebrow">Resumen</p>
+      <div class="du-resumen__main">
+        <p class="du-resumen__label">Documentos registrados</p>
+        <p class="du-resumen__count">{{ totalDocsCount() }}</p>
       </div>
-    </div>
+      <div class="du-resumen__actions">
+        <button type="button" class="du-resumen__btn du-resumen__btn--light" (click)="irHistorial()">
+          <i class="fas fa-history"></i>
+          Historial
+        </button>
+        <button type="button" class="du-resumen__btn du-resumen__btn--ghost" (click)="irRegistro()">
+          + Nuevo
+        </button>
+      </div>
+    </aside>
   </section>
 
   <div class="du-toolbar">
@@ -56,7 +63,9 @@
       <i class="fas fa-search"></i>
       <input type="search" placeholder="Buscar tipo, código o referencia…" [(ngModel)]="search" />
     </div>
-    <span class="du-toolbar__count">{{ totalDocsCount() }} documento(s)</span>
+    <button type="button" class="du-btn du-btn--ghost" (click)="volverLista()">
+      <i class="fas fa-arrow-left"></i> Volver al listado
+    </button>
   </div>
 
   <!-- 3 grouped sections -->
