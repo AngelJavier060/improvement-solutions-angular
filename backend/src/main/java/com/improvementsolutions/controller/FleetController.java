@@ -168,4 +168,88 @@ public class FleetController {
                     .body(new ErrorResponse("Error al eliminar el documento", "INTERNAL", 500));
         }
     }
+
+    @GetMapping("/{ruc}/compliance-docs")
+    public ResponseEntity<?> listAllComplianceDocs(@PathVariable String ruc) {
+        try {
+            return ResponseEntity.ok(fleetVehicleService.listComplianceDocumentsByRuc(ruc));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(e.getMessage(), "NOT_FOUND", 404));
+        } catch (Exception e) {
+            log.error("[Fleet] list compliance: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al listar documentación", "INTERNAL", 500));
+        }
+    }
+
+    @GetMapping("/{ruc}/vehicles/{id}/compliance-docs")
+    public ResponseEntity<?> listComplianceDocs(@PathVariable String ruc, @PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(fleetVehicleService.listComplianceDocuments(ruc, id));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(e.getMessage(), "NOT_FOUND", 404));
+        } catch (Exception e) {
+            log.error("[Fleet] list vehicle compliance: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al listar documentación", "INTERNAL", 500));
+        }
+    }
+
+    @PostMapping("/{ruc}/vehicles/{id}/compliance-docs")
+    public ResponseEntity<?> createComplianceDoc(
+            @PathVariable String ruc,
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        try {
+            Map<String, Object> created = fleetVehicleService.createComplianceDocument(ruc, id, body);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(e.getMessage(), "BAD_REQUEST", 400));
+        } catch (Exception e) {
+            log.error("[Fleet] create compliance: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al guardar documentación", "INTERNAL", 500));
+        }
+    }
+
+    @PutMapping("/{ruc}/vehicles/{id}/compliance-docs/{docId}")
+    public ResponseEntity<?> updateComplianceDoc(
+            @PathVariable String ruc,
+            @PathVariable Long id,
+            @PathVariable Long docId,
+            @RequestBody Map<String, Object> body) {
+        try {
+            return ResponseEntity.ok(fleetVehicleService.updateComplianceDocument(ruc, id, docId, body));
+        } catch (IllegalArgumentException e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            HttpStatus status = msg.contains("no encontrado") ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status)
+                    .body(new ErrorResponse(e.getMessage(), status.name(), status.value()));
+        } catch (Exception e) {
+            log.error("[Fleet] update compliance: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al actualizar documentación", "INTERNAL", 500));
+        }
+    }
+
+    @DeleteMapping("/{ruc}/vehicles/{id}/compliance-docs/{docId}")
+    public ResponseEntity<?> deleteComplianceDoc(
+            @PathVariable String ruc,
+            @PathVariable Long id,
+            @PathVariable Long docId) {
+        try {
+            fleetVehicleService.deleteComplianceDocument(ruc, id, docId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(e.getMessage(), "NOT_FOUND", 404));
+        } catch (Exception e) {
+            log.error("[Fleet] delete compliance: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al eliminar documentación", "INTERNAL", 500));
+        }
+    }
 }

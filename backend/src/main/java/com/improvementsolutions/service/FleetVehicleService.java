@@ -2,6 +2,7 @@ package com.improvementsolutions.service;
 
 import com.improvementsolutions.dto.fleet.FleetVehicleWriteDto;
 import com.improvementsolutions.model.*;
+import com.improvementsolutions.repository.FleetComplianceDocumentRepository;
 import com.improvementsolutions.repository.FleetVehicleDocumentRepository;
 import com.improvementsolutions.repository.FleetVehicleRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -33,6 +35,7 @@ public class FleetVehicleService {
 
     private final FleetVehicleRepository fleetVehicleRepository;
     private final FleetVehicleDocumentRepository fleetVehicleDocumentRepository;
+    private final FleetComplianceDocumentRepository fleetComplianceDocumentRepository;
     private final BusinessService businessService;
 
     @Value("${file.upload-dir:uploads}")
@@ -60,6 +63,18 @@ public class FleetVehicleService {
         out.put("transmisiones", toIdNameList(full.getTransmisiones()));
         out.put("numeroEjes", toIdNameList(full.getNumeroEjes()));
         out.put("configuracionEjes", toIdNameList(full.getConfiguracionEjes()));
+        // Tipos de documento de la empresa (con categoría para las 3 secciones de documentación)
+        List<Map<String, Object>> tipoDocs = new ArrayList<>();
+        for (TipoDocumentoVehiculo t : businessService.listTipoDocumentoVehiculosByBusinessId(full.getId())) {
+            if (t == null || t.getId() == null) continue;
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", t.getId());
+            m.put("name", t.getName());
+            m.put("description", t.getDescription());
+            m.put("category", t.getCategoryOrDefault());
+            tipoDocs.add(m);
+        }
+        out.put("tipoDocumentoVehiculos", tipoDocs);
         return out;
     }
 
@@ -604,5 +619,236 @@ public class FleetVehicleService {
         } catch (IOException e) {
             log.warn("[Fleet] No se pudo borrar archivo {}: {}", filePath, e.getMessage());
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> listComplianceDocumentsByRuc(String ruc) {
+        businessService.findByRuc(ruc)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
+        return fleetComplianceDocumentRepository.findByBusinessRuc(ruc).stream()
+                .map(this::toComplianceResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> listComplianceDocuments(String ruc, Long vehicleId) {
+        Business business = businessService.findByRuc(ruc)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
+        fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
+        return fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(vehicleId).stream()
+                .map(this::toComplianceResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, Object> createComplianceDocument(String ruc, Long vehicleId, Map<String, Object> body) {
+        Business business = businessService.findByRuc(ruc)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
+        FleetVehicle v = fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
+
+        String typeCode = str(body.get("typeCode"));
+        String typeLabel = str(body.get("typeLabel"));
+        if (typeCode == null || typeCode.isBlank()) {
+            throw new IllegalArgumentException("typeCode es requerido");
+        }
+        if (typeLabel == null || typeLabel.isBlank()) {
+            typeLabel = typeCode;
+        }
+
+        FleetVehicleDocument attached = resolveAttachedFile(vehicleId, longOrNull(body.get("attachedFleetDocumentId")));
+        if (attached != null) {
+            // Evita duplicar filas al reimportar el mismo PDF
+            var existingOpt = fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(vehicleId)
+                    .stream()
+                    .filter(c -> c.getFleetVehicleDocument() != null
+                            && attached.getId().equals(c.getFleetVehicleDocument().getId()))
+                    .findFirst();
+            if (existingOpt.isPresent()) {
+                return toComplianceResponse(existingOpt.get());
+            }
+        }
+
+        FleetComplianceDocument doc = FleetComplianceDocument.builder()
+                .fleetVehicle(v)
+                .typeCode(typeCode.trim())
+                .typeLabel(typeLabel.trim())
+                .docCategory(normalizeCategory(str(body.get("docCategory"))))
+                .entidadRemitenteId(longOrNull(body.get("entidadRemitenteId")))
+                .entidadRemitenteName(blankToNull(str(body.get("entidadRemitenteName"))))
+                .referenceId(blankToNull(str(body.get("referenceId"))))
+                .issueDate(parseDate(body.get("issueDate")))
+                .expiryDate(parseDate(body.get("expiryDate")))
+                .active(boolOrDefault(body.get("active"), true))
+                .historicMode(boolOrDefault(body.get("historicMode"), false))
+                .fileName(blankToNull(str(body.get("fileName"))))
+                .fileSizeLabel(blankToNull(str(body.get("fileSizeLabel"))))
+                .fleetVehicleDocument(attached)
+                .build();
+
+        return toComplianceResponse(fleetComplianceDocumentRepository.save(doc));
+    }
+
+    @Transactional
+    public Map<String, Object> updateComplianceDocument(String ruc, Long vehicleId, Long docId, Map<String, Object> body) {
+        Business business = businessService.findByRuc(ruc)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
+        fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
+        FleetComplianceDocument doc = fleetComplianceDocumentRepository.findByIdAndFleetVehicle_Id(docId, vehicleId)
+                .orElseThrow(() -> new IllegalArgumentException("Registro de documentación no encontrado"));
+
+        if (body.containsKey("typeCode")) {
+            String typeCode = str(body.get("typeCode"));
+            if (typeCode == null || typeCode.isBlank()) {
+                throw new IllegalArgumentException("typeCode es requerido");
+            }
+            doc.setTypeCode(typeCode.trim());
+        }
+        if (body.containsKey("typeLabel")) {
+            String typeLabel = str(body.get("typeLabel"));
+            if (typeLabel != null && !typeLabel.isBlank()) {
+                doc.setTypeLabel(typeLabel.trim());
+            }
+        }
+        if (body.containsKey("docCategory")) {
+            doc.setDocCategory(normalizeCategory(str(body.get("docCategory"))));
+        }
+        if (body.containsKey("entidadRemitenteId")) {
+            doc.setEntidadRemitenteId(longOrNull(body.get("entidadRemitenteId")));
+        }
+        if (body.containsKey("entidadRemitenteName")) {
+            doc.setEntidadRemitenteName(blankToNull(str(body.get("entidadRemitenteName"))));
+        }
+        if (body.containsKey("referenceId")) {
+            doc.setReferenceId(blankToNull(str(body.get("referenceId"))));
+        }
+        if (body.containsKey("issueDate")) {
+            doc.setIssueDate(parseDate(body.get("issueDate")));
+        }
+        if (body.containsKey("expiryDate")) {
+            doc.setExpiryDate(parseDate(body.get("expiryDate")));
+        }
+        if (body.containsKey("active")) {
+            doc.setActive(boolOrDefault(body.get("active"), true));
+        }
+        if (body.containsKey("historicMode")) {
+            doc.setHistoricMode(boolOrDefault(body.get("historicMode"), false));
+        }
+        if (body.containsKey("fileName")) {
+            doc.setFileName(blankToNull(str(body.get("fileName"))));
+        }
+        if (body.containsKey("fileSizeLabel")) {
+            doc.setFileSizeLabel(blankToNull(str(body.get("fileSizeLabel"))));
+        }
+        if (body.containsKey("attachedFleetDocumentId")) {
+            doc.setFleetVehicleDocument(resolveAttachedFile(vehicleId, longOrNull(body.get("attachedFleetDocumentId"))));
+        }
+
+        return toComplianceResponse(fleetComplianceDocumentRepository.save(doc));
+    }
+
+    @Transactional
+    public void deleteComplianceDocument(String ruc, Long vehicleId, Long docId) throws IOException {
+        Business business = businessService.findByRuc(ruc)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
+        fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
+        FleetComplianceDocument doc = fleetComplianceDocumentRepository.findByIdAndFleetVehicle_Id(docId, vehicleId)
+                .orElseThrow(() -> new IllegalArgumentException("Registro de documentación no encontrado"));
+
+        Long fileId = doc.getFleetVehicleDocument() != null ? doc.getFleetVehicleDocument().getId() : null;
+        fleetComplianceDocumentRepository.delete(doc);
+        if (fileId != null) {
+            try {
+                deleteVehicleDocument(ruc, vehicleId, fileId);
+            } catch (IllegalArgumentException ignored) {
+                // archivo ya no existe
+            }
+        }
+    }
+
+    private FleetVehicleDocument resolveAttachedFile(Long vehicleId, Long fileId) {
+        if (fileId == null) return null;
+        return fleetVehicleDocumentRepository.findByIdAndFleetVehicle_Id(fileId, vehicleId)
+                .orElseThrow(() -> new IllegalArgumentException("Archivo PDF no encontrado para la unidad"));
+    }
+
+    private Map<String, Object> toComplianceResponse(FleetComplianceDocument d) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", d.getId());
+        m.put("vehicleId", d.getFleetVehicle() != null ? d.getFleetVehicle().getId() : null);
+        m.put("typeCode", d.getTypeCode());
+        m.put("typeLabel", d.getTypeLabel());
+        m.put("docCategory", d.getDocCategory() != null ? d.getDocCategory() : "DOCUMENTOS_PRINCIPALES");
+        m.put("entidadRemitenteId", d.getEntidadRemitenteId());
+        m.put("entidadRemitenteName", d.getEntidadRemitenteName());
+        m.put("referenceId", d.getReferenceId());
+        m.put("issueDate", d.getIssueDate() != null ? d.getIssueDate().toString() : null);
+        m.put("expiryDate", d.getExpiryDate() != null ? d.getExpiryDate().toString() : null);
+        m.put("active", Boolean.TRUE.equals(d.getActive()));
+        m.put("historicMode", Boolean.TRUE.equals(d.getHistoricMode()));
+        m.put("fileName", d.getFileName());
+        m.put("fileSizeLabel", d.getFileSizeLabel());
+        Long fileId = d.getFleetVehicleDocument() != null ? d.getFleetVehicleDocument().getId() : null;
+        m.put("attachedFleetDocumentId", fileId);
+        if (d.getFleetVehicleDocument() != null && d.getFleetVehicleDocument().getStoredPath() != null) {
+            m.put("attachedDocumentUrl", "/api/files/" + d.getFleetVehicleDocument().getStoredPath().replace('\\', '/'));
+        } else {
+            m.put("attachedDocumentUrl", null);
+        }
+        m.put("createdAt", d.getCreatedAt() != null ? d.getCreatedAt().toString() : null);
+        m.put("updatedAt", d.getUpdatedAt() != null ? d.getUpdatedAt().toString() : null);
+        return m;
+    }
+
+    private static String normalizeCategory(String raw) {
+        if ("CERTIFICACIONES".equals(raw) || "LIBERACIONES".equals(raw) || "DOCUMENTOS_PRINCIPALES".equals(raw)) {
+            return raw;
+        }
+        return "DOCUMENTOS_PRINCIPALES";
+    }
+
+    private static String str(Object o) {
+        return o == null ? null : String.valueOf(o);
+    }
+
+    private static String blankToNull(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    private static Long longOrNull(Object o) {
+        if (o == null || "".equals(o)) return null;
+        if (o instanceof Number n) return n.longValue();
+        try {
+            return Long.parseLong(String.valueOf(o).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private static LocalDate parseDate(Object o) {
+        if (o == null || "".equals(o)) return null;
+        String s = String.valueOf(o).trim();
+        if (s.isEmpty()) return null;
+        // admite ISO date o datetime
+        if (s.length() >= 10) s = s.substring(0, 10);
+        try {
+            return LocalDate.parse(s);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Fecha inválida: " + o);
+        }
+    }
+
+    private static boolean boolOrDefault(Object o, boolean def) {
+        if (o == null) return def;
+        if (o instanceof Boolean b) return b;
+        String s = String.valueOf(o).trim().toLowerCase(Locale.ROOT);
+        if ("true".equals(s) || "1".equals(s) || "yes".equals(s)) return true;
+        if ("false".equals(s) || "0".equals(s) || "no".equals(s)) return false;
+        return def;
     }
 }

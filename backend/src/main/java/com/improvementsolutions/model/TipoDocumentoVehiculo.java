@@ -28,9 +28,10 @@ public class TipoDocumentoVehiculo {
     private String description;
 
     /**
-     * Grupo operativo: DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES
+     * Grupo operativo: DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES.
+     * Nullable en BD para despliegues graduales; si es null se trata como DOCUMENTOS_PRINCIPALES.
      */
-    @Column(name = "category", length = 40, nullable = false)
+    @Column(name = "category", length = 40)
     private String category = CAT_DOCUMENTOS_PRINCIPALES;
 
     @Column(name = "created_at")
@@ -38,6 +39,13 @@ public class TipoDocumentoVehiculo {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public String getCategoryOrDefault() {
+        if (category == null || category.isBlank()) {
+            return CAT_DOCUMENTOS_PRINCIPALES;
+        }
+        return category.trim();
+    }
 
     @PrePersist
     protected void onCreate() {

@@ -9,7 +9,6 @@ import { FleetDocumentationService } from '../../../../../../services/fleet-docu
 import { Vehicle } from '../../../../../../models/vehicle.model';
 import { FleetDocComplianceStatus } from '../../../../../../models/fleet-documentation.model';
 
-type FilterTab = 'ALL' | string;
 type SortKey = 'daysAsc' | 'daysDesc' | 'placa';
 
 @Component({
@@ -26,7 +25,6 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
   error = '';
 
   search = '';
-  filterTab: FilterTab = 'ALL';
   sortKey: SortKey = 'daysAsc';
 
   /** Forzar repintado cuando cambia localStorage de documentación */
@@ -68,7 +66,9 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
           this.docService.initForRuc(ruc);
           this.error = '';
           this.loading = true;
-          return this.fleetService.getVehicles(ruc, 1, 500);
+          return this.docService.syncFromServer(ruc).pipe(
+            switchMap(() => this.fleetService.getVehicles(ruc, 1, 500))
+          );
         })
       )
       .subscribe({
@@ -101,11 +101,6 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
     return Array.from({ length: n }, (_, i) => i + 1);
   }
 
-  docFilterTypes(): { code: string; label: string }[] {
-    const ids = this.vehicles.map(v => v.id).filter((x): x is number => x != null);
-    return this.docService.distinctDocTypesAcrossFleet(ids);
-  }
-
   private matchesSearch(v: Vehicle): boolean {
     const q = this.search.trim().toLowerCase();
     if (!q) return true;
@@ -116,17 +111,8 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
     return placa.includes(q) || cod.includes(q) || sm.includes(q) || sc.includes(q);
   }
 
-  private matchesFilterTab(v: Vehicle): boolean {
-    if (this.filterTab === 'ALL') return true;
-    const id = v.id;
-    if (id == null) return false;
-    return this.docService
-      .getDocuments(id)
-      .some(d => d.active && d.typeCode === this.filterTab);
-  }
-
   filteredVehicles(): Vehicle[] {
-    let list = this.vehicles.filter(v => this.matchesSearch(v) && this.matchesFilterTab(v));
+    let list = this.vehicles.filter(v => this.matchesSearch(v));
     const getDays = (v: Vehicle) => {
       const id = v.id;
       if (id == null) return null as number | null;
@@ -243,11 +229,6 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
     const c = v.clase || '—';
     const t = v.tipoVehiculo || '';
     return t ? `${c} · ${t}` : c;
-  }
-
-  setTab(tab: FilterTab): void {
-    this.filterTab = tab;
-    this.currentPage = 1;
   }
 
   exportCsv(): void {

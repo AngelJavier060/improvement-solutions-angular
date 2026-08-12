@@ -964,6 +964,11 @@ public class BusinessService {
         return entidadRemitenteRepository.findAllAssignedToBusiness(businessId);
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<com.improvementsolutions.model.TipoDocumentoVehiculo> listTipoDocumentoVehiculosByBusinessId(Long businessId) {
+        return tipoDocumentoVehiculoRepository.findAllAssignedToBusiness(businessId);
+    }
+
     @Transactional
     public void removeEntidadRemitenteFromBusiness(Long bId, Long id) {
         Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subscription, combineLatest, forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { FleetService } from '../../../../../../services/fleet.service';
 import { FleetDocumentationService } from '../../../../../../services/fleet-documentation.service';
 import { TipoVehiculoService } from '../../../../../../services/tipo-vehiculo.service';
@@ -225,7 +225,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
 
     forkJoin({ tipo: tipo$, cats: cat$ }).subscribe({
       next: ({ tipo, cats }) => {
-        this.applyTipoDocumentosConfig(tipo, v);
+        this.applyTipoDocumentosConfig(tipo, v, cats?.tipoDocumentoVehiculos ?? []);
         const list = Array.isArray(cats?.entidadRemitentes) ? [...cats.entidadRemitentes] : [];
         this.entidadRemitentes = list
           .filter(e => e && e.id != null && !!(e.name || '').trim())
@@ -245,20 +245,35 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     });
   }
 
-  private applyTipoDocumentosConfig(tipo: TipoVehiculo | null, v: Vehicle): void {
-    const list = tipo?.documentos ?? [];
-    this.dynamicDocTypes = list
+  private applyTipoDocumentosConfig(
+    tipo: TipoVehiculo | null,
+    v: Vehicle,
+    empresaTipos: { id: number; name: string; category?: string }[] = []
+  ): void {
+    // Prioridad: documentos del tipo de vehículo; si no hay, tipos asignados a la empresa
+    const fromTipo = (tipo?.documentos ?? [])
       .filter(d => d.id != null)
       .map(d => ({
         code: fleetDocTypeCodeFromTipoDocumentoVehiculoId(d.id!),
         label: d.name,
         category: d.category || 'DOCUMENTOS_PRINCIPALES'
       }));
+
+    const fromEmpresa = (empresaTipos || [])
+      .filter(d => d?.id != null)
+      .map(d => ({
+        code: fleetDocTypeCodeFromTipoDocumentoVehiculoId(d.id),
+        label: d.name,
+        category: d.category || 'DOCUMENTOS_PRINCIPALES'
+      }));
+
+    this.dynamicDocTypes = fromTipo.length > 0 ? fromTipo : fromEmpresa;
+
     if (this.dynamicDocTypes.length === 0) {
       this.docConfigMessage =
         v.tipoVehiculoId != null
-          ? 'No hay documentos asociados a este tipo de vehículo en la configuración (Tipo de vehículo). Se muestra el catálogo general hasta que los defina el administrador.'
-          : 'La unidad no tiene tipo de vehículo en ficha. Asígnelo en Flota / editar ficha para cargar documentos automáticos, o use el catálogo general.';
+          ? 'No hay documentos asociados a este tipo de vehículo ni tipos asignados a la empresa. Configure Tipo de documento (con grupo) en administración.'
+          : 'Asigne tipos de documento a la empresa (con grupo) o un tipo de vehículo a la ficha para cargar el listado.';
     } else {
       this.docConfigMessage = '';
     }
@@ -446,6 +461,19 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
 
     const desc = `Documentación: ${typeOpt?.label || v.typeCode}`;
 
+    const afterPersistOk = (savedVid: number) => {
+      this.pendingPdfFile = null;
+      this.saving = false;
+      this.router.navigate(['/usuario', this.businessRuc, 'mantenimiento', 'documentacion', 'unidad', savedVid]);
+      this.cdr.markForCheck();
+    };
+
+    const afterPersistFail = (msg: string) => {
+      this.error = msg;
+      this.saving = false;
+      this.cdr.markForCheck();
+    };
+
     if (this.pendingPdfFile) {
       this.saving = true;
       this.error = '';
@@ -458,23 +486,25 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
             name: dto.originalFilename,
             sizeLabel: this.formatBytes(dto.fileSize)
           });
-          const ok = this.persistComplianceDoc(vid, payload);
-          if (!ok) {
-            this.error = 'No se pudo guardar el registro tras subir el archivo.';
-            this.saving = false;
-            this.cdr.markForCheck();
-            return;
-          }
-          if (oldFleetDocId != null && oldFleetDocId !== dto.id) {
-            this.fleetService
-              .deleteVehicleDocument(this.businessRuc, vid, oldFleetDocId)
-              .pipe(catchError(() => of(void 0)))
-              .subscribe();
-          }
-          this.pendingPdfFile = null;
-          this.saving = false;
-          this.router.navigate(['/usuario', this.businessRuc, 'mantenimiento', 'documentacion', 'unidad', vid]);
-          this.cdr.markForCheck();
+          this.persistComplianceDoc(vid, payload).subscribe({
+            next: ok => {
+              if (!ok) {
+                afterPersistFail('No se pudo guardar el registro tras subir el archivo.');
+                return;
+              }
+              if (oldFleetDocId != null && oldFleetDocId !== dto.id) {
+                this.fleetService
+                  .deleteVehicleDocument(this.businessRuc, vid, oldFleetDocId)
+                  .pipe(catchError(() => of(void 0)))
+                  .subscribe();
+              }
+              afterPersistOk(vid);
+            },
+            error: err => {
+              console.error(err);
+              afterPersistFail('No se pudo guardar el registro de documentación en el servidor.');
+            }
+          });
         },
         error: err => {
           console.error(err);
@@ -487,24 +517,37 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.saving = true;
+    this.error = '';
     const payload = buildPayload(null);
-    if (!this.persistComplianceDoc(vid, payload)) {
-      return;
-    }
-    this.router.navigate(['/usuario', this.businessRuc, 'mantenimiento', 'documentacion', 'unidad', vid]);
+    this.persistComplianceDoc(vid, payload).subscribe({
+      next: ok => {
+        if (!ok) {
+          afterPersistFail('No se pudo guardar el registro de documentación.');
+          return;
+        }
+        afterPersistOk(vid);
+      },
+      error: err => {
+        console.error(err);
+        afterPersistFail('No se pudo guardar el registro de documentación en el servidor.');
+      }
+    });
   }
 
-  private persistComplianceDoc(vid: number, payload: FleetDocRegistroPayload): boolean {
+  private persistComplianceDoc(vid: number, payload: FleetDocRegistroPayload) {
     if (this.editDocId) {
-      const updated = this.docService.updateDocument(vid, this.editDocId, payload);
-      if (!updated) {
-        this.error = 'No se encontró el documento a actualizar.';
-        return false;
-      }
-      return true;
+      return this.docService.updateDocument$(this.businessRuc, vid, this.editDocId, payload).pipe(
+        map(updated => {
+          if (!updated) {
+            this.error = 'No se encontró el documento a actualizar.';
+            return false;
+          }
+          return true;
+        })
+      );
     }
-    this.docService.createDocument(vid, payload);
-    return true;
+    return this.docService.createDocument$(this.businessRuc, vid, payload).pipe(map(() => true));
   }
 
   cancel(): void {

@@ -23,13 +23,24 @@ public class PublicTipoDocumentoVehiculoController {
 
     @GetMapping
     public ResponseEntity<List<TipoDocumentoVehiculo>> getAll() {
-        return ResponseEntity.ok(repository.findAll());
+        List<TipoDocumentoVehiculo> list = repository.findAll();
+        for (TipoDocumentoVehiculo t : list) {
+            if (t.getCategory() == null || t.getCategory().isBlank()) {
+                t.setCategory(TipoDocumentoVehiculo.CAT_DOCUMENTOS_PRINCIPALES);
+            }
+        }
+        return ResponseEntity.ok(list);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<TipoDocumentoVehiculo> getById(@PathVariable Long id) {
         return repository.findById(id)
-                .map(ResponseEntity::ok)
+                .map(t -> {
+                    if (t.getCategory() == null || t.getCategory().isBlank()) {
+                        t.setCategory(TipoDocumentoVehiculo.CAT_DOCUMENTOS_PRINCIPALES);
+                    }
+                    return ResponseEntity.ok(t);
+                })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
