@@ -7,6 +7,7 @@ import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { FleetService } from '../../../../../../services/fleet.service';
 import { FleetDocumentationService } from '../../../../../../services/fleet-documentation.service';
+import { AuthService } from '../../../../../../core/services/auth.service';
 import { Vehicle } from '../../../../../../models/vehicle.model';
 import { FleetComplianceDoc } from '../../../../../../models/fleet-documentation.model';
 import {
@@ -51,13 +52,14 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     private router: Router,
     private fleetService: FleetService,
     private docService: FleetDocumentationService,
+    private authService: AuthService,
     private http: HttpClient,
     private renderer: Renderer2,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.docSub = this.docService.changes$.subscribe(() => this.cdr.markForCheck());
+    this.docSub = this.docService.changes$.subscribe(() => this.cdr.detectChanges());
     this.routeSub = this.route.paramMap.subscribe(pm => {
       const id = Number(pm.get('vehicleId') || '');
       this.vehicleId = id;
@@ -67,9 +69,29 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
         this.loading = false;
         return;
       }
+      if (!this.authService.isLoggedIn()) {
+        this.router.navigate(['/auth/usuario-login'], {
+          queryParams: { returnUrl: this.router.url }
+        });
+        return;
+      }
       this.docService.initForRuc(this.businessRuc);
       this.loadVehicleAndDocs();
     });
+  }
+
+  /** Expuesto al template para queryParams de renovar. */
+  normalizeCategory(code: string | null | undefined): FleetDocCategory {
+    return normalizeFleetDocCategory(code);
+  }
+
+  private ensureSession(): boolean {
+    if (this.authService.isLoggedIn()) return true;
+    alert('Sesión expirada. Vuelva a iniciar sesión para continuar.');
+    this.router.navigate(['/auth/usuario-login'], {
+      queryParams: { returnUrl: this.router.url }
+    });
+    return false;
   }
 
   ngOnDestroy(): void {
@@ -225,6 +247,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   deleteDoc(doc: FleetComplianceDoc, ev?: Event): void {
     ev?.preventDefault();
     ev?.stopPropagation();
+    if (!this.ensureSession()) return;
     if (!confirm(`¿Eliminar "${doc.typeLabel}"? Se quitará del listado y el PDF asociado.`)) return;
 
     const fileId = doc.attachedFleetDocumentId;
@@ -232,7 +255,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
       next: ok => {
         if (!ok) {
           alert('No se pudo eliminar el documento.');
-          this.cdr.markForCheck();
+          this.cdr.detectChanges();
           return;
         }
         // Borrar archivo suelto para que no reaparezca al recuperar huérfanos
@@ -242,70 +265,14 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
             .pipe(catchError(() => of(void 0)))
             .subscribe();
         }
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: err => {
         console.error(err);
         alert('No se pudo eliminar el documento.');
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     });
-  }
-
-  irHistorial(): void {
-    this.router.navigate([
-      '/usuario',
-      this.businessRuc,
-      'mantenimiento',
-      'documentacion',
-      'unidad',
-      this.vehicleId,
-      'historial'
-    ]);
-  }
-
-  irRegistro(doc?: FleetComplianceDoc, category?: FleetDocCategory, ev?: Event): void {
-    ev?.preventDefault();
-    ev?.stopPropagation();
-    const base = [
-      '/usuario',
-      this.businessRuc,
-      'mantenimiento',
-      'documentacion',
-      'unidad',
-      this.vehicleId,
-      'registro'
-    ];
-    if (doc) {
-      this.router.navigate(base, { queryParams: { docId: doc.id } });
-    } else if (category) {
-      this.router.navigate(base, { queryParams: { category } });
-    } else {
-      this.router.navigate(base);
-    }
-  }
-
-  /** Renovar: alta nueva con el mismo tipo. */
-  irRenovar(doc: FleetComplianceDoc, ev?: Event): void {
-    ev?.preventDefault();
-    ev?.stopPropagation();
-    this.router.navigate(
-      [
-        '/usuario',
-        this.businessRuc,
-        'mantenimiento',
-        'documentacion',
-        'unidad',
-        this.vehicleId,
-        'registro'
-      ],
-      {
-        queryParams: {
-          renewFrom: doc.id,
-          category: normalizeFleetDocCategory(doc.docCategory)
-        }
-      }
-    );
   }
 
   hasPdf(doc: FleetComplianceDoc): boolean {
@@ -328,6 +295,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   openPdf(doc: FleetComplianceDoc, ev?: Event): void {
     ev?.preventDefault();
     ev?.stopPropagation();
+    if (!this.ensureSession()) return;
     const url = this.pdfFetchUrl(doc);
     if (!url) {
       alert('Este registro no tiene PDF adjunto. Edítelo y suba el archivo.');
@@ -481,7 +449,4 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     document.addEventListener('keydown', this.pdfKeyHandler);
   }
 
-  volverLista(): void {
-    this.router.navigate(['/usuario', this.businessRuc, 'mantenimiento', 'documentacion']);
-  }
 }

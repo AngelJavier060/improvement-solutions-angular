@@ -16,9 +16,24 @@ export function fleetDocCategoryLabel(code: string | null | undefined): string {
 }
 
 export function normalizeFleetDocCategory(code: string | null | undefined): FleetDocCategory {
-  if (code === 'CERTIFICACIONES' || code === 'LIBERACIONES' || code === 'DOCUMENTOS_PRINCIPALES') {
-    return code;
+  const raw = (code || '').trim();
+  if (!raw) return 'DOCUMENTOS_PRINCIPALES';
+  const upper = raw.toUpperCase().replace(/\s+/g, '_');
+  if (upper === 'CERTIFICACIONES' || upper.includes('CERTIFIC')) return 'CERTIFICACIONES';
+  if (upper === 'LIBERACIONES' || upper.includes('LIBERAC')) return 'LIBERACIONES';
+  if (
+    upper === 'DOCUMENTOS_PRINCIPALES' ||
+    upper.includes('DOCUMENTOS_LEGAL') ||
+    upper.includes('DOCUMENTOS LEGALES') ||
+    upper.includes('LEGALES') ||
+    upper.includes('PERMISOS')
+  ) {
+    return 'DOCUMENTOS_PRINCIPALES';
   }
+  // Etiquetas en español del admin
+  const lower = raw.toLowerCase();
+  if (lower.includes('certific')) return 'CERTIFICACIONES';
+  if (lower.includes('liberac')) return 'LIBERACIONES';
   return 'DOCUMENTOS_PRINCIPALES';
 }
 

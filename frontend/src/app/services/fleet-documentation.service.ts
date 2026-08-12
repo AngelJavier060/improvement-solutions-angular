@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
+import { SKIP_AUTH_REDIRECT } from '../core/interceptors/auth.interceptor';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import {
@@ -88,7 +89,12 @@ export class FleetDocumentationService {
     this.currentRuc = ruc;
     // Conservar locales antes de reemplazar con la respuesta del servidor
     const localSnapshot = this.allDocsFlat().map(d => this.cloneDoc(d));
-    return this.http.get<FleetComplianceApiDto[]>(`${this.baseUrl}/${encodeURIComponent(ruc)}/compliance-docs`).pipe(
+    return this.http
+      .get<FleetComplianceApiDto[]>(
+        `${this.baseUrl}/${encodeURIComponent(ruc)}/compliance-docs`,
+        this.optionalAuthOptions()
+      )
+      .pipe(
       tap(list => {
         this.serverSynced = true;
         if ((list || []).length === 0 && localSnapshot.length > 0) {
@@ -130,6 +136,15 @@ export class FleetDocumentationService {
     this.persist({ v: 1, byVehicle });
   }
 
+  /**
+   * Opciones para lecturas opcionales: si falla auth, se usa caché local sin cerrar sesión.
+   * Usa HttpContext (metadato solo de cliente) — NO un header HTTP, para no disparar
+   * preflight CORS que el backend rechazaría (rompía la carga de documentos).
+   */
+  private optionalAuthOptions(): { context: HttpContext } {
+    return { context: new HttpContext().set(SKIP_AUTH_REDIRECT, true) };
+  }
+
   /** Carga docs de una unidad. No borra caché local si el servidor viene vacío. */
   syncVehicleFromServer(ruc: string, vehicleId: number): Observable<FleetComplianceDoc[]> {
     if (!ruc || !vehicleId) return of([]);
@@ -137,7 +152,8 @@ export class FleetDocumentationService {
     const localBefore = this.getDocuments(vehicleId).map(d => this.cloneDoc(d));
     return this.http
       .get<FleetComplianceApiDto[]>(
-        `${this.baseUrl}/${encodeURIComponent(ruc)}/vehicles/${vehicleId}/compliance-docs`
+        `${this.baseUrl}/${encodeURIComponent(ruc)}/vehicles/${vehicleId}/compliance-docs`,
+        this.optionalAuthOptions()
       )
       .pipe(
         tap(list => {

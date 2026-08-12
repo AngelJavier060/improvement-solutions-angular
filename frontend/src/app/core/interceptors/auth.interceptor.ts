@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import {
+  HttpContextToken,
   HttpRequest,
   HttpHandler,
   HttpEvent,
@@ -10,6 +11,14 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
+
+/**
+ * Metadato SOLO de cliente (nunca viaja por la red, a diferencia de un header HTTP).
+ * Úsalo para lecturas opcionales: si el 401 ocurre, no se cierra sesión ni se redirige.
+ * IMPORTANTE: no usar un header HTTP personalizado para esto — dispara preflight CORS
+ * y el backend lo bloquea si no está en la lista blanca de allowedHeaders.
+ */
+export const SKIP_AUTH_REDIRECT = new HttpContextToken<boolean>(() => false);
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas públicas que no necesitan token
@@ -96,9 +105,17 @@ export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas pú
         
         if (error.status === 401) {
           if (!isPublicRoute) {
-            console.log('[AuthInterceptor] Error 401 en ruta protegida - redirigiendo a login');
-            this.authService.clearSession();
-            this.router.navigate(['/auth/usuario-login']);
+            // Permite fallback local (p. ej. sync de documentación) sin matar la sesión.
+            const skipRedirect = request.context.get(SKIP_AUTH_REDIRECT);
+            if (skipRedirect) {
+              console.warn('[AuthInterceptor] 401 en lectura opcional — no se cierra sesión');
+            } else {
+              console.log('[AuthInterceptor] Error 401 en ruta protegida - redirigiendo a login');
+              this.authService.clearSession();
+              this.router.navigate(['/auth/usuario-login'], {
+                queryParams: { returnUrl: this.router.url }
+              });
+            }
           } else {
             console.log('[AuthInterceptor] Error 401 en ruta pública - continuando...');
           }

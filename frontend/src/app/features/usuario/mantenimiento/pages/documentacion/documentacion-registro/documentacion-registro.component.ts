@@ -15,6 +15,7 @@ import {
   FleetDocRegistroPayload,
   fleetDocTypeCodeFromTipoDocumentoVehiculoId
 } from '../../../../../../models/fleet-documentation.model';
+import { normalizeFleetDocCategory } from '../../../../../../models/tipo-documento-vehiculo.model';
 import { activeBusinessRuc } from '../documentacion-ruc.helper';
 
 @Component({
@@ -182,7 +183,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     return order
       .map(g => ({
         ...g,
-        items: opts.filter(o => (o.category || 'DOCUMENTOS_PRINCIPALES') === g.code)
+        items: opts.filter(o => normalizeFleetDocCategory(o.category) === g.code)
       }))
       .filter(g => g.items.length > 0);
   }
@@ -286,7 +287,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       .map(d => ({
         code: fleetDocTypeCodeFromTipoDocumentoVehiculoId(d.id!),
         label: d.name,
-        category: d.category || 'DOCUMENTOS_PRINCIPALES'
+        category: normalizeFleetDocCategory(d.category)
       }));
 
     const fromEmpresa = (empresaTipos || [])
@@ -294,7 +295,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       .map(d => ({
         code: fleetDocTypeCodeFromTipoDocumentoVehiculoId(d.id),
         label: d.name,
-        category: d.category || 'DOCUMENTOS_PRINCIPALES'
+        category: normalizeFleetDocCategory(d.category)
       }));
 
     this.dynamicDocTypes = fromTipo.length > 0 ? fromTipo : fromEmpresa;
@@ -379,12 +380,14 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
   }
 
   private ensureDefaultTypeCode(): void {
+    // En edición/renovación no pisar el tipo ya cargado
+    if (this.editDocId || this.renewFromId) return;
     const opts = this.docTypeOptionsForSelect();
     const cur = this.form.get('typeCode')?.value;
     if (!cur || !opts.some(o => o.code === cur)) {
       const preferred =
         this.preferredCategory
-          ? opts.find(o => (o.category || 'DOCUMENTOS_PRINCIPALES') === this.preferredCategory)
+          ? opts.find(o => normalizeFleetDocCategory(o.category) === normalizeFleetDocCategory(this.preferredCategory))
           : undefined;
       const next = preferred?.code ?? opts[0]?.code ?? '';
       if (next) {
@@ -498,7 +501,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       return {
         typeCode: v.typeCode!,
         typeLabel: typeOpt?.label,
-        docCategory: typeOpt?.category || prevDoc?.docCategory || 'DOCUMENTOS_PRINCIPALES',
+        docCategory: normalizeFleetDocCategory(typeOpt?.category || prevDoc?.docCategory || 'DOCUMENTOS_PRINCIPALES'),
         entidadRemitenteId: ent != null ? ent.id : null,
         entidadRemitenteName: ent?.name ?? null,
         referenceId: '',

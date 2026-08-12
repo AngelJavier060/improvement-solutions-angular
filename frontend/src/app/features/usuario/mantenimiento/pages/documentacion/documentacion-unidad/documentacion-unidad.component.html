@@ -47,13 +47,17 @@
         <p class="du-resumen__count">{{ totalDocsCount() }}</p>
       </div>
       <div class="du-resumen__actions">
-        <button type="button" class="du-resumen__btn du-resumen__btn--light" (click)="irHistorial()">
+        <a
+          class="du-resumen__btn du-resumen__btn--light"
+          [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', vehicleId, 'historial']">
           <i class="fas fa-history"></i>
           Historial
-        </button>
-        <button type="button" class="du-resumen__btn du-resumen__btn--ghost" (click)="irRegistro()">
+        </a>
+        <a
+          class="du-resumen__btn du-resumen__btn--ghost"
+          [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', vehicleId, 'registro']">
           + Nuevo
-        </button>
+        </a>
       </div>
     </aside>
   </section>
@@ -63,23 +67,25 @@
       <i class="fas fa-search"></i>
       <input type="search" placeholder="Buscar tipo o descripción…" [(ngModel)]="search" />
     </div>
-    <button type="button" class="du-btn du-btn--ghost" (click)="volverLista()">
+    <a
+      class="du-btn du-btn--ghost"
+      [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion']">
       <i class="fas fa-arrow-left"></i> Volver al listado
-    </button>
+    </a>
   </div>
 
   <!-- 3 grouped sections -->
   <section class="du-section" *ngFor="let sec of sections()">
     <div class="du-section__head">
       <h2>{{ sec.label }}</h2>
-      <button
+      <a
         *ngIf="sec.code === 'DOCUMENTOS_PRINCIPALES'"
-        type="button"
         class="du-btn du-btn--primary"
-        (click)="irRegistro(undefined, sec.code)">
+        [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', vehicleId, 'registro']"
+        [queryParams]="{ category: sec.code }">
         <i class="fas fa-plus"></i>
         Nuevo Documento
-      </button>
+      </a>
     </div>
 
     <div class="du-table-wrap">
@@ -128,16 +134,20 @@
                 (click)="openPdf(d, $event)">
                 <i class="fas fa-file-pdf"></i>
               </button>
-              <button
-                type="button"
+              <a
                 class="du-icon"
                 title="Renovar"
-                (click)="irRenovar(d, $event)">
+                [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', vehicleId, 'registro']"
+                [queryParams]="{ renewFrom: d.id, category: normalizeCategory(d.docCategory) }">
                 <i class="fas fa-sync-alt"></i>
-              </button>
-              <button type="button" class="du-icon" title="Editar" (click)="irRegistro(d, undefined, $event)">
+              </a>
+              <a
+                class="du-icon"
+                title="Editar"
+                [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', vehicleId, 'registro']"
+                [queryParams]="{ docId: d.id }">
                 <i class="fas fa-pen"></i>
-              </button>
+              </a>
               <button type="button" class="du-icon du-icon--danger" title="Eliminar" (click)="deleteDoc(d, $event)">
                 <i class="fas fa-trash-alt"></i>
               </button>
@@ -154,5 +164,5 @@
 </div>
 <div class="du-page" *ngIf="error && !loading">
   <div class="du-alert">{{ error }}</div>
-  <button type="button" class="du-btn du-btn--primary" (click)="volverLista()">Volver</button>
+  <a class="du-btn du-btn--primary" [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion']">Volver</a>
 </div>

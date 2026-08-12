@@ -233,6 +233,7 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
+  text-decoration: none;
   transition: background 0.15s ease, border-color 0.15s ease;
 
   &--light {
@@ -330,6 +331,7 @@
   font-weight: 600;
   letter-spacing: 0.02em;
   cursor: pointer;
+  text-decoration: none;
   transition: background 0.15s ease, border-color 0.15s ease;
 
   &--primary {
@@ -512,6 +514,8 @@
   justify-content: center;
   position: relative;
   z-index: 2;
+  text-decoration: none;
+  vertical-align: middle;
 
   i {
     pointer-events: none;
