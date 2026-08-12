@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { OverlayModule } from '@angular/cdk/overlay';
 import { NgxEchartsModule, NGX_ECHARTS_CONFIG } from 'ngx-echarts';
 
 import { TalentoHumanoRoutingModule } from './talento-humano-routing.module';
@@ -54,6 +55,7 @@ import { AccidentesComponent } from './components/accidentes.component';
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
+    OverlayModule,
     TalentoHumanoRoutingModule,
     SharedModule,
     NgxEchartsModule

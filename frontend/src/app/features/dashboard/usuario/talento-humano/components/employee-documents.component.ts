@@ -1,5 +1,10 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import {
+  Component, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, Output, EventEmitter,
+  Renderer2, HostListener, ViewChild, TemplateRef, ViewContainerRef
+} from '@angular/core';
 import { HttpClient, HttpResponse } from '@angular/common/http';
+import { Overlay, OverlayRef } from '@angular/cdk/overlay';
+import { TemplatePortal } from '@angular/cdk/portal';
 import { DocumentService, EmployeeDocumentResponse, CreateEmployeeDocumentRequest } from '../services/document.service';
 import { TipoDocumentoService } from '../../../../../services/tipo-documento.service';
 
@@ -8,10 +13,13 @@ import { TipoDocumentoService } from '../../../../../services/tipo-documento.ser
   templateUrl: './employee-documents.component.html',
   styleUrls: ['./employee-documents.component.scss']
 })
-export class EmployeeDocumentsComponent implements OnInit, OnChanges {
+export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy {
   @Input() employeeId!: number;
   @Input() employeeCedula!: string;
   @Output() changed = new EventEmitter<void>();
+
+  @ViewChild('renewConfirmTpl') renewConfirmTpl!: TemplateRef<unknown>;
+  @ViewChild('renewFormTpl') renewFormTpl!: TemplateRef<unknown>;
 
   documents: EmployeeDocumentResponse[] = [];
   docTypes: Array<{ id: number; name: string }> = [];
@@ -43,11 +51,41 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges {
   renewFileError: string | null = null;
   renewTypeName: string = '';
 
+  /** Overlay montado en document.body (evita titileo del iframe dentro del layout) */
+  private pdfOverlayEl: HTMLElement | null = null;
+  private pdfBlobUrl: string | null = null;
+  private pdfKeyHandler: ((e: KeyboardEvent) => void) | null = null;
+  private bodyOverflowBackup: string | null = null;
+  /** Modales Renovar fuera del overflow:hidden del layout */
+  private renewOverlayRef: OverlayRef | null = null;
+
   constructor(
     private documentService: DocumentService,
     private tipoDocumentoService: TipoDocumentoService,
-    private http: HttpClient
+    private http: HttpClient,
+    private renderer: Renderer2,
+    private overlay: Overlay,
+    private vcr: ViewContainerRef
   ) {}
+
+  @HostListener('document:keydown.escape')
+  onEscapeModals(): void {
+    if (this.showPdfOverlayOpen()) {
+      this.closePdfPreview();
+      return;
+    }
+    if (this.showRenewForm) {
+      this.cancelRenewForm();
+      return;
+    }
+    if (this.showRenewConfirm) {
+      this.closeRenewConfirm();
+    }
+  }
+
+  private showPdfOverlayOpen(): boolean {
+    return !!this.pdfOverlayEl;
+  }
 
   ngOnInit(): void {
     this.loadDocTypes();
@@ -211,37 +249,185 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges {
     });
   }
 
-  // Abrir archivo con token (evitar 401 en enlaces directos)
-  openFile(file: { file: string; file_name?: string }): void {
-    const url = file.file;
+  /**
+   * Ver PDF sin descargar: UNA sola vista a pantalla completa con ✕ Cerrar.
+   * No abre pestaña nueva. Los datos del trabajador se mantienen detrás.
+   */
+  openFile(file: { file: string; file_name?: string; file_type?: string }): void {
+    const rawUrl = file?.file || '';
+    const url = this.normalizeFileUrlForView(rawUrl);
+    const fileName = file.file_name || this.extractFileNameFromUrl(url);
+    const looksPdf =
+      (file.file_type || '').toLowerCase().includes('pdf') ||
+      fileName.toLowerCase().endsWith('.pdf') ||
+      url.toLowerCase().includes('.pdf');
+
+    this.closePdfPreview();
+
     this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
       next: (resp: HttpResponse<Blob>) => {
         const blob = resp.body as Blob;
-        const contentType = resp.headers.get('Content-Type') || 'application/octet-stream';
-        const blobWithType = new Blob([blob], { type: contentType });
-        const fileName = file.file_name || this.extractFileNameFromUrl(url);
-        const blobUrl = window.URL.createObjectURL(blobWithType);
-        // Abrir en nueva pestaña si es visualizable
-        const isViewable = contentType.startsWith('application/pdf') || contentType.startsWith('image/');
-        if (isViewable) {
-          window.open(blobUrl, '_blank');
-        } else {
-          // Forzar descarga
-          const a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = fileName || 'documento';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        }
-        // Liberar URL después de un tiempo
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        const headerType = (resp.headers.get('Content-Type') || '').toLowerCase();
+        const mime = looksPdf || headerType.includes('pdf')
+          ? 'application/pdf'
+          : (headerType.startsWith('image/') ? headerType : 'application/pdf');
+        const typed = new Blob([blob], { type: mime });
+        this.pdfBlobUrl = window.URL.createObjectURL(typed);
+        this.mountPdfViewerOverlay(fileName || 'Documento PDF', this.pdfBlobUrl);
       },
       error: (err) => {
         console.error('Error abriendo archivo', err);
+        this.closePdfPreview();
         alert('No se pudo abrir el archivo');
       }
     });
+  }
+
+  closePdfPreview(): void {
+    if (this.pdfKeyHandler) {
+      document.removeEventListener('keydown', this.pdfKeyHandler);
+      this.pdfKeyHandler = null;
+    }
+    if (this.pdfOverlayEl) {
+      try { this.renderer.removeChild(document.body, this.pdfOverlayEl); } catch { /* ignore */ }
+      this.pdfOverlayEl = null;
+    }
+    if (this.pdfBlobUrl) {
+      try { URL.revokeObjectURL(this.pdfBlobUrl); } catch { /* ignore */ }
+      this.pdfBlobUrl = null;
+    }
+    this.unlockBodyScroll();
+  }
+
+  private mountPdfViewerOverlay(title: string, blobUrl: string): void {
+    this.lockBodyScroll();
+    const root = this.createPdfShell(title);
+    const body = root.querySelector('.ed-pdf-body') as HTMLElement;
+
+    const embed = this.renderer.createElement('embed') as HTMLEmbedElement;
+    embed.type = 'application/pdf';
+    embed.src = `${blobUrl}#zoom=page-width&toolbar=1&navpanes=0&scrollbar=1`;
+    embed.setAttribute('title', title);
+    Object.assign(embed.style, {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      width: '100%',
+      height: '100%',
+      border: '0',
+      margin: '0',
+      padding: '0',
+      display: 'block',
+      background: '#525659'
+    } as CSSStyleDeclaration);
+    body.appendChild(embed);
+
+    this.pdfOverlayEl = root;
+    this.renderer.appendChild(document.body, root);
+    this.bindPdfEscape();
+  }
+
+  private createPdfShell(title: string): HTMLElement {
+    // Estilos inline: el overlay vive en document.body (fuera del encapsulado Angular)
+    const root = this.renderer.createElement('div') as HTMLElement;
+    root.className = 'ed-pdf-overlay';
+    root.setAttribute('role', 'dialog');
+    root.setAttribute('aria-modal', 'true');
+    Object.assign(root.style, {
+      position: 'fixed',
+      inset: '0',
+      zIndex: '2147483646',
+      background: '#111827',
+      display: 'flex',
+      flexDirection: 'column',
+      width: '100vw',
+      height: '100vh',
+      margin: '0',
+      padding: '0',
+      overflow: 'hidden',
+      overscrollBehavior: 'none'
+    } as CSSStyleDeclaration);
+
+    root.innerHTML = `
+      <div class="ed-pdf-shell" style="display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden;">
+        <div class="ed-pdf-bar" style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:#1f2937;color:#f9fafb;border-bottom:1px solid rgba(255,255,255,.08);">
+          <div class="ed-pdf-title" style="display:flex;align-items:center;gap:10px;min-width:0;font:600 14px/1.3 system-ui,sans-serif;">
+            <span class="ed-pdf-icon" style="background:#4648d4;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;">PDF</span>
+            <span class="ed-pdf-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+          </div>
+          <button type="button" class="ed-pdf-close" title="Cerrar (Esc)"
+            style="border:0;border-radius:6px;background:rgba(255,255,255,.12);color:#f9fafb;font:600 13px/1 system-ui,sans-serif;padding:8px 12px;cursor:pointer;">
+            ✕ Cerrar
+          </button>
+        </div>
+        <div class="ed-pdf-body" style="flex:1 1 auto;position:relative;min-height:0;overflow:hidden;background:#374151;"></div>
+      </div>
+    `;
+
+    const nameEl = root.querySelector('.ed-pdf-name') as HTMLElement;
+    nameEl.textContent = title;
+    const closeBtn = root.querySelector('.ed-pdf-close') as HTMLButtonElement;
+    closeBtn.addEventListener('click', () => this.closePdfPreview());
+    return root;
+  }
+
+  private bindPdfEscape(): void {
+    if (this.pdfKeyHandler) {
+      document.removeEventListener('keydown', this.pdfKeyHandler);
+    }
+    this.pdfKeyHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        this.closePdfPreview();
+      }
+    };
+    document.addEventListener('keydown', this.pdfKeyHandler);
+  }
+
+  private lockBodyScroll(): void {
+    if (this.bodyOverflowBackup === null) {
+      this.bodyOverflowBackup = document.body.style.overflow || '';
+    }
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+  }
+
+  private unlockBodyScroll(): void {
+    if (this.bodyOverflowBackup !== null) {
+      document.body.style.overflow = this.bodyOverflowBackup;
+      this.bodyOverflowBackup = null;
+    }
+    document.documentElement.style.overflow = '';
+  }
+
+  ngOnDestroy(): void {
+    this.closePdfPreview();
+    this.closeRenewOverlay();
+  }
+
+  /** Evita endpoints de descarga forzada; sirve el archivo en modo inline. */
+  private normalizeFileUrlForView(raw: string): string {
+    try {
+      let rel = String(raw || '').replace(/\\/g, '/').trim();
+      if (!rel) return '/api/files/unknown.pdf';
+      if (/^https?:\/\//i.test(rel)) {
+        return rel.replace('/api/files/download/', '/api/files/');
+      }
+      if (rel.startsWith('/api/files/download/')) {
+        return rel.replace('/api/files/download/', '/api/files/');
+      }
+      if (rel.startsWith('api/files/download/')) {
+        return ('/' + rel).replace('/api/files/download/', '/api/files/');
+      }
+      if (rel.startsWith('/api/')) return rel;
+      if (rel.startsWith('api/')) return `/${rel}`;
+      rel = rel.replace(/^\.\/+/, '');
+      if (rel.startsWith('/')) rel = rel.substring(1);
+      if (rel.startsWith('uploads/')) rel = rel.substring('uploads/'.length);
+      return `/api/files/${rel}`;
+    } catch {
+      return '/api/files/unknown.pdf';
+    }
   }
 
   private extractFileNameFromUrl(url: string): string {
@@ -285,10 +471,10 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges {
 
   getExpiryBadgeClass(dateStr?: string | null): string {
     const status = this.getExpiryStatus(dateStr);
-    if (status === 'Caducado') return 'bg-danger';
-    if (status === 'Próximo a vencer') return 'bg-warning text-dark';
-    if (status === 'Vigente') return 'bg-success';
-    return 'bg-secondary';
+    if (status === 'Caducado') return 'is-expired';
+    if (status === 'Próximo a vencer') return 'is-soon';
+    if (status === 'Vigente') return 'is-ok';
+    return 'is-muted';
   }
 
   // === Renovación ===
@@ -320,11 +506,17 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges {
   openRenewConfirm(doc: EmployeeDocumentResponse): void {
     this.renewTarget = doc;
     this.showRenewConfirm = true;
+    this.showRenewForm = false;
+    // Esperar un tick para que ViewChild del template esté listo
+    setTimeout(() => this.openRenewOverlay(this.renewConfirmTpl, () => this.closeRenewConfirm()), 0);
   }
 
   closeRenewConfirm(): void {
     this.showRenewConfirm = false;
-    this.renewTarget = null;
+    if (!this.showRenewForm) {
+      this.renewTarget = null;
+      this.closeRenewOverlay();
+    }
   }
 
   confirmRenew(): void {
@@ -342,6 +534,7 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges {
     }
     this.showRenewConfirm = false;
     this.showRenewForm = true;
+    setTimeout(() => this.openRenewOverlay(this.renewFormTpl, () => this.cancelRenewForm()), 0);
   }
 
   onRenewFilesSelected(event: Event): void {
@@ -365,6 +558,33 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges {
     this.renewFileError = null;
     this.renewTypeName = '';
     this.renewTarget = null;
+    this.closeRenewOverlay();
+  }
+
+  /** Abre el modal en document.body (fuera del recuadro con overflow:hidden). */
+  private openRenewOverlay(tpl: TemplateRef<unknown> | undefined, onBackdrop: () => void): void {
+    if (!tpl) return;
+    this.closeRenewOverlay();
+    this.renewOverlayRef = this.overlay.create({
+      hasBackdrop: true,
+      backdropClass: 'ed-renew-backdrop',
+      panelClass: 'ed-renew-panel',
+      scrollStrategy: this.overlay.scrollStrategies.block(),
+      positionStrategy: this.overlay.position().global().centerHorizontally().centerVertically(),
+      width: '100vw',
+      height: '100vh',
+      maxWidth: '100vw',
+      maxHeight: '100vh'
+    });
+    this.renewOverlayRef.attach(new TemplatePortal(tpl, this.vcr));
+    this.renewOverlayRef.backdropClick().subscribe(() => onBackdrop());
+  }
+
+  private closeRenewOverlay(): void {
+    if (this.renewOverlayRef) {
+      try { this.renewOverlayRef.dispose(); } catch { /* ignore */ }
+      this.renewOverlayRef = null;
+    }
   }
 
   submitRenewal(): void {

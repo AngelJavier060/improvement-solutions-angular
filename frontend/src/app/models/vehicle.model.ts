@@ -102,6 +102,10 @@ export interface VehicleKPIs {
   programadosHoy: number;
   estadoActivo: number;
   alertasCriticas: number;
+  /** Totales opcionales (dashboard) */
+  dadoDeBaja?: number;
+  totalFlota?: number;
+  enTaller?: number;
 }
 
 export interface VehicleListResponse {

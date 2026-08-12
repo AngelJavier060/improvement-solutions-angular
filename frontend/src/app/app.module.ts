@@ -123,7 +123,9 @@ import { FileService } from './services/file.service';
           { path: 'documentacion/unidad/:vehicleId/registro', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-registro/documentacion-registro.component').then(m => m.DocumentacionRegistroComponent) },
           { path: 'documentacion/unidad/:vehicleId', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-unidad/documentacion-unidad.component').then(m => m.DocumentacionUnidadComponent) },
           { path: 'documentacion/registro', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-registro/documentacion-registro.component').then(m => m.DocumentacionRegistroComponent) },
-          { path: 'documentacion', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-lista/documentacion-lista.component').then(m => m.DocumentacionListaComponent) }
+          { path: 'documentacion', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-lista/documentacion-lista.component').then(m => m.DocumentacionListaComponent) },
+          { path: 'mantenimiento-programado', loadComponent: () => import('./features/usuario/mantenimiento/pages/en-construccion/en-construccion.component').then(m => m.MantenimientoEnConstruccionComponent) },
+          { path: 'reportes', loadComponent: () => import('./features/usuario/mantenimiento/pages/en-construccion/en-construccion.component').then(m => m.MantenimientoEnConstruccionComponent) }
         ]
       },
       

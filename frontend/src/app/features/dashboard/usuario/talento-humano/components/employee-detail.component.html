@@ -1,40 +1,140 @@
 <div class="employee-detail-container th-modern-detail">
   <style>
-    .th-modern-detail { background-color: #f8fafc; }
+    .th-modern-detail {
+      --ed-primary: #4648d4;
+      --ed-primary-hover: #6063ee;
+      --ed-on-surface: #121c2a;
+      --ed-on-variant: #464554;
+      --ed-outline: #c7c4d7;
+      --ed-surface: #ffffff;
+      --ed-surface-low: #eff4ff;
+      --ed-bg: #f8f9ff;
+      background-color: var(--ed-bg);
+      color: var(--ed-on-surface);
+    }
     .th-modern-detail .glass-header {
       position: sticky; top: 0; z-index: 3;
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(226, 232, 240, 0.7);
-      box-shadow: 0 10px 20px -15px rgba(15, 23, 42, .25);
+      background: var(--ed-surface);
+      border: 1px solid var(--ed-outline);
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 2px rgba(18, 28, 42, 0.04);
+    }
+    .th-modern-detail .glass-header .page-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ed-on-surface);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
     .th-modern-detail .modern-card {
       position: relative;
-      border-radius: 14px;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 6px 18px -4px rgba(2, 6, 23, 0.08);
+      border-radius: 0.75rem;
+      border: 1px solid var(--ed-outline);
+      box-shadow: 0 1px 3px rgba(18, 28, 42, 0.06);
       overflow: hidden;
+      background: var(--ed-surface);
     }
-    .th-modern-detail .modern-card::before {
-      content: '';
-      position: absolute; top: 0; left: 0; width: 100%; height: 3px;
-      background: linear-gradient(90deg, #6366f1, #4f46e5, #4338ca, #3730a3);
+    .th-modern-detail .modern-card::before { display: none; }
+    .th-modern-detail .modern-card > .card-header {
+      background: var(--ed-surface-low);
+      border-bottom: 1px solid var(--ed-outline);
+      color: var(--ed-on-surface);
     }
-    .th-modern-detail .modern-tabs { border-bottom: 1px solid #e2e8f0; overflow-x: auto; white-space: nowrap; }
-    .th-modern-detail .modern-tabs .nav-link { border: none; color: #64748b; font-weight: 600; padding: 10px 14px; border-radius: 0; }
-    .th-modern-detail .modern-tabs .nav-link.active { color: #4338ca; border-bottom: 2px solid #4338ca; background: transparent; }
-    .th-modern-detail .modern-tabs .nav-link:hover { color: #0f172a; background: rgba(15, 23, 42, 0.02); }
+    .th-modern-detail .modern-card > .card-header h5 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .th-modern-detail .modern-tabs {
+      border-bottom: 1px solid var(--ed-outline);
+      overflow-x: auto;
+      white-space: nowrap;
+      margin-bottom: 1.5rem !important;
+    }
+    .th-modern-detail .modern-tabs .nav-link {
+      border: none;
+      color: var(--ed-on-variant);
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      padding: 12px 16px;
+      border-radius: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .th-modern-detail .modern-tabs .nav-link.active {
+      color: var(--ed-primary);
+      border-bottom: 2px solid var(--ed-primary);
+      background: transparent;
+      font-weight: 700;
+    }
+    .th-modern-detail .modern-tabs .nav-link:hover {
+      color: var(--ed-primary);
+      background: rgba(70, 72, 212, 0.04);
+    }
     .th-modern-detail .btn-modern-ghost {
-      background: #ffffff; color: #475569; border: 1px solid #e2e8f0; border-radius: 10px;
-      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+      background: transparent;
+      color: var(--ed-on-variant);
+      border: 0;
+      border-radius: 0.5rem;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
     }
-    .th-modern-detail .btn-modern-ghost:hover { background: #f8fafc; }
+    .th-modern-detail .btn-modern-ghost:hover {
+      color: var(--ed-primary);
+      background: var(--ed-surface-low);
+    }
     .th-modern-detail .btn-modern-primary {
-      color: #ffffff; background-image: linear-gradient(90deg, #4f46e5, #4338ca);
-      border: 0; border-radius: 10px; box-shadow: 0 6px 16px rgba(79, 70, 229, 0.25);
+      color: #ffffff;
+      background: var(--ed-primary);
+      border: 0;
+      border-radius: 0.35rem;
+      box-shadow: none;
     }
-    .th-modern-detail .btn-modern-primary:hover { background-image: linear-gradient(90deg, #4338ca, #3730a3); }
+    .th-modern-detail .btn-modern-primary:hover { background: var(--ed-primary-hover); }
+    .th-modern-detail .btn-outline-primary {
+      color: var(--ed-primary);
+      border-color: var(--ed-outline);
+      background: transparent;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .th-modern-detail .btn-outline-primary:hover {
+      color: #fff;
+      background: var(--ed-primary);
+      border-color: var(--ed-primary);
+    }
+    .th-modern-detail .docs-mini-hero {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--ed-outline);
+    }
+    .th-modern-detail .docs-mini-hero .mini-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 999px;
+      object-fit: cover;
+      border: 1px solid var(--ed-outline);
+    }
+    .th-modern-detail .docs-mini-hero .fw-semibold {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ed-on-surface);
+    }
+    .th-modern-detail .docs-mini-hero .text-muted {
+      color: var(--ed-on-variant) !important;
+      font-size: 13px;
+    }
     /* KPI chips */
     .th-modern-detail .kpi-grid .kpi-chip {
       display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 12px;
@@ -564,11 +664,11 @@
         <div class="card-body">
           <!-- Mini hero with photo and basic info above documents list -->
           <ng-container *ngIf="employee">
-            <div class="mini-hero d-flex align-items-center gap-3 mb-4">
+            <div class="docs-mini-hero">
               <img [src]="getEmployeeImageUrl()" alt="Foto del empleado" class="mini-avatar" (error)="onImgError($event)" />
               <div>
                 <div class="fw-semibold">{{ (employee.nombres || employee.name) | capitalize }} {{ (employee.apellidos || '') | capitalize }}</div>
-                <div class="text-muted small">Cédula: <span class="text-body">{{ employee.cedula }}</span></div>
+                <div class="text-muted">Cédula: {{ employee.cedula }}</div>
               </div>
             </div>
           </ng-container>

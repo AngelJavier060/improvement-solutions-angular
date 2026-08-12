@@ -1,178 +1,198 @@
-<div class="employee-documents">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">Documentos del empleado</h5>
-    <div class="d-flex align-items-center gap-3">
-      <div class="form-check form-switch m-0">
-        <input class="form-check-input" type="checkbox" id="docsToggleHistory" [(ngModel)]="showHistory" (change)="loadDocuments()">
-        <label class="form-check-label" for="docsToggleHistory">Ver histórico</label>
-      </div>
-      <button class="btn btn-sm btn-outline-secondary" (click)="loadDocuments()">
+<div class="employee-documents ed-docs">
+  <div class="ed-docs__toolbar">
+    <h5 class="ed-docs__title">Documentos del empleado</h5>
+    <div class="ed-docs__toolbar-actions">
+      <label class="ed-docs__switch">
+        <input type="checkbox" [(ngModel)]="showHistory" (change)="loadDocuments()" />
+        <span class="ed-docs__switch-track" aria-hidden="true"><span class="ed-docs__switch-dot"></span></span>
+        <span class="ed-docs__switch-label">Ver histórico</span>
+      </label>
+      <button type="button" class="ed-docs__btn-ghost" (click)="loadDocuments()">
         <i class="fas fa-sync-alt"></i> Recargar
       </button>
     </div>
   </div>
 
-  <div class="card mb-3" *ngIf="!showRenewForm">
-    <div class="card-body">
-      <div class="row g-3 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label">Tipo de documento</label>
-          <select class="form-select" [(ngModel)]="selectedDocTypeId">
-            <option value="">Seleccione</option>
-            <option *ngFor="let t of docTypes" [value]="t.id">{{ t.name }}</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Fecha emisión</label>
-          <input type="date" class="form-control" [(ngModel)]="startDate" />
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Fecha expiración</label>
-          <input type="date" class="form-control" [(ngModel)]="endDate" />
-        </div>
-        <div class="col-md-12">
-          <label class="form-label">Descripción</label>
-          <textarea class="form-control" rows="2" [(ngModel)]="description" placeholder="Descripción (opcional)"></textarea>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">Archivos (PDF)</label>
-          <input type="file" class="form-control" accept="application/pdf" (change)="onFilesSelected($event)" multiple />
-          <div class="text-danger small mt-1" *ngIf="fileError">{{ fileError }}</div>
-        </div>
-        <div class="col-md-6 text-end">
-          <button type="button" class="btn btn-primary" (click)="createDocument()"
-                  [disabled]="saving || !selectedDocTypeId || !selectedFiles.length || (startDate && endDate && startDate > endDate)">
-            <i class="fas" [ngClass]="saving ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
-            {{ saving ? 'Guardando...' : 'Subir documento' }}
-          </button>
-        </div>
-        <div class="col-12" *ngIf="error" >
-          <div class="alert alert-danger py-2">{{ error }}</div>
-        </div>
+  <div class="ed-docs__form-card" *ngIf="!showRenewForm">
+    <div class="ed-docs__form-grid">
+      <div class="ed-docs__field">
+        <label>Tipo de documento</label>
+        <select [(ngModel)]="selectedDocTypeId">
+          <option value="">Seleccione</option>
+          <option *ngFor="let t of docTypes" [value]="t.id">{{ t.name }}</option>
+        </select>
+      </div>
+      <div class="ed-docs__field">
+        <label>Fecha emisión</label>
+        <input type="date" [(ngModel)]="startDate" />
+      </div>
+      <div class="ed-docs__field">
+        <label>Fecha expiración</label>
+        <input type="date" [(ngModel)]="endDate" />
       </div>
     </div>
+
+    <div class="ed-docs__field ed-docs__field--full">
+      <label>Descripción</label>
+      <textarea rows="2" [(ngModel)]="description" placeholder="Descripción (opcional)"></textarea>
+    </div>
+
+    <div class="ed-docs__upload-row">
+      <div class="ed-docs__field ed-docs__field--grow">
+        <label>Archivos (PDF)</label>
+        <input type="file" accept="application/pdf" (change)="onFilesSelected($event)" multiple />
+        <div class="ed-docs__error" *ngIf="fileError">{{ fileError }}</div>
+        <div class="ed-docs__hint" *ngIf="selectedFiles.length">
+          {{ selectedFiles.length }} archivo(s) seleccionado(s)
+        </div>
+      </div>
+      <button type="button" class="ed-docs__btn-primary"
+              (click)="createDocument()"
+              [disabled]="saving || !selectedDocTypeId || !selectedFiles.length || (startDate && endDate && startDate > endDate)">
+        <i class="fas" [ngClass]="saving ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
+        {{ saving ? 'Guardando...' : 'Subir documento' }}
+      </button>
+    </div>
+
+    <div class="ed-docs__alert" *ngIf="error">{{ error }}</div>
   </div>
 
-  <div class="card">
-    <div class="card-body p-0">
-      <div *ngIf="loading" class="text-center py-4">Cargando documentos...</div>
-      <div *ngIf="!loading && filteredDocuments().length === 0" class="text-center py-4 text-muted">No hay documentos</div>
-      <div *ngIf="!loading && filteredDocuments().length > 0" class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>Tipo</th>
-              <th>Emisión</th>
-              <th>Vencimiento</th>
-              <th>Vigencia</th>
-              <th>Días</th>
-              <th>Descripción</th>
-              <th>Archivos</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let d of filteredDocuments()">
-              <td>{{ d.type_document.name }}</td>
-              <td>{{ d.start_date || '-' }}</td>
-              <td>{{ d.end_date || '-' }}</td>
-              <td>
-                <span class="badge" [ngClass]="getExpiryBadgeClass(d.end_date)">{{ getExpiryStatus(d.end_date) }}</span>
-              </td>
-              <td>{{ getDaysLeft(d.end_date) }}</td>
-              <td>{{ d.description || '-' }}</td>
-              <td>
-                <ng-container *ngIf="d.files && d.files.length > 0; else nofiles">
-                  <button type="button" class="btn btn-link p-0 me-2" *ngFor="let f of d.files" (click)="openFile(f)" [title]="f.file_name || 'Abrir archivo'">
-                    <i class="far fa-file-pdf"></i>
-                  </button>
-                </ng-container>
-                <ng-template #nofiles>-</ng-template>
-              </td>
-              <td class="text-end">
-                <button class="btn btn-sm btn-outline-primary me-2" (click)="openRenewConfirm(d)" title="Renovar">
+  <div class="ed-docs__table-wrap">
+    <div *ngIf="loading" class="ed-docs__empty">Cargando documentos...</div>
+    <div *ngIf="!loading && filteredDocuments().length === 0" class="ed-docs__empty">No hay documentos</div>
+    <div *ngIf="!loading && filteredDocuments().length > 0" class="ed-docs__table-scroll">
+      <table class="ed-docs__table">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Emisión</th>
+            <th>Vencimiento</th>
+            <th>Vigencia</th>
+            <th>Días</th>
+            <th>Descripción</th>
+            <th class="text-center">Archivos</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of filteredDocuments()">
+            <td>{{ d.type_document.name }}</td>
+            <td>{{ d.start_date || '-' }}</td>
+            <td>{{ d.end_date || '-' }}</td>
+            <td>
+              <span class="ed-docs__badge" [ngClass]="getExpiryBadgeClass(d.end_date)">{{ getExpiryStatus(d.end_date) }}</span>
+            </td>
+            <td>{{ getDaysLeft(d.end_date) }}</td>
+            <td class="ed-docs__desc" [title]="d.description || ''">{{ d.description || '-' }}</td>
+            <td class="text-center">
+              <ng-container *ngIf="d.files && d.files.length > 0; else nofiles">
+                <button type="button"
+                        class="ed-docs__pdf-btn"
+                        *ngFor="let f of d.files"
+                        (click)="openFile(f)"
+                        [title]="(f.file_name || 'Ver PDF') + ' (vista previa)'">
+                  <i class="far fa-file-pdf"></i>
+                </button>
+              </ng-container>
+              <ng-template #nofiles>-</ng-template>
+            </td>
+            <td class="text-end">
+              <div class="ed-docs__row-actions">
+                <button type="button" class="ed-docs__icon-btn" (click)="openRenewConfirm(d)" title="Renovar">
                   <i class="fas fa-sync"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-danger" (click)="deleteDocument(d)">
+                <button type="button" class="ed-docs__icon-btn ed-docs__icon-btn--danger" (click)="deleteDocument(d)" title="Eliminar">
                   <i class="fas fa-trash"></i>
                 </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- Modal Confirmación Renovación -->
-  <div class="modal fade" [class.show]="showRenewConfirm" [style.display]="showRenewConfirm ? 'block' : 'none'" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="fas fa-sync me-2"></i>Confirmar renovación</h5>
-          <button type="button" class="btn-close" (click)="closeRenewConfirm()"></button>
+  <!-- Modales fuera del recuadro de la página (CDK Overlay → document.body) -->
+  <ng-template #renewConfirmTpl>
+    <div class="ed-modal" (click)="closeRenewConfirm()">
+      <div class="ed-modal__dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <div class="ed-modal__header">
+          <h5 class="ed-modal__title"><i class="fas fa-sync"></i> Confirmar renovación</h5>
+          <button type="button" class="ed-modal__x" (click)="closeRenewConfirm()" title="Cerrar">✕</button>
         </div>
-        <div class="modal-body">
-          <p>¿Desea renovar este documento y mantener el histórico?</p>
-          <div class="small text-muted" *ngIf="renewTarget">
+        <div class="ed-modal__body">
+          <p>¿Desea renovar este documento?</p>
+          <p class="ed-modal__help">
+            El documento actual (incluido si está caducado) pasará al <strong>histórico</strong>
+            y podrá registrar la nueva vigencia con su PDF.
+          </p>
+          <div class="ed-modal__meta" *ngIf="renewTarget">
             <div><strong>Tipo:</strong> {{ renewTarget.type_document.name }}</div>
             <div><strong>Emisión:</strong> {{ renewTarget.start_date || '-' }}</div>
-            <div><strong>Vencimiento:</strong> {{ renewTarget.end_date || '-' }} ({{ getExpiryStatus(renewTarget.end_date) }}, {{ getDaysLeft(renewTarget.end_date) }} días)</div>
+            <div><strong>Vencimiento:</strong> {{ renewTarget.end_date || '-' }}
+              ({{ getExpiryStatus(renewTarget.end_date) }}, {{ getDaysLeft(renewTarget.end_date) }} días)</div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="closeRenewConfirm()">Cancelar</button>
-          <button type="button" class="btn btn-primary" (click)="confirmRenew()">Aceptar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Formulario de Renovación -->
-  <div class="modal fade" [class.show]="showRenewForm" [style.display]="showRenewForm ? 'block' : 'none'" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="fas fa-sync me-2"></i>
-            Renovar {{ renewTypeName }}
-          </h5>
-          <button type="button" class="btn-close" (click)="cancelRenewForm()"></button>
-        </div>
-        <div class="modal-body">
-          <div class="row g-3 align-items-end">
-            <div class="col-12">
-              <div class="small text-muted" *ngIf="renewTarget">
-                <div><strong>Actual:</strong> Emisión {{ renewTarget.start_date || '-' }} · Venc. {{ renewTarget.end_date || '-' }} ({{ getExpiryStatus(renewTarget.end_date) }}, {{ getDaysLeft(renewTarget.end_date) }} días)</div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Fecha emisión</label>
-              <input type="date" class="form-control" [(ngModel)]="renewStartDate" />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Fecha expiración</label>
-              <input type="date" class="form-control" [(ngModel)]="renewEndDate" />
-            </div>
-            <div class="col-12">
-              <label class="form-label">Descripción</label>
-              <textarea rows="2" class="form-control" [(ngModel)]="renewDescription" placeholder="Descripción (opcional)"></textarea>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Archivos (PDF)</label>
-              <input type="file" class="form-control" accept="application/pdf" (change)="onRenewFilesSelected($event)" multiple />
-              <div class="text-danger small mt-1" *ngIf="renewFileError">{{ renewFileError }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="cancelRenewForm()">Cancelar</button>
-          <button type="button" class="btn btn-primary" (click)="submitRenewal()" [disabled]="renewSaving || !renewFiles.length || (renewStartDate && renewEndDate && renewStartDate > renewEndDate)">
-            <i class="fas" [ngClass]="renewSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-            {{ renewSaving ? 'Guardando...' : 'Confirmar renovación' }}
+        <div class="ed-modal__footer">
+          <button type="button" class="ed-modal__btn ed-modal__btn--ghost" (click)="closeRenewConfirm()">Cancelar</button>
+          <button type="button" class="ed-modal__btn ed-modal__btn--primary" (click)="confirmRenew()">
+            <i class="fas fa-history"></i>
+            Sí, renovar y guardar histórico
           </button>
         </div>
       </div>
     </div>
-  </div>
+  </ng-template>
+
+  <ng-template #renewFormTpl>
+    <div class="ed-modal" (click)="cancelRenewForm()">
+      <div class="ed-modal__dialog ed-modal__dialog--form" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <div class="ed-modal__header">
+          <h5 class="ed-modal__title"><i class="fas fa-sync"></i> Renovar {{ renewTypeName }}</h5>
+          <button type="button" class="ed-modal__x" (click)="cancelRenewForm()" title="Cerrar">✕</button>
+        </div>
+        <div class="ed-modal__body">
+          <div class="ed-modal__meta" *ngIf="renewTarget">
+            <strong>Actual:</strong>
+            Emisión {{ renewTarget.start_date || '-' }} ·
+            Venc. {{ renewTarget.end_date || '-' }}
+            ({{ getExpiryStatus(renewTarget.end_date) }}, {{ getDaysLeft(renewTarget.end_date) }} días)
+          </div>
+
+          <div class="ed-modal__grid">
+            <div class="ed-modal__field">
+              <label>Fecha emisión</label>
+              <input type="date" [(ngModel)]="renewStartDate" />
+            </div>
+            <div class="ed-modal__field">
+              <label>Fecha expiración</label>
+              <input type="date" [(ngModel)]="renewEndDate" />
+            </div>
+          </div>
+
+          <div class="ed-modal__field">
+            <label>Descripción</label>
+            <textarea rows="2" [(ngModel)]="renewDescription" placeholder="Descripción (opcional)"></textarea>
+          </div>
+
+          <div class="ed-modal__field">
+            <label>Archivos (PDF)</label>
+            <input type="file" accept="application/pdf" (change)="onRenewFilesSelected($event)" multiple />
+            <div class="ed-modal__error" *ngIf="renewFileError">{{ renewFileError }}</div>
+            <div class="ed-modal__hint" *ngIf="renewFiles.length">{{ renewFiles.length }} archivo(s) seleccionado(s)</div>
+          </div>
+        </div>
+        <div class="ed-modal__footer">
+          <button type="button" class="ed-modal__btn ed-modal__btn--ghost" (click)="cancelRenewForm()">Cancelar</button>
+          <button type="button"
+                  class="ed-modal__btn ed-modal__btn--primary"
+                  (click)="submitRenewal()"
+                  [disabled]="renewSaving || !renewFiles.length || (renewStartDate && renewEndDate && renewStartDate > renewEndDate)">
+            <i class="fas" [ngClass]="renewSaving ? 'fa-spinner fa-spin' : 'fa-history'"></i>
+            {{ renewSaving ? 'Guardando...' : 'Guardar renovación en histórico' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </ng-template>
 </div>

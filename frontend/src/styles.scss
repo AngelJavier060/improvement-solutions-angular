@@ -1,4 +1,204 @@
 /* Estilos globales para la aplicación */
+@import '@angular/cdk/overlay-prebuilt.css';
+
+/* Modales Renovar (CDK Overlay en body — fuera del recuadro de la página) */
+.cdk-overlay-container {
+  z-index: 2200 !important;
+}
+.ed-renew-backdrop {
+  background: rgba(18, 28, 42, 0.62) !important;
+}
+.ed-renew-panel {
+  pointer-events: auto !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+}
+
+/* Estilos globales del modal (el overlay no hereda variables del componente) */
+.ed-modal {
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  margin: 0;
+  background: transparent;
+  overscroll-behavior: none;
+  pointer-events: auto;
+}
+.ed-modal__dialog {
+  width: min(560px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #c7c4d7;
+  border-radius: 0.75rem;
+  box-shadow: 0 18px 48px rgba(18, 28, 42, 0.28);
+  overflow: hidden;
+  pointer-events: auto;
+}
+.ed-modal__dialog--form {
+  width: min(640px, calc(100vw - 2rem));
+}
+.ed-modal__header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  background: #eff4ff;
+  border-bottom: 1px solid #c7c4d7;
+}
+.ed-modal__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #121c2a;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.ed-modal__title i { color: #4648d4; }
+.ed-modal__x {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: #464554;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ed-modal__x:hover {
+  background: #d9e3f6;
+  color: #4648d4;
+}
+.ed-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.1rem;
+  color: #121c2a;
+  font-size: 14px;
+}
+.ed-modal__help {
+  margin: 0 0 1rem;
+  font-size: 13px;
+  color: #464554;
+  line-height: 1.45;
+}
+.ed-modal__meta {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.5rem;
+  background: #eff4ff;
+  border: 1px solid #c7c4d7;
+  color: #464554;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.ed-modal__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+@media (min-width: 576px) {
+  .ed-modal__grid { grid-template-columns: 1fr 1fr; }
+}
+.ed-modal__field {
+  margin-bottom: 0.85rem;
+}
+.ed-modal__field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #464554;
+  margin-bottom: 0.3rem;
+}
+.ed-modal__field input[type='date'],
+.ed-modal__field input[type='file'],
+.ed-modal__field textarea {
+  width: 100%;
+  border: 1px solid #c7c4d7;
+  border-radius: 0.35rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 14px;
+  color: #121c2a;
+  background: #fff;
+  outline: none;
+}
+.ed-modal__field input:focus,
+.ed-modal__field textarea:focus {
+  border-color: #4648d4;
+  box-shadow: 0 0 0 2px rgba(70, 72, 212, 0.18);
+}
+.ed-modal__field textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+.ed-modal__error {
+  margin-top: 0.35rem;
+  color: #ba1a1a;
+  font-size: 12px;
+}
+.ed-modal__hint {
+  margin-top: 0.35rem;
+  color: #464554;
+  font-size: 12px;
+}
+.ed-modal__footer {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.9rem 1.1rem;
+  border-top: 1px solid #c7c4d7;
+  background: #ffffff;
+}
+.ed-modal__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 0;
+  border-radius: 0.35rem;
+  padding: 0.65rem 1.1rem;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ed-modal__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ed-modal__btn--ghost {
+  background: #ffffff;
+  color: #464554;
+  border: 1px solid #c7c4d7;
+}
+.ed-modal__btn--ghost:hover:not(:disabled) {
+  background: #eff4ff;
+  color: #4648d4;
+}
+.ed-modal__btn--primary {
+  background: #4648d4 !important;
+  color: #ffffff !important;
+}
+.ed-modal__btn--primary:hover:not(:disabled) {
+  background: #6063ee !important;
+}
 
 /* Variables personalizadas */
 :root {

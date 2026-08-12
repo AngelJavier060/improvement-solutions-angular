@@ -128,15 +128,20 @@ public class FleetVehicleService {
 
         long activos = fleetVehicleRepository.countByBusiness_IdAndEstadoActivo(business.getId(), "ACTIVO");
         long enTaller = fleetVehicleRepository.countByBusiness_IdAndEstadoActivo(business.getId(), "EN_TALLER");
+        long dadoBaja = fleetVehicleRepository.countByBusiness_IdAndEstadoActivo(business.getId(), "DADO_DE_BAJA");
 
         Map<String, Object> kpis = new LinkedHashMap<>();
         long n = fleetVehicleRepository.countByBusiness_Id(business.getId());
         double salud = n == 0 ? 100.0 : Math.round((activos * 1000.0 / n)) / 10.0;
         kpis.put("saludOperativa", salud);
         kpis.put("saludOperativaTendencia", 0.0);
-        kpis.put("programadosHoy", 0);
+        // En taller = mantenimientos en curso; críticas = fuera de servicio
+        kpis.put("programadosHoy", enTaller);
         kpis.put("estadoActivo", activos);
-        kpis.put("alertasCriticas", enTaller);
+        kpis.put("alertasCriticas", dadoBaja);
+        kpis.put("dadoDeBaja", dadoBaja);
+        kpis.put("totalFlota", n);
+        kpis.put("enTaller", enTaller);
 
         List<Map<String, Object>> vehicles = pg.getContent().stream()
                 .map(this::toVehicleResponse)

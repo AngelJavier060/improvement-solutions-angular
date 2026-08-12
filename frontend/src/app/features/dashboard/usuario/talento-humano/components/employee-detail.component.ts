@@ -379,16 +379,23 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     const rawUrl = this.normalizeFileUrl(file?.file || '');
     // Forzar vista en navegador: si viene como /api/files/download/... cambiar a /api/files/...
     const url = rawUrl.replace('/api/files/download/', '/api/files/');
-    // Usar HttpClient para incluir credenciales/headers (evita 401 en enlaces directos)
+    const name = (file.file_name || '').toLowerCase();
     this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
       next: (resp) => {
         const blob = resp.body as Blob;
-        // Si el backend no envía Content-Type correcto, asumir PDF
-        const ct = resp.headers.get('Content-Type') || (file.file_name && file.file_name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
-        const typed = new Blob([blob], { type: ct });
+        const header = (resp.headers.get('Content-Type') || '').toLowerCase();
+        // Forzar PDF para previsualizar (evitar descarga por octet-stream / attachment)
+        const mime = header.includes('pdf') || name.endsWith('.pdf') || url.toLowerCase().includes('.pdf')
+          ? 'application/pdf'
+          : (header.startsWith('image/') ? header : 'application/pdf');
+        const typed = new Blob([blob], { type: mime });
         const blobUrl = window.URL.createObjectURL(typed);
-        window.open(blobUrl, '_blank', 'noopener');
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        const win = window.open(blobUrl, '_blank', 'noopener');
+        if (!win) {
+          // Si el popup está bloqueado, abrir en la misma pestaña solo como vista
+          window.location.href = blobUrl;
+        }
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
       },
       error: () => alert('No se pudo abrir el archivo')
     });

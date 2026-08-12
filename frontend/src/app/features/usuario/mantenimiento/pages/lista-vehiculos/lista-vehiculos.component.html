@@ -89,7 +89,7 @@
             <!-- Identidad -->
             <td class="p-3">
               <div class="fw-bold text-primary">{{ vehicle.placa }}</div>
-              <small class="text-muted">VIN: {{ vehicle.serieChasis || '—' }}</small>
+              <small class="text-muted">Año: {{ vehicle.anio || '—' }}</small>
             </td>
             
             <!-- Especificaciones: solo marca -->
@@ -183,74 +183,173 @@
     </div>
   </div>
 
-  <!-- Panel resumen ficha + documentos -->
+  <!-- Panel resumen ficha + documentos (diseño Vehicle Details Card) -->
   <div *ngIf="selectedVehicle" class="fleet-detail-overlay" (click)="closeVehicleDetail()">
-    <div class="fleet-detail-card card shadow-lg border-0" (click)="$event.stopPropagation()">
-      <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white py-2">
-        <div>
-          <strong class="me-2">{{ selectedVehicle.placa }}</strong>
-          <small class="opacity-75">{{ selectedVehicle.codigoEquipo }}</small>
+    <div class="fv-card" role="dialog" aria-modal="true" aria-label="Detalle del vehículo" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="fv-card__header">
+        <div class="fv-card__identity">
+          <span class="fv-card__placa">{{ selectedVehicle.placa }}</span>
+          <span class="fv-card__codigo">{{ selectedVehicle.codigoEquipo || '—' }}</span>
         </div>
-        <button type="button" class="btn btn-sm btn-light" (click)="closeVehicleDetail()" aria-label="Cerrar">
+        <button type="button" class="fv-card__close" (click)="closeVehicleDetail()" aria-label="Cerrar" title="Cerrar">
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div class="card-body">
-        <div class="row g-2 small mb-3">
-          <div class="col-6 col-md-4"><span class="text-muted">Clase</span><div class="fw-semibold text-break">{{ selectedVehicle.clase || '—' }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Marca</span><div class="fw-semibold">{{ selectedVehicle.marca || '—' }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Tipo</span><div class="fw-semibold">{{ selectedVehicle.tipoVehiculo || '—' }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Serie chasis</span><div class="fw-semibold text-break">{{ selectedVehicle.serieChasis || '—' }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Serie motor</span><div class="fw-semibold text-break">{{ selectedVehicle.serieMotor || '—' }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Modelo</span><div class="fw-semibold">{{ selectedVehicle.modelo || '—' }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Año</span><div class="fw-semibold">{{ selectedVehicle.anio ?? '—' }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Color</span><div class="fw-semibold">{{ selectedVehicle.color || '—' }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Combustible</span><div class="fw-semibold">{{ selectedVehicle.tipoCombustible || '—' }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Estado unidad</span><div class="fw-semibold">{{ selectedVehicle.estadoUnidad || '—' }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Estado activo</span><div class="fw-semibold">{{ getStatusLabel(selectedVehicle.estadoActivo) }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Proyecto asignado</span><div class="fw-semibold text-break">{{ selectedVehicle.proyectoAsignado || '—' }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Km inicio</span><div class="fw-semibold">{{ selectedVehicle.kmInicio != null ? selectedVehicle.kmInicio : '—' }}</div></div>
-          <div class="col-6 col-md-4"><span class="text-muted">Tonelaje</span><div class="fw-semibold">{{ selectedVehicle.tonelaje || '—' }}</div></div>
-        </div>
 
-        <button type="button" class="btn btn-outline-primary btn-sm w-100 mb-2" (click)="toggleDocsSection()">
-          <i class="fas fa-folder-open me-1"></i>
-          {{ docsSectionOpen ? 'Ocultar documentos' : 'Administrar documentos' }}
-        </button>
-
-        <div *ngIf="docsSectionOpen" class="fleet-docs-panel border rounded p-2 bg-light">
-          <div *ngIf="detailDocError" class="alert alert-warning py-1 small mb-2">{{ detailDocError }}</div>
-          <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
-            <div class="flex-grow-1" style="min-width: 140px;">
-              <label class="form-label small mb-0 text-muted">Descripción (opcional)</label>
-              <input type="text" class="form-control form-control-sm" [(ngModel)]="docDescription" placeholder="Ej. Revisión técnica">
-            </div>
-            <div>
-              <label class="btn btn-sm btn-primary mb-0" [class.disabled]="docUploading">
-                <i class="fas fa-upload me-1"></i>Subir archivo
-                <input type="file" class="d-none" (change)="onDocumentFileSelected($event)" [disabled]="docUploading">
-              </label>
+      <!-- Content -->
+      <div class="fv-card__body">
+        <div class="fv-card__grid">
+          <div class="fv-field">
+            <span class="fv-field__label">Clase</span>
+            <div class="fv-field__value">
+              <i class="fas fa-truck"></i>
+              <span>{{ selectedVehicle.clase || '—' }}</span>
             </div>
           </div>
-          <div *ngIf="detailDocsLoading" class="text-muted small py-2"><i class="fas fa-spinner fa-spin me-1"></i>Cargando…</div>
-          <ul class="list-group list-group-flush small" *ngIf="!detailDocsLoading && detailDocs.length > 0">
-            <li *ngFor="let d of detailDocs" class="list-group-item d-flex justify-content-between align-items-center px-2 py-2">
-              <div class="me-2 text-truncate" style="max-width: 55%;">
-                <a [href]="d.url" target="_blank" rel="noopener" class="fw-semibold text-decoration-none">{{ d.originalFilename }}</a>
-                <div class="text-muted" *ngIf="d.description">{{ d.description }}</div>
+          <div class="fv-field">
+            <span class="fv-field__label">Marca</span>
+            <div class="fv-field__value">
+              <i class="fas fa-car"></i>
+              <span>{{ selectedVehicle.marca || '—' }}</span>
+            </div>
+          </div>
+          <div class="fv-field">
+            <span class="fv-field__label">Tipo</span>
+            <div class="fv-field__value">
+              <i class="fas fa-shuttle-van"></i>
+              <span>{{ selectedVehicle.tipoVehiculo || '—' }}</span>
+            </div>
+          </div>
+
+          <div class="fv-field">
+            <span class="fv-field__label">Serie chasis</span>
+            <div class="fv-field__value">
+              <i class="fas fa-barcode"></i>
+              <span class="text-break">{{ selectedVehicle.serieChasis || '—' }}</span>
+            </div>
+          </div>
+          <div class="fv-field">
+            <span class="fv-field__label">Serie motor</span>
+            <div class="fv-field__value">
+              <i class="fas fa-cogs"></i>
+              <span class="text-break">{{ selectedVehicle.serieMotor || '—' }}</span>
+            </div>
+          </div>
+          <div class="fv-field">
+            <span class="fv-field__label">Modelo</span>
+            <div class="fv-field__value">
+              <i class="fas fa-layer-group"></i>
+              <span>{{ selectedVehicle.modelo || '—' }}</span>
+            </div>
+          </div>
+
+          <div class="fv-field">
+            <span class="fv-field__label">Año</span>
+            <div class="fv-field__value">
+              <i class="far fa-calendar-alt"></i>
+              <span>{{ selectedVehicle.anio ?? '—' }}</span>
+            </div>
+          </div>
+          <div class="fv-field">
+            <span class="fv-field__label">Color</span>
+            <div class="fv-field__value">
+              <i class="fas fa-palette"></i>
+              <span>{{ selectedVehicle.color || '—' }}</span>
+            </div>
+          </div>
+          <div class="fv-field">
+            <span class="fv-field__label">Combustible</span>
+            <div class="fv-field__value">
+              <i class="fas fa-gas-pump"></i>
+              <span>{{ selectedVehicle.tipoCombustible || '—' }}</span>
+            </div>
+          </div>
+
+          <div class="fv-field">
+            <span class="fv-field__label">Estado unidad</span>
+            <div class="fv-field__value">
+              <span>{{ selectedVehicle.estadoUnidad || '—' }}</span>
+            </div>
+          </div>
+          <div class="fv-field">
+            <span class="fv-field__label">Estado activo</span>
+            <div class="fv-field__value">
+              <span class="fv-badge" [class.fv-badge--ok]="selectedVehicle.estadoActivo === 'ACTIVO'">
+                {{ getStatusLabel(selectedVehicle.estadoActivo) || '—' }}
+              </span>
+            </div>
+          </div>
+          <div class="fv-field">
+            <span class="fv-field__label">Proyecto asignado</span>
+            <div class="fv-field__value">
+              <span class="text-break">{{ selectedVehicle.proyectoAsignado || '—' }}</span>
+            </div>
+          </div>
+
+          <div class="fv-field">
+            <span class="fv-field__label">Km inicio</span>
+            <div class="fv-field__value">
+              <i class="fas fa-tachometer-alt"></i>
+              <span>{{ selectedVehicle.kmInicio != null ? selectedVehicle.kmInicio : '—' }}</span>
+            </div>
+          </div>
+          <div class="fv-field">
+            <span class="fv-field__label">Tonelaje</span>
+            <div class="fv-field__value">
+              <i class="fas fa-weight-hanging"></i>
+              <span>{{ selectedVehicle.tonelaje || '—' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <hr class="fv-card__divider" />
+
+        <div class="fv-card__actions">
+          <button type="button" class="fv-link" (click)="toggleDocsSection()">
+            <i class="fas fa-folder"></i>
+            {{ docsSectionOpen ? 'Ocultar documentos' : 'Administrar documentos' }}
+          </button>
+          <button
+            type="button"
+            class="fv-btn-primary"
+            *ngIf="selectedVehicle.id != null"
+            (click)="editarFicha(selectedVehicle); closeVehicleDetail()">
+            <i class="fas fa-edit"></i>
+            Editar ficha completa
+          </button>
+        </div>
+
+        <div *ngIf="docsSectionOpen" class="fv-docs">
+          <div *ngIf="detailDocError" class="fv-docs__alert">{{ detailDocError }}</div>
+          <div class="fv-docs__upload">
+            <div class="fv-docs__field">
+              <label>Descripción (opcional)</label>
+              <input type="text" [(ngModel)]="docDescription" placeholder="Ej. Revisión técnica" />
+            </div>
+            <label class="fv-docs__upload-btn" [class.is-disabled]="docUploading">
+              <i class="fas fa-upload"></i>
+              Subir archivo
+              <input type="file" (change)="onDocumentFileSelected($event)" [disabled]="docUploading" />
+            </label>
+          </div>
+          <div *ngIf="detailDocsLoading" class="fv-docs__muted">
+            <i class="fas fa-spinner fa-spin"></i> Cargando…
+          </div>
+          <ul class="fv-docs__list" *ngIf="!detailDocsLoading && detailDocs.length > 0">
+            <li *ngFor="let d of detailDocs">
+              <div class="fv-docs__file">
+                <a [href]="d.url" target="_blank" rel="noopener">{{ d.originalFilename }}</a>
+                <small *ngIf="d.description">{{ d.description }}</small>
               </div>
-              <button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0" (click)="deleteDocument(d)" title="Eliminar">
+              <button type="button" class="fv-docs__delete" (click)="deleteDocument(d)" title="Eliminar">
                 <i class="fas fa-trash-alt"></i>
               </button>
             </li>
           </ul>
-          <p *ngIf="!detailDocsLoading && detailDocs.length === 0" class="text-muted small mb-0 py-2">No hay documentos adjuntos.</p>
-        </div>
-
-        <div class="d-flex gap-2 mt-3">
-          <button type="button" class="btn btn-primary btn-sm" *ngIf="selectedVehicle.id != null" (click)="editarFicha(selectedVehicle); closeVehicleDetail()">
-            <i class="fas fa-edit me-1"></i>Editar ficha completa
-          </button>
+          <p *ngIf="!detailDocsLoading && detailDocs.length === 0" class="fv-docs__muted">
+            No hay documentos adjuntos.
+          </p>
         </div>
       </div>
     </div>

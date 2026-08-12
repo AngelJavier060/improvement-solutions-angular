@@ -1,87 +1,158 @@
-<div class="container-fluid py-4">
-  <h2 class="h4 fw-bold mb-4">Dashboard de Mantenimiento</h2>
-  
-  <!-- KPI Cards -->
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <small class="text-muted text-uppercase fw-bold">Vehículos Activos</small>
-          <h3 class="display-6 fw-bold text-primary mt-2">{{ kpis.vehiculosActivos }}</h3>
-          <small class="text-muted">Unidades operativas</small>
-        </div>
-      </div>
+<div class="md-dash">
+  <header class="md-dash__header">
+    <div>
+      <h1 class="md-dash__title">Dashboard de Mantenimiento</h1>
+      <p class="md-dash__subtitle">Resumen general del estado de la flota.</p>
     </div>
-    
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <small class="text-muted text-uppercase fw-bold">Mantenimientos Hoy</small>
-          <h3 class="display-6 fw-bold text-warning mt-2">{{ kpis.mantenimientosHoy }}</h3>
-          <small class="text-muted">Programados</small>
-        </div>
-      </div>
+    <div class="md-dash__actions">
+      <button type="button" class="md-btn md-btn--ghost" (click)="goFlota()">
+        <i class="fas fa-list"></i>
+        Ver flota
+      </button>
+      <button type="button" class="md-btn md-btn--primary" (click)="goNuevoVehiculo()">
+        <i class="fas fa-plus"></i>
+        Nuevo vehículo
+      </button>
     </div>
-    
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm h-100 border-start border-danger border-4">
-        <div class="card-body">
-          <small class="text-muted text-uppercase fw-bold">Alertas Críticas</small>
-          <h3 class="display-6 fw-bold text-danger mt-2">{{ kpis.alertasCriticas }}</h3>
-          <small class="text-muted">Requieren atención</small>
-        </div>
-      </div>
-    </div>
-    
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
-        <div class="card-body">
-          <small class="text-muted text-uppercase fw-bold">Salud Operativa</small>
-          <h3 class="display-6 fw-bold text-success mt-2">{{ kpis.saludOperativa }}%</h3>
-          <small class="text-success"><i class="fas fa-arrow-up"></i> +2.4%</small>
-        </div>
-      </div>
-    </div>
+  </header>
+
+  <div *ngIf="loading" class="md-state">
+    <div class="spinner-border text-primary" role="status"></div>
+    <span>Cargando indicadores de flota…</span>
   </div>
 
-  <!-- Quick Actions -->
-  <div class="row g-3">
-    <div class="col-md-6">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title fw-bold">Acciones Rápidas</h5>
-          <div class="d-grid gap-2">
-            <a [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'nueva-ficha']" class="btn btn-outline-primary text-start">
-              <i class="fas fa-plus-circle me-2"></i>Registrar Nuevo Vehículo
-            </a>
-            <a [routerLink]="['/usuario', businessRuc, 'mantenimiento']" class="btn btn-outline-secondary text-start">
-              <i class="fas fa-list me-2"></i>Ver Lista de Vehículos
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="col-md-6">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title fw-bold">Resumen de Actividad</h5>
-          <ul class="list-unstyled mb-0">
-            <li class="mb-2">
-              <i class="fas fa-check-circle text-success me-2"></i>
-              <strong>12</strong> mantenimientos completados esta semana
-            </li>
-            <li class="mb-2">
-              <i class="fas fa-clock text-warning me-2"></i>
-              <strong>5</strong> mantenimientos pendientes
-            </li>
-            <li>
-              <i class="fas fa-exclamation-triangle text-danger me-2"></i>
-              <strong>3</strong> vehículos requieren atención urgente
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
+  <div *ngIf="!loading && error" class="alert alert-danger md-alert" role="alert">
+    {{ error }}
   </div>
+
+  <ng-container *ngIf="!loading && !error">
+    <!-- KPIs -->
+    <section class="md-kpis">
+      <article class="md-kpi">
+        <div class="md-kpi__top">
+          <h2>Vehículos activos</h2>
+          <span class="md-kpi__icon md-kpi__icon--primary"><i class="fas fa-car"></i></span>
+        </div>
+        <p class="md-kpi__value md-kpi__value--primary">{{ kpis.estadoActivo || 0 }}</p>
+        <p class="md-kpi__hint">
+          Unidades operativas
+          <span *ngIf="kpis.totalFlota"> · {{ kpis.totalFlota }} en flota</span>
+        </p>
+      </article>
+
+      <article class="md-kpi">
+        <div class="md-kpi__top">
+          <h2>En mantenimiento</h2>
+          <span class="md-kpi__icon md-kpi__icon--secondary"><i class="fas fa-wrench"></i></span>
+        </div>
+        <p class="md-kpi__value md-kpi__value--secondary">{{ kpis.programadosHoy || 0 }}</p>
+        <p class="md-kpi__hint">Unidades en taller</p>
+      </article>
+
+      <article class="md-kpi md-kpi--alert">
+        <div class="md-kpi__top">
+          <h2 class="text-danger">Alertas críticas</h2>
+          <span class="md-kpi__icon md-kpi__icon--error"><i class="fas fa-exclamation-triangle"></i></span>
+        </div>
+        <p class="md-kpi__value md-kpi__value--error">{{ kpis.alertasCriticas || statusBreakdown.critico || 0 }}</p>
+        <p class="md-kpi__hint">Fuera de servicio / baja</p>
+      </article>
+
+      <article class="md-kpi md-kpi--health">
+        <div class="md-kpi__top">
+          <h2>Salud operativa</h2>
+          <span class="md-kpi__icon md-kpi__icon--success"><i class="fas fa-heart"></i></span>
+        </div>
+        <p class="md-kpi__value md-kpi__value--success">{{ kpis.saludOperativa | number:'1.0-1' }}%</p>
+        <p class="md-kpi__hint md-kpi__hint--success" *ngIf="tendenciaSign() !== 0">
+          <i class="fas" [class.fa-arrow-up]="tendenciaSign() > 0" [class.fa-arrow-down]="tendenciaSign() < 0"></i>
+          {{ tendenciaSign() > 0 ? '+' : '' }}{{ kpis.saludOperativaTendencia | number:'1.0-1' }}%
+        </p>
+        <p class="md-kpi__hint" *ngIf="tendenciaSign() === 0">Activos sobre total de flota</p>
+      </article>
+    </section>
+
+    <!-- Charts -->
+    <section class="md-charts">
+      <article class="md-panel md-panel--wide">
+        <h3 class="md-panel__title">{{ activityChartTitle }}</h3>
+        <div echarts [options]="activityChartOptions" [autoResize]="true" class="md-chart md-chart--bar"></div>
+      </article>
+
+      <article class="md-panel">
+        <h3 class="md-panel__title">Estado de la flota</h3>
+        <div echarts [options]="statusChartOptions" [autoResize]="true" class="md-chart md-chart--donut"></div>
+        <ul class="md-legend">
+          <li>
+            <span class="md-dot md-dot--primary"></span>
+            <span class="md-legend__label">Operativo</span>
+            <strong>{{ statusBreakdown.operativo }}</strong>
+          </li>
+          <li>
+            <span class="md-dot md-dot--secondary"></span>
+            <span class="md-legend__label">En mantenimiento</span>
+            <strong>{{ statusBreakdown.enTaller }}</strong>
+          </li>
+          <li>
+            <span class="md-dot md-dot--error"></span>
+            <span class="md-legend__label">Fuera de servicio</span>
+            <strong>{{ statusBreakdown.critico }}</strong>
+          </li>
+        </ul>
+      </article>
+    </section>
+
+    <!-- Attention + quick actions -->
+    <section class="md-bottom">
+      <article class="md-panel">
+        <div class="md-panel__head">
+          <h3 class="md-panel__title mb-0">Unidades que requieren atención</h3>
+          <button type="button" class="md-link-btn" (click)="goFlota()">Ver todas</button>
+        </div>
+
+        <div *ngIf="recentCritical.length === 0" class="md-empty">
+          No hay unidades en taller ni fuera de servicio en este momento.
+        </div>
+
+        <ul class="md-attn" *ngIf="recentCritical.length > 0">
+          <li *ngFor="let v of recentCritical" (click)="goVehicle(v)" tabindex="0" (keyup.enter)="goVehicle(v)">
+            <div class="md-attn__main">
+              <strong>{{ v.placa || v.codigoEquipo || '—' }}</strong>
+              <span>{{ v.marca || '' }} {{ v.modelo || '' }}</span>
+            </div>
+            <span class="md-badge" [class.md-badge--warn]="statusTone(v) === 'warn'" [class.md-badge--danger]="statusTone(v) === 'danger'" [class.md-badge--ok]="statusTone(v) === 'ok'">
+              {{ statusLabel(v) }}
+            </span>
+          </li>
+        </ul>
+      </article>
+
+      <article class="md-panel">
+        <h3 class="md-panel__title">Acciones rápidas</h3>
+        <div class="md-quick">
+          <button type="button" class="md-quick__item" (click)="goNuevoVehiculo()">
+            <i class="fas fa-plus-circle"></i>
+            <div>
+              <strong>Registrar vehículo</strong>
+              <span>Crear ficha nueva en la flota</span>
+            </div>
+          </button>
+          <button type="button" class="md-quick__item" (click)="goFlota()">
+            <i class="fas fa-truck"></i>
+            <div>
+              <strong>Lista de flota</strong>
+              <span>Consultar y filtrar unidades</span>
+            </div>
+          </button>
+          <button type="button" class="md-quick__item" (click)="goDocumentacion()">
+            <i class="fas fa-folder-open"></i>
+            <div>
+              <strong>Documentación</strong>
+              <span>Gestión documental de unidades</span>
+            </div>
+          </button>
+        </div>
+      </article>
+    </section>
+  </ng-container>
 </div>
