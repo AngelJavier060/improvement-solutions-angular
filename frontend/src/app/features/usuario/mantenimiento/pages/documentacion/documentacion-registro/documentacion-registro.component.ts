@@ -200,19 +200,27 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     this.dynamicDocTypes = [];
     this.entidadRemitentes = [];
     this.docConfigMessage = '';
-    this.fleetService.getVehicleById(this.businessRuc, id).subscribe({
-      next: v => {
-        this.vehicle = v;
-        this.loadVehicleFormContext(v);
-      },
-      error: err => {
-        console.error(err);
-        this.error = 'No se pudo cargar la unidad.';
-        this.vehicle = null;
-        this.loadingFleet = false;
-        this.cdr.markForCheck();
-      }
-    });
+    // Sincronizar compliance desde API antes de parchear edición
+    this.docService
+      .syncVehicleFromServer(this.businessRuc, id)
+      .pipe(catchError(() => of([] as any[])))
+      .subscribe({
+        next: () => {
+          this.fleetService.getVehicleById(this.businessRuc, id).subscribe({
+            next: v => {
+              this.vehicle = v;
+              this.loadVehicleFormContext(v);
+            },
+            error: err => {
+              console.error(err);
+              this.error = 'No se pudo cargar la unidad.';
+              this.vehicle = null;
+              this.loadingFleet = false;
+              this.cdr.markForCheck();
+            }
+          });
+        }
+      });
   }
 
   private loadVehicleFormContext(v: Vehicle): void {

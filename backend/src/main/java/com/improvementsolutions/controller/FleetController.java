@@ -5,6 +5,8 @@ import com.improvementsolutions.dto.fleet.FleetVehicleWriteDto;
 import com.improvementsolutions.service.FleetVehicleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -148,6 +150,23 @@ public class FleetController {
             log.error("[Fleet] upload document: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Error al subir el documento", "INTERNAL", 500));
+        }
+    }
+
+    @GetMapping("/{ruc}/vehicles/{id}/documents/{docId}/content")
+    public ResponseEntity<?> downloadVehicleDocumentContent(
+            @PathVariable String ruc,
+            @PathVariable Long id,
+            @PathVariable Long docId) {
+        try {
+            return fleetVehicleService.downloadVehicleDocument(ruc, id, docId);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(e.getMessage(), "NOT_FOUND", 404));
+        } catch (Exception e) {
+            log.error("[Fleet] download document content: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al abrir el documento", "INTERNAL", 500));
         }
     }
 

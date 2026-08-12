@@ -121,19 +121,19 @@
                 {{ statusText(d) }}
               </span>
             </td>
-            <td class="text-end">
+            <td class="text-end du-actions">
               <button
                 type="button"
                 class="du-icon"
                 title="Ver PDF"
-                *ngIf="d.attachedDocumentUrl"
-                (click)="openPdf(d)">
+                *ngIf="hasPdf(d)"
+                (click)="openPdf(d); $event.stopPropagation()">
                 <i class="fas fa-file-pdf"></i>
               </button>
-              <button type="button" class="du-icon" title="Editar" (click)="irRegistro(d)">
+              <button type="button" class="du-icon" title="Editar" (click)="irRegistro(d); $event.stopPropagation()">
                 <i class="fas fa-pen"></i>
               </button>
-              <button type="button" class="du-icon du-icon--danger" title="Eliminar" (click)="deleteDoc(d)">
+              <button type="button" class="du-icon du-icon--danger" title="Eliminar" (click)="deleteDoc(d); $event.stopPropagation()">
                 <i class="fas fa-trash-alt"></i>
               </button>
             </td>

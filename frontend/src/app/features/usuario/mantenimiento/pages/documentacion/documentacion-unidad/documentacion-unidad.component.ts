@@ -194,8 +194,15 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     if (!confirm(`¿Eliminar del listado activo "${doc.typeLabel}"? Quedará en el historial.`)) return;
     this.docService.deleteDocument$(this.businessRuc, this.vehicleId, doc.id).subscribe({
       next: ok => {
-        if (!ok) alert('No se pudo eliminar el documento.');
-        this.cdr.markForCheck();
+        if (!ok) {
+          alert('No se pudo eliminar el documento.');
+          return;
+        }
+        // Recargar desde servidor para asegurar UI consistente
+        this.docService.syncVehicleFromServer(this.businessRuc, this.vehicleId).subscribe({
+          next: () => this.cdr.markForCheck(),
+          error: () => this.cdr.markForCheck()
+        });
       },
       error: () => alert('No se pudo eliminar el documento.')
     });
@@ -232,20 +239,42 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     }
   }
 
+  hasPdf(doc: FleetComplianceDoc): boolean {
+    return !!(doc.attachedFleetDocumentId || (doc.attachedDocumentUrl && doc.attachedDocumentUrl.trim()));
+  }
+
+  /** URL autenticada preferida para ver el PDF de flota. */
+  private pdfFetchUrl(doc: FleetComplianceDoc): string | null {
+    if (doc.attachedFleetDocumentId != null) {
+      return `/api/fleet/${encodeURIComponent(this.businessRuc)}/vehicles/${this.vehicleId}/documents/${doc.attachedFleetDocumentId}/content`;
+    }
+    const raw = (doc.attachedDocumentUrl || '').trim();
+    if (!raw) return null;
+    return this.normalizeFileUrl(raw);
+  }
+
   openPdf(doc: FleetComplianceDoc): void {
-    const rawUrl = (doc.attachedDocumentUrl || '').trim();
-    if (!rawUrl) {
+    const url = this.pdfFetchUrl(doc);
+    if (!url) {
       alert('Este registro no tiene PDF adjunto.');
       return;
     }
-    const url = this.normalizeFileUrl(rawUrl);
     const title = doc.fileName || doc.typeLabel || 'Documento PDF';
     this.closePdfPreview();
 
     this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
       next: (resp: HttpResponse<Blob>) => {
         const blob = resp.body as Blob;
+        if (!blob || blob.size === 0) {
+          alert('El PDF está vacío o no se pudo descargar.');
+          return;
+        }
+        // Si el backend devolvió JSON de error como blob, avisamos
         const headerType = (resp.headers.get('Content-Type') || '').toLowerCase();
+        if (headerType.includes('json') || headerType.includes('text/html')) {
+          alert('No se pudo abrir el PDF (respuesta inválida del servidor).');
+          return;
+        }
         const mime =
           headerType.includes('pdf') || title.toLowerCase().endsWith('.pdf') || url.toLowerCase().includes('.pdf')
             ? 'application/pdf'
@@ -259,7 +288,14 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
       error: err => {
         console.error('Error abriendo PDF', err);
         this.closePdfPreview();
-        alert('No se pudo abrir el PDF. Verifique su sesión e intente de nuevo.');
+        const status = err?.status;
+        if (status === 401 || status === 403) {
+          alert('Sesión expirada. Vuelva a iniciar sesión para ver el PDF.');
+        } else if (status === 404) {
+          alert('No se encontró el archivo PDF en el servidor.');
+        } else {
+          alert('No se pudo abrir el PDF. Verifique su sesión e intente de nuevo.');
+        }
       }
     });
   }

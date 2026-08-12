@@ -10,12 +10,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -559,6 +565,41 @@ public class FleetVehicleService {
         return m;
     }
 
+    /** Descarga/visualización autenticada del PDF de flota (ruta anidada segura). */
+    @Transactional(readOnly = true)
+    public ResponseEntity<Resource> downloadVehicleDocument(String ruc, Long vehicleId, Long docId) throws MalformedURLException {
+        Business business = businessService.findByRuc(ruc)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
+        fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
+        FleetVehicleDocument doc = fleetVehicleDocumentRepository.findByIdAndFleetVehicle_Id(docId, vehicleId)
+                .orElseThrow(() -> new IllegalArgumentException("Documento no encontrado"));
+
+        Path base = Paths.get(uploadDir).resolve("fleet").normalize();
+        Path filePath = Paths.get(uploadDir).resolve(doc.getStoredPath()).normalize();
+        if (!filePath.startsWith(base) || !Files.isRegularFile(filePath)) {
+            throw new IllegalArgumentException("Archivo no encontrado en disco");
+        }
+
+        Resource resource = new UrlResource(filePath.toUri());
+        if (!resource.exists() || !resource.isReadable()) {
+            throw new IllegalArgumentException("Archivo no legible");
+        }
+
+        String contentType = doc.getContentType();
+        if (contentType == null || contentType.isBlank()) {
+            contentType = "application/pdf";
+        }
+        String filename = doc.getOriginalFilename() != null ? doc.getOriginalFilename() : ("doc-" + docId + ".pdf");
+        filename = filename.replace("\"", "");
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .header(HttpHeaders.CACHE_CONTROL, "private, max-age=60")
+                .body(resource);
+    }
+
     @Transactional
     public Map<String, Object> addVehicleDocument(String ruc, Long vehicleId, MultipartFile file, String description) throws IOException {
         if (file == null || file.isEmpty()) {
@@ -621,24 +662,197 @@ public class FleetVehicleService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<Map<String, Object>> listComplianceDocumentsByRuc(String ruc) {
-        businessService.findByRuc(ruc)
+        Business business = businessService.findByRuc(ruc)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
+        List<TipoDocumentoVehiculo> catalog =
+                businessService.listTipoDocumentoVehiculosByBusinessId(business.getId());
+        List<FleetVehicle> vehicles = fleetVehicleRepository
+                .findByBusiness_IdOrderByUpdatedAtDesc(business.getId(), PageRequest.of(0, 2000))
+                .getContent();
+        for (FleetVehicle v : vehicles) {
+            importOrphanFilesForVehicle(v, catalog);
+            realignComplianceWithCatalog(v, catalog);
+            cleanupJunkCompliance(v, catalog);
+        }
         return fleetComplianceDocumentRepository.findByBusinessRuc(ruc).stream()
-                .map(this::toComplianceResponse)
+                .map(d -> toComplianceResponse(d, ruc))
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<Map<String, Object>> listComplianceDocuments(String ruc, Long vehicleId) {
         Business business = businessService.findByRuc(ruc)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
-        fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
+        FleetVehicle v = fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
+        List<TipoDocumentoVehiculo> catalog =
+                businessService.listTipoDocumentoVehiculosByBusinessId(business.getId());
+        importOrphanFilesForVehicle(v, catalog);
+        realignComplianceWithCatalog(v, catalog);
+        cleanupJunkCompliance(v, catalog);
         return fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(vehicleId).stream()
-                .map(this::toComplianceResponse)
+                .map(d -> toComplianceResponse(d, ruc))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Crea filas de compliance para PDFs huérfanos, usando el catálogo de tipos
+     * de documento de la empresa (nombre + categoría de administración).
+     */
+    private void importOrphanFilesForVehicle(FleetVehicle v, List<TipoDocumentoVehiculo> catalog) {
+        if (v == null || v.getId() == null) return;
+        Long vehicleId = v.getId();
+        Set<Long> linked = fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(vehicleId)
+                .stream()
+                .map(c -> c.getFleetVehicleDocument() != null ? c.getFleetVehicleDocument().getId() : null)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        List<FleetVehicleDocument> files =
+                fleetVehicleDocumentRepository.findByFleetVehicle_IdOrderByCreatedAtDesc(vehicleId);
+        for (FleetVehicleDocument f : files) {
+            if (linked.contains(f.getId())) continue;
+            String rawLabel = labelFromFile(f);
+            if (isJunkLabel(rawLabel, f.getOriginalFilename())) {
+                log.info("[Fleet] PDF huérfano omitido (etiqueta basura) id={} label={}", f.getId(), rawLabel);
+                continue;
+            }
+            TipoDocumentoVehiculo matched = matchTipoDocumento(rawLabel, f.getOriginalFilename(), catalog);
+            String typeLabel = matched != null ? matched.getName() : rawLabel;
+            String typeCode = matched != null ? "tdv_" + matched.getId() : "OTRO";
+            String category = matched != null
+                    ? normalizeCategory(matched.getCategoryOrDefault())
+                    : "DOCUMENTOS_PRINCIPALES";
+
+            FleetComplianceDocument doc = FleetComplianceDocument.builder()
+                    .fleetVehicle(v)
+                    .typeCode(typeCode)
+                    .typeLabel(typeLabel)
+                    .docCategory(category)
+                    .referenceId("PDF-" + f.getId())
+                    .issueDate(f.getCreatedAt() != null ? f.getCreatedAt().toLocalDate() : null)
+                    .expiryDate(null)
+                    .active(true)
+                    .historicMode(false)
+                    .fileName(f.getOriginalFilename())
+                    .fileSizeLabel(f.getFileSize() != null ? formatBytes(f.getFileSize()) : null)
+                    .fleetVehicleDocument(f)
+                    .build();
+            fleetComplianceDocumentRepository.save(doc);
+            linked.add(f.getId());
+            log.info("[Fleet] Compliance recuperado PDF id={} -> {} [{}]", f.getId(), typeLabel, category);
+        }
+    }
+
+    /** Alinea filas existentes al catálogo de la empresa (grupo / nombre / código). */
+    private void realignComplianceWithCatalog(FleetVehicle v, List<TipoDocumentoVehiculo> catalog) {
+        if (v == null || v.getId() == null || catalog == null || catalog.isEmpty()) return;
+        List<FleetComplianceDocument> docs =
+                fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(v.getId());
+        for (FleetComplianceDocument doc : docs) {
+            TipoDocumentoVehiculo matched = matchTipoDocumento(doc.getTypeLabel(), doc.getFileName(), catalog);
+            if (matched == null) continue;
+            String newCode = "tdv_" + matched.getId();
+            String newCat = normalizeCategory(matched.getCategoryOrDefault());
+            boolean changed = false;
+            if (!Objects.equals(doc.getTypeCode(), newCode)) {
+                doc.setTypeCode(newCode);
+                changed = true;
+            }
+            if (!Objects.equals(doc.getTypeLabel(), matched.getName())) {
+                doc.setTypeLabel(matched.getName());
+                changed = true;
+            }
+            if (!Objects.equals(normalizeCategory(doc.getDocCategory()), newCat)) {
+                doc.setDocCategory(newCat);
+                changed = true;
+            }
+            if (changed) {
+                fleetComplianceDocumentRepository.save(doc);
+            }
+        }
+    }
+
+    /** Elimina registros recuperados con etiqueta basura (p.ej. "PESOS") que no están en el catálogo. */
+    private void cleanupJunkCompliance(FleetVehicle v, List<TipoDocumentoVehiculo> catalog) {
+        if (v == null || v.getId() == null) return;
+        List<FleetComplianceDocument> docs =
+                fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(v.getId());
+        for (FleetComplianceDocument doc : docs) {
+            if (!isJunkLabel(doc.getTypeLabel(), doc.getFileName())) continue;
+            TipoDocumentoVehiculo matched = matchTipoDocumento(doc.getTypeLabel(), doc.getFileName(), catalog);
+            if (matched != null) continue; // se puede realinear
+            Long fileId = doc.getFleetVehicleDocument() != null ? doc.getFleetVehicleDocument().getId() : null;
+            fleetComplianceDocumentRepository.delete(doc);
+            log.info("[Fleet] Compliance basura eliminado label={} fileId={}", doc.getTypeLabel(), fileId);
+        }
+    }
+
+    private static boolean isJunkLabel(String label, String filename) {
+        String n = normalizeText(label);
+        if (n.isEmpty()) return true;
+        // Etiquetas genéricas / errores de carga antigua (no son tipos del catálogo)
+        if (n.equals("pesos") || n.equals("peso") || n.equals("otro") || n.equals("documento")) return true;
+        // Cédula mal cargada como documentación de flota
+        if (n.contains("cedula") && n.contains("papeleta")) return true;
+        String nf = normalizeText(filename);
+        if (nf.contains("cedula") && (n.equals("pesos") || n.length() <= 5)) return true;
+        return false;
+    }
+
+    private static TipoDocumentoVehiculo matchTipoDocumento(
+            String label, String filename, List<TipoDocumentoVehiculo> catalog) {
+        if (catalog == null || catalog.isEmpty()) return null;
+        String nLabel = normalizeText(label);
+        String nFile = normalizeText(filename);
+        TipoDocumentoVehiculo best = null;
+        int bestScore = 0;
+        for (TipoDocumentoVehiculo t : catalog) {
+            if (t == null || t.getName() == null) continue;
+            String nName = normalizeText(t.getName());
+            if (nName.isEmpty()) continue;
+            int score = 0;
+            if (!nLabel.isEmpty() && nLabel.equals(nName)) score = 100;
+            else if (!nLabel.isEmpty() && (nLabel.contains(nName) || nName.contains(nLabel)) && nLabel.length() >= 6) {
+                score = 70 + Math.min(nName.length(), 20);
+            } else if (!nFile.isEmpty() && nFile.contains(nName) && nName.length() >= 6) {
+                score = 50 + Math.min(nName.length(), 20);
+            }
+            if (score > bestScore) {
+                bestScore = score;
+                best = t;
+            }
+        }
+        return bestScore >= 50 ? best : null;
+    }
+
+    private static String normalizeText(String raw) {
+        if (raw == null) return "";
+        String s = raw.replaceFirst("(?i)^Documentación:\\s*", "").trim().toLowerCase(Locale.ROOT);
+        s = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "");
+        s = s.replaceAll("[^a-z0-9]+", " ").trim().replaceAll("\\s+", " ");
+        return s;
+    }
+
+    private static String labelFromFile(FleetVehicleDocument f) {
+        String desc = f.getDescription();
+        if (desc != null && !desc.isBlank()) {
+            String cleaned = desc.replaceFirst("(?i)^Documentación:\\s*", "").trim();
+            if (!cleaned.isEmpty()) return cleaned;
+        }
+        if (f.getOriginalFilename() != null && !f.getOriginalFilename().isBlank()) {
+            return f.getOriginalFilename();
+        }
+        return "Documento #" + f.getId();
+    }
+
+    private static String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return String.format(Locale.US, "%.1f KB", bytes / 1024.0);
+        return String.format(Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0));
     }
 
     @Transactional
@@ -666,7 +880,7 @@ public class FleetVehicleService {
                             && attached.getId().equals(c.getFleetVehicleDocument().getId()))
                     .findFirst();
             if (existingOpt.isPresent()) {
-                return toComplianceResponse(existingOpt.get());
+                return toComplianceResponse(existingOpt.get(), ruc);
             }
         }
 
@@ -687,7 +901,7 @@ public class FleetVehicleService {
                 .fleetVehicleDocument(attached)
                 .build();
 
-        return toComplianceResponse(fleetComplianceDocumentRepository.save(doc));
+        return toComplianceResponse(fleetComplianceDocumentRepository.save(doc), ruc);
     }
 
     @Transactional
@@ -746,7 +960,7 @@ public class FleetVehicleService {
             doc.setFleetVehicleDocument(resolveAttachedFile(vehicleId, longOrNull(body.get("attachedFleetDocumentId"))));
         }
 
-        return toComplianceResponse(fleetComplianceDocumentRepository.save(doc));
+        return toComplianceResponse(fleetComplianceDocumentRepository.save(doc), ruc);
     }
 
     @Transactional
@@ -775,7 +989,7 @@ public class FleetVehicleService {
                 .orElseThrow(() -> new IllegalArgumentException("Archivo PDF no encontrado para la unidad"));
     }
 
-    private Map<String, Object> toComplianceResponse(FleetComplianceDocument d) {
+    private Map<String, Object> toComplianceResponse(FleetComplianceDocument d, String ruc) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", d.getId());
         m.put("vehicleId", d.getFleetVehicle() != null ? d.getFleetVehicle().getId() : null);
@@ -793,7 +1007,19 @@ public class FleetVehicleService {
         m.put("fileSizeLabel", d.getFileSizeLabel());
         Long fileId = d.getFleetVehicleDocument() != null ? d.getFleetVehicleDocument().getId() : null;
         m.put("attachedFleetDocumentId", fileId);
-        if (d.getFleetVehicleDocument() != null && d.getFleetVehicleDocument().getStoredPath() != null) {
+        Long vehicleId = d.getFleetVehicle() != null ? d.getFleetVehicle().getId() : null;
+        String effectiveRuc = ruc;
+        if ((effectiveRuc == null || effectiveRuc.isBlank())
+                && d.getFleetVehicle() != null
+                && d.getFleetVehicle().getBusiness() != null) {
+            effectiveRuc = d.getFleetVehicle().getBusiness().getRuc();
+        }
+        if (fileId != null && vehicleId != null && effectiveRuc != null && !effectiveRuc.isBlank()) {
+            m.put(
+                    "attachedDocumentUrl",
+                    "/api/fleet/" + effectiveRuc + "/vehicles/" + vehicleId + "/documents/" + fileId + "/content"
+            );
+        } else if (d.getFleetVehicleDocument() != null && d.getFleetVehicleDocument().getStoredPath() != null) {
             m.put("attachedDocumentUrl", "/api/files/" + d.getFleetVehicleDocument().getStoredPath().replace('\\', '/'));
         } else {
             m.put("attachedDocumentUrl", null);
