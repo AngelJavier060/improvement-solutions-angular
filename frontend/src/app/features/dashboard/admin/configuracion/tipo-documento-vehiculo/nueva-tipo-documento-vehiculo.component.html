@@ -19,6 +19,16 @@
     </div>
 
     <div class="form-group">
+      <label for="category">Grupo / división *</label>
+      <select id="category" formControlName="category" class="form-control">
+        <option value="DOCUMENTOS_PRINCIPALES">Documentos Legales y Permisos</option>
+        <option value="CERTIFICACIONES">Certificaciones Técnicas</option>
+        <option value="LIBERACIONES">Liberaciones</option>
+      </select>
+      <small class="text-muted">Define en qué bloque aparece en la documentación de la unidad.</small>
+    </div>
+
+    <div class="form-group">
       <label for="description">Descripción</label>
       <textarea id="description" formControlName="description" class="form-control" rows="3"></textarea>
     </div>

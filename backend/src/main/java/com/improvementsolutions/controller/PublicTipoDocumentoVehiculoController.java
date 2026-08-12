@@ -36,6 +36,9 @@ public class PublicTipoDocumentoVehiculoController {
     @PostMapping
     public ResponseEntity<TipoDocumentoVehiculo> create(@RequestBody TipoDocumentoVehiculo entity) {
         entity.setId(null);
+        if (entity.getCategory() == null || entity.getCategory().isBlank()) {
+            entity.setCategory(TipoDocumentoVehiculo.CAT_DOCUMENTOS_PRINCIPALES);
+        }
         return new ResponseEntity<>(repository.save(entity), HttpStatus.CREATED);
     }
 
@@ -46,6 +49,9 @@ public class PublicTipoDocumentoVehiculoController {
             TipoDocumentoVehiculo toUpdate = existing.get();
             toUpdate.setName(entity.getName());
             toUpdate.setDescription(entity.getDescription());
+            if (entity.getCategory() != null && !entity.getCategory().isBlank()) {
+                toUpdate.setCategory(entity.getCategory().trim());
+            }
             return ResponseEntity.ok(repository.save(toUpdate));
         }
         return ResponseEntity.notFound().build();

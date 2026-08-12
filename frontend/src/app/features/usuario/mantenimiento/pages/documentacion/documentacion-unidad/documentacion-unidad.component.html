@@ -1,174 +1,136 @@
 <div class="du-page" *ngIf="!loading && !error && vehicle">
-  <!-- Breadcrumb -->
-  <nav class="du-breadcrumb" aria-label="Miga de pan">
-    <a [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion']">DOCUMENTACIÓN</a>
-    <i class="fas fa-chevron-right"></i>
-    <span>UNIDAD {{ vehicle.placa }}</span>
-  </nav>
-
-  <!-- Hero + Resumen -->
-  <section class="du-top">
-    <article class="du-hero">
-      <div class="du-hero__media">
-        <img
-          *ngIf="vehicle.fotoPrincipal"
-          [src]="vehicle.fotoPrincipal"
-          [alt]="vehicle.placa"
-        />
-        <div *ngIf="!vehicle.fotoPrincipal" class="du-hero__placeholder">
-          <i class="fas fa-truck"></i>
-          <span>Sin foto</span>
+  <!-- Vehicle header -->
+  <section class="du-banner">
+    <div class="du-banner__accent"></div>
+    <div class="du-banner__body">
+      <div class="du-banner__identity">
+        <div class="du-banner__photo">
+          <img *ngIf="vehicle.fotoPrincipal" [src]="vehicle.fotoPrincipal" [alt]="vehicle.placa" />
+          <div *ngIf="!vehicle.fotoPrincipal" class="du-banner__photo-fallback">
+            <i class="fas fa-truck"></i>
+          </div>
         </div>
-      </div>
-      <div class="du-hero__content">
-        <span class="du-pill">Flota Activa</span>
-        <h1 class="du-hero__title">{{ vehicle.placa }}</h1>
-        <p class="du-hero__sub">{{ vehicle.marca || '—' }} · {{ vehicle.modelo || '—' }}</p>
-
-        <div class="du-hero__meta">
-          <div>
-            <p class="du-meta-label">CÓDIGO</p>
-            <p class="du-meta-value">{{ vehicle.codigoEquipo || '—' }}</p>
+        <div class="du-banner__text">
+          <div class="du-banner__title-row">
+            <h1>{{ vehicle.placa }}</h1>
+            <span class="du-pill">{{ estadoUnidadLabel() }}</span>
           </div>
-          <div>
-            <p class="du-meta-label">CLASE</p>
-            <p class="du-meta-value">{{ vehicle.clase || '—' }}</p>
-          </div>
-          <div>
-            <p class="du-meta-label">TIPO</p>
-            <p class="du-meta-value">{{ vehicle.tipoVehiculo || '—' }}</p>
-          </div>
-          <div>
-            <p class="du-meta-label">NÚMERO MOTOR</p>
-            <p class="du-meta-value">{{ vehicle.serieMotor || '—' }}</p>
-          </div>
-          <div class="du-meta-wide">
-            <p class="du-meta-label">CHASIS / VIN</p>
-            <p class="du-meta-value">{{ vehicle.serieChasis || '—' }}</p>
+          <p class="du-banner__sub">
+            <span class="du-banner__sub-icon"><i class="fas fa-truck"></i></span>
+            {{ vehicleTitle() }}
+          </p>
+          <div class="du-banner__actions">
+            <button type="button" class="du-btn du-btn--ghost" (click)="irHistorial()">
+              <i class="fas fa-history"></i> Historial
+            </button>
+            <button type="button" class="du-btn du-btn--ghost" (click)="volverLista()">
+              <i class="fas fa-arrow-left"></i> Volver
+            </button>
           </div>
         </div>
       </div>
-    </article>
 
-    <aside class="du-summary">
-      <div class="du-summary__glow" aria-hidden="true"></div>
-      <div class="du-summary__top">
-        <p class="du-summary__eyebrow">RESUMEN</p>
-        <p class="du-summary__label">DOCUMENTOS REGISTRADOS</p>
-        <p class="du-summary__count">{{ totalDocsCount() }}</p>
-      </div>
-      <div class="du-summary__actions">
-        <button type="button" class="du-btn-light" (click)="irHistorial()">
-          <i class="fas fa-history"></i>
-          Historial
-        </button>
-        <button type="button" class="du-btn-ghost" (click)="irRegistro()">
-          <i class="fas fa-plus"></i>
-          Nuevo
-        </button>
-      </div>
-    </aside>
-  </section>
-
-  <!-- Documentación -->
-  <section class="du-panel">
-    <div class="du-panel__head">
-      <div>
-        <h2 class="du-panel__title">Documentación del vehículo</h2>
-        <p class="du-panel__desc">Revise y gestione permisos y fechas de vigencia.</p>
-      </div>
-      <div class="du-panel__tools">
-        <div class="du-search">
-          <i class="fas fa-search"></i>
-          <input
-            type="search"
-            placeholder="Buscar tipo, código o referencia..."
-            [(ngModel)]="search"
-          />
+      <div class="du-banner__meta">
+        <div class="du-meta-card">
+          <p class="du-meta-card__label">Marca</p>
+          <p class="du-meta-card__value">{{ vehicle.marca || '—' }}</p>
         </div>
-        <button type="button" class="du-btn-dark" (click)="irRegistro()">
-          <i class="fas fa-plus-square"></i>
-          Registrar
-        </button>
+        <div class="du-meta-card">
+          <p class="du-meta-card__label">Motor</p>
+          <p class="du-meta-card__value">{{ vehicle.serieMotor || '—' }}</p>
+        </div>
+        <div class="du-meta-card">
+          <p class="du-meta-card__label">Chasis</p>
+          <p class="du-meta-card__value" [title]="vehicle.serieChasis || ''">{{ vehicle.serieChasis || '—' }}</p>
+        </div>
+        <div class="du-meta-card">
+          <p class="du-meta-card__label">Clase</p>
+          <p class="du-meta-card__value">{{ vehicle.clase || '—' }}</p>
+        </div>
       </div>
     </div>
+  </section>
 
-    <div class="du-table-scroll">
+  <div class="du-toolbar">
+    <div class="du-search">
+      <i class="fas fa-search"></i>
+      <input type="search" placeholder="Buscar tipo, código o referencia…" [(ngModel)]="search" />
+    </div>
+    <span class="du-toolbar__count">{{ totalDocsCount() }} documento(s)</span>
+  </div>
+
+  <!-- 3 grouped sections -->
+  <section class="du-section" *ngFor="let sec of sections()">
+    <div class="du-section__head">
+      <h2>{{ sec.label }}</h2>
+      <button
+        *ngIf="sec.code === 'DOCUMENTOS_PRINCIPALES'"
+        type="button"
+        class="du-btn du-btn--primary"
+        (click)="irRegistro(undefined, sec.code)">
+        <i class="fas fa-plus"></i>
+        Nuevo Documento
+      </button>
+    </div>
+
+    <div class="du-table-wrap">
       <table class="du-table">
         <thead>
           <tr>
-            <th>TIPO</th>
-            <th>ENTIDAD REMITENTE</th>
-            <th>RESPALDO</th>
-            <th>ESTADO</th>
-            <th>EXPEDICIÓN</th>
-            <th>VENCIMIENTO</th>
-            <th>DÍAS</th>
-            <th class="text-end">ACCIONES</th>
+            <th>Documento</th>
+            <th>N° Referencia</th>
+            <th>Fecha Emisión</th>
+            <th>Vencimiento</th>
+            <th>Estado</th>
+            <th class="text-end">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngIf="docs().length === 0">
-            <td colspan="8" class="du-empty">
-              <div class="du-empty__inner">
-                <div class="du-empty__icon">
-                  <i class="fas fa-folder-open"></i>
-                </div>
-                <p>No hay documentos registrados para este vehículo.</p>
-              </div>
-            </td>
+          <tr *ngIf="sec.docs.length === 0">
+            <td colspan="6" class="du-empty">Sin documentos en este grupo.</td>
           </tr>
-          <tr *ngFor="let d of docs()" [ngClass]="rowClass(d)">
+          <tr *ngFor="let d of sec.docs">
             <td>
-              <div class="du-type">
-                <div class="du-type__icon"><i class="fas fa-file-pdf"></i></div>
+              <div class="du-doc">
+                <div class="du-doc__icon" [class.is-warn]="statusTone(d) === 'warn'" [class.is-err]="statusTone(d) === 'err'">
+                  <i class="fas" [ngClass]="sectionIcon(sec.code)"></i>
+                </div>
                 <div>
-                  <p class="du-type__name">{{ d.typeLabel }}</p>
-                  <p class="du-type__ref">{{ d.referenceId }}</p>
+                  <p class="du-doc__name">{{ d.typeLabel }}</p>
+                  <p class="du-doc__sub">{{ d.entidadRemitenteName || 'Sin entidad' }}</p>
                 </div>
               </div>
             </td>
-            <td>{{ d.entidadRemitenteName || '—' }}</td>
-            <td>
-              <a
-                *ngIf="d.attachedDocumentUrl"
-                [href]="d.attachedDocumentUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="du-pdf-link"
-              ><i class="fas fa-file-pdf"></i> PDF</a>
-              <span *ngIf="!d.attachedDocumentUrl" class="du-muted">—</span>
+            <td class="du-muted">{{ d.referenceId || '—' }}</td>
+            <td class="du-muted">{{ formatDate(d.issueDate) }}</td>
+            <td [class.du-expiry-warn]="statusTone(d) === 'warn'" [class.du-expiry-err]="statusTone(d) === 'err'">
+              {{ d.expiryDate ? formatDate(d.expiryDate) : '—' }}
             </td>
-            <td><span [ngClass]="statusBadgeClass(d)">{{ statusText(d) }}</span></td>
-            <td>{{ formatDate(d.issueDate) }}</td>
-            <td>{{ d.expiryDate ? formatDate(d.expiryDate) : '—' }}</td>
             <td>
-              <ng-container *ngIf="d.expiryDate; else noExp">
-                <span
-                  class="du-days"
-                  [class.is-vencido]="status(d)==='VENCIDO'"
-                  [class.is-proximo]="status(d)==='PROXIMO'"
-                  [class.is-ok]="status(d)==='VIGENTE'"
-                >{{ days(d) }}</span>
-              </ng-container>
-              <ng-template #noExp><span class="du-muted">∞</span></ng-template>
+              <span class="du-status" [class.du-status--ok]="statusTone(d) === 'ok'" [class.du-status--warn]="statusTone(d) === 'warn'" [class.du-status--err]="statusTone(d) === 'err'" [class.du-status--muted]="statusTone(d) === 'muted'">
+                <span class="du-status__dot"></span>
+                {{ statusText(d) }}
+              </span>
             </td>
             <td class="text-end">
-              <button type="button" class="du-icon-btn" title="Editar" (click)="irRegistro(d)">
-                <i class="fas fa-edit"></i>
+              <button
+                type="button"
+                class="du-icon"
+                title="Ver PDF"
+                *ngIf="d.attachedDocumentUrl"
+                (click)="openPdf(d)">
+                <i class="fas fa-file-pdf"></i>
               </button>
-              <button type="button" class="du-icon-btn du-icon-btn--danger" title="Eliminar" (click)="deleteDoc(d)">
+              <button type="button" class="du-icon" title="Editar" (click)="irRegistro(d)">
+                <i class="fas fa-pen"></i>
+              </button>
+              <button type="button" class="du-icon du-icon--danger" title="Eliminar" (click)="deleteDoc(d)">
                 <i class="fas fa-trash-alt"></i>
               </button>
             </td>
           </tr>
         </tbody>
       </table>
-    </div>
-
-    <div class="du-panel__foot">
-      <span>{{ docs().length }} DOCUMENTO(S) MOSTRADO(S)</span>
-      <button type="button" class="du-foot-link" (click)="volverLista()">Volver al listado</button>
     </div>
   </section>
 </div>
@@ -178,5 +140,5 @@
 </div>
 <div class="du-page" *ngIf="error && !loading">
   <div class="du-alert">{{ error }}</div>
-  <button type="button" class="du-btn-dark" (click)="volverLista()">Volver</button>
+  <button type="button" class="du-btn du-btn--primary" (click)="volverLista()">Volver</button>
 </div>

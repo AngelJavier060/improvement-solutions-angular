@@ -355,7 +355,14 @@ public class BusinessController {
         response.put("colorVehiculos", business.getColorVehiculos().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
         response.put("transmisiones", business.getTransmisiones().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
         response.put("propietarioVehiculos", business.getPropietarioVehiculos().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
-        response.put("tipoDocumentoVehiculos", business.getTipoDocumentoVehiculos().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
+        response.put("tipoDocumentoVehiculos", business.getTipoDocumentoVehiculos().stream().map(e -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", e.getId());
+            m.put("name", e.getName());
+            m.put("description", e.getDescription());
+            m.put("category", e.getCategory() != null ? e.getCategory() : "DOCUMENTOS_PRINCIPALES");
+            return m;
+        }).collect(Collectors.toList()));
         response.put("unidadMedidas", business.getUnidadMedidas().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
         response.put("ubicacionRutas", business.getUbicacionRutas().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
         response.put("paisOrigenes", business.getPaisOrigenes().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));

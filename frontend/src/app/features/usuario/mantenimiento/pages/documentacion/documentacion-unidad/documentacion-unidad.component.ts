@@ -7,7 +7,18 @@ import { FleetService } from '../../../../../../services/fleet.service';
 import { FleetDocumentationService } from '../../../../../../services/fleet-documentation.service';
 import { Vehicle } from '../../../../../../models/vehicle.model';
 import { FleetComplianceDoc } from '../../../../../../models/fleet-documentation.model';
+import {
+  FLEET_DOC_CATEGORIES,
+  FleetDocCategory,
+  normalizeFleetDocCategory
+} from '../../../../../../models/tipo-documento-vehiculo.model';
 import { activeBusinessRuc } from '../documentacion-ruc.helper';
+
+interface DocSection {
+  code: FleetDocCategory;
+  label: string;
+  docs: FleetComplianceDoc[];
+}
 
 @Component({
   selector: 'app-documentacion-unidad',
@@ -76,7 +87,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     return this.docService.getDocuments(this.vehicleId).length;
   }
 
-  docs(): FleetComplianceDoc[] {
+  filteredDocs(): FleetComplianceDoc[] {
     const all = this.docService.getDocuments(this.vehicleId);
     const q = this.search.trim().toLowerCase();
     if (!q) return all;
@@ -84,8 +95,18 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
       d =>
         (d.typeLabel || '').toLowerCase().includes(q) ||
         (d.referenceId || '').toLowerCase().includes(q) ||
-        (d.typeCode || '').toLowerCase().includes(q)
+        (d.typeCode || '').toLowerCase().includes(q) ||
+        (d.entidadRemitenteName || '').toLowerCase().includes(q)
     );
+  }
+
+  sections(): DocSection[] {
+    const docs = this.filteredDocs();
+    return FLEET_DOC_CATEGORIES.map(c => ({
+      code: c.code,
+      label: c.label,
+      docs: docs.filter(d => normalizeFleetDocCategory(d.docCategory) === c.code)
+    }));
   }
 
   status(doc: FleetComplianceDoc) {
@@ -96,35 +117,56 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     return this.docService.daysToExpiry(doc.expiryDate);
   }
 
-  statusBadgeClass(doc: FleetComplianceDoc): string {
-    const s = this.status(doc);
-    if (!doc.active) return 'doc-badge doc-badge--neutral';
-    if (s === 'VENCIDO') return 'doc-badge doc-badge--vencido';
-    if (s === 'PROXIMO') return 'doc-badge doc-badge--proximo';
-    if (s === 'NO_CADUCA') return 'doc-badge doc-badge--neutral';
-    return 'doc-badge doc-badge--vigente';
-  }
-
   statusText(doc: FleetComplianceDoc): string {
     if (!doc.active) return 'Inactivo';
     const s = this.status(doc);
+    const d = this.days(doc);
     if (s === 'VENCIDO') return 'Vencido';
-    if (s === 'PROXIMO') return 'Próximo a vencer';
+    if (s === 'PROXIMO') return d != null ? `Por Vencer (${d} días)` : 'Por Vencer';
     if (s === 'NO_CADUCA') return 'No caduca';
     if (s === 'SIN_VIGENCIA') return 'Sin vigencia';
     return 'Vigente';
   }
 
-  formatDate(iso: string): string {
-    if (!iso) return '—';
-    const d = new Date(iso + 'T12:00:00');
-    return isNaN(d.getTime()) ? iso : d.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' });
+  statusTone(doc: FleetComplianceDoc): 'ok' | 'warn' | 'err' | 'muted' {
+    if (!doc.active) return 'muted';
+    const s = this.status(doc);
+    if (s === 'VENCIDO') return 'err';
+    if (s === 'PROXIMO') return 'warn';
+    if (s === 'VIGENTE' || s === 'NO_CADUCA') return 'ok';
+    return 'muted';
   }
 
-  rowClass(doc: FleetComplianceDoc): string {
-    const s = this.status(doc);
-    if (doc.active && s === 'VENCIDO') return 'table-danger bg-opacity-10';
-    return '';
+  formatDate(iso: string | null | undefined): string {
+    if (!iso) return '—';
+    const d = new Date(iso + 'T12:00:00');
+    return isNaN(d.getTime())
+      ? iso
+      : d.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  estadoUnidadLabel(): string {
+    switch (this.vehicle?.estadoActivo) {
+      case 'ACTIVO':
+        return 'Activo';
+      case 'EN_TALLER':
+        return 'En taller';
+      case 'DADO_DE_BAJA':
+        return 'Fuera de servicio';
+      default:
+        return this.vehicle?.estadoActivo || '—';
+    }
+  }
+
+  vehicleTitle(): string {
+    const parts = [this.vehicle?.marca, this.vehicle?.modelo, this.vehicle?.tipoVehiculo].filter(Boolean);
+    return parts.length ? parts.join(' · ') : 'Unidad de flota';
+  }
+
+  sectionIcon(code: FleetDocCategory): string {
+    if (code === 'CERTIFICACIONES') return 'fa-certificate';
+    if (code === 'LIBERACIONES') return 'fa-clipboard-check';
+    return 'fa-file-contract';
   }
 
   deleteDoc(doc: FleetComplianceDoc): void {
@@ -133,15 +175,39 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   }
 
   irHistorial(): void {
-    this.router.navigate(['/usuario', this.businessRuc, 'mantenimiento', 'documentacion', 'unidad', this.vehicleId, 'historial']);
+    this.router.navigate([
+      '/usuario',
+      this.businessRuc,
+      'mantenimiento',
+      'documentacion',
+      'unidad',
+      this.vehicleId,
+      'historial'
+    ]);
   }
 
-  irRegistro(doc?: FleetComplianceDoc): void {
-    const base = ['/usuario', this.businessRuc, 'mantenimiento', 'documentacion', 'unidad', this.vehicleId, 'registro'];
+  irRegistro(doc?: FleetComplianceDoc, category?: FleetDocCategory): void {
+    const base = [
+      '/usuario',
+      this.businessRuc,
+      'mantenimiento',
+      'documentacion',
+      'unidad',
+      this.vehicleId,
+      'registro'
+    ];
     if (doc) {
       this.router.navigate(base, { queryParams: { docId: doc.id } });
+    } else if (category) {
+      this.router.navigate(base, { queryParams: { category } });
     } else {
       this.router.navigate(base);
+    }
+  }
+
+  openPdf(doc: FleetComplianceDoc): void {
+    if (doc.attachedDocumentUrl) {
+      window.open(doc.attachedDocumentUrl, '_blank', 'noopener');
     }
   }
 

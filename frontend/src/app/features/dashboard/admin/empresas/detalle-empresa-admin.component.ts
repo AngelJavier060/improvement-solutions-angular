@@ -4430,6 +4430,13 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   openAsignTipoDocVehModal(): void { this.showAsignTipoDocVehModal = true; this.selectedTipoDocVehId = null; }
   closeAsignTipoDocVehModal(): void { this.showAsignTipoDocVehModal = false; }
   availableTipoDocVeh(): any[] { const ids = this.tipoDocumentoVehiculos.map((e:any)=>e.id); return this.allTipoDocumentoVehiculos.filter((e:any)=>!ids.includes(e.id)); }
+
+  tipoDocCategoryLabel(category: string | undefined): string {
+    if (category === 'CERTIFICACIONES') return 'Certificaciones';
+    if (category === 'LIBERACIONES') return 'Liberaciones';
+    return 'Documentos legales';
+  }
+
   assignTipoDocVeh(): void {
     if (!this.selectedTipoDocVehId) return;
     this.savingTipoDocVeh = true;

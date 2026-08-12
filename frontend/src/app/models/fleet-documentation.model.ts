@@ -24,6 +24,11 @@ export interface FleetComplianceDoc {
   vehicleId: number;
   typeCode: string;
   typeLabel: string;
+  /**
+   * Grupo visual: DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES
+   * (viene del Tipo de documento configurado en administración).
+   */
+  docCategory?: string | null;
   /** Entidad remitente (catálogo de la empresa, misma fuente que ficha / admin empresa). */
   entidadRemitenteId?: number | null;
   entidadRemitenteName?: string | null;
@@ -59,6 +64,7 @@ export interface FleetDocRegistroPayload {
   typeCode: string;
   /** Si viene informado, sustituye a la etiqueta inferida por typeCode (p. ej. tdv_12). */
   typeLabel?: string;
+  docCategory?: string | null;
   entidadRemitenteId?: number | null;
   entidadRemitenteName?: string | null;
   referenceId: string;

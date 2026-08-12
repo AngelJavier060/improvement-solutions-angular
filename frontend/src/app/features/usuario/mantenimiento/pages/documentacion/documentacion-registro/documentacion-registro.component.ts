@@ -33,10 +33,12 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
   loadingFleet = false;
   error = '';
   /** Documentos exigidos para el tipo de vehículo (config. admin tipo-vehículo). */
-  dynamicDocTypes: { code: string; label: string }[] = [];
+  dynamicDocTypes: { code: string; label: string; category?: string }[] = [];
   entidadRemitentes: MaintenanceCatalogItem[] = [];
   docConfigMessage = '';
   editDocId: string | null = null;
+  /** Preferencia de grupo al abrir registro desde una sección. */
+  preferredCategory: string | null = null;
   /** PDF nuevo a subir al guardar (API flota). */
   pendingPdfFile: File | null = null;
   saving = false;
@@ -83,6 +85,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       const vid = vidStr != null && vidStr !== '' ? Number(vidStr) : NaN;
       this.routeVehicleId = Number.isFinite(vid) && vid > 0 ? vid : null;
       this.editDocId = qm.get('docId');
+      this.preferredCategory = qm.get('category');
 
       if (this.routeVehicleId != null) {
         this.selectedVehicleId = this.routeVehicleId;
@@ -129,18 +132,46 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
    * Opciones del desplegable: prioridad a documentos configurados para el tipo de vehículo;
    * si no hay, catálogo general; siempre se incluye el código actual al editar registros antiguos.
    */
-  docTypeOptionsForSelect(): { code: string; label: string }[] {
-    let base: { code: string; label: string }[] =
-      this.dynamicDocTypes.length > 0 ? [...this.dynamicDocTypes] : [...FLEET_DOC_TYPE_OPTIONS];
+  docTypeOptionsForSelect(): { code: string; label: string; category?: string }[] {
+    let base: { code: string; label: string; category?: string }[] =
+      this.dynamicDocTypes.length > 0
+        ? [...this.dynamicDocTypes]
+        : FLEET_DOC_TYPE_OPTIONS.map(o => ({
+            ...o,
+            category: o.code === 'CERT_OP' ? 'CERTIFICACIONES' : 'DOCUMENTOS_PRINCIPALES'
+          }));
     const cur = this.form.get('typeCode')?.value;
     if (cur && !base.some(b => b.code === cur)) {
       const doc =
         this.selectedVehicleId != null && this.editDocId
           ? this.docService.getDocumentById(this.selectedVehicleId, this.editDocId)
           : undefined;
-      base = [{ code: cur, label: doc?.typeLabel || cur }, ...base];
+      base = [
+        {
+          code: cur,
+          label: doc?.typeLabel || cur,
+          category: doc?.docCategory || 'DOCUMENTOS_PRINCIPALES'
+        },
+        ...base
+      ];
     }
     return base;
+  }
+
+  /** Opciones de tipo agrupadas para el select del registro. */
+  docTypeGroups(): { code: string; label: string; items: { code: string; label: string; category?: string }[] }[] {
+    const order = [
+      { code: 'DOCUMENTOS_PRINCIPALES', label: 'Documentos Legales y Permisos' },
+      { code: 'CERTIFICACIONES', label: 'Certificaciones Técnicas' },
+      { code: 'LIBERACIONES', label: 'Liberaciones' }
+    ];
+    const opts = this.docTypeOptionsForSelect();
+    return order
+      .map(g => ({
+        ...g,
+        items: opts.filter(o => (o.category || 'DOCUMENTOS_PRINCIPALES') === g.code)
+      }))
+      .filter(g => g.items.length > 0);
   }
 
   private loadVehiclesForPickerOnce(): void {
@@ -220,7 +251,8 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       .filter(d => d.id != null)
       .map(d => ({
         code: fleetDocTypeCodeFromTipoDocumentoVehiculoId(d.id!),
-        label: d.name
+        label: d.name,
+        category: d.category || 'DOCUMENTOS_PRINCIPALES'
       }));
     if (this.dynamicDocTypes.length === 0) {
       this.docConfigMessage =
@@ -281,7 +313,11 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     const opts = this.docTypeOptionsForSelect();
     const cur = this.form.get('typeCode')?.value;
     if (!cur || !opts.some(o => o.code === cur)) {
-      const next = opts[0]?.code ?? '';
+      const preferred =
+        this.preferredCategory
+          ? opts.find(o => (o.category || 'DOCUMENTOS_PRINCIPALES') === this.preferredCategory)
+          : undefined;
+      const next = preferred?.code ?? opts[0]?.code ?? '';
       if (next) {
         this.form.patchValue({ typeCode: next }, { emitEvent: false });
       }
@@ -393,6 +429,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       return {
         typeCode: v.typeCode!,
         typeLabel: typeOpt?.label,
+        docCategory: typeOpt?.category || prevDoc?.docCategory || 'DOCUMENTOS_PRINCIPALES',
         entidadRemitenteId: ent != null ? ent.id : null,
         entidadRemitenteName: ent?.name ?? null,
         referenceId: '',

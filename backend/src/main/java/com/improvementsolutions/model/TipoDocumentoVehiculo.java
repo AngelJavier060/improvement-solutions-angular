@@ -14,6 +14,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TipoDocumentoVehiculo {
 
+    public static final String CAT_DOCUMENTOS_PRINCIPALES = "DOCUMENTOS_PRINCIPALES";
+    public static final String CAT_CERTIFICACIONES = "CERTIFICACIONES";
+    public static final String CAT_LIBERACIONES = "LIBERACIONES";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,6 +26,12 @@ public class TipoDocumentoVehiculo {
     private String name;
 
     private String description;
+
+    /**
+     * Grupo operativo: DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES
+     */
+    @Column(name = "category", length = 40, nullable = false)
+    private String category = CAT_DOCUMENTOS_PRINCIPALES;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -33,10 +43,16 @@ public class TipoDocumentoVehiculo {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.category == null || this.category.isBlank()) {
+            this.category = CAT_DOCUMENTOS_PRINCIPALES;
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+        if (this.category == null || this.category.isBlank()) {
+            this.category = CAT_DOCUMENTOS_PRINCIPALES;
+        }
     }
 }

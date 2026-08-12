@@ -1514,7 +1514,10 @@
         <div class="card-body p-2">
           <div *ngIf="tipoDocumentoVehiculos && tipoDocumentoVehiculos.length > 0">
             <div *ngFor="let item of tipoDocumentoVehiculos" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size: 11px;" class="fw-semibold">{{ item.name }}</span>
+              <span style="font-size: 11px;" class="fw-semibold">
+                {{ item.name }}
+                <span class="badge bg-secondary ms-1" style="font-size: 9px; font-weight: 600;">{{ tipoDocCategoryLabel(item.category) }}</span>
+              </span>
               <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeTipoDocVeh(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
             </div>
           </div>
@@ -3756,7 +3759,9 @@
       <div class="modal-body p-4">
         <select class="form-select" [(ngModel)]="selectedTipoDocVehId">
           <option [ngValue]="null" disabled>-- Seleccione --</option>
-          <option *ngFor="let item of availableTipoDocVeh()" [ngValue]="item.id">{{ item.name }}</option>
+          <option *ngFor="let item of availableTipoDocVeh()" [ngValue]="item.id">
+            {{ item.name }} ({{ tipoDocCategoryLabel(item.category) }})
+          </option>
         </select>
         <div *ngIf="availableTipoDocVeh().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
       </div>

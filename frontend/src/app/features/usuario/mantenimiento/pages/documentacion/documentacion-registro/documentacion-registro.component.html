@@ -112,7 +112,11 @@
                 Listado según configuración del tipo de vehículo (administración → Tipo de vehículo).
               </p>
               <select id="dr-type" class="dr-select" formControlName="typeCode">
-                <option *ngFor="let t of docTypeOptionsForSelect()" [value]="t.code">{{ t.label }}</option>
+                <ng-container *ngFor="let group of docTypeGroups()">
+                  <optgroup [label]="group.label">
+                    <option *ngFor="let t of group.items" [value]="t.code">{{ t.label }}</option>
+                  </optgroup>
+                </ng-container>
               </select>
             </div>
 

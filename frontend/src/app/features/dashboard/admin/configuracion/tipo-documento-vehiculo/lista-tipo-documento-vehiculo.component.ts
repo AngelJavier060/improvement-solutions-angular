@@ -1,6 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { TipoDocumentoVehiculo } from '../../../../../models/tipo-documento-vehiculo.model';
+import {
+  TipoDocumentoVehiculo,
+  fleetDocCategoryLabel
+} from '../../../../../models/tipo-documento-vehiculo.model';
 import { TipoDocumentoVehiculoService } from '../../../../../services/tipo-documento-vehiculo.service';
 
 @Component({
@@ -17,6 +20,10 @@ export class ListaTipoDocumentoVehiculoComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadItems();
+  }
+
+  categoryLabel(code: string | undefined): string {
+    return fleetDocCategoryLabel(code);
   }
 
   loadItems(): void {

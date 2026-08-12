@@ -16,7 +16,8 @@ export class NuevaTipoDocumentoVehiculoComponent {
   constructor(private fb: FormBuilder, private service: TipoDocumentoVehiculoService, private router: Router) {
     this.form = this.fb.group({
       name: ['', Validators.required],
-      description: ['']
+      description: [''],
+      category: ['DOCUMENTOS_PRINCIPALES', Validators.required]
     });
   }
 
