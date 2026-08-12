@@ -1,1 +1,74 @@
 @import '../documentacion.shared.scss';
+
+.doc-vigencia-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 9rem;
+  max-width: 14rem;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 0.35rem;
+    background: #f1f5f9;
+    border-left: 3px solid #94a3b8;
+  }
+
+  &__item--ok {
+    border-left-color: #22c55e;
+    background: #f0fdf4;
+  }
+
+  &__item--warn {
+    border-left-color: #eab308;
+    background: #fffbeb;
+  }
+
+  &__item--err {
+    border-left-color: #ef4444;
+    background: #fef2f2;
+  }
+
+  &__name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  &__days {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-weight: 800;
+    font-family: 'Manrope', system-ui, sans-serif;
+    color: #0f172a;
+  }
+
+  &__item--warn &__days {
+    color: #a16207;
+  }
+
+  &__item--err &__days {
+    color: #b91c1c;
+  }
+
+  &__item--ok &__days {
+    color: #15803d;
+  }
+}
+
+.doc-vigencia-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}

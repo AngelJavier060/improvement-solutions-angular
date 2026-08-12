@@ -184,6 +184,38 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
     return String(d);
   }
 
+  /**
+   * Hasta 3 documentos activos más urgentes (menor días a vencer primero).
+   * Incluye sin caducidad al final si no hay suficientes con fecha.
+   */
+  topVigencias(v: Vehicle): { label: string; days: number | null; status: FleetDocComplianceStatus }[] {
+    if (v.id == null) return [];
+    const docs = this.docService.getDocuments(v.id).filter(d => d.active && !d.historicMode);
+    if (docs.length === 0) return [];
+
+    const withDays = docs
+      .map(d => {
+        const days =
+          d.expiryDate == null || d.expiryDate === ''
+            ? null
+            : this.docService.daysToExpiry(d.expiryDate);
+        return {
+          label: d.typeLabel || this.docService.labelForTypeCode(d.typeCode),
+          days,
+          status: this.docService.complianceStatusForDoc(d)
+        };
+      })
+      .sort((a, b) => {
+        // Con fecha primero (más urgentes); sin caducidad al final
+        if (a.days === null && b.days === null) return a.label.localeCompare(b.label, 'es');
+        if (a.days === null) return 1;
+        if (b.days === null) return -1;
+        return a.days - b.days;
+      });
+
+    return withDays.slice(0, 3);
+  }
+
   statusBadgeClass(v: Vehicle): string {
     const s = this.statusFor(v);
     if (s === 'VENCIDO') return 'doc-badge doc-badge--vencido';

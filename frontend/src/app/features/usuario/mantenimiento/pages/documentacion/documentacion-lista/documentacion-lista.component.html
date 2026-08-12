@@ -124,17 +124,25 @@
           </div>
           <div>
             <p class="text-uppercase fw-bold text-secondary mb-1 small" style="font-size: 0.65rem; letter-spacing: 0.08em;">Días de vigencia</p>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-              <span
-                class="doc-headline h4 mb-0"
-                [class.text-danger]="statusFor(v)==='VENCIDO'"
-                [class.text-warning]="statusFor(v)==='PROXIMO'"
-                [class.text-success]="statusFor(v)==='VIGENTE' || statusFor(v)==='NO_CADUCA'"
-              >{{ daysLabel(v) }}</span>
-              <span class="small fw-bold text-uppercase text-danger" *ngIf="statusFor(v)==='VENCIDO'">Expirado</span>
-              <span class="small fw-bold text-uppercase text-warning" *ngIf="statusFor(v)==='PROXIMO'">En riesgo</span>
-              <span class="small fw-bold text-uppercase text-success" *ngIf="statusFor(v)==='VIGENTE' || statusFor(v)==='NO_CADUCA'">Seguro</span>
-            </div>
+            <ng-container *ngIf="topVigencias(v) as items">
+              <ul class="doc-vigencia-list" *ngIf="items.length > 0">
+                <li
+                  *ngFor="let item of items"
+                  [class.doc-vigencia-list__item--err]="item.status === 'VENCIDO'"
+                  [class.doc-vigencia-list__item--warn]="item.status === 'PROXIMO'"
+                  [class.doc-vigencia-list__item--ok]="item.status === 'VIGENTE' || item.status === 'NO_CADUCA'">
+                  <span class="doc-vigencia-list__name" [title]="item.label">{{ item.label }}</span>
+                  <span class="doc-vigencia-list__days">
+                    <ng-container *ngIf="item.days === null">∞</ng-container>
+                    <ng-container *ngIf="item.days !== null">{{ item.days }}d</ng-container>
+                  </span>
+                </li>
+              </ul>
+              <div class="doc-vigencia-empty" *ngIf="items.length === 0">
+                <span class="doc-headline h5 mb-0 text-muted">—</span>
+                <span class="small text-muted">Sin documentos</span>
+              </div>
+            </ng-container>
           </div>
           <div class="d-flex align-items-center justify-content-lg-end">
             <span [ngClass]="statusBadgeClass(v)">{{ statusText(v) }}</span>

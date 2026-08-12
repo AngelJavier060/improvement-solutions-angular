@@ -188,8 +188,4 @@ export class ListaVehiculosComponent implements OnInit {
         return status || '—';
     }
   }
-
-  isUrgent(vehicle: Vehicle): boolean {
-    return vehicle.proximoMantenimiento === 'INMEDIATO' || vehicle.estadoActivo === 'EN_TALLER';
-  }
 }

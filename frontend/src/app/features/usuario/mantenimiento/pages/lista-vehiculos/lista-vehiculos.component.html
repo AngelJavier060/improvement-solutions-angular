@@ -67,8 +67,8 @@
             <th class="text-uppercase small fw-bold">Foto</th>
             <th class="text-uppercase small fw-bold">Identidad</th>
             <th class="text-uppercase small fw-bold">Especificaciones</th>
-            <th class="text-uppercase small fw-bold">Último Servicio</th>
-            <th class="text-uppercase small fw-bold">Próximo Mant.</th>
+            <th class="text-uppercase small fw-bold">Serie Motor</th>
+            <th class="text-uppercase small fw-bold">Serie Chasis</th>
             <th class="text-uppercase small fw-bold text-center">Estado</th>
             <th class="text-uppercase small fw-bold text-end">Acciones</th>
           </tr>
@@ -97,26 +97,14 @@
               <div class="fw-semibold">{{ vehicle.marca || '—' }}</div>
             </td>
             
-            <!-- Último Servicio -->
+            <!-- Serie Motor -->
             <td class="p-3">
-              <div [class.text-danger]="isUrgent(vehicle)">
-                <i [class]="isUrgent(vehicle) ? 'fas fa-exclamation-triangle' : 'fas fa-history'" class="me-1"></i>
-                {{ vehicle.ultimoServicio || 'Sin registro' }}
-              </div>
-              <small [class.text-danger]="isUrgent(vehicle)" [class.text-muted]="!isUrgent(vehicle)">
-                {{ vehicle.ultimoServicioDescripcion || '' }}
-              </small>
+              <div class="fw-semibold text-break">{{ vehicle.serieMotor || '—' }}</div>
             </td>
-            
-            <!-- Próximo Mantenimiento (planificación pendiente de configurar en backend) -->
+
+            <!-- Serie Chasis -->
             <td class="p-3">
-              <div [class.text-danger]="isUrgent(vehicle)" [class.text-primary]="!isUrgent(vehicle)" class="fw-semibold">
-                <i [class]="isUrgent(vehicle) ? 'fas fa-bell' : 'fas fa-calendar-alt'" class="me-1"></i>
-                {{ vehicle.proximoMantenimiento || '—' }}
-              </div>
-              <small class="text-muted d-block" *ngIf="vehicle.kmRestantes || vehicle.proximoMantenimientoDescripcion">
-                {{ vehicle.kmRestantes || vehicle.proximoMantenimientoDescripcion }}
-              </small>
+              <div class="fw-semibold text-break">{{ vehicle.serieChasis || '—' }}</div>
             </td>
             
             <!-- Estado -->
