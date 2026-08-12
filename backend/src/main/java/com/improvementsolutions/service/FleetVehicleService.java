@@ -666,15 +666,14 @@ public class FleetVehicleService {
     public List<Map<String, Object>> listComplianceDocumentsByRuc(String ruc) {
         Business business = businessService.findByRuc(ruc)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
+        // Solo alinea categorías; NO reimporta PDF (eso recreaba filas tras eliminar)
         List<TipoDocumentoVehiculo> catalog =
                 businessService.listTipoDocumentoVehiculosByBusinessId(business.getId());
         List<FleetVehicle> vehicles = fleetVehicleRepository
                 .findByBusiness_IdOrderByUpdatedAtDesc(business.getId(), PageRequest.of(0, 2000))
                 .getContent();
         for (FleetVehicle v : vehicles) {
-            importOrphanFilesForVehicle(v, catalog);
             realignComplianceWithCatalog(v, catalog);
-            cleanupJunkCompliance(v, catalog);
         }
         return fleetComplianceDocumentRepository.findByBusinessRuc(ruc).stream()
                 .map(d -> toComplianceResponse(d, ruc))
@@ -683,6 +682,21 @@ public class FleetVehicleService {
 
     @Transactional
     public List<Map<String, Object>> listComplianceDocuments(String ruc, Long vehicleId) {
+        Business business = businessService.findByRuc(ruc)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
+        FleetVehicle v = fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
+        List<TipoDocumentoVehiculo> catalog =
+                businessService.listTipoDocumentoVehiculosByBusinessId(business.getId());
+        realignComplianceWithCatalog(v, catalog);
+        return fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(vehicleId).stream()
+                .map(d -> toComplianceResponse(d, ruc))
+                .collect(Collectors.toList());
+    }
+
+    /** Importación explícita de PDFs huérfanos (no se llama en cada listado). */
+    @Transactional
+    public List<Map<String, Object>> recoverOrphanComplianceDocuments(String ruc, Long vehicleId) {
         Business business = businessService.findByRuc(ruc)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
         FleetVehicle v = fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
@@ -752,7 +766,10 @@ public class FleetVehicleService {
         List<FleetComplianceDocument> docs =
                 fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(v.getId());
         for (FleetComplianceDocument doc : docs) {
-            TipoDocumentoVehiculo matched = matchTipoDocumento(doc.getTypeLabel(), doc.getFileName(), catalog);
+            TipoDocumentoVehiculo matched = matchByTypeCode(doc.getTypeCode(), catalog);
+            if (matched == null) {
+                matched = matchTipoDocumento(doc.getTypeLabel(), doc.getFileName(), catalog);
+            }
             if (matched == null) continue;
             String newCode = "tdv_" + matched.getId();
             String newCat = normalizeCategory(matched.getCategoryOrDefault());
@@ -771,7 +788,18 @@ public class FleetVehicleService {
             }
             if (changed) {
                 fleetComplianceDocumentRepository.save(doc);
+                log.info("[Fleet] Compliance realineado id={} -> {} [{}]", doc.getId(), matched.getName(), newCat);
             }
+        }
+    }
+
+    private static TipoDocumentoVehiculo matchByTypeCode(String typeCode, List<TipoDocumentoVehiculo> catalog) {
+        if (typeCode == null || !typeCode.startsWith("tdv_")) return null;
+        try {
+            Long id = Long.parseLong(typeCode.substring(4).trim());
+            return catalog.stream().filter(t -> t != null && id.equals(t.getId())).findFirst().orElse(null);
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 

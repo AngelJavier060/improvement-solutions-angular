@@ -73,6 +73,18 @@ export class FleetService {
     return this.http.delete<void>(`${this.baseUrl}/${businessRuc}/vehicles/${vehicleId}/documents/${docId}`);
   }
 
+  /** URL autenticada para visualizar PDF de flota. */
+  vehicleDocumentContentUrl(businessRuc: string, vehicleId: number, docId: number): string {
+    return `${this.baseUrl}/${encodeURIComponent(businessRuc)}/vehicles/${vehicleId}/documents/${docId}/content`;
+  }
+
+  recoverOrphanComplianceDocs(businessRuc: string, vehicleId: number): Observable<unknown[]> {
+    return this.http.post<unknown[]>(
+      `${this.baseUrl}/${encodeURIComponent(businessRuc)}/vehicles/${vehicleId}/compliance-docs/recover-orphans`,
+      {}
+    );
+  }
+
   getKPIs(businessRuc: string): Observable<VehicleKPIs> {
     return this.http.get<VehicleKPIs>(`${this.baseUrl}/${businessRuc}/kpis`);
   }

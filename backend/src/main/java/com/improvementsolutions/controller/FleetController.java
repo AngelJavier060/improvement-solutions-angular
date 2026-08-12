@@ -216,6 +216,20 @@ public class FleetController {
         }
     }
 
+    @PostMapping("/{ruc}/vehicles/{id}/compliance-docs/recover-orphans")
+    public ResponseEntity<?> recoverOrphanComplianceDocs(@PathVariable String ruc, @PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(fleetVehicleService.recoverOrphanComplianceDocuments(ruc, id));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(e.getMessage(), "NOT_FOUND", 404));
+        } catch (Exception e) {
+            log.error("[Fleet] recover orphans: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al recuperar PDFs", "INTERNAL", 500));
+        }
+    }
+
     @PostMapping("/{ruc}/vehicles/{id}/compliance-docs")
     public ResponseEntity<?> createComplianceDoc(
             @PathVariable String ruc,

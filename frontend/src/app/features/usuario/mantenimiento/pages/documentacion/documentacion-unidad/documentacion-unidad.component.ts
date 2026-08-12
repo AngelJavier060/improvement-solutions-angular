@@ -36,6 +36,8 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   loading = true;
   error = '';
   search = '';
+  /** description del tipo de documento (catálogo empresa) por typeCode */
+  private tipoDescByCode = new Map<string, string>();
   private docSub?: Subscription;
   private routeSub?: Subscription;
 
@@ -85,12 +87,30 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     forkJoin({
       vehicle: this.fleetService.getVehicleById(ruc, vid),
       docs: this.docService.syncVehicleFromServer(ruc, vid).pipe(catchError(() => of([]))),
-      files: this.fleetService.listVehicleDocuments(ruc, vid).pipe(catchError(() => of([])))
+      catalogs: this.fleetService.getFichaCatalogs(ruc).pipe(catchError(() => of(null)))
     }).subscribe({
-      next: ({ vehicle, files }) => {
+      next: ({ vehicle, catalogs }) => {
         this.vehicle = vehicle;
-        // PDFs subidos sin fila de compliance (p. ej. registros previos solo en localStorage de otro navegador)
-        this.docService.importOrphanFiles(ruc, vid, files || []);
+        this.tipoDescByCode.clear();
+        const tipos = catalogs?.tipoDocumentoVehiculos || [];
+        for (const t of tipos) {
+          if (t?.id == null) continue;
+          const code = `tdv_${t.id}`;
+          const desc = (t.description || '').trim();
+          if (desc) this.tipoDescByCode.set(code, desc);
+          if (desc && t.name) this.tipoDescByCode.set(`name:${(t.name || '').toLowerCase()}`, desc);
+        }
+        // Solo recuperar PDF huérfanos si no hay ninguna fila (no tras cada eliminar)
+        if (this.docService.getDocuments(vid).length === 0) {
+          this.fleetService.recoverOrphanComplianceDocs(ruc, vid).pipe(catchError(() => of([]))).subscribe({
+            next: () => {
+              this.docService.syncVehicleFromServer(ruc, vid).subscribe({
+                next: () => this.cdr.markForCheck(),
+                error: () => this.cdr.markForCheck()
+              });
+            }
+          });
+        }
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -108,6 +128,17 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     return this.docService.getDocuments(this.vehicleId).length;
   }
 
+  /** Subtítulo: descripción del tipo (catálogo) o entidad remitente. */
+  docSubtitle(doc: FleetComplianceDoc): string {
+    const byCode = this.tipoDescByCode.get(doc.typeCode || '');
+    if (byCode) return byCode;
+    const byName = this.tipoDescByCode.get(`name:${(doc.typeLabel || '').toLowerCase()}`);
+    if (byName) return byName;
+    if (doc.entidadRemitenteName?.trim()) return doc.entidadRemitenteName.trim();
+    if (doc.fileName?.trim()) return doc.fileName.trim();
+    return '—';
+  }
+
   filteredDocs(): FleetComplianceDoc[] {
     const all = this.docService.getDocuments(this.vehicleId);
     const q = this.search.trim().toLowerCase();
@@ -115,9 +146,10 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     return all.filter(
       d =>
         (d.typeLabel || '').toLowerCase().includes(q) ||
-        (d.referenceId || '').toLowerCase().includes(q) ||
         (d.typeCode || '').toLowerCase().includes(q) ||
-        (d.entidadRemitenteName || '').toLowerCase().includes(q)
+        (d.entidadRemitenteName || '').toLowerCase().includes(q) ||
+        this.docSubtitle(d).toLowerCase().includes(q) ||
+        (d.fileName || '').toLowerCase().includes(q)
     );
   }
 
@@ -190,21 +222,33 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     return 'fa-file-contract';
   }
 
-  deleteDoc(doc: FleetComplianceDoc): void {
-    if (!confirm(`¿Eliminar del listado activo "${doc.typeLabel}"? Quedará en el historial.`)) return;
+  deleteDoc(doc: FleetComplianceDoc, ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    if (!confirm(`¿Eliminar "${doc.typeLabel}"? Se quitará del listado y el PDF asociado.`)) return;
+
+    const fileId = doc.attachedFleetDocumentId;
     this.docService.deleteDocument$(this.businessRuc, this.vehicleId, doc.id).subscribe({
       next: ok => {
         if (!ok) {
           alert('No se pudo eliminar el documento.');
+          this.cdr.markForCheck();
           return;
         }
-        // Recargar desde servidor para asegurar UI consistente
-        this.docService.syncVehicleFromServer(this.businessRuc, this.vehicleId).subscribe({
-          next: () => this.cdr.markForCheck(),
-          error: () => this.cdr.markForCheck()
-        });
+        // Borrar archivo suelto para que no reaparezca al recuperar huérfanos
+        if (fileId != null) {
+          this.fleetService
+            .deleteVehicleDocument(this.businessRuc, this.vehicleId, fileId)
+            .pipe(catchError(() => of(void 0)))
+            .subscribe();
+        }
+        this.cdr.markForCheck();
       },
-      error: () => alert('No se pudo eliminar el documento.')
+      error: err => {
+        console.error(err);
+        alert('No se pudo eliminar el documento.');
+        this.cdr.markForCheck();
+      }
     });
   }
 
@@ -220,7 +264,9 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     ]);
   }
 
-  irRegistro(doc?: FleetComplianceDoc, category?: FleetDocCategory): void {
+  irRegistro(doc?: FleetComplianceDoc, category?: FleetDocCategory, ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
     const base = [
       '/usuario',
       this.businessRuc,
@@ -239,24 +285,52 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Renovar: alta nueva con el mismo tipo. */
+  irRenovar(doc: FleetComplianceDoc, ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    this.router.navigate(
+      [
+        '/usuario',
+        this.businessRuc,
+        'mantenimiento',
+        'documentacion',
+        'unidad',
+        this.vehicleId,
+        'registro'
+      ],
+      {
+        queryParams: {
+          renewFrom: doc.id,
+          category: normalizeFleetDocCategory(doc.docCategory)
+        }
+      }
+    );
+  }
+
   hasPdf(doc: FleetComplianceDoc): boolean {
     return !!(doc.attachedFleetDocumentId || (doc.attachedDocumentUrl && doc.attachedDocumentUrl.trim()));
   }
 
-  /** URL autenticada preferida para ver el PDF de flota. */
   private pdfFetchUrl(doc: FleetComplianceDoc): string | null {
     if (doc.attachedFleetDocumentId != null) {
-      return `/api/fleet/${encodeURIComponent(this.businessRuc)}/vehicles/${this.vehicleId}/documents/${doc.attachedFleetDocumentId}/content`;
+      return this.fleetService.vehicleDocumentContentUrl(
+        this.businessRuc,
+        this.vehicleId,
+        doc.attachedFleetDocumentId
+      );
     }
     const raw = (doc.attachedDocumentUrl || '').trim();
     if (!raw) return null;
     return this.normalizeFileUrl(raw);
   }
 
-  openPdf(doc: FleetComplianceDoc): void {
+  openPdf(doc: FleetComplianceDoc, ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
     const url = this.pdfFetchUrl(doc);
     if (!url) {
-      alert('Este registro no tiene PDF adjunto.');
+      alert('Este registro no tiene PDF adjunto. Edítelo y suba el archivo.');
       return;
     }
     const title = doc.fileName || doc.typeLabel || 'Documento PDF';
@@ -269,19 +343,15 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
           alert('El PDF está vacío o no se pudo descargar.');
           return;
         }
-        // Si el backend devolvió JSON de error como blob, avisamos
         const headerType = (resp.headers.get('Content-Type') || '').toLowerCase();
         if (headerType.includes('json') || headerType.includes('text/html')) {
-          alert('No se pudo abrir el PDF (respuesta inválida del servidor).');
+          blob.text().then(t => {
+            console.error('PDF respuesta no binaria', t);
+            alert('No se pudo abrir el PDF. Reinicie el backend local (endpoint /content).');
+          });
           return;
         }
-        const mime =
-          headerType.includes('pdf') || title.toLowerCase().endsWith('.pdf') || url.toLowerCase().includes('.pdf')
-            ? 'application/pdf'
-            : headerType.startsWith('image/')
-              ? headerType
-              : 'application/pdf';
-        const typed = new Blob([blob], { type: mime });
+        const typed = new Blob([blob], { type: 'application/pdf' });
         this.pdfBlobUrl = window.URL.createObjectURL(typed);
         this.mountPdfViewerOverlay(title, this.pdfBlobUrl);
       },
@@ -290,11 +360,13 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
         this.closePdfPreview();
         const status = err?.status;
         if (status === 401 || status === 403) {
-          alert('Sesión expirada. Vuelva a iniciar sesión para ver el PDF.');
+          alert('Sesión expirada. Vuelva a iniciar sesión.');
         } else if (status === 404) {
-          alert('No se encontró el archivo PDF en el servidor.');
+          alert(
+            'PDF no encontrado (404). Reinicie el backend local para cargar /documents/{id}/content.'
+          );
         } else {
-          alert('No se pudo abrir el PDF. Verifique su sesión e intente de nuevo.');
+          alert(`No se pudo abrir el PDF (error ${status || 'red'}). ¿Está corriendo el backend?`);
         }
       }
     });
@@ -381,11 +453,11 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     closeBtn.addEventListener('click', () => this.closePdfPreview());
 
     const body = root.querySelector('.du-pdf-body') as HTMLElement;
-    const embed = this.renderer.createElement('embed') as HTMLEmbedElement;
-    embed.type = 'application/pdf';
-    embed.src = `${blobUrl}#zoom=page-width&toolbar=1&navpanes=0&scrollbar=1`;
-    embed.setAttribute('title', title);
-    Object.assign(embed.style, {
+    // iframe es más compatible que embed en varios navegadores
+    const frame = this.renderer.createElement('iframe') as HTMLIFrameElement;
+    frame.src = `${blobUrl}#zoom=page-width&toolbar=1&navpanes=0&scrollbar=1`;
+    frame.setAttribute('title', title);
+    Object.assign(frame.style, {
       position: 'absolute',
       left: '0',
       top: '0',
@@ -395,7 +467,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
       display: 'block',
       background: '#525659'
     } as CSSStyleDeclaration);
-    body.appendChild(embed);
+    body.appendChild(frame);
 
     this.pdfOverlayEl = root;
     this.renderer.appendChild(document.body, root);

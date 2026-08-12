@@ -1,5 +1,5 @@
 <div class="du-page" *ngIf="!loading && !error && vehicle">
-  <!-- Header: ficha + resumen (mock) -->
+  <!-- Header: ficha + resumen -->
   <section class="du-top">
     <article class="du-hero">
       <div class="du-hero__media">
@@ -61,7 +61,7 @@
   <div class="du-toolbar">
     <div class="du-search">
       <i class="fas fa-search"></i>
-      <input type="search" placeholder="Buscar tipo, código o referencia…" [(ngModel)]="search" />
+      <input type="search" placeholder="Buscar tipo o descripción…" [(ngModel)]="search" />
     </div>
     <button type="button" class="du-btn du-btn--ghost" (click)="volverLista()">
       <i class="fas fa-arrow-left"></i> Volver al listado
@@ -87,7 +87,6 @@
         <thead>
           <tr>
             <th>Documento</th>
-            <th>N° Referencia</th>
             <th>Fecha Emisión</th>
             <th>Vencimiento</th>
             <th>Estado</th>
@@ -96,7 +95,7 @@
         </thead>
         <tbody>
           <tr *ngIf="sec.docs.length === 0">
-            <td colspan="6" class="du-empty">Sin documentos en este grupo.</td>
+            <td colspan="5" class="du-empty">Sin documentos en este grupo.</td>
           </tr>
           <tr *ngFor="let d of sec.docs">
             <td>
@@ -106,11 +105,10 @@
                 </div>
                 <div>
                   <p class="du-doc__name">{{ d.typeLabel }}</p>
-                  <p class="du-doc__sub">{{ d.entidadRemitenteName || 'Sin entidad' }}</p>
+                  <p class="du-doc__sub">{{ docSubtitle(d) }}</p>
                 </div>
               </div>
             </td>
-            <td class="du-muted">{{ d.referenceId || '—' }}</td>
             <td class="du-muted">{{ formatDate(d.issueDate) }}</td>
             <td [class.du-expiry-warn]="statusTone(d) === 'warn'" [class.du-expiry-err]="statusTone(d) === 'err'">
               {{ d.expiryDate ? formatDate(d.expiryDate) : '—' }}
@@ -127,13 +125,20 @@
                 class="du-icon"
                 title="Ver PDF"
                 *ngIf="hasPdf(d)"
-                (click)="openPdf(d); $event.stopPropagation()">
+                (click)="openPdf(d, $event)">
                 <i class="fas fa-file-pdf"></i>
               </button>
-              <button type="button" class="du-icon" title="Editar" (click)="irRegistro(d); $event.stopPropagation()">
+              <button
+                type="button"
+                class="du-icon"
+                title="Renovar"
+                (click)="irRenovar(d, $event)">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+              <button type="button" class="du-icon" title="Editar" (click)="irRegistro(d, undefined, $event)">
                 <i class="fas fa-pen"></i>
               </button>
-              <button type="button" class="du-icon du-icon--danger" title="Eliminar" (click)="deleteDoc(d); $event.stopPropagation()">
+              <button type="button" class="du-icon du-icon--danger" title="Eliminar" (click)="deleteDoc(d, $event)">
                 <i class="fas fa-trash-alt"></i>
               </button>
             </td>

@@ -11,6 +11,7 @@ import { Vehicle, MaintenanceCatalogItem } from '../../../../../../models/vehicl
 import { TipoVehiculo } from '../../../../../../models/tipo-vehiculo.model';
 import {
   FLEET_DOC_TYPE_OPTIONS,
+  FleetComplianceDoc,
   FleetDocRegistroPayload,
   fleetDocTypeCodeFromTipoDocumentoVehiculoId
 } from '../../../../../../models/fleet-documentation.model';
@@ -39,6 +40,8 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
   editDocId: string | null = null;
   /** Preferencia de grupo al abrir registro desde una sección. */
   preferredCategory: string | null = null;
+  /** Renovar desde un documento existente (alta nueva con mismo tipo). */
+  renewFromId: string | null = null;
   /** PDF nuevo a subir al guardar (API flota). */
   pendingPdfFile: File | null = null;
   saving = false;
@@ -48,6 +51,8 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
   private docSub?: Subscription;
   private routeSub?: Subscription;
   private lastLoadedVehicleId: number | null = null;
+  /** Snapshot del doc a editar/renovar (por si el sync limpia caché). */
+  private pendingEditSnapshot: FleetComplianceDoc | null = null;
 
   form = this.fb.group({
     typeCode: ['', Validators.required],
@@ -85,14 +90,22 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       const vid = vidStr != null && vidStr !== '' ? Number(vidStr) : NaN;
       this.routeVehicleId = Number.isFinite(vid) && vid > 0 ? vid : null;
       this.editDocId = qm.get('docId');
+      this.renewFromId = qm.get('renewFrom');
       this.preferredCategory = qm.get('category');
+      this.pendingEditSnapshot = null;
 
       if (this.routeVehicleId != null) {
+        const snapId = this.editDocId || this.renewFromId;
+        if (snapId) {
+          const existing = this.docService.getDocumentById(this.routeVehicleId, snapId);
+          if (existing) this.pendingEditSnapshot = { ...existing };
+        }
         this.selectedVehicleId = this.routeVehicleId;
         if (this.lastLoadedVehicleId !== this.routeVehicleId) {
           this.lastLoadedVehicleId = this.routeVehicleId;
           this.loadVehicle(this.routeVehicleId);
         } else {
+          this.restorePendingSnapshot();
           this.patchFormFromDoc();
           this.ensureDefaultTypeCode();
           this.cdr.markForCheck();
@@ -206,6 +219,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       .pipe(catchError(() => of([] as any[])))
       .subscribe({
         next: () => {
+          this.restorePendingSnapshot();
           this.fleetService.getVehicleById(this.businessRuc, id).subscribe({
             next: v => {
               this.vehicle = v;
@@ -221,6 +235,14 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
           });
         }
       });
+  }
+
+  private restorePendingSnapshot(): void {
+    if (!this.pendingEditSnapshot || this.routeVehicleId == null) return;
+    const id = this.pendingEditSnapshot.id;
+    if (!this.docService.getDocumentById(this.routeVehicleId, id)) {
+      this.docService.ensureLocalDoc(this.pendingEditSnapshot);
+    }
   }
 
   private loadVehicleFormContext(v: Vehicle): void {
@@ -296,9 +318,11 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
 
   private patchFormFromDoc(): void {
     const vid = this.selectedVehicleId;
-    const docId = this.editDocId;
-    if (docId && vid != null) {
-      const doc = this.docService.getDocumentById(vid, docId);
+    this.restorePendingSnapshot();
+
+    // Edición
+    if (this.editDocId && vid != null) {
+      const doc = this.docService.getDocumentById(vid, this.editDocId) || this.pendingEditSnapshot;
       if (doc) {
         this.pendingPdfFile = null;
         this.existingPdfUrl = doc.attachedDocumentUrl ?? null;
@@ -316,6 +340,28 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
         return;
       }
     }
+
+    // Renovación: mismo tipo, fechas vacías, sin PDF previo (alta nueva)
+    if (this.renewFromId && vid != null) {
+      const src = this.docService.getDocumentById(vid, this.renewFromId) || this.pendingEditSnapshot;
+      if (src) {
+        this.pendingPdfFile = null;
+        this.existingPdfUrl = null;
+        this.existingPdfName = null;
+        this.form.patchValue({
+          typeCode: src.typeCode,
+          entidadRemitenteId: src.entidadRemitenteId ?? null,
+          issueDate: '',
+          expiryDate: '',
+          noCaduca: false,
+          active: true,
+          historicMode: false
+        });
+        this.syncExpiryControl();
+        return;
+      }
+    }
+
     this.pendingPdfFile = null;
     this.existingPdfUrl = null;
     this.existingPdfName = null;
