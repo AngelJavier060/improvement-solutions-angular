@@ -41,6 +41,7 @@ export interface Vehicle {
   anio?: number;
   serieChasis?: string;
   serieMotor?: string;
+  propietario?: string;
   color?: string;
   colorVehiculoId?: number;
   paisOrigen?: string;
@@ -129,6 +130,7 @@ export interface CreateVehicleRequest {
   anio?: number;
   serieChasis?: string;
   serieMotor?: string;
+  propietario?: string;
   colorVehiculoId?: number | null;
   paisOrigenId?: number | null;
   tipoCombustibleId?: number | null;

@@ -271,6 +271,7 @@ public class FleetVehicleService {
                 .anio(dto.getAnio())
                 .serieChasis(dto.getSerieChasis())
                 .serieMotor(dto.getSerieMotor())
+                .propietario(blankToNull(dto.getPropietario()))
                 .estadoActivo(estado)
                 .cilindraje(dto.getCilindraje())
                 .pasajeros(dto.getPasajeros())
@@ -342,6 +343,7 @@ public class FleetVehicleService {
         v.setAnio(dto.getAnio());
         v.setSerieChasis(dto.getSerieChasis());
         v.setSerieMotor(dto.getSerieMotor());
+        v.setPropietario(blankToNull(dto.getPropietario()));
         v.setEstadoActivo(estado);
         v.setCilindraje(dto.getCilindraje());
         v.setPasajeros(dto.getPasajeros());
@@ -486,6 +488,7 @@ public class FleetVehicleService {
         m.put("anio", v.getAnio());
         m.put("serieChasis", v.getSerieChasis());
         m.put("serieMotor", v.getSerieMotor());
+        m.put("propietario", v.getPropietario());
         m.put("color", v.getColorVehiculo() != null ? v.getColorVehiculo().getName() : null);
         m.put("colorVehiculoId", v.getColorVehiculo() != null ? v.getColorVehiculo().getId() : null);
         m.put("paisOrigen", v.getPaisOrigen() != null ? v.getPaisOrigen().getName() : null);

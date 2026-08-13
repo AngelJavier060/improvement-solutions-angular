@@ -67,6 +67,10 @@ public class FleetVehicle {
     @Column(name = "serie_motor", length = 120)
     private String serieMotor;
 
+    /** Nombre del propietario (texto libre). */
+    @Column(name = "propietario", length = 255)
+    private String propietario;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "color_vehiculo_id")
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
