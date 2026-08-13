@@ -10,17 +10,29 @@
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()" class="config-form">
     <div class="form-group">
-      <label for="name">Nombre *</label>
+      <label for="name">Nombre del Documento *</label>
       <input id="name" type="text" formControlName="name" class="form-control"
+             placeholder="Ej: Matrícula, SOAT, Certificado de operatividad"
              [class.is-invalid]="form.get('name')?.invalid && form.get('name')?.touched">
       <span class="invalid-feedback" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
-        El nombre es requerido
+        El nombre del documento es requerido
       </span>
     </div>
 
     <div class="form-group">
-      <label for="description">Descripción</label>
-      <textarea id="description" formControlName="description" class="form-control" rows="3"></textarea>
+      <label for="category">Grupo / categoría *</label>
+      <select id="category" formControlName="category" class="form-control">
+        <option value="DOCUMENTOS_PRINCIPALES">Documentos Legales y Permisos</option>
+        <option value="CERTIFICACIONES">Certificaciones Técnicas</option>
+        <option value="LIBERACIONES">Liberaciones</option>
+      </select>
+      <small class="text-muted">Define en qué bloque aparece este documento en la unidad.</small>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Entidad que remite</label>
+      <textarea id="description" formControlName="description" class="form-control" rows="3"
+                placeholder="Ej: Agencia Nacional de Tránsito"></textarea>
     </div>
 
     <div class="form-actions">

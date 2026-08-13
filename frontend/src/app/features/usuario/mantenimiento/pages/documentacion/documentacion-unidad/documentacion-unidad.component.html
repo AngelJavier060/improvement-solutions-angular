@@ -53,11 +53,6 @@
           <i class="fas fa-history"></i>
           Historial
         </a>
-        <a
-          class="du-resumen__btn du-resumen__btn--ghost"
-          [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', vehicleId, 'registro']">
-          + Nuevo
-        </a>
       </div>
     </aside>
   </section>
@@ -65,27 +60,31 @@
   <div class="du-toolbar">
     <div class="du-search">
       <i class="fas fa-search"></i>
-      <input type="search" placeholder="Buscar tipo o descripción…" [(ngModel)]="search" />
+      <input
+        type="search"
+        placeholder="Buscar tipo o descripción…"
+        [ngModel]="search"
+        (ngModelChange)="onSearchChange($event)" />
     </div>
-    <a
-      class="du-btn du-btn--ghost"
-      [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion']">
-      <i class="fas fa-arrow-left"></i> Volver al listado
-    </a>
-  </div>
-
-  <!-- 3 grouped sections -->
-  <section class="du-section" *ngFor="let sec of sections()">
-    <div class="du-section__head">
-      <h2>{{ sec.label }}</h2>
+    <div class="du-toolbar__actions">
       <a
-        *ngIf="sec.code === 'DOCUMENTOS_PRINCIPALES'"
         class="du-btn du-btn--primary"
-        [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', vehicleId, 'registro']"
-        [queryParams]="{ category: sec.code }">
+        [routerLink]="registroCommands()">
         <i class="fas fa-plus"></i>
         Nuevo Documento
       </a>
+      <a
+        class="du-btn du-btn--ghost"
+        [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion']">
+        <i class="fas fa-arrow-left"></i> Volver al listado
+      </a>
+    </div>
+  </div>
+
+  <!-- 3 grouped sections -->
+  <section class="du-section" *ngFor="let sec of docSections; trackBy: trackSection">
+    <div class="du-section__head">
+      <h2>{{ sec.label }}</h2>
     </div>
 
     <div class="du-table-wrap">
@@ -95,15 +94,16 @@
             <th>Documento</th>
             <th>Fecha Emisión</th>
             <th>Vencimiento</th>
+            <th>Días de vigencia</th>
             <th>Estado</th>
             <th class="text-end">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngIf="sec.docs.length === 0">
-            <td colspan="5" class="du-empty">Sin documentos en este grupo.</td>
+            <td colspan="6" class="du-empty">Sin documentos en este grupo.</td>
           </tr>
-          <tr *ngFor="let d of sec.docs">
+          <tr *ngFor="let d of sec.docs; trackBy: trackDoc">
             <td>
               <div class="du-doc">
                 <div class="du-doc__icon" [class.is-warn]="statusTone(d) === 'warn'" [class.is-err]="statusTone(d) === 'err'">
@@ -120,6 +120,16 @@
               {{ d.expiryDate ? formatDate(d.expiryDate) : '—' }}
             </td>
             <td>
+              <span
+                class="du-vigencia"
+                [class.du-vigencia--ok]="statusTone(d) === 'ok'"
+                [class.du-vigencia--warn]="statusTone(d) === 'warn'"
+                [class.du-vigencia--err]="statusTone(d) === 'err'"
+                [class.du-vigencia--muted]="statusTone(d) === 'muted'">
+                {{ vigenciaText(d) }}
+              </span>
+            </td>
+            <td>
               <span class="du-status" [class.du-status--ok]="statusTone(d) === 'ok'" [class.du-status--warn]="statusTone(d) === 'warn'" [class.du-status--err]="statusTone(d) === 'err'" [class.du-status--muted]="statusTone(d) === 'muted'">
                 <span class="du-status__dot"></span>
                 {{ statusText(d) }}
@@ -129,23 +139,25 @@
               <button
                 type="button"
                 class="du-icon"
-                title="Ver PDF"
-                *ngIf="hasPdf(d)"
+                [class.du-icon--muted]="!hasPdf(d)"
+                [title]="hasPdf(d) ? 'Ver PDF' : 'Sin PDF adjunto'"
                 (click)="openPdf(d, $event)">
                 <i class="fas fa-file-pdf"></i>
               </button>
               <a
                 class="du-icon"
                 title="Renovar"
-                [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', vehicleId, 'registro']"
-                [queryParams]="{ renewFrom: d.id, category: normalizeCategory(d.docCategory) }">
+                [routerLink]="registroCommands()"
+                [queryParams]="{ renewFrom: d.id }"
+                [state]="{ doc: d }">
                 <i class="fas fa-sync-alt"></i>
               </a>
               <a
                 class="du-icon"
                 title="Editar"
-                [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', vehicleId, 'registro']"
-                [queryParams]="{ docId: d.id }">
+                [routerLink]="registroCommands()"
+                [queryParams]="{ docId: d.id }"
+                [state]="{ doc: d }">
                 <i class="fas fa-pen"></i>
               </a>
               <button type="button" class="du-icon du-icon--danger" title="Eliminar" (click)="deleteDoc(d, $event)">

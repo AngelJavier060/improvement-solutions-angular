@@ -12,12 +12,8 @@ export const FLEET_DOC_TYPE_OPTIONS: { code: string; label: string }[] = [
 
 export type FleetDocComplianceStatus = 'VIGENTE' | 'PROXIMO' | 'VENCIDO' | 'NO_CADUCA' | 'SIN_VIGENCIA';
 
-/** Prefijo para tipo de documento definido en configuración (tipo documento vehículo). */
-export const FLEET_DOC_CODE_TDV_PREFIX = 'tdv_';
-
-export function fleetDocTypeCodeFromTipoDocumentoVehiculoId(id: number): string {
-  return `${FLEET_DOC_CODE_TDV_PREFIX}${id}`;
-}
+/** Prefijo para documentos ligados a entidad remitente. */
+export const FLEET_DOC_CODE_ER_PREFIX = 'er_';
 
 export interface FleetComplianceDoc {
   id: string;
@@ -26,7 +22,7 @@ export interface FleetComplianceDoc {
   typeLabel: string;
   /**
    * Grupo visual: DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES
-   * (viene del Tipo de documento configurado en administración).
+   * (viene de la entidad remitente configurada en administración).
    */
   docCategory?: string | null;
   /** Entidad remitente (catálogo de la empresa, misma fuente que ficha / admin empresa). */
@@ -62,7 +58,7 @@ export interface FleetDocHistoryEntry {
 
 export interface FleetDocRegistroPayload {
   typeCode: string;
-  /** Si viene informado, sustituye a la etiqueta inferida por typeCode (p. ej. tdv_12). */
+  /** Si viene informado, sustituye a la etiqueta inferida por typeCode (p. ej. er_12). */
   typeLabel?: string;
   docCategory?: string | null;
   entidadRemitenteId?: number | null;

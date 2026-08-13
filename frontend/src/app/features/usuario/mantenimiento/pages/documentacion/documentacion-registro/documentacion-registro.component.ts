@@ -6,14 +6,10 @@ import { Subscription, combineLatest, forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { FleetService } from '../../../../../../services/fleet.service';
 import { FleetDocumentationService } from '../../../../../../services/fleet-documentation.service';
-import { TipoVehiculoService } from '../../../../../../services/tipo-vehiculo.service';
 import { Vehicle, MaintenanceCatalogItem } from '../../../../../../models/vehicle.model';
-import { TipoVehiculo } from '../../../../../../models/tipo-vehiculo.model';
 import {
-  FLEET_DOC_TYPE_OPTIONS,
   FleetComplianceDoc,
-  FleetDocRegistroPayload,
-  fleetDocTypeCodeFromTipoDocumentoVehiculoId
+  FleetDocRegistroPayload
 } from '../../../../../../models/fleet-documentation.model';
 import { normalizeFleetDocCategory } from '../../../../../../models/tipo-documento-vehiculo.model';
 import { activeBusinessRuc } from '../documentacion-ruc.helper';
@@ -34,8 +30,6 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
   vehicle: Vehicle | null = null;
   loadingFleet = false;
   error = '';
-  /** Documentos exigidos para el tipo de vehículo (config. admin tipo-vehículo). */
-  dynamicDocTypes: { code: string; label: string; category?: string }[] = [];
   entidadRemitentes: MaintenanceCatalogItem[] = [];
   docConfigMessage = '';
   editDocId: string | null = null;
@@ -49,15 +43,19 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
   /** Respaldo ya guardado (edición). */
   existingPdfUrl: string | null = null;
   existingPdfName: string | null = null;
+  get hasExistingPdf(): boolean {
+    return !!(this.existingPdfUrl || this.existingPdfName);
+  }
   private docSub?: Subscription;
   private routeSub?: Subscription;
   private lastLoadedVehicleId: number | null = null;
   /** Snapshot del doc a editar/renovar (por si el sync limpia caché). */
   private pendingEditSnapshot: FleetComplianceDoc | null = null;
+  private navStateDoc: FleetComplianceDoc | null = null;
 
   form = this.fb.group({
-    typeCode: ['', Validators.required],
-    entidadRemitenteId: [null as number | null],
+    typeCode: [''],
+    entidadRemitenteId: [null as number | null, Validators.required],
     issueDate: ['', Validators.required],
     expiryDate: [''],
     noCaduca: [false],
@@ -70,10 +68,14 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     private router: Router,
     private fb: FormBuilder,
     private fleetService: FleetService,
-    private tipoVehiculoService: TipoVehiculoService,
     private docService: FleetDocumentationService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    const nav = this.router.getCurrentNavigation();
+    const fromNav = nav?.extras?.state?.['doc'] as FleetComplianceDoc | undefined;
+    const fromHist = typeof history !== 'undefined' ? (history.state?.doc as FleetComplianceDoc | undefined) : undefined;
+    this.navStateDoc = fromNav || fromHist || null;
+  }
 
   ngOnInit(): void {
     this.businessRuc = activeBusinessRuc(this.route);
@@ -94,13 +96,17 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       this.renewFromId = qm.get('renewFrom');
       this.preferredCategory = qm.get('category');
       this.pendingEditSnapshot = null;
+      const snapId = this.editDocId || this.renewFromId;
+      if (snapId) {
+        const fromCache =
+          this.routeVehicleId != null ? this.docService.getDocumentById(this.routeVehicleId, snapId) : undefined;
+        const fromState =
+          this.navStateDoc && String(this.navStateDoc.id) === String(snapId) ? this.navStateDoc : null;
+        const existing = fromCache || fromState;
+        if (existing) this.pendingEditSnapshot = { ...existing };
+      }
 
       if (this.routeVehicleId != null) {
-        const snapId = this.editDocId || this.renewFromId;
-        if (snapId) {
-          const existing = this.docService.getDocumentById(this.routeVehicleId, snapId);
-          if (existing) this.pendingEditSnapshot = { ...existing };
-        }
         this.selectedVehicleId = this.routeVehicleId;
         if (this.lastLoadedVehicleId !== this.routeVehicleId) {
           this.lastLoadedVehicleId = this.routeVehicleId;
@@ -109,18 +115,17 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
           this.restorePendingSnapshot();
           this.patchFormFromDoc();
           this.ensureDefaultTypeCode();
-          this.cdr.markForCheck();
+          this.cdr.detectChanges();
         }
       } else {
         this.lastLoadedVehicleId = null;
         this.selectedVehicleId = null;
         this.vehicle = null;
-        this.dynamicDocTypes = [];
         this.entidadRemitentes = [];
         this.docConfigMessage = '';
         this.loadVehiclesForPickerOnce();
         this.patchFormFromDoc();
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     });
 
@@ -143,17 +148,16 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Opciones del desplegable: prioridad a documentos configurados para el tipo de vehículo;
-   * si no hay, catálogo general; siempre se incluye el código actual al editar registros antiguos.
+   * Códigos internos derivados de las entidades remitente de la empresa.
    */
   docTypeOptionsForSelect(): { code: string; label: string; category?: string }[] {
-    let base: { code: string; label: string; category?: string }[] =
-      this.dynamicDocTypes.length > 0
-        ? [...this.dynamicDocTypes]
-        : FLEET_DOC_TYPE_OPTIONS.map(o => ({
-            ...o,
-            category: o.code === 'CERT_OP' ? 'CERTIFICACIONES' : 'DOCUMENTOS_PRINCIPALES'
-          }));
+    let base: { code: string; label: string; category?: string }[] = this.entidadRemitentes
+      .filter(e => e?.id != null)
+      .map(e => ({
+        code: `er_${e.id}`,
+        label: e.name,
+        category: normalizeFleetDocCategory(e.category)
+      }));
     const cur = this.form.get('typeCode')?.value;
     if (cur && !base.some(b => b.code === cur)) {
       const doc =
@@ -172,18 +176,17 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     return base;
   }
 
-  /** Opciones de tipo agrupadas para el select del registro. */
-  docTypeGroups(): { code: string; label: string; items: { code: string; label: string; category?: string }[] }[] {
+  /** Entidades de la empresa agrupadas por las 3 categorías de documentación. */
+  entidadGroups(): { code: string; label: string; items: MaintenanceCatalogItem[] }[] {
     const order = [
       { code: 'DOCUMENTOS_PRINCIPALES', label: 'Documentos Legales y Permisos' },
       { code: 'CERTIFICACIONES', label: 'Certificaciones Técnicas' },
       { code: 'LIBERACIONES', label: 'Liberaciones' }
     ];
-    const opts = this.docTypeOptionsForSelect();
     return order
       .map(g => ({
         ...g,
-        items: opts.filter(o => normalizeFleetDocCategory(o.category) === g.code)
+        items: this.entidadRemitentes.filter(e => normalizeFleetDocCategory(e.category) === g.code)
       }))
       .filter(g => g.items.length > 0);
   }
@@ -211,31 +214,37 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     this.existingPdfUrl = null;
     this.existingPdfName = null;
     this.loadingFleet = true;
-    this.dynamicDocTypes = [];
     this.entidadRemitentes = [];
     this.docConfigMessage = '';
-    // Sincronizar compliance desde API antes de parchear edición
-    this.docService
-      .syncVehicleFromServer(this.businessRuc, id)
-      .pipe(catchError(() => of([] as any[])))
-      .subscribe({
-        next: () => {
-          this.restorePendingSnapshot();
-          this.fleetService.getVehicleById(this.businessRuc, id).subscribe({
-            next: v => {
-              this.vehicle = v;
-              this.loadVehicleFormContext(v);
-            },
-            error: err => {
-              console.error(err);
-              this.error = 'No se pudo cargar la unidad.';
-              this.vehicle = null;
-              this.loadingFleet = false;
-              this.cdr.markForCheck();
-            }
-          });
-        }
-      });
+
+    const vehicle$ = this.fleetService.getVehicleById(this.businessRuc, id);
+    const docs$ = this.docService.syncVehicleFromServer(this.businessRuc, id).pipe(catchError(() => of([] as FleetComplianceDoc[])));
+    const cats$ = this.fleetService.getFichaCatalogs(this.businessRuc).pipe(catchError(() => of(null)));
+
+    forkJoin({ vehicle: vehicle$, docs: docs$, cats: cats$ }).subscribe({
+      next: ({ vehicle, cats }) => {
+        this.vehicle = vehicle;
+        this.restorePendingSnapshot();
+        const list = Array.isArray(cats?.entidadRemitentes) ? [...cats.entidadRemitentes] : [];
+        this.entidadRemitentes = list
+          .filter(e => e && e.id != null && !!(e.name || '').trim())
+          .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es', { sensitivity: 'base' }));
+        this.docConfigMessage = this.entidadRemitentes.length === 0
+          ? 'Asigne entidades remitente a la empresa (con grupo: Legales, Certificaciones o Liberaciones) en administración.'
+          : '';
+        this.loadingFleet = false;
+        this.patchFormFromDoc();
+        this.ensureDefaultTypeCode();
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        console.error(err);
+        this.error = 'No se pudo cargar la unidad.';
+        this.vehicle = null;
+        this.loadingFleet = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   private restorePendingSnapshot(): void {
@@ -246,68 +255,49 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     }
   }
 
-  private loadVehicleFormContext(v: Vehicle): void {
-    const tipo$ =
-      v.tipoVehiculoId != null
-        ? this.tipoVehiculoService.getById(v.tipoVehiculoId).pipe(catchError(() => of(null)))
-        : of(null);
-    // No tragar errores del catálogo: sin entidades no se puede seleccionar
-    const cat$ = this.fleetService.getFichaCatalogs(this.businessRuc);
+  compareEntidadId = (a: number | string | null, b: number | string | null): boolean => {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    return Number(a) === Number(b);
+  };
 
-    forkJoin({ tipo: tipo$, cats: cat$ }).subscribe({
-      next: ({ tipo, cats }) => {
-        this.applyTipoDocumentosConfig(tipo, v, cats?.tipoDocumentoVehiculos ?? []);
-        const list = Array.isArray(cats?.entidadRemitentes) ? [...cats.entidadRemitentes] : [];
-        this.entidadRemitentes = list
-          .filter(e => e && e.id != null && !!(e.name || '').trim())
-          .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es', { sensitivity: 'base' }));
-        this.loadingFleet = false;
-        this.patchFormFromDoc();
-        this.ensureDefaultTypeCode();
-        this.cdr.markForCheck();
-      },
-      error: err => {
-        console.error(err);
-        this.loadingFleet = false;
-        this.error =
-          'No se pudo cargar el catálogo de entidades remitentes de la empresa. Verifique la configuración en administración.';
-        this.cdr.markForCheck();
-      }
-    });
+  private toDateInput(value: string | null | undefined): string {
+    if (!value) return '';
+    const s = String(value).trim();
+    const iso = s.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (iso) return iso[1];
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+    return '';
   }
 
-  private applyTipoDocumentosConfig(
-    tipo: TipoVehiculo | null,
-    v: Vehicle,
-    empresaTipos: { id: number; name: string; category?: string }[] = []
-  ): void {
-    // Prioridad: documentos del tipo de vehículo; si no hay, tipos asignados a la empresa
-    const fromTipo = (tipo?.documentos ?? [])
-      .filter(d => d.id != null)
-      .map(d => ({
-        code: fleetDocTypeCodeFromTipoDocumentoVehiculoId(d.id!),
-        label: d.name,
-        category: normalizeFleetDocCategory(d.category)
-      }));
-
-    const fromEmpresa = (empresaTipos || [])
-      .filter(d => d?.id != null)
-      .map(d => ({
-        code: fleetDocTypeCodeFromTipoDocumentoVehiculoId(d.id),
-        label: d.name,
-        category: normalizeFleetDocCategory(d.category)
-      }));
-
-    this.dynamicDocTypes = fromTipo.length > 0 ? fromTipo : fromEmpresa;
-
-    if (this.dynamicDocTypes.length === 0) {
-      this.docConfigMessage =
-        v.tipoVehiculoId != null
-          ? 'No hay documentos asociados a este tipo de vehículo ni tipos asignados a la empresa. Configure Tipo de documento (con grupo) en administración.'
-          : 'Asigne tipos de documento a la empresa (con grupo) o un tipo de vehículo a la ficha para cargar el listado.';
-    } else {
-      this.docConfigMessage = '';
+  private resolveEntidadId(doc: FleetComplianceDoc): number | null {
+    const raw = doc.entidadRemitenteId;
+    if (raw != null && raw !== ('' as unknown)) {
+      const n = Number(raw);
+      if (Number.isFinite(n) && this.entidadRemitentes.some(e => Number(e.id) === n)) return n;
     }
+    const name = (doc.entidadRemitenteName || '').trim().toLowerCase();
+    if (name) {
+      const byName = this.entidadRemitentes.find(e => (e.name || '').trim().toLowerCase() === name);
+      if (byName?.id != null) return byName.id;
+    }
+    return raw != null ? Number(raw) || null : null;
+  }
+
+  private resolveDocForForm(id: string | null): FleetComplianceDoc | undefined {
+    if (!id || this.selectedVehicleId == null) return this.pendingEditSnapshot || undefined;
+    return (
+      this.docService.getDocumentById(this.selectedVehicleId, id) ||
+      this.docService.getDocuments(this.selectedVehicleId).find(d => String(d.id) === String(id)) ||
+      this.pendingEditSnapshot ||
+      undefined
+    );
   }
 
   private syncExpiryControl(): void {
@@ -323,35 +313,38 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
 
     // Edición
     if (this.editDocId && vid != null) {
-      const doc = this.docService.getDocumentById(vid, this.editDocId) || this.pendingEditSnapshot;
+      const doc = this.resolveDocForForm(this.editDocId);
       if (doc) {
         this.pendingPdfFile = null;
         this.existingPdfUrl = doc.attachedDocumentUrl ?? null;
-        this.existingPdfName = doc.fileName ?? null;
+        this.existingPdfName = doc.fileName ?? (doc.attachedFleetDocumentId != null ? 'PDF adjunto' : null);
         this.form.patchValue({
-          typeCode: doc.typeCode,
-          entidadRemitenteId: doc.entidadRemitenteId ?? null,
-          issueDate: doc.issueDate,
-          expiryDate: doc.expiryDate || '',
-          noCaduca: doc.expiryDate == null || doc.expiryDate === '',
-          active: doc.active,
-          historicMode: doc.historicMode
+          typeCode: doc.typeCode || '',
+          entidadRemitenteId: this.resolveEntidadId(doc),
+          issueDate: this.toDateInput(doc.issueDate),
+          expiryDate: this.toDateInput(doc.expiryDate),
+          noCaduca: !doc.expiryDate,
+          active: doc.active !== false,
+          historicMode: !!doc.historicMode
         });
         this.syncExpiryControl();
+        this.cdr.detectChanges();
         return;
       }
+      this.error = 'No se encontró el documento a editar. Vuelva al listado e intente de nuevo.';
+      return;
     }
 
     // Renovación: mismo tipo, fechas vacías, sin PDF previo (alta nueva)
     if (this.renewFromId && vid != null) {
-      const src = this.docService.getDocumentById(vid, this.renewFromId) || this.pendingEditSnapshot;
+      const src = this.resolveDocForForm(this.renewFromId);
       if (src) {
         this.pendingPdfFile = null;
         this.existingPdfUrl = null;
         this.existingPdfName = null;
         this.form.patchValue({
-          typeCode: src.typeCode,
-          entidadRemitenteId: src.entidadRemitenteId ?? null,
+          typeCode: src.typeCode || '',
+          entidadRemitenteId: this.resolveEntidadId(src),
           issueDate: '',
           expiryDate: '',
           noCaduca: false,
@@ -359,14 +352,17 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
           historicMode: false
         });
         this.syncExpiryControl();
+        this.cdr.detectChanges();
         return;
       }
+      this.error = 'No se encontró el documento a renovar. Vuelva al listado e intente de nuevo.';
+      return;
     }
 
     this.pendingPdfFile = null;
     this.existingPdfUrl = null;
     this.existingPdfName = null;
-    const firstCode = this.docTypeOptionsForSelect()[0]?.code ?? FLEET_DOC_TYPE_OPTIONS[0]?.code ?? '';
+    const firstCode = this.docTypeOptionsForSelect()[0]?.code ?? '';
     this.form.reset({
       typeCode: firstCode,
       entidadRemitenteId: null,
@@ -424,7 +420,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     const d = this.daysRemaining();
     if (d === null) return 'NA';
     if (d < 0) return 'VENCIDO';
-    if (d <= 30) return 'PROXIMO';
+    if (d <= 20) return 'PROXIMO';
     return 'VIGENTE';
   }
 
@@ -475,10 +471,16 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     if (this.saving) return;
 
     const v = this.form.getRawValue();
-    const opts = this.docTypeOptionsForSelect();
-    const typeOpt = opts.find(o => o.code === v.typeCode);
     const entId = v.entidadRemitenteId;
-    const ent = entId != null ? this.entidadRemitentes.find(e => e.id === entId) : undefined;
+    const ent =
+      entId != null
+        ? this.entidadRemitentes.find(e => Number(e.id) === Number(entId))
+        : undefined;
+    if (!ent) {
+      this.error = 'Seleccione la entidad remitente configurada para esta empresa.';
+      this.form.markAllAsTouched();
+      return;
+    }
 
     const prevDoc =
       this.editDocId && this.selectedVehicleId != null
@@ -499,11 +501,11 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
         sz = prevDoc.fileSizeLabel;
       }
       return {
-        typeCode: v.typeCode!,
-        typeLabel: typeOpt?.label,
-        docCategory: normalizeFleetDocCategory(typeOpt?.category || prevDoc?.docCategory || 'DOCUMENTOS_PRINCIPALES'),
-        entidadRemitenteId: ent != null ? ent.id : null,
-        entidadRemitenteName: ent?.name ?? null,
+        typeCode: `er_${ent.id}`,
+        typeLabel: ent.name,
+        docCategory: normalizeFleetDocCategory(ent.category || prevDoc?.docCategory || 'DOCUMENTOS_PRINCIPALES'),
+        entidadRemitenteId: ent.id,
+        entidadRemitenteName: ent.name ?? null,
         referenceId: '',
         issueDate: v.issueDate!,
         expiryDate: v.noCaduca ? null : v.expiryDate || null,
@@ -516,7 +518,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       };
     };
 
-    const desc = `Documentación: ${typeOpt?.label || v.typeCode}`;
+    const desc = `Documentación: ${ent.name}`;
 
     const afterPersistOk = (savedVid: number) => {
       this.pendingPdfFile = null;

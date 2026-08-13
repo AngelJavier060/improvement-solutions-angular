@@ -23,6 +23,7 @@ export class EditarEntidadRemitenteComponent implements OnInit {
   ) {
     this.form = this.fb.group({
       name: ['', Validators.required],
+      category: ['DOCUMENTOS_PRINCIPALES', Validators.required],
       description: ['']
     });
   }
@@ -31,7 +32,11 @@ export class EditarEntidadRemitenteComponent implements OnInit {
     this.id = Number(this.route.snapshot.paramMap.get('id'));
     this.service.getById(this.id).subscribe({
       next: (data) => {
-        this.form.patchValue({ name: data.name, description: data.description });
+        this.form.patchValue({
+          name: data.name,
+          description: data.description,
+          category: data.category || 'DOCUMENTOS_PRINCIPALES'
+        });
         this.loading = false;
       },
       error: (err) => {

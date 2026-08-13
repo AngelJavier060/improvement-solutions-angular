@@ -17,8 +17,8 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "tipoDocumentoVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems"})
-@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "tipoDocumentoVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems"})
+@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems"})
+@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems"})
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Business {
     @Id
@@ -278,15 +278,6 @@ public class Business {
     )
     @JsonIgnore
     private Set<PropietarioVehiculo> propietarioVehiculos = new HashSet<>();
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "business_tipo_documento_vehiculo",
-        joinColumns = @JoinColumn(name = "business_id"),
-        inverseJoinColumns = @JoinColumn(name = "tipo_documento_vehiculo_id")
-    )
-    @JsonIgnore
-    private Set<TipoDocumentoVehiculo> tipoDocumentoVehiculos = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -634,9 +625,6 @@ public class Business {
 
     public void addPropietarioVehiculo(PropietarioVehiculo p) { propietarioVehiculos.add(p); }
     public void removePropietarioVehiculo(PropietarioVehiculo p) { propietarioVehiculos.remove(p); }
-
-    public void addTipoDocumentoVehiculo(TipoDocumentoVehiculo t) { tipoDocumentoVehiculos.add(t); }
-    public void removeTipoDocumentoVehiculo(TipoDocumentoVehiculo t) { tipoDocumentoVehiculos.remove(t); }
 
     public void addUnidadMedida(UnidadMedida u) { unidadMedidas.add(u); }
     public void removeUnidadMedida(UnidadMedida u) { unidadMedidas.remove(u); }

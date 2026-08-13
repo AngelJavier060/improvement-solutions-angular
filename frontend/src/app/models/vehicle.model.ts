@@ -2,7 +2,7 @@ export interface MaintenanceCatalogItem {
   id: number;
   name: string;
   description?: string;
-  /** Solo tipos de documento: DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES */
+  /** DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES */
   category?: string;
 }
 
@@ -22,8 +22,6 @@ export interface FichaCatalogsResponse {
   transmisiones: MaintenanceCatalogItem[];
   numeroEjes: MaintenanceCatalogItem[];
   configuracionEjes: MaintenanceCatalogItem[];
-  /** Tipos de documento asignados a la empresa (con categoría). */
-  tipoDocumentoVehiculos?: MaintenanceCatalogItem[];
 }
 
 export interface Vehicle {

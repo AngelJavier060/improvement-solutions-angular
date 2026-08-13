@@ -118,8 +118,8 @@
               <ul class="doc-vigencia-list" *ngIf="items.length > 0">
                 <li
                   *ngFor="let item of items"
-                  [class.doc-vigencia-list__item--err]="item.status === 'VENCIDO'"
-                  [class.doc-vigencia-list__item--warn]="item.status === 'PROXIMO'"
+                  [class.doc-vigencia-list__item--err]="item.status === 'VENCIDO' || (item.days !== null && item.days <= 10)"
+                  [class.doc-vigencia-list__item--warn]="item.status === 'PROXIMO' && item.days !== null && item.days > 10"
                   [class.doc-vigencia-list__item--ok]="item.status === 'VIGENTE' || item.status === 'NO_CADUCA'">
                   <span class="doc-vigencia-list__name" [title]="item.label">{{ item.label }}</span>
                   <span class="doc-vigencia-list__days">

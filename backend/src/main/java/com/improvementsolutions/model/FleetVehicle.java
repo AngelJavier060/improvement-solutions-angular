@@ -48,7 +48,7 @@ public class FleetVehicle {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tipo_vehiculo_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "documentos"})
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private TipoVehiculo tipoVehiculo;
 
     @ManyToOne(fetch = FetchType.LAZY)

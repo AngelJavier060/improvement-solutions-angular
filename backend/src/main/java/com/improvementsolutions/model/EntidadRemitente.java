@@ -23,6 +23,12 @@ public class EntidadRemitente {
 
     private String description;
 
+    /**
+     * Grupo de documentación: DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES.
+     */
+    @Column(name = "category", length = 40)
+    private String category = "DOCUMENTOS_PRINCIPALES";
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -33,10 +39,23 @@ public class EntidadRemitente {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.category == null || this.category.isBlank()) {
+            this.category = "DOCUMENTOS_PRINCIPALES";
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+        if (this.category == null || this.category.isBlank()) {
+            this.category = "DOCUMENTOS_PRINCIPALES";
+        }
+    }
+
+    public String getCategoryOrDefault() {
+        if (category == null || category.isBlank()) {
+            return "DOCUMENTOS_PRINCIPALES";
+        }
+        return category.trim();
     }
 }

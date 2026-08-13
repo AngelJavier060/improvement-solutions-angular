@@ -1,4 +1,4 @@
-/** Grupos de documentación de flota (alineados al backend). */
+/** Grupos de documentación de flota (alineados al backend / entidad remitente). */
 export type FleetDocCategory =
   | 'DOCUMENTOS_PRINCIPALES'
   | 'CERTIFICACIONES'
@@ -37,12 +37,3 @@ export function normalizeFleetDocCategory(code: string | null | undefined): Flee
   return 'DOCUMENTOS_PRINCIPALES';
 }
 
-export interface TipoDocumentoVehiculo {
-  id?: number;
-  name: string;
-  description?: string;
-  /** DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES */
-  category?: FleetDocCategory | string;
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
-}

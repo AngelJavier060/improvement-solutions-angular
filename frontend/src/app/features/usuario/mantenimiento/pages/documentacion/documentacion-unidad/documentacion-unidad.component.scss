@@ -9,6 +9,7 @@
   --du-on: #121c2a;
   --du-muted: #464554;
   --du-outline: #c7c4d7;
+  --du-ok: #15803d;
   --du-warn: #d97706;
   --du-err: #ba1a1a;
 
@@ -229,6 +230,7 @@
   gap: 0.4rem;
   border-radius: 0.5rem;
   padding: 0.75rem 0.85rem;
+  font: inherit;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -264,6 +266,13 @@
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 1.25rem;
+}
+
+.du-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .du-search {
@@ -455,6 +464,42 @@
   font-weight: 600;
 }
 
+.du-vigencia {
+  display: inline-flex;
+  align-items: center;
+  min-width: 4.5rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid transparent;
+
+  &--ok {
+    background: #dcfce7;
+    color: var(--du-ok);
+    border-color: #86efac;
+  }
+
+  &--warn {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+  }
+
+  &--err {
+    background: #ffdad6;
+    color: #93000a;
+    border-color: #f5c2c0;
+  }
+
+  &--muted {
+    background: #eef2f7;
+    color: #64748b;
+    border-color: #dbe3ef;
+  }
+}
+
 .du-status {
   display: inline-flex;
   align-items: center;
@@ -473,9 +518,9 @@
   }
 
   &--ok {
-    background: #eff4ff;
-    color: var(--du-primary);
-    border-color: #e1e0ff;
+    background: #dcfce7;
+    color: var(--du-ok);
+    border-color: #86efac;
   }
 
   &--warn {
@@ -532,6 +577,10 @@
       color: var(--du-err);
       background: rgba(186, 26, 26, 0.08);
     }
+  }
+
+  &--muted {
+    color: #9aa3b2;
   }
 }
 

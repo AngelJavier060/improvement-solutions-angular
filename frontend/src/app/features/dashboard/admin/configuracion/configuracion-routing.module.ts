@@ -118,10 +118,6 @@ const routes: Routes = [
         loadChildren: () => import('./propietario-vehiculo/propietario-vehiculo.module').then(m => m.PropietarioVehiculoModule)
       },
       {
-        path: 'tipo-documento-vehiculo',
-        loadChildren: () => import('./tipo-documento-vehiculo/tipo-documento-vehiculo.module').then(m => m.TipoDocumentoVehiculoModule)
-      },
-      {
         path: 'unidad-medida',
         loadChildren: () => import('./unidad-medida/unidad-medida.module').then(m => m.UnidadMedidaModule)
       },

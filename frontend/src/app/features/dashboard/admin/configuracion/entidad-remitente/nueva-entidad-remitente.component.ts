@@ -16,6 +16,7 @@ export class NuevaEntidadRemitenteComponent {
   constructor(private fb: FormBuilder, private service: EntidadRemitenteService, private router: Router) {
     this.form = this.fb.group({
       name: ['', Validators.required],
+      category: ['DOCUMENTOS_PRINCIPALES', Validators.required],
       description: ['']
     });
   }

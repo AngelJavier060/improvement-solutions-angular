@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { EntidadRemitente } from '../../../../../models/entidad-remitente.model';
 import { EntidadRemitenteService } from '../../../../../services/entidad-remitente.service';
+import { fleetDocCategoryLabel } from '../../../../../models/tipo-documento-vehiculo.model';
 
 @Component({
   selector: 'app-lista-entidad-remitente',
@@ -56,5 +57,9 @@ export class ListaEntidadRemitenteComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['dashboard/admin/configuracion']);
+  }
+
+  categoryLabel(code: string | null | undefined): string {
+    return fleetDocCategoryLabel(code);
   }
 }

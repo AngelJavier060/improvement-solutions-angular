@@ -22,14 +22,16 @@
   <table *ngIf="!loading && items.length > 0" class="config-table">
     <thead>
       <tr>
-        <th>Nombre</th>
-        <th>Descripción</th>
+        <th>Nombre del Documento</th>
+        <th>Grupo</th>
+        <th>Entidad que remite</th>
         <th>Acciones</th>
       </tr>
     </thead>
     <tbody>
       <tr *ngFor="let item of items">
         <td>{{ item.name }}</td>
+        <td>{{ categoryLabel(item.category) }}</td>
         <td>{{ item.description || '-' }}</td>
         <td class="actions">
           <button class="btn-icon btn-edit" (click)="goToEdit(item.id!)" title="Editar">

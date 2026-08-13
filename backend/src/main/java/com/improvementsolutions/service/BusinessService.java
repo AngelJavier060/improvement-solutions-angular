@@ -41,7 +41,6 @@ public class BusinessService {
     private final com.improvementsolutions.repository.ColorVehiculoRepository colorVehiculoRepository;
     private final com.improvementsolutions.repository.TransmisionRepository transmisionRepository;
     private final com.improvementsolutions.repository.PropietarioVehiculoRepository propietarioVehiculoRepository;
-    private final com.improvementsolutions.repository.TipoDocumentoVehiculoRepository tipoDocumentoVehiculoRepository;
     private final com.improvementsolutions.repository.UnidadMedidaRepository unidadMedidaRepository;
     private final com.improvementsolutions.repository.UbicacionRutaRepository ubicacionRutaRepository;
     private final com.improvementsolutions.repository.PaisOrigenRepository paisOrigenRepository;
@@ -139,7 +138,6 @@ public class BusinessService {
                 if (business.getColorVehiculos() != null) business.getColorVehiculos().size();
                 if (business.getTransmisiones() != null) business.getTransmisiones().size();
                 if (business.getPropietarioVehiculos() != null) business.getPropietarioVehiculos().size();
-                if (business.getTipoDocumentoVehiculos() != null) business.getTipoDocumentoVehiculos().size();
                 if (business.getUnidadMedidas() != null) business.getUnidadMedidas().size();
                 if (business.getUbicacionRutas() != null) business.getUbicacionRutas().size();
                 if (business.getPaisOrigenes() != null) business.getPaisOrigenes().size();
@@ -964,11 +962,6 @@ public class BusinessService {
         return entidadRemitenteRepository.findAllAssignedToBusiness(businessId);
     }
 
-    @Transactional(readOnly = true)
-    public java.util.List<com.improvementsolutions.model.TipoDocumentoVehiculo> listTipoDocumentoVehiculosByBusinessId(Long businessId) {
-        return tipoDocumentoVehiculoRepository.findAllAssignedToBusiness(businessId);
-    }
-
     @Transactional
     public void removeEntidadRemitenteFromBusiness(Long bId, Long id) {
         Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
@@ -1021,18 +1014,6 @@ public class BusinessService {
     public void removePropietarioVehiculoFromBusiness(Long bId, Long id) {
         Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
         b.getPropietarioVehiculos().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
-    }
-
-    @Transactional
-    public void addTipoDocumentoVehiculoToBusiness(Long bId, Long id) {
-        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
-        com.improvementsolutions.model.TipoDocumentoVehiculo e = tipoDocumentoVehiculoRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
-        b.addTipoDocumentoVehiculo(e); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
-    }
-    @Transactional
-    public void removeTipoDocumentoVehiculoFromBusiness(Long bId, Long id) {
-        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
-        b.getTipoDocumentoVehiculos().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
     }
 
     @Transactional

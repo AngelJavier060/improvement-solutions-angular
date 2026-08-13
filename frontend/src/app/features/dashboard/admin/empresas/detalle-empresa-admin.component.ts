@@ -264,13 +264,6 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   selectedPropietarioId: number | null = null;
   savingPropietario = false;
 
-  // Tipos de Documento Vehículo
-  tipoDocumentoVehiculos: any[] = [];
-  allTipoDocumentoVehiculos: any[] = [];
-  showAsignTipoDocVehModal = false;
-  selectedTipoDocVehId: number | null = null;
-  savingTipoDocVeh = false;
-
   // Unidades de Medida
   unidadMedidas: any[] = [];
   allUnidadMedidas: any[] = [];
@@ -1920,7 +1913,6 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.colorVehiculos = empresa.colorVehiculos || [];
         this.transmisiones = empresa.transmisiones || [];
         this.propietarioVehiculos = empresa.propietarioVehiculos || [];
-        this.tipoDocumentoVehiculos = empresa.tipoDocumentoVehiculos || [];
         this.unidadMedidas = empresa.unidadMedidas || [];
         this.ubicacionRutas = empresa.ubicacionRutas || [];
         this.paisOrigenes = empresa.paisOrigenes || [];
@@ -4178,7 +4170,6 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       { url: '/api/public/color-vehiculos', prop: 'allColorVehiculos' },
       { url: '/api/public/transmisiones', prop: 'allTransmisiones' },
       { url: '/api/public/propietario-vehiculos', prop: 'allPropietarioVehiculos' },
-      { url: '/api/public/tipo-documento-vehiculos', prop: 'allTipoDocumentoVehiculos' },
       { url: '/api/public/unidad-medidas', prop: 'allUnidadMedidas' },
       { url: '/api/public/ubicacion-rutas', prop: 'allUbicacionRutas' },
       { url: '/api/public/pais-origenes', prop: 'allPaisOrigenes' },
@@ -4424,30 +4415,6 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   removePropietario(id: number): void {
     if (!confirm('¿Eliminar?')) return;
     this.http.delete(`/api/businesses/${this.empresaId}/propietario-vehiculo/${id}`).subscribe({ next: () => this.loadData(), error: (err:any) => { console.error(err); alert('Error'); } });
-  }
-
-  // === TIPO DOCUMENTO VEHÍCULO ===
-  openAsignTipoDocVehModal(): void { this.showAsignTipoDocVehModal = true; this.selectedTipoDocVehId = null; }
-  closeAsignTipoDocVehModal(): void { this.showAsignTipoDocVehModal = false; }
-  availableTipoDocVeh(): any[] { const ids = this.tipoDocumentoVehiculos.map((e:any)=>e.id); return this.allTipoDocumentoVehiculos.filter((e:any)=>!ids.includes(e.id)); }
-
-  tipoDocCategoryLabel(category: string | undefined): string {
-    if (category === 'CERTIFICACIONES') return 'Certificaciones';
-    if (category === 'LIBERACIONES') return 'Liberaciones';
-    return 'Documentos legales';
-  }
-
-  assignTipoDocVeh(): void {
-    if (!this.selectedTipoDocVehId) return;
-    this.savingTipoDocVeh = true;
-    this.http.post(`/api/businesses/${this.empresaId}/tipo-documento-vehiculo/${this.selectedTipoDocVehId}`, {}).subscribe({
-      next: () => { this.savingTipoDocVeh = false; this.showAsignTipoDocVehModal = false; this.loadData(); },
-      error: (err: any) => { this.savingTipoDocVeh = false; console.error(err); alert('Error al asignar'); }
-    });
-  }
-  removeTipoDocVeh(id: number): void {
-    if (!confirm('¿Eliminar?')) return;
-    this.http.delete(`/api/businesses/${this.empresaId}/tipo-documento-vehiculo/${id}`).subscribe({ next: () => this.loadData(), error: (err:any) => { console.error(err); alert('Error'); } });
   }
 
   // === UNIDAD MEDIDA ===

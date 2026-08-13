@@ -349,20 +349,12 @@ public class BusinessController {
             e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; };
         response.put("claseVehiculos", business.getClaseVehiculos().stream().map(claseDto).collect(Collectors.toList()));
         java.util.function.Function<com.improvementsolutions.model.EntidadRemitente, Map<String, Object>> erDto =
-            e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; };
+            e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); m.put("category", e.getCategoryOrDefault()); return m; };
         response.put("entidadRemitentes", businessService.listEntidadRemitentesByBusinessId(business.getId()).stream().map(erDto).collect(Collectors.toList()));
         response.put("tipoCombustibles", business.getTipoCombustibles().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
         response.put("colorVehiculos", business.getColorVehiculos().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
         response.put("transmisiones", business.getTransmisiones().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
         response.put("propietarioVehiculos", business.getPropietarioVehiculos().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
-        response.put("tipoDocumentoVehiculos", business.getTipoDocumentoVehiculos().stream().map(e -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("id", e.getId());
-            m.put("name", e.getName());
-            m.put("description", e.getDescription());
-            m.put("category", e.getCategoryOrDefault());
-            return m;
-        }).collect(Collectors.toList()));
         response.put("unidadMedidas", business.getUnidadMedidas().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
         response.put("ubicacionRutas", business.getUbicacionRutas().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
         response.put("paisOrigenes", business.getPaisOrigenes().stream().map(e -> { Map<String, Object> m = new HashMap<>(); m.put("id", e.getId()); m.put("name", e.getName()); m.put("description", e.getDescription()); return m; }).collect(Collectors.toList()));
@@ -1352,19 +1344,6 @@ public class BusinessController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> removePropietarioVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
         businessService.removePropietarioVehiculoFromBusiness(businessId, id);
-        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
-    }
-
-    @PostMapping("/{businessId}/tipo-documento-vehiculo/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public ResponseEntity<Map<String, String>> addTipoDocumentoVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
-        businessService.addTipoDocumentoVehiculoToBusiness(businessId, id);
-        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
-    }
-    @DeleteMapping("/{businessId}/tipo-documento-vehiculo/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public ResponseEntity<Map<String, String>> removeTipoDocumentoVehiculo(@PathVariable Long businessId, @PathVariable Long id) {
-        businessService.removeTipoDocumentoVehiculoFromBusiness(businessId, id);
         return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
     }
 

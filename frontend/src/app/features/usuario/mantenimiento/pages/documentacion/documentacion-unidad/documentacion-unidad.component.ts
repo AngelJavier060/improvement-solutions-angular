@@ -37,7 +37,8 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   loading = true;
   error = '';
   search = '';
-  /** description del tipo de documento (catálogo empresa) por typeCode */
+  docSections: DocSection[] = [];
+  /** description del catálogo (entidad remitente) por typeCode */
   private tipoDescByCode = new Map<string, string>();
   private docSub?: Subscription;
   private routeSub?: Subscription;
@@ -59,7 +60,10 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.docSub = this.docService.changes$.subscribe(() => this.cdr.detectChanges());
+    this.docSub = this.docService.changes$.subscribe(() => {
+      this.rebuildSections();
+      this.cdr.detectChanges();
+    });
     this.routeSub = this.route.paramMap.subscribe(pm => {
       const id = Number(pm.get('vehicleId') || '');
       this.vehicleId = id;
@@ -114,25 +118,15 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
       next: ({ vehicle, catalogs }) => {
         this.vehicle = vehicle;
         this.tipoDescByCode.clear();
-        const tipos = catalogs?.tipoDocumentoVehiculos || [];
-        for (const t of tipos) {
-          if (t?.id == null) continue;
-          const code = `tdv_${t.id}`;
-          const desc = (t.description || '').trim();
+        const entidades = catalogs?.entidadRemitentes || [];
+        for (const e of entidades) {
+          if (e?.id == null) continue;
+          const code = `er_${e.id}`;
+          const desc = (e.description || '').trim();
           if (desc) this.tipoDescByCode.set(code, desc);
-          if (desc && t.name) this.tipoDescByCode.set(`name:${(t.name || '').toLowerCase()}`, desc);
+          if (desc && e.name) this.tipoDescByCode.set(`name:${(e.name || '').toLowerCase()}`, desc);
         }
-        // Solo recuperar PDF huérfanos si no hay ninguna fila (no tras cada eliminar)
-        if (this.docService.getDocuments(vid).length === 0) {
-          this.fleetService.recoverOrphanComplianceDocs(ruc, vid).pipe(catchError(() => of([]))).subscribe({
-            next: () => {
-              this.docService.syncVehicleFromServer(ruc, vid).subscribe({
-                next: () => this.cdr.markForCheck(),
-                error: () => this.cdr.markForCheck()
-              });
-            }
-          });
-        }
+        this.rebuildSections();
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -150,7 +144,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     return this.docService.getDocuments(this.vehicleId).length;
   }
 
-  /** Subtítulo: descripción del tipo (catálogo) o entidad remitente. */
+  /** Subtítulo: descripción de la entidad remitente o nombre. */
   docSubtitle(doc: FleetComplianceDoc): string {
     const byCode = this.tipoDescByCode.get(doc.typeCode || '');
     if (byCode) return byCode;
@@ -175,13 +169,34 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     );
   }
 
-  sections(): DocSection[] {
+  registroCommands(): (string | number)[] {
+    return ['/usuario', this.businessRuc, 'mantenimiento', 'documentacion', 'unidad', this.vehicleId, 'registro'];
+  }
+
+  onSearchChange(value: string): void {
+    this.search = value;
+    this.rebuildSections();
+  }
+
+  trackSection(_i: number, sec: DocSection): string {
+    return sec.code;
+  }
+
+  trackDoc(_i: number, doc: FleetComplianceDoc): string {
+    return doc.id;
+  }
+
+  private rebuildSections(): void {
     const docs = this.filteredDocs();
-    return FLEET_DOC_CATEGORIES.map(c => ({
+    this.docSections = FLEET_DOC_CATEGORIES.map(c => ({
       code: c.code,
       label: c.label,
       docs: docs.filter(d => normalizeFleetDocCategory(d.docCategory) === c.code)
     }));
+  }
+
+  sections(): DocSection[] {
+    return this.docSections;
   }
 
   status(doc: FleetComplianceDoc) {
@@ -194,22 +209,46 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
 
   statusText(doc: FleetComplianceDoc): string {
     if (!doc.active) return 'Inactivo';
-    const s = this.status(doc);
-    const d = this.days(doc);
-    if (s === 'VENCIDO') return 'Vencido';
-    if (s === 'PROXIMO') return d != null ? `Por Vencer (${d} días)` : 'Por Vencer';
-    if (s === 'NO_CADUCA') return 'No caduca';
-    if (s === 'SIN_VIGENCIA') return 'Sin vigencia';
+    const tone = this.statusTone(doc);
+    if (tone === 'err') {
+      const d = this.days(doc);
+      return d != null && d < 0 ? 'Vencido' : 'Por vencer';
+    }
+    if (tone === 'warn') return 'Próximo a vencer';
+    if (this.status(doc) === 'NO_CADUCA') return 'No caduca';
+    if (this.status(doc) === 'SIN_VIGENCIA') return 'Sin vigencia';
     return 'Vigente';
   }
 
+  /** Días restantes calculados hoy (se actualizan solos al abrir la pantalla). */
+  vigenciaText(doc: FleetComplianceDoc): string {
+    if (!doc.active) return '—';
+    const d = this.days(doc);
+    if (d == null) {
+      return this.status(doc) === 'NO_CADUCA' ? 'No caduca' : '—';
+    }
+    if (d < 0) {
+      const n = Math.abs(d);
+      return n === 1 ? 'Vencido hace 1 día' : `Vencido hace ${n} días`;
+    }
+    if (d === 0) return 'Vence hoy';
+    if (d === 1) return '1 día';
+    return `${d} días`;
+  }
+
+  /**
+   * Verde: más de 20 días. Amarillo: 11–20 (próximo). Rojo: 10 o menos, o ya vencido.
+   */
   statusTone(doc: FleetComplianceDoc): 'ok' | 'warn' | 'err' | 'muted' {
     if (!doc.active) return 'muted';
     const s = this.status(doc);
-    if (s === 'VENCIDO') return 'err';
-    if (s === 'PROXIMO') return 'warn';
-    if (s === 'VIGENTE' || s === 'NO_CADUCA') return 'ok';
-    return 'muted';
+    if (s === 'NO_CADUCA') return 'ok';
+    if (s === 'SIN_VIGENCIA') return 'muted';
+    const d = this.days(doc);
+    if (d == null) return 'muted';
+    if (d < 0 || d <= 10) return 'err';
+    if (d <= 20) return 'warn';
+    return 'ok';
   }
 
   formatDate(iso: string | null | undefined): string {

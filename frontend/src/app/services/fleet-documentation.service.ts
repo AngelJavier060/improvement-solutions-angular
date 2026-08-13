@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { SKIP_AUTH_REDIRECT } from '../core/interceptors/auth.interceptor';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import {
   FleetComplianceDoc,
@@ -9,7 +9,7 @@ import {
   FleetDocHistoryEntry,
   FleetDocRegistroPayload,
   FLEET_DOC_TYPE_OPTIONS,
-  FLEET_DOC_CODE_TDV_PREFIX,
+  FLEET_DOC_CODE_ER_PREFIX,
   FleetDocComplianceStatus
 } from '../models/fleet-documentation.model';
 
@@ -159,23 +159,13 @@ export class FleetDocumentationService {
         tap(list => {
           const incoming = (list || []).map(d => this.fromApi(d));
           this.serverSynced = true;
-          if (incoming.length === 0 && localBefore.length > 0) {
-            // Conservar locales (p. ej. sin tabla aún / API vacía) y migrar
-            this.replaceVehicleDocs(vehicleId, localBefore);
-            this.migrateLocalDocsForVehicle(ruc, vehicleId, localBefore);
+          const localOnly = localBefore.filter(d => this.isLocalOnlyId(d.id));
+          if (incoming.length === 0 && localOnly.length > 0) {
+            this.replaceVehicleDocs(vehicleId, localOnly);
+            this.migrateLocalDocsForVehicle(ruc, vehicleId, localOnly);
             return;
           }
-          // Servidor gana; conservar solo locales sin id numérico que no estén linkeados por archivo
-          const serverFileIds = new Set(
-            incoming.map(d => d.attachedFleetDocumentId).filter((x): x is number => x != null)
-          );
-          const orphansLocal = localBefore.filter(
-            d => !/^\d+$/.test(d.id) && (d.attachedFleetDocumentId == null || !serverFileIds.has(d.attachedFleetDocumentId))
-          );
-          this.replaceVehicleDocs(vehicleId, [...incoming, ...orphansLocal]);
-          if (orphansLocal.length) {
-            this.migrateLocalDocsForVehicle(ruc, vehicleId, orphansLocal);
-          }
+          this.replaceVehicleDocs(vehicleId, incoming);
         }),
         map(() => this.getDocuments(vehicleId)),
         catchError(err => {
@@ -195,7 +185,7 @@ export class FleetDocumentationService {
   }
 
   private migrateLocalDocsForVehicle(ruc: string, vehicleId: number, locals: FleetComplianceDoc[]): void {
-    for (const doc of locals.filter(d => !/^\d+$/.test(d.id))) {
+    for (const doc of locals.filter(d => this.isLocalOnlyId(d.id))) {
       this.createDocument$(ruc, vehicleId, {
         typeCode: doc.typeCode,
         typeLabel: doc.typeLabel,
@@ -387,7 +377,7 @@ export class FleetDocumentationService {
   labelForTypeCode(code: string): string {
     const staticLabel = FLEET_DOC_TYPE_OPTIONS.find(t => t.code === code)?.label;
     if (staticLabel) return staticLabel;
-    if (code.startsWith(FLEET_DOC_CODE_TDV_PREFIX)) return code;
+    if (code.startsWith(FLEET_DOC_CODE_ER_PREFIX)) return code;
     return code;
   }
 
@@ -418,8 +408,14 @@ export class FleetDocumentationService {
     );
   }
 
-  getDocumentById(vehicleId: number, docId: string): FleetComplianceDoc | undefined {
-    return this.bucket(vehicleId).docs.find(d => d.id === docId);
+  getDocumentById(vehicleId: number, docId: string | number | null | undefined): FleetComplianceDoc | undefined {
+    if (docId == null || docId === '') return undefined;
+    const wanted = String(docId);
+    return this.bucket(vehicleId).docs.find(d => String(d.id) === wanted);
+  }
+
+  private isLocalOnlyId(id: string | number | null | undefined): boolean {
+    return !/^\d+$/.test(String(id ?? ''));
   }
 
   daysToExpiry(expiryDate: string | null): number | null {
@@ -436,7 +432,7 @@ export class FleetDocumentationService {
     const d = this.daysToExpiry(doc.expiryDate);
     if (d === null) return 'SIN_VIGENCIA';
     if (d < 0) return 'VENCIDO';
-    if (d <= 30) return 'PROXIMO';
+    if (d <= 20) return 'PROXIMO';
     return 'VIGENTE';
   }
 
@@ -524,8 +520,8 @@ export class FleetDocumentationService {
           }
         }),
         catchError(err => {
-          console.warn('[FleetDocs] create remoto falló, guardando local', err);
-          return of(this.createDocumentLocalOnly(vehicleId, { ...payload, typeLabel }));
+          console.error('[FleetDocs] create remoto falló', err);
+          return throwError(() => err);
         })
       );
   }
@@ -538,20 +534,17 @@ export class FleetDocumentationService {
   ): Observable<FleetComplianceDoc | null> {
     const numericId = Number(docId);
     if (!Number.isFinite(numericId) || numericId <= 0) {
-      // Registro solo local: intenta crear en servidor; si falla, actualiza local
       return this.createDocument$(ruc, vehicleId, payload).pipe(
         tap(created => {
           const b = this.bucket(vehicleId);
-          const idx = b.docs.findIndex(d => d.id === docId);
+          const idx = b.docs.findIndex(d => String(d.id) === String(docId));
           if (idx >= 0) {
-            this.pushHistory(vehicleId, docId, 'UPDATED', b.docs[idx], 'Actualizado');
+            this.pushHistory(vehicleId, String(docId), 'UPDATED', b.docs[idx], 'Actualizado');
             b.docs.splice(idx, 1);
           }
           if (!b.docs.some(d => d.id === created.id)) b.docs.push(created);
           this.persist(this.read());
-        }),
-        catchError(() => of(this.updateDocumentLocal(vehicleId, docId, payload))
-        )
+        })
       );
     }
 
@@ -567,17 +560,16 @@ export class FleetDocumentationService {
       .pipe(
         map(dto => this.fromApi(dto)),
         tap(updated => {
-          if (prev) this.pushHistory(vehicleId, docId, 'UPDATED', prev, 'Versión anterior archivada en historial');
+          if (prev) this.pushHistory(vehicleId, String(docId), 'UPDATED', prev, 'Versión anterior archivada en historial');
           const b = this.bucket(vehicleId);
-          const idx = b.docs.findIndex(d => d.id === docId);
+          const idx = b.docs.findIndex(d => String(d.id) === String(docId));
           if (idx >= 0) b.docs[idx] = updated;
           else b.docs.push(updated);
           this.persist(this.read());
         }),
         catchError(err => {
-          console.error(err);
-          const local = this.updateDocumentLocal(vehicleId, docId, payload);
-          return of(local);
+          console.error('[FleetDocs] update remoto falló', err);
+          return throwError(() => err);
         })
       );
   }
@@ -625,15 +617,15 @@ export class FleetDocumentationService {
 
   deleteDocument$(ruc: string, vehicleId: number, docId: string): Observable<boolean> {
     const b = this.bucket(vehicleId);
-    const idx = b.docs.findIndex(d => d.id === docId);
+    const idx = b.docs.findIndex(d => String(d.id) === String(docId));
     if (idx < 0) return of(false);
     const removed = this.cloneDoc(b.docs[idx]);
     const numericId = Number(docId);
 
     const finishLocal = () => {
-      const i = b.docs.findIndex(d => d.id === docId);
+      const i = b.docs.findIndex(d => String(d.id) === String(docId));
       if (i >= 0) b.docs.splice(i, 1);
-      this.pushHistory(vehicleId, docId, 'DELETED', removed, 'Documento eliminado del listado activo');
+      this.pushHistory(vehicleId, String(docId), 'DELETED', removed, 'Documento eliminado del listado activo');
       this.persist(this.read());
     };
 
@@ -650,10 +642,12 @@ export class FleetDocumentationService {
         tap(() => finishLocal()),
         map(() => true),
         catchError(err => {
-          console.error(err);
-          // Limpia local aunque el API falle (tabla ausente / offline)
-          finishLocal();
-          return of(true);
+          console.error('[FleetDocs] delete remoto falló', err);
+          if (err?.status === 404) {
+            finishLocal();
+            return of(true);
+          }
+          return of(false);
         })
       );
   }

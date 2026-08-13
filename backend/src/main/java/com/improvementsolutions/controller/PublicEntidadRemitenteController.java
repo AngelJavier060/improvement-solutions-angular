@@ -46,6 +46,7 @@ public class PublicEntidadRemitenteController {
             EntidadRemitente toUpdate = existing.get();
             toUpdate.setName(entity.getName());
             toUpdate.setDescription(entity.getDescription());
+            toUpdate.setCategory(entity.getCategory());
             return ResponseEntity.ok(repository.save(toUpdate));
         }
         return ResponseEntity.notFound().build();

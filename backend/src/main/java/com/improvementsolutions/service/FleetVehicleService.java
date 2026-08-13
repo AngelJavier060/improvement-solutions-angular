@@ -69,18 +69,6 @@ public class FleetVehicleService {
         out.put("transmisiones", toIdNameList(full.getTransmisiones()));
         out.put("numeroEjes", toIdNameList(full.getNumeroEjes()));
         out.put("configuracionEjes", toIdNameList(full.getConfiguracionEjes()));
-        // Tipos de documento de la empresa (con categoría para las 3 secciones de documentación)
-        List<Map<String, Object>> tipoDocs = new ArrayList<>();
-        for (TipoDocumentoVehiculo t : businessService.listTipoDocumentoVehiculosByBusinessId(full.getId())) {
-            if (t == null || t.getId() == null) continue;
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("id", t.getId());
-            m.put("name", t.getName());
-            m.put("description", t.getDescription());
-            m.put("category", t.getCategoryOrDefault());
-            tipoDocs.add(m);
-        }
-        out.put("tipoDocumentoVehiculos", tipoDocs);
         return out;
     }
 
@@ -134,6 +122,7 @@ public class FleetVehicleService {
                         m.put("id", t.getId());
                         m.put("name", t.getName());
                         m.put("description", t.getDescription());
+                        m.put("category", t.getCategoryOrDefault());
                     }
                     return m;
                 })
@@ -667,8 +656,8 @@ public class FleetVehicleService {
         Business business = businessService.findByRuc(ruc)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
         // Solo alinea categorías; NO reimporta PDF (eso recreaba filas tras eliminar)
-        List<TipoDocumentoVehiculo> catalog =
-                businessService.listTipoDocumentoVehiculosByBusinessId(business.getId());
+        List<EntidadRemitente> catalog =
+                businessService.listEntidadRemitentesByBusinessId(business.getId());
         List<FleetVehicle> vehicles = fleetVehicleRepository
                 .findByBusiness_IdOrderByUpdatedAtDesc(business.getId(), PageRequest.of(0, 2000))
                 .getContent();
@@ -686,8 +675,8 @@ public class FleetVehicleService {
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
         FleetVehicle v = fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
-        List<TipoDocumentoVehiculo> catalog =
-                businessService.listTipoDocumentoVehiculosByBusinessId(business.getId());
+        List<EntidadRemitente> catalog =
+                businessService.listEntidadRemitentesByBusinessId(business.getId());
         realignComplianceWithCatalog(v, catalog);
         return fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(vehicleId).stream()
                 .map(d -> toComplianceResponse(d, ruc))
@@ -701,8 +690,8 @@ public class FleetVehicleService {
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
         FleetVehicle v = fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
-        List<TipoDocumentoVehiculo> catalog =
-                businessService.listTipoDocumentoVehiculosByBusinessId(business.getId());
+        List<EntidadRemitente> catalog =
+                businessService.listEntidadRemitentesByBusinessId(business.getId());
         importOrphanFilesForVehicle(v, catalog);
         realignComplianceWithCatalog(v, catalog);
         cleanupJunkCompliance(v, catalog);
@@ -712,10 +701,10 @@ public class FleetVehicleService {
     }
 
     /**
-     * Crea filas de compliance para PDFs huérfanos, usando el catálogo de tipos
-     * de documento de la empresa (nombre + categoría de administración).
+     * Crea filas de compliance para PDFs huérfanos, usando el catálogo de
+     * entidad remitente de la empresa (nombre + categoría).
      */
-    private void importOrphanFilesForVehicle(FleetVehicle v, List<TipoDocumentoVehiculo> catalog) {
+    private void importOrphanFilesForVehicle(FleetVehicle v, List<EntidadRemitente> catalog) {
         if (v == null || v.getId() == null) return;
         Long vehicleId = v.getId();
         Set<Long> linked = fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(vehicleId)
@@ -733,9 +722,9 @@ public class FleetVehicleService {
                 log.info("[Fleet] PDF huérfano omitido (etiqueta basura) id={} label={}", f.getId(), rawLabel);
                 continue;
             }
-            TipoDocumentoVehiculo matched = matchTipoDocumento(rawLabel, f.getOriginalFilename(), catalog);
+            EntidadRemitente matched = matchEntidadRemitente(rawLabel, f.getOriginalFilename(), catalog);
             String typeLabel = matched != null ? matched.getName() : rawLabel;
-            String typeCode = matched != null ? "tdv_" + matched.getId() : "OTRO";
+            String typeCode = matched != null ? "er_" + matched.getId() : "OTRO";
             String category = matched != null
                     ? normalizeCategory(matched.getCategoryOrDefault())
                     : "DOCUMENTOS_PRINCIPALES";
@@ -760,18 +749,18 @@ public class FleetVehicleService {
         }
     }
 
-    /** Alinea filas existentes al catálogo de la empresa (grupo / nombre / código). */
-    private void realignComplianceWithCatalog(FleetVehicle v, List<TipoDocumentoVehiculo> catalog) {
+    /** Alinea filas existentes al catálogo de entidad remitente (grupo / nombre / código). */
+    private void realignComplianceWithCatalog(FleetVehicle v, List<EntidadRemitente> catalog) {
         if (v == null || v.getId() == null || catalog == null || catalog.isEmpty()) return;
         List<FleetComplianceDocument> docs =
                 fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(v.getId());
         for (FleetComplianceDocument doc : docs) {
-            TipoDocumentoVehiculo matched = matchByTypeCode(doc.getTypeCode(), catalog);
+            EntidadRemitente matched = matchByTypeCode(doc.getTypeCode(), catalog);
             if (matched == null) {
-                matched = matchTipoDocumento(doc.getTypeLabel(), doc.getFileName(), catalog);
+                matched = matchEntidadRemitente(doc.getTypeLabel(), doc.getFileName(), catalog);
             }
             if (matched == null) continue;
-            String newCode = "tdv_" + matched.getId();
+            String newCode = "er_" + matched.getId();
             String newCat = normalizeCategory(matched.getCategoryOrDefault());
             boolean changed = false;
             if (!Objects.equals(doc.getTypeCode(), newCode)) {
@@ -793,10 +782,10 @@ public class FleetVehicleService {
         }
     }
 
-    private static TipoDocumentoVehiculo matchByTypeCode(String typeCode, List<TipoDocumentoVehiculo> catalog) {
-        if (typeCode == null || !typeCode.startsWith("tdv_")) return null;
+    private static EntidadRemitente matchByTypeCode(String typeCode, List<EntidadRemitente> catalog) {
+        if (typeCode == null || !typeCode.startsWith("er_")) return null;
         try {
-            Long id = Long.parseLong(typeCode.substring(4).trim());
+            Long id = Long.parseLong(typeCode.substring(3).trim());
             return catalog.stream().filter(t -> t != null && id.equals(t.getId())).findFirst().orElse(null);
         } catch (NumberFormatException e) {
             return null;
@@ -804,13 +793,13 @@ public class FleetVehicleService {
     }
 
     /** Elimina registros recuperados con etiqueta basura (p.ej. "PESOS") que no están en el catálogo. */
-    private void cleanupJunkCompliance(FleetVehicle v, List<TipoDocumentoVehiculo> catalog) {
+    private void cleanupJunkCompliance(FleetVehicle v, List<EntidadRemitente> catalog) {
         if (v == null || v.getId() == null) return;
         List<FleetComplianceDocument> docs =
                 fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(v.getId());
         for (FleetComplianceDocument doc : docs) {
             if (!isJunkLabel(doc.getTypeLabel(), doc.getFileName())) continue;
-            TipoDocumentoVehiculo matched = matchTipoDocumento(doc.getTypeLabel(), doc.getFileName(), catalog);
+            EntidadRemitente matched = matchEntidadRemitente(doc.getTypeLabel(), doc.getFileName(), catalog);
             if (matched != null) continue; // se puede realinear
             Long fileId = doc.getFleetVehicleDocument() != null ? doc.getFleetVehicleDocument().getId() : null;
             fleetComplianceDocumentRepository.delete(doc);
@@ -830,14 +819,14 @@ public class FleetVehicleService {
         return false;
     }
 
-    private static TipoDocumentoVehiculo matchTipoDocumento(
-            String label, String filename, List<TipoDocumentoVehiculo> catalog) {
+    private static EntidadRemitente matchEntidadRemitente(
+            String label, String filename, List<EntidadRemitente> catalog) {
         if (catalog == null || catalog.isEmpty()) return null;
         String nLabel = normalizeText(label);
         String nFile = normalizeText(filename);
-        TipoDocumentoVehiculo best = null;
+        EntidadRemitente best = null;
         int bestScore = 0;
-        for (TipoDocumentoVehiculo t : catalog) {
+        for (EntidadRemitente t : catalog) {
             if (t == null || t.getName() == null) continue;
             String nName = normalizeText(t.getName());
             if (nName.isEmpty()) continue;

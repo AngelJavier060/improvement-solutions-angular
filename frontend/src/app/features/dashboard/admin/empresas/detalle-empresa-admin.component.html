@@ -1503,31 +1503,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 11. Tipo de documentos -->
-    <div class="col-lg-4 col-xl-3">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" style="background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);">
-          <div class="d-flex align-items-center"><i class="fas fa-file-alt text-white me-2"></i><h6 class="text-white mb-0 fw-bold" style="font-size: 13px;">Tipo de documentos</h6></div>
-          <button class="btn btn-sm btn-light px-2 py-0" (click)="openAsignTipoDocVehModal()" title="Agregar"><i class="fas fa-plus" style="font-size: 11px;"></i></button>
-        </div>
-        <div class="card-body p-2">
-          <div *ngIf="tipoDocumentoVehiculos && tipoDocumentoVehiculos.length > 0">
-            <div *ngFor="let item of tipoDocumentoVehiculos" class="d-flex align-items-center justify-content-between mb-1 px-1 py-1 bg-light rounded">
-              <span style="font-size: 11px;" class="fw-semibold">
-                {{ item.name }}
-                <span class="badge bg-secondary ms-1" style="font-size: 9px; font-weight: 600;">{{ tipoDocCategoryLabel(item.category) }}</span>
-              </span>
-              <button class="btn btn-outline-danger btn-sm p-0 px-1" (click)="removeTipoDocVeh(item.id)" style="font-size: 10px; line-height: 1.4;"><i class="fas fa-times"></i></button>
-            </div>
-          </div>
-          <div *ngIf="!tipoDocumentoVehiculos || tipoDocumentoVehiculos.length === 0" class="text-center py-2">
-            <i class="fas fa-file-alt text-muted opacity-50" style="font-size: 16px;"></i>
-            <p class="text-muted mb-0" style="font-size: 10px;">Sin tipos de documento asignados</p>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- Configuración de Mantenimiento por Empresa (intervalos, notificaciones) -->
@@ -3742,33 +3717,6 @@
         <button class="btn btn-outline-secondary" (click)="closeAsignPropietarioModal()">Cancelar</button>
         <button class="btn btn-success" (click)="assignPropietario()" [disabled]="!selectedPropietarioId || savingPropietario">
           <i class="fas" [ngClass]="savingPropietario ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: Asignar Tipo de Documento Vehículo -->
-<div *ngIf="showAsignTipoDocVehModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg">
-      <div class="modal-header border-0" style="background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);">
-        <div class="d-flex align-items-center"><i class="fas fa-file-alt text-white me-2"></i><h5 class="modal-title mb-0 text-white">Asignar Tipo de Documento</h5></div>
-        <button type="button" class="btn-close btn-close-white" (click)="closeAsignTipoDocVehModal()"></button>
-      </div>
-      <div class="modal-body p-4">
-        <select class="form-select" [(ngModel)]="selectedTipoDocVehId">
-          <option [ngValue]="null" disabled>-- Seleccione --</option>
-          <option *ngFor="let item of availableTipoDocVeh()" [ngValue]="item.id">
-            {{ item.name }} ({{ tipoDocCategoryLabel(item.category) }})
-          </option>
-        </select>
-        <div *ngIf="availableTipoDocVeh().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
-      </div>
-      <div class="modal-footer border-0 bg-light">
-        <button class="btn btn-outline-secondary" (click)="closeAsignTipoDocVehModal()">Cancelar</button>
-        <button class="btn btn-warning" (click)="assignTipoDocVeh()" [disabled]="!selectedTipoDocVehId || savingTipoDocVeh">
-          <i class="fas" [ngClass]="savingTipoDocVeh ? 'fa-spinner fa-spin' : 'fa-check'"></i> Asignar
         </button>
       </div>
     </div>

@@ -107,33 +107,28 @@
           <!-- Left -->
           <div class="dr-form__col">
             <div class="dr-field">
-              <label class="dr-label" for="dr-type">Tipo de documento</label>
-              <p class="dr-help" *ngIf="dynamicDocTypes.length">
-                Listado según configuración del tipo de vehículo (administración → Tipo de vehículo).
-              </p>
-              <select id="dr-type" class="dr-select" formControlName="typeCode">
-                <ng-container *ngFor="let group of docTypeGroups()">
-                  <optgroup [label]="group.label">
-                    <option *ngFor="let t of group.items" [value]="t.code">{{ t.label }}</option>
-                  </optgroup>
-                </ng-container>
-              </select>
-            </div>
-
-            <div class="dr-field">
-              <label class="dr-label" for="dr-entidad">Entidad remitente</label>
+              <label class="dr-label" for="dr-entidad">Documento / entidad que emite *</label>
               <p class="dr-help">
-                Catálogo de la empresa (administración → Mantenimiento → Entidad remitente).
+                Catálogo de esta empresa (administración → Entidad remitente).
+                El grupo (Legales, Certificaciones o Liberaciones) sale de esa configuración.
                 <ng-container *ngIf="entidadRemitentes.length">
-                  {{ entidadRemitentes.length }} opción(es) disponible(s).
+                  {{ entidadRemitentes.length }} opción(es).
                 </ng-container>
                 <ng-container *ngIf="!entidadRemitentes.length">
                   No hay entidades asignadas a esta empresa; asígnelas en administración.
                 </ng-container>
               </p>
-              <select id="dr-entidad" class="dr-select" formControlName="entidadRemitenteId" size="1">
+              <select
+                id="dr-entidad"
+                class="dr-select"
+                formControlName="entidadRemitenteId"
+                [compareWith]="compareEntidadId">
                 <option [ngValue]="null">— Seleccione —</option>
-                <option *ngFor="let e of entidadRemitentes" [ngValue]="e.id">{{ e.name }}</option>
+                <ng-container *ngFor="let group of entidadGroups()">
+                  <optgroup [label]="group.label">
+                    <option *ngFor="let e of group.items" [ngValue]="e.id">{{ e.name }}</option>
+                  </optgroup>
+                </ng-container>
               </select>
             </div>
 
@@ -165,11 +160,9 @@
                   Quitar
                 </button>
               </div>
-              <div class="dr-file-existing" *ngIf="editDocId && existingPdfUrl && !pendingPdfFile">
+              <div class="dr-file-existing" *ngIf="editDocId && hasExistingPdf && !pendingPdfFile">
                 <span>Archivo actual:</span>
-                <a [href]="existingPdfUrl" target="_blank" rel="noopener noreferrer">
-                  {{ existingPdfName || 'Ver PDF' }}
-                </a>
+                <strong>{{ existingPdfName || 'PDF adjunto' }}</strong>
                 <span class="dr-muted">(sustitúyalo eligiendo otro PDF)</span>
               </div>
             </div>
