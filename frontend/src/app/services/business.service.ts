@@ -234,4 +234,32 @@ export class BusinessService {
   removeWorkShiftFromBusiness(businessId: number, workShiftId: number): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/${businessId}/work-shifts/${workShiftId}`);
   }
+
+  // === Documentos de flota por tipo de vehículo (por empresa) ===
+  summarizeTipoVehiculoDocumentos(businessId: number): Observable<{
+    businessId: number;
+    items: Array<{ tipoVehiculoId: number; tipoVehiculoName: string; documentCount: number }>;
+  }> {
+    return this.http.get<any>(`${this.apiUrl}/${businessId}/tipo-vehiculo-documentos`);
+  }
+
+  listDocumentosByTipoVehiculo(businessId: number, tipoVehiculoId: number): Observable<Array<{
+    id: number;
+    name: string;
+    description?: string;
+    category?: string;
+  }>> {
+    return this.http.get<any[]>(`${this.apiUrl}/${businessId}/tipo-vehiculo/${tipoVehiculoId}/documentos`);
+  }
+
+  replaceDocumentosByTipoVehiculo(
+    businessId: number,
+    tipoVehiculoId: number,
+    entidadRemitenteIds: number[]
+  ): Observable<Array<{ id: number; name: string; description?: string; category?: string }>> {
+    return this.http.put<any[]>(
+      `${this.apiUrl}/${businessId}/tipo-vehiculo/${tipoVehiculoId}/documentos`,
+      { entidadRemitenteIds }
+    );
+  }
 }

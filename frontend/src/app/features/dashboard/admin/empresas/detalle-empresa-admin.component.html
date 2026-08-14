@@ -1505,6 +1505,105 @@
     </div>
   </div>
 
+  <!-- Documentos aplicables por tipo de vehículo (por empresa) -->
+  <div class="row g-2 mb-3">
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-header py-2 px-3" style="background: linear-gradient(90deg, #0f766e 0%, #14b8a6 100%);">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-link text-white me-2"></i>
+              <div>
+                <h6 class="text-white mb-0 fw-bold">Documentos por tipo de vehículo</h6>
+                <small class="text-white-50">Configuración por tipo (no por unidad): todas las unidades con ese tipo heredan estos documentos</small>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-sm btn-light"
+              (click)="saveDocsPorTipo()"
+              [disabled]="savingDocsPorTipo || selectedDocsTipoId == null || loadingDocsPorTipo">
+              <i class="fas" [ngClass]="savingDocsPorTipo ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+              <span class="ms-1">Guardar</span>
+            </button>
+          </div>
+        </div>
+        <div class="card-body p-3">
+          <div class="alert alert-light border py-2 small mb-3">
+            <ol class="mb-0 ps-3">
+              <li>Elija un <strong>tipo</strong> (ej. Vacumm).</li>
+              <li>Marque los documentos que aplican a ese tipo.</li>
+              <li>Pulse <strong>Guardar</strong>.</li>
+              <li>En flota, al registrar docs de una unidad, solo verá los del tipo de esa unidad.</li>
+            </ol>
+          </div>
+          <div *ngIf="docsPorTipoError" class="alert alert-danger py-2 small mb-2">{{ docsPorTipoError }}</div>
+          <div *ngIf="docsPorTipoOk" class="alert alert-success py-2 small mb-2">{{ docsPorTipoOk }}</div>
+
+          <div *ngIf="!tipoVehiculos?.length" class="text-muted small mb-0">
+            Asigne al menos un tipo de vehículo a la empresa para configurar documentos.
+          </div>
+          <div *ngIf="tipoVehiculos?.length && !entidadRemitentes?.length" class="text-muted small mb-0">
+            Asigne entidades remitente (documentos de flota) a la empresa antes de asociarlas a un tipo.
+          </div>
+
+          <div class="row g-3" *ngIf="tipoVehiculos?.length && entidadRemitentes?.length">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small mb-1">Tipo de vehículo</label>
+              <select
+                class="form-select form-select-sm"
+                [ngModel]="selectedDocsTipoId"
+                (ngModelChange)="onSelectDocsTipo($event ? +$event : null)">
+                <option [ngValue]="null">— Seleccione —</option>
+                <option *ngFor="let t of tipoVehiculos" [ngValue]="t.id">
+                  {{ t.name }} ({{ docsCountForTipo(t.id) }} docs)
+                </option>
+              </select>
+              <div class="form-text">No es por unidad: el tipo define el set para toda la flota de ese tipo.</div>
+            </div>
+            <div class="col-md-8">
+              <div *ngIf="selectedDocsTipoId == null" class="text-muted small py-3">
+                Elija un tipo para marcar los documentos aplicables.
+              </div>
+              <div *ngIf="selectedDocsTipoId != null && loadingDocsPorTipo" class="text-muted small py-3">
+                <i class="fas fa-spinner fa-spin me-1"></i>Cargando asociaciones…
+              </div>
+              <div *ngIf="selectedDocsTipoId != null && !loadingDocsPorTipo">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="small text-muted">
+                    Seleccionados: <strong>{{ selectedDocsTipoIds.length }}</strong>
+                    <span *ngIf="selectedDocsTipoName()"> para “{{ selectedDocsTipoName() }}”</span>
+                  </span>
+                </div>
+                <div *ngFor="let g of docsPorTipoGroups" class="mb-3">
+                  <div class="fw-semibold small text-secondary mb-1">{{ g.label }}</div>
+                  <div class="row g-2">
+                    <div class="col-md-6" *ngFor="let er of g.items; trackBy: trackByErId">
+                      <button
+                        type="button"
+                        class="docs-tipo-item w-100 text-start"
+                        [class.docs-tipo-item--selected]="isDocSelectedForTipo(er.id)"
+                        (click)="onDocCheckClick($event, er.id)">
+                        <span class="docs-tipo-item__icon" aria-hidden="true">
+                          <i class="fas" [ngClass]="isDocSelectedForTipo(er.id) ? 'fa-check-square' : 'fa-square'"></i>
+                        </span>
+                        <span class="docs-tipo-item__body">
+                          <span class="docs-tipo-item__name">{{ er.name }}</span>
+                          <span class="docs-tipo-item__desc" *ngIf="er.description">{{ er.description }}</span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div *ngIf="!docsPorTipoGroups.length" class="text-muted small">Sin documentos disponibles.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Configuración de Mantenimiento por Empresa (intervalos, notificaciones) -->
   <div class="row g-2 mb-4">
     <div class="col-12">

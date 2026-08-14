@@ -16,9 +16,14 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +42,7 @@ public class BusinessService {
     private final com.improvementsolutions.repository.MarcaVehiculoRepository marcaVehiculoRepository;
     private final com.improvementsolutions.repository.ClaseVehiculoRepository claseVehiculoRepository;
     private final com.improvementsolutions.repository.EntidadRemitenteRepository entidadRemitenteRepository;
+    private final com.improvementsolutions.repository.BusinessTipoVehiculoDocumentoRepository businessTipoVehiculoDocumentoRepository;
     private final com.improvementsolutions.repository.TipoCombustibleRepository tipoCombustibleRepository;
     private final com.improvementsolutions.repository.ColorVehiculoRepository colorVehiculoRepository;
     private final com.improvementsolutions.repository.TransmisionRepository transmisionRepository;
@@ -900,6 +906,7 @@ public class BusinessService {
     public void removeTipoVehiculoFromBusiness(Long businessId, Long tipoVehiculoId) {
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        businessTipoVehiculoDocumentoRepository.deleteByBusinessAndTipo(businessId, tipoVehiculoId);
         business.getTipoVehiculos().removeIf(tv -> tv.getId().equals(tipoVehiculoId));
         business.setUpdatedAt(LocalDateTime.now());
         businessRepository.save(business);
@@ -965,6 +972,7 @@ public class BusinessService {
     @Transactional
     public void removeEntidadRemitenteFromBusiness(Long bId, Long id) {
         Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        businessTipoVehiculoDocumentoRepository.deleteByBusinessAndEntidadRemitente(bId, id);
         b.getEntidadRemitentes().removeIf(e -> e.getId().equals(id)); b.setUpdatedAt(LocalDateTime.now()); businessRepository.save(b);
     }
 
@@ -1276,5 +1284,133 @@ public class BusinessService {
         b.getMedidasControlTomadasViajeCatalogo().removeIf(e -> e.getId().equals(id));
         b.setUpdatedAt(LocalDateTime.now());
         businessRepository.save(b);
+    }
+
+    // === Documentos de flota por tipo de vehículo (por empresa) ===
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> listDocumentosByTipoVehiculo(Long businessId, Long tipoVehiculoId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+        assertTipoAssignedToBusiness(business, tipoVehiculoId);
+        return businessTipoVehiculoDocumentoRepository
+                .findEntidadRemitentesByBusinessAndTipo(businessId, tipoVehiculoId)
+                .stream()
+                .map(this::entidadRemitenteToMap)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Reemplaza de forma atómica el set de documentos aplicables a un tipo
+     * para la empresa. Solo acepta tipos/documentos ya asignados a la empresa.
+     */
+    @Transactional
+    public List<Map<String, Object>> replaceDocumentosByTipoVehiculo(
+            Long businessId, Long tipoVehiculoId, List<Long> entidadRemitenteIds) {
+        Business business = businessRepository.findByIdWithAllRelations(businessId)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+        assertTipoAssignedToBusiness(business, tipoVehiculoId);
+
+        TipoVehiculo tipo = tipoVehiculoRepository.findById(tipoVehiculoId)
+                .orElseThrow(() -> new IllegalArgumentException("Tipo de vehículo no encontrado"));
+
+        Set<Long> assignedErIds = business.getEntidadRemitentes() == null
+                ? Set.of()
+                : business.getEntidadRemitentes().stream()
+                    .filter(e -> e != null && e.getId() != null)
+                    .map(EntidadRemitente::getId)
+                    .collect(Collectors.toSet());
+
+        List<Long> desired = entidadRemitenteIds == null ? List.of() : entidadRemitenteIds.stream()
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .collect(Collectors.toList());
+
+        for (Long erId : desired) {
+            if (!assignedErIds.contains(erId)) {
+                throw new IllegalArgumentException(
+                        "El documento/entidad remitente " + erId + " no está asignado a esta empresa");
+            }
+        }
+
+        businessTipoVehiculoDocumentoRepository.deleteByBusinessAndTipo(businessId, tipoVehiculoId);
+        // flush para respetar unique constraint al reinsertar
+        businessTipoVehiculoDocumentoRepository.flush();
+
+        for (Long erId : desired) {
+            EntidadRemitente er = entidadRemitenteRepository.findById(erId)
+                    .orElseThrow(() -> new IllegalArgumentException("Documento no encontrado: " + erId));
+            BusinessTipoVehiculoDocumento row = BusinessTipoVehiculoDocumento.builder()
+                    .business(business)
+                    .tipoVehiculo(tipo)
+                    .entidadRemitente(er)
+                    .build();
+            businessTipoVehiculoDocumentoRepository.save(row);
+        }
+
+        return listDocumentosByTipoVehiculo(businessId, tipoVehiculoId);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> summarizeDocumentosPorTipo(Long businessId) {
+        Business business = businessRepository.findByIdWithAllRelations(businessId)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada"));
+        Map<String, Object> out = new LinkedHashMap<>();
+        List<Map<String, Object>> items = new ArrayList<>();
+        if (business.getTipoVehiculos() != null) {
+            for (TipoVehiculo tv : business.getTipoVehiculos()) {
+                if (tv == null || tv.getId() == null) continue;
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("tipoVehiculoId", tv.getId());
+                row.put("tipoVehiculoName", tv.getName());
+                row.put("documentCount", businessTipoVehiculoDocumentoRepository
+                        .countByBusiness_IdAndTipoVehiculo_Id(businessId, tv.getId()));
+                items.add(row);
+            }
+        }
+        out.put("businessId", businessId);
+        out.put("items", items);
+        return out;
+    }
+
+    private void assertTipoAssignedToBusiness(Business business, Long tipoVehiculoId) {
+        if (tipoVehiculoId == null) {
+            throw new IllegalArgumentException("tipoVehiculoId es requerido");
+        }
+        boolean assigned = business.getTipoVehiculos() != null
+                && business.getTipoVehiculos().stream()
+                    .anyMatch(t -> t != null && tipoVehiculoId.equals(t.getId()));
+        if (!assigned) {
+            // Fallback: cargar con relaciones si el set no vino inicializado
+            Business full = businessRepository.findByIdWithAllRelations(business.getId()).orElse(business);
+            assigned = full.getTipoVehiculos() != null
+                    && full.getTipoVehiculos().stream()
+                        .anyMatch(t -> t != null && tipoVehiculoId.equals(t.getId()));
+        }
+        if (!assigned) {
+            throw new IllegalArgumentException("El tipo de vehículo no está asignado a esta empresa");
+        }
+    }
+
+    private Map<String, Object> entidadRemitenteToMap(EntidadRemitente e) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", e.getId());
+        m.put("name", e.getName());
+        m.put("description", e.getDescription());
+        m.put("category", e.getCategoryOrDefault());
+        return m;
+    }
+
+    @Transactional(readOnly = true)
+    public long countDocumentosForTipo(Long businessId, Long tipoVehiculoId) {
+        if (businessId == null || tipoVehiculoId == null) return 0;
+        return businessTipoVehiculoDocumentoRepository.countByBusiness_IdAndTipoVehiculo_Id(businessId, tipoVehiculoId);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isDocumentoApplicableToTipo(Long businessId, Long tipoVehiculoId, Long entidadRemitenteId) {
+        if (businessId == null || tipoVehiculoId == null || entidadRemitenteId == null) return false;
+        return businessTipoVehiculoDocumentoRepository
+                .existsByBusiness_IdAndTipoVehiculo_IdAndEntidadRemitente_Id(businessId, tipoVehiculoId, entidadRemitenteId);
     }
 }

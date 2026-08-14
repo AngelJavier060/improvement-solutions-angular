@@ -85,6 +85,21 @@ export class FleetService {
     );
   }
 
+  /** Documentos (entidades remitente) aplicables al tipo de la unidad. */
+  getApplicableDocs(businessRuc: string, vehicleId: number): Observable<{
+    vehicleId: number;
+    businessId: number;
+    tipoVehiculoId: number | null;
+    tipoVehiculoName: string | null;
+    configured: boolean;
+    message: string | null;
+    documentos: Array<{ id: number; name: string; description?: string; category?: string }>;
+  }> {
+    return this.http.get<any>(
+      `${this.baseUrl}/${encodeURIComponent(businessRuc)}/vehicles/${vehicleId}/applicable-docs`
+    );
+  }
+
   getKPIs(businessRuc: string): Observable<VehicleKPIs> {
     return this.http.get<VehicleKPIs>(`${this.baseUrl}/${businessRuc}/kpis`);
   }

@@ -875,6 +875,89 @@ public class FleetVehicleService {
         return String.format(Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0));
     }
 
+    @Transactional(readOnly = true)
+    public Map<String, Object> listApplicableDocsForVehicle(String ruc, Long vehicleId) {
+        Business business = businessService.findByRuc(ruc)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
+        FleetVehicle v = fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("vehicleId", vehicleId);
+        out.put("businessId", business.getId());
+
+        TipoVehiculo tipo = v.getTipoVehiculo();
+        if (tipo == null || tipo.getId() == null) {
+            out.put("tipoVehiculoId", null);
+            out.put("tipoVehiculoName", null);
+            out.put("configured", false);
+            out.put("message", "Asigne un tipo de vehículo en la ficha de la unidad para filtrar los documentos aplicables.");
+            out.put("documentos", List.of());
+            return out;
+        }
+
+        Long tipoId = tipo.getId();
+        out.put("tipoVehiculoId", tipoId);
+        out.put("tipoVehiculoName", tipo.getName());
+
+        List<Map<String, Object>> docs = businessService.listDocumentosByTipoVehiculo(business.getId(), tipoId);
+        out.put("configured", true);
+        out.put("documentos", docs);
+        if (docs.isEmpty()) {
+            out.put("message",
+                    "No hay documentos configurados para el tipo \"" + tipo.getName()
+                            + "\". Configure \"Documentos por tipo\" en administración de la empresa.");
+        } else {
+            out.put("message", null);
+        }
+        return out;
+    }
+
+    /**
+     * Valida que el documento (ER) sea aplicable al tipo del vehículo.
+     * @param existingErId si no es null y coincide con el nuevo, se permite (edición de historial).
+     */
+    private void assertComplianceDocAllowed(
+            Business business,
+            FleetVehicle vehicle,
+            Long entidadRemitenteId,
+            String typeCode,
+            Long existingErId) {
+        TipoVehiculo tipo = vehicle.getTipoVehiculo();
+        if (tipo == null || tipo.getId() == null) {
+            throw new IllegalArgumentException(
+                    "Asigne un tipo de vehículo en la ficha antes de registrar documentación.");
+        }
+
+        Long erId = entidadRemitenteId;
+        if (erId == null && typeCode != null && typeCode.startsWith("er_")) {
+            try {
+                erId = Long.parseLong(typeCode.substring(3).trim());
+            } catch (NumberFormatException ignored) {
+                erId = null;
+            }
+        }
+        if (erId == null) {
+            throw new IllegalArgumentException("Debe seleccionar un documento válido de la empresa.");
+        }
+
+        // Edición: conservar el mismo documento aunque ya no esté en el set del tipo
+        if (existingErId != null && existingErId.equals(erId)) {
+            return;
+        }
+
+        long configured = businessService.countDocumentosForTipo(business.getId(), tipo.getId());
+        if (configured <= 0) {
+            throw new IllegalArgumentException(
+                    "No hay documentos configurados para el tipo \"" + tipo.getName()
+                            + "\". Configure Documentos por tipo en administración de la empresa.");
+        }
+        if (!businessService.isDocumentoApplicableToTipo(business.getId(), tipo.getId(), erId)) {
+            throw new IllegalArgumentException(
+                    "El documento seleccionado no aplica al tipo de vehículo \"" + tipo.getName() + "\".");
+        }
+    }
+
     @Transactional
     public Map<String, Object> createComplianceDocument(String ruc, Long vehicleId, Map<String, Object> body) {
         Business business = businessService.findByRuc(ruc)
@@ -890,6 +973,9 @@ public class FleetVehicleService {
         if (typeLabel == null || typeLabel.isBlank()) {
             typeLabel = typeCode;
         }
+
+        Long erId = longOrNull(body.get("entidadRemitenteId"));
+        assertComplianceDocAllowed(business, v, erId, typeCode, null);
 
         FleetVehicleDocument attached = resolveAttachedFile(vehicleId, longOrNull(body.get("attachedFleetDocumentId")));
         if (attached != null) {
@@ -909,7 +995,7 @@ public class FleetVehicleService {
                 .typeCode(typeCode.trim())
                 .typeLabel(typeLabel.trim())
                 .docCategory(normalizeCategory(str(body.get("docCategory"))))
-                .entidadRemitenteId(longOrNull(body.get("entidadRemitenteId")))
+                .entidadRemitenteId(erId)
                 .entidadRemitenteName(blankToNull(str(body.get("entidadRemitenteName"))))
                 .referenceId(blankToNull(str(body.get("referenceId"))))
                 .issueDate(parseDate(body.get("issueDate")))
@@ -928,10 +1014,19 @@ public class FleetVehicleService {
     public Map<String, Object> updateComplianceDocument(String ruc, Long vehicleId, Long docId, Map<String, Object> body) {
         Business business = businessService.findByRuc(ruc)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
-        fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
+        FleetVehicle vehicle = fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
         FleetComplianceDocument doc = fleetComplianceDocumentRepository.findByIdAndFleetVehicle_Id(docId, vehicleId)
                 .orElseThrow(() -> new IllegalArgumentException("Registro de documentación no encontrado"));
+
+        Long existingErId = doc.getEntidadRemitenteId();
+        if (existingErId == null && doc.getTypeCode() != null && doc.getTypeCode().startsWith("er_")) {
+            try {
+                existingErId = Long.parseLong(doc.getTypeCode().substring(3).trim());
+            } catch (NumberFormatException ignored) {
+                existingErId = null;
+            }
+        }
 
         if (body.containsKey("typeCode")) {
             String typeCode = str(body.get("typeCode"));
@@ -955,6 +1050,18 @@ public class FleetVehicleService {
         if (body.containsKey("entidadRemitenteName")) {
             doc.setEntidadRemitenteName(blankToNull(str(body.get("entidadRemitenteName"))));
         }
+
+        // Solo revalidar si cambia el documento (ER / typeCode)
+        boolean docIdentityChanged = body.containsKey("entidadRemitenteId") || body.containsKey("typeCode");
+        if (docIdentityChanged) {
+            assertComplianceDocAllowed(
+                    business,
+                    vehicle,
+                    doc.getEntidadRemitenteId(),
+                    doc.getTypeCode(),
+                    existingErId);
+        }
+
         if (body.containsKey("referenceId")) {
             doc.setReferenceId(blankToNull(str(body.get("referenceId"))));
         }

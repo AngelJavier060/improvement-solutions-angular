@@ -37,6 +37,7 @@ import { MetodologiaRiesgo } from '../../../../models/metodologia-riesgo.model';
 import { MetodologiaRiesgoService } from '../../../../services/metodologia-riesgo.service';
 import { parametroFactorParaCatalogo } from '../configuracion/shared/metodologia-factor-viaje.util';
 import { Iso9001CatalogKey, Iso9001CatalogService } from '../../../../services/iso-9001-catalog.service';
+import { FLEET_DOC_CATEGORIES, normalizeFleetDocCategory } from '../../../../models/tipo-documento-vehiculo.model';
 
 @Component({
   selector: 'app-detalle-empresa-admin',
@@ -235,6 +236,16 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   showAsignEntidadRemModal = false;
   selectedEntidadRemId: number | null = null;
   savingEntidadRem = false;
+
+  /** Documentos aplicables por tipo de vehículo (fase 1). */
+  docsPorTipoSummary: Array<{ tipoVehiculoId: number; tipoVehiculoName: string; documentCount: number }> = [];
+  selectedDocsTipoId: number | null = null;
+  selectedDocsTipoIds: number[] = [];
+  docsPorTipoGroups: Array<{ code: string; label: string; items: any[] }> = [];
+  loadingDocsPorTipo = false;
+  savingDocsPorTipo = false;
+  docsPorTipoError = '';
+  docsPorTipoOk = '';
 
   // Tipos de Combustible
   tipoCombustibles: any[] = [];
@@ -1909,6 +1920,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.marcaVehiculos = empresa.marcaVehiculos || [];
         this.claseVehiculos = empresa.claseVehiculos || [];
         this.entidadRemitentes = empresa.entidadRemitentes || [];
+        this.refreshDocsPorTipoGroups();
         this.tipoCombustibles = empresa.tipoCombustibles || [];
         this.colorVehiculos = empresa.colorVehiculos || [];
         this.transmisiones = empresa.transmisiones || [];
@@ -1918,6 +1930,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.paisOrigenes = empresa.paisOrigenes || [];
         this.numeroEjes = empresa.numeroEjes || [];
         this.configuracionEjes = empresa.configuracionEjes || [];
+        this.loadDocsPorTipoSummary();
 
         // Gerencia de Viajes
         this.distanciaRecorrers = empresa.distanciaRecorrers || [];
@@ -4346,6 +4359,133 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     this.http.delete(`/api/businesses/${this.empresaId}/entidad-remitente/${id}`).subscribe({
       next: () => this.loadData(),
       error: (err: any) => { console.error(err); alert('Error al eliminar'); }
+    });
+  }
+
+  // === Documentos por tipo de vehículo (por empresa) ===
+  loadDocsPorTipoSummary(): void {
+    if (!this.empresaId) return;
+    this.businessService.summarizeTipoVehiculoDocumentos(this.empresaId).subscribe({
+      next: (res) => {
+        this.docsPorTipoSummary = Array.isArray(res?.items) ? res.items : [];
+        if (this.selectedDocsTipoId != null) {
+          const still = this.docsPorTipoSummary.some(i => i.tipoVehiculoId === this.selectedDocsTipoId);
+          if (!still) {
+            this.selectedDocsTipoId = null;
+            this.selectedDocsTipoIds = [];
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Error cargando resumen documentos por tipo:', err);
+        this.docsPorTipoSummary = [];
+      }
+    });
+  }
+
+  docsCountForTipo(tipoId: number): number {
+    // Mientras edita el tipo actual, mostrar la selección en vivo
+    if (this.selectedDocsTipoId != null && Number(tipoId) === Number(this.selectedDocsTipoId)) {
+      return this.selectedDocsTipoIds.length;
+    }
+    const row = this.docsPorTipoSummary.find(i => Number(i.tipoVehiculoId) === Number(tipoId));
+    return row ? Number(row.documentCount || 0) : 0;
+  }
+
+  selectedDocsTipoName(): string {
+    if (this.selectedDocsTipoId == null) return '';
+    const t = (this.tipoVehiculos || []).find((x: any) => Number(x.id) === Number(this.selectedDocsTipoId));
+    return t?.name || '';
+  }
+
+  onSelectDocsTipo(tipoId: number | null): void {
+    this.docsPorTipoError = '';
+    this.docsPorTipoOk = '';
+    this.selectedDocsTipoId = tipoId;
+    this.selectedDocsTipoIds = [];
+    if (tipoId == null || !this.empresaId) return;
+    this.loadingDocsPorTipo = true;
+    this.businessService.listDocumentosByTipoVehiculo(this.empresaId, tipoId).subscribe({
+      next: (docs) => {
+        this.selectedDocsTipoIds = (docs || [])
+          .map(d => Number(d.id))
+          .filter(id => Number.isFinite(id) && id > 0);
+        this.loadingDocsPorTipo = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.loadingDocsPorTipo = false;
+        this.docsPorTipoError = err?.error?.message || 'No se pudieron cargar los documentos del tipo.';
+      }
+    });
+  }
+
+  isDocSelectedForTipo(erId: number): boolean {
+    return this.selectedDocsTipoIds.includes(Number(erId));
+  }
+
+  /** Evita que el navegador pelee con Angular al marcar el checkbox. */
+  onDocCheckClick(event: Event, erId: number): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const id = Number(erId);
+    if (!Number.isFinite(id) || id <= 0) return;
+    const nextChecked = !this.isDocSelectedForTipo(id);
+    this.toggleDocForTipo(id, nextChecked);
+  }
+
+  toggleDocForTipo(erId: number, checked: boolean): void {
+    const id = Number(erId);
+    if (!Number.isFinite(id)) return;
+    if (checked) {
+      if (!this.selectedDocsTipoIds.includes(id)) {
+        this.selectedDocsTipoIds = [...this.selectedDocsTipoIds, id];
+      }
+    } else {
+      this.selectedDocsTipoIds = this.selectedDocsTipoIds.filter(x => x !== id);
+    }
+    this.docsPorTipoOk = '';
+  }
+
+  refreshDocsPorTipoGroups(): void {
+    this.docsPorTipoGroups = FLEET_DOC_CATEGORIES.map(g => ({
+      code: g.code,
+      label: g.label,
+      items: (this.entidadRemitentes || []).filter(
+        (e: any) => normalizeFleetDocCategory(e?.category) === g.code
+      )
+    })).filter(g => g.items.length > 0);
+  }
+
+  trackByErId(_index: number, er: any): number | string {
+    return er?.id ?? _index;
+  }
+
+  saveDocsPorTipo(): void {
+    if (!this.empresaId || this.selectedDocsTipoId == null) return;
+    this.savingDocsPorTipo = true;
+    this.docsPorTipoError = '';
+    this.docsPorTipoOk = '';
+    const ids = [...this.selectedDocsTipoIds];
+    const tipoId = this.selectedDocsTipoId;
+    const tipoName = this.selectedDocsTipoName() || 'el tipo';
+    this.businessService.replaceDocumentosByTipoVehiculo(this.empresaId, tipoId, ids).subscribe({
+      next: (saved) => {
+        this.savingDocsPorTipo = false;
+        this.selectedDocsTipoIds = (saved || [])
+          .map(d => Number(d.id))
+          .filter(id => Number.isFinite(id) && id > 0);
+        const n = this.selectedDocsTipoIds.length;
+        this.docsPorTipoOk = n === 0
+          ? `Sin documentos asociados a “${tipoName}”. Las unidades de este tipo no podrán registrar docs hasta configurar al menos uno.`
+          : `Guardado: ${n} documento(s) para el tipo “${tipoName}”. Aplica a todas las unidades con ese tipo.`;
+        this.loadDocsPorTipoSummary();
+      },
+      error: (err) => {
+        this.savingDocsPorTipo = false;
+        console.error(err);
+        this.docsPorTipoError = err?.error?.message || 'Error al guardar documentos del tipo.';
+      }
     });
   }
 

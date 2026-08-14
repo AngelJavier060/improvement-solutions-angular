@@ -1295,6 +1295,57 @@ public class BusinessController {
         return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
     }
 
+    /** Resumen de cuántos documentos tiene configurados cada tipo de la empresa. */
+    @GetMapping("/{businessId}/tipo-vehiculo-documentos")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<?> summarizeTipoVehiculoDocumentos(@PathVariable Long businessId) {
+        try {
+            return ResponseEntity.ok(businessService.summarizeDocumentosPorTipo(businessId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Collections.singletonMap("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{businessId}/tipo-vehiculo/{tipoVehiculoId}/documentos")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<?> listDocumentosByTipoVehiculo(
+            @PathVariable Long businessId,
+            @PathVariable Long tipoVehiculoId) {
+        try {
+            return ResponseEntity.ok(businessService.listDocumentosByTipoVehiculo(businessId, tipoVehiculoId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Collections.singletonMap("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[Business] list documentos por tipo: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Collections.singletonMap("message", "Error al listar documentos del tipo"));
+        }
+    }
+
+    @PutMapping("/{businessId}/tipo-vehiculo/{tipoVehiculoId}/documentos")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<?> replaceDocumentosByTipoVehiculo(
+            @PathVariable Long businessId,
+            @PathVariable Long tipoVehiculoId,
+            @RequestBody Map<String, Object> body) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<Object> raw = body != null && body.get("entidadRemitenteIds") instanceof List
+                    ? (List<Object>) body.get("entidadRemitenteIds")
+                    : List.of();
+            List<Long> ids = raw.stream()
+                    .filter(o -> o != null)
+                    .map(o -> Long.valueOf(String.valueOf(o)))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(businessService.replaceDocumentosByTipoVehiculo(businessId, tipoVehiculoId, ids));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Collections.singletonMap("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Collections.singletonMap("message", "Error al guardar documentos del tipo"));
+        }
+    }
+
     @PostMapping("/{businessId}/tipo-combustible/{id}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Map<String, String>> addTipoCombustible(@PathVariable Long businessId, @PathVariable Long id) {

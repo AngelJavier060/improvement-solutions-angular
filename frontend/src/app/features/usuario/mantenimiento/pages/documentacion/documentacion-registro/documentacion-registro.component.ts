@@ -219,19 +219,52 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
 
     const vehicle$ = this.fleetService.getVehicleById(this.businessRuc, id);
     const docs$ = this.docService.syncVehicleFromServer(this.businessRuc, id).pipe(catchError(() => of([] as FleetComplianceDoc[])));
-    const cats$ = this.fleetService.getFichaCatalogs(this.businessRuc).pipe(catchError(() => of(null)));
+    const applicable$ = this.fleetService.getApplicableDocs(this.businessRuc, id).pipe(
+      catchError(err => {
+        console.error(err);
+        return of({
+          vehicleId: id,
+          businessId: 0,
+          tipoVehiculoId: null,
+          tipoVehiculoName: null,
+          configured: false,
+          message: 'No se pudieron cargar los documentos aplicables al tipo.',
+          documentos: [] as Array<{ id: number; name: string; description?: string; category?: string }>
+        });
+      })
+    );
 
-    forkJoin({ vehicle: vehicle$, docs: docs$, cats: cats$ }).subscribe({
-      next: ({ vehicle, cats }) => {
+    forkJoin({ vehicle: vehicle$, docs: docs$, applicable: applicable$ }).subscribe({
+      next: ({ vehicle, applicable }) => {
         this.vehicle = vehicle;
         this.restorePendingSnapshot();
-        const list = Array.isArray(cats?.entidadRemitentes) ? [...cats.entidadRemitentes] : [];
+
+        const list = Array.isArray(applicable?.documentos) ? [...applicable.documentos] : [];
         this.entidadRemitentes = list
           .filter(e => e && e.id != null && !!(e.name || '').trim())
+          .map(e => ({
+            id: e.id,
+            name: e.name,
+            description: e.description,
+            category: e.category
+          }))
           .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es', { sensitivity: 'base' }));
-        this.docConfigMessage = this.entidadRemitentes.length === 0
-          ? 'Asigne entidades remitente a la empresa (con grupo: Legales, Certificaciones o Liberaciones) en administración.'
-          : '';
+
+        // Edición/renovación: conservar el documento actual aunque ya no esté en el set del tipo
+        this.ensureCurrentDocInOptions();
+
+        if (applicable?.message) {
+          this.docConfigMessage = applicable.message;
+        } else if (!applicable?.configured) {
+          this.docConfigMessage =
+            'Asigne un tipo de vehículo en la ficha de la unidad para filtrar los documentos aplicables.';
+        } else if (this.entidadRemitentes.length === 0) {
+          this.docConfigMessage =
+            'No hay documentos configurados para este tipo. Configure “Documentos por tipo” en administración de la empresa.';
+        } else {
+          this.docConfigMessage = '';
+        }
+
         this.loadingFleet = false;
         this.patchFormFromDoc();
         this.ensureDefaultTypeCode();
@@ -245,6 +278,38 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  /** Si editamos un doc fuera del set actual, lo incluimos para no romper el formulario. */
+  private ensureCurrentDocInOptions(): void {
+    const snap =
+      this.pendingEditSnapshot ||
+      (this.editDocId && this.selectedVehicleId != null
+        ? this.docService.getDocumentById(this.selectedVehicleId, this.editDocId)
+        : undefined);
+    if (!snap) return;
+
+    let erId: number | null = null;
+    if (snap.entidadRemitenteId != null) {
+      const n = Number(snap.entidadRemitenteId);
+      if (Number.isFinite(n) && n > 0) erId = n;
+    }
+    if (erId == null && typeof snap.typeCode === 'string' && snap.typeCode.startsWith('er_')) {
+      const n = Number(snap.typeCode.substring(3));
+      if (Number.isFinite(n) && n > 0) erId = n;
+    }
+    if (erId == null) return;
+    if (this.entidadRemitentes.some(e => Number(e.id) === Number(erId))) return;
+
+    this.entidadRemitentes = [
+      {
+        id: erId,
+        name: snap.entidadRemitenteName || snap.typeLabel || `Documento #${erId}`,
+        category: snap.docCategory || 'DOCUMENTOS_PRINCIPALES',
+        description: '(ya no aplica al tipo; solo edición)'
+      },
+      ...this.entidadRemitentes
+    ];
   }
 
   private restorePendingSnapshot(): void {

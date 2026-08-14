@@ -216,6 +216,20 @@ public class FleetController {
         }
     }
 
+    @GetMapping("/{ruc}/vehicles/{id}/applicable-docs")
+    public ResponseEntity<?> listApplicableDocs(@PathVariable String ruc, @PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(fleetVehicleService.listApplicableDocsForVehicle(ruc, id));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(e.getMessage(), "NOT_FOUND", 404));
+        } catch (Exception e) {
+            log.error("[Fleet] applicable-docs: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al listar documentos aplicables", "INTERNAL", 500));
+        }
+    }
+
     @PostMapping("/{ruc}/vehicles/{id}/compliance-docs/recover-orphans")
     public ResponseEntity<?> recoverOrphanComplianceDocs(@PathVariable String ruc, @PathVariable Long id) {
         try {
