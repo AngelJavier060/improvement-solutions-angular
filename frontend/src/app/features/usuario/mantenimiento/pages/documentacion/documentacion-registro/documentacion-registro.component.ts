@@ -85,7 +85,21 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     }
     this.docService.initForRuc(this.businessRuc);
 
-    this.docSub = this.docService.changes$.subscribe(() => this.cdr.markForCheck());
+    this.docSub = this.docService.changes$.subscribe(() => {
+      // Tras crear/eliminar/renovar, refrescar opciones del selector (sin duplicados)
+      if (this.selectedVehicleId != null && this.entidadRemitentes.length && !this.editDocId && !this.renewFromId) {
+        if (this.availableEntidades().length === 0 && this.entidadRemitentes.length > 0) {
+          this.docConfigMessage =
+            'Todos los documentos aplicables ya están registrados en esta unidad. Elimine uno o use Renovar para actualizar un existente.';
+        } else if (
+          this.docConfigMessage?.includes('Todos los documentos aplicables') &&
+          this.availableEntidades().length > 0
+        ) {
+          this.docConfigMessage = '';
+        }
+      }
+      this.cdr.markForCheck();
+    });
 
     this.routeSub = combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(([pm, qm]) => {
       this.error = '';
@@ -148,10 +162,10 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Códigos internos derivados de las entidades remitente de la empresa.
+   * Códigos internos derivados de las entidades disponibles (no duplicadas).
    */
   docTypeOptionsForSelect(): { code: string; label: string; category?: string }[] {
-    let base: { code: string; label: string; category?: string }[] = this.entidadRemitentes
+    let base: { code: string; label: string; category?: string }[] = this.availableEntidades()
       .filter(e => e?.id != null)
       .map(e => ({
         code: `er_${e.id}`,
@@ -176,8 +190,63 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     return base;
   }
 
-  /** Entidades de la empresa agrupadas por las 3 categorías de documentación. */
+  /**
+   * Entidades aplicables al tipo, menos las ya registradas en la unidad
+   * (excepto el documento en edición/renovación).
+   */
+  availableEntidades(): MaintenanceCatalogItem[] {
+    const used = this.usedEntidadIdsOnVehicle();
+    const allowed = this.exceptionEntidadIds();
+    return (this.entidadRemitentes || []).filter(e => {
+      const id = Number(e?.id);
+      if (!Number.isFinite(id) || id <= 0) return false;
+      if (allowed.has(id)) return true;
+      return !used.has(id);
+    });
+  }
+
+  /** IDs ya usados por un registro activo (no histórico) en la unidad. */
+  private usedEntidadIdsOnVehicle(): Set<number> {
+    const used = new Set<number>();
+    if (this.selectedVehicleId == null) return used;
+    for (const d of this.docService.getDocuments(this.selectedVehicleId)) {
+      if (this.editDocId && String(d.id) === String(this.editDocId)) {
+        // El que se edita no cuenta como “otro” duplicado
+        continue;
+      }
+      if (d.active === false || d.historicMode) continue;
+      const erId = this.extractEntidadIdFromDoc(d);
+      if (erId != null) used.add(erId);
+    }
+    return used;
+  }
+
+  /** En editar/renovar, el tipo del documento actual debe seguir visible. */
+  private exceptionEntidadIds(): Set<number> {
+    const allow = new Set<number>();
+    const snapId = this.editDocId || this.renewFromId;
+    const doc = snapId ? this.resolveDocForForm(snapId) : this.pendingEditSnapshot;
+    if (!doc) return allow;
+    const erId = this.extractEntidadIdFromDoc(doc);
+    if (erId != null) allow.add(erId);
+    return allow;
+  }
+
+  private extractEntidadIdFromDoc(doc: FleetComplianceDoc): number | null {
+    if (doc.entidadRemitenteId != null) {
+      const n = Number(doc.entidadRemitenteId);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    if (typeof doc.typeCode === 'string' && doc.typeCode.startsWith('er_')) {
+      const n = Number(doc.typeCode.substring(3));
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    return null;
+  }
+
+  /** Entidades disponibles agrupadas por las 3 categorías de documentación. */
   entidadGroups(): { code: string; label: string; items: MaintenanceCatalogItem[] }[] {
+    const available = this.availableEntidades();
     const order = [
       { code: 'DOCUMENTOS_PRINCIPALES', label: 'Documentos Legales y Permisos' },
       { code: 'CERTIFICACIONES', label: 'Certificaciones Técnicas' },
@@ -186,7 +255,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     return order
       .map(g => ({
         ...g,
-        items: this.entidadRemitentes.filter(e => normalizeFleetDocCategory(e.category) === g.code)
+        items: available.filter(e => normalizeFleetDocCategory(e.category) === g.code)
       }))
       .filter(g => g.items.length > 0);
   }
@@ -261,6 +330,13 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
         } else if (this.entidadRemitentes.length === 0) {
           this.docConfigMessage =
             'No hay documentos configurados para este tipo. Configure “Documentos por tipo” en administración de la empresa.';
+        } else if (
+          !this.editDocId &&
+          !this.renewFromId &&
+          this.availableEntidades().length === 0
+        ) {
+          this.docConfigMessage =
+            'Todos los documentos aplicables ya están registrados en esta unidad. Elimine uno o use Renovar para actualizar un existente.';
         } else {
           this.docConfigMessage = '';
         }

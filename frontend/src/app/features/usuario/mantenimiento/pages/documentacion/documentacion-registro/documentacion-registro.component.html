@@ -109,13 +109,19 @@
             <div class="dr-field">
               <label class="dr-label" for="dr-entidad">Documento / entidad que emite *</label>
               <p class="dr-help">
-                Catálogo de esta empresa (administración → Entidad remitente).
-                El grupo (Legales, Certificaciones o Liberaciones) sale de esa configuración.
-                <ng-container *ngIf="entidadRemitentes.length">
-                  {{ entidadRemitentes.length }} opción(es).
+                Solo documentos aplicables al tipo de esta unidad.
+                Los ya registrados (activos) no se listan para evitar duplicados; al eliminar o renovar vuelven a aparecer.
+                <ng-container *ngIf="availableEntidades().length">
+                  {{ availableEntidades().length }} disponible(s)
+                  <span *ngIf="entidadRemitentes.length > availableEntidades().length">
+                    · {{ entidadRemitentes.length - availableEntidades().length }} ya registrado(s)
+                  </span>.
+                </ng-container>
+                <ng-container *ngIf="!availableEntidades().length && entidadRemitentes.length">
+                  No hay opciones libres: todos ya están registrados.
                 </ng-container>
                 <ng-container *ngIf="!entidadRemitentes.length">
-                  No hay entidades asignadas a esta empresa; asígnelas en administración.
+                  No hay documentos configurados para este tipo.
                 </ng-container>
               </p>
               <select
