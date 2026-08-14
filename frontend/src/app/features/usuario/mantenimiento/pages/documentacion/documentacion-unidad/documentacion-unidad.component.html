@@ -106,7 +106,7 @@
           <tr *ngFor="let d of sec.docs; trackBy: trackDoc">
             <td>
               <div class="du-doc">
-                <div class="du-doc__icon" [class.is-warn]="statusTone(d) === 'warn'" [class.is-err]="statusTone(d) === 'err'">
+                <div class="du-doc__icon" [class.is-ok]="statusTone(d) === 'ok'" [class.is-warn]="statusTone(d) === 'warn'" [class.is-err]="statusTone(d) === 'err'">
                   <i class="fas" [ngClass]="sectionIcon(sec.code)"></i>
                 </div>
                 <div>
@@ -116,7 +116,7 @@
               </div>
             </td>
             <td class="du-muted">{{ formatDate(d.issueDate) }}</td>
-            <td [class.du-expiry-warn]="statusTone(d) === 'warn'" [class.du-expiry-err]="statusTone(d) === 'err'">
+            <td [class.du-expiry-ok]="statusTone(d) === 'ok'" [class.du-expiry-warn]="statusTone(d) === 'warn'" [class.du-expiry-err]="statusTone(d) === 'err'">
               {{ d.expiryDate ? formatDate(d.expiryDate) : '—' }}
             </td>
             <td>

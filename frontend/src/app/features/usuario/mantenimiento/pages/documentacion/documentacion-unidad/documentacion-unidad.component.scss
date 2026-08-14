@@ -426,6 +426,11 @@
     justify-content: center;
     flex-shrink: 0;
 
+    &.is-ok {
+      background: rgba(34, 197, 94, 0.12);
+      color: #15803d;
+    }
+
     &.is-warn {
       background: rgba(217, 119, 6, 0.12);
       color: var(--du-warn);
@@ -452,6 +457,11 @@
 
 .du-muted {
   color: var(--du-muted);
+}
+
+.du-expiry-ok {
+  color: #15803d;
+  font-weight: 600;
 }
 
 .du-expiry-warn {

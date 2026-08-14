@@ -209,14 +209,13 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
 
   statusText(doc: FleetComplianceDoc): string {
     if (!doc.active) return 'Inactivo';
-    const tone = this.statusTone(doc);
-    if (tone === 'err') {
-      const d = this.days(doc);
-      return d != null && d < 0 ? 'Vencido' : 'Por vencer';
-    }
-    if (tone === 'warn') return 'Próximo a vencer';
     if (this.status(doc) === 'NO_CADUCA') return 'No caduca';
     if (this.status(doc) === 'SIN_VIGENCIA') return 'Sin vigencia';
+    const d = this.days(doc);
+    if (d == null) return 'Sin vigencia';
+    if (d <= 0) return 'Caducado';
+    if (d <= 10) return 'Por caducar';
+    if (d <= 30) return 'Próximo por caducar';
     return 'Vigente';
   }
 
@@ -237,7 +236,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Verde: más de 20 días. Amarillo: 11–20 (próximo). Rojo: 10 o menos, o ya vencido.
+   * Rojo: ≤ 0 (caducado). Amarillo: 1–10 (por caducar). Verde: ≥ 11 (próximo / vigente).
    */
   statusTone(doc: FleetComplianceDoc): 'ok' | 'warn' | 'err' | 'muted' {
     if (!doc.active) return 'muted';
@@ -246,8 +245,8 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     if (s === 'SIN_VIGENCIA') return 'muted';
     const d = this.days(doc);
     if (d == null) return 'muted';
-    if (d < 0 || d <= 10) return 'err';
-    if (d <= 20) return 'warn';
+    if (d <= 0) return 'err';
+    if (d <= 10) return 'warn';
     return 'ok';
   }
 

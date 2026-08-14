@@ -118,19 +118,16 @@
               <ul class="doc-vigencia-list" *ngIf="items.length > 0">
                 <li
                   *ngFor="let item of items"
-                  [class.doc-vigencia-list__item--err]="item.status === 'VENCIDO' || (item.days !== null && item.days <= 10)"
-                  [class.doc-vigencia-list__item--warn]="item.status === 'PROXIMO' && item.days !== null && item.days > 10"
-                  [class.doc-vigencia-list__item--ok]="item.status === 'VIGENTE' || item.status === 'NO_CADUCA'">
-                  <span class="doc-vigencia-list__name" [title]="item.label">{{ item.label }}</span>
-                  <span class="doc-vigencia-list__days">
-                    <ng-container *ngIf="item.days === null">∞</ng-container>
-                    <ng-container *ngIf="item.days !== null">{{ item.days }}d</ng-container>
-                  </span>
+                  [class.doc-vigencia-list__item--err]="item.tone === 'err'"
+                  [class.doc-vigencia-list__item--warn]="item.tone === 'warn'"
+                  [class.doc-vigencia-list__item--ok]="item.tone === 'ok'"
+                  [title]="item.stateLabel + ': ' + item.label">
+                  <span class="doc-vigencia-list__name">{{ item.label }}</span>
+                  <span class="doc-vigencia-list__days">{{ item.days }}d</span>
                 </li>
               </ul>
-              <div class="doc-vigencia-empty" *ngIf="items.length === 0">
-                <span class="doc-headline h5 mb-0 text-muted">—</span>
-                <span class="small text-muted">Sin documentos</span>
+              <div class="doc-vigencia-empty doc-vigencia-empty--ok" *ngIf="items.length === 0">
+                <span class="doc-vigencia-empty__msg">Documentación Vigente</span>
               </div>
             </ng-container>
           </div>

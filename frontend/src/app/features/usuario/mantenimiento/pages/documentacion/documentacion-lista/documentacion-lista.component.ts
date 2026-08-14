@@ -171,35 +171,48 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Hasta 3 documentos activos más urgentes (menor días a vencer primero).
-   * Incluye sin caducidad al final si no hay suficientes con fecha.
+   * Solo documentos en alerta de vigencia (máx. 3, más urgentes primero):
+   * - Caducado: ≤ 0 días → rojo
+   * - Por caducar: 1–10 días → amarillo
+   * - Próximo por caducar: 11–30 días → verde
+   * Vigentes (> 30 días) y sin caducidad no se listan aquí.
    */
-  topVigencias(v: Vehicle): { label: string; days: number | null; status: FleetDocComplianceStatus }[] {
+  topVigencias(v: Vehicle): {
+    label: string;
+    days: number;
+    tone: 'err' | 'warn' | 'ok';
+    stateLabel: string;
+  }[] {
     if (v.id == null) return [];
     const docs = this.docService.getDocuments(v.id).filter(d => d.active && !d.historicMode);
-    if (docs.length === 0) return [];
 
-    const withDays = docs
+    return docs
       .map(d => {
-        const days =
-          d.expiryDate == null || d.expiryDate === ''
-            ? null
-            : this.docService.daysToExpiry(d.expiryDate);
+        if (d.expiryDate == null || d.expiryDate === '') return null;
+        const days = this.docService.daysToExpiry(d.expiryDate);
+        if (days === null || days > 30) return null;
+        let tone: 'err' | 'warn' | 'ok';
+        let stateLabel: string;
+        if (days <= 0) {
+          tone = 'err';
+          stateLabel = 'Caducado';
+        } else if (days <= 10) {
+          tone = 'warn';
+          stateLabel = 'Por caducar';
+        } else {
+          tone = 'ok';
+          stateLabel = 'Próximo por caducar';
+        }
         return {
           label: d.typeLabel || this.docService.labelForTypeCode(d.typeCode),
           days,
-          status: this.docService.complianceStatusForDoc(d)
+          tone,
+          stateLabel
         };
       })
-      .sort((a, b) => {
-        // Con fecha primero (más urgentes); sin caducidad al final
-        if (a.days === null && b.days === null) return a.label.localeCompare(b.label, 'es');
-        if (a.days === null) return 1;
-        if (b.days === null) return -1;
-        return a.days - b.days;
-      });
-
-    return withDays.slice(0, 3);
+      .filter((x): x is { label: string; days: number; tone: 'err' | 'warn' | 'ok'; stateLabel: string } => x != null)
+      .sort((a, b) => a.days - b.days || a.label.localeCompare(b.label, 'es'))
+      .slice(0, 3);
   }
 
   statusBadgeClass(v: Vehicle): string {

@@ -66,7 +66,8 @@
           <tr>
             <th class="text-uppercase small fw-bold">Foto</th>
             <th class="text-uppercase small fw-bold">Identidad</th>
-            <th class="text-uppercase small fw-bold">Especificaciones</th>
+            <th class="text-uppercase small fw-bold">Marca</th>
+            <th class="text-uppercase small fw-bold">Modelo</th>
             <th class="text-uppercase small fw-bold">Serie Motor</th>
             <th class="text-uppercase small fw-bold">Serie Chasis</th>
             <th class="text-uppercase small fw-bold">Propietario</th>
@@ -93,9 +94,14 @@
               <small class="text-muted">Año: {{ vehicle.anio || '—' }}</small>
             </td>
             
-            <!-- Especificaciones: solo marca -->
+            <!-- Marca -->
             <td class="p-3">
               <div class="fw-semibold">{{ vehicle.marca || '—' }}</div>
+            </td>
+
+            <!-- Modelo -->
+            <td class="p-3">
+              <div class="fw-semibold text-break">{{ vehicle.modelo || '—' }}</div>
             </td>
             
             <!-- Serie Motor -->
