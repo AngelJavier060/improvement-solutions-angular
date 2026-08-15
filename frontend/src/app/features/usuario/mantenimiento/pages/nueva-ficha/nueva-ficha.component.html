@@ -52,13 +52,6 @@
                   <option *ngFor="let c of (catalogs?.claseVehiculos || [])" [ngValue]="c.id">{{ c.name }}</option>
                 </select>
               </div>
-              <div class="col-md-4" *ngIf="editingVehicleId != null">
-                <label class="form-label small fw-bold text-uppercase text-muted">Entidad remitente</label>
-                <select formControlName="entidadRemitenteId" class="form-select bg-light border-0">
-                  <option [ngValue]="null">Seleccionar…</option>
-                  <option *ngFor="let e of (catalogs?.entidadRemitentes || [])" [ngValue]="e.id">{{ e.name }}</option>
-                </select>
-              </div>
               <div class="col-md-4">
                 <label class="form-label small fw-bold text-uppercase text-muted">Tipo de vehículo</label>
                 <select formControlName="tipoVehiculoId" class="form-select bg-light border-0">

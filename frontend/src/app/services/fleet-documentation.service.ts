@@ -431,8 +431,8 @@ export class FleetDocumentationService {
     if (doc.expiryDate == null || doc.expiryDate === '') return 'NO_CADUCA';
     const d = this.daysToExpiry(doc.expiryDate);
     if (d === null) return 'SIN_VIGENCIA';
-    if (d < 0) return 'VENCIDO';
-    if (d <= 20) return 'PROXIMO';
+    if (d <= 0) return 'VENCIDO';
+    if (d <= 30) return 'PROXIMO';
     return 'VIGENTE';
   }
 

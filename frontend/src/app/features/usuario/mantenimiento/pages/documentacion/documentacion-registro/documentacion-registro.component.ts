@@ -560,8 +560,8 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
   statusChip(): 'VIGENTE' | 'PROXIMO' | 'VENCIDO' | 'NA' {
     const d = this.daysRemaining();
     if (d === null) return 'NA';
-    if (d < 0) return 'VENCIDO';
-    if (d <= 20) return 'PROXIMO';
+    if (d <= 0) return 'VENCIDO';
+    if (d <= 30) return 'PROXIMO';
     return 'VIGENTE';
   }
 

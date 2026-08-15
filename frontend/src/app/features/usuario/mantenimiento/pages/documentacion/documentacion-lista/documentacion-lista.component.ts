@@ -173,11 +173,10 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Solo documentos en alerta de vigencia (máx. 3, más urgentes primero):
+   * Alertas de vigencia (máx. 3, más urgentes primero):
    * - Caducado: ≤ 0 días → rojo
-   * - Por caducar: 1–10 días → amarillo
-   * - Próximo por caducar: 11–30 días → verde
-   * Vigentes (> 30 días) y sin caducidad no se listan aquí.
+   * - Próximo a caducar: 1–30 días → amarillo
+   * Vigentes (> 30 días) no se listan aquí.
    */
   topVigencias(v: Vehicle): {
     label: string;
@@ -187,34 +186,19 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
   }[] {
     if (v.id == null) return [];
     const docs = this.docService.getDocuments(v.id).filter(d => d.active && !d.historicMode);
-
-    return docs
-      .map(d => {
-        if (d.expiryDate == null || d.expiryDate === '') return null;
-        const days = this.docService.daysToExpiry(d.expiryDate);
-        if (days === null || days > 30) return null;
-        let tone: 'err' | 'warn' | 'ok';
-        let stateLabel: string;
-        if (days <= 0) {
-          tone = 'err';
-          stateLabel = 'Caducado';
-        } else if (days <= 10) {
-          tone = 'warn';
-          stateLabel = 'Por caducar';
-        } else {
-          tone = 'ok';
-          stateLabel = 'Próximo por caducar';
-        }
-        return {
-          label: d.typeLabel || this.docService.labelForTypeCode(d.typeCode),
-          days,
-          tone,
-          stateLabel
-        };
-      })
-      .filter((x): x is { label: string; days: number; tone: 'err' | 'warn' | 'ok'; stateLabel: string } => x != null)
-      .sort((a, b) => a.days - b.days || a.label.localeCompare(b.label, 'es'))
-      .slice(0, 3);
+    const alerts: { label: string; days: number; tone: 'err' | 'warn' | 'ok'; stateLabel: string }[] = [];
+    for (const d of docs) {
+      if (d.expiryDate == null || d.expiryDate === '') continue;
+      const days = this.docService.daysToExpiry(d.expiryDate);
+      if (days === null || days > 30) continue;
+      alerts.push({
+        label: d.typeLabel || this.docService.labelForTypeCode(d.typeCode),
+        days,
+        tone: days <= 0 ? 'err' : 'warn',
+        stateLabel: days <= 0 ? 'Caducado' : 'Próximo a caducar'
+      });
+    }
+    return alerts.sort((a, b) => a.days - b.days || a.label.localeCompare(b.label, 'es')).slice(0, 3);
   }
 
   statusBadgeClass(v: Vehicle): string {
@@ -367,8 +351,7 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
     const days = this.docService.daysToExpiry(doc.expiryDate);
     if (days == null) return 'Sin vigencia';
     if (days <= 0) return 'Caducado';
-    if (days <= 10) return 'Por caducar';
-    if (days <= 30) return 'Próximo por caducar';
+    if (days <= 30) return 'Próximo a caducar';
     return 'Vigente';
   }
 

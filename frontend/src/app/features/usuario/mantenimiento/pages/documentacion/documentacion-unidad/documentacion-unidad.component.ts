@@ -274,14 +274,23 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
         pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW, imgH);
       } else {
         const pageHeightPx = Math.floor(usableH * pxPerMm);
+        const src = canvas.getContext('2d');
         let srcY = 0;
         let pageIndex = 0;
         while (srcY < canvas.height) {
           const remaining = canvas.height - srcY;
-          if (remaining < 12) {
+          if (remaining < 16) {
             break;
           }
-          const sliceH = Math.min(pageHeightPx, remaining);
+          const idealEnd = Math.min(srcY + pageHeightPx, canvas.height);
+          const cutY =
+            idealEnd >= canvas.height
+              ? canvas.height
+              : this.findPdfRowBreak(src, canvas.width, srcY, idealEnd);
+          const sliceH = cutY - srcY;
+          if (sliceH < 16) {
+            break;
+          }
           const pageCanvas = document.createElement('canvas');
           pageCanvas.width = canvas.width;
           pageCanvas.height = sliceH;
@@ -303,7 +312,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
             imgW,
             sliceH / pxPerMm
           );
-          srcY += sliceH;
+          srcY = this.skipPdfBlankRows(src, canvas.width, canvas.height, cutY);
           pageIndex++;
         }
       }
@@ -322,6 +331,65 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Corta en el hueco blanco entre filas para no partir un documento a la mitad. */
+  private findPdfRowBreak(
+    ctx: CanvasRenderingContext2D | null,
+    width: number,
+    startY: number,
+    idealEnd: number
+  ): number {
+    if (!ctx) return idealEnd;
+    const minY = startY + Math.floor((idealEnd - startY) * 0.55);
+    let best = idealEnd;
+    let bestRun = 0;
+    let run = 0;
+    let runStart = idealEnd;
+    for (let y = idealEnd - 1; y >= minY; y--) {
+      if (this.isPdfMostlyWhiteRow(ctx, width, y)) {
+        run++;
+        runStart = y;
+        if (run >= 3 && run >= bestRun) {
+          bestRun = run;
+          best = runStart + Math.floor(run / 2);
+        }
+      } else {
+        run = 0;
+      }
+    }
+    return best;
+  }
+
+  private skipPdfBlankRows(
+    ctx: CanvasRenderingContext2D | null,
+    width: number,
+    height: number,
+    y: number
+  ): number {
+    if (!ctx) return y;
+    let next = y;
+    while (next < height && this.isPdfMostlyWhiteRow(ctx, width, next)) {
+      next++;
+    }
+    return next;
+  }
+
+  private isPdfMostlyWhiteRow(ctx: CanvasRenderingContext2D, width: number, y: number): boolean {
+    try {
+      const data = ctx.getImageData(0, y, width, 1).data;
+      let dark = 0;
+      const step = 12;
+      for (let i = 0; i < data.length; i += 4 * step) {
+        if (data[i] < 200 || data[i + 1] < 200 || data[i + 2] < 200) {
+          dark++;
+          if (dark > 3) return false;
+        }
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   status(doc: FleetComplianceDoc) {
     return this.docService.complianceStatusForDoc(doc);
   }
@@ -337,8 +405,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     const d = this.days(doc);
     if (d == null) return 'Sin vigencia';
     if (d <= 0) return 'Caducado';
-    if (d <= 10) return 'Por caducar';
-    if (d <= 30) return 'Próximo por caducar';
+    if (d <= 30) return 'Próximo a caducar';
     return 'Vigente';
   }
 
@@ -359,7 +426,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Rojo: ≤ 0 (caducado). Amarillo: 1–10 (por caducar). Verde: ≥ 11 (próximo / vigente).
+   * Verde: > 30 días (Vigente). Amarillo: 1–30 (Próximo a caducar). Rojo: ≤ 0 (Caducado).
    */
   statusTone(doc: FleetComplianceDoc): 'ok' | 'warn' | 'err' | 'muted' {
     if (!doc.active) return 'muted';
@@ -369,7 +436,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     const d = this.days(doc);
     if (d == null) return 'muted';
     if (d <= 0) return 'err';
-    if (d <= 10) return 'warn';
+    if (d <= 30) return 'warn';
     return 'ok';
   }
 
