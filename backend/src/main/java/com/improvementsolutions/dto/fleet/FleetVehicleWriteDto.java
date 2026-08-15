@@ -18,6 +18,7 @@ public class FleetVehicleWriteDto {
     private String serieChasis;
     private String serieMotor;
     private String propietario;
+    private Long propietarioVehiculoId;
     private Long colorVehiculoId;
     private Long paisOrigenId;
     private Long tipoCombustibleId;

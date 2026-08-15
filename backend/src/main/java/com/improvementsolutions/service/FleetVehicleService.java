@@ -67,6 +67,7 @@ public class FleetVehicleService {
         out.put("tipoCombustibles", toIdNameList(full.getTipoCombustibles()));
         out.put("estadoUnidades", toIdNameList(full.getEstadoUnidades()));
         out.put("transmisiones", toIdNameList(full.getTransmisiones()));
+        out.put("propietarioVehiculos", toIdNameList(full.getPropietarioVehiculos()));
         out.put("numeroEjes", toIdNameList(full.getNumeroEjes()));
         out.put("configuracionEjes", toIdNameList(full.getConfiguracionEjes()));
         return out;
@@ -103,6 +104,10 @@ public class FleetVehicleService {
                         m.put("name", t.getName());
                         m.put("description", t.getDescription());
                     } else if (o instanceof Transmision t) {
+                        m.put("id", t.getId());
+                        m.put("name", t.getName());
+                        m.put("description", t.getDescription());
+                    } else if (o instanceof PropietarioVehiculo t) {
                         m.put("id", t.getId());
                         m.put("name", t.getName());
                         m.put("description", t.getDescription());
@@ -302,6 +307,7 @@ public class FleetVehicleService {
         v.setTipoCombustible(resolveCombustible(full, dto.getTipoCombustibleId()));
         v.setEstadoUnidad(resolveEstadoUnidad(full, dto.getEstadoUnidadId()));
         v.setTransmision(resolveTransmision(full, dto.getTransmisionId()));
+        applyPropietario(v, full, dto);
         v.setNumeroEje(resolveNumeroEje(full, dto.getNumeroEjeId()));
         v.setConfiguracionEje(resolveConfiguracionEje(full, dto.getConfiguracionEjeId()));
 
@@ -343,7 +349,6 @@ public class FleetVehicleService {
         v.setAnio(dto.getAnio());
         v.setSerieChasis(dto.getSerieChasis());
         v.setSerieMotor(dto.getSerieMotor());
-        v.setPropietario(blankToNull(dto.getPropietario()));
         v.setEstadoActivo(estado);
         v.setCilindraje(dto.getCilindraje());
         v.setPasajeros(dto.getPasajeros());
@@ -370,6 +375,7 @@ public class FleetVehicleService {
         v.setTipoCombustible(resolveCombustible(full, dto.getTipoCombustibleId()));
         v.setEstadoUnidad(resolveEstadoUnidad(full, dto.getEstadoUnidadId()));
         v.setTransmision(resolveTransmision(full, dto.getTransmisionId()));
+        applyPropietario(v, full, dto);
         v.setNumeroEje(resolveNumeroEje(full, dto.getNumeroEjeId()));
         v.setConfiguracionEje(resolveConfiguracionEje(full, dto.getConfiguracionEjeId()));
 
@@ -390,6 +396,7 @@ public class FleetVehicleService {
         assertInCollection(dto.getConfiguracionEjeId(), b.getConfiguracionEjes(), "Configuración de ejes / neumáticos");
         assertInCollection(dto.getClaseVehiculoId(), b.getClaseVehiculos(), "Clase de vehículo");
         assertInCollection(dto.getEntidadRemitenteId(), b.getEntidadRemitentes(), "Entidad remitente");
+        assertInCollection(dto.getPropietarioVehiculoId(), b.getPropietarioVehiculos(), "Propietario");
     }
 
     private void assertInCollection(Long id, Collection<?> col, String label) {
@@ -413,6 +420,7 @@ public class FleetVehicleService {
         if (x instanceof ConfiguracionEje t) return t.getId();
         if (x instanceof ClaseVehiculo t) return t.getId();
         if (x instanceof EntidadRemitente t) return t.getId();
+        if (x instanceof PropietarioVehiculo t) return t.getId();
         return null;
     }
 
@@ -456,6 +464,21 @@ public class FleetVehicleService {
         return b.getEstadoUnidades().stream().filter(t -> id.equals(t.getId())).findFirst().orElse(null);
     }
 
+    private PropietarioVehiculo resolvePropietario(Business b, Long id) {
+        if (id == null) return null;
+        return b.getPropietarioVehiculos().stream().filter(t -> id.equals(t.getId())).findFirst().orElse(null);
+    }
+
+    private void applyPropietario(FleetVehicle v, Business b, FleetVehicleWriteDto dto) {
+        PropietarioVehiculo cat = resolvePropietario(b, dto.getPropietarioVehiculoId());
+        v.setPropietarioVehiculo(cat);
+        if (cat != null) {
+            v.setPropietario(cat.getName());
+        } else {
+            v.setPropietario(blankToNull(dto.getPropietario()));
+        }
+    }
+
     private Transmision resolveTransmision(Business b, Long id) {
         if (id == null) return null;
         return b.getTransmisiones().stream().filter(t -> id.equals(t.getId())).findFirst().orElse(null);
@@ -488,7 +511,8 @@ public class FleetVehicleService {
         m.put("anio", v.getAnio());
         m.put("serieChasis", v.getSerieChasis());
         m.put("serieMotor", v.getSerieMotor());
-        m.put("propietario", v.getPropietario());
+        m.put("propietario", v.getPropietarioVehiculo() != null ? v.getPropietarioVehiculo().getName() : v.getPropietario());
+        m.put("propietarioVehiculoId", v.getPropietarioVehiculo() != null ? v.getPropietarioVehiculo().getId() : null);
         m.put("color", v.getColorVehiculo() != null ? v.getColorVehiculo().getName() : null);
         m.put("colorVehiculoId", v.getColorVehiculo() != null ? v.getColorVehiculo().getId() : null);
         m.put("paisOrigen", v.getPaisOrigen() != null ? v.getPaisOrigen().getName() : null);

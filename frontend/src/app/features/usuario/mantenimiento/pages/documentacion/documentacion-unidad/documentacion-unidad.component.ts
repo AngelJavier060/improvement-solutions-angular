@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ChangeDetectorRef, Renderer2 } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectorRef, Renderer2, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpResponse } from '@angular/common/http';
@@ -8,6 +8,7 @@ import { catchError } from 'rxjs/operators';
 import { FleetService } from '../../../../../../services/fleet.service';
 import { FleetDocumentationService } from '../../../../../../services/fleet-documentation.service';
 import { AuthService } from '../../../../../../core/services/auth.service';
+import { BusinessService } from '../../../../../../services/business.service';
 import { Vehicle } from '../../../../../../models/vehicle.model';
 import { FleetComplianceDoc } from '../../../../../../models/fleet-documentation.model';
 import {
@@ -48,12 +49,18 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   private pdfKeyHandler: ((e: KeyboardEvent) => void) | null = null;
   private bodyOverflowBackup: string | null = null;
 
+  @ViewChild('estadoReport') estadoReport?: ElementRef<HTMLElement>;
+  exportingPdf = false;
+  companyLogoUrl = '';
+  private pdfDownloadName: string | null = null;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private fleetService: FleetService,
     private docService: FleetDocumentationService,
     private authService: AuthService,
+    private businessService: BusinessService,
     private http: HttpClient,
     private renderer: Renderer2,
     private cdr: ChangeDetectorRef
@@ -113,10 +120,12 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     forkJoin({
       vehicle: this.fleetService.getVehicleById(ruc, vid),
       docs: this.docService.syncVehicleFromServer(ruc, vid).pipe(catchError(() => of([]))),
-      catalogs: this.fleetService.getFichaCatalogs(ruc).pipe(catchError(() => of(null)))
+      catalogs: this.fleetService.getFichaCatalogs(ruc).pipe(catchError(() => of(null))),
+      business: this.businessService.getByRuc(ruc).pipe(catchError(() => of(null)))
     }).subscribe({
-      next: ({ vehicle, catalogs }) => {
+      next: ({ vehicle, catalogs, business }) => {
         this.vehicle = vehicle;
+        this.companyLogoUrl = this.logoUrlFromPath(business?.logo);
         this.tipoDescByCode.clear();
         const entidades = catalogs?.entidadRemitentes || [];
         for (const e of entidades) {
@@ -197,6 +206,120 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
 
   sections(): DocSection[] {
     return this.docSections;
+  }
+
+  reportSections(): DocSection[] {
+    const all = this.docService.getDocuments(this.vehicleId);
+    return FLEET_DOC_CATEGORIES.map(c => ({
+      code: c.code,
+      label: c.label,
+      docs: all.filter(d => normalizeFleetDocCategory(d.docCategory) === c.code)
+    }));
+  }
+
+  reportDownloadDate(): string {
+    return new Date().toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  reportBadge(): string {
+    return this.vehicle?.estadoActivo === 'ACTIVO' ? 'FLOTA ACTIVA' : (this.estadoUnidadLabel() || 'FLOTA').toUpperCase();
+  }
+
+  reportVehicleLine(): string {
+    return [this.vehicle?.marca, this.vehicle?.modelo, this.vehicle?.tipoVehiculo].filter(Boolean).join(' • ') || 'Unidad de flota';
+  }
+
+  private logoUrlFromPath(logoPath?: string | null): string {
+    if (!logoPath) return '';
+    if (/^https?:\/\//i.test(logoPath)) return logoPath;
+    const filename = String(logoPath).replace(/\\/g, '/').split('/').pop() || '';
+    return filename ? `/api/files/logos/${filename}` : '';
+  }
+
+  async exportEstadoPdf(): Promise<void> {
+    if (!this.vehicle || this.exportingPdf) return;
+    this.exportingPdf = true;
+    this.cdr.detectChanges();
+    await new Promise(r => setTimeout(r, 50));
+    const el = this.estadoReport?.nativeElement;
+    if (!el) {
+      this.exportingPdf = false;
+      alert('No se pudo preparar el reporte.');
+      return;
+    }
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight
+      });
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const usableW = pageW - margin * 2;
+      const usableH = pageH - margin * 2;
+      const imgW = usableW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      const pxPerMm = canvas.width / imgW;
+
+      if (imgH <= usableH + 2) {
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW, imgH);
+      } else {
+        const pageHeightPx = Math.floor(usableH * pxPerMm);
+        let srcY = 0;
+        let pageIndex = 0;
+        while (srcY < canvas.height) {
+          const remaining = canvas.height - srcY;
+          if (remaining < 12) {
+            break;
+          }
+          const sliceH = Math.min(pageHeightPx, remaining);
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = sliceH;
+          const ctx = pageCanvas.getContext('2d');
+          if (!ctx) {
+            break;
+          }
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+          if (pageIndex > 0) {
+            pdf.addPage();
+          }
+          pdf.addImage(
+            pageCanvas.toDataURL('image/jpeg', 0.92),
+            'JPEG',
+            margin,
+            margin,
+            imgW,
+            sliceH / pxPerMm
+          );
+          srcY += sliceH;
+          pageIndex++;
+        }
+      }
+      const placa = (this.vehicle.placa || 'unidad').replace(/[^\w-]+/g, '_');
+      const fileName = `reporte-estado-vehicular-${placa}.pdf`;
+      const blob = pdf.output('blob');
+      this.closePdfPreview();
+      this.pdfBlobUrl = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      this.mountPdfViewerOverlay(`Reporte de Estado — ${this.vehicle.placa}`, this.pdfBlobUrl, fileName);
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo generar el PDF. Intente de nuevo.');
+    } finally {
+      this.exportingPdf = false;
+      this.cdr.detectChanges();
+    }
   }
 
   status(doc: FleetComplianceDoc) {
@@ -406,6 +529,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
       }
       this.pdfBlobUrl = null;
     }
+    this.pdfDownloadName = null;
     if (this.bodyOverflowBackup !== null) {
       document.body.style.overflow = this.bodyOverflowBackup;
       this.bodyOverflowBackup = null;
@@ -413,7 +537,18 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     document.documentElement.style.overflow = '';
   }
 
-  private mountPdfViewerOverlay(title: string, blobUrl: string): void {
+  private downloadCurrentPdf(): void {
+    if (!this.pdfBlobUrl) return;
+    const a = document.createElement('a');
+    a.href = this.pdfBlobUrl;
+    a.download = this.pdfDownloadName || 'documento.pdf';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  private mountPdfViewerOverlay(title: string, blobUrl: string, downloadName?: string): void {
     if (this.bodyOverflowBackup === null) {
       this.bodyOverflowBackup = document.body.style.overflow || '';
     }
@@ -444,10 +579,16 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
             <span style="background:#4648d4;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;">PDF</span>
             <span class="du-pdf-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
           </div>
-          <button type="button" class="du-pdf-close" title="Cerrar (Esc)"
-            style="border:0;border-radius:6px;background:rgba(255,255,255,.12);color:#f9fafb;font:600 13px/1 system-ui,sans-serif;padding:8px 12px;cursor:pointer;">
-            ✕ Cerrar
-          </button>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <button type="button" class="du-pdf-download" title="Descargar PDF"
+              style="display:none;border:0;border-radius:6px;background:#4648d4;color:#fff;font:600 13px/1 system-ui,sans-serif;padding:8px 12px;cursor:pointer;">
+              Descargar
+            </button>
+            <button type="button" class="du-pdf-close" title="Cerrar (Esc)"
+              style="border:0;border-radius:6px;background:rgba(255,255,255,.12);color:#f9fafb;font:600 13px/1 system-ui,sans-serif;padding:8px 12px;cursor:pointer;">
+              ✕ Cerrar
+            </button>
+          </div>
         </div>
         <div class="du-pdf-body" style="flex:1 1 auto;position:relative;min-height:0;overflow:hidden;background:#374151;"></div>
       </div>
@@ -457,6 +598,12 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     nameEl.textContent = title;
     const closeBtn = root.querySelector('.du-pdf-close') as HTMLButtonElement;
     closeBtn.addEventListener('click', () => this.closePdfPreview());
+    const downloadBtn = root.querySelector('.du-pdf-download') as HTMLButtonElement;
+    if (downloadName) {
+      this.pdfDownloadName = downloadName;
+      downloadBtn.style.display = 'inline-flex';
+      downloadBtn.addEventListener('click', () => this.downloadCurrentPdf());
+    }
 
     const body = root.querySelector('.du-pdf-body') as HTMLElement;
     // iframe es más compatible que embed en varios navegadores

@@ -20,6 +20,7 @@ export interface FichaCatalogsResponse {
   tipoCombustibles: MaintenanceCatalogItem[];
   estadoUnidades: MaintenanceCatalogItem[];
   transmisiones: MaintenanceCatalogItem[];
+  propietarioVehiculos: MaintenanceCatalogItem[];
   numeroEjes: MaintenanceCatalogItem[];
   configuracionEjes: MaintenanceCatalogItem[];
 }
@@ -42,6 +43,7 @@ export interface Vehicle {
   serieChasis?: string;
   serieMotor?: string;
   propietario?: string;
+  propietarioVehiculoId?: number;
   color?: string;
   colorVehiculoId?: number;
   paisOrigen?: string;
@@ -131,6 +133,7 @@ export interface CreateVehicleRequest {
   serieChasis?: string;
   serieMotor?: string;
   propietario?: string;
+  propietarioVehiculoId?: number | null;
   colorVehiculoId?: number | null;
   paisOrigenId?: number | null;
   tipoCombustibleId?: number | null;

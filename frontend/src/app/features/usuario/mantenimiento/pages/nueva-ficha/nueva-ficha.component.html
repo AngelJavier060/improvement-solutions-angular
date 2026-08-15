@@ -91,7 +91,11 @@
               </div>
               <div class="col-md-4">
                 <label class="form-label small fw-bold text-uppercase text-muted">Propietario</label>
-                <input formControlName="propietario" class="form-control bg-light border-0" type="text" placeholder="Nombre del propietario">
+                <select formControlName="propietarioVehiculoId" class="form-select bg-light border-0">
+                  <option [ngValue]="null">Seleccionar…</option>
+                  <option *ngFor="let t of (catalogs?.propietarioVehiculos || [])" [ngValue]="t.id">{{ t.name }}</option>
+                </select>
+                <small class="text-muted" *ngIf="!(catalogs?.propietarioVehiculos || []).length">Asigne propietarios en Administración → Mantenimiento automotriz → Propietario/Empresa.</small>
               </div>
               <div class="col-md-4">
                 <label class="form-label small fw-bold text-uppercase text-muted">Color</label>

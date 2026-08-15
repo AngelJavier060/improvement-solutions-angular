@@ -75,6 +75,14 @@
 
     <div class="d-flex flex-wrap align-items-center justify-content-end gap-3 mb-3 px-1">
       <div class="d-flex align-items-center gap-2">
+        <button
+          type="button"
+          class="doc-excel-btn"
+          title="Descargar consolidado Excel de todas las unidades"
+          [disabled]="exportingExcel"
+          (click)="exportExcelConsolidado()">
+          <i class="fas" [ngClass]="exportingExcel ? 'fa-spinner fa-spin' : 'fa-file-excel'"></i>
+        </button>
         <label class="small text-muted text-uppercase fw-bold mb-0">Ordenar</label>
         <select class="form-select form-select-sm" style="width: auto; min-width: 12rem;" [(ngModel)]="sortKey">
           <option value="daysAsc">Días de vigencia (menor a mayor)</option>

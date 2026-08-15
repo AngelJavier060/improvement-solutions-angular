@@ -67,6 +67,14 @@
         (ngModelChange)="onSearchChange($event)" />
     </div>
     <div class="du-toolbar__actions">
+      <button
+        type="button"
+        class="du-btn du-btn--pdf"
+        title="Exportar reporte PDF para imprimir"
+        [disabled]="exportingPdf"
+        (click)="exportEstadoPdf()">
+        <i class="fas" [ngClass]="exportingPdf ? 'fa-spinner fa-spin' : 'fa-file-pdf'"></i>
+      </button>
       <a
         class="du-btn du-btn--primary"
         [routerLink]="registroCommands()">
@@ -177,4 +185,108 @@
 <div class="du-page" *ngIf="error && !loading">
   <div class="du-alert">{{ error }}</div>
   <a class="du-btn du-btn--primary" [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion']">Volver</a>
+</div>
+
+<!-- Plantilla A4 del reporte (fuera de pantalla; se captura para PDF) -->
+<div class="du-report-host" aria-hidden="true">
+  <div #estadoReport class="du-report" *ngIf="vehicle">
+    <header class="du-report__header">
+      <div class="du-report__stamp">
+        <img *ngIf="companyLogoUrl" [src]="companyLogoUrl" alt="Sello de la empresa" />
+        <ng-container *ngIf="!companyLogoUrl">
+          <i class="fas fa-stamp"></i>
+          <p>SELLO DE LA EMPRESA</p>
+        </ng-container>
+      </div>
+      <div class="du-report__title-wrap">
+        <h1>Reporte de Estado del Vehicular</h1>
+        <p>Vehículo: <strong>{{ vehicle.placa }}</strong></p>
+      </div>
+      <div class="du-report__date">
+        Fecha de descarga:<br>
+        <span>{{ reportDownloadDate() }}</span>
+      </div>
+    </header>
+
+    <section class="du-report__summary">
+      <div class="du-report__photo">
+        <img *ngIf="vehicle.fotoPrincipal" [src]="vehicle.fotoPrincipal" [alt]="vehicle.placa" />
+        <div *ngIf="!vehicle.fotoPrincipal" class="du-report__photo-empty">
+          <i class="fas fa-truck"></i>
+        </div>
+      </div>
+      <div class="du-report__meta">
+        <span class="du-report__badge">{{ reportBadge() }}</span>
+        <h2>{{ vehicle.placa }}</h2>
+        <p class="du-report__sub">{{ reportVehicleLine() }}</p>
+        <hr>
+        <div class="du-report__grid">
+          <div>
+            <p class="du-report__lbl">CÓDIGO</p>
+            <p class="du-report__val">{{ vehicle.codigoEquipo || '—' }}</p>
+          </div>
+          <div>
+            <p class="du-report__lbl">CLASE</p>
+            <p class="du-report__val">{{ vehicle.clase || '—' }}</p>
+          </div>
+          <div>
+            <p class="du-report__lbl">NÚMERO MOTOR</p>
+            <p class="du-report__val">{{ vehicle.serieMotor || '—' }}</p>
+          </div>
+          <div>
+            <p class="du-report__lbl">TIPO</p>
+            <p class="du-report__val">{{ vehicle.tipoVehiculo || '—' }}</p>
+          </div>
+          <div class="du-report__grid--wide">
+            <p class="du-report__lbl">CHASIS / VIN</p>
+            <p class="du-report__val">{{ vehicle.serieChasis || '—' }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="du-report__block" *ngFor="let sec of reportSections()">
+      <h3>{{ sec.label }}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>DOCUMENTO</th>
+            <th>FECHA EMISIÓN</th>
+            <th>VENCIMIENTO</th>
+            <th>DÍAS DE VIGENCIA</th>
+            <th>ESTADO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="sec.docs.length === 0">
+            <td colspan="5" class="du-report__empty">Sin documentos en este grupo.</td>
+          </tr>
+          <tr *ngFor="let d of sec.docs">
+            <td>
+              <div class="du-report__doc">
+                <div class="du-report__doc-ico" [attr.data-tone]="statusTone(d)">
+                  <i class="fas" [ngClass]="sectionIcon(sec.code)"></i>
+                </div>
+                <div>
+                  <p class="du-report__doc-name">{{ d.typeLabel }}</p>
+                  <p class="du-report__doc-sub">{{ docSubtitle(d) }}</p>
+                </div>
+              </div>
+            </td>
+            <td>{{ formatDate(d.issueDate) }}</td>
+            <td [attr.data-tone]="statusTone(d)">{{ d.expiryDate ? formatDate(d.expiryDate) : '—' }}</td>
+            <td>
+              <span class="du-report__chip" [attr.data-tone]="statusTone(d)">{{ vigenciaText(d) }}</span>
+            </td>
+            <td>
+              <span class="du-report__pill" [attr.data-tone]="statusTone(d)">
+                <span class="du-report__dot"></span>
+                {{ statusText(d) }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
 </div>

@@ -7,7 +7,8 @@ import { switchMap } from 'rxjs/operators';
 import { FleetService } from '../../../../../../services/fleet.service';
 import { FleetDocumentationService } from '../../../../../../services/fleet-documentation.service';
 import { Vehicle } from '../../../../../../models/vehicle.model';
-import { FleetDocComplianceStatus } from '../../../../../../models/fleet-documentation.model';
+import { FleetComplianceDoc, FleetDocComplianceStatus } from '../../../../../../models/fleet-documentation.model';
+import { fleetDocCategoryLabel, normalizeFleetDocCategory } from '../../../../../../models/tipo-documento-vehiculo.model';
 
 type SortKey = 'daysAsc' | 'daysDesc' | 'placa';
 
@@ -26,6 +27,7 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
 
   search = '';
   sortKey: SortKey = 'daysAsc';
+  exportingExcel = false;
 
   /** Forzar repintado cuando cambia localStorage de documentación */
   private sub?: Subscription;
@@ -242,6 +244,156 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
     const c = v.clase || '—';
     const t = v.tipoVehiculo || '';
     return t ? `${c} · ${t}` : c;
+  }
+
+  exportExcelConsolidado(): void {
+    if (this.exportingExcel) return;
+    this.exportingExcel = true;
+    try {
+      const headers = [
+        'Placa',
+        'Código',
+        'Marca',
+        'Modelo',
+        'Clase',
+        'Tipo',
+        'Serie motor',
+        'Serie chasis',
+        'Propietario',
+        'Estado unidad',
+        'Grupo documento',
+        'Documento',
+        'Entidad remitente',
+        'Fecha emisión',
+        'Vencimiento',
+        'Días de vigencia',
+        'Estado documento',
+        'Activo'
+      ];
+      const rows: string[][] = [];
+      const units = [...this.vehicles].sort((a, b) => (a.placa || '').localeCompare(b.placa || '', 'es'));
+      for (const v of units) {
+        const docs = v.id != null ? this.docService.getDocuments(v.id) : [];
+        if (docs.length === 0) {
+          rows.push(this.excelUnitDocRow(v, null));
+          continue;
+        }
+        const ordered = [...docs].sort((a, b) => {
+          const ga = fleetDocCategoryLabel(normalizeFleetDocCategory(a.docCategory));
+          const gb = fleetDocCategoryLabel(normalizeFleetDocCategory(b.docCategory));
+          return ga.localeCompare(gb, 'es') || (a.typeLabel || '').localeCompare(b.typeLabel || '', 'es');
+        });
+        for (const d of ordered) {
+          rows.push(this.excelUnitDocRow(v, d));
+        }
+      }
+      const xml = this.buildExcelXml('Consolidado flota', headers, rows);
+      const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+      const a = document.createElement('a');
+      const day = new Date().toISOString().slice(0, 10);
+      a.href = URL.createObjectURL(blob);
+      a.download = `consolidado-documentacion-flota-${this.businessRuc}-${day}.xls`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } finally {
+      this.exportingExcel = false;
+    }
+  }
+
+  private excelUnitDocRow(v: Vehicle, d: FleetComplianceDoc | null): string[] {
+    return [
+      v.placa || '',
+      v.codigoEquipo || '',
+      v.marca || '',
+      v.modelo || '',
+      v.clase || '',
+      v.tipoVehiculo || '',
+      v.serieMotor || '',
+      v.serieChasis || '',
+      v.propietario || '',
+      this.estadoUnidadLabel(v),
+      d ? fleetDocCategoryLabel(normalizeFleetDocCategory(d.docCategory)) : '',
+      d ? (d.typeLabel || this.docService.labelForTypeCode(d.typeCode)) : '',
+      d ? (d.entidadRemitenteName || '') : '',
+      d ? this.formatExcelDate(d.issueDate) : '',
+      d ? this.formatExcelDate(d.expiryDate) : '',
+      d ? this.excelVigenciaText(d) : '',
+      d ? this.excelDocStatus(d) : 'Sin documentos',
+      d ? (d.active ? 'Sí' : 'No') : ''
+    ];
+  }
+
+  private estadoUnidadLabel(v: Vehicle): string {
+    switch (v.estadoActivo) {
+      case 'ACTIVO':
+        return 'Activo';
+      case 'EN_TALLER':
+        return 'En taller';
+      case 'DADO_DE_BAJA':
+        return 'Fuera de servicio';
+      default:
+        return v.estadoActivo || '';
+    }
+  }
+
+  private formatExcelDate(iso: string | null | undefined): string {
+    if (!iso) return '';
+    const dt = new Date(iso + 'T12:00:00');
+    return isNaN(dt.getTime())
+      ? iso
+      : dt.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  private excelVigenciaText(doc: FleetComplianceDoc): string {
+    if (!doc.active) return '';
+    const days = this.docService.daysToExpiry(doc.expiryDate);
+    if (days == null) {
+      return this.docService.complianceStatusForDoc(doc) === 'NO_CADUCA' ? 'No caduca' : '';
+    }
+    if (days < 0) {
+      const n = Math.abs(days);
+      return n === 1 ? 'Vencido hace 1 día' : `Vencido hace ${n} días`;
+    }
+    if (days === 0) return 'Vence hoy';
+    if (days === 1) return '1 día';
+    return `${days} días`;
+  }
+
+  private excelDocStatus(doc: FleetComplianceDoc): string {
+    if (!doc.active) return 'Inactivo';
+    const st = this.docService.complianceStatusForDoc(doc);
+    if (st === 'NO_CADUCA') return 'No caduca';
+    if (st === 'SIN_VIGENCIA') return 'Sin vigencia';
+    const days = this.docService.daysToExpiry(doc.expiryDate);
+    if (days == null) return 'Sin vigencia';
+    if (days <= 0) return 'Caducado';
+    if (days <= 10) return 'Por caducar';
+    if (days <= 30) return 'Próximo por caducar';
+    return 'Vigente';
+  }
+
+  private xmlEsc(value: string): string {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  private buildExcelXml(sheetName: string, headers: string[], rows: string[][]): string {
+    const cell = (text: string) =>
+      `<Cell><Data ss:Type="String">${this.xmlEsc(text)}</Data></Cell>`;
+    const headerRow = `<Row>${headers.map(h => cell(h)).join('')}</Row>`;
+    const body = rows.map(r => `<Row>${r.map(c => cell(c)).join('')}</Row>`).join('');
+    return (
+      `<?xml version="1.0" encoding="UTF-8"?>` +
+      `<?mso-application progid="Excel.Sheet"?>` +
+      `<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">` +
+      `<Worksheet ss:Name="${this.xmlEsc(sheetName)}"><Table>` +
+      headerRow +
+      body +
+      `</Table></Worksheet></Workbook>`
+    );
   }
 
   exportCsv(): void {

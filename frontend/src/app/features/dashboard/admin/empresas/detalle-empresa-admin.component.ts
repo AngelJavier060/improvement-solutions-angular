@@ -468,7 +468,11 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     this.isSuperAdmin = this.authService.hasRole('ROLE_SUPER_ADMIN');
     this.route.params.subscribe(params => {
       if (params['id']) {
-        this.empresaId = +params['id'];
+        const nextId = +params['id'];
+        if (this.empresaId != null && this.empresaId !== nextId) {
+          this.empresa = null;
+        }
+        this.empresaId = nextId;
         this.loadData();
         this.loadApprovals();
         this.loadBusinessAdmins();
@@ -1781,8 +1785,36 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     });
   }
 
+  private captureAdminScroll(): { windowY: number; mainY: number } {
+    const main = document.querySelector('main.main-content') as HTMLElement | null;
+    return {
+      windowY: window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0,
+      mainY: main ? main.scrollTop : 0
+    };
+  }
+
+  private restoreAdminScroll(pos: { windowY: number; mainY: number }): void {
+    const apply = () => {
+      const main = document.querySelector('main.main-content') as HTMLElement | null;
+      if (main) {
+        main.scrollTop = pos.mainY;
+      }
+      window.scrollTo(0, pos.windowY);
+      document.documentElement.scrollTop = pos.windowY;
+      document.body.scrollTop = pos.windowY;
+    };
+    apply();
+    requestAnimationFrame(apply);
+    setTimeout(apply, 0);
+    setTimeout(apply, 80);
+  }
+
   loadData(): void {
-    this.loading = true;
+    const keepView = !!this.empresa;
+    const scrollPos = keepView ? this.captureAdminScroll() : null;
+    if (!keepView) {
+      this.loading = true;
+    }
     this.error = null;
     
     console.log('Cargando datos para empresa ID:', this.empresaId);
@@ -1958,6 +1990,9 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         console.log('Documentos de la empresa:', empresa.type_documents?.length || 0);
 
         this.loading = false;
+        if (scrollPos) {
+          this.restoreAdminScroll(scrollPos);
+        }
         // Cargar listado de personal de esta empresa
         this.loadCompanyEmployees();
 
@@ -1987,6 +2022,9 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         if (error.status !== 200) {
           this.error = `Error al cargar la empresa: ${error.message || error.status || 'Error desconocido'}`;
           this.loading = false;
+          if (scrollPos) {
+            this.restoreAdminScroll(scrollPos);
+          }
         } else {
           console.log('Respuesta exitosa interpretada como error - ignorando');
         }

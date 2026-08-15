@@ -34,6 +34,19 @@ public class FleetVehiclePropietarioSchemaGuard implements CommandLineRunner {
                 jdbc.execute("ALTER TABLE fleet_vehicles ADD COLUMN propietario VARCHAR(255)");
                 log.info("[FleetVehiclePropietarioGuard] Columna propietario creada.");
             }
+            Boolean fkExists = jdbc.queryForObject(
+                    "SELECT EXISTS (" +
+                            " SELECT 1 FROM information_schema.columns" +
+                            " WHERE table_schema = 'public'" +
+                            "   AND table_name = 'fleet_vehicles'" +
+                            "   AND column_name = 'propietario_vehiculo_id'" +
+                            ")",
+                    Boolean.class
+            );
+            if (!Boolean.TRUE.equals(fkExists)) {
+                jdbc.execute("ALTER TABLE fleet_vehicles ADD COLUMN propietario_vehiculo_id BIGINT");
+                log.info("[FleetVehiclePropietarioGuard] Columna propietario_vehiculo_id creada.");
+            }
         } catch (Exception e) {
             log.warn("[FleetVehiclePropietarioGuard] No se pudo asegurar columna propietario: {}", e.getMessage());
         }

@@ -95,6 +95,31 @@ export class NuevaFichaComponent implements OnInit {
     });
   }
 
+  private resolvePropietarioId(v: Record<string, unknown>): number | null {
+    const raw = v['propietarioVehiculoId'];
+    if (raw != null && raw !== '') {
+      const n = Number(raw);
+      if (!Number.isNaN(n)) {
+        return n;
+      }
+    }
+    const name = String(v['propietario'] || '').trim().toLowerCase();
+    if (!name) {
+      return null;
+    }
+    const found = this.catalogs?.propietarioVehiculos?.find(
+      x => (x.name || '').trim().toLowerCase() === name
+    );
+    return found?.id ?? null;
+  }
+
+  private propietarioNameById(id: number | null | undefined): string {
+    if (id == null) {
+      return '';
+    }
+    return this.catalogs?.propietarioVehiculos?.find(x => x.id === id)?.name || '';
+  }
+
   private patchFormFromVehicle(v: Record<string, unknown>): void {
     this.vehicleForm.patchValue({
       codigoEquipo: v['codigoEquipo'] ?? '',
@@ -107,7 +132,7 @@ export class NuevaFichaComponent implements OnInit {
       anio: v['anio'] ?? null,
       serieChasis: v['serieChasis'] ?? '',
       serieMotor: v['serieMotor'] ?? '',
-      propietario: v['propietario'] ?? '',
+      propietarioVehiculoId: this.resolvePropietarioId(v),
       colorVehiculoId: v['colorVehiculoId'] ?? null,
       paisOrigenId: v['paisOrigenId'] ?? null,
       tipoCombustibleId: v['tipoCombustibleId'] ?? null,
@@ -149,7 +174,7 @@ export class NuevaFichaComponent implements OnInit {
       anio: [null as number | null],
       serieChasis: [''],
       serieMotor: [''],
-      propietario: [''],
+      propietarioVehiculoId: [null as number | null],
       colorVehiculoId: [null as number | null],
       paisOrigenId: [null as number | null],
       tipoCombustibleId: [null as number | null],
@@ -262,7 +287,8 @@ export class NuevaFichaComponent implements OnInit {
         anio: v.anio,
         serieChasis: v.serieChasis || undefined,
         serieMotor: v.serieMotor || undefined,
-        propietario: v.propietario || undefined,
+        propietarioVehiculoId: v.propietarioVehiculoId,
+        propietario: this.propietarioNameById(v.propietarioVehiculoId) || undefined,
         colorVehiculoId: v.colorVehiculoId,
         paisOrigenId: v.paisOrigenId,
         tipoCombustibleId: v.tipoCombustibleId,
