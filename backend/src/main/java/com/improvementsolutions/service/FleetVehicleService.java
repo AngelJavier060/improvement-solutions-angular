@@ -705,6 +705,7 @@ public class FleetVehicleService {
         List<EntidadRemitente> catalog =
                 businessService.listEntidadRemitentesByBusinessId(business.getId());
         realignComplianceWithCatalog(v, catalog);
+        archiveOlderActiveDuplicates(vehicleId);
         return fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(vehicleId).stream()
                 .map(d -> toComplianceResponse(d, ruc))
                 .collect(Collectors.toList());
@@ -1002,17 +1003,6 @@ public class FleetVehicleService {
         assertComplianceDocAllowed(business, v, erId, typeCode, null);
 
         FleetVehicleDocument attached = resolveAttachedFile(vehicleId, longOrNull(body.get("attachedFleetDocumentId")));
-        if (attached != null) {
-            // Evita duplicar filas al reimportar el mismo PDF
-            var existingOpt = fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(vehicleId)
-                    .stream()
-                    .filter(c -> c.getFleetVehicleDocument() != null
-                            && attached.getId().equals(c.getFleetVehicleDocument().getId()))
-                    .findFirst();
-            if (existingOpt.isPresent()) {
-                return toComplianceResponse(existingOpt.get(), ruc);
-            }
-        }
 
         FleetComplianceDocument doc = FleetComplianceDocument.builder()
                 .fleetVehicle(v)
@@ -1031,7 +1021,41 @@ public class FleetVehicleService {
                 .fleetVehicleDocument(attached)
                 .build();
 
-        return toComplianceResponse(fleetComplianceDocumentRepository.save(doc), ruc);
+        FleetComplianceDocument saved = fleetComplianceDocumentRepository.save(doc);
+        archiveOtherActiveOfSameIdentity(vehicleId, saved);
+        return toComplianceResponse(saved, ruc);
+    }
+
+    /**
+     * Renovación: crea la nueva versión (datos + PDF) y archiva la anterior
+     * con su respaldo, en la misma transacción.
+     */
+    @Transactional
+    public Map<String, Object> renewComplianceDocument(
+            String ruc, Long vehicleId, Long sourceDocId, Map<String, Object> body) {
+        fleetComplianceDocumentRepository
+                .findByIdAndFleetVehicle_Id(sourceDocId, vehicleId)
+                .orElseThrow(() -> new IllegalArgumentException("Documento a renovar no encontrado"));
+
+        Map<String, Object> created = createComplianceDocument(ruc, vehicleId, body);
+        Long keepId = longOrNull(created.get("id"));
+        FleetComplianceDocument keep = keepId != null
+                ? fleetComplianceDocumentRepository.findByIdAndFleetVehicle_Id(keepId, vehicleId).orElse(null)
+                : null;
+        if (keep != null) {
+            archiveOtherActiveOfSameIdentity(vehicleId, keep);
+        } else {
+            FleetComplianceDocument source = fleetComplianceDocumentRepository
+                    .findByIdAndFleetVehicle_Id(sourceDocId, vehicleId)
+                    .orElse(null);
+            if (source != null) {
+                source.setActive(false);
+                source.setHistoricMode(true);
+                fleetComplianceDocumentRepository.save(source);
+            }
+        }
+        log.info("[Fleet] Documento {} archivado tras renovación; vigente={}", sourceDocId, created.get("id"));
+        return created;
     }
 
     @Transactional
@@ -1125,7 +1149,8 @@ public class FleetVehicleService {
 
         Long fileId = doc.getFleetVehicleDocument() != null ? doc.getFleetVehicleDocument().getId() : null;
         fleetComplianceDocumentRepository.delete(doc);
-        if (fileId != null) {
+        fleetComplianceDocumentRepository.flush();
+        if (fileId != null && !fleetComplianceDocumentRepository.existsByFleetVehicleDocument_Id(fileId)) {
             try {
                 deleteVehicleDocument(ruc, vehicleId, fileId);
             } catch (IllegalArgumentException ignored) {
@@ -1178,6 +1203,66 @@ public class FleetVehicleService {
         m.put("createdAt", d.getCreatedAt() != null ? d.getCreatedAt().toString() : null);
         m.put("updatedAt", d.getUpdatedAt() != null ? d.getUpdatedAt().toString() : null);
         return m;
+    }
+
+    /** Deja un solo documento vigente por tipo/entidad; el resto pasa a histórico. */
+    private void archiveOlderActiveDuplicates(Long vehicleId) {
+        List<FleetComplianceDocument> all =
+                fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(vehicleId);
+        Map<String, List<FleetComplianceDocument>> groups = new LinkedHashMap<>();
+        for (FleetComplianceDocument d : all) {
+            if (d == null || Boolean.FALSE.equals(d.getActive()) || Boolean.TRUE.equals(d.getHistoricMode())) {
+                continue;
+            }
+            groups.computeIfAbsent(identityKey(d), k -> new ArrayList<>()).add(d);
+        }
+        for (List<FleetComplianceDocument> group : groups.values()) {
+            if (group.size() < 2) continue;
+            group.sort(this::compareRecency);
+            FleetComplianceDocument keep = group.get(0);
+            archiveOtherActiveOfSameIdentity(vehicleId, keep);
+        }
+    }
+
+    private void archiveOtherActiveOfSameIdentity(Long vehicleId, FleetComplianceDocument keep) {
+        if (keep == null || keep.getId() == null) return;
+        String key = identityKey(keep);
+        List<FleetComplianceDocument> all =
+                fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(vehicleId);
+        for (FleetComplianceDocument d : all) {
+            if (d == null || keep.getId().equals(d.getId())) continue;
+            if (Boolean.FALSE.equals(d.getActive()) || Boolean.TRUE.equals(d.getHistoricMode())) continue;
+            if (!key.equals(identityKey(d))) continue;
+            d.setActive(false);
+            d.setHistoricMode(true);
+            fleetComplianceDocumentRepository.save(d);
+            log.info("[Fleet] Documento duplicado archivado id={} key={}", d.getId(), key);
+        }
+    }
+
+    private static String identityKey(FleetComplianceDocument d) {
+        if (d.getEntidadRemitenteId() != null) {
+            return "er:" + d.getEntidadRemitenteId();
+        }
+        String code = d.getTypeCode() != null ? d.getTypeCode().trim() : "";
+        if (code.startsWith("er_")) return code.toLowerCase();
+        String label = d.getTypeLabel() != null ? d.getTypeLabel().trim().toLowerCase() : "";
+        return (code + "|" + label).toLowerCase();
+    }
+
+    /** Más reciente primero (fecha de emisión, luego actualización, luego id). */
+    private int compareRecency(FleetComplianceDocument a, FleetComplianceDocument b) {
+        LocalDate da = a.getIssueDate();
+        LocalDate db = b.getIssueDate();
+        if (da != null && db != null && !da.equals(db)) return db.compareTo(da);
+        if (da != null && db == null) return -1;
+        if (da == null && db != null) return 1;
+        java.time.LocalDateTime ua = a.getUpdatedAt();
+        java.time.LocalDateTime ub = b.getUpdatedAt();
+        if (ua != null && ub != null && !ua.equals(ub)) return ub.compareTo(ua);
+        long ia = a.getId() != null ? a.getId() : 0L;
+        long ib = b.getId() != null ? b.getId() : 0L;
+        return Long.compare(ib, ia);
     }
 
     private static String normalizeCategory(String raw) {

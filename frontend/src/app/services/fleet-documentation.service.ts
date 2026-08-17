@@ -402,8 +402,73 @@ export class FleetDocumentationService {
     );
   }
 
+  /** Documentos vigentes (un solo registro por tipo/entidad; el resto va al historial). */
+  getCurrentDocuments(vehicleId: number): FleetComplianceDoc[] {
+    const current = this.getDocuments(vehicleId).filter(d => d.active !== false && !d.historicMode);
+    const byKey = new Map<string, FleetComplianceDoc>();
+    for (const d of current) {
+      const k = this.docIdentityKey(d);
+      const prev = byKey.get(k);
+      if (!prev || this.isNewerDoc(d, prev)) byKey.set(k, d);
+    }
+    return [...byKey.values()].sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+  }
+
+  private docIdentityKey(d: FleetComplianceDoc): string {
+    if (d.entidadRemitenteId != null) return `er:${d.entidadRemitenteId}`;
+    const code = (d.typeCode || '').trim();
+    if (code.toLowerCase().startsWith('er_')) return code.toLowerCase();
+    return `${code}|${(d.typeLabel || '').trim()}`.toLowerCase();
+  }
+
+  private isNewerDoc(a: FleetComplianceDoc, b: FleetComplianceDoc): boolean {
+    const da = (a.issueDate || '').trim();
+    const db = (b.issueDate || '').trim();
+    if (da && db && da !== db) return da > db;
+    if (da && !db) return true;
+    if (!da && db) return false;
+    const ua = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const ub = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    if (ua !== ub) return ua > ub;
+    return Number(a.id) > Number(b.id);
+  }
+
+  /** Versiones archivadas en servidor (renovaciones anteriores). */
+  getArchivedDocuments(vehicleId: number): FleetComplianceDoc[] {
+    return this.getDocuments(vehicleId).filter(d => d.historicMode || d.active === false);
+  }
+
   getHistory(vehicleId: number): FleetDocHistoryEntry[] {
     return [...(this.bucket(vehicleId).history || [])].sort(
+      (a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+    );
+  }
+
+  /**
+   * Historial visible: versiones archivadas del servidor + eventos locales
+   * (ediciones/eliminaciones), sin duplicar el mismo documento.
+   */
+  getHistoryTimeline(vehicleId: number): FleetDocHistoryEntry[] {
+    const local = this.getHistory(vehicleId);
+    const seen = new Set<string>();
+    for (const e of local) {
+      if (e.replacedDocumentId) seen.add(String(e.replacedDocumentId));
+      if (e.snapshot?.id) seen.add(String(e.snapshot.id));
+    }
+    const fromServer: FleetDocHistoryEntry[] = this.getArchivedDocuments(vehicleId)
+      .filter(d => !seen.has(String(d.id)))
+      .map(d => ({
+        id: `srv_${d.id}`,
+        vehicleId,
+        replacedDocumentId: d.id,
+        action: 'UPDATED' as const,
+        snapshot: this.cloneDoc(d),
+        changedAt: d.updatedAt || d.createdAt,
+        note: 'Renovación: versión anterior archivada'
+      }));
+    return [...fromServer, ...local].sort(
       (a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
     );
   }
@@ -521,6 +586,47 @@ export class FleetDocumentationService {
         }),
         catchError(err => {
           console.error('[FleetDocs] create remoto falló', err);
+          return throwError(() => err);
+        })
+      );
+  }
+
+  /** Renueva: crea la nueva versión y archiva la anterior (datos + PDF) en el servidor. */
+  renewDocument$(
+    ruc: string,
+    vehicleId: number,
+    fromDocId: string,
+    payload: FleetDocRegistroPayload
+  ): Observable<FleetComplianceDoc> {
+    const numericId = Number(fromDocId);
+    if (!Number.isFinite(numericId) || numericId <= 0) {
+      return throwError(() => new Error('Documento a renovar no válido.'));
+    }
+    const prev = this.getDocumentById(vehicleId, fromDocId);
+    const typeLabel =
+      (payload.typeLabel && payload.typeLabel.trim()) || this.labelForTypeCode(payload.typeCode);
+    const body = this.toApiBody({ ...payload, typeLabel });
+    return this.http
+      .post<FleetComplianceApiDto>(
+        `${this.baseUrl}/${encodeURIComponent(ruc)}/vehicles/${vehicleId}/compliance-docs/${numericId}/renew`,
+        body
+      )
+      .pipe(
+        map(dto => this.fromApi(dto)),
+        tap(created => {
+          const b = this.bucket(vehicleId);
+          if (prev) {
+            this.pushHistory(vehicleId, String(fromDocId), 'UPDATED', prev, 'Renovación: versión anterior archivada');
+            const idx = b.docs.findIndex(d => String(d.id) === String(fromDocId));
+            if (idx >= 0) {
+              b.docs[idx] = { ...b.docs[idx], active: false, historicMode: true, updatedAt: new Date().toISOString() };
+            }
+          }
+          if (!b.docs.some(d => d.id === created.id)) b.docs.push(created);
+          this.persist(this.read());
+        }),
+        catchError(err => {
+          console.error('[FleetDocs] renovar remoto falló', err);
           return throwError(() => err);
         })
       );

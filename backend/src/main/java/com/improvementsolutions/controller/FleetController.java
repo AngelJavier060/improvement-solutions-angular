@@ -244,6 +244,27 @@ public class FleetController {
         }
     }
 
+    @PostMapping("/{ruc}/vehicles/{id}/compliance-docs/{docId}/renew")
+    public ResponseEntity<?> renewComplianceDoc(
+            @PathVariable String ruc,
+            @PathVariable Long id,
+            @PathVariable Long docId,
+            @RequestBody Map<String, Object> body) {
+        try {
+            Map<String, Object> created = fleetVehicleService.renewComplianceDocument(ruc, id, docId, body);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (IllegalArgumentException e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            HttpStatus status = msg.contains("no encontrado") ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status)
+                    .body(new ErrorResponse(e.getMessage(), status.name(), status.value()));
+        } catch (Exception e) {
+            log.error("[Fleet] renew compliance: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al renovar documentación", "INTERNAL", 500));
+        }
+    }
+
     @PostMapping("/{ruc}/vehicles/{id}/compliance-docs")
     public ResponseEntity<?> createComplianceDoc(
             @PathVariable String ruc,

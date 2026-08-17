@@ -194,6 +194,10 @@ public class Business {
     @Column(name = "maintenance_config", columnDefinition = "TEXT")
     private String maintenanceConfig;
 
+    // Avisos de caducidad (flota + personal): correos, umbrales y módulos (JSON)
+    @Column(name = "expiry_notification_config", columnDefinition = "TEXT")
+    private String expiryNotificationConfig;
+
     // Contactos de emergencia por empresa (JSON string de una lista de objetos {area, phone})
     @Column(name = "emergency_contacts", columnDefinition = "TEXT")
     private String emergencyContacts;

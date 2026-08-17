@@ -9,12 +9,17 @@
         Unidad
       </a>
       <i *ngIf="vehicle?.id" class="fas fa-chevron-right"></i>
-      <span aria-current="page">{{ editDocId ? 'Editar registro' : 'Nuevo registro' }}</span>
+      <span aria-current="page">{{ editDocId ? 'Editar registro' : (renewFromId ? 'Renovar registro' : 'Nuevo registro') }}</span>
     </nav>
     <div>
-      <h1 class="dr-title">Registro de documentación</h1>
+      <h1 class="dr-title">{{ renewFromId ? 'Renovar documentación' : 'Registro de documentación' }}</h1>
       <p class="dr-lead">
-        Complete los datos del documento. Puede adjuntar un PDF como respaldo; se guarda en el servidor vinculado a la unidad.
+        <ng-container *ngIf="renewFromId">
+          Ingrese las nuevas fechas y adjunte el PDF renovado. El documento anterior y su respaldo quedan en el historial.
+        </ng-container>
+        <ng-container *ngIf="!renewFromId">
+          Complete los datos del documento. Puede adjuntar un PDF como respaldo; se guarda en el servidor vinculado a la unidad.
+        </ng-container>
       </p>
     </div>
   </header>
@@ -108,7 +113,10 @@
           <div class="dr-form__col">
             <div class="dr-field">
               <label class="dr-label" for="dr-entidad">Documento / entidad que emite *</label>
-              <p class="dr-help">
+              <p class="dr-help" *ngIf="renewFromId">
+                Al renovar se mantiene el mismo documento. No puede cambiarse para evitar confusiones o duplicados.
+              </p>
+              <p class="dr-help" *ngIf="!renewFromId">
                 Solo documentos aplicables al tipo de esta unidad.
                 Los ya registrados (activos) no se listan para evitar duplicados; al eliminar o renovar vuelven a aparecer.
                 <ng-container *ngIf="availableEntidades().length">
@@ -129,7 +137,7 @@
                 class="dr-select"
                 formControlName="entidadRemitenteId"
                 [compareWith]="compareEntidadId">
-                <option [ngValue]="null">— Seleccione —</option>
+                <option *ngIf="!renewFromId" [ngValue]="null">— Seleccione —</option>
                 <ng-container *ngFor="let group of entidadGroups()">
                   <optgroup [label]="group.label">
                     <option *ngFor="let e of group.items" [ngValue]="e.id">{{ e.name }}</option>
@@ -139,9 +147,10 @@
             </div>
 
             <div class="dr-field dr-field--pdf">
-              <label class="dr-label">Respaldo PDF (opcional)</label>
+              <label class="dr-label">Respaldo PDF {{ renewFromId ? '(nuevo recomendado)' : '(opcional)' }}</label>
               <p class="dr-help">
                 Solo PDF. El archivo se almacena en el servidor y queda asociado a este registro de documentación.
+                <ng-container *ngIf="renewFromId"> Si no adjunta uno nuevo, se conserva el PDF anterior en la versión vigente y el original queda en el historial.</ng-container>
               </p>
               <div class="dr-file-row">
                 <label class="dr-file-btn" for="dr-pdf">
@@ -166,10 +175,11 @@
                   Quitar
                 </button>
               </div>
-              <div class="dr-file-existing" *ngIf="editDocId && hasExistingPdf && !pendingPdfFile">
-                <span>Archivo actual:</span>
+              <div class="dr-file-existing" *ngIf="(editDocId || renewFromId) && hasExistingPdf && !pendingPdfFile">
+                <span>{{ renewFromId ? 'PDF anterior (se archiva en historial):' : 'Archivo actual:' }}</span>
                 <strong>{{ existingPdfName || 'PDF adjunto' }}</strong>
-                <span class="dr-muted">(sustitúyalo eligiendo otro PDF)</span>
+                <span class="dr-muted" *ngIf="!renewFromId">(sustitúyalo eligiendo otro PDF)</span>
+                <span class="dr-muted" *ngIf="renewFromId">(opcional: elija el PDF renovado)</span>
               </div>
             </div>
           </div>
@@ -213,8 +223,8 @@
             </div>
           </div>
 
-          <!-- Toggles -->
-          <div class="dr-toggles">
+          <!-- Toggles (no en renovación: el sistema archiva el anterior automáticamente) -->
+          <div class="dr-toggles" *ngIf="!renewFromId">
             <div class="dr-toggle" [class.dr-toggle--on]="form.get('active')?.value">
               <span class="dr-toggle__label">Activo</span>
               <label class="dr-switch">
@@ -248,8 +258,8 @@
       <i class="fas fa-info-circle"></i>
       <p>
         <strong>Auditoría:</strong>
-        las ediciones archivan la versión anterior en el historial. Si al editar sube un PDF nuevo, tras guardar
-        correctamente se elimina el archivo anterior del servidor (si existía).
+        las ediciones y renovaciones archivan la versión anterior en el historial. Si al editar sube un PDF nuevo, tras guardar
+        correctamente se elimina el archivo anterior del servidor (si existía). Al renovar, el PDF previo se conserva como respaldo histórico.
       </p>
     </div>
   </ng-container>

@@ -1604,6 +1604,124 @@
     </div>
   </div>
 
+  <!-- Avisos de caducidad por correo (flota + personal) -->
+  <div class="row g-2 mb-3">
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-header py-2 px-3" style="background: linear-gradient(90deg, #1d4ed8 0%, #3b82f6 100%);">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-bell text-white me-2"></i>
+              <div>
+                <h6 class="text-white mb-0 fw-bold">Avisos de caducidad por correo</h6>
+                <small class="text-white-50">Flota y personal · tres avisos (30, 15 y 7 días) · independiente del taller</small>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="expiry-alerts-enabled" [(ngModel)]="expiryAlertConfig.enabled">
+                <label class="form-check-label text-white small" for="expiry-alerts-enabled">Activar</label>
+              </div>
+              <button type="button" class="btn btn-sm btn-light" (click)="saveExpiryAlertConfig()" [disabled]="savingExpiryAlerts">
+                <i class="fas" [ngClass]="savingExpiryAlerts ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                <span class="ms-1">Guardar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-3">
+          <div class="alert alert-light border py-2 small mb-3">
+            Cada mañana (08:00) el sistema envía un correo si un documento vigente vence exactamente en 30, 15 o 7 días.
+            Use <strong>Ver caducidades</strong> para listar lo que hay ahora (hasta 30 días) y <strong>Enviar prueba</strong> para confirmar que el correo llega.
+          </div>
+          <div *ngIf="expiryAlertError" class="alert alert-danger py-2 small mb-2">{{ expiryAlertError }}</div>
+          <div *ngIf="expiryAlertMsg" class="alert alert-success py-2 small mb-2">{{ expiryAlertMsg }}</div>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="fw-semibold small mb-2">Módulos a vigilar</div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" id="ea-fleet" [(ngModel)]="expiryAlertConfig.fleet"><label class="form-check-label small" for="ea-fleet">Flota (documentos de unidad)</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" id="ea-docs" [(ngModel)]="expiryAlertConfig.personnelDocuments"><label class="form-check-label small" for="ea-docs">Personal · documentos</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" id="ea-courses" [(ngModel)]="expiryAlertConfig.personnelCourses"><label class="form-check-label small" for="ea-courses">Personal · cursos</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" id="ea-cards" [(ngModel)]="expiryAlertConfig.personnelCards"><label class="form-check-label small" for="ea-cards">Personal · tarjetas</label></div>
+              <div class="form-check"><input class="form-check-input" type="checkbox" id="ea-contracts" [(ngModel)]="expiryAlertConfig.personnelContracts"><label class="form-check-label small" for="ea-contracts">Personal · contratos</label></div>
+              <div class="fw-semibold small mt-3 mb-2">Días de aviso</div>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-sm" [class.btn-primary]="isExpiryThresholdOn(30)" [class.btn-outline-secondary]="!isExpiryThresholdOn(30)" (click)="toggleExpiryThreshold(30)">30 días</button>
+                <button type="button" class="btn btn-sm" [class.btn-primary]="isExpiryThresholdOn(15)" [class.btn-outline-secondary]="!isExpiryThresholdOn(15)" (click)="toggleExpiryThreshold(15)">15 días</button>
+                <button type="button" class="btn btn-sm" [class.btn-primary]="isExpiryThresholdOn(7)" [class.btn-outline-secondary]="!isExpiryThresholdOn(7)" (click)="toggleExpiryThreshold(7)">7 días</button>
+              </div>
+            </div>
+            <div class="col-md-8">
+              <div class="fw-semibold small mb-2">Destinatarios</div>
+              <label class="form-label small mb-1">Correos adicionales</label>
+              <div class="d-flex gap-2 mb-2">
+                <input class="form-control form-control-sm" [(ngModel)]="expiryAlertEmailDraft" placeholder="correo@empresa.com" (keyup.enter)="addExpiryAlertEmail()">
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="addExpiryAlertEmail()">Agregar</button>
+              </div>
+              <div class="mb-3" *ngIf="expiryAlertConfig.emails?.length">
+                <span *ngFor="let e of expiryAlertConfig.emails" class="badge bg-light text-dark border me-1 mb-1">
+                  {{ e }}
+                  <button type="button" class="btn btn-sm p-0 ms-1 text-danger" (click)="removeExpiryAlertEmail(e)" title="Quitar">&times;</button>
+                </span>
+              </div>
+              <div class="text-muted small mb-2" *ngIf="!expiryAlertPeople().length">
+                No hay usuarios con correo en esta empresa. Agregue correos arriba o asigne usuarios.
+              </div>
+              <div class="border rounded p-2" style="max-height: 180px; overflow: auto;" *ngIf="expiryAlertPeople().length">
+                <div class="form-check" *ngFor="let u of expiryAlertPeople()">
+                  <input class="form-check-input" type="checkbox" [id]="'ea-user-' + u.id" [checked]="isExpiryUserSelected(u.id)" (change)="toggleExpiryUser(u.id)">
+                  <label class="form-check-label small" [for]="'ea-user-' + u.id">
+                    {{ u.name || u.username }} <span class="text-muted">&lt;{{ u.email }}&gt;</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button type="button" class="btn btn-sm btn-outline-primary" (click)="previewExpiryAlerts()" [disabled]="loadingExpiryPreview">
+              <i class="fas" [ngClass]="loadingExpiryPreview ? 'fa-spinner fa-spin' : 'fa-search'"></i>
+              <span class="ms-1">Ver caducidades</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-primary" (click)="sendExpiryAlertTest()" [disabled]="sendingExpiryTest">
+              <i class="fas" [ngClass]="sendingExpiryTest ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+              <span class="ms-1">Enviar prueba</span>
+            </button>
+          </div>
+
+          <div class="table-responsive mt-3" *ngIf="expiryAlertPreview">
+            <div class="small text-muted mb-2">
+              Destinatarios: {{ (expiryAlertPreview.recipients || []).join(', ') || 'ninguno' }}
+              · SMTP: {{ expiryAlertPreview.mailConfigured ? 'configurado' : 'no configurado' }}
+            </div>
+            <table class="table table-sm table-hover mb-0" *ngIf="expiryAlertPreview.items?.length">
+              <thead class="table-light">
+                <tr>
+                  <th>Módulo</th>
+                  <th>Referencia</th>
+                  <th>Documento</th>
+                  <th>Vence</th>
+                  <th>Quedan</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let it of expiryAlertPreview.items">
+                  <td>{{ it.module }}</td>
+                  <td>{{ it.subject }}</td>
+                  <td>{{ it.document }}</td>
+                  <td>{{ it.expiryDate }}</td>
+                  <td>{{ it.daysLeft }} día(s)</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="text-muted small" *ngIf="!expiryAlertPreview.items?.length">No hay caducidades en la ventana de avisos.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Configuración de Mantenimiento por Empresa (intervalos, notificaciones) -->
   <div class="row g-2 mb-4">
     <div class="col-12">

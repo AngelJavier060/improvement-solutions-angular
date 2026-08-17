@@ -150,7 +150,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   }
 
   totalDocsCount(): number {
-    return this.docService.getDocuments(this.vehicleId).length;
+    return this.docService.getCurrentDocuments(this.vehicleId).length;
   }
 
   /** Subtítulo: descripción de la entidad remitente o nombre. */
@@ -165,7 +165,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   }
 
   filteredDocs(): FleetComplianceDoc[] {
-    const all = this.docService.getDocuments(this.vehicleId);
+    const all = this.docService.getCurrentDocuments(this.vehicleId);
     const q = this.search.trim().toLowerCase();
     if (!q) return all;
     return all.filter(
@@ -209,7 +209,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   }
 
   reportSections(): DocSection[] {
-    const all = this.docService.getDocuments(this.vehicleId);
+    const all = this.docService.getCurrentDocuments(this.vehicleId);
     return FLEET_DOC_CATEGORIES.map(c => ({
       code: c.code,
       label: c.label,

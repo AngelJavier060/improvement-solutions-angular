@@ -19,4 +19,17 @@ public interface FleetComplianceDocumentRepository extends JpaRepository<FleetCo
     List<FleetComplianceDocument> findByBusinessRuc(@Param("ruc") String ruc);
 
     boolean existsByFleetVehicleDocument_Id(Long fleetVehicleDocumentId);
+
+    @Query("SELECT DISTINCT d FROM FleetComplianceDocument d " +
+           "JOIN FETCH d.fleetVehicle v " +
+           "JOIN v.business b " +
+           "WHERE b.id = :businessId " +
+           "AND (d.active = true OR d.active IS NULL) " +
+           "AND (d.historicMode = false OR d.historicMode IS NULL) " +
+           "AND d.expiryDate IS NOT NULL " +
+           "AND d.expiryDate BETWEEN :from AND :to")
+    List<FleetComplianceDocument> findActiveExpiringBetween(
+            @Param("businessId") Long businessId,
+            @Param("from") java.time.LocalDate from,
+            @Param("to") java.time.LocalDate to);
 }

@@ -42,6 +42,7 @@ public class BusinessController {
     private final ContractorCompanyRepository contractorCompanyRepository;
     private final ContractorBlockRepository contractorBlockRepository;
     private final RoleRepository roleRepository;
+    private final com.improvementsolutions.service.ExpiryNotificationService expiryNotificationService;
 
     // Endpoints para el administrador
     @GetMapping("/admin/dashboard")
@@ -1188,6 +1189,42 @@ public class BusinessController {
             @RequestBody String maintenanceJson) {
         String saved = businessService.updateMaintenanceConfig(businessId, maintenanceJson);
         return ResponseEntity.ok(saved);
+    }
+
+    @GetMapping("/{businessId}/expiry-alerts")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<com.improvementsolutions.dto.expiry.ExpiryAlertConfigDto> getExpiryAlerts(
+            @PathVariable Long businessId) {
+        return ResponseEntity.ok(expiryNotificationService.getConfig(businessId));
+    }
+
+    @PutMapping("/{businessId}/expiry-alerts")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<com.improvementsolutions.dto.expiry.ExpiryAlertConfigDto> updateExpiryAlerts(
+            @PathVariable Long businessId,
+            @RequestBody com.improvementsolutions.dto.expiry.ExpiryAlertConfigDto body) {
+        return ResponseEntity.ok(expiryNotificationService.saveConfig(businessId, body));
+    }
+
+    @GetMapping("/{businessId}/expiry-alerts/preview")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<com.improvementsolutions.dto.expiry.ExpiryAlertPreviewDto> previewExpiryAlerts(
+            @PathVariable Long businessId) {
+        return ResponseEntity.ok(expiryNotificationService.preview(businessId));
+    }
+
+    @PostMapping("/{businessId}/expiry-alerts/test")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<com.improvementsolutions.dto.expiry.ExpiryAlertPreviewDto> testExpiryAlerts(
+            @PathVariable Long businessId) {
+        return ResponseEntity.ok(expiryNotificationService.sendTest(businessId));
+    }
+
+    @PostMapping("/{businessId}/expiry-alerts/run")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<com.improvementsolutions.dto.expiry.ExpiryAlertPreviewDto> runExpiryAlerts(
+            @PathVariable Long businessId) {
+        return ResponseEntity.ok(expiryNotificationService.runForBusiness(businessId));
     }
 
     // === ENDPOINTS DE CONTACTOS DE EMERGENCIA (por empresa) ===

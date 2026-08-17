@@ -192,11 +192,14 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
 
   /**
    * Entidades aplicables al tipo, menos las ya registradas en la unidad
-   * (excepto el documento en edición/renovación).
+   * (excepto el documento en edición). En renovación solo se muestra el mismo documento.
    */
   availableEntidades(): MaintenanceCatalogItem[] {
-    const used = this.usedEntidadIdsOnVehicle();
     const allowed = this.exceptionEntidadIds();
+    if (this.renewFromId) {
+      return (this.entidadRemitentes || []).filter(e => allowed.has(Number(e?.id)));
+    }
+    const used = this.usedEntidadIdsOnVehicle();
     return (this.entidadRemitentes || []).filter(e => {
       const id = Number(e?.id);
       if (!Number.isFinite(id) || id <= 0) return false;
@@ -211,7 +214,9 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     if (this.selectedVehicleId == null) return used;
     for (const d of this.docService.getDocuments(this.selectedVehicleId)) {
       if (this.editDocId && String(d.id) === String(this.editDocId)) {
-        // El que se edita no cuenta como “otro” duplicado
+        continue;
+      }
+      if (this.renewFromId && String(d.id) === String(this.renewFromId)) {
         continue;
       }
       if (d.active === false || d.historicMode) continue;
@@ -351,12 +356,15 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Si editamos un doc fuera del set actual, lo incluimos para no romper el formulario. */
+  /** Si editamos o renovamos un doc fuera del set actual, lo incluimos para no romper el formulario. */
   private ensureCurrentDocInOptions(): void {
     const snap =
       this.pendingEditSnapshot ||
-      (this.editDocId && this.selectedVehicleId != null
-        ? this.docService.getDocumentById(this.selectedVehicleId, this.editDocId)
+      (this.selectedVehicleId != null
+        ? this.docService.getDocumentById(
+            this.selectedVehicleId,
+            this.editDocId || this.renewFromId || ''
+          )
         : undefined);
     if (!snap) return;
 
@@ -454,6 +462,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
         this.pendingPdfFile = null;
         this.existingPdfUrl = doc.attachedDocumentUrl ?? null;
         this.existingPdfName = doc.fileName ?? (doc.attachedFleetDocumentId != null ? 'PDF adjunto' : null);
+        this.form.get('entidadRemitenteId')?.enable({ emitEvent: false });
         this.form.patchValue({
           typeCode: doc.typeCode || '',
           entidadRemitenteId: this.resolveEntidadId(doc),
@@ -471,13 +480,13 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Renovación: mismo tipo, fechas vacías, sin PDF previo (alta nueva)
+    // Renovación: mismo documento (bloqueado), fechas vacías, PDF nuevo opcional
     if (this.renewFromId && vid != null) {
       const src = this.resolveDocForForm(this.renewFromId);
       if (src) {
         this.pendingPdfFile = null;
-        this.existingPdfUrl = null;
-        this.existingPdfName = null;
+        this.existingPdfUrl = src.attachedDocumentUrl ?? null;
+        this.existingPdfName = src.fileName ?? (src.attachedFleetDocumentId != null ? 'PDF anterior' : null);
         this.form.patchValue({
           typeCode: src.typeCode || '',
           entidadRemitenteId: this.resolveEntidadId(src),
@@ -487,6 +496,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
           active: true,
           historicMode: false
         });
+        this.form.get('entidadRemitenteId')?.disable({ emitEvent: false });
         this.syncExpiryControl();
         this.cdr.detectChanges();
         return;
@@ -494,6 +504,8 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       this.error = 'No se encontró el documento a renovar. Vuelva al listado e intente de nuevo.';
       return;
     }
+
+    this.form.get('entidadRemitenteId')?.enable({ emitEvent: false });
 
     this.pendingPdfFile = null;
     this.existingPdfUrl = null;
@@ -622,6 +634,11 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       this.editDocId && this.selectedVehicleId != null
         ? this.docService.getDocumentById(this.selectedVehicleId, this.editDocId)
         : undefined;
+    const sourceDoc =
+      this.renewFromId && this.selectedVehicleId != null
+        ? this.resolveDocForForm(this.renewFromId)
+        : undefined;
+    const pdfFallback = prevDoc || sourceDoc;
 
     const buildPayload = (
       attach: { id: number; url: string; name: string; sizeLabel?: string } | null
@@ -630,23 +647,25 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
       let attUrl: string | null = attach?.url ?? null;
       let fn: string | undefined = attach?.name;
       let sz: string | undefined = attach?.sizeLabel;
-      if (!attach && prevDoc) {
-        attId = prevDoc.attachedFleetDocumentId ?? null;
-        attUrl = prevDoc.attachedDocumentUrl ?? null;
-        fn = prevDoc.fileName;
-        sz = prevDoc.fileSizeLabel;
+      if (!attach && pdfFallback) {
+        attId = pdfFallback.attachedFleetDocumentId ?? null;
+        attUrl = pdfFallback.attachedDocumentUrl ?? null;
+        fn = pdfFallback.fileName;
+        sz = pdfFallback.fileSizeLabel;
       }
       return {
         typeCode: `er_${ent.id}`,
         typeLabel: ent.name,
-        docCategory: normalizeFleetDocCategory(ent.category || prevDoc?.docCategory || 'DOCUMENTOS_PRINCIPALES'),
+        docCategory: normalizeFleetDocCategory(
+          ent.category || pdfFallback?.docCategory || 'DOCUMENTOS_PRINCIPALES'
+        ),
         entidadRemitenteId: ent.id,
         entidadRemitenteName: ent.name ?? null,
         referenceId: '',
         issueDate: v.issueDate!,
         expiryDate: v.noCaduca ? null : v.expiryDate || null,
-        active: !!v.active,
-        historicMode: !!v.historicMode,
+        active: this.renewFromId ? true : !!v.active,
+        historicMode: this.renewFromId ? false : !!v.historicMode,
         fileName: fn,
         fileSizeLabel: sz,
         attachedFleetDocumentId: attId,
@@ -687,7 +706,7 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
                 afterPersistFail('No se pudo guardar el registro tras subir el archivo.');
                 return;
               }
-              if (oldFleetDocId != null && oldFleetDocId !== dto.id) {
+              if (oldFleetDocId != null && oldFleetDocId !== dto.id && !this.renewFromId) {
                 this.fleetService
                   .deleteVehicleDocument(this.businessRuc, vid, oldFleetDocId)
                   .pipe(catchError(() => of(void 0)))
@@ -740,6 +759,11 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
           }
           return true;
         })
+      );
+    }
+    if (this.renewFromId) {
+      return this.docService.renewDocument$(this.businessRuc, vid, this.renewFromId, payload).pipe(
+        map(() => true)
       );
     }
     return this.docService.createDocument$(this.businessRuc, vid, payload).pipe(map(() => true));

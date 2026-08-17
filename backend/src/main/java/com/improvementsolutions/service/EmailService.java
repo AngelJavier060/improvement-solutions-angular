@@ -56,6 +56,31 @@ public class EmailService {
             throw new RuntimeException("Error al enviar el correo electrónico: " + e.getMessage());
         }
     }
+
+    public boolean isConfigured() {
+        return mailSender != null && from != null && !from.isBlank();
+    }
+
+    public boolean sendHtml(String to, String subject, String htmlContent) {
+        if (!isConfigured()) {
+            logger.warn("JavaMailSender no configurado. Omitiendo envío a {}", to);
+            return false;
+        }
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from, fromName);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+            logger.info("Correo enviado a: {} asunto={}", to, subject);
+            return true;
+        } catch (Exception e) {
+            logger.error("Error al enviar correo a {}: {}", to, e.getMessage());
+            return false;
+        }
+    }
     
     /**
      * Crea el contenido HTML del correo de restablecimiento de contraseña

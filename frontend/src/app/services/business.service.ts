@@ -262,4 +262,24 @@ export class BusinessService {
       { entidadRemitenteIds }
     );
   }
+
+  getExpiryAlertConfig(businessId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${businessId}/expiry-alerts`);
+  }
+
+  updateExpiryAlertConfig(businessId: number, config: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${businessId}/expiry-alerts`, config);
+  }
+
+  previewExpiryAlerts(businessId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${businessId}/expiry-alerts/preview`);
+  }
+
+  testExpiryAlerts(businessId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/expiry-alerts/test`, {});
+  }
+
+  runExpiryAlerts(businessId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/expiry-alerts/run`, {});
+  }
 }

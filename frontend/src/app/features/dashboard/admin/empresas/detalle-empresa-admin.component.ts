@@ -247,6 +247,15 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   docsPorTipoError = '';
   docsPorTipoOk = '';
 
+  expiryAlertConfig: any = this.defaultExpiryAlertConfig();
+  expiryAlertEmailDraft = '';
+  savingExpiryAlerts = false;
+  expiryAlertMsg = '';
+  expiryAlertError = '';
+  expiryAlertPreview: any = null;
+  loadingExpiryPreview = false;
+  sendingExpiryTest = false;
+
   // Tipos de Combustible
   tipoCombustibles: any[] = [];
   allTipoCombustibles: any[] = [];
@@ -586,6 +595,153 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       error: () => {
         this.savingMaintenance = false;
         alert('No se pudo guardar la configuración de mantenimiento');
+      }
+    });
+  }
+
+  private defaultExpiryAlertConfig(): any {
+    return {
+      enabled: true,
+      emails: [] as string[],
+      userIds: [] as number[],
+      thresholds: [30, 15, 7],
+      fleet: true,
+      personnelDocuments: true,
+      personnelCourses: true,
+      personnelCards: true,
+      personnelContracts: true
+    };
+  }
+
+  expiryAlertPeople(): any[] {
+    const map = new Map<number, any>();
+    [...(this.users || []), ...(this.businessAdmins || [])].forEach((u: any) => {
+      if (u?.id && u?.email) map.set(u.id, u);
+    });
+    return Array.from(map.values());
+  }
+
+  loadExpiryAlertConfig(): void {
+    if (!this.empresaId) return;
+    this.businessService.getExpiryAlertConfig(this.empresaId).subscribe({
+      next: (cfg) => {
+        const def = this.defaultExpiryAlertConfig();
+        this.expiryAlertConfig = { ...def, ...(cfg || {}) };
+        this.expiryAlertConfig.emails = Array.isArray(this.expiryAlertConfig.emails) ? this.expiryAlertConfig.emails : [];
+        this.expiryAlertConfig.userIds = Array.isArray(this.expiryAlertConfig.userIds) ? this.expiryAlertConfig.userIds : [];
+        this.expiryAlertConfig.thresholds = Array.isArray(this.expiryAlertConfig.thresholds) && this.expiryAlertConfig.thresholds.length
+          ? this.expiryAlertConfig.thresholds
+          : def.thresholds;
+      },
+      error: () => {
+        this.expiryAlertConfig = this.defaultExpiryAlertConfig();
+      }
+    });
+  }
+
+  isExpiryThresholdOn(days: number): boolean {
+    return Array.isArray(this.expiryAlertConfig?.thresholds) && this.expiryAlertConfig.thresholds.includes(days);
+  }
+
+  toggleExpiryThreshold(days: number): void {
+    const cur: number[] = Array.isArray(this.expiryAlertConfig.thresholds) ? [...this.expiryAlertConfig.thresholds] : [];
+    const i = cur.indexOf(days);
+    if (i >= 0) cur.splice(i, 1);
+    else cur.push(days);
+    this.expiryAlertConfig.thresholds = cur.sort((a, b) => b - a);
+  }
+
+  isExpiryUserSelected(userId: number): boolean {
+    return Array.isArray(this.expiryAlertConfig?.userIds) && this.expiryAlertConfig.userIds.includes(userId);
+  }
+
+  toggleExpiryUser(userId: number): void {
+    const cur: number[] = Array.isArray(this.expiryAlertConfig.userIds) ? [...this.expiryAlertConfig.userIds] : [];
+    const i = cur.indexOf(userId);
+    if (i >= 0) cur.splice(i, 1);
+    else cur.push(userId);
+    this.expiryAlertConfig.userIds = cur;
+  }
+
+  addExpiryAlertEmail(): void {
+    const raw = (this.expiryAlertEmailDraft || '').trim();
+    if (!raw) return;
+    const emails: string[] = Array.isArray(this.expiryAlertConfig.emails) ? [...this.expiryAlertConfig.emails] : [];
+    raw.split(/[,;\s]+/).forEach((part) => {
+      const e = part.trim().toLowerCase();
+      if (e && e.includes('@') && !emails.includes(e)) emails.push(e);
+    });
+    this.expiryAlertConfig.emails = emails;
+    this.expiryAlertEmailDraft = '';
+  }
+
+  removeExpiryAlertEmail(email: string): void {
+    this.expiryAlertConfig.emails = (this.expiryAlertConfig.emails || []).filter((e: string) => e !== email);
+  }
+
+  saveExpiryAlertConfig(): void {
+    if (!this.empresaId) return;
+    this.addExpiryAlertEmail();
+    this.savingExpiryAlerts = true;
+    this.expiryAlertError = '';
+    this.expiryAlertMsg = '';
+    this.businessService.updateExpiryAlertConfig(this.empresaId, this.expiryAlertConfig).subscribe({
+      next: (saved) => {
+        this.expiryAlertConfig = { ...this.defaultExpiryAlertConfig(), ...(saved || {}) };
+        this.savingExpiryAlerts = false;
+        this.expiryAlertMsg = 'Configuración de avisos guardada.';
+      },
+      error: () => {
+        this.savingExpiryAlerts = false;
+        this.expiryAlertError = 'No se pudo guardar la configuración de avisos.';
+      }
+    });
+  }
+
+  previewExpiryAlerts(): void {
+    if (!this.empresaId) return;
+    this.loadingExpiryPreview = true;
+    this.expiryAlertError = '';
+    this.expiryAlertMsg = '';
+    this.businessService.previewExpiryAlerts(this.empresaId).subscribe({
+      next: (res) => {
+        this.expiryAlertPreview = res;
+        this.loadingExpiryPreview = false;
+        this.expiryAlertMsg = res?.message || '';
+      },
+      error: () => {
+        this.loadingExpiryPreview = false;
+        this.expiryAlertError = 'No se pudo consultar las caducidades.';
+      }
+    });
+  }
+
+  sendExpiryAlertTest(): void {
+    if (!this.empresaId) return;
+    this.addExpiryAlertEmail();
+    this.sendingExpiryTest = true;
+    this.expiryAlertError = '';
+    this.expiryAlertMsg = '';
+    this.businessService.updateExpiryAlertConfig(this.empresaId, this.expiryAlertConfig).subscribe({
+      next: () => {
+        this.businessService.testExpiryAlerts(this.empresaId!).subscribe({
+          next: (res) => {
+            this.expiryAlertPreview = res;
+            this.sendingExpiryTest = false;
+            this.expiryAlertMsg = res?.message || '';
+            if (!res?.mailConfigured) {
+              this.expiryAlertError = 'SMTP no está configurado en el servidor; el listado sí se generó.';
+            }
+          },
+          error: () => {
+            this.sendingExpiryTest = false;
+            this.expiryAlertError = 'No se pudo enviar el correo de prueba.';
+          }
+        });
+      },
+      error: () => {
+        this.sendingExpiryTest = false;
+        this.expiryAlertError = 'Guarde la configuración antes de enviar la prueba.';
       }
     });
   }
@@ -1945,6 +2101,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.loadConfigurationData();
         // Cargar configuración de mantenimiento específica de esta empresa
         this.loadMaintenanceConfig();
+        this.loadExpiryAlertConfig();
         
         // Cargar todos los parámetros de mantenimiento asignados a la empresa
         this.tipoVehiculos = empresa.tipoVehiculos || [];
