@@ -1532,7 +1532,7 @@
           <div class="alert alert-light border py-2 small mb-3">
             <ol class="mb-0 ps-3">
               <li>Elija un <strong>tipo</strong> (ej. Vacumm).</li>
-              <li>Marque los documentos que aplican a ese tipo.</li>
+              <li>Marque los documentos que aplican a ese tipo (incluye Documentos Adicionales del catálogo general).</li>
               <li>Pulse <strong>Guardar</strong>.</li>
               <li>En flota, al registrar docs de una unidad, solo verá los del tipo de esa unidad.</li>
             </ol>
@@ -1543,11 +1543,11 @@
           <div *ngIf="!tipoVehiculos?.length" class="text-muted small mb-0">
             Asigne al menos un tipo de vehículo a la empresa para configurar documentos.
           </div>
-          <div *ngIf="tipoVehiculos?.length && !entidadRemitentes?.length" class="text-muted small mb-0">
-            Asigne entidades remitente (documentos de flota) a la empresa antes de asociarlas a un tipo.
+          <div *ngIf="tipoVehiculos?.length && !hasDocsPorTipoSource()" class="text-muted small mb-0">
+            Cree documentos en Configuración general → Entidad remitente (incluya Documentos Adicionales) para poder asociarlos a un tipo.
           </div>
 
-          <div class="row g-3" *ngIf="tipoVehiculos?.length && entidadRemitentes?.length">
+          <div class="row g-3" *ngIf="tipoVehiculos?.length && hasDocsPorTipoSource()">
             <div class="col-md-4">
               <label class="form-label fw-semibold small mb-1">Tipo de vehículo</label>
               <select
@@ -1577,7 +1577,7 @@
                 </div>
                 <div *ngFor="let g of docsPorTipoGroups" class="mb-3">
                   <div class="fw-semibold small text-secondary mb-1">{{ g.label }}</div>
-                  <div class="row g-2">
+                  <div class="row g-2" *ngIf="g.items.length">
                     <div class="col-md-6" *ngFor="let er of g.items; trackBy: trackByErId">
                       <button
                         type="button"
@@ -1594,8 +1594,8 @@
                       </button>
                     </div>
                   </div>
+                  <div *ngIf="!g.items.length" class="text-muted small">Sin documentos en este grupo.</div>
                 </div>
-                <div *ngIf="!docsPorTipoGroups.length" class="text-muted small">Sin documentos disponibles.</div>
               </div>
             </div>
           </div>
@@ -3708,7 +3708,11 @@
         <p class="text-muted small mb-3">Seleccione del catálogo global para asignarlo a <strong>{{ empresa?.name }}</strong>.</p>
         <select class="form-select" [(ngModel)]="selectedEntidadRemId">
           <option [ngValue]="null" disabled>-- Seleccione --</option>
-          <option *ngFor="let item of availableEntidadRems()" [ngValue]="item.id">{{ item.name }} {{ item.description ? '- ' + item.description : '' }}</option>
+          <ng-container *ngFor="let g of availableEntidadRemGroups()">
+            <optgroup [label]="g.label">
+              <option *ngFor="let item of g.items" [ngValue]="item.id">{{ item.name }} {{ item.description ? '- ' + item.description : '' }}</option>
+            </optgroup>
+          </ng-container>
         </select>
         <div *ngIf="availableEntidadRems().length === 0" class="alert alert-info small py-2 mt-2"><i class="fas fa-info-circle me-1"></i>No hay elementos disponibles.</div>
       </div>

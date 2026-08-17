@@ -1181,7 +1181,10 @@ public class FleetVehicleService {
     }
 
     private static String normalizeCategory(String raw) {
-        if ("CERTIFICACIONES".equals(raw) || "LIBERACIONES".equals(raw) || "DOCUMENTOS_PRINCIPALES".equals(raw)) {
+        if ("CERTIFICACIONES".equals(raw)
+                || "LIBERACIONES".equals(raw)
+                || "DOCUMENTOS_PRINCIPALES".equals(raw)
+                || "DOCUMENTOS_ADICIONALES".equals(raw)) {
             return raw;
         }
         return "DOCUMENTOS_PRINCIPALES";

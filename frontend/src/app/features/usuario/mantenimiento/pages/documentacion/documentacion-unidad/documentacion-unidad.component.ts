@@ -469,6 +469,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   sectionIcon(code: FleetDocCategory): string {
     if (code === 'CERTIFICACIONES') return 'fa-certificate';
     if (code === 'LIBERACIONES') return 'fa-clipboard-check';
+    if (code === 'DOCUMENTOS_ADICIONALES') return 'fa-folder-plus';
     return 'fa-file-contract';
   }
 

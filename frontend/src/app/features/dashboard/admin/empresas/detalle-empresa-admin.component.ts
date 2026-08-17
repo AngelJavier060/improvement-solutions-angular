@@ -4244,7 +4244,12 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     ];
     endpoints.forEach(ep => {
       this.http.get<any[]>(ep.url).subscribe({
-        next: (data: any[]) => { (this as any)[ep.prop] = data || []; },
+        next: (data: any[]) => {
+          (this as any)[ep.prop] = data || [];
+          if (ep.prop === 'allEntidadRemitentes') {
+            this.refreshDocsPorTipoGroups();
+          }
+        },
         error: (err: any) => console.error(`Error cargando ${ep.url}:`, err)
       });
     });
@@ -4381,8 +4386,21 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   openAsignEntidadRemModal(): void { this.showAsignEntidadRemModal = true; this.selectedEntidadRemId = null; }
   closeAsignEntidadRemModal(): void { this.showAsignEntidadRemModal = false; }
   availableEntidadRems(): any[] {
-    const ids = this.entidadRemitentes.map((e: any) => e.id);
-    return this.allEntidadRemitentes.filter((e: any) => !ids.includes(e.id));
+    const ids = new Set((this.entidadRemitentes || []).map((e: any) => Number(e.id)));
+    return (this.allEntidadRemitentes || []).filter((e: any) => !ids.has(Number(e.id)));
+  }
+
+  availableEntidadRemGroups(): Array<{ code: string; label: string; items: any[] }> {
+    const available = this.availableEntidadRems();
+    return FLEET_DOC_CATEGORIES.map(g => ({
+      code: g.code,
+      label: g.label,
+      items: available.filter((e: any) => normalizeFleetDocCategory(e?.category) === g.code)
+    })).filter(g => g.items.length > 0);
+  }
+
+  hasDocsPorTipoSource(): boolean {
+    return (this.entidadRemitentes?.length || 0) > 0 || (this.allEntidadRemitentes?.length || 0) > 0;
   }
   assignEntidadRem(): void {
     if (!this.selectedEntidadRemId) return;
@@ -4486,13 +4504,27 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   }
 
   refreshDocsPorTipoGroups(): void {
+    const byId = new Map<number, any>();
+    for (const e of this.allEntidadRemitentes || []) {
+      const id = Number(e?.id);
+      if (Number.isFinite(id) && id > 0) byId.set(id, { ...e });
+    }
+    for (const e of this.entidadRemitentes || []) {
+      const id = Number(e?.id);
+      if (!Number.isFinite(id) || id <= 0) continue;
+      const fromCatalog = byId.get(id);
+      byId.set(id, {
+        ...(fromCatalog || {}),
+        ...e,
+        category: e?.category || fromCatalog?.category
+      });
+    }
+    const items = Array.from(byId.values());
     this.docsPorTipoGroups = FLEET_DOC_CATEGORIES.map(g => ({
       code: g.code,
       label: g.label,
-      items: (this.entidadRemitentes || []).filter(
-        (e: any) => normalizeFleetDocCategory(e?.category) === g.code
-      )
-    })).filter(g => g.items.length > 0);
+      items: items.filter((e: any) => normalizeFleetDocCategory(e?.category) === g.code)
+    }));
   }
 
   trackByErId(_index: number, er: any): number | string {
@@ -4517,6 +4549,14 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         this.docsPorTipoOk = n === 0
           ? `Sin documentos asociados a “${tipoName}”. Las unidades de este tipo no podrán registrar docs hasta configurar al menos uno.`
           : `Guardado: ${n} documento(s) para el tipo “${tipoName}”. Aplica a todas las unidades con ese tipo.`;
+        const assignedIds = new Set((this.entidadRemitentes || []).map((e: any) => Number(e.id)));
+        const extras = (this.allEntidadRemitentes || []).filter(
+          (e: any) => this.selectedDocsTipoIds.includes(Number(e.id)) && !assignedIds.has(Number(e.id))
+        );
+        if (extras.length) {
+          this.entidadRemitentes = [...this.entidadRemitentes, ...extras];
+        }
+        this.refreshDocsPorTipoGroups();
         this.loadDocsPorTipoSummary();
       },
       error: (err) => {

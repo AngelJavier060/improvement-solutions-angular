@@ -24,7 +24,7 @@ public class EntidadRemitente {
     private String description;
 
     /**
-     * Grupo de documentación: DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES.
+     * Grupo de documentación: DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES | DOCUMENTOS_ADICIONALES.
      */
     @Column(name = "category", length = 40)
     private String category = "DOCUMENTOS_PRINCIPALES";

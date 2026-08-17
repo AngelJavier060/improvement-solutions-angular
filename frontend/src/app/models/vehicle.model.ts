@@ -2,7 +2,7 @@ export interface MaintenanceCatalogItem {
   id: number;
   name: string;
   description?: string;
-  /** DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES */
+  /** DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES | DOCUMENTOS_ADICIONALES */
   category?: string;
 }
 

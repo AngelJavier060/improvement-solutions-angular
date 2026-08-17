@@ -21,7 +21,7 @@ export interface FleetComplianceDoc {
   typeCode: string;
   typeLabel: string;
   /**
-   * Grupo visual: DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES
+   * Grupo visual: DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES | DOCUMENTOS_ADICIONALES
    * (viene de la entidad remitente configurada en administración).
    */
   docCategory?: string | null;

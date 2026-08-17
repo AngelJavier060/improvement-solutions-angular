@@ -11,7 +11,7 @@ import {
   FleetComplianceDoc,
   FleetDocRegistroPayload
 } from '../../../../../../models/fleet-documentation.model';
-import { normalizeFleetDocCategory } from '../../../../../../models/tipo-documento-vehiculo.model';
+import { FLEET_DOC_CATEGORIES, normalizeFleetDocCategory } from '../../../../../../models/tipo-documento-vehiculo.model';
 import { activeBusinessRuc } from '../documentacion-ruc.helper';
 
 @Component({
@@ -244,15 +244,10 @@ export class DocumentacionRegistroComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  /** Entidades disponibles agrupadas por las 3 categorías de documentación. */
+  /** Entidades disponibles agrupadas por las categorías de documentación. */
   entidadGroups(): { code: string; label: string; items: MaintenanceCatalogItem[] }[] {
     const available = this.availableEntidades();
-    const order = [
-      { code: 'DOCUMENTOS_PRINCIPALES', label: 'Documentos Legales y Permisos' },
-      { code: 'CERTIFICACIONES', label: 'Certificaciones Técnicas' },
-      { code: 'LIBERACIONES', label: 'Liberaciones' }
-    ];
-    return order
+    return FLEET_DOC_CATEGORIES
       .map(g => ({
         ...g,
         items: available.filter(e => normalizeFleetDocCategory(e.category) === g.code)

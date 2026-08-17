@@ -2,12 +2,14 @@
 export type FleetDocCategory =
   | 'DOCUMENTOS_PRINCIPALES'
   | 'CERTIFICACIONES'
-  | 'LIBERACIONES';
+  | 'LIBERACIONES'
+  | 'DOCUMENTOS_ADICIONALES';
 
 export const FLEET_DOC_CATEGORIES: { code: FleetDocCategory; label: string }[] = [
   { code: 'DOCUMENTOS_PRINCIPALES', label: 'Documentos Legales y Permisos' },
   { code: 'CERTIFICACIONES', label: 'Certificaciones Técnicas' },
-  { code: 'LIBERACIONES', label: 'Liberaciones' }
+  { code: 'LIBERACIONES', label: 'Liberaciones' },
+  { code: 'DOCUMENTOS_ADICIONALES', label: 'Documentos Adicionales' }
 ];
 
 export function fleetDocCategoryLabel(code: string | null | undefined): string {
@@ -21,6 +23,7 @@ export function normalizeFleetDocCategory(code: string | null | undefined): Flee
   const upper = raw.toUpperCase().replace(/\s+/g, '_');
   if (upper === 'CERTIFICACIONES' || upper.includes('CERTIFIC')) return 'CERTIFICACIONES';
   if (upper === 'LIBERACIONES' || upper.includes('LIBERAC')) return 'LIBERACIONES';
+  if (upper === 'DOCUMENTOS_ADICIONALES' || upper.includes('ADICIONAL')) return 'DOCUMENTOS_ADICIONALES';
   if (
     upper === 'DOCUMENTOS_PRINCIPALES' ||
     upper.includes('DOCUMENTOS_LEGAL') ||
@@ -34,6 +37,7 @@ export function normalizeFleetDocCategory(code: string | null | undefined): Flee
   const lower = raw.toLowerCase();
   if (lower.includes('certific')) return 'CERTIFICACIONES';
   if (lower.includes('liberac')) return 'LIBERACIONES';
+  if (lower.includes('adicional')) return 'DOCUMENTOS_ADICIONALES';
   return 'DOCUMENTOS_PRINCIPALES';
 }
 

@@ -1302,7 +1302,8 @@ public class BusinessService {
 
     /**
      * Reemplaza de forma atómica el set de documentos aplicables a un tipo
-     * para la empresa. Solo acepta tipos/documentos ya asignados a la empresa.
+     * para la empresa. Si un documento del catálogo aún no está asignado a la
+     * empresa, se asigna automáticamente al guardar.
      */
     @Transactional
     public List<Map<String, Object>> replaceDocumentosByTipoVehiculo(
@@ -1314,23 +1315,32 @@ public class BusinessService {
         TipoVehiculo tipo = tipoVehiculoRepository.findById(tipoVehiculoId)
                 .orElseThrow(() -> new IllegalArgumentException("Tipo de vehículo no encontrado"));
 
-        Set<Long> assignedErIds = business.getEntidadRemitentes() == null
-                ? Set.of()
-                : business.getEntidadRemitentes().stream()
-                    .filter(e -> e != null && e.getId() != null)
-                    .map(EntidadRemitente::getId)
-                    .collect(Collectors.toSet());
+        Set<Long> assignedErIds = new HashSet<>();
+        if (business.getEntidadRemitentes() != null) {
+            for (EntidadRemitente assigned : business.getEntidadRemitentes()) {
+                if (assigned != null && assigned.getId() != null) {
+                    assignedErIds.add(assigned.getId());
+                }
+            }
+        }
 
         List<Long> desired = entidadRemitenteIds == null ? List.of() : entidadRemitenteIds.stream()
                 .filter(id -> id != null && id > 0)
                 .distinct()
                 .collect(Collectors.toList());
 
+        boolean assignedNew = false;
         for (Long erId : desired) {
-            if (!assignedErIds.contains(erId)) {
-                throw new IllegalArgumentException(
-                        "El documento/entidad remitente " + erId + " no está asignado a esta empresa");
-            }
+            if (assignedErIds.contains(erId)) continue;
+            EntidadRemitente er = entidadRemitenteRepository.findById(erId)
+                    .orElseThrow(() -> new IllegalArgumentException("Documento no encontrado: " + erId));
+            business.addEntidadRemitente(er);
+            assignedErIds.add(erId);
+            assignedNew = true;
+        }
+        if (assignedNew) {
+            business.setUpdatedAt(LocalDateTime.now());
+            businessRepository.save(business);
         }
 
         businessTipoVehiculoDocumentoRepository.deleteByBusinessAndTipo(businessId, tipoVehiculoId);

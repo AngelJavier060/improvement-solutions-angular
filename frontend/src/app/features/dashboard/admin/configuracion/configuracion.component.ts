@@ -209,7 +209,7 @@ export class ConfiguracionComponent implements OnInit {
       categorias: [
         { nombre: 'Marca de vehículo', descripcion: 'Catálogo de fabricantes y marcas soportadas', ruta: 'marca-vehiculo', icono: 'fas fa-copyright', proximamente: false },
         { nombre: 'Clase', descripcion: 'Clases de unidad (trailer, cabezal, etc.) asignables por empresa', ruta: 'clase-vehiculo', icono: 'fas fa-layer-group', proximamente: false },
-        { nombre: 'Entidad remitente', descripcion: 'Quién emite el documento y en qué grupo (Legales, Certificaciones o Liberaciones)', ruta: 'entidad-remitente', icono: 'fas fa-building', proximamente: false },
+        { nombre: 'Entidad remitente', descripcion: 'Quién emite el documento y en qué grupo (Legales, Certificaciones, Liberaciones o Adicionales)', ruta: 'entidad-remitente', icono: 'fas fa-building', proximamente: false },
         { nombre: 'Tipos de vehículo', descripcion: 'Clasificación (SUV, Sedán, Camión, etc)', ruta: 'tipo-vehiculo', icono: 'fas fa-truck', proximamente: false },
         { nombre: 'Tipos de combustible', descripcion: 'Gestión de Gasolina, Diesel, Eléctrico', ruta: 'tipo-combustible', icono: 'fas fa-gas-pump', proximamente: false },
         { nombre: 'Colores', descripcion: 'Paleta de colores oficiales de la flota', ruta: 'color-vehiculo', icono: 'fas fa-palette', proximamente: false },

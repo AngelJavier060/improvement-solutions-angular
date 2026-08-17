@@ -4,7 +4,7 @@ export interface EntidadRemitente {
   id?: number;
   name: string;
   description?: string;
-  /** DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES */
+  /** DOCUMENTOS_PRINCIPALES | CERTIFICACIONES | LIBERACIONES | DOCUMENTOS_ADICIONALES */
   category?: FleetDocCategory | string;
   createdAt?: Date | string;
   updatedAt?: Date | string;
