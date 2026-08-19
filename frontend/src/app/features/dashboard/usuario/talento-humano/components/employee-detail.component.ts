@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Renderer2 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EmployeeService } from '../services/employee.service';
 import { EmployeeResponse } from '../models/employee.model';
@@ -49,7 +49,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   cedula: string | null = null;
   businessRuc: string | null = null;
   businessId: number | null = null;
-  activeTab: 'employees' | 'profile' | 'courses' | 'documents' | 'cards' = 'employees';
+  activeTab: 'employees' | 'profile' | 'docs-certs' | 'courses' | 'documents' | 'cards' | 'history' = 'employees';
   showEditModal = false;
   private queryParamsSubscription: Subscription | null = null;
   private paramsSubscription: Subscription | null = null;
@@ -94,11 +94,17 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   // Expose Math to template (for Math.min / Math.max in HTML)
   Math = Math;
 
+  kpiHiresThisMonth = 0;
+  kpiHiresThisYear = 0;
+  private hireKpisLoaded = false;
+
   // Vista unificada (Documentos + Cursos + Tarjetas) por empleado
   employeeItemsMap: { [beId: number]: EmployeeUnifiedItem[] | undefined } = {};
   employeeItemsLoading: { [beId: number]: boolean | undefined } = {};
   // Menú contextual por empleado (nombre clickeable)
   openMenuForId: number | null = null;
+  /** Hoja de vida abierta sobre la pestaña Empleados (no navega). */
+  cvEmployee: EmployeeResponse | null = null;
 
   // ID del BusinessEmployee para usar en hijos (documentos, cursos, tarjetas)
   get businessEmployeeId(): number | null {
@@ -111,6 +117,57 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
 
   onFilterChanged(): void {
     this.filtersChange$.next();
+  }
+
+  get kpiExpiringCount(): number {
+    let n = 0;
+    Object.values(this.employeeItemsMap).forEach(items => {
+      (items || []).forEach(it => {
+        if (this.getExpiryStatus(it.expiry_date) === 'Próximo a vencer') n++;
+      });
+    });
+    return n;
+  }
+
+  employeeHasExpiring(emp: EmployeeResponse | any): boolean {
+    return this.itemsFor(emp).some(it => this.getExpiryStatus(it.expiry_date) === 'Próximo a vencer');
+  }
+
+  itemIcon(it: EmployeeUnifiedItem): string {
+    if (it.type === 'course') return 'school';
+    if (it.type === 'card') return 'credit_card';
+    return 'person';
+  }
+
+  private parseHireDate(raw?: string | null): Date | null {
+    if (!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  private loadHireKpis(): void {
+    if (!this.businessRuc || this.hireKpisLoaded) return;
+    this.hireKpisLoaded = true;
+    this.employeeService.getEmployeesByBusinessRuc(this.businessRuc).subscribe({
+      next: (employees) => {
+        const now = new Date();
+        let month = 0;
+        let year = 0;
+        (employees || []).forEach(emp => {
+          const d = this.parseHireDate((emp as any)?.fechaIngreso);
+          if (!d) return;
+          if (d.getFullYear() === now.getFullYear()) {
+            year++;
+            if (d.getMonth() === now.getMonth()) month++;
+          }
+        });
+        this.kpiHiresThisMonth = month;
+        this.kpiHiresThisYear = year;
+      },
+      error: () => {
+        this.hireKpisLoaded = false;
+      }
+    });
   }
 
   getBusinessEmployeeIdFor(emp: EmployeeResponse | any): number {
@@ -177,10 +234,10 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   }
 
   // === Unificación de ítems (Documentos + Cursos + Tarjetas) ===
-  ensureEmployeeOverview(emp: EmployeeResponse): void {
+  ensureEmployeeOverview(emp: EmployeeResponse): boolean {
     const beId = this.getBusinessEmployeeIdFor(emp);
-    if (beId < 0) return;
-    if (this.employeeItemsMap[beId] || this.employeeItemsLoading[beId]) return;
+    if (beId < 0) return true;
+    if (this.employeeItemsMap[beId] || this.employeeItemsLoading[beId]) return true;
     this.employeeItemsLoading[beId] = true;
 
     forkJoin({
@@ -275,6 +332,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
         delete this.employeeItemsLoading[beId];
       }
     });
+    return true;
   }
 
   itemsFor(emp: EmployeeResponse | any): EmployeeUnifiedItem[] {
@@ -317,7 +375,11 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
 
   nextPage(): void { if ((this.pageIndex + 1) * this.pageSize < this.totalElements) { this.pageIndex++; this.loadEmployeesList(); } }
   prevPage(): void { if (this.pageIndex > 0) { this.pageIndex--; this.loadEmployeesList(); } }
-  changePageSize(size: number): void { this.pageSize = size; this.pageIndex = 0; this.loadEmployeesList(); }
+  changePageSize(size: number): void {
+    this.pageSize = Number(size) || 25;
+    this.pageIndex = 0;
+    this.loadEmployeesList();
+  }
 
   ensureEmployeeDocs(emp: EmployeeResponse): void {
     const beId: number | null = this.getBusinessEmployeeIdFor(emp);
@@ -367,6 +429,14 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     return 'bg-secondary';
   }
 
+  expiryTone(dateStr?: string | null): 'warn' | 'ok' | 'expired' | 'muted' {
+    const s = this.getExpiryStatus(dateStr);
+    if (s === 'Próximo a vencer') return 'warn';
+    if (s === 'Vigente') return 'ok';
+    if (s === 'Caducado') return 'expired';
+    return 'muted';
+  }
+
   // Solo mostrar botones PDF si el archivo es PDF
   isPdf(file: { file_type?: string; file_name?: string } | null | undefined): boolean {
     if (!file) return false;
@@ -375,30 +445,128 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     return type.includes('pdf') || name.endsWith('.pdf');
   }
 
+  private pdfOverlayEl: HTMLElement | null = null;
+  private pdfBlobUrl: string | null = null;
+  private pdfKeyHandler: ((e: KeyboardEvent) => void) | null = null;
+  private bodyOverflowBackup: string | null = null;
+
   openDocFile(file: { file: string; file_name?: string }): void {
     const rawUrl = this.normalizeFileUrl(file?.file || '');
-    // Forzar vista en navegador: si viene como /api/files/download/... cambiar a /api/files/...
     const url = rawUrl.replace('/api/files/download/', '/api/files/');
     const name = (file.file_name || '').toLowerCase();
+    this.closePdfPreview();
     this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
       next: (resp) => {
         const blob = resp.body as Blob;
         const header = (resp.headers.get('Content-Type') || '').toLowerCase();
-        // Forzar PDF para previsualizar (evitar descarga por octet-stream / attachment)
         const mime = header.includes('pdf') || name.endsWith('.pdf') || url.toLowerCase().includes('.pdf')
           ? 'application/pdf'
           : (header.startsWith('image/') ? header : 'application/pdf');
         const typed = new Blob([blob], { type: mime });
-        const blobUrl = window.URL.createObjectURL(typed);
-        const win = window.open(blobUrl, '_blank', 'noopener');
-        if (!win) {
-          // Si el popup está bloqueado, abrir en la misma pestaña solo como vista
-          window.location.href = blobUrl;
-        }
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+        this.pdfBlobUrl = window.URL.createObjectURL(typed);
+        this.mountPdfViewerOverlay(file.file_name || 'Documento PDF', this.pdfBlobUrl);
       },
-      error: () => alert('No se pudo abrir el archivo')
+      error: () => {
+        this.closePdfPreview();
+        alert('No se pudo abrir el archivo');
+      }
     });
+  }
+
+  closePdfPreview(): void {
+    if (this.pdfKeyHandler) {
+      document.removeEventListener('keydown', this.pdfKeyHandler);
+      this.pdfKeyHandler = null;
+    }
+    if (this.pdfOverlayEl) {
+      try { this.renderer.removeChild(document.body, this.pdfOverlayEl); } catch { /* ignore */ }
+      this.pdfOverlayEl = null;
+    }
+    if (this.pdfBlobUrl) {
+      try { URL.revokeObjectURL(this.pdfBlobUrl); } catch { /* ignore */ }
+      this.pdfBlobUrl = null;
+    }
+    if (this.bodyOverflowBackup !== null) {
+      document.body.style.overflow = this.bodyOverflowBackup;
+      this.bodyOverflowBackup = null;
+    }
+    document.documentElement.style.overflow = '';
+  }
+
+  private mountPdfViewerOverlay(title: string, blobUrl: string): void {
+    if (this.bodyOverflowBackup === null) {
+      this.bodyOverflowBackup = document.body.style.overflow || '';
+    }
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    const root = this.renderer.createElement('div') as HTMLElement;
+    root.className = 'ed-pdf-overlay';
+    root.setAttribute('role', 'dialog');
+    root.setAttribute('aria-modal', 'true');
+    Object.assign(root.style, {
+      position: 'fixed',
+      inset: '0',
+      zIndex: '2147483646',
+      background: '#111827',
+      display: 'flex',
+      flexDirection: 'column',
+      width: '100vw',
+      height: '100vh',
+      margin: '0',
+      padding: '0',
+      overflow: 'hidden'
+    } as CSSStyleDeclaration);
+
+    root.innerHTML = `
+      <div style="display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden;">
+        <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:#1f2937;color:#f9fafb;border-bottom:1px solid rgba(255,255,255,.08);">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;font:600 14px/1.3 Inter,system-ui,sans-serif;">
+            <span style="background:#0058be;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;">PDF</span>
+            <span class="ed-pdf-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+          </div>
+          <button type="button" class="ed-pdf-close" title="Cerrar (Esc)"
+            style="border:0;border-radius:6px;background:rgba(255,255,255,.12);color:#f9fafb;font:600 13px/1 Inter,system-ui,sans-serif;padding:8px 14px;cursor:pointer;">
+            ✕ Cerrar
+          </button>
+        </div>
+        <div class="ed-pdf-body" style="flex:1 1 auto;position:relative;min-height:0;overflow:hidden;background:#374151;"></div>
+      </div>
+    `;
+
+    const nameEl = root.querySelector('.ed-pdf-name') as HTMLElement;
+    nameEl.textContent = title;
+    const closeBtn = root.querySelector('.ed-pdf-close') as HTMLButtonElement;
+    closeBtn.addEventListener('click', () => this.closePdfPreview());
+
+    const body = root.querySelector('.ed-pdf-body') as HTMLElement;
+    const embed = this.renderer.createElement('embed') as HTMLEmbedElement;
+    embed.type = 'application/pdf';
+    embed.src = `${blobUrl}#zoom=page-width&toolbar=1&navpanes=0&scrollbar=1`;
+    embed.setAttribute('title', title);
+    Object.assign(embed.style, {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      width: '100%',
+      height: '100%',
+      border: '0',
+      margin: '0',
+      padding: '0',
+      display: 'block',
+      background: '#525659'
+    } as CSSStyleDeclaration);
+    body.appendChild(embed);
+
+    this.pdfOverlayEl = root;
+    this.renderer.appendChild(document.body, root);
+    this.pdfKeyHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        this.closePdfPreview();
+      }
+    };
+    document.addEventListener('keydown', this.pdfKeyHandler);
   }
 
   downloadDocFile(file: { file: string; file_name?: string }): void {
@@ -444,13 +612,23 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     this.openMenuForId = this.openMenuForId === beId ? null : beId;
   }
 
-  goToEmployeeTab(emp: EmployeeResponse, tab: 'profile' | 'documents' | 'courses' | 'cards'): void {
+  goToEmployeeTab(emp: EmployeeResponse, tab: 'profile' | 'documents' | 'courses' | 'cards' | 'history' | 'docs-certs'): void {
     this.openMenuForId = null;
     if (this.businessRuc) {
       this.router.navigate(['/usuario', this.businessRuc, 'talento-humano', 'employee', emp.cedula], {
         queryParams: { tab }
       });
     }
+  }
+
+  openEmployeeCv(emp: EmployeeResponse, ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    this.cvEmployee = emp;
+  }
+
+  closeEmployeeCv(): void {
+    this.cvEmployee = null;
   }
 
   private tryNavigateToFirstEmployee(): void {
@@ -480,6 +658,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     private documentService: DocumentService,
     private employeeCourseService: EmployeeCourseService,
     private employeeCardService: EmployeeCardService,
+    private renderer: Renderer2,
   ) {}
 
   ngOnInit(): void {
@@ -487,13 +666,14 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     // Intentar extraer businessRuc desde rutas padre
     this.businessRuc = this.findParamUp('businessRuc') || this.findParamUp('ruc');
     const initTab = this.route.snapshot.queryParams['tab'];
-    if (initTab && ['employees','courses', 'documents', 'profile', 'cards'].includes(initTab)) {
+    if (initTab && ['employees','courses', 'documents', 'profile', 'cards', 'history', 'docs-certs'].includes(initTab)) {
       this.activeTab = initTab as any;
     }
     if (this.cedula) {
       this.loadEmployee();
       this.loadDocumentTypes();
     }
+    this.loadHireKpis();
 
     this.fallbackTimeoutId = setTimeout(() => {
       if (!this.loading && !this.employee) {
@@ -504,8 +684,8 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     // Suscribirse a cambios en query params para cambiar el tab
     this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
       const tab = params['tab'];
-      if (tab && ['employees','courses', 'documents', 'profile', 'cards'].includes(tab)) {
-        this.activeTab = tab as 'employees' | 'courses' | 'documents' | 'profile' | 'cards';
+      if (tab && ['employees','courses', 'documents', 'profile', 'cards', 'history', 'docs-certs'].includes(tab)) {
+        this.activeTab = tab as 'employees' | 'courses' | 'documents' | 'profile' | 'cards' | 'history' | 'docs-certs';
         // Si se navega directamente a documentos vía URL, asegurarnos de cargar
         if (this.activeTab === 'documents') {
           this.loadEmployeeDocuments();
@@ -535,6 +715,8 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.closeEmployeeCv();
+    this.closePdfPreview();
     if (this.queryParamsSubscription) {
       this.queryParamsSubscription.unsubscribe();
     }
@@ -738,7 +920,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  setActiveTab(tab: 'employees' | 'profile' | 'courses' | 'documents' | 'cards'): void {
+  setActiveTab(tab: 'employees' | 'profile' | 'docs-certs' | 'courses' | 'documents' | 'cards' | 'history'): void {
     // Actualizar estado local
     this.activeTab = tab as any;
     if (tab === 'documents') this.loadEmployeeDocuments();

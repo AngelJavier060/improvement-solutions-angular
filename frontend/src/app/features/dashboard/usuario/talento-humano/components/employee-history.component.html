@@ -1,0 +1,103 @@
+<div class="ed-hist">
+  <div class="ed-hist__toolbar">
+    <div>
+      <h5 class="ed-hist__title">Histórico de renovaciones</h5>
+      <p class="ed-hist__lead">
+        Solo aparecen trabajadores que ya renovaron un documento, curso o tarjeta.
+        Quienes no han renovado no salen en este listado.
+      </p>
+    </div>
+    <button type="button" class="ed-hist__btn-ghost" (click)="load()" [disabled]="loading">
+      <i class="fas" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+      Recargar
+    </button>
+  </div>
+
+  <div class="ed-hist__filters">
+    <div class="ed-hist__field">
+      <label>Trabajador</label>
+      <input type="text" [(ngModel)]="workerFilter" placeholder="Nombre o cédula" />
+    </div>
+    <div class="ed-hist__field">
+      <label>Sección</label>
+      <select [(ngModel)]="sectionFilter" (ngModelChange)="typeFilter = ''">
+        <option value="">Todas</option>
+        <option value="document">Documentos personales</option>
+        <option value="course">Cursos</option>
+        <option value="card">Tarjetas</option>
+      </select>
+    </div>
+    <div class="ed-hist__field">
+      <label>Tipo</label>
+      <select [(ngModel)]="typeFilter">
+        <option value="">Todos</option>
+        <option *ngFor="let t of typeOptions()" [value]="t">{{ t }}</option>
+      </select>
+    </div>
+    <div class="ed-hist__field">
+      <label>Año</label>
+      <select [(ngModel)]="yearFilter">
+        <option value="">Todos</option>
+        <option *ngFor="let y of yearOptions()" [value]="y">{{ y }}</option>
+      </select>
+    </div>
+    <div class="ed-hist__count">
+      {{ groupedEmployees().length }} trabajador(es) · {{ filteredItems().length }} renovación(es)
+    </div>
+  </div>
+
+  <div class="ed-hist__table-wrap">
+    <div *ngIf="loading" class="ed-hist__empty">Cargando histórico...</div>
+    <div *ngIf="!loading && groupedEmployees().length === 0" class="ed-hist__empty">
+      Aún no hay renovaciones. Cuando un trabajador renueve un documento, curso o tarjeta, aparecerá aquí.
+    </div>
+    <div *ngIf="!loading && groupedEmployees().length > 0" class="ed-hist__table-scroll">
+      <table class="ed-hist__table">
+        <thead>
+          <tr>
+            <th>Trabajador</th>
+            <th>Sección</th>
+            <th>Tipo</th>
+            <th>Emisión</th>
+            <th>Vencimiento</th>
+            <th>Detalle</th>
+            <th class="text-center">Archivos</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let g of groupedEmployees()">
+            <tr *ngFor="let it of g.items; let i = index">
+              <td *ngIf="i === 0" [attr.rowspan]="g.items.length" class="ed-hist__emp">
+                <div class="ed-hist__emp-name">{{ g.employeeName }}</div>
+                <div class="ed-hist__extra">Cédula: {{ g.employeeCedula || '-' }}</div>
+                <div class="ed-hist__extra">{{ g.items.length }} renovación(es)</div>
+              </td>
+              <td>
+                <span class="ed-hist__badge" [ngClass]="sectionBadgeClass(it.section)">{{ it.sectionLabel }}</span>
+              </td>
+              <td>
+                <div class="ed-hist__type">{{ it.typeName }}</div>
+                <div class="ed-hist__extra" *ngIf="it.extra">{{ it.extra }}</div>
+              </td>
+              <td>{{ it.issueDate | dateDmy }}</td>
+              <td>{{ it.expiryDate | dateDmy }}</td>
+              <td class="ed-hist__notes" [title]="it.notes || ''">{{ it.notes || '-' }}</td>
+              <td class="text-center">
+                <ng-container *ngIf="it.files?.length; else nofiles">
+                  <button type="button"
+                          class="ed-hist__pdf-btn"
+                          *ngFor="let f of it.files"
+                          (click)="openFile(f)"
+                          [title]="fileLabel(f)">
+                    <i class="far fa-file-pdf"></i>
+                  </button>
+                </ng-container>
+                <ng-template #nofiles>-</ng-template>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -19,6 +19,10 @@ import { EmployeeDocumentsComponent } from './components/employee-documents.comp
 import { EmployeeContractsComponent } from './components/employee-contracts.component';
 import { EmployeeCoursesComponent } from './components/employee-courses.component';
 import { EmployeeCardsComponent } from './components/employee-cards.component';
+import { EmployeeHistoryComponent } from './components/employee-history.component';
+import { ThDateFieldComponent } from './components/th-date-field.component';
+import { EmployeeCvOverlayComponent } from './components/employee-cv-overlay.component';
+import { DateDmyPipe } from './pipes/date-dmy.pipe';
 import { TalentoHumanoChartsComponent } from './components/talento-humano-charts.component';
 import { CapitalizePipe } from '../../../../pipes/capitalize.pipe';
 import { PlanillaMensualComponent } from './components/planilla-mensual.component';
@@ -42,6 +46,10 @@ import { AccidentesComponent } from './components/accidentes.component';
     EmployeeContractsComponent,
     EmployeeCoursesComponent,
     EmployeeCardsComponent,
+    EmployeeHistoryComponent,
+    ThDateFieldComponent,
+    EmployeeCvOverlayComponent,
+    DateDmyPipe,
     TalentoHumanoChartsComponent,
     CapitalizePipe,
     PlanillaMensualComponent,

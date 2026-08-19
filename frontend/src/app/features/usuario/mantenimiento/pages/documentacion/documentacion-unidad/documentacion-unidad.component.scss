@@ -373,6 +373,25 @@
     }
   }
 
+  &--zip {
+    background: #fff;
+    border-color: var(--du-outline);
+    color: #1b4d8f;
+    justify-content: center;
+    padding-left: 0.75rem;
+    padding-right: 0.85rem;
+
+    &:hover:not(:disabled) {
+      border-color: #1b4d8f;
+      background: #f0f6ff;
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+
   &--ghost {
     background: #fff;
     border-color: var(--du-outline);

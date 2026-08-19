@@ -1,423 +1,239 @@
-<div class="employee-detail-container th-modern-detail">
-  <style>
-    .th-modern-detail {
-      --ed-primary: #4648d4;
-      --ed-primary-hover: #6063ee;
-      --ed-on-surface: #121c2a;
-      --ed-on-variant: #464554;
-      --ed-outline: #c7c4d7;
-      --ed-surface: #ffffff;
-      --ed-surface-low: #eff4ff;
-      --ed-bg: #f8f9ff;
-      background-color: var(--ed-bg);
-      color: var(--ed-on-surface);
-    }
-    .th-modern-detail .glass-header {
-      position: sticky; top: 0; z-index: 3;
-      background: var(--ed-surface);
-      border: 1px solid var(--ed-outline);
-      border-radius: 0.75rem;
-      box-shadow: 0 1px 2px rgba(18, 28, 42, 0.04);
-    }
-    .th-modern-detail .glass-header .page-title {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--ed-on-surface);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .th-modern-detail .modern-card {
-      position: relative;
-      border-radius: 0.75rem;
-      border: 1px solid var(--ed-outline);
-      box-shadow: 0 1px 3px rgba(18, 28, 42, 0.06);
-      overflow: hidden;
-      background: var(--ed-surface);
-    }
-    .th-modern-detail .modern-card::before { display: none; }
-    .th-modern-detail .modern-card > .card-header {
-      background: var(--ed-surface-low);
-      border-bottom: 1px solid var(--ed-outline);
-      color: var(--ed-on-surface);
-    }
-    .th-modern-detail .modern-card > .card-header h5 {
-      font-size: 16px;
-      font-weight: 600;
-      margin: 0;
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-    .th-modern-detail .modern-tabs {
-      border-bottom: 1px solid var(--ed-outline);
-      overflow-x: auto;
-      white-space: nowrap;
-      margin-bottom: 1.5rem !important;
-    }
-    .th-modern-detail .modern-tabs .nav-link {
-      border: none;
-      color: var(--ed-on-variant);
-      font-weight: 600;
-      font-size: 12px;
-      letter-spacing: 0.02em;
-      padding: 12px 16px;
-      border-radius: 0;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-    .th-modern-detail .modern-tabs .nav-link.active {
-      color: var(--ed-primary);
-      border-bottom: 2px solid var(--ed-primary);
-      background: transparent;
-      font-weight: 700;
-    }
-    .th-modern-detail .modern-tabs .nav-link:hover {
-      color: var(--ed-primary);
-      background: rgba(70, 72, 212, 0.04);
-    }
-    .th-modern-detail .btn-modern-ghost {
-      background: transparent;
-      color: var(--ed-on-variant);
-      border: 0;
-      border-radius: 0.5rem;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 0.4rem 0.75rem;
-    }
-    .th-modern-detail .btn-modern-ghost:hover {
-      color: var(--ed-primary);
-      background: var(--ed-surface-low);
-    }
-    .th-modern-detail .btn-modern-primary {
-      color: #ffffff;
-      background: var(--ed-primary);
-      border: 0;
-      border-radius: 0.35rem;
-      box-shadow: none;
-    }
-    .th-modern-detail .btn-modern-primary:hover { background: var(--ed-primary-hover); }
-    .th-modern-detail .btn-outline-primary {
-      color: var(--ed-primary);
-      border-color: var(--ed-outline);
-      background: transparent;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .th-modern-detail .btn-outline-primary:hover {
-      color: #fff;
-      background: var(--ed-primary);
-      border-color: var(--ed-primary);
-    }
-    .th-modern-detail .docs-mini-hero {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 1px solid var(--ed-outline);
-    }
-    .th-modern-detail .docs-mini-hero .mini-avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 999px;
-      object-fit: cover;
-      border: 1px solid var(--ed-outline);
-    }
-    .th-modern-detail .docs-mini-hero .fw-semibold {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--ed-on-surface);
-    }
-    .th-modern-detail .docs-mini-hero .text-muted {
-      color: var(--ed-on-variant) !important;
-      font-size: 13px;
-    }
-    /* KPI chips */
-    .th-modern-detail .kpi-grid .kpi-chip {
-      display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 12px;
-      background: #f9fafb; border: 1px solid #e5e7eb; transition: background .2s ease, border-color .2s ease, transform .1s ease;
-    }
-    .th-modern-detail .kpi-grid .kpi-chip:hover { background: #ffffff; border-color: #e5e7eb; transform: translateY(-1px); }
-    .th-modern-detail .kpi-grid .kpi-icon { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; background: #eef2ff; color: #4f46e5; }
-    .th-modern-detail .kpi-grid .kpi-label { font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; }
-    .th-modern-detail .kpi-grid .kpi-value { font-size: 14px; font-weight: 600; color: #111827; margin-top: 2px; }
+<div class="employee-detail-container th-md-page">
+  <header class="ed-topbar">
+    <h2 class="ed-topbar-title">
+      <span class="material-symbols-outlined">person</span>
+      Detalle del Empleado
+    </h2>
+    <button type="button" class="ed-back-btn" (click)="goBack()">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Volver
+    </button>
+  </header>
 
-    /* Profile hero */
-    .th-modern-detail .profile-hero .avatar-img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
-    .th-modern-detail .profile-name { color: #0f172a; font-weight: 800; }
-    .th-modern-detail .badge.bg-success { background-color: #10b981 !important; }
-    .th-modern-detail .badge.bg-secondary { background-color: #94a3b8 !important; }
-
-    /* Profile grid */
-    .th-modern-detail .profile-section-title { font-weight: 800; color: #0f172a; margin: 16px 0; }
-    .th-modern-detail .profile-grid { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; }
-    @media (min-width: 768px) { .th-modern-detail .profile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (min-width: 992px) { .th-modern-detail .profile-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    .th-modern-detail .profile-grid label { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
-    .th-modern-detail .profile-grid .fw-semibold { color: #111827; }
-
-    /* Skeletons */
-    .th-modern-detail .profile-skeleton .skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%); background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: 8px; }
-    .th-modern-detail .profile-skeleton .skeleton-avatar { width: 96px; height: 96px; border-radius: 12px; }
-    .th-modern-detail .profile-skeleton .skeleton-line { height: 20px; }
-    .th-modern-detail .profile-skeleton .skeleton-kpi { height: 64px; border-radius: 12px; }
-    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-    /* Mini avatars used in other tabs */
-    .th-modern-detail .mini-avatar { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb; }
-  </style>
-  <div class="page-header glass-header mb-4 px-3 py-3 rounded-3">
-    <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <h2 class="page-title">
-          <i class="fas fa-user me-2"></i>
-          Detalle del Empleado
-        </h2>
+  <div class="ed-canvas">
+    <div class="ed-kpis">
+      <div class="ed-kpi">
+        <div class="ed-kpi-icon">
+          <span class="material-symbols-outlined">group</span>
+        </div>
+        <div>
+          <p class="ed-kpi-label">Total Empleados</p>
+          <p class="ed-kpi-value">{{ totalElements }}</p>
+        </div>
       </div>
-      <button class="btn btn-secondary btn-modern-ghost" (click)="goBack()">
-        <i class="fas fa-arrow-left me-2"></i>
-        Volver
-      </button>
+      <div class="ed-kpi">
+        <div class="ed-kpi-icon warn">
+          <span class="material-symbols-outlined">warning</span>
+        </div>
+        <div>
+          <p class="ed-kpi-label">Documentos por Vencer</p>
+          <p class="ed-kpi-value warn">{{ kpiExpiringCount }}</p>
+        </div>
+      </div>
+      <div class="ed-kpi">
+        <div class="ed-kpi-icon ok">
+          <span class="material-symbols-outlined">check_circle</span>
+        </div>
+        <div>
+          <p class="ed-kpi-label">Ingreso al mes</p>
+          <p class="ed-kpi-value">{{ kpiHiresThisMonth }}</p>
+        </div>
+      </div>
+      <div class="ed-kpi">
+        <div class="ed-kpi-icon add">
+          <span class="material-symbols-outlined">person_add</span>
+        </div>
+        <div>
+          <p class="ed-kpi-label">Total anual</p>
+          <p class="ed-kpi-value">{{ kpiHiresThisYear }}</p>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- Tabs -->
-  <ul class="nav nav-tabs modern-tabs mb-4">
-    <li class="nav-item">
-      <a class="nav-link" [class.active]="activeTab === 'employees'" [routerLink]="[]" [queryParams]="{ tab: 'employees' }" queryParamsHandling="merge">
-        <i class="fas fa-users me-2"></i>
+    <nav class="ed-tabs">
+      <a class="ed-tab" [class.active]="activeTab === 'employees'" [routerLink]="[]" [queryParams]="{ tab: 'employees' }" queryParamsHandling="merge">
+        <span class="material-symbols-outlined" [class.filled]="activeTab === 'employees'">group</span>
         Empleados
       </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" [class.active]="activeTab === 'profile'" [routerLink]="[]" [queryParams]="{ tab: 'profile' }" queryParamsHandling="merge">
-        <i class="fas fa-user me-2"></i>
+      <a class="ed-tab" [class.active]="activeTab === 'profile'" [routerLink]="[]" [queryParams]="{ tab: 'profile' }" queryParamsHandling="merge">
+        <span class="material-symbols-outlined" [class.filled]="activeTab === 'profile'">person</span>
         Perfil
       </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" [class.active]="activeTab === 'documents'" [routerLink]="[]" [queryParams]="{ tab: 'documents' }" queryParamsHandling="merge">
-        <i class="fas fa-file-alt me-2"></i>
+      <a class="ed-tab" [class.active]="activeTab === 'docs-certs'" [routerLink]="[]" [queryParams]="{ tab: 'docs-certs' }" queryParamsHandling="merge">
+        <span class="material-symbols-outlined" [class.filled]="activeTab === 'docs-certs'">folder_open</span>
+        Documentos y Certificaciones
+      </a>
+      <a class="ed-tab" [class.active]="activeTab === 'documents'" [routerLink]="[]" [queryParams]="{ tab: 'documents' }" queryParamsHandling="merge">
+        <span class="material-symbols-outlined" [class.filled]="activeTab === 'documents'">description</span>
         Documentos Personales
       </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" [class.active]="activeTab === 'courses'" [routerLink]="[]" [queryParams]="{ tab: 'courses' }" queryParamsHandling="merge">
-        <i class="fas fa-graduation-cap me-2"></i>
+      <a class="ed-tab" [class.active]="activeTab === 'courses'" [routerLink]="[]" [queryParams]="{ tab: 'courses' }" queryParamsHandling="merge">
+        <span class="material-symbols-outlined" [class.filled]="activeTab === 'courses'">school</span>
         Cursos
       </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" [class.active]="activeTab === 'cards'" [routerLink]="[]" [queryParams]="{ tab: 'cards' }" queryParamsHandling="merge">
-        <i class="fas fa-id-card me-2"></i>
+      <a class="ed-tab" [class.active]="activeTab === 'cards'" [routerLink]="[]" [queryParams]="{ tab: 'cards' }" queryParamsHandling="merge">
+        <span class="material-symbols-outlined" [class.filled]="activeTab === 'cards'">credit_card</span>
         Tarjetas
       </a>
-    </li>
-  </ul>
+      <a class="ed-tab" [class.active]="activeTab === 'history'" [routerLink]="[]" [queryParams]="{ tab: 'history' }" queryParamsHandling="merge">
+        <span class="material-symbols-outlined" [class.filled]="activeTab === 'history'">history</span>
+        Histórico
+      </a>
+    </nav>
 
-  <!-- Tab Content -->
   <div class="tab-content">
-    <!-- Employees Tab -->
     <div class="tab-pane fade" [class.show]="activeTab === 'employees'" [class.active]="activeTab === 'employees'">
-      <div class="card modern-card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">
-            <i class="fas fa-users me-2"></i>
-            Empleados de la empresa
-          </h5>
-          <div class="d-flex align-items-center gap-3">
-            <div class="form-check form-switch m-0">
-              <input class="form-check-input" type="checkbox" id="toggleHistory" [(ngModel)]="showHistory" (change)="onHistoryToggle()">
-              <label class="form-check-label" for="toggleHistory">Ver histórico</label>
-            </div>
-            <button class="btn btn-sm btn-outline-secondary" (click)="loadEmployeesList()">
-              <i class="fas fa-sync-alt"></i> Recargar
+      <div class="ed-panel">
+        <div class="ed-panel-head">
+          <div class="ed-panel-head-row">
+            <h3 class="ed-panel-title">
+              <span class="material-symbols-outlined">group</span>
+              Empleados de la empresa
+            </h3>
+            <button type="button" class="ed-link-btn" (click)="loadEmployeesList()">
+              <span class="material-symbols-outlined">refresh</span>
+              Recargar
             </button>
           </div>
+          <div class="ed-filters">
+            <div class="ed-field">
+              <label>Identificación</label>
+              <input type="text" [(ngModel)]="filterCedula" (ngModelChange)="onFilterChanged()" placeholder="Cédula">
+            </div>
+            <div class="ed-field">
+              <label>Nombre</label>
+              <input type="text" [(ngModel)]="filterNombre" (ngModelChange)="onFilterChanged()" placeholder="Nombre">
+            </div>
+            <div class="ed-field">
+              <label>Apellido</label>
+              <input type="text" [(ngModel)]="filterApellido" (ngModelChange)="onFilterChanged()" placeholder="Apellido">
+            </div>
+            <div class="ed-field">
+              <label>Código Empleado</label>
+              <input type="text" [(ngModel)]="filterCodigo" (ngModelChange)="onFilterChanged()" placeholder="Código">
+            </div>
+          </div>
         </div>
-        <div class="card-body p-0">
-          <!-- Filtros -->
-          <div class="filters px-3 py-3 border-bottom bg-light">
-            <div class="row g-2 align-items-end">
-              <div class="col-12 col-md-3">
-                <label class="form-label mb-1">Identificación</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="filterCedula" (ngModelChange)="onFilterChanged()" placeholder="Cédula">
+
+        <div class="ed-panel-body">
+          <div *ngIf="listLoading" class="ed-empty">Cargando empleados...</div>
+          <div *ngIf="!listLoading && (!listEmployees || listEmployees.length === 0)" class="ed-empty">No hay empleados</div>
+
+          <div *ngIf="!listLoading && listEmployees?.length" class="ed-bento-list">
+            <div *ngFor="let emp of listEmployees" class="ed-bento" [class.ed-bento--warn]="employeeHasExpiring(emp)">
+              <ng-container *ngIf="ensureEmployeeOverview(emp)"></ng-container>
+              <div class="ed-bento-side">
+                <div class="ed-emp-head">
+                  <div class="ed-avatar">
+                    <img [src]="getImageUrlFor(emp)" alt="Foto" (error)="onImgError($event)" loading="lazy" decoding="async">
+                  </div>
+                  <div class="ed-emp-copy">
+                    <h4 class="ed-emp-name" (click)="goToEmployeeTab(emp, 'profile')">
+                      {{ (emp.nombres || emp.name) | capitalize }} {{ (emp.apellidos || '') | capitalize }}
+                    </h4>
+                    <p class="ed-emp-meta">{{ emp.positionName || '-' }}</p>
+                  </div>
+                  <button type="button"
+                          class="ed-cv-icon"
+                          (click)="openEmployeeCv(emp, $event)"
+                          title="Hoja de vida"
+                          aria-label="Ver hoja de vida">
+                    <span class="material-symbols-outlined" aria-hidden="true">description</span>
+                  </button>
+                </div>
+                <div class="ed-emp-code">
+                  <strong>Código:</strong> {{ emp.codigoTrabajador || '-' }}
+                </div>
+                <div class="ed-emp-links">
+                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'profile')">Perfil</a>
+                  <span class="sep">•</span>
+                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'documents')">Documentos</a>
+                  <span class="sep">•</span>
+                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'courses')">Cursos</a>
+                  <span class="sep">•</span>
+                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'cards')">Tarjetas</a>
+                  <span class="sep">•</span>
+                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'history')">Histórico</a>
+                </div>
               </div>
-              <div class="col-12 col-md-3">
-                <label class="form-label mb-1">Nombre</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="filterNombre" (ngModelChange)="onFilterChanged()" placeholder="Nombre">
-              </div>
-              <div class="col-12 col-md-3">
-                <label class="form-label mb-1">Apellido</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="filterApellido" (ngModelChange)="onFilterChanged()" placeholder="Apellido">
-              </div>
-              <div class="col-12 col-md-3">
-                <label class="form-label mb-1">Código Empleado</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="filterCodigo" (ngModelChange)="onFilterChanged()" placeholder="Código">
+
+              <div class="ed-bento-main">
+                <ng-container *ngIf="getBusinessEmployeeIdFor(emp) as beId">
+                  <ng-container *ngIf="employeeItemsMap[beId] as items; else awaitingItems">
+                    <ng-container *ngIf="items.length; else noItems">
+                      <div *ngFor="let it of items"
+                           class="ed-doc-row"
+                           [class.ed-doc-row--warn]="getExpiryStatus(it.expiry_date) === 'Próximo a vencer'">
+                        <div class="ed-doc-info">
+                          <div class="ed-doc-icon">
+                            <span class="material-symbols-outlined">{{ itemIcon(it) }}</span>
+                          </div>
+                          <div>
+                            <p class="ed-doc-name">{{ it.name }}</p>
+                            <p class="ed-doc-cat">{{ it.category }}</p>
+                          </div>
+                        </div>
+                        <div class="ed-doc-meta">
+                          <div class="ed-doc-date">
+                            <span class="lbl">Emisión</span>
+                            <span>{{ it.issue_date | dateDmy }}</span>
+                          </div>
+                          <div class="ed-doc-date">
+                            <span class="lbl">Vencimiento</span>
+                            <span>{{ it.expiry_date | dateDmy }}</span>
+                          </div>
+                          <div class="ed-doc-status">
+                            <span class="ed-badge" [ngClass]="expiryTone(it.expiry_date)">{{ getExpiryStatus(it.expiry_date) }}</span>
+                            <div class="ed-days">
+                              <span class="n">{{ getDaysLeft(it.expiry_date) }}</span>
+                              <span class="u">Días</span>
+                            </div>
+                            <button type="button" class="ed-pdf-btn"
+                                    *ngIf="it.files?.length && isPdf(it.files[0])"
+                                    (click)="openDocFile(it.files[0])"
+                                    title="Ver PDF">
+                              <span class="material-symbols-outlined">picture_as_pdf</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </ng-container>
+                    <ng-template #noItems>
+                      <p class="ed-no-docs">
+                        <span class="material-symbols-outlined">info</span>
+                        Sin registros de documentos
+                      </p>
+                    </ng-template>
+                  </ng-container>
+                  <ng-template #awaitingItems>
+                    <p class="ed-no-docs">
+                      <span class="material-symbols-outlined">info</span>
+                      {{ employeeItemsLoading[beId] ? 'Cargando...' : 'Sin registros de documentos' }}
+                    </p>
+                  </ng-template>
+                </ng-container>
               </div>
             </div>
           </div>
-          <div *ngIf="listLoading" class="text-center py-4">Cargando empleados...</div>
-          <div *ngIf="!listLoading && (!listEmployees || listEmployees.length===0)" class="text-center py-4 text-muted">No hay empleados</div>
-          <div *ngIf="!listLoading && listEmployees && listEmployees.length>0" class="table-responsive">
-            <table class="table table-hover mb-0 align-middle employees-table">
-              <thead class="table-dark">
-                <tr>
-                  <th style="width: 320px;">Empleado</th>
-                  <th>Tipo</th>
-                  <th>Emisión</th>
-                  <th>Vencimiento</th>
-                  <th>Vigencia</th>
-                  <th>Días</th>
-                  <th>Documento</th>
-                </tr>
-              </thead>
-              <tbody>
-                <ng-container *ngFor="let emp of listEmployees">
-                  <ng-container *ngIf="ensureEmployeeOverview(emp); true"></ng-container>
-                  <ng-container *ngIf="getBusinessEmployeeIdFor(emp) as beId">
-                    <!-- Si ya hay items cargados -->
-                    <ng-container *ngIf="employeeItemsMap[beId] as items; else awaiting">
-                      <!-- Con registros -->
-                      <ng-container *ngIf="items.length > 0; else noItems">
-                        <tr *ngFor="let it of items; let i = index"
-                            [ngClass]="{
-                              'table-danger': it && getExpiryStatus(it.expiry_date) === 'Caducado',
-                              'table-warning': it && getExpiryStatus(it.expiry_date) === 'Próximo a vencer'
-                            }">
-                          <td *ngIf="i === 0" [attr.rowspan]="items.length" class="align-top">
-                            <div class="d-flex gap-3">
-                              <img [src]="getImageUrlFor(emp)" alt="Foto" class="mini-avatar" (error)="onImgError($event)" loading="lazy" decoding="async">
-                              <div>
-                                <div class="emp-name clickable" (click)="goToEmployeeTab(emp, 'profile')">
-                                  {{ (emp.nombres || emp.name) | capitalize }} {{ (emp.apellidos || '') | capitalize }}
-                                </div>
-                                <div class="emp-meta">{{ emp.positionName || '-' }}</div>
-                                <div class="small"><strong>Código:</strong> {{ emp.codigoTrabajador || '-' }}</div>
-                                <div class="small mt-1">
-                                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'profile')">Perfil</a>
-                                  · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'documents')">Documentos</a>
-                                  · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'courses')">Cursos</a>
-                                  · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'cards')">Tarjetas</a>
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <div class="d-flex align-items-center gap-2">
-                              <span class="doc-icon">
-                                <i class="fas" [ngClass]="{
-                                  'fa-user': it.type==='document',
-                                  'fa-graduation-cap': it.type==='course',
-                                  'fa-id-card': it.type==='card'
-                                }"></i>
-                              </span>
-                              <div>
-                                <div class="fw-semibold">{{ it.name }}</div>
-                                <div class="text-muted small">{{ it.category }}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td>{{ it.issue_date || '-' }}</td>
-                          <td>{{ it.expiry_date || '-' }}</td>
-                          <td>
-                            <span class="badge" [ngClass]="getExpiryBadgeClass(it.expiry_date)">{{ getExpiryStatus(it.expiry_date) }}</span>
-                          </td>
-                          <td>{{ getDaysLeft(it.expiry_date) }}</td>
-                          <td>
-                            <ng-container *ngIf="it.files?.length; else noFile">
-                              <div class="d-flex align-items-center gap-2">
-                                <button type="button" class="btn btn-outline-danger btn-sm rounded-3 pdf-btn" *ngIf="isPdf(it.files[0])" (click)="openDocFile(it.files[0])" title="Abrir PDF">
-                                  <i class="far fa-file-pdf"></i>
-                                </button>
-                                <span *ngIf="!isPdf(it.files[0])">-</span>
-                              </div>
-                            </ng-container>
-                            <ng-template #noFile>-</ng-template>
-                          </td>
-                        </tr>
-                      </ng-container>
-                      <!-- Sin registros -->
-                      <ng-template #noItems>
-                        <tr>
-                          <td class="align-top">
-                            <div class="d-flex gap-3">
-                              <img [src]="getImageUrlFor(emp)" alt="Foto" class="mini-avatar" (error)="onImgError($event)" loading="lazy" decoding="async">
-                              <div>
-                                <div class="emp-name clickable" (click)="goToEmployeeTab(emp, 'profile')">
-                                  {{ (emp.nombres || emp.name) | capitalize }} {{ (emp.apellidos || '') | capitalize }}
-                                </div>
-                                <div class="emp-meta">{{ emp.positionName || '-' }}</div>
-                                <div class="small"><strong>Código:</strong> {{ emp.codigoTrabajador || '-' }}</div>
-                                <div class="small mt-1">
-                                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'profile')">Perfil</a>
-                                  · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'documents')">Documentos</a>
-                                  · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'courses')">Cursos</a>
-                                  · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'cards')">Tarjetas</a>
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td colspan="6" class="text-center text-muted">Sin registros</td>
-                        </tr>
-                      </ng-template>
-                    </ng-container>
-                    <!-- A la espera de datos o cargando -->
-                    <ng-template #awaiting>
-                      <tr>
-                        <td class="align-top">
-                          <div class="d-flex gap-3">
-                            <img [src]="getImageUrlFor(emp)" alt="Foto" class="mini-avatar" (error)="onImgError($event)" loading="lazy" decoding="async">
-                            <div>
-                              <div class="emp-name clickable" (click)="goToEmployeeTab(emp, 'profile')">
-                                {{ (emp.nombres || emp.name) | capitalize }} {{ (emp.apellidos || '') | capitalize }}
-                              </div>
-                              <div class="emp-meta">{{ emp.positionName || '-' }}</div>
-                              <div class="small"><strong>Código:</strong> {{ emp.codigoTrabajador || '-' }}</div>
-                              <div class="small mt-1">
-                                <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'profile')">Perfil</a>
-                                · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'documents')">Documentos</a>
-                                · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'courses')">Cursos</a>
-                                · <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'cards')">Tarjetas</a>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td colspan="6" class="text-center text-muted">
-                          {{ employeeItemsLoading[beId] ? 'Cargando...' : 'Sin registros' }}
-                        </td>
-                      </tr>
-                    </ng-template>
-                  </ng-container>
-                </ng-container>
-              </tbody>
-            </table>
-            <div class="px-3 py-2 border-top d-flex justify-content-between align-items-center bg-light">
-              <div class="small text-muted">
-                Mostrando {{ totalElements === 0 ? 0 : (pageIndex * pageSize + 1) }} - {{ Math.min(totalElements, (pageIndex + 1) * pageSize) }} de {{ totalElements }}
-              </div>
-              <div class="d-flex align-items-center gap-2">
-                <div class="input-group input-group-sm" style="width: auto;">
-                  <span class="input-group-text">Tamaño</span>
-                  <select class="form-select form-select-sm" [ngModel]="pageSize" (ngModelChange)="changePageSize($event)">
-                    <option [ngValue]="10">10</option>
-                    <option [ngValue]="25">25</option>
-                    <option [ngValue]="50">50</option>
-                    <option [ngValue]="100">100</option>
-                  </select>
-                </div>
-                <div class="btn-group btn-group-sm">
-                  <button class="btn btn-outline-secondary" [disabled]="pageIndex === 0" (click)="prevPage()">
-                    <i class="fas fa-chevron-left"></i>
-                  </button>
-                  <button class="btn btn-outline-secondary" [disabled]="(pageIndex + 1) * pageSize >= totalElements" (click)="nextPage()">
-                    <i class="fas fa-chevron-right"></i>
-                  </button>
-                </div>
-              </div>
+        </div>
+
+        <div class="ed-panel-foot" *ngIf="!listLoading">
+          <span>Mostrando {{ totalElements === 0 ? 0 : (pageIndex * pageSize + 1) }} - {{ Math.min(totalElements, (pageIndex + 1) * pageSize) }} de {{ totalElements }}</span>
+          <div class="ed-pager">
+            <span>Tamaño</span>
+            <select [ngModel]="pageSize" (ngModelChange)="changePageSize($event)">
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="25">25</option>
+              <option [ngValue]="50">50</option>
+              <option [ngValue]="100">100</option>
+            </select>
+            <div class="ed-pager-btns">
+              <button type="button" [disabled]="pageIndex === 0" (click)="prevPage()">
+                <span class="material-symbols-outlined">chevron_left</span>
+              </button>
+              <button type="button" [disabled]="(pageIndex + 1) * pageSize >= totalElements" (click)="nextPage()">
+                <span class="material-symbols-outlined">chevron_right</span>
+              </button>
             </div>
           </div>
         </div>
@@ -648,6 +464,21 @@
       </div>
     </div>
 
+    <!-- Documentos y Certificaciones (contenido original del menú) -->
+    <div class="tab-pane fade" [class.show]="activeTab === 'docs-certs'" [class.active]="activeTab === 'docs-certs'">
+      <div class="card modern-card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-file-certificate me-2"></i>
+            Documentos y Certificaciones
+          </h5>
+        </div>
+        <div class="card-body docs-certs-embed">
+          <app-documents-certifications *ngIf="activeTab === 'docs-certs'"></app-documents-certifications>
+        </div>
+      </div>
+    </div>
+
     <!-- Documents Tab -->
     <div class="tab-pane fade" [class.show]="activeTab === 'documents'" [class.active]="activeTab === 'documents'">
       <div class="card modern-card">
@@ -766,6 +597,34 @@
         </div>
       </div>
     </div>
+
+    <!-- History Tab -->
+    <div class="tab-pane fade" [class.show]="activeTab === 'history'" [class.active]="activeTab === 'history'">
+      <div class="card modern-card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-history me-2"></i>
+            Histórico
+          </h5>
+        </div>
+        <div class="card-body">
+          <ng-container *ngIf="businessRuc; else historyPlaceholder">
+            <app-employee-history
+              *ngIf="activeTab === 'history'"
+              [businessRuc]="businessRuc">
+            </app-employee-history>
+          </ng-container>
+          <ng-template #historyPlaceholder>
+            <div class="text-center py-5">
+              <i class="fas fa-history fa-4x text-muted mb-3"></i>
+              <h4 class="text-muted">Histórico de renovaciones</h4>
+              <p class="text-muted">No se encontró la empresa para consultar el histórico de trabajadores.</p>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </div>
   </div>
 
   <!-- Modal: Listado de trabajadores -->
@@ -821,3 +680,10 @@
     </div>
   </div>
 </div>
+
+<app-employee-cv-overlay
+  *ngIf="cvEmployee"
+  [employee]="cvEmployee"
+  [businessRuc]="businessRuc || ''"
+  (closed)="closeEmployeeCv()">
+</app-employee-cv-overlay>

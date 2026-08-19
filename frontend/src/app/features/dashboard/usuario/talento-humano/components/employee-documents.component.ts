@@ -39,8 +39,6 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
   // Confirmación de renovación
   showRenewConfirm = false;
   renewTarget: EmployeeDocumentResponse | null = null;
-  // Mostrar histórico
-  showHistory = false;
   // Formulario de renovación (modal independiente)
   showRenewForm = false;
   renewSaving = false;
@@ -120,6 +118,7 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
     obs.subscribe({
       next: (docs) => {
         this.documents = docs || [];
+        this.syncSelectedDocType();
         this.loading = false;
       },
       error: (err) => {
@@ -129,48 +128,55 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
     });
   }
 
-  // Lista visible según "Ver histórico":
-  // - Histórico OFF: mostrar SOLO el último registro por tipo de documento (por id), y ocultar caducados (o usar active=true si viene del backend)
-  // - Histórico ON: mostrar SOLO históricos (active=false) o, si no hay bandera, solo caducados
-  filteredDocuments(): EmployeeDocumentResponse[] {
-    const items = this.documents || [];
-    if (this.showHistory) {
-      const hasActive = items.some(d => (d as any).active !== undefined);
-      if (hasActive) {
-        return items.filter(d => (d as any).active === false);
-      }
-      return items.filter(d => this.getExpiryStatus(d.end_date) === 'Caducado');
+  /** Tipos que aún no tienen un documento vigente (no histórico) para este empleado. */
+  availableDocTypes(): Array<{ id: number; name: string }> {
+    const used = new Set<number>();
+    for (const d of this.currentActiveDocuments()) {
+      const id = Number(d?.type_document?.id);
+      if (!Number.isNaN(id) && id > 0) used.add(id);
     }
+    return (this.docTypes || []).filter(t => !used.has(Number(t.id)));
+  }
 
-    // Si el backend envía la bandera 'active', usarla como fuente de verdad
+  private currentActiveDocuments(): EmployeeDocumentResponse[] {
+    const items = this.documents || [];
     const hasActive = items.some(d => (d as any).active !== undefined);
     if (hasActive) {
       return items.filter(d => (d as any).active !== false);
     }
-
-    // Fallback: elegir el último por tipo y ocultar caducados
-    const score = (d: EmployeeDocumentResponse): number => {
-      const toTs = (s?: string) => {
-        if (!s) return Number.NEGATIVE_INFINITY;
-        const t = new Date(s as string).getTime();
-        return isNaN(t) ? Number.NEGATIVE_INFINITY : t;
-      };
-      const exp = toTs(d.end_date);
-      if (exp !== Number.NEGATIVE_INFINITY) return exp;
-      return toTs(d.start_date);
-    };
-
-    const byType = new Map<number, EmployeeDocumentResponse>();
+    const latestByType = new Map<number, EmployeeDocumentResponse>();
     for (const d of items) {
-      const id = ((d as any)?.type_document?.id ?? -1) as number;
-      const prev = byType.get(id);
-      if (!prev || score(d) > score(prev)) {
-        byType.set(id, d);
+      const id = Number((d as any)?.type_document?.id ?? -1);
+      const prev = latestByType.get(id);
+      if (!prev || this.documentScore(d) > this.documentScore(prev)) {
+        latestByType.set(id, d);
       }
     }
+    return Array.from(latestByType.values())
+      .filter(d => this.getExpiryStatus(d.end_date) !== 'Caducado');
+  }
 
-    const latest = Array.from(byType.values());
-    const visible = latest.filter(d => this.getExpiryStatus(d.end_date) !== 'Caducado');
+  private syncSelectedDocType(): void {
+    if (!this.selectedDocTypeId) return;
+    const stillAvailable = this.availableDocTypes()
+      .some(t => String(t.id) === String(this.selectedDocTypeId));
+    if (!stillAvailable) this.selectedDocTypeId = '';
+  }
+
+  private documentScore(d: EmployeeDocumentResponse): number {
+    const toTs = (s?: string) => {
+      if (!s) return Number.NEGATIVE_INFINITY;
+      const t = new Date(s as string).getTime();
+      return isNaN(t) ? Number.NEGATIVE_INFINITY : t;
+    };
+    const exp = toTs(d.end_date);
+    if (exp !== Number.NEGATIVE_INFINITY) return exp;
+    return toTs(d.start_date);
+  }
+
+  // Lista vigente: último registro activo por tipo. El histórico vive en la pestaña Histórico.
+  filteredDocuments(): EmployeeDocumentResponse[] {
+    const visible = [...this.currentActiveDocuments()];
     visible.sort((a, b) => ((a as any)?.type_document?.name || '').localeCompare(((b as any)?.type_document?.name || '')));
     return visible;
   }
@@ -202,6 +208,13 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
     }
     if (!this.selectedDocTypeId) {
       this.error = 'Seleccione un tipo de documento.';
+      return;
+    }
+    const typeStillAvailable = this.availableDocTypes()
+      .some(t => String(t.id) === String(this.selectedDocTypeId));
+    if (!typeStillAvailable) {
+      this.error = 'Este tipo de documento ya está registrado para el empleado. Elimínelo o renuévelo.';
+      this.syncSelectedDocType();
       return;
     }
     if (!this.selectedFiles || this.selectedFiles.length === 0) {

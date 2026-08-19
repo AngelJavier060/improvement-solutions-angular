@@ -32,8 +32,6 @@ export class EmployeeCoursesComponent implements OnInit, OnChanges {
   // Confirmación de renovación
   showRenewConfirm = false;
   renewTarget: EmployeeCourseResponse | null = null;
-  // Mostrar histórico
-  showHistory = false;
   // Formulario de renovación (modal independiente)
   showRenewForm = false;
   renewSaving = false;
@@ -86,20 +84,11 @@ export class EmployeeCoursesComponent implements OnInit, OnChanges {
     });
   }
 
-  // Lista visible según "Ver histórico":
-  // - Histórico OFF: mostrar SOLO el último registro por curso (por id), y ocultar caducados
-  // - Histórico ON: mostrar todo
+  // Lista vigente: último curso activo. El histórico vive en la pestaña Histórico.
   filteredCourses(): EmployeeCourseResponse[] {
     const items = this.courses || [];
-    if (this.showHistory) {
-      // Mostrar solo históricos por item: preferir active===false; si no hay bandera, usar estado de vigencia
-      return items.filter(c => {
-        const a = (c as any).active;
-        if (a === false) return true;
-        if (a === true) return false;
-        return this.getExpiryStatus(c.expiry_date) === 'Caducado';
-      });
-    }
+    const hasActive = items.some(c => (c as any).active !== undefined);
+    const base = hasActive ? items.filter(c => (c as any).active !== false) : items;
 
     const score = (c: EmployeeCourseResponse): number => {
       const toTs = (d?: string) => {
@@ -113,7 +102,7 @@ export class EmployeeCoursesComponent implements OnInit, OnChanges {
     };
 
     const byCourse = new Map<number, EmployeeCourseResponse>();
-    for (const c of items) {
+    for (const c of base) {
       const id = ((c as any)?.course?.id ?? -1) as number;
       const prev = byCourse.get(id);
       if (!prev || score(c) > score(prev)) {
@@ -121,10 +110,7 @@ export class EmployeeCoursesComponent implements OnInit, OnChanges {
       }
     }
 
-    const latest = Array.from(byCourse.values());
-    // Ocultar caducados en vista principal
-    const visible = latest.filter(c => this.getExpiryStatus(c.expiry_date) !== 'Caducado');
-    // Orden opcional por nombre de curso
+    const visible = Array.from(byCourse.values());
     visible.sort((a, b) => ((a as any)?.course?.name || '').localeCompare(((b as any)?.course?.name || '')));
     return visible;
   }

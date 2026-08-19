@@ -1,14 +1,14 @@
 /* Documentos del empleado — diseño alineado al mock de Detalle del Empleado */
 .ed-docs {
-  --ed-primary: #4648d4;
-  --ed-primary-hover: #6063ee;
-  --ed-on-surface: #121c2a;
-  --ed-on-variant: #464554;
-  --ed-outline: #c7c4d7;
-  --ed-surface: #ffffff;
-  --ed-surface-low: #eff4ff;
-  --ed-bg: #f8f9ff;
-  --ed-error: #ba1a1a;
+  --ed-primary: var(--th-primary, #031635);
+  --ed-primary-hover: var(--th-secondary, #0058be);
+  --ed-on-surface: var(--th-on-surface, #1b1b1e);
+  --ed-on-variant: var(--th-on-variant, #44474e);
+  --ed-outline: var(--th-outline, #c5c6cf);
+  --ed-surface: var(--th-surface, #ffffff);
+  --ed-surface-low: var(--th-surface-low, #f5f3f6);
+  --ed-bg: var(--th-bg, #fbf8fc);
+  --ed-error: var(--th-error, #ba1a1a);
   --ed-tertiary: #b90538;
   --ed-radius: 0.75rem;
 
@@ -375,7 +375,8 @@
   justify-content: center;
   padding: 1rem;
   margin: 0;
-  background: transparent;
+  background: rgba(27, 27, 30, 0.4);
+  backdrop-filter: blur(4px);
   overscroll-behavior: none;
   isolation: isolate;
   animation: none !important;

@@ -78,6 +78,11 @@ export class FleetService {
     return `${this.baseUrl}/${encodeURIComponent(businessRuc)}/vehicles/${vehicleId}/documents/${docId}/content`;
   }
 
+  /** ZIP con los PDF vigentes de esta unidad. */
+  vehicleDocumentsZipUrl(businessRuc: string, vehicleId: number): string {
+    return `${this.baseUrl}/${encodeURIComponent(businessRuc)}/vehicles/${vehicleId}/documents/zip`;
+  }
+
   recoverOrphanComplianceDocs(businessRuc: string, vehicleId: number): Observable<unknown[]> {
     return this.http.post<unknown[]>(
       `${this.baseUrl}/${encodeURIComponent(businessRuc)}/vehicles/${vehicleId}/compliance-docs/recover-orphans`,

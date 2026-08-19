@@ -51,6 +51,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
 
   @ViewChild('estadoReport') estadoReport?: ElementRef<HTMLElement>;
   exportingPdf = false;
+  downloadingZip = false;
   companyLogoUrl = '';
   private pdfDownloadName: string | null = null;
 
@@ -506,6 +507,67 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
 
   hasPdf(doc: FleetComplianceDoc): boolean {
     return !!(doc.attachedFleetDocumentId || (doc.attachedDocumentUrl && doc.attachedDocumentUrl.trim()));
+  }
+
+  pdfDocsCount(): number {
+    return this.docService.getCurrentDocuments(this.vehicleId).filter(d => this.hasPdf(d)).length;
+  }
+
+  downloadAllPdfs(): void {
+    if (!this.ensureSession()) return;
+    if (this.pdfDocsCount() === 0) {
+      alert('Esta unidad no tiene PDF adjuntos para descargar.');
+      return;
+    }
+    this.downloadingZip = true;
+    const url = this.fleetService.vehicleDocumentsZipUrl(this.businessRuc, this.vehicleId);
+    this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
+      next: (resp: HttpResponse<Blob>) => {
+        this.downloadingZip = false;
+        const blob = resp.body;
+        if (!blob || blob.size === 0) {
+          alert('No se pudo generar el archivo ZIP.');
+          return;
+        }
+        const headerType = (resp.headers.get('Content-Type') || '').toLowerCase();
+        if (headerType.includes('json') || headerType.includes('text/html')) {
+          blob.text().then(t => {
+            console.error('ZIP respuesta no binaria', t);
+            alert('No hay PDF para comprimir o no se pudo generar el ZIP.');
+          });
+          return;
+        }
+        const a = document.createElement('a');
+        const objectUrl = URL.createObjectURL(blob);
+        a.href = objectUrl;
+        a.download = this.zipDownloadName(resp.headers.get('Content-Disposition'));
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+      },
+      error: err => {
+        this.downloadingZip = false;
+        console.error(err);
+        alert('No se pudo descargar el ZIP de esta unidad.');
+      }
+    });
+  }
+
+  private zipDownloadName(disposition: string | null): string {
+    const placa = (this.vehicle?.placa || 'unidad').replace(/[\\/:*?"<>|]+/g, '_');
+    const fallback = `documentacion_${placa}.zip`;
+    if (!disposition) return fallback;
+    const utf = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+    if (utf?.[1]) {
+      try {
+        return decodeURIComponent(utf[1].trim());
+      } catch {
+        return fallback;
+      }
+    }
+    const plain = /filename="?([^";]+)"?/i.exec(disposition);
+    return plain?.[1]?.trim() || fallback;
   }
 
   private pdfFetchUrl(doc: FleetComplianceDoc): string | null {

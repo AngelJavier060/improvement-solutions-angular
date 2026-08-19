@@ -75,6 +75,15 @@
         (click)="exportEstadoPdf()">
         <i class="fas" [ngClass]="exportingPdf ? 'fa-spinner fa-spin' : 'fa-file-pdf'"></i>
       </button>
+      <button
+        type="button"
+        class="du-btn du-btn--zip"
+        title="Descargar todos los PDF de esta unidad en un ZIP"
+        [disabled]="downloadingZip || pdfDocsCount() === 0"
+        (click)="downloadAllPdfs()">
+        <i class="fas" [ngClass]="downloadingZip ? 'fa-spinner fa-spin' : 'fa-file-archive'"></i>
+        <span>Descargar todo</span>
+      </button>
       <a
         class="du-btn du-btn--primary"
         [routerLink]="registroCommands()">

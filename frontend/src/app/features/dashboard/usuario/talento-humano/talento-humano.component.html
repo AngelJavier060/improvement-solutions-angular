@@ -1,4 +1,4 @@
-<div class="talento-humano-container">
+<div class="talento-humano-container" [class.th-theme-dark]="isDark">
   <div class="d-flex layout-row">
 
     <!-- Toggle button -->
@@ -15,14 +15,13 @@
       <!-- Cabecera -->
       <div class="sidebar-header pt-4 pb-2">
         <div class="sidebar-icon mb-2">
-          <i class="fas fa-users"></i>
+          <span class="material-symbols-outlined filled">group</span>
         </div>
         <h4 class="sidebar-title" *ngIf="!isCollapsed">Talento Humano</h4>
       </div>
 
       <!-- Empresa activa (solo informativo, sin colapso) -->
       <div class="sidebar-business-info" *ngIf="!isCollapsed">
-        <i class="fas fa-building me-2"></i>
         <span class="biz-name">{{ businessName }}</span>
       </div>
 
@@ -37,8 +36,8 @@
                [routerLinkActiveOptions]="{ exact: true }"
                class="nav-link"
                title="Inicio">
-              <i class="fas fa-home"></i>
-              <span *ngIf="!isCollapsed">Inicio</span>
+              <span class="material-symbols-outlined">home</span>
+              <span class="nav-label" *ngIf="!isCollapsed">Inicio</span>
             </a>
           </li>
 
@@ -48,19 +47,20 @@
                routerLinkActive="active"
                class="nav-link"
                title="Gestión de Empleados">
-              <i class="fas fa-user-friends"></i>
-              <span *ngIf="!isCollapsed">Gestión de Empleados</span>
+              <span class="material-symbols-outlined">group</span>
+              <span class="nav-label" *ngIf="!isCollapsed">Gestión de Empleados</span>
             </a>
           </li>
 
           <!-- Documentos y Certificaciones -->
           <li>
-            <a routerLink="documentos-certificaciones"
-               routerLinkActive="active"
+            <a href="javascript:void(0)"
+               (click)="openDocumentosCertificaciones($event)"
                class="nav-link"
+               [class.active]="isDocumentosCertificacionesActive()"
                title="Documentos y Certificaciones">
-              <i class="fas fa-file-certificate"></i>
-              <span *ngIf="!isCollapsed">Documentos y<br>Certificaciones</span>
+              <span class="material-symbols-outlined">description</span>
+              <span class="nav-label" *ngIf="!isCollapsed">Documentos y Certificaciones</span>
             </a>
           </li>
 
@@ -72,11 +72,10 @@
                     (click)="toggleAttendance()"
                     title="Control de Asistencia"
                     type="button">
-              <i class="fas fa-calendar-check"></i>
-              <span *ngIf="!isCollapsed">Control de Asistencia</span>
-              <i *ngIf="!isCollapsed"
-                 class="fas ms-auto nav-chevron"
-                 [ngClass]="isAttendanceExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+              <span class="material-symbols-outlined">calendar_today</span>
+              <span class="nav-label" *ngIf="!isCollapsed">Control de Asistencia</span>
+              <span *ngIf="!isCollapsed"
+                    class="material-symbols-outlined nav-chevron ms-auto">{{ isAttendanceExpanded ? 'expand_less' : 'expand_more' }}</span>
             </button>
 
             <!-- Sub-items -->
@@ -131,6 +130,18 @@
 
         </ul>
       </nav>
+
+      <div class="sidebar-theme">
+        <button type="button"
+                class="th-theme-toggle"
+                (click)="toggleTheme()"
+                [attr.title]="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+                [attr.aria-label]="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+                [attr.aria-pressed]="isDark">
+          <span class="material-symbols-outlined">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
+          <span class="nav-label" *ngIf="!isCollapsed">{{ isDark ? 'Modo claro' : 'Modo oscuro' }}</span>
+        </button>
+      </div>
     </aside>
 
     <!-- ── Contenido principal ── -->

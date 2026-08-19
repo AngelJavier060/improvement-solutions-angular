@@ -2,11 +2,6 @@
   <div class="ed-docs__toolbar">
     <h5 class="ed-docs__title">Documentos del empleado</h5>
     <div class="ed-docs__toolbar-actions">
-      <label class="ed-docs__switch">
-        <input type="checkbox" [(ngModel)]="showHistory" (change)="loadDocuments()" />
-        <span class="ed-docs__switch-track" aria-hidden="true"><span class="ed-docs__switch-dot"></span></span>
-        <span class="ed-docs__switch-label">Ver histórico</span>
-      </label>
       <button type="button" class="ed-docs__btn-ghost" (click)="loadDocuments()">
         <i class="fas fa-sync-alt"></i> Recargar
       </button>
@@ -19,8 +14,11 @@
         <label>Tipo de documento</label>
         <select [(ngModel)]="selectedDocTypeId">
           <option value="">Seleccione</option>
-          <option *ngFor="let t of docTypes" [value]="t.id">{{ t.name }}</option>
+          <option *ngFor="let t of availableDocTypes()" [value]="t.id">{{ t.name }}</option>
         </select>
+        <div class="ed-docs__hint" *ngIf="docTypes.length && !availableDocTypes().length">
+          Todos los tipos ya están registrados. Elimine uno para volver a usarlo, o renuévelo desde la tabla.
+        </div>
       </div>
       <div class="ed-docs__field">
         <label>Fecha emisión</label>
@@ -77,8 +75,8 @@
         <tbody>
           <tr *ngFor="let d of filteredDocuments()">
             <td>{{ d.type_document.name }}</td>
-            <td>{{ d.start_date || '-' }}</td>
-            <td>{{ d.end_date || '-' }}</td>
+            <td>{{ d.start_date | dateDmy }}</td>
+            <td>{{ d.end_date | dateDmy }}</td>
             <td>
               <span class="ed-docs__badge" [ngClass]="getExpiryBadgeClass(d.end_date)">{{ getExpiryStatus(d.end_date) }}</span>
             </td>
@@ -115,28 +113,40 @@
   <!-- Modales fuera del recuadro de la página (CDK Overlay → document.body) -->
   <ng-template #renewConfirmTpl>
     <div class="ed-modal" (click)="closeRenewConfirm()">
-      <div class="ed-modal__dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-        <div class="ed-modal__header">
-          <h5 class="ed-modal__title"><i class="fas fa-sync"></i> Confirmar renovación</h5>
-          <button type="button" class="ed-modal__x" (click)="closeRenewConfirm()" title="Cerrar">✕</button>
+      <div class="ed-renew" role="dialog" aria-modal="true" aria-labelledby="edRenewTitle" (click)="$event.stopPropagation()">
+        <div class="ed-renew__header">
+          <div class="ed-renew__icon" aria-hidden="true">
+            <span class="material-symbols-outlined">refresh</span>
+          </div>
+          <h2 class="ed-renew__title" id="edRenewTitle">Confirmar renovación</h2>
         </div>
-        <div class="ed-modal__body">
-          <p>¿Desea renovar este documento?</p>
-          <p class="ed-modal__help">
-            El documento actual (incluido si está caducado) pasará al <strong>histórico</strong>
-            y podrá registrar la nueva vigencia con su PDF.
+        <div class="ed-renew__body">
+          <p class="ed-renew__q">¿Desea renovar este documento?</p>
+          <p class="ed-renew__help">
+            El documento actual (incluido si está caducado) pasará al histórico y podrá registrar la nueva vigencia con su PDF.
           </p>
-          <div class="ed-modal__meta" *ngIf="renewTarget">
-            <div><strong>Tipo:</strong> {{ renewTarget.type_document.name }}</div>
-            <div><strong>Emisión:</strong> {{ renewTarget.start_date || '-' }}</div>
-            <div><strong>Vencimiento:</strong> {{ renewTarget.end_date || '-' }}
-              ({{ getExpiryStatus(renewTarget.end_date) }}, {{ getDaysLeft(renewTarget.end_date) }} días)</div>
+          <div class="ed-renew__meta" *ngIf="renewTarget">
+            <div class="ed-renew__row">
+              <span class="ed-renew__label">Tipo</span>
+              <span class="ed-renew__value">{{ renewTarget.type_document.name }}</span>
+            </div>
+            <div class="ed-renew__row">
+              <span class="ed-renew__label">Emisión</span>
+              <span class="ed-renew__value">{{ renewTarget.start_date | dateDmy }}</span>
+            </div>
+            <div class="ed-renew__row">
+              <span class="ed-renew__label">Vencimiento</span>
+              <div class="ed-renew__value-wrap">
+                <span class="ed-renew__value">{{ renewTarget.end_date | dateDmy }}</span>
+                <span class="ed-renew__badge">{{ getExpiryStatus(renewTarget.end_date) }}, {{ getDaysLeft(renewTarget.end_date) }} días</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="ed-modal__footer">
-          <button type="button" class="ed-modal__btn ed-modal__btn--ghost" (click)="closeRenewConfirm()">Cancelar</button>
-          <button type="button" class="ed-modal__btn ed-modal__btn--primary" (click)="confirmRenew()">
-            <i class="fas fa-history"></i>
+        <div class="ed-renew__footer">
+          <button type="button" class="ed-renew__btn ed-renew__btn--ghost" (click)="closeRenewConfirm()">Cancelar</button>
+          <button type="button" class="ed-renew__btn ed-renew__btn--primary" (click)="confirmRenew()">
+            <span class="material-symbols-outlined filled" aria-hidden="true">refresh</span>
             Sí, renovar y guardar histórico
           </button>
         </div>
@@ -146,49 +156,55 @@
 
   <ng-template #renewFormTpl>
     <div class="ed-modal" (click)="cancelRenewForm()">
-      <div class="ed-modal__dialog ed-modal__dialog--form" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
-        <div class="ed-modal__header">
-          <h5 class="ed-modal__title"><i class="fas fa-sync"></i> Renovar {{ renewTypeName }}</h5>
-          <button type="button" class="ed-modal__x" (click)="cancelRenewForm()" title="Cerrar">✕</button>
+      <div class="ed-rform" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <div class="ed-rform__header">
+          <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+          <h2 class="ed-rform__title">Renovar {{ renewTypeName }}</h2>
         </div>
-        <div class="ed-modal__body">
-          <div class="ed-modal__meta" *ngIf="renewTarget">
-            <strong>Actual:</strong>
-            Emisión {{ renewTarget.start_date || '-' }} ·
-            Venc. {{ renewTarget.end_date || '-' }}
-            ({{ getExpiryStatus(renewTarget.end_date) }}, {{ getDaysLeft(renewTarget.end_date) }} días)
+        <div class="ed-rform__body">
+          <div class="ed-rform__alert" *ngIf="renewTarget">
+            <span class="material-symbols-outlined" aria-hidden="true">info</span>
+            <p>
+              Actual: Emisión {{ renewTarget.start_date | dateDmy }} ·
+              Venc. {{ renewTarget.end_date | dateDmy }}
+              ({{ getExpiryStatus(renewTarget.end_date) }}, {{ getDaysLeft(renewTarget.end_date) }} días)
+            </p>
           </div>
-
-          <div class="ed-modal__grid">
-            <div class="ed-modal__field">
+          <div class="ed-rform__grid">
+            <div class="ed-rform__field">
               <label>Fecha emisión</label>
-              <input type="date" [(ngModel)]="renewStartDate" />
+              <div class="ed-rform__date">
+                <th-date-field [(ngModel)]="renewStartDate" name="renewStartDate"></th-date-field>
+              </div>
             </div>
-            <div class="ed-modal__field">
+            <div class="ed-rform__field">
               <label>Fecha expiración</label>
-              <input type="date" [(ngModel)]="renewEndDate" />
+              <div class="ed-rform__date">
+                <th-date-field [(ngModel)]="renewEndDate" name="renewEndDate" align="end"></th-date-field>
+              </div>
             </div>
           </div>
-
-          <div class="ed-modal__field">
+          <div class="ed-rform__field">
             <label>Descripción</label>
-            <textarea rows="2" [(ngModel)]="renewDescription" placeholder="Descripción (opcional)"></textarea>
+            <textarea rows="3" [(ngModel)]="renewDescription" placeholder="Descripción (opcional)"></textarea>
           </div>
-
-          <div class="ed-modal__field">
+          <div class="ed-rform__field">
             <label>Archivos (PDF)</label>
-            <input type="file" accept="application/pdf" (change)="onRenewFilesSelected($event)" multiple />
-            <div class="ed-modal__error" *ngIf="renewFileError">{{ renewFileError }}</div>
-            <div class="ed-modal__hint" *ngIf="renewFiles.length">{{ renewFiles.length }} archivo(s) seleccionado(s)</div>
+            <div class="ed-rform__file">
+              <input #renewFileInput type="file" accept="application/pdf" (change)="onRenewFilesSelected($event)" multiple hidden />
+              <button type="button" class="ed-rform__file-btn" (click)="renewFileInput.click()">Elegir archivos</button>
+              <span class="ed-rform__file-name">{{ renewFiles.length ? (renewFiles.length + ' archivo(s) seleccionado(s)') : 'No se eligió ningún archivo' }}</span>
+            </div>
+            <div class="ed-rform__error" *ngIf="renewFileError">{{ renewFileError }}</div>
           </div>
         </div>
-        <div class="ed-modal__footer">
-          <button type="button" class="ed-modal__btn ed-modal__btn--ghost" (click)="cancelRenewForm()">Cancelar</button>
+        <div class="ed-rform__footer">
+          <button type="button" class="ed-rform__btn ed-rform__btn--ghost" (click)="cancelRenewForm()">Cancelar</button>
           <button type="button"
-                  class="ed-modal__btn ed-modal__btn--primary"
+                  class="ed-rform__btn ed-rform__btn--primary"
                   (click)="submitRenewal()"
                   [disabled]="renewSaving || !renewFiles.length || (renewStartDate && renewEndDate && renewStartDate > renewEndDate)">
-            <i class="fas" [ngClass]="renewSaving ? 'fa-spinner fa-spin' : 'fa-history'"></i>
+            <span class="material-symbols-outlined" aria-hidden="true">{{ renewSaving ? 'progress_activity' : 'history' }}</span>
             {{ renewSaving ? 'Guardando...' : 'Guardar renovación en histórico' }}
           </button>
         </div>

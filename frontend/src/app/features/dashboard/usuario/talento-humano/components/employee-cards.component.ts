@@ -31,8 +31,6 @@ export class EmployeeCardsComponent implements OnInit, OnChanges {
   // Confirmación de renovación
   showRenewConfirm = false;
   renewTarget: EmployeeCardResponse | null = null;
-  // Mostrar histórico
-  showHistory = false;
   // Formulario de renovación (modal independiente)
   showRenewForm = false;
   renewSaving = false;
@@ -98,24 +96,11 @@ export class EmployeeCardsComponent implements OnInit, OnChanges {
     }
   }
 
-  // Lista visible según "Ver histórico":
-  // - Histórico OFF: mostrar SOLO el último registro por tarjeta (por id) y ocultar caducados.
-  //   Si el backend envía bandera 'active', usarla (active !== false).
-  // - Histórico ON: mostrar SOLO históricos (active === false) o, si no hay bandera, solo caducados.
+  // Lista vigente: última tarjeta activa. El histórico vive en la pestaña Histórico.
   filteredCards(): EmployeeCardResponse[] {
     const items = this.records || [];
-    if (this.showHistory) {
-      return items.filter(r => {
-        const a = (r as any).active;
-        if (a === false) return true;
-        if (a === true) return false;
-        return this.getExpiryStatus(r.expiry_date) === 'Caducado';
-      });
-    }
-
-    // Histórico OFF
     const hasActive = items.some(r => (r as any).active !== undefined);
-    const base = hasActive ? items.filter(r => (r as any).active === true) : items;
+    const base = hasActive ? items.filter(r => (r as any).active === true || (r as any).active === undefined) : items;
 
     const score = (r: EmployeeCardResponse): number => {
       const toTs = (s?: string) => {
@@ -139,9 +124,8 @@ export class EmployeeCardsComponent implements OnInit, OnChanges {
     }
 
     const latest = Array.from(byCardName.values());
-    const visible = latest.filter(r => this.getExpiryStatus(r.expiry_date) !== 'Caducado');
-    visible.sort((a, b) => ((a as any)?.card?.name || '').localeCompare(((b as any)?.card?.name || '')));
-    return visible;
+    latest.sort((a, b) => ((a as any)?.card?.name || '').localeCompare(((b as any)?.card?.name || '')));
+    return latest;
   }
 
   onFilesSelected(event: Event): void {

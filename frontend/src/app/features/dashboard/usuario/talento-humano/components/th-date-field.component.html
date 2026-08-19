@@ -1,0 +1,50 @@
+<div class="th-date" [class.is-open]="open">
+  <input
+    type="text"
+    class="th-date__input"
+    inputmode="numeric"
+    autocomplete="off"
+    maxlength="10"
+    [placeholder]="placeholder"
+    [disabled]="disabled"
+    [value]="display"
+    (input)="onType($any($event.target).value)"
+    (blur)="onBlur()" />
+  <button
+    type="button"
+    class="th-date__btn"
+    [disabled]="disabled"
+    (mousedown)="$event.preventDefault(); $event.stopPropagation()"
+    (click)="toggleCal($event)"
+    aria-label="Abrir calendario">
+    <span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>
+  </button>
+
+  <div class="th-date__pop" [class.is-end]="align === 'end'" *ngIf="open" role="dialog" aria-label="Calendario">
+    <div class="th-date__nav">
+      <button type="button" class="th-date__nav-btn" (mousedown)="prevMonth($event)" aria-label="Mes anterior">
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+      </button>
+      <span class="th-date__month">{{ monthLabel }}</span>
+      <button type="button" class="th-date__nav-btn" (mousedown)="nextMonth($event)" aria-label="Mes siguiente">
+        <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+      </button>
+    </div>
+    <div class="th-date__week">
+      <span *ngFor="let w of weekDays">{{ w }}</span>
+    </div>
+    <div class="th-date__grid">
+      <button
+        *ngFor="let c of cells; trackBy: trackCell"
+        type="button"
+        class="th-date__day"
+        [class.is-empty]="!c.day"
+        [class.is-selected]="isSelected(c.iso)"
+        [class.is-today]="isToday(c.iso)"
+        [disabled]="!c.day"
+        (mousedown)="pickDay(c.iso, $event)">
+        {{ c.day || '' }}
+      </button>
+    </div>
+  </div>
+</div>

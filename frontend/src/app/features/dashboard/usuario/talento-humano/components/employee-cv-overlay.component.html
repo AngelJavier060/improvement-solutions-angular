@@ -1,0 +1,247 @@
+<ng-template #cvTpl>
+  <div class="ed-cv-layer" role="dialog" aria-modal="true" aria-labelledby="edCvTitle">
+    <header class="ed-cv-bar ed-cv-no-print">
+      <div class="ed-cv-bar-left">
+        <span class="material-symbols-outlined" aria-hidden="true">description</span>
+        <h1 class="ed-cv-bar-title" id="edCvTitle">Curriculum Vitae</h1>
+      </div>
+      <div class="ed-cv-bar-actions">
+        <button type="button" class="ed-cv-btn ed-cv-btn--primary" (click)="downloadPdf()" [disabled]="loading">
+          <span class="material-symbols-outlined" aria-hidden="true">download</span>
+          Descargar PDF
+        </button>
+        <button type="button" class="ed-cv-btn ed-cv-btn--ghost" (click)="close()" title="Cerrar (Esc)">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+          Cerrar
+        </button>
+      </div>
+    </header>
+
+    <div class="ed-cv-scroll">
+      <div class="ed-cv-sheet" *ngIf="profile as emp">
+        <section class="ed-cv-hero">
+          <img class="ed-cv-photo" [src]="photoUrl(emp)" [alt]="'Foto de ' + fullName(emp)" (error)="onImgError($event)" />
+          <div class="ed-cv-hero-main">
+            <div class="ed-cv-name-row">
+              <h2 class="ed-cv-name">{{ fullName(emp) | capitalize }}</h2>
+              <span class="ed-cv-status" [class.is-ok]="emp.active !== false" [class.is-muted]="emp.active === false">
+                {{ emp.active === false ? 'Inactivo' : 'Activo' }}
+              </span>
+            </div>
+            <p class="ed-cv-role">{{ emp.positionName || '—' }}</p>
+            <div class="ed-cv-chips">
+              <span class="ed-cv-chip">
+                <span class="material-symbols-outlined" aria-hidden="true">badge</span>
+                Cédula: {{ emp.cedula || '—' }}
+              </span>
+              <span class="ed-cv-chip">
+                <span class="material-symbols-outlined" aria-hidden="true">mail</span>
+                {{ emp.email || '—' }}
+              </span>
+            </div>
+          </div>
+          <div class="ed-cv-company">{{ emp.businessName || '—' }}</div>
+        </section>
+
+        <div class="ed-cv-cols">
+          <section>
+            <h3 class="ed-cv-h">
+              <span class="material-symbols-outlined" aria-hidden="true">person</span>
+              Información Personal
+            </h3>
+            <div class="ed-cv-grid">
+              <div>
+                <p class="ed-cv-label">Nombres</p>
+                <p class="ed-cv-value">{{ emp.nombres || emp.name || '—' }}</p>
+              </div>
+              <div>
+                <p class="ed-cv-label">Apellidos</p>
+                <p class="ed-cv-value">{{ emp.apellidos || '—' }}</p>
+              </div>
+              <div>
+                <p class="ed-cv-label">Fecha Nacimiento</p>
+                <p class="ed-cv-value">{{ emp.dateBirth | dateDmy }}</p>
+              </div>
+              <div>
+                <p class="ed-cv-label">Género</p>
+                <p class="ed-cv-value">{{ emp.genderName || '—' }}</p>
+              </div>
+              <div>
+                <p class="ed-cv-label">Estado Civil</p>
+                <p class="ed-cv-value">{{ emp.civilStatusName || '—' }}</p>
+              </div>
+              <div>
+                <p class="ed-cv-label">Tipo Sangre</p>
+                <p class="ed-cv-value">{{ emp.tipoSangre || '—' }}</p>
+              </div>
+              <div class="ed-cv-span2">
+                <p class="ed-cv-label">Dirección</p>
+                <p class="ed-cv-value">{{ emp.direccionDomiciliaria || emp.address || '—' }}</p>
+              </div>
+              <div class="ed-cv-span2">
+                <p class="ed-cv-label">Nivel Educación</p>
+                <p class="ed-cv-value">{{ emp.nivelEducacion || emp.degreeName || '—' }}</p>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h3 class="ed-cv-h">
+              <span class="material-symbols-outlined" aria-hidden="true">work</span>
+              Información de Empresa
+            </h3>
+            <div class="ed-cv-grid">
+              <div class="ed-cv-span2">
+                <p class="ed-cv-label">Empresa</p>
+                <p class="ed-cv-value">{{ companyLine(emp) }}</p>
+              </div>
+              <div>
+                <p class="ed-cv-label">Cargo</p>
+                <p class="ed-cv-value">{{ emp.positionName || '—' }}</p>
+              </div>
+              <div>
+                <p class="ed-cv-label">Departamento</p>
+                <p class="ed-cv-value">{{ emp.departmentName || '—' }}</p>
+              </div>
+              <div>
+                <p class="ed-cv-label">Tipo Contrato</p>
+                <p class="ed-cv-value">{{ emp.contractTypeName || '—' }}</p>
+              </div>
+              <div>
+                <p class="ed-cv-label">Fecha Ingreso</p>
+                <p class="ed-cv-value">{{ emp.fechaIngreso | dateDmy }}</p>
+              </div>
+              <div class="ed-cv-span2">
+                <p class="ed-cv-label">Código IESS</p>
+                <p class="ed-cv-value">{{ emp.codigoIess || '—' }}</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section>
+          <h3 class="ed-cv-h">
+            <span class="material-symbols-outlined" aria-hidden="true">history</span>
+            Historial Laboral
+          </h3>
+          <div class="ed-cv-table-wrap" *ngIf="movements.length; else noMoves">
+            <table class="ed-cv-table">
+              <thead>
+                <tr>
+                  <th>Fecha efectiva</th>
+                  <th>Tipo</th>
+                  <th>Motivo / notas</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let mv of movements">
+                  <td>{{ mv.effectiveDate | dateDmy }}</td>
+                  <td>
+                    <span class="ed-cv-pill" [ngClass]="movementClass(mv.movementType)">{{ movementLabel(mv.movementType) }}</span>
+                  </td>
+                  <td>{{ mv.reason || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ng-template #noMoves>
+            <div class="ed-cv-empty">Sin movimientos registrados</div>
+          </ng-template>
+        </section>
+
+        <section>
+          <h3 class="ed-cv-h">
+            <span class="material-symbols-outlined" aria-hidden="true">folder_open</span>
+            Documentos y Certificaciones
+          </h3>
+          <div class="ed-cv-table-wrap" *ngIf="documents.length; else noDocs">
+            <table class="ed-cv-table">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Emisión</th>
+                  <th>Vencimiento</th>
+                  <th>Vigencia</th>
+                  <th>Descripción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let d of documents">
+                  <td>{{ d.type_document.name || '—' }}</td>
+                  <td>{{ d.start_date | dateDmy }}</td>
+                  <td>{{ d.end_date | dateDmy }}</td>
+                  <td>
+                    <span class="ed-cv-pill" [ngClass]="expiryClass(d.end_date)">{{ expiryStatus(d.end_date) }}</span>
+                  </td>
+                  <td>{{ d.description || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ng-template #noDocs>
+            <div class="ed-cv-empty">No hay documentos</div>
+          </ng-template>
+        </section>
+
+        <div class="ed-cv-split">
+          <section>
+            <h3 class="ed-cv-h">
+              <span class="material-symbols-outlined" aria-hidden="true">school</span>
+              Cursos y certificaciones
+            </h3>
+            <div class="ed-cv-table-wrap" *ngIf="courses.length; else noCourses">
+              <table class="ed-cv-table">
+                <thead>
+                  <tr>
+                    <th>Curso</th>
+                    <th>Emisión</th>
+                    <th>Vencimiento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let c of courses">
+                    <td>{{ c.course.name || '—' }}</td>
+                    <td>{{ c.issue_date | dateDmy }}</td>
+                    <td>{{ c.expiry_date | dateDmy }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ng-template #noCourses>
+              <div class="ed-cv-empty">No hay cursos/certificaciones</div>
+            </ng-template>
+          </section>
+          <section>
+            <h3 class="ed-cv-h">
+              <span class="material-symbols-outlined" aria-hidden="true">credit_card</span>
+              Tarjetas del empleado
+            </h3>
+            <div class="ed-cv-table-wrap" *ngIf="cards.length; else noCards">
+              <table class="ed-cv-table">
+                <thead>
+                  <tr>
+                    <th>Tarjeta</th>
+                    <th>Emisión</th>
+                    <th>Vencimiento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let r of cards">
+                    <td>{{ r.card.name || '—' }}</td>
+                    <td>{{ r.issue_date | dateDmy }}</td>
+                    <td>{{ r.expiry_date | dateDmy }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ng-template #noCards>
+              <div class="ed-cv-empty">No hay tarjetas</div>
+            </ng-template>
+          </section>
+        </div>
+
+        <p class="ed-cv-loading" *ngIf="loading">Cargando hoja de vida...</p>
+      </div>
+    </div>
+  </div>
+</ng-template>

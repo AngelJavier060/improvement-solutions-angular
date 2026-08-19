@@ -2,10 +2,6 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="mb-0">Tarjetas del empleado</h5>
     <div class="d-flex align-items-center gap-3">
-      <div class="form-check form-switch m-0">
-        <input class="form-check-input" type="checkbox" id="cardsToggleHistory" [(ngModel)]="showHistory" (change)="loadCards()">
-        <label class="form-check-label" for="cardsToggleHistory">Ver histórico</label>
-      </div>
       <button class="btn btn-sm btn-outline-secondary" (click)="loadCards()">
         <i class="fas fa-sync-alt"></i> Recargar
       </button>
@@ -78,8 +74,8 @@
             <tr *ngFor="let r of filteredCards()">
               <td>{{ r.card.name }}</td>
               <td>{{ r.card_number || '-' }}</td>
-              <td>{{ r.issue_date || '-' }}</td>
-              <td>{{ r.expiry_date || '-' }}</td>
+              <td>{{ r.issue_date | dateDmy }}</td>
+              <td>{{ r.expiry_date | dateDmy }}</td>
               <td>
                 <span class="badge" [ngClass]="getExpiryBadgeClass(r.expiry_date)">{{ getExpiryStatus(r.expiry_date) }}</span>
               </td>
@@ -108,26 +104,107 @@
     </div>
   </div>
 
-  <!-- Modal Confirmación Renovación -->
-  <div class="modal fade" [class.show]="showRenewConfirm" [style.display]="showRenewConfirm ? 'block' : 'none'" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="fas fa-sync me-2"></i>Confirmar renovación</h5>
-          <button type="button" class="btn-close" (click)="closeRenewConfirm()"></button>
+  <!-- Confirmación de renovación -->
+  <div class="ed-renew-layer" *ngIf="showRenewConfirm">
+    <div class="ed-renew-dim" (click)="closeRenewConfirm()" aria-hidden="true"></div>
+    <div class="ed-renew" role="dialog" aria-modal="true" aria-labelledby="edRenewCardTitle">
+      <div class="ed-renew__header">
+        <div class="ed-renew__icon" aria-hidden="true">
+          <span class="material-symbols-outlined">refresh</span>
         </div>
-        <div class="modal-body">
-          <p>¿Desea renovar este registro y mantener el histórico?</p>
-          <div class="small text-muted" *ngIf="renewTarget">
-            <div><strong>Tarjeta:</strong> {{ renewTarget.card.name }}</div>
-            <div><strong>Emisión:</strong> {{ renewTarget.issue_date || '-' }}</div>
-            <div><strong>Vencimiento:</strong> {{ renewTarget.expiry_date || '-' }} ({{ getExpiryStatus(renewTarget.expiry_date) }}, {{ getDaysLeft(renewTarget.expiry_date) }} días)</div>
+        <h2 class="ed-renew__title" id="edRenewCardTitle">Confirmar renovación</h2>
+      </div>
+      <div class="ed-renew__body">
+        <p class="ed-renew__q">¿Desea renovar esta tarjeta?</p>
+        <p class="ed-renew__help">
+          La tarjeta actual (incluida si está caducada) pasará al histórico y podrá registrar la nueva vigencia con su PDF.
+        </p>
+        <div class="ed-renew__meta" *ngIf="renewTarget">
+          <div class="ed-renew__row">
+            <span class="ed-renew__label">Tipo</span>
+            <span class="ed-renew__value">{{ renewTarget.card.name }}</span>
+          </div>
+          <div class="ed-renew__row">
+            <span class="ed-renew__label">Emisión</span>
+            <span class="ed-renew__value">{{ renewTarget.issue_date | dateDmy }}</span>
+          </div>
+          <div class="ed-renew__row">
+            <span class="ed-renew__label">Vencimiento</span>
+            <div class="ed-renew__value-wrap">
+              <span class="ed-renew__value">{{ renewTarget.expiry_date | dateDmy }}</span>
+              <span class="ed-renew__badge">{{ getExpiryStatus(renewTarget.expiry_date) }}, {{ getDaysLeft(renewTarget.expiry_date) }} días</span>
+            </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="closeRenewConfirm()">Cancelar</button>
-          <button type="button" class="btn btn-primary" (click)="confirmRenew()">Aceptar</button>
+      </div>
+      <div class="ed-renew__footer">
+        <button type="button" class="ed-renew__btn ed-renew__btn--ghost" (click)="closeRenewConfirm()">Cancelar</button>
+        <button type="button" class="ed-renew__btn ed-renew__btn--primary" (click)="confirmRenew()">
+          <span class="material-symbols-outlined filled" aria-hidden="true">refresh</span>
+          Sí, renovar y guardar histórico
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario de renovación -->
+  <div class="ed-renew-layer" *ngIf="showRenewForm">
+    <div class="ed-renew-dim" (click)="cancelRenewForm()" aria-hidden="true"></div>
+    <div class="ed-rform" role="dialog" aria-modal="true">
+      <div class="ed-rform__header">
+        <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+        <h2 class="ed-rform__title">Renovar {{ renewCardName }}</h2>
+      </div>
+      <div class="ed-rform__body">
+        <div class="ed-rform__alert" *ngIf="renewTarget">
+          <span class="material-symbols-outlined" aria-hidden="true">info</span>
+          <p>
+            Actual: Emisión {{ renewTarget.issue_date | dateDmy }} ·
+            Venc. {{ renewTarget.expiry_date | dateDmy }}
+            ({{ getExpiryStatus(renewTarget.expiry_date) }}, {{ getDaysLeft(renewTarget.expiry_date) }} días)
+          </p>
         </div>
+        <div class="ed-rform__grid">
+          <div class="ed-rform__field">
+            <label>Fecha emisión</label>
+            <div class="ed-rform__date">
+              <th-date-field [(ngModel)]="renewIssueDate" name="renewCardIssue"></th-date-field>
+            </div>
+          </div>
+          <div class="ed-rform__field">
+            <label>Fecha expiración</label>
+            <div class="ed-rform__date">
+              <th-date-field [(ngModel)]="renewExpiryDate" name="renewCardExpiry" align="end"></th-date-field>
+            </div>
+          </div>
+        </div>
+        <div class="ed-rform__field">
+          <label>Número de tarjeta</label>
+          <input type="text" [(ngModel)]="renewCardNumber" placeholder="Opcional" />
+        </div>
+        <div class="ed-rform__field">
+          <label>Observaciones</label>
+          <textarea rows="3" [(ngModel)]="renewObservations" placeholder="Opcional"></textarea>
+        </div>
+        <div class="ed-rform__field">
+          <label>Archivos (PDF)</label>
+          <div class="ed-rform__file">
+            <input #renewCardFile type="file" accept="application/pdf" (change)="onRenewFilesSelected($event)" multiple hidden />
+            <button type="button" class="ed-rform__file-btn" (click)="renewCardFile.click()">Elegir archivos</button>
+            <span class="ed-rform__file-name">{{ renewFiles.length ? (renewFiles.length + ' archivo(s) seleccionado(s)') : 'No se eligió ningún archivo' }}</span>
+          </div>
+          <div class="ed-rform__error" *ngIf="renewFileError">{{ renewFileError }}</div>
+        </div>
+      </div>
+      <div class="ed-rform__footer">
+        <button type="button" class="ed-rform__btn ed-rform__btn--ghost" (click)="cancelRenewForm()">Cancelar</button>
+        <button type="button"
+                class="ed-rform__btn ed-rform__btn--primary"
+                (click)="submitRenewal()"
+                [disabled]="renewSaving || !renewFiles.length || (renewIssueDate && renewExpiryDate && renewIssueDate > renewExpiryDate)">
+          <span class="material-symbols-outlined" aria-hidden="true">{{ renewSaving ? 'progress_activity' : 'history' }}</span>
+          {{ renewSaving ? 'Guardando...' : 'Guardar renovación en histórico' }}
+        </button>
       </div>
     </div>
   </div>
