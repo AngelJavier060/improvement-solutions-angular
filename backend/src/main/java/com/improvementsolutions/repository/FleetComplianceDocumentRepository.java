@@ -12,6 +12,12 @@ public interface FleetComplianceDocumentRepository extends JpaRepository<FleetCo
 
     List<FleetComplianceDocument> findByFleetVehicle_IdOrderByUpdatedAtDesc(Long fleetVehicleId);
 
+    @Query("SELECT DISTINCT c FROM FleetComplianceDocument c " +
+           "LEFT JOIN FETCH c.fleetVehicleDocument " +
+           "WHERE c.fleetVehicle.id = :vehicleId " +
+           "ORDER BY c.updatedAt DESC")
+    List<FleetComplianceDocument> findByFleetVehicleIdWithFile(@Param("vehicleId") Long vehicleId);
+
     Optional<FleetComplianceDocument> findByIdAndFleetVehicle_Id(Long id, Long fleetVehicleId);
 
     @Query("SELECT c FROM FleetComplianceDocument c JOIN c.fleetVehicle v JOIN v.business b " +

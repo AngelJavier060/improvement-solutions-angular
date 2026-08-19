@@ -134,6 +134,23 @@ public class FleetController {
         }
     }
 
+    /** ZIP con los PDF vigentes de esta unidad (por empresa / RUC). */
+    @GetMapping("/{ruc}/vehicles/{id}/documents/zip")
+    public ResponseEntity<?> downloadVehicleDocumentsZip(@PathVariable String ruc, @PathVariable Long id) {
+        try {
+            return fleetVehicleService.downloadCurrentDocumentsZip(ruc, id);
+        } catch (IllegalArgumentException e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "No hay documentos";
+            HttpStatus status = msg.toLowerCase().contains("no hay") ? HttpStatus.BAD_REQUEST : HttpStatus.NOT_FOUND;
+            return ResponseEntity.status(status)
+                    .body(new ErrorResponse(msg, status == HttpStatus.BAD_REQUEST ? "BAD_REQUEST" : "NOT_FOUND", status.value()));
+        } catch (Exception e) {
+            log.error("[Fleet] zip documents: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error al generar el ZIP de documentos", "INTERNAL", 500));
+        }
+    }
+
     @PostMapping(value = "/{ruc}/vehicles/{id}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadVehicleDocument(
             @PathVariable String ruc,

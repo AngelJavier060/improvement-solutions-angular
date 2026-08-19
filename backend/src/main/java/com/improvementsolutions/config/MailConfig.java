@@ -30,8 +30,12 @@ public class MailConfig {
 
     @Bean
     public JavaMailSender javaMailSender() {
-        logger.info("Configurando JavaMailSender con host: {}", host);
-        
+        logger.info("Configurando JavaMailSender con host: {} port: {} user: {}",
+                host, port, (username == null || username.isBlank()) ? "(vacío)" : username);
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
+            logger.warn("SMTP_USERNAME o SMTP_PASSWORD vacíos: no se podrán enviar correos hasta configurarlos en el .env del VPS.");
+        }
+
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         mailSender.setHost(host);
         mailSender.setPort(port);

@@ -19,9 +19,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,6 +33,8 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Service
 @RequiredArgsConstructor
@@ -614,6 +619,114 @@ public class FleetVehicleService {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
                 .header(HttpHeaders.CACHE_CONTROL, "private, max-age=60")
                 .body(resource);
+    }
+
+    /**
+     * ZIP con los PDF vigentes de una unidad. Ámbito: empresa (RUC) + vehículo.
+     */
+    @Transactional(readOnly = true)
+    public ResponseEntity<byte[]> downloadCurrentDocumentsZip(String ruc, Long vehicleId) {
+        Business business = businessService.findByRuc(ruc)
+                .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
+        FleetVehicle vehicle = fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
+
+        Path base = Paths.get(uploadDir).resolve("fleet").normalize();
+        List<FleetComplianceDocument> rows =
+                fleetComplianceDocumentRepository.findByFleetVehicleIdWithFile(vehicleId);
+
+        record ZipItem(String entryName, Path path) {}
+        List<ZipItem> items = new ArrayList<>();
+        Set<String> usedNames = new HashSet<>();
+        Set<Long> usedFileIds = new HashSet<>();
+
+        for (FleetComplianceDocument row : rows) {
+            if (row == null) continue;
+            if (Boolean.FALSE.equals(row.getActive()) || Boolean.TRUE.equals(row.getHistoricMode())) continue;
+            FleetVehicleDocument file = row.getFleetVehicleDocument();
+            if (file == null || file.getId() == null || !usedFileIds.add(file.getId())) continue;
+            if (file.getStoredPath() == null || file.getStoredPath().isBlank()) continue;
+            Path filePath = Paths.get(uploadDir).resolve(file.getStoredPath()).normalize();
+            if (!filePath.startsWith(base) || !Files.isRegularFile(filePath)) continue;
+            items.add(new ZipItem(
+                    uniqueZipEntryName(row.getTypeLabel(), file.getOriginalFilename(), file.getId(), usedNames),
+                    filePath
+            ));
+        }
+
+        if (items.isEmpty()) {
+            throw new IllegalArgumentException("No hay PDF adjuntos vigentes para esta unidad");
+        }
+
+        String zipName = zipDownloadName(vehicle);
+        byte[] zipBytes;
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+                byte[] buf = new byte[8192];
+                for (ZipItem item : items) {
+                    zos.putNextEntry(new ZipEntry(item.entryName()));
+                    try (InputStream in = Files.newInputStream(item.path())) {
+                        int n;
+                        while ((n = in.read(buf)) >= 0) {
+                            zos.write(buf, 0, n);
+                        }
+                    }
+                    zos.closeEntry();
+                }
+            }
+            zipBytes = baos.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException("No se pudo comprimir los PDF de la unidad", e);
+        }
+
+        String encoded = URLEncoder.encode(zipName, StandardCharsets.UTF_8).replace("+", "%20");
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + zipName.replace("\"", "") + "\"; filename*=UTF-8''" + encoded)
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .contentLength(zipBytes.length)
+                .body(zipBytes);
+    }
+
+    private static String zipDownloadName(FleetVehicle vehicle) {
+        String placa = vehicle.getPlaca() != null ? vehicle.getPlaca().trim() : "";
+        String codigo = vehicle.getCodigoEquipo() != null ? vehicle.getCodigoEquipo().trim() : "";
+        String raw = "documentacion";
+        if (!placa.isBlank()) raw += "_" + placa;
+        if (!codigo.isBlank() && !codigo.equalsIgnoreCase(placa)) raw += "_" + codigo;
+        return sanitizeZipPart(raw) + ".zip";
+    }
+
+    private static String uniqueZipEntryName(String typeLabel, String originalFilename, Long fileId, Set<String> used) {
+        String base = sanitizeZipPart(typeLabel);
+        if (base.isBlank()) {
+            String orig = originalFilename != null ? originalFilename : "";
+            int slash = Math.max(orig.lastIndexOf('/'), orig.lastIndexOf('\\'));
+            base = sanitizeZipPart(slash >= 0 ? orig.substring(slash + 1) : orig);
+        }
+        if (base.isBlank()) base = "documento_" + fileId;
+        if (!base.toLowerCase(Locale.ROOT).endsWith(".pdf")) {
+            base = base + ".pdf";
+        }
+        String name = base;
+        int i = 1;
+        while (used.contains(name.toLowerCase(Locale.ROOT))) {
+            String stem = base.replaceAll("(?i)\\.pdf$", "");
+            name = stem + "_" + i + ".pdf";
+            i++;
+        }
+        used.add(name.toLowerCase(Locale.ROOT));
+        return name;
+    }
+
+    private static String sanitizeZipPart(String raw) {
+        if (raw == null) return "";
+        String s = raw.trim().replaceAll("[\\\\/:*?\"<>|]+", "_").replaceAll("\\s+", "_");
+        s = s.replaceAll("[^\\p{L}\\p{N}._-]+", "_").replaceAll("_+", "_");
+        if (s.length() > 80) s = s.substring(0, 80);
+        return s.replaceAll("^_+|_+$", "");
     }
 
     @Transactional
