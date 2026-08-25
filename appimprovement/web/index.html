@@ -31,6 +31,17 @@
 
   <title>appimprovement</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- pdfx requiere pdf.js en window.pdfjsLib ANTES de iniciar Flutter -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    var pdfRenderOptions = {
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+      cMapPacked: true,
+    };
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

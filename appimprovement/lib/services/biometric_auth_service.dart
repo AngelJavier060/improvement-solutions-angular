@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'dart:io' show Platform;
 import 'package:android_intent_plus/android_intent.dart';
 
 class BiometricAuthService {
@@ -18,6 +17,7 @@ class BiometricAuthService {
   static const _kRememberMe = 'remember_me';
 
   Future<bool> isDeviceSupported() async {
+    if (kIsWeb) return false;
     try {
       return await _auth.isDeviceSupported();
     } catch (_) {
@@ -26,6 +26,7 @@ class BiometricAuthService {
   }
 
   Future<bool> canCheckBiometrics() async {
+    if (kIsWeb) return false;
     try {
       final can = await _auth.canCheckBiometrics;
       final enrolled = await _auth.getAvailableBiometrics();
@@ -36,6 +37,7 @@ class BiometricAuthService {
   }
 
   Future<bool> isEnrolled() async {
+    if (kIsWeb) return false;
     try {
       final list = await _auth.getAvailableBiometrics();
       return list.isNotEmpty;
@@ -45,6 +47,7 @@ class BiometricAuthService {
   }
 
   Future<bool> isBiometricEnabled() async {
+    if (kIsWeb) return false;
     final flag = await _storage.read(key: _kBioEnabled);
     final user = await _storage.read(key: _kBioUsername);
     final refresh = await _storage.read(key: _kBioRefresh);
@@ -54,6 +57,7 @@ class BiometricAuthService {
   Future<String?> getBiometricUsername() => _storage.read(key: _kBioUsername);
 
   Future<bool> authenticate({String reason = 'Autentícate para continuar'}) async {
+    if (kIsWeb) return false;
     try {
       final ok = await _auth.authenticate(
         localizedReason: reason,
@@ -101,7 +105,7 @@ class BiometricAuthService {
   }
 
   Future<void> openEnrollSettings() async {
-    if (!Platform.isAndroid) return;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
     try {
       const intent = AndroidIntent(action: 'android.settings.BIOMETRIC_ENROLL');
       await intent.launch();

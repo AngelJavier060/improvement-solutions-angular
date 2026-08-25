@@ -1,0 +1,90 @@
+<div class="visitas-web-page">
+  <div class="page-header">
+    <div>
+      <h2><i class="fas fa-shield-alt me-2"></i>Visitas web (seguridad)</h2>
+      <p class="mb-0 text-muted">
+        Registro técnico de quién entra a la landing: IP, hora, navegador e idioma.
+        Solo visible para Super Administrador.
+      </p>
+    </div>
+    <button type="button" class="btn btn-primary" (click)="load()" [disabled]="loading">
+      <i class="fas fa-sync-alt me-1" [class.fa-spin]="loading"></i> Actualizar
+    </button>
+  </div>
+
+  <div class="stats-row" *ngIf="!error">
+    <div class="stat-card">
+      <span class="stat-label">Visitas totales</span>
+      <strong>{{ totalVisits | number }}</strong>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">IPs distintas (24 h)</span>
+      <strong>{{ uniqueIpsLast24h | number }}</strong>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Registros mostrados</span>
+      <strong>{{ visits.length | number }}</strong>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+      <div *ngIf="loading" class="state-box">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Cargando visitas...</span>
+      </div>
+
+      <div *ngIf="error && !loading" class="state-box state-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ error }}</span>
+        <button type="button" class="btn btn-sm btn-outline-primary mt-2" (click)="load()">Reintentar</button>
+      </div>
+
+      <div class="table-responsive" *ngIf="!loading && !error">
+        <table class="table table-hover align-middle mb-0 visitas-table">
+          <thead>
+            <tr>
+              <th>Fecha / hora</th>
+              <th>Origen (IP)</th>
+              <th>Idioma</th>
+              <th>Navegador</th>
+              <th>Vino desde</th>
+              <th>Actividad 24 h</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let v of visits" [class.row-suspicious]="v.suspicious">
+              <td class="td-date">
+                {{ v.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}
+              </td>
+              <td>
+                <code>{{ v.ipAddress || '—' }}</code>
+              </td>
+              <td>{{ shortLanguage(v.acceptLanguage) }}</td>
+              <td [title]="v.userAgent || ''">{{ shortBrowser(v.userAgent) }}</td>
+              <td [title]="v.referer || ''">{{ shortReferer(v.referer) }}</td>
+              <td>{{ v.hitsLast24h || 0 }}</td>
+              <td>
+                <span class="badge" [class.badge-ok]="!v.suspicious" [class.badge-warn]="v.suspicious">
+                  {{ v.suspicious ? 'Sospechosa' : 'Normal' }}
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="visits.length === 0">
+              <td colspan="7" class="text-center text-muted py-4">
+                Aún no hay visitas registradas. Cuando alguien entre a la landing, aparecerán aquí.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <p class="security-note mt-3 mb-0">
+    <i class="fas fa-info-circle me-1"></i>
+    Esto ayuda a vigilar accesos raros (muchas visitas desde la misma IP). No reemplaza firewall ni antivirus.
+    La ubicación geográfica exacta (ciudad/país) no se muestra aquí; el origen es la IP de red.
+  </p>
+</div>

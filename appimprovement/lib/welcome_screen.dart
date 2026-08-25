@@ -52,8 +52,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF031635),
       body: Stack(
+        fit: StackFit.expand,
         children: [
+          // Fondo fijo (evita pantalla negra mientras cargan las fotos)
+          const ColoredBox(color: Color(0xFF031635)),
           // Carrusel de imágenes
           PageView.builder(
             controller: _pageController,
@@ -65,32 +69,31 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             },
             itemCount: _images.length,
             itemBuilder: (context, index) {
-              return SizedBox(
-                width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height,
-                child: Image.asset(
-                  _images[index],
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: const Color(0xFF6B8CA6),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.image_not_supported, size: 64, color: Colors.white),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Imagen ${index + 1} no encontrada:\n${_images[index]}',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        ),
+              return Image.asset(
+                _images[index],
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                gaplessPlayback: true,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: const Color(0xFF6B8CA6),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.image_not_supported, size: 64, color: Colors.white),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Imagen ${index + 1} no encontrada:\n${_images[index]}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               );
             },
           ),

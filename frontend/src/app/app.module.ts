@@ -190,6 +190,10 @@ import { FileService } from './services/file.service';
           {
             path: 'planes',
             loadChildren: () => import('./features/dashboard/admin/planes/planes.module').then(m => m.PlanesModule)
+          },
+          {
+            path: 'visitas-web',
+            loadChildren: () => import('./features/dashboard/admin/visitas-web/visitas-web.module').then(m => m.VisitasWebModule)
           }
         ]
       },

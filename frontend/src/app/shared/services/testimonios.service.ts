@@ -16,10 +16,10 @@ export class TestimoniosService {
   private testimonios: Testimonio[] = [
     {
       id: 1,
-      nombre: 'Javier Rodríguez',
+      nombre: 'Ángel Guerrero',
       cargo: 'Magister en SSO',
-      imagen: 'assets/img/testimonio-angel.jpg',
-      texto: 'Gracias al sistema desarrollado por Improvement Solutions, hemos logrado implementar soluciones inmediatas en materia de Seguridad, Salud, Ambiente y Calidad. Ha simplificado enormemente nuestros procesos y nos proporciona datos estadísticos detallados.',
+      imagen: 'assets/img/Javier.jpg',
+      texto: 'Con Improvement Solutions logramos poner en orden la gestión de Seguridad, Salud, Medio Ambiente y Calidad, todo en un solo sistema. Ya no manejamos información dispersa: ahora tenemos datos estadísticos claros y actualizados que nos ayudan a tomar mejores decisiones y a cumplir con la normativa vigente sin complicaciones.',
       estrellas: 5
     },
     {

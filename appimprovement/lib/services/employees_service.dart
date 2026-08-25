@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -25,7 +24,7 @@ class EmployeesService {
             'Accept': 'application/json',
           },
         )
-        .timeout(const Duration(seconds: 6));
+        .timeout(const Duration(seconds: 12));
     if (resp.statusCode != 200) return null;
     return jsonDecode(resp.body);
   }
@@ -38,6 +37,37 @@ class EmployeesService {
       return decoded;
     }
     return null;
+  }
+
+  List<Map<String, dynamic>> _extractList(dynamic decoded) {
+    if (decoded is List) {
+      return decoded.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
+    }
+    if (decoded is Map<String, dynamic> && decoded['data'] is List) {
+      return (decoded['data'] as List).whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  Future<List<Map<String, dynamic>>> _getListTrying(List<String> urls, String token) async {
+    for (final url in urls) {
+      try {
+        final decoded = await _getJson(url, token);
+        if (decoded == null) continue;
+        final list = _extractList(decoded);
+        if (list.isNotEmpty || decoded is List) return list;
+      } catch (_) {}
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  /// ID de BusinessEmployee (como en Angular `getBusinessEmployeeIdFor`).
+  static dynamic businessEmployeeIdOf(Map<String, dynamic> e) {
+    return e['id'] ??
+        e['businessEmployeeId'] ??
+        e['business_employee_id'] ??
+        e['businessId'] ??
+        (e['employee'] is Map ? (e['employee'] as Map)['id'] : null);
   }
 
   Future<List<Map<String, dynamic>>> getEmployeesByBusinessRuc(String businessRuc) async {
@@ -56,14 +86,7 @@ class EmployeesService {
     );
 
     if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
-      if (decoded is List) {
-        return decoded.cast<Map<String, dynamic>>();
-      }
-      if (decoded is Map<String, dynamic> && decoded['data'] is List) {
-        return (decoded['data'] as List).cast<Map<String, dynamic>>();
-      }
-      throw Exception('Formato de respuesta no esperado');
+      return _extractList(jsonDecode(response.body));
     }
 
     if (response.statusCode == 401) {
@@ -73,80 +96,66 @@ class EmployeesService {
     throw Exception('Error al obtener empleados (${response.statusCode})');
   }
 
-  Future<List<Map<String, dynamic>>> getEmployeeDocuments(dynamic employeeId) async {
-    if (employeeId == null) return <Map<String, dynamic>>[];
+  /// Documentos personales — mismo endpoint que Angular.
+  Future<List<Map<String, dynamic>>> getEmployeeDocuments(dynamic businessEmployeeId) async {
+    if (businessEmployeeId == null) return <Map<String, dynamic>>[];
     final token = AuthService().token;
     if (token == null) return <Map<String, dynamic>>[];
 
-    final List<String> urls = [
-      '${AppConfig.baseUrl}/api/employee-documents/employee/$employeeId',
-      '${AppConfig.baseUrl}/api/employees/$employeeId/documents',
-      '${AppConfig.baseUrl}/api/employees/$employeeId/files',
-    ];
-    for (final url in urls) {
-      try {
-        final resp = await http.get(
-          Uri.parse(url),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Accept': 'application/json',
-          },
-        );
-        if (resp.statusCode == 200) {
-          final decoded = jsonDecode(resp.body);
-          if (decoded is List) return decoded.cast<Map<String, dynamic>>();
-          if (decoded is Map<String, dynamic> && decoded['data'] is List) {
-            return (decoded['data'] as List).cast<Map<String, dynamic>>();
-          }
-        }
-      } catch (_) {}
-    }
-    return <Map<String, dynamic>>[];
+    return _getListTrying([
+      '${AppConfig.baseUrl}/api/employee_document/by-business-employee/$businessEmployeeId?includeHistory=false',
+      '${AppConfig.baseUrl}/api/employee-documents/employee/$businessEmployeeId',
+    ], token);
   }
 
-  Future<List<Map<String, dynamic>>> getEmployeeCertifications(dynamic employeeId) async {
-    if (employeeId == null) return <Map<String, dynamic>>[];
+  /// Cursos — mismo endpoint que Angular.
+  Future<List<Map<String, dynamic>>> getEmployeeCourses(dynamic businessEmployeeId) async {
+    if (businessEmployeeId == null) return <Map<String, dynamic>>[];
     final token = AuthService().token;
     if (token == null) return <Map<String, dynamic>>[];
 
-    final List<String> urls = [
-      '${AppConfig.baseUrl}/api/employee-courses/employee/$employeeId',
-      '${AppConfig.baseUrl}/api/trainings/employee/$employeeId',
-      '${AppConfig.baseUrl}/api/employees/$employeeId/certifications',
-    ];
-    for (final url in urls) {
-      try {
-        final resp = await http.get(
-          Uri.parse(url),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Accept': 'application/json',
-          },
-        );
-        if (resp.statusCode == 200) {
-          final decoded = jsonDecode(resp.body);
-          if (decoded is List) return decoded.cast<Map<String, dynamic>>();
-          if (decoded is Map<String, dynamic> && decoded['data'] is List) {
-            return (decoded['data'] as List).cast<Map<String, dynamic>>();
-          }
-        }
-      } catch (_) {}
-    }
-    return <Map<String, dynamic>>[];
+    return _getListTrying([
+      '${AppConfig.baseUrl}/api/employee_course/by-business-employee/$businessEmployeeId?includeHistory=false',
+      '${AppConfig.baseUrl}/api/employee-courses/employee/$businessEmployeeId',
+    ], token);
   }
 
-  Future<Map<String, dynamic>?> getEmployeeDetail({dynamic id, String? cedula}) async {
+  /// Alias legacy usado por pantallas previas.
+  Future<List<Map<String, dynamic>>> getEmployeeCertifications(dynamic employeeId) {
+    return getEmployeeCourses(employeeId);
+  }
+
+  /// Tarjetas — mismo endpoint que Angular.
+  Future<List<Map<String, dynamic>>> getEmployeeCards(dynamic businessEmployeeId) async {
+    if (businessEmployeeId == null) return <Map<String, dynamic>>[];
+    final token = AuthService().token;
+    if (token == null) return <Map<String, dynamic>>[];
+
+    return _getListTrying([
+      '${AppConfig.baseUrl}/api/employee_card/by-business-employee/$businessEmployeeId?includeHistory=false',
+    ], token);
+  }
+
+  Future<Map<String, dynamic>?> getEmployeeDetail({
+    dynamic id,
+    String? cedula,
+    String? businessRuc,
+  }) async {
     final token = AuthService().token;
     if (token == null) return null;
     final key = _cacheKey(id: id, cedula: cedula);
     if (_detailCache.containsKey(key)) return _detailCache[key];
 
     final ced = (cedula ?? '').trim();
+    final ruc = (businessRuc ?? AuthService().getPrimaryBusinessRuc() ?? '').trim();
+
     final List<String> urls = [
-      if (id != null) '${AppConfig.baseUrl}/api/employees/$id',
+      if (ruc.isNotEmpty && ced.isNotEmpty)
+        '${AppConfig.baseUrl}/api/business-employees/company/${Uri.encodeComponent(ruc)}/cedula/${Uri.encodeComponent(ced)}',
+      if (ced.isNotEmpty) '${AppConfig.baseUrl}/api/business-employees/cedula/${Uri.encodeComponent(ced)}',
       if (id != null) '${AppConfig.baseUrl}/api/business-employees/$id',
-      if (ced.isNotEmpty) '${AppConfig.baseUrl}/api/employees/cedula/$ced',
-      if (ced.isNotEmpty) '${AppConfig.baseUrl}/api/business-employees/cedula/$ced',
+      if (id != null) '${AppConfig.baseUrl}/api/employees/$id',
+      if (ced.isNotEmpty) '${AppConfig.baseUrl}/api/employees/cedula/${Uri.encodeComponent(ced)}',
     ];
 
     Map<String, dynamic>? result;
@@ -187,7 +196,9 @@ class EmployeesService {
             result = decoded['data'] as Map<String, dynamic>;
           } else if (decoded['data'] is List) {
             result = _pickEmergencyFromList((decoded['data'] as List).cast());
-          } else if (decoded.containsKey('name') || decoded.containsKey('telefono') || decoded.containsKey('phone')) {
+          } else if (decoded.containsKey('name') ||
+              decoded.containsKey('telefono') ||
+              decoded.containsKey('phone')) {
             result = decoded;
           }
         } else if (decoded is List) {
@@ -207,11 +218,8 @@ class EmployeesService {
       final m = raw.cast<String, dynamic>();
       final type = (m['type'] ?? m['category'] ?? m['contactType'] ?? m['tipo'])?.toString().toUpperCase();
       final isEmergency = type == 'EMERGENCY' || type == 'EMERGENCIA' || (m['emergency'] == true);
-      if (isEmergency) {
-        return m;
-      }
+      if (isEmergency) return m;
     }
-    // Si ninguno marca EMERGENCY, devolvemos el primero que tenga nombre y teléfono
     for (final raw in items) {
       if (raw is! Map) continue;
       final m = raw.cast<String, dynamic>();
@@ -219,6 +227,44 @@ class EmployeesService {
       final hasPhone = (m['phone'] ?? m['telefono'] ?? m['mobile']) != null;
       if (hasName && hasPhone) return m;
     }
+    return null;
+  }
+
+  /// Construye URL absoluta de archivo (PDF) como en Angular `normalizeFileUrl`.
+  static String? fileAbsoluteUrl(dynamic fileField) {
+    if (fileField == null) return null;
+    var rel = fileField.toString().replaceAll('\\', '/').trim();
+    if (rel.isEmpty) return null;
+    rel = rel.replaceAll('/api/files/download/', '/api/files/');
+    if (rel.startsWith('http://') || rel.startsWith('https://')) return rel;
+    if (rel.startsWith('/api/')) return '${AppConfig.baseUrl}$rel';
+    if (rel.startsWith('api/')) return '${AppConfig.baseUrl}/$rel';
+    while (rel.startsWith('/')) {
+      rel = rel.substring(1);
+    }
+    if (rel.startsWith('uploads/')) rel = rel.substring('uploads/'.length);
+    final encoded = rel.split('/').map(Uri.encodeComponent).join('/');
+    return '${AppConfig.baseUrl}/api/files/$encoded';
+  }
+
+  static bool isPdfFile(Map<String, dynamic>? file) {
+    if (file == null) return false;
+    final type = (file['file_type'] ?? file['fileType'] ?? '').toString().toLowerCase();
+    final name = (file['file_name'] ?? file['fileName'] ?? file['name'] ?? '').toString().toLowerCase();
+    final path = (file['file'] ?? '').toString().toLowerCase();
+    return type.contains('pdf') || name.endsWith('.pdf') || path.endsWith('.pdf');
+  }
+
+  static Map<String, dynamic>? firstPdfFile(Map<String, dynamic> item) {
+    final files = item['files'];
+    if (files is! List || files.isEmpty) return null;
+    for (final raw in files) {
+      if (raw is! Map) continue;
+      final m = raw.cast<String, dynamic>();
+      if (isPdfFile(m)) return m;
+    }
+    final first = files.first;
+    if (first is Map) return first.cast<String, dynamic>();
     return null;
   }
 }

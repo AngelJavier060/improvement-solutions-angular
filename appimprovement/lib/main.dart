@@ -4,6 +4,7 @@ import 'welcome_screen.dart';
 import 'login_screen.dart';
 import 'services/auth_service.dart';
 import 'employees_list_screen.dart';
+import 'units_list_screen.dart';
 import 'config/app_config.dart';
 import 'services/business_service.dart';
 import 'security_legal_screen.dart';
@@ -18,6 +19,26 @@ import 'services/biometric_auth_service.dart';
 import 'package:flutter/services.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: ${details.exceptionAsString()}');
+  };
+  ErrorWidget.builder = (details) {
+    return Material(
+      color: const Color(0xFF031635),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Error de UI:\n${details.exceptionAsString()}',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+          ),
+        ),
+      ),
+    );
+  };
   runApp(const MyApp());
 }
 
@@ -62,6 +83,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const MyHomePage(title: 'Improvements Solutions'),
         '/employees': (context) => const EmployeesListScreen(),
+        '/units': (context) => const UnitsListScreen(),
         '/security-legal': (context) => const SecurityLegalScreen(),
         '/seguridad-industrial': (context) => const SeguridadIndustrialScreen(),
         '/gerencias-viajes': (context) => const GerenciasViajesListScreen(),
@@ -278,24 +300,37 @@ class _MyHomePageState extends State<MyHomePage> {
                 const SizedBox(height: 40),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Column(
                     children: [
-                      Flexible(
-                        fit: FlexFit.tight,
-                        child: _FeatureCard(
-                          icon: Icons.group,
-                          label: 'Talento Humano',
-                          onTap: () => Navigator.pushNamed(context, '/employees'),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            fit: FlexFit.tight,
+                            child: _FeatureCard(
+                              icon: Icons.group,
+                              label: 'Talento Humano',
+                              onTap: () => Navigator.pushNamed(context, '/employees'),
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Flexible(
+                            fit: FlexFit.tight,
+                            child: _FeatureCard(
+                              icon: Icons.gavel,
+                              label: 'Seguridad Industrial',
+                              onTap: () => Navigator.pushNamed(context, '/seguridad-industrial'),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 20),
-                      Flexible(
-                        fit: FlexFit.tight,
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: (MediaQuery.of(context).size.width - 48 - 20) / 2,
                         child: _FeatureCard(
-                          icon: Icons.gavel,
-                          label: 'Seguridad Industrial',
-                          onTap: () => Navigator.pushNamed(context, '/seguridad-industrial'),
+                          icon: Icons.local_shipping,
+                          label: 'Unidades',
+                          onTap: () => Navigator.pushNamed(context, '/units'),
                         ),
                       ),
                     ],

@@ -47,14 +47,37 @@ class AuthService {
         ? {'email': user, 'password': password}
         : {'username': user, 'password': password};
 
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode(body),
-    );
+    late final http.Response response;
+    try {
+      response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+    } on http.ClientException catch (e) {
+      // En Chrome (Flutter Web) suele ser CORS: producción no permite origin localhost:XXXX
+      final msg = e.message;
+      if (kIsWeb && (msg.contains('Failed to fetch') || msg.contains('XMLHttpRequest'))) {
+        throw Exception(
+          'No se puede iniciar sesión desde Chrome (CORS). '
+          'Usa el emulador Android: flutter run -d emulator-5554. '
+          'Las credenciales no se validaron; la petición ni siquiera llegó al servidor.',
+        );
+      }
+      throw Exception('Sin conexión con el servidor ($msg)');
+    } catch (e) {
+      final s = e.toString();
+      if (kIsWeb && s.contains('Failed to fetch')) {
+        throw Exception(
+          'No se puede iniciar sesión desde Chrome (CORS). '
+          'Usa el emulador Android: flutter run -d emulator-5554.',
+        );
+      }
+      rethrow;
+    }
 
     if (kDebugMode && response.statusCode != 200) {
       debugPrint('[Auth] POST $url → ${response.statusCode}');

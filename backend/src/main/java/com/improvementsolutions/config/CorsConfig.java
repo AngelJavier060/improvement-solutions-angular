@@ -34,9 +34,15 @@ public class CorsConfig {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
-        // Siempre permitir el localhost de desarrollo
+        // Siempre permitir el localhost de desarrollo (Angular + Flutter Web en puerto aleatorio)
         if (!allowedOrigins.contains("http://localhost:4200")) {
             allowedOrigins.add("http://localhost:4200");
+        }
+        if (!allowedOrigins.contains("http://localhost:*")) {
+            allowedOrigins.add("http://localhost:*");
+        }
+        if (!allowedOrigins.contains("http://127.0.0.1:*")) {
+            allowedOrigins.add("http://127.0.0.1:*");
         }
         configuration.setAllowedOriginPatterns(allowedOrigins);
 

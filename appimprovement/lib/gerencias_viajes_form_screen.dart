@@ -1964,9 +1964,7 @@ class _GerenciasViajesFormScreenState extends State<GerenciasViajesFormScreen> {
         horasConduccion: _horasConduccion,
         horarioViaje: _horarioCirculacion,
         descansoConduc: _horasDescanso,
-        mediosComunicacion: _medioComunicacionesSeleccionados.isNotEmpty
-            ? _medioComunicacionesSeleccionados.join(', ')
-            : _medioComunicacion,
+        mediosComunicacion: _medioComunicacion,
         riesgosVia: _riesgosSeleccionados.join(', '),
         catalogoOtrosPeligros: _otrosPeligrosSeleccionados.isNotEmpty ? _otrosPeligrosSeleccionados.join(', ') : null,
         medidasControlTomadasViaje: _medidasControlSeleccionadas.isNotEmpty ? _medidasControlSeleccionadas.join(', ') : null,

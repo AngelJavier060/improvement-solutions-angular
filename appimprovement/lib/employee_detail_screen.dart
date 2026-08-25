@@ -1,134 +1,84 @@
 import 'package:flutter/material.dart';
-
-import 'config/app_config.dart';
-import 'services/auth_service.dart';
-import 'services/employees_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class EmployeeDetailScreen extends StatelessWidget {
+import 'config/app_config.dart';
+import 'pdf_viewer_page.dart';
+import 'services/auth_service.dart';
+import 'services/employees_service.dart';
+
+/// Detalle del trabajador — Perfil según diseño entregado (lógica de datos intacta).
+class EmployeeDetailScreen extends StatefulWidget {
   final Map<String, dynamic> employee;
   const EmployeeDetailScreen({super.key, required this.employee});
 
-  String _displayName(Map<String, dynamic> e) {
-    final name = (e['name'] as String?)?.trim();
-    final nombres = (e['nombres'] as String?)?.trim();
-    final apellidos = (e['apellidos'] as String?)?.trim();
-    if (name != null && name.isNotEmpty) return name;
-    final combined = [nombres, apellidos].where((s) => s != null && s!.isNotEmpty).join(' ');
-    return combined.isNotEmpty ? combined : (e['cedula']?.toString() ?? 'Empleado');
-  }
-
-  String? _photoUrl(Map<String, dynamic> e) {
-    final raw = (e['profile_picture'] ?? e['imagePath'] ?? e['profilePicture'] ?? e['photo'] ?? e['foto'] ?? e['image'])?.toString();
-    final path = raw?.trim();
-    if (path == null || path.isEmpty) return null;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    if (path.startsWith('/api/')) {
-      final lastSlash = path.lastIndexOf('/');
-      final prefix = path.substring(0, lastSlash + 1);
-      final last = path.substring(lastSlash + 1);
-      return '${AppConfig.baseUrl}$prefix${Uri.encodeComponent(last)}';
-    }
-    var normalized = path.replaceAll('\\', '/');
-    while (normalized.startsWith('/')) normalized = normalized.substring(1);
-    if (normalized.startsWith('uploads/')) normalized = normalized.substring('uploads/'.length);
-    final hasSlash = normalized.contains('/');
-    final filename = hasSlash ? (normalized.split('/').last) : normalized;
-    final lower = normalized.toLowerCase();
-    if (lower.startsWith('profiles/')) {
-      final encoded = normalized.split('/').map(Uri.encodeComponent).join('/');
-      return '${AppConfig.baseUrl}/api/files/$encoded';
-    }
-    if (!hasSlash) {
-      return '${AppConfig.baseUrl}/api/files/profiles/${Uri.encodeComponent(filename)}';
-    }
-    final encoded = normalized.split('/').map(Uri.encodeComponent).join('/');
-    return '${AppConfig.baseUrl}/api/files/$encoded';
-  }
-
-  Widget _infoRow(IconData icon, String label, String value) {
-    if (value.trim().isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: Colors.grey.shade700),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                const SizedBox(height: 2),
-                Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  
-
   @override
-  Widget build(BuildContext context) {
-    return _EmployeeDetailView(employee: employee);
-  }
+  State<EmployeeDetailScreen> createState() => _EmployeeDetailScreenState();
 }
 
-class _EmployeeDetailView extends StatefulWidget {
-  final Map<String, dynamic> employee;
-  const _EmployeeDetailView({required this.employee});
+class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
+  // Paleta del diseño HTML
+  static const _primary = Color(0xFF002045);
+  static const _secondary = Color(0xFF5B5F61);
+  static const _onBackground = Color(0xFF111C2C);
+  static const _surface = Color(0xFFF9F9FF);
+  static const _surfaceContainer = Color(0xFFE7EEFF);
+  static const _surfaceLow = Color(0xFFF0F3FF);
+  static const _surfaceVariant = Color(0xFFD8E3FA);
+  static const _onSurfaceVariant = Color(0xFF43474E);
+  static const _outlineVariant = Color(0xFFC4C6CF);
+  static const _bodyBg = Color(0xFFE0E3E5);
+  static const _error = Color(0xFFBA1A1A);
+  static const _errorContainer = Color(0xFFFFDAD6);
 
-  @override
-  State<_EmployeeDetailView> createState() => _EmployeeDetailViewState();
-}
-
-class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
-  late Future<List<Map<String, dynamic>>> _docsFuture;
-  late Future<List<Map<String, dynamic>>> _certsFuture;
   String _activeTab = 'info';
-  Map<String, dynamic>? _detail; // datos de producción si faltan
+  Map<String, dynamic>? _detail;
   Map<String, dynamic>? _emergency;
   bool _loadingDetail = true;
   bool _loadingEmergency = true;
 
+  late Future<List<Map<String, dynamic>>> _docsFuture;
+  late Future<List<Map<String, dynamic>>> _coursesFuture;
+  late Future<List<Map<String, dynamic>>> _cardsFuture;
+
   @override
   void initState() {
     super.initState();
-    final e = widget.employee;
-    final id = e['id'] ?? e['employeeId'] ?? e['employee_id'] ?? e['businessEmployeeId'] ?? e['personaId'] ?? e['personId'] ?? e['person_id'] ?? (e['employee'] is Map ? (e['employee']['id'] ?? e['employee']['employeeId']) : null);
-    _docsFuture = EmployeesService().getEmployeeDocuments(id);
-    _certsFuture = EmployeesService().getEmployeeCertifications(id);
+    final beId = EmployeesService.businessEmployeeIdOf(widget.employee);
+    _docsFuture = EmployeesService().getEmployeeDocuments(beId);
+    _coursesFuture = EmployeesService().getEmployeeCourses(beId);
+    _cardsFuture = EmployeesService().getEmployeeCards(beId);
     _hydrateFromServer();
   }
 
   Future<void> _hydrateFromServer() async {
     final e = widget.employee;
-    final id = e['id'] ?? e['employeeId'] ?? e['employee_id'] ?? e['businessEmployeeId'] ?? e['personaId'] ?? e['personId'] ?? e['person_id'] ?? (e['employee'] is Map ? (e['employee']['id'] ?? e['employee']['employeeId']) : null);
+    final id = EmployeesService.businessEmployeeIdOf(e);
     final cedula = (e['cedula'] ?? e['dni'] ?? e['document'])?.toString();
+    final ruc = AuthService().getPrimaryBusinessRuc();
     try {
-      final detailFuture = EmployeesService().getEmployeeDetail(id: id, cedula: cedula);
-      final emergencyFuture = EmployeesService().getEmergencyContact(id: id, cedula: cedula);
-
       Map<String, dynamic>? detail;
       try {
-        detail = await detailFuture;
+        detail = await EmployeesService().getEmployeeDetail(id: id, cedula: cedula, businessRuc: ruc);
       } catch (_) {}
-
       if (!mounted) return;
       setState(() {
         _detail = detail;
         _loadingDetail = false;
       });
 
+      final resolvedId = EmployeesService.businessEmployeeIdOf({...e, ...?detail});
+      if (resolvedId != null && resolvedId.toString() != id?.toString()) {
+        setState(() {
+          _docsFuture = EmployeesService().getEmployeeDocuments(resolvedId);
+          _coursesFuture = EmployeesService().getEmployeeCourses(resolvedId);
+          _cardsFuture = EmployeesService().getEmployeeCards(resolvedId);
+        });
+      }
+
       Map<String, dynamic>? emergency;
       try {
-        emergency = await emergencyFuture;
+        emergency = await EmployeesService().getEmergencyContact(id: resolvedId ?? id, cedula: cedula);
       } catch (_) {}
-
       if (!mounted) return;
       setState(() {
         _emergency = emergency;
@@ -143,263 +93,370 @@ class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
     }
   }
 
+  Map<String, dynamic> get _effective => <String, dynamic>{...widget.employee, ...?_detail};
+
   @override
   Widget build(BuildContext context) {
-    final e = widget.employee;
-    final effective = <String, dynamic>{...e, ...?_detail};
-    final title = _displayName(effective);
-    final cedula = (effective['cedula'] ?? effective['dni'] ?? effective['document'])?.toString() ?? '';
-    final phone = (effective['phone'] ?? effective['telefono'] ?? effective['mobile'] ?? effective['celular'])?.toString() ?? '';
-    final email = (effective['email'] ?? effective['correo'])?.toString() ?? '';
-    final position = (effective['positionName'] ?? effective['position'] ?? effective['cargo'])?.toString() ?? '';
-    final department = (effective['departmentName'] ?? effective['department'] ?? effective['departamento'])?.toString() ?? '';
-    final address = (effective['address'] ?? effective['direccion'])?.toString() ?? '';
-    final city = (effective['city'] ?? effective['ciudad'])?.toString() ?? '';
-    final birth = (effective['dateBirth'] ?? effective['birthDate'] ?? effective['dateOfBirth'] ?? effective['fechaNacimiento'] ?? effective['fecha_nacimiento'] ?? effective['fecha_de_nacimiento'] ?? effective['f_nacimiento'] ?? effective['nacimiento'])?.toString() ?? '';
-    final photo = _photoUrl(effective);
-
-    // Stats opcionales, si existen en backend
-    final performance = (e['performance'] ?? e['desempeno'] ?? e['score']) as num?;
-    final hours = (e['hoursWorked'] ?? e['hours'] ?? e['horas']) as num?;
-    final projects = (e['projectsCompleted'] ?? e['projects'] ?? e['proyectos']) as num?;
+    final e = _effective;
+    final title = _displayName(e).toUpperCase();
+    final position = _str(e, ['positionName', 'position', 'cargo']);
+    final department = _str(e, ['departmentName', 'department', 'departamento']);
+    final photo = _photoUrl(e);
+    final active = e['active'] == true || e['active'] == 1 || e['activo'] == true;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: _bodyBg,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: _primary,
         elevation: 0,
         foregroundColor: Colors.white,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF6B8CA6), Color(0xFFAFC7D9)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
-        centerTitle: true,
         title: const Text(
-          'Datos del trabajador',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+          'Detalle del trabajador',
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
         ),
+        titleSpacing: 0,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header con gradiente
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF6B8CA6), Color(0xFFAFC7D9)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+      body: Column(
+        children: [
+          // Header perfil (diseño)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 28, 16, 32),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [_primary, _surfaceContainer],
               ),
-              child: Column(
-                children: [
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+              boxShadow: [BoxShadow(color: Color(0x1A1A365D), blurRadius: 8, offset: Offset(0, 2))],
+            ),
+            child: Column(
+              children: [
+                _avatar(photo, active),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: _onBackground,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                ),
+                if (position.isNotEmpty) ...[
+                  const SizedBox(height: 8),
                   Container(
-                    width: 132,
-                    height: 132,
+                    constraints: const BoxConstraints(maxWidth: 320),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 16, offset: const Offset(0, 6))],
+                      color: _surfaceVariant,
+                      borderRadius: BorderRadius.circular(999),
                     ),
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(28),
-                          child: Container(
-                            color: Colors.white24,
-                            child: photo != null
-                                ? Image.network(photo, fit: BoxFit.cover, width: 132, height: 132,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 64, color: Colors.white))
-                                : const Icon(Icons.person, size: 64, color: Colors.white),
-                          ),
-                        ),
-                        Positioned(
-                          right: -2,
-                          bottom: -2,
-                          child: Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white, width: 4)),
-                            child: const Icon(Icons.check_circle, color: Colors.white, size: 16),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      position,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(title, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
-                  if (position.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white30)),
-                      child: Text(position, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                    ),
-                  ],
-                  if (department.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      const Icon(Icons.business, size: 16, color: Colors.white70),
-                      const SizedBox(width: 6),
-                      Text(department, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                    ]),
-                  ],
                 ],
-              ),
-            ),
-
-            // Stats opcionales
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-              child: Row(
-                children: [
-                  if (performance != null) Expanded(child: _statCard(context, Icons.trending_up, '${performance.toInt()}%', 'Desempeño', Colors.green)),
-                  if (performance != null && (hours != null || projects != null)) const SizedBox(width: 8),
-                  if (hours != null) Expanded(child: _statCard(context, Icons.schedule, '${hours.toInt()}', 'Horas', Colors.blue)),
-                  if (hours != null && projects != null) const SizedBox(width: 8),
-                  if (projects != null) Expanded(child: _statCard(context, Icons.emoji_events, '${projects.toInt()}', 'Proyectos', Colors.deepPurple)),
+                if (department.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.domain, size: 16, color: _secondary),
+                      const SizedBox(width: 4),
+                      Text(
+                        department,
+                        style: const TextStyle(color: _secondary, fontSize: 14, fontWeight: FontWeight.w400),
+                      ),
+                    ],
+                  ),
                 ],
-              ),
+              ],
             ),
+          ),
 
-            // Pestañas
-            // Tabs estilo segmentado (como imagen 2)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [BoxShadow(color: Color(0x33405362), blurRadius: 6, offset: const Offset(0, 2))],
-                ),
-                child: Row(
-                  children: [
-                    _segmentedTab('Información', 'info'),
-                    _segmentedTab('Documentos Personales', 'docs'),
-                    _segmentedTab('Cursos', 'cert'),
-                  ],
-                ),
-              ),
+          // Tabs pill
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+            child: _tabsBar(),
+          ),
+
+          Expanded(
+            child: _loadingDetail && _detail == null && _activeTab == 'info'
+                ? const Center(child: CircularProgressIndicator(color: _primary))
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+                    child: _buildTabBody(e),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabBody(Map<String, dynamic> e) {
+    switch (_activeTab) {
+      case 'docs':
+        return _recordsSection(
+          future: _docsFuture,
+          emptyLabel: 'Sin documentos personales',
+          itemBuilder: (doc) {
+            final name = _nestedName(doc['type_document'] ?? doc['typeDocument'], fallbackKeys: ['name', 'documentName', 'title']) ??
+                _str(doc, ['name', 'documentName', 'title', 'fileName'], fallback: 'Documento');
+            final issue = _str(doc, ['start_date', 'startDate', 'issue_date', 'issueDate']);
+            final expiry = _str(doc, ['end_date', 'endDate', 'expiry_date', 'expiryDate']);
+            return _recordCard(
+              icon: Icons.description_outlined,
+              iconColor: _primary,
+              title: name,
+              issue: issue,
+              expiry: expiry,
+              file: EmployeesService.firstPdfFile(doc),
+            );
+          },
+        );
+      case 'courses':
+        return _recordsSection(
+          future: _coursesFuture,
+          emptyLabel: 'Sin cursos',
+          itemBuilder: (c) {
+            final name = _nestedName(c['course'] ?? c['courseCertification'], fallbackKeys: ['name']) ??
+                _str(c, ['name', 'courseName', 'certificationName'], fallback: 'Curso');
+            final issue = _str(c, ['issue_date', 'issueDate', 'start_date']);
+            final expiry = _str(c, ['expiry_date', 'expiryDate', 'end_date']);
+            return _recordCard(
+              icon: Icons.school_outlined,
+              iconColor: _primary,
+              title: name,
+              issue: issue,
+              expiry: expiry,
+              file: EmployeesService.firstPdfFile(c),
+            );
+          },
+        );
+      case 'cards':
+        return _recordsSection(
+          future: _cardsFuture,
+          emptyLabel: 'Sin tarjetas',
+          itemBuilder: (card) {
+            final name = _nestedName(card['card'], fallbackKeys: ['name']) ??
+                _str(card, ['name', 'cardName'], fallback: 'Tarjeta');
+            final number = _str(card, ['card_number', 'cardNumber', 'numero']);
+            final issue = _str(card, ['issue_date', 'issueDate']);
+            final expiry = _str(card, ['expiry_date', 'expiryDate']);
+            final title = number.isEmpty ? name : '$name · $number';
+            return _recordCard(
+              icon: Icons.credit_card_outlined,
+              iconColor: _primary,
+              title: title,
+              issue: issue,
+              expiry: expiry,
+              file: EmployeesService.firstPdfFile(card),
+            );
+          },
+        );
+      default:
+        return _profileSection(e);
+    }
+  }
+
+  /// Solo campos del diseño HTML.
+  Widget _profileSection(Map<String, dynamic> e) {
+    final cedula = _str(e, ['cedula', 'dni', 'document']);
+    final birth = _formatDateDmy(_str(e, ['dateBirth', 'birthDate', 'dateOfBirth', 'fechaNacimiento', 'fecha_nacimiento']));
+    final phone = _str(e, ['phone', 'telefono', 'mobile', 'celular']);
+    final email = _str(e, ['email', 'correo']);
+    final blood = _str(e, ['tipoSangre', 'bloodType']);
+    final gender = _str(e, ['genderName', 'genero', 'gender']);
+    final civil = _str(e, ['civilStatusName', 'estadoCivil']);
+    final education = _str(e, ['nivelEducacion', 'degreeName', 'educationLevel']);
+    final homeAddress = _str(e, ['direccionDomiciliaria', 'homeAddress', 'address', 'direccion']);
+    final prov = _str(e, ['lugarNacimientoProvincia']);
+    final cityBirth = _str(e, ['lugarNacimientoCiudad']);
+    final ingreso = _formatDateDmy(_str(e, ['fechaIngreso', 'hireDate', 'fecha_ingreso']));
+    final codigo = _str(e, ['codigoTrabajador', 'codigo']);
+
+    final provinciaText = [
+      if (prov.isNotEmpty) prov,
+      if (cityBirth.isNotEmpty) cityBirth,
+    ].join(' - ');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sectionTitle('Información Personal'),
+        const SizedBox(height: 12),
+        _card(
+          children: [
+            _dataRow(Icons.calendar_today, 'Fecha de Ingreso', ingreso.isEmpty ? '—' : ingreso),
+            _divider(),
+            _dataRow(Icons.badge_outlined, 'Código del Trabajador', codigo.isEmpty ? '—' : codigo),
+            _divider(),
+            _dataRow(Icons.credit_card, 'Cédula', cedula.isEmpty ? '—' : cedula),
+            _divider(),
+            _dataRow(Icons.cake_outlined, 'Fecha Nacimiento', birth.isEmpty ? '—' : birth),
+            _divider(),
+            _twoColRow(
+              leftIcon: Icons.water_drop_outlined,
+              leftLabel: 'Tipo Sangre',
+              leftValue: blood.isEmpty ? '—' : blood,
+              rightIcon: Icons.wc_outlined,
+              rightLabel: 'Género',
+              rightValue: gender.isEmpty ? '—' : gender,
             ),
-            const SizedBox(height: 8),
-
-            if (_activeTab == 'info') ...[
-              _infoPersonalSection(cedula, _formatLongDateText(birth)),
-              _infoContactoSection(phone, email, address, city),
-              _emergencySection(),
-            ] else if (_activeTab == 'docs') ...[
-              _docsSection(),
-            ] else ...[
-              _certsSection(),
-            ],
-            const SizedBox(height: 20),
+            _divider(),
+            _twoColRow(
+              leftIcon: Icons.favorite_border,
+              leftLabel: 'Estado Civil',
+              leftValue: civil.isEmpty ? '—' : civil,
+              rightIcon: Icons.school_outlined,
+              rightLabel: 'Educación',
+              rightValue: education.isEmpty ? '—' : education,
+            ),
+            _divider(),
+            _dataRow(Icons.map_outlined, 'Provincia', provinciaText.isEmpty ? '—' : provinciaText),
+            _divider(),
+            _dataRow(Icons.home_outlined, 'Dirección Domiciliaria', homeAddress.isEmpty ? '—' : homeAddress),
           ],
         ),
-      ),
+        const SizedBox(height: 28),
+        _sectionTitle('Contacto'),
+        const SizedBox(height: 12),
+        _card(
+          children: [
+            _dataRow(Icons.call_outlined, 'Teléfono', phone.isEmpty ? '—' : phone),
+            _divider(),
+            _dataRow(Icons.mail_outline, 'Correo Electrónico', email.isEmpty ? '—' : email),
+          ],
+        ),
+        const SizedBox(height: 28),
+        _emergencySection(),
+      ],
     );
   }
 
-  Widget _segmentedTab(String label, String key) {
-    final selected = _activeTab == key;
-    return Expanded(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => setState(() => _activeTab = key),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: selected ? const Color(0xFF6E7E89) : null,
-            border: Border(
-              bottom: BorderSide(
-                color: selected ? const Color(0xFF6E7E89) : Colors.transparent,
-                width: 2,
-              ),
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 13,
-              height: 1.1,
-              fontWeight: FontWeight.w600,
-              color: selected ? const Color(0xFFFFFFFF) : const Color(0xFF405362),
-            ),
-          ),
+  Widget _sectionTitle(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: _onBackground,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          height: 1.3,
         ),
       ),
     );
   }
 
-  Widget _statCard(BuildContext context, IconData icon, String value, String label, Color color) {
+  Widget _card({required List<Widget> children}) {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4))]),
-      child: Column(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(color: Color(0x141A365D), blurRadius: 12, offset: Offset(0, 4)),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: children),
+    );
+  }
+
+  Widget _divider() => const Divider(height: 1, thickness: 1, color: Color(0x33C4C6CF));
+
+  Widget _dataRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Row(
         children: [
-          Container(width: 40, height: 40, decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color)),
-          const SizedBox(height: 6),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
-          const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _surfaceLow,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: _primary, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(color: _secondary, fontSize: 12, fontWeight: FontWeight.w500, height: 1.3),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(color: _primary, fontSize: 14, fontWeight: FontWeight.w600, height: 1.4),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _infoPersonalSection(String cedula, String birthDateText) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _twoColRow({
+    required IconData leftIcon,
+    required String leftLabel,
+    required String leftValue,
+    required IconData rightIcon,
+    required String rightLabel,
+    required String rightValue,
+  }) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 6),
-            child: Text('Información Personal', style: TextStyle(fontWeight: FontWeight.w800)),
-          ),
-          Container(
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0x6691B7D0))),
-            child: Column(children: [
-              _tileInfo(icon: Icons.badge_outlined, label: 'Cédula de Identidad', value: cedula),
-              _tileInfo(icon: Icons.calendar_month_outlined, label: 'Fecha de Nacimiento', value: birthDateText),
-            ]),
-          ),
-          const SizedBox(height: 14),
+          Expanded(child: _compactCell(leftIcon, leftLabel, leftValue)),
+          Container(width: 1, color: const Color(0x33C4C6CF)),
+          Expanded(child: _compactCell(rightIcon, rightLabel, rightValue)),
         ],
       ),
     );
   }
 
-  Widget _infoContactoSection(String phone, String email, String address, String city) {
+  Widget _compactCell(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(20),
+      child: Row(
         children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 6),
-            child: Text('Información de Contacto', style: TextStyle(fontWeight: FontWeight.w800)),
+          Icon(icon, color: _primary.withValues(alpha: 0.7), size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: _secondary, fontSize: 12, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: _primary, fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
           ),
-          Container(
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0x6691B7D0))),
-            child: Column(children: [
-              _tileInfo(icon: Icons.phone_outlined, label: 'Teléfono', value: phone),
-              _tileInfo(icon: Icons.email_outlined, label: 'Correo Electrónico', value: email),
-              _tileInfo(icon: Icons.place_outlined, label: 'Dirección Domiciliaria', value: address.isNotEmpty ? address : '—'),
-              if (city.isNotEmpty) _tileInfo(icon: Icons.location_city_outlined, label: '', value: city, subtle: true),
-            ]),
-          ),
-          const SizedBox(height: 14),
         ],
       ),
     );
@@ -411,58 +468,393 @@ class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
     final relation = em['relation'] ?? '';
     final phone = em['phone'] ?? '';
     final hasAny = name.isNotEmpty || relation.isNotEmpty || phone.isNotEmpty;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFFFFF1F2), Color(0xFFFFE4E6)]),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFFCA5A5), width: 1.5),
-        ),
-        padding: const EdgeInsets.all(12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: const [
-            Icon(Icons.emergency, color: Color(0xFFDC2626)),
-            SizedBox(width: 8),
-            Text('Contacto de Emergencia', style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF991B1B))),
-          ]),
-          const SizedBox(height: 8),
+    final nameText = _loadingEmergency && !hasAny ? 'Cargando...' : (name.isNotEmpty ? name : '—');
+    final phoneText = _loadingEmergency && !hasAny ? 'Cargando...' : (phone.isNotEmpty ? phone : '—');
+    final relationText = relation.isNotEmpty ? '(${relation.toUpperCase()})' : '';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: _errorContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _error.withValues(alpha: 0.2)),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(12, 10, 12, 8),
+            child: Row(
+              children: [
+                Icon(Icons.medical_services, color: _error, size: 22),
+                SizedBox(width: 8),
+                Text(
+                  'Contacto de Emergencia',
+                  style: TextStyle(color: _error, fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
           Container(
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-            child: Column(children: [
-              _tileInfo(
-                icon: Icons.person_outline,
-                label: 'Nombre del Contacto',
-                value: _loadingEmergency && !hasAny ? 'Cargando...' : (name.isNotEmpty ? name : '—'),
-                extra: relation.isNotEmpty ? '($relation)' : '',
-              ),
-              Row(children: [
-                Expanded(
-                  child: _tileInfo(
-                    icon: Icons.phone_outlined,
-                    label: 'Teléfono de Emergencia',
-                    value: _loadingEmergency && !hasAny ? 'Cargando...' : (phone.isNotEmpty ? phone : '—'),
+            margin: const EdgeInsets.fromLTRB(4, 0, 4, 4),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: const [
+                BoxShadow(color: Color(0x141A365D), blurRadius: 12, offset: Offset(0, 4)),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: _surfaceLow,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.person_outline, color: _secondary, size: 22),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Nombre del Contacto',
+                                  style: TextStyle(color: _secondary, fontSize: 12, fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  nameText,
+                                  style: const TextStyle(
+                                    color: _onBackground,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (relationText.isNotEmpty)
+                      Text(
+                        relationText,
+                        style: const TextStyle(
+                          color: _secondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Divider(height: 1, color: Color(0x33C4C6CF)),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: _surfaceLow,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.phone_iphone, color: _secondary, size: 22),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Teléfono de Emergencia',
+                                  style: TextStyle(color: _secondary, fontSize: 12, fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  phoneText,
+                                  style: const TextStyle(
+                                    color: _onBackground,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (phone.isNotEmpty)
+                      TextButton(
+                        onPressed: () => _launchTel(phone),
+                        style: TextButton.styleFrom(
+                          backgroundColor: _secondary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Llamar', style: TextStyle(fontWeight: FontWeight.w500)),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabsBar() {
+    final tabs = <MapEntry<String, String>>[
+      const MapEntry('info', 'Perfil'),
+      const MapEntry('docs', 'Documentos'),
+      const MapEntry('courses', 'Cursos'),
+      const MapEntry('cards', 'Tarjetas'),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _outlineVariant.withValues(alpha: 0.3)),
+        boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 4, offset: Offset(0, 1))],
+      ),
+      child: Row(
+        children: tabs.map((t) {
+          final selected = _activeTab == t.key;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _activeTab = t.key),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: selected ? _secondary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: selected
+                      ? const [BoxShadow(color: Color(0x1A000000), blurRadius: 4, offset: Offset(0, 1))]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  t.value,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: selected ? Colors.white : _secondary,
                   ),
                 ),
-                if (phone.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6E7E89),
-                        foregroundColor: Colors.white,
-                        shadowColor: const Color(0x66405362),
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      onPressed: () => _launchTel(phone),
-                      child: const Text('Llamar'),
-                    ),
-                  ),
-              ]),
-            ]),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _avatar(String? photo, bool active) {
+    return SizedBox(
+      width: 96,
+      height: 96,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: _surface, width: 4),
+              boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 2))],
+            ),
+            child: ClipOval(
+              child: Container(
+                width: 96,
+                height: 96,
+                color: _surfaceVariant,
+                child: photo != null
+                    ? Image.network(
+                        photo,
+                        fit: BoxFit.cover,
+                        width: 96,
+                        height: 96,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 48, color: _secondary),
+                      )
+                    : const Icon(Icons.person, size: 48, color: _secondary),
+              ),
+            ),
           ),
-        ]),
+          Positioned(
+            right: 2,
+            bottom: 2,
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: active ? const Color(0xFF22C55E) : Colors.grey,
+                shape: BoxShape.circle,
+                border: Border.all(color: _surface, width: 2),
+              ),
+              child: Icon(active ? Icons.check : Icons.remove, color: Colors.white, size: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _recordsSection({
+    required Future<List<Map<String, dynamic>>> future,
+    required String emptyLabel,
+    required Widget Function(Map<String, dynamic>) itemBuilder,
+  }) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: future,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator(color: _primary)),
+          );
+        }
+        final list = snap.data ?? const <Map<String, dynamic>>[];
+        if (list.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(child: Text(emptyLabel, style: const TextStyle(color: _secondary))),
+          );
+        }
+        return Column(children: list.map(itemBuilder).toList());
+      },
+    );
+  }
+
+  Widget _recordCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String issue,
+    required String expiry,
+    Map<String, dynamic>? file,
+  }) {
+    final status = _expiryStatus(expiry);
+    final days = _daysLeft(expiry);
+    final pdfUrl = file != null ? EmployeesService.fileAbsoluteUrl(file['file']) : null;
+    final canOpenPdf = pdfUrl != null && EmployeesService.isPdfFile(file);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(color: Color(0x141A365D), blurRadius: 12, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: _surfaceLow, borderRadius: BorderRadius.circular(8)),
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(color: _primary, fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+              ),
+              if (canOpenPdf)
+                IconButton(
+                  tooltip: 'Ver PDF',
+                  onPressed: () => _openPdf(pdfUrl, title),
+                  icon: const Icon(Icons.picture_as_pdf, color: _error),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _dateCol('Emisión', _formatDateDmy(issue))),
+              Expanded(child: _dateCol('Vencimiento', _formatDateDmy(expiry))),
+              Column(
+                children: [
+                  _expiryBadge(status),
+                  if (days != null) ...[
+                    const SizedBox(height: 4),
+                    Text('$days', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: _primary)),
+                    const Text('Días', style: TextStyle(fontSize: 10, color: _secondary)),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dateCol(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 11, color: _secondary, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 2),
+        Text(value.isEmpty ? '—' : value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _primary)),
+      ],
+    );
+  }
+
+  Widget _expiryBadge(String status) {
+    Color bg;
+    Color fg;
+    switch (status) {
+      case 'Caducado':
+        bg = const Color(0xFFFEE2E2);
+        fg = const Color(0xFFB91C1C);
+        break;
+      case 'Próximo a vencer':
+        bg = const Color(0xFFFEF3C7);
+        fg = const Color(0xFFB45309);
+        break;
+      case 'Vigente':
+        bg = const Color(0xFFDCFCE7);
+        fg = const Color(0xFF15803D);
+        break;
+      default:
+        bg = _surfaceLow;
+        fg = _secondary;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+      child: Text(status, style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w700)),
+    );
+  }
+
+  void _openPdf(String url, String title) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PdfViewerPage(url: url),
+        settings: RouteSettings(name: '/pdf-viewer', arguments: url),
       ),
     );
   }
@@ -479,24 +871,24 @@ class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
     if (_emergency is Map<String, dynamic>) base = {...?_emergency};
     final nested = (_detail?['emergencyContact'] ?? _detail?['contactoEmergencia'] ?? _detail?['emergency_contact']);
     if (nested is Map<String, dynamic>) base = {...nested, ...base};
-    final contactsList = (_detail?['contacts'] ?? _detail?['contactos'] ?? _detail?['employeeContacts']);
-    if (contactsList is List) {
-      for (final raw in contactsList) {
-        if (raw is! Map) continue;
-        final m = raw.cast<String, dynamic>();
-        final type = (m['type'] ?? m['category'] ?? m['contactType'] ?? m['tipo'])?.toString().toUpperCase();
-        final isEmergency = type == 'EMERGENCY' || type == 'EMERGENCIA' || (m['emergency'] == true);
-        if (isEmergency) { base = {...m, ...base}; break; }
-      }
-    }
-    final name = (base['name'] ?? base['nombre'] ?? base['fullName'] ??
-            _detail?['contactName'] ?? _detail?['emergencyContactName'] ?? _detail?['emergency_name'] ?? _detail?['contactoEmergenciaNombre'])
+    final name = (base['name'] ??
+            base['nombre'] ??
+            base['fullName'] ??
+            _detail?['contactName'] ??
+            _detail?['emergencyContactName'])
         ?.toString();
-    final relation = (base['relation'] ?? base['relacion'] ?? base['parentesco'] ??
-            _detail?['contactKinship'] ?? _detail?['emergencyContactRelation'] ?? _detail?['emergency_relation'] ?? _detail?['contactoEmergenciaParentesco'])
+    final relation = (base['relation'] ??
+            base['relacion'] ??
+            base['parentesco'] ??
+            _detail?['contactKinship'] ??
+            _detail?['emergencyContactRelation'])
         ?.toString();
-    final phone = (base['phone'] ?? base['telefono'] ?? base['mobile'] ?? base['celular'] ?? base['emergencyPhone'] ?? base['telefono_emergencia'] ??
-            _detail?['contactPhone'] ?? _detail?['emergencyContactPhone'] ?? _detail?['emergency_phone'] ?? _detail?['contactoEmergenciaTelefono'])
+    final phone = (base['phone'] ??
+            base['telefono'] ??
+            base['mobile'] ??
+            base['celular'] ??
+            _detail?['contactPhone'] ??
+            _detail?['emergencyContactPhone'])
         ?.toString();
     return {
       'name': name ?? '',
@@ -505,119 +897,18 @@ class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
     };
   }
 
-  Widget _tileInfo({required IconData icon, required String label, required String value, String extra = '', bool subtle = false}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: subtle ? const Color(0xFFF8FAFF) : Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))]),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(width: 36, height: 36, decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: const Color(0xFF475569))),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          if (label.isNotEmpty) Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
-          const SizedBox(height: 2),
-          Row(children: [
-            Expanded(child: Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)))),
-            if (extra.isNotEmpty) Text(extra, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-          ]),
-        ])),
-      ]),
-    );
-  }
-
-  Widget _docsSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _docsFuture,
-        builder: (context, snap) {
-          final list = snap.data ?? const <Map<String, dynamic>>[];
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()));
-          }
-          if (list.isEmpty) {
-            return const Padding(padding: EdgeInsets.all(16), child: Text('Sin documentos personales'));
-          }
-          return Column(
-            children: list.map((doc) {
-              final name = (doc['name'] ?? doc['documentName'] ?? doc['title'] ?? doc['fileName'] ?? 'Documento').toString();
-              final date = _parseDate(doc['updatedAt'] ?? doc['createdAt']);
-              final when = date != null ? _timeAgo(date) : '';
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: Theme.of(context).dividerColor)),
-                child: Row(children: [
-                  Container(width: 36, height: 36, decoration: BoxDecoration(color: Colors.blue.withOpacity(0.12), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.description, color: Colors.blue)),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    if (when.isNotEmpty) Text(when, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                  ])),
-                ]),
-              );
-            }).toList(),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _certsSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _certsFuture,
-        builder: (context, snap) {
-          final list = snap.data ?? const <Map<String, dynamic>>[];
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()));
-          }
-          if (list.isEmpty) {
-            return const Padding(padding: EdgeInsets.all(16), child: Text('Sin cursos/certificaciones'));
-          }
-          return Column(
-            children: list.map((c) {
-              final name = (c['name'] ?? c['courseName'] ?? c['certificationName'] ?? 'Curso').toString();
-              final completed = _parseDate(c['completedAt'] ?? c['date'] ?? c['createdAt']);
-              final label = completed != null ? 'Completado: ${_formatMonthYear(completed)}' : '';
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFFFFFBEB), Color(0xFFFEF3C7)]),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFDE68A)),
-                ),
-                child: Row(children: [
-                  Container(width: 40, height: 40, decoration: BoxDecoration(color: const Color(0xFFF59E0B), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.emoji_events, color: Colors.white)),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF7C2D12))),
-                    if (label.isNotEmpty) Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF92400E))),
-                  ])),
-                  Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: const Color(0xFFF59E0B), borderRadius: BorderRadius.circular(8)), child: const Text('Completado ✓', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700))),
-                ]),
-              );
-            }).toList(),
-          );
-        },
-      ),
-    );
-  }
-
-  // Helpers reutilizados
   String _displayName(Map<String, dynamic> e) {
     final name = (e['name'] as String?)?.trim();
     final nombres = (e['nombres'] as String?)?.trim();
     final apellidos = (e['apellidos'] as String?)?.trim();
-    if (name != null && name.isNotEmpty) return name;
-    final combined = [nombres, apellidos].where((s) => s != null && s!.isNotEmpty).join(' ');
+    if (name != null && name.isNotEmpty && (apellidos == null || apellidos.isEmpty)) return name;
+    final combined = [nombres ?? name, apellidos].where((s) => (s ?? '').isNotEmpty).join(' ');
     return combined.isNotEmpty ? combined : (e['cedula']?.toString() ?? 'Empleado');
   }
 
   String? _photoUrl(Map<String, dynamic> e) {
-    final raw = (e['profile_picture'] ?? e['imagePath'] ?? e['profilePicture'] ?? e['photo'] ?? e['foto'] ?? e['image'])?.toString();
+    final raw = (e['profile_picture'] ?? e['imagePath'] ?? e['profilePicture'] ?? e['photo'] ?? e['foto'] ?? e['image'])
+        ?.toString();
     final path = raw?.trim();
     if (path == null || path.isEmpty) return null;
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
@@ -628,10 +919,12 @@ class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
       return '${AppConfig.baseUrl}$prefix${Uri.encodeComponent(last)}';
     }
     var normalized = path.replaceAll('\\', '/');
-    while (normalized.startsWith('/')) normalized = normalized.substring(1);
+    while (normalized.startsWith('/')) {
+      normalized = normalized.substring(1);
+    }
     if (normalized.startsWith('uploads/')) normalized = normalized.substring('uploads/'.length);
     final hasSlash = normalized.contains('/');
-    final filename = hasSlash ? (normalized.split('/').last) : normalized;
+    final filename = hasSlash ? normalized.split('/').last : normalized;
     final lower = normalized.toLowerCase();
     if (lower.startsWith('profiles/')) {
       final encoded = normalized.split('/').map(Uri.encodeComponent).join('/');
@@ -644,77 +937,69 @@ class _EmployeeDetailViewState extends State<_EmployeeDetailView> {
     return '${AppConfig.baseUrl}/api/files/$encoded';
   }
 
-  Widget _infoRow(IconData icon, String label, String value) {
-    if (value.trim().isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(children: [
-        Icon(icon, size: 18, color: Colors.grey.shade700),
-        const SizedBox(width: 8),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-          const SizedBox(height: 2),
-          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-        ])),
-      ]),
-    );
+  String _str(Map<String, dynamic> m, List<String> keys, {String fallback = ''}) {
+    for (final k in keys) {
+      final v = m[k];
+      if (v == null) continue;
+      final s = v.toString().trim();
+      if (s.isNotEmpty && s.toLowerCase() != 'null') return s;
+    }
+    return fallback;
   }
 
-  DateTime? _parseDate(dynamic v) {
-    if (v == null) return null;
-    try { return DateTime.tryParse(v.toString()); } catch (_) { return null; }
-  }
-
-  DateTime? _parseFlexibleDate(String s) {
-    try {
-      final trimmed = s.trim();
-      if (trimmed.isEmpty) return null;
-      final basic = DateTime.tryParse(trimmed);
-      if (basic != null) return basic;
-      final parts = trimmed.split(' ');
-      final datePart = parts.first;
-      final norm = datePart.replaceAll('/', '-');
-      final ymd = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$');
-      final dmy = RegExp(r'^(\d{2})-(\d{2})-(\d{4})$');
-      var m = ymd.firstMatch(norm);
-      if (m != null) {
-        final y = int.parse(m.group(1)!);
-        final mo = int.parse(m.group(2)!);
-        final d = int.parse(m.group(3)!);
-        return DateTime(y, mo, d);
+  String? _nestedName(dynamic nested, {required List<String> fallbackKeys}) {
+    if (nested is Map) {
+      final m = nested.cast<String, dynamic>();
+      for (final k in fallbackKeys) {
+        final v = m[k]?.toString().trim();
+        if (v != null && v.isNotEmpty) return v;
       }
-      m = dmy.firstMatch(norm);
-      if (m != null) {
-        final d = int.parse(m.group(1)!);
-        final mo = int.parse(m.group(2)!);
-        final y = int.parse(m.group(3)!);
-        return DateTime(y, mo, d);
-      }
-    } catch (_) {}
+    }
     return null;
   }
 
-  String _formatLongDateText(String s) {
-    if (s.trim().isEmpty) return '—';
-    final dt = _parseFlexibleDate(s);
-    if (dt == null) return s;
-    const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-    return '${dt.day} de ${months[dt.month - 1]} de ${dt.year}';
+  DateTime? _parseDate(String? s) {
+    if (s == null || s.trim().isEmpty) return null;
+    final trimmed = s.trim();
+    final basic = DateTime.tryParse(trimmed);
+    if (basic != null) return DateTime(basic.year, basic.month, basic.day);
+    final norm = trimmed.split(' ').first.replaceAll('/', '-');
+    final ymd = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(norm);
+    if (ymd != null) {
+      return DateTime(int.parse(ymd.group(1)!), int.parse(ymd.group(2)!), int.parse(ymd.group(3)!));
+    }
+    final dmy = RegExp(r'^(\d{2})-(\d{2})-(\d{4})$').firstMatch(norm);
+    if (dmy != null) {
+      return DateTime(int.parse(dmy.group(3)!), int.parse(dmy.group(2)!), int.parse(dmy.group(1)!));
+    }
+    return null;
   }
 
-  String _timeAgo(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date).inDays;
-    if (diff <= 0) return 'Hoy';
-    if (diff == 1) return 'Hace 1 día';
-    if (diff < 30) return 'Hace $diff días';
-    final months = (diff / 30).floor();
-    if (months == 1) return 'Hace 1 mes';
-    return 'Hace $months meses';
+  String _formatDateDmy(String raw) {
+    if (raw.trim().isEmpty) return '';
+    final dt = _parseDate(raw);
+    if (dt == null) return raw;
+    final d = dt.day.toString().padLeft(2, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    return '$d/$m/${dt.year}';
   }
 
-  String _formatMonthYear(DateTime d) {
-    const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    return '${months[d.month - 1]} ${d.year}';
+  String _expiryStatus(String expiryRaw) {
+    final dt = _parseDate(expiryRaw);
+    if (dt == null) return '—';
+    final today = DateTime.now();
+    final startToday = DateTime(today.year, today.month, today.day);
+    final days = dt.difference(startToday).inDays;
+    if (days < 0) return 'Caducado';
+    if (days <= 30) return 'Próximo a vencer';
+    return 'Vigente';
+  }
+
+  int? _daysLeft(String expiryRaw) {
+    final dt = _parseDate(expiryRaw);
+    if (dt == null) return null;
+    final today = DateTime.now();
+    final startToday = DateTime(today.year, today.month, today.day);
+    return dt.difference(startToday).inDays;
   }
 }
