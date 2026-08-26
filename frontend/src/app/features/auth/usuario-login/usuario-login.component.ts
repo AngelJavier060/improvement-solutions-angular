@@ -77,59 +77,30 @@ export class UsuarioLoginComponent implements OnInit {
           console.log('Usuario actual:', user);
           console.log('Usuario completo:', JSON.stringify(user, null, 2));
           
-          // Determinar roles del usuario
-          const roles: string[] = Array.isArray(response?.userDetail?.roles)
+          const rawRoles: any[] = Array.isArray(response?.userDetail?.roles)
             ? response.userDetail.roles
             : (Array.isArray(user?.roles) ? user.roles : []);
-          const isAdmin = roles.includes('ROLE_ADMIN');
+          const roles = this.authService.normalizeRoles(rawRoles);
+          const businesses = response.userDetail?.businesses?.length
+            ? response.userDetail.businesses
+            : (user?.businesses || []);
 
-          // Verificar si hay información de empresa en la respuesta o en el usuario
-          let businessRuc: string | null = null;
-          let empresasDisponibles: any[] = [];
-
-          if (response.userDetail?.businesses && response.userDetail.businesses.length > 0) {
-            empresasDisponibles = response.userDetail.businesses;
-            businessRuc = response.userDetail.businesses[0].ruc;
-            console.log('Empresas en respuesta:', empresasDisponibles);
-          } else if (user?.businesses && user.businesses.length > 0) {
-            empresasDisponibles = user.businesses;
-            businessRuc = user.businesses[0].ruc;
-            console.log('Empresas del usuario almacenado:', empresasDisponibles);
+          // Puerta Usuario de la intranet → siempre módulos /usuario/... (no parámetros admin)
+          const isSuper = roles.includes('ROLE_SUPER_ADMIN');
+          if (isSuper) {
+            // Super no opera por esta puerta
+            this.router.navigateByUrl('/dashboard/admin');
+            this.loading = false;
+            return;
           }
 
-          console.log('Roles del usuario:', roles);
-          console.log('¿Es admin?:', isAdmin);
-          console.log('RUC de empresa encontrado:', businessRuc);
-          console.log('Total de empresas:', empresasDisponibles.length);
-
-          // Si viene returnUrl y es admin, priorizar navegación a esa ruta
-          if (isAdmin && this.returnUrl) {
-            console.log('Usuario ADMIN con returnUrl. Redirigiendo a:', this.returnUrl);
-            this.router.navigateByUrl(this.returnUrl).then(
-              (success) => console.log('Navegación por returnUrl exitosa:', success),
-              (error) => console.error('Error en navegación por returnUrl:', error)
-            );
-          } else if (isAdmin) {
-            // En producción debemos llevar al Administrador a la configuración
-            console.log('Usuario ADMIN: redirigiendo a configuración del administrador');
-            this.router.navigate(['/dashboard/admin/configuracion']).then(
-              (success) => console.log('Navegación a admin/configuracion exitosa:', success),
-              (error) => console.error('Error en navegación a admin/configuracion:', error)
-            );
-          } else if (businessRuc) {
-            // Usuario de empresa con RUC asociado
-            const rutaDestino = `/usuario/${businessRuc}/welcome`;
-            console.log('Usuario de empresa: redirigiendo a:', rutaDestino);
-            this.router.navigate([rutaDestino]).then(
-              (success) => console.log('Navegación exitosa:', success),
-              (error) => console.error('Error en navegación:', error)
-            );
+          if (this.returnUrl && roles.includes('ROLE_ADMIN') && this.returnUrl.startsWith('/usuario/')) {
+            this.router.navigateByUrl(this.returnUrl);
           } else {
-            // Fallback: dashboard de usuario
-            console.log('Sin empresa asociada ni rol admin, redirigiendo a dashboard de usuario');
-            this.router.navigate(['/dashboard/usuario']);
+            const dest = this.authService.resolvePostLoginUrl(roles, businesses, 'user');
+            this.router.navigateByUrl(dest);
           }
-          
+
           this.loading = false;
         },
         error: (error) => {

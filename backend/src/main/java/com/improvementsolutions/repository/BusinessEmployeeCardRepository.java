@@ -22,7 +22,11 @@ public interface BusinessEmployeeCardRepository extends JpaRepository<BusinessEm
            "JOIN FETCH c.businessEmployee be " +
            "JOIN FETCH c.card " +
            "JOIN be.business b " +
-           "WHERE b.ruc = :ruc AND c.active = false")
+           "WHERE b.ruc = :ruc AND (" +
+           "  c.active = false " +
+           "  OR be.active = false " +
+           "  OR UPPER(COALESCE(be.status, '')) = 'INACTIVO'" +
+           ")")
     List<BusinessEmployeeCard> findHistoricByBusinessRuc(@Param("ruc") String ruc);
 
     @Query("SELECT DISTINCT c FROM BusinessEmployeeCard c " +

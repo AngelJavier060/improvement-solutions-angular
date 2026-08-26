@@ -10,6 +10,7 @@ import { forkJoin, Subject } from 'rxjs';
 import { filter, map, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { extractUsuarioRucFromRoute, resolveThBusinessFromRoute } from '../utils/th-business-from-route';
 import { EmployeeResponse } from '../models/employee.model';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 export interface PermissionTypeRow {
   label: string;
@@ -43,6 +44,8 @@ export class PermisosComponent implements OnInit, OnDestroy {
   loadingEmps = false;
   error: string | null = null;
   successMsg: string | null = null;
+  /** Matriz: registrar / gestionar permisos */
+  canManageTimeOff = false;
 
   filterYear: number = new Date().getFullYear();
   filterMonth: number = new Date().getMonth() + 1;
@@ -109,7 +112,8 @@ export class PermisosComponent implements OnInit, OnDestroy {
     private employeeService: EmployeeService,
     private businessContext: BusinessContextService,
     private businessService: BusinessService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private authService: AuthService
   ) {}
 
   /** Nombre de la empresa en gestión (URL / RUC), para encabezados y PDF */
@@ -118,6 +122,7 @@ export class PermisosComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.canManageTimeOff = this.authService.canTimeOff();
     this.buildForm();
     this.initFromRoute();
     this.router.events.pipe(
@@ -180,6 +185,7 @@ export class PermisosComponent implements OnInit, OnDestroy {
   }
 
   openNewModal(): void {
+    if (!this.canManageTimeOff) return;
     this.selectedEmployee = null;
     this.resetTypeRows();
     this.replacementEmployee = '';

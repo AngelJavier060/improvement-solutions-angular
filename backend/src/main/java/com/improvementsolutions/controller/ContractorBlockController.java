@@ -18,35 +18,35 @@ public class ContractorBlockController {
     private final ContractorBlockService contractorBlockService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<ContractorBlockDto>> getAllBlocks() {
         List<ContractorBlockDto> blocks = contractorBlockService.getAllBlocks();
         return ResponseEntity.ok(blocks);
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<ContractorBlockDto>> getAllActiveBlocks() {
         List<ContractorBlockDto> blocks = contractorBlockService.getAllActiveBlocks();
         return ResponseEntity.ok(blocks);
     }
 
     @GetMapping("/by-company/{companyId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<ContractorBlockDto>> getBlocksByCompanyId(@PathVariable Long companyId) {
         List<ContractorBlockDto> blocks = contractorBlockService.getBlocksByCompanyId(companyId);
         return ResponseEntity.ok(blocks);
     }
 
     @GetMapping("/by-company/{companyId}/active")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<ContractorBlockDto>> getActiveBlocksByCompanyId(@PathVariable Long companyId) {
         List<ContractorBlockDto> blocks = contractorBlockService.getActiveBlocksByCompanyId(companyId);
         return ResponseEntity.ok(blocks);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<ContractorBlockDto> getBlockById(@PathVariable Long id) {
         return contractorBlockService.getBlockById(id)
                 .map(ResponseEntity::ok)
@@ -54,7 +54,7 @@ public class ContractorBlockController {
     }
 
     @GetMapping("/by-code/{code}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<ContractorBlockDto> getBlockByCode(@PathVariable String code) {
         return contractorBlockService.getBlockByCode(code)
                 .map(ResponseEntity::ok)
@@ -62,7 +62,7 @@ public class ContractorBlockController {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<ContractorBlockDto>> searchBlocksByName(@RequestParam String name) {
         List<ContractorBlockDto> blocks = contractorBlockService.searchBlocksByName(name);
         return ResponseEntity.ok(blocks);

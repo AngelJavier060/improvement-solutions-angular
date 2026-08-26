@@ -12,7 +12,12 @@
       <i [class]="userTypeIcon + ' fa-2x ' + userTypeClass"></i>
     </div>
     <h5>Ingrese sus credenciales de {{ userTypeTitle }}</h5>
-    <p class="text-muted">Acceda al sistema de gestión integral QHSE</p>
+    <p class="text-muted small mb-0" *ngIf="userType === 'admin'">
+      Acceso a <strong>parámetros y catálogos</strong> de la empresa.
+    </p>
+    <p class="text-muted small mb-0" *ngIf="userType !== 'admin'">
+      Acceso a <strong>módulos operativos</strong> (documentación, Talento Humano, etc.).
+    </p>
   </div>
 
   <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">

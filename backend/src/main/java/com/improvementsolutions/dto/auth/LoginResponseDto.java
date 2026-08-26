@@ -34,6 +34,8 @@ public class LoginResponseDto {
         private String email;
         private List<String> roles;
         private List<BusinessInfoDto> businesses;
+        /** Capacidades operativas efectivas (matriz por usuario / rol). */
+        private UserOperationalCapabilityInfoDto operationalCapabilities;
         
         public UserInfoDto() {
         }
@@ -44,6 +46,21 @@ public class LoginResponseDto {
             this.email = email;
             this.roles = roles;
         }
+    }
+
+    @Data
+    public static class UserOperationalCapabilityInfoDto {
+        private boolean canView;
+        private boolean canDownload;
+        private boolean canCreate;
+        private boolean canEdit;
+        private boolean canDelete;
+        private boolean canUpload;
+        private boolean canOvertime;
+        private boolean canVacations;
+        private boolean canTimeOff;
+        private boolean canWriteOps;
+        private boolean writeLockedByRole;
     }
     
     @Data

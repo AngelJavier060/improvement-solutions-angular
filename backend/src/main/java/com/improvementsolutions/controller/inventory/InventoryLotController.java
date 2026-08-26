@@ -27,7 +27,7 @@ public class InventoryLotController {
     private final InventoryLotRepository lotRepository;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public List<Map<String, Object>> listLots(
         @PathVariable String ruc,
         @PathVariable Long variantId
@@ -38,7 +38,7 @@ public class InventoryLotController {
     }
 
     @GetMapping("/available")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public List<Map<String, Object>> listAvailableLots(
         @PathVariable String ruc,
         @PathVariable Long variantId

@@ -35,7 +35,7 @@ public class FileController {
     }
     
     @PostMapping("/upload")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<FileResponse> handleFileUpload(@RequestParam(value = "file", required = false) MultipartFile file) {
         try {
             if (file == null || file.isEmpty()) {
@@ -113,7 +113,7 @@ public class FileController {
     }
     
     @GetMapping("/download/{filename:.+}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'EMPLOYEE')")
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
         try {
             Resource file = storageService.loadAsResource(filename);
@@ -127,7 +127,7 @@ public class FileController {
     }
     
     @GetMapping("/download/{directory}/{filename:.+}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'EMPLOYEE')")
     public ResponseEntity<Resource> serveFileFromDirectory(
             @PathVariable String directory,
             @PathVariable String filename) {
@@ -187,7 +187,7 @@ public class FileController {
     }
 
     @DeleteMapping("/delete/{filename:.+}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Void> deleteFile(@PathVariable String filename) {
         try {
             storageService.delete(filename);
@@ -203,7 +203,7 @@ public class FileController {
     }
 
     @DeleteMapping("/delete/{directory}/{filename:.+}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Void> deleteFileFromDirectory(
             @PathVariable String directory,
             @PathVariable String filename) {

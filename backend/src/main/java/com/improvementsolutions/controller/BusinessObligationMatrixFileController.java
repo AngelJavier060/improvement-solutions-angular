@@ -88,7 +88,7 @@ public class BusinessObligationMatrixFileController {
     }
 
     @PostMapping(value = "/{matrixId}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<BusinessObligationMatrixFile> uploadFile(
             @PathVariable Long matrixId,
             @RequestPart("file") MultipartFile file,
@@ -144,7 +144,7 @@ public class BusinessObligationMatrixFileController {
     }
 
     @PutMapping("/files/{fileId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<BusinessObligationMatrixFile> updateDescription(
             @PathVariable Long fileId,
             @RequestBody Map<String, String> body
@@ -155,7 +155,7 @@ public class BusinessObligationMatrixFileController {
     }
 
     @DeleteMapping("/files/{fileId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Void> delete(@PathVariable Long fileId) {
         fileService.delete(fileId);
         return ResponseEntity.noContent().build();

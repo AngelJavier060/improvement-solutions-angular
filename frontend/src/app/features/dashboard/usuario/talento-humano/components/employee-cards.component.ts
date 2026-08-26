@@ -2,6 +2,7 @@ import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitte
 import { EmployeeCardService, EmployeeCardResponse, CreateEmployeeCardRequest } from '../services/employee-card.service';
 import { CardService, CardCatalog } from '../../../../../services/card.service';
 import { HttpClient, HttpResponse } from '@angular/common/http';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-employee-cards',
@@ -19,6 +20,7 @@ export class EmployeeCardsComponent implements OnInit, OnChanges {
   loading = false;
   saving = false;
   error: string | null = null;
+  canWrite = false;
 
   // Form inputs
   selectedCardId: string = '';
@@ -45,10 +47,12 @@ export class EmployeeCardsComponent implements OnInit, OnChanges {
   constructor(
     private employeeCardService: EmployeeCardService,
     private cardCatalogService: CardService,
-    private http: HttpClient
+    private http: HttpClient,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    this.canWrite = this.authService.canWrite();
     this.loadCatalog();
     this.loadCards();
   }

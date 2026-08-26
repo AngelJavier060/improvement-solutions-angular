@@ -70,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await _maybeOfferEnableBiometric(username, password);
 
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, AuthService().postLoginRoute);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -165,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       await AuthService().refreshLogin(refreshToken: creds['refreshToken']!);
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, AuthService().postLoginRoute);
     } catch (e) {
       if (!mounted) return;
       // Si falla con 401/credenciales, limpiar credenciales biométricas guardadas

@@ -24,6 +24,9 @@ export class UsuarioWelcomeComponent implements OnInit {
   modulesLoaded = false;
   isAdmin = false;
   isSuperAdmin = false;
+  canWriteOps = false;
+  isConsulta = false;
+  isGestorOnly = false;
   togglingModule: string | null = null;
   // Códigos de módulo del backend → ruta del frontend
   private moduleRouteMap: { [code: string]: string } = {
@@ -60,6 +63,9 @@ export class UsuarioWelcomeComponent implements OnInit {
 
     // Obtener información del usuario y empresa
     this.usuario = this.authService.getCurrentUser();
+    this.canWriteOps = this.authService.canWrite();
+    this.isConsulta = this.authService.isConsultaUser();
+    this.isGestorOnly = this.authService.isGestor();
     console.log('Usuario obtenido en welcome:', this.usuario);
     console.log('RUC buscado desde URL:', this.empresaRuc);
     
@@ -110,26 +116,25 @@ export class UsuarioWelcomeComponent implements OnInit {
   loadActiveModules(): void {
     if (!this.empresaRuc) return;
 
-    // Detectar rol
-    const roles = this.usuario?.roles || [];
+    // Detectar rol (Gestor no habilita módulos; solo los consume si Admin/Super los activó)
+    const roles = this.authService.normalizeRoles(this.usuario?.roles || []);
     this.isSuperAdmin = roles.includes('ROLE_SUPER_ADMIN');
     this.isAdmin = roles.includes('ROLE_ADMIN') || this.isSuperAdmin;
 
     if (this.isAdmin) {
-      // Admin/SuperAdmin: cargar TODOS los módulos (activos + inactivos)
+      // Admin/SuperAdmin: cargar TODOS los módulos (activos + inactivos) para poder gestionar
       this.businessModuleService.getAllModulesByRuc(this.empresaRuc).subscribe({
         next: (modules) => {
           this.allModules = modules;
           this.activeModules = modules.filter(m => m.effectivelyActive);
           this.modulesLoaded = true;
-          console.log('[Welcome] Todos los módulos para', this.empresaRuc, ':', modules.map(m => m.moduleCode + ':' + m.active));
         },
-        error: (err) => {
-          console.warn('[Welcome] Error cargando todos los módulos, intentando solo activos:', err);
+        error: () => {
           this.loadActiveModulesOnly();
         }
       });
     } else {
+      // Gestor / Supervisor: solo módulos activos de la empresa
       this.loadActiveModulesOnly();
     }
   }

@@ -21,13 +21,13 @@ public class WorkShiftController {
     private final WorkShiftRepository workShiftRepository;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<WorkShift>> getAll() {
         return ResponseEntity.ok(workShiftRepository.findAll());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<WorkShift> getById(@PathVariable Long id) {
         return workShiftRepository.findById(id)
                 .map(ResponseEntity::ok)

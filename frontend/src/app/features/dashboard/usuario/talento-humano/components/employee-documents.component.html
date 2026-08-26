@@ -8,7 +8,7 @@
     </div>
   </div>
 
-  <div class="ed-docs__form-card" *ngIf="!showRenewForm">
+  <div class="ed-docs__form-card" *ngIf="canWrite && !showRenewForm">
     <div class="ed-docs__form-grid">
       <div class="ed-docs__field">
         <label>Tipo de documento</label>
@@ -95,7 +95,7 @@
               <ng-template #nofiles>-</ng-template>
             </td>
             <td class="text-end">
-              <div class="ed-docs__row-actions">
+              <div class="ed-docs__row-actions" *ngIf="canWrite">
                 <button type="button" class="ed-docs__icon-btn" (click)="openRenewConfirm(d)" title="Renovar">
                   <i class="fas fa-sync"></i>
                 </button>

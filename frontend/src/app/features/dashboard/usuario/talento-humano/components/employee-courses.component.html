@@ -8,7 +8,7 @@
     </div>
   </div>
 
-  <div class="card mb-3" *ngIf="!showRenewForm">
+  <div class="card mb-3" *ngIf="canWrite && !showRenewForm">
     <div class="card-body">
       <div class="row g-3 align-items-end">
         <div class="col-md-4">
@@ -95,7 +95,7 @@
                 </ng-container>
                 <ng-template #nofiles>-</ng-template>
               </td>
-              <td class="text-end">
+              <td class="text-end" *ngIf="canWrite">
                 <button class="btn btn-sm btn-outline-primary me-2" (click)="openRenewConfirm(c)" title="Renovar">
                   <i class="fas fa-sync"></i>
                 </button>

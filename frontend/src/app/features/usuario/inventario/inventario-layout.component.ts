@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 import { InventoryAlertService } from '../../../services/inventory-alert.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { catchError, of } from 'rxjs';
 
 @Component({
@@ -28,8 +29,21 @@ export class InventarioLayoutComponent implements OnInit {
   ruc: string = '';
   collapsed: boolean = false;
   companyName: string = 'Mi Empresa';
+  isConsulta = false;
+  canWrite = true;
 
-  menuSections: Array<{
+  /** Rutas de menú que implican escritura (ocultas para Usuario consulta) */
+  private readonly writeRoutes = new Set([
+    'nueva-entrada',
+    'nueva-salida',
+    'cambios-reemplazos',
+    'devoluciones',
+    'prestamos',
+    'ajustes',
+    'traslados'
+  ]);
+
+  private allMenuSections: Array<{
     label: string;
     icon: string;
     route?: string;
@@ -108,15 +122,39 @@ export class InventarioLayoutComponent implements OnInit {
     }
   ];
 
+  menuSections: typeof this.allMenuSections = [];
+
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private alertService: InventoryAlertService
+    private alertService: InventoryAlertService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    this.canWrite = this.authService.canWrite();
+    this.isConsulta = this.authService.isConsultaUser();
+    this.menuSections = this.buildMenuSections();
     this.ruc = this.route.snapshot.params['ruc'] || '';
     this.loadAlertBadges();
+  }
+
+  private buildMenuSections(): typeof this.allMenuSections {
+    if (this.canWrite) {
+      return this.allMenuSections.map(s => ({
+        ...s,
+        items: s.items ? [...s.items] : undefined
+      }));
+    }
+    return this.allMenuSections
+      .map(section => {
+        if (section.type !== 'group' || !section.items) {
+          return { ...section };
+        }
+        const items = section.items.filter(i => !this.writeRoutes.has(i.route));
+        return { ...section, items: [...items] };
+      })
+      .filter(section => section.type === 'single' || (section.items && section.items.length > 0));
   }
 
   loadAlertBadges(): void {

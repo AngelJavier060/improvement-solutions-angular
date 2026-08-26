@@ -15,6 +15,7 @@ import { IndicadoresReactivosDashboardComponent } from './views/indicadores-reac
 import { GerenciasViajesListaComponent } from './views/gerencias-viajes/gerencias-viajes-lista.component';
 import { GerenciasViajesFormComponent } from './views/gerencias-viajes/gerencias-viajes-form.component';
 import { GerenciasViajesDetalleComponent } from './views/gerencias-viajes/gerencias-viajes-detalle.component';
+import { WriteAccessGuard } from '../../../../core/guards/write-access.guard';
 
 const routes: Routes = [
   {
@@ -37,11 +38,11 @@ const routes: Routes = [
         ]
       },
       { path: 'gerencias-viajes', component: GerenciasViajesListaComponent },
-      { path: 'gerencias-viajes/nuevo', component: GerenciasViajesFormComponent },
-      { path: 'gerencias-viajes/:id/editar', component: GerenciasViajesFormComponent },
+      { path: 'gerencias-viajes/nuevo', component: GerenciasViajesFormComponent, canActivate: [WriteAccessGuard] },
+      { path: 'gerencias-viajes/:id/editar', component: GerenciasViajesFormComponent, canActivate: [WriteAccessGuard] },
       { path: 'gerencias-viajes/:id', component: GerenciasViajesDetalleComponent },
       { path: 'accidentes-incidentes', component: AccidentesIncidentesComponent },
-      { path: 'accidentes-incidentes/nuevo', component: IncidentFormComponent },
+      { path: 'accidentes-incidentes/nuevo', component: IncidentFormComponent, canActivate: [WriteAccessGuard] },
       { path: 'accidentes-incidentes/:id', component: IncidentFormComponent }
     ]
   }

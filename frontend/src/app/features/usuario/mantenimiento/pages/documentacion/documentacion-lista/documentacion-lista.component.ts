@@ -6,6 +6,7 @@ import { Subscription, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { FleetService } from '../../../../../../services/fleet.service';
 import { FleetDocumentationService } from '../../../../../../services/fleet-documentation.service';
+import { AuthService } from '../../../../../../core/services/auth.service';
 import { Vehicle } from '../../../../../../models/vehicle.model';
 import { FleetComplianceDoc, FleetDocComplianceStatus } from '../../../../../../models/fleet-documentation.model';
 import { fleetDocCategoryLabel, normalizeFleetDocCategory } from '../../../../../../models/tipo-documento-vehiculo.model';
@@ -24,6 +25,7 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
   vehicles: Vehicle[] = [];
   loading = true;
   error = '';
+  canWrite = false;
 
   search = '';
   sortKey: SortKey = 'daysAsc';
@@ -44,10 +46,12 @@ export class DocumentacionListaComponent implements OnInit, OnDestroy {
     private router: Router,
     private fleetService: FleetService,
     private docService: FleetDocumentationService,
+    private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    this.canWrite = this.authService.canWrite();
     const parent = this.route.parent;
     if (!parent) {
       this.error = 'Ruta inválida.';

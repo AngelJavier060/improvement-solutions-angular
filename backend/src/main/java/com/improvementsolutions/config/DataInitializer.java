@@ -75,13 +75,35 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Rol ROLE_ADMIN actualizado");
         }
 
-        // Crear rol MANAGER si no existe (nivel intermedio para usuarios con más privilegios que ROLE_USER)
+        // Crear rol MANAGER si no existe (Gestor operativo: escribe docs/operación)
         if (!roleRepository.existsByName("ROLE_MANAGER")) {
             Role managerRole = new Role();
             managerRole.setName("ROLE_MANAGER");
-            managerRole.setDescription("Responsable de área / usuario avanzado");
+            managerRole.setDescription("Gestor operativo - subir/editar/eliminar documentación y operación de la empresa");
             roleRepository.save(managerRole);
             log.info("Rol ROLE_MANAGER creado");
+        } else {
+            roleRepository.findByName("ROLE_MANAGER").ifPresent(r -> {
+                r.setDescription("Gestor operativo - subir/editar/eliminar documentación y operación de la empresa");
+                roleRepository.save(r);
+            });
+        }
+
+        // Supervisor (consulta)
+        if (roleRepository.existsByName("ROLE_USER")) {
+            roleRepository.findByName("ROLE_USER").ifPresent(r -> {
+                r.setDescription("Supervisor - solo ver y descargar documentación");
+                roleRepository.save(r);
+            });
+        }
+
+        // Fase D: portal trabajador
+        if (!roleRepository.existsByName("ROLE_EMPLOYEE")) {
+            Role employeeRole = new Role();
+            employeeRole.setName("ROLE_EMPLOYEE");
+            employeeRole.setDescription("Empleado de empresa - acceso limitado a su información personal");
+            roleRepository.save(employeeRole);
+            log.info("Rol ROLE_EMPLOYEE creado");
         }
     }
 

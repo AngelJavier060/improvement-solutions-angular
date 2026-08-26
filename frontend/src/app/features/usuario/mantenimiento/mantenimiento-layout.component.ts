@@ -17,6 +17,7 @@ export class MantenimientoLayoutComponent implements OnInit, OnDestroy {
   businessRuc: string = '';
   businessName: string = '';
   currentUser: any = null;
+  isConsulta = false;
   private routeSub?: Subscription;
 
   menuItems = [
@@ -37,6 +38,7 @@ export class MantenimientoLayoutComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.currentUser = this.authService.getCurrentUser();
+    this.isConsulta = this.authService.isConsultaUser();
 
     // RUC puede venir en esta ruta o en un padre (/usuario/:ruc/mantenimiento)
     this.routeSub = this.route.paramMap.subscribe(() => {

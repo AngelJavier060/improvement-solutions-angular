@@ -1,7 +1,21 @@
 <!-- Layout profesional y moderno -->
 <div class="container-fluid p-4" *ngIf="empresa">
 
-  
+  <div class="alert alert-warning border-0 shadow-sm mb-4" role="status">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <div>
+        <strong><i class="fas fa-info-circle me-1"></i> Esta pantalla es solo parámetros / catálogos</strong>
+        <div class="small mb-0">
+          Aquí defines tipos de documento, cargos, departamentos, etc.
+          <strong>No</strong> se suben aquí los archivos de cada trabajador.
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" (click)="goToTHEmployees()">
+        <i class="fas fa-folder-open me-1"></i>
+        Ir a ingresar documentación (Talento Humano)
+      </button>
+    </div>
+  </div>
   
   <!-- Header de la empresa con diseño profesional -->
   <div class="card shadow-lg border-0 mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">

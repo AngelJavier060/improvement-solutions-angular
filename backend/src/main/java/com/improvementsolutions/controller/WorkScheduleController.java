@@ -21,13 +21,13 @@ public class WorkScheduleController {
     private final WorkScheduleRepository workScheduleRepository;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<WorkSchedule>> getAll() {
         return ResponseEntity.ok(workScheduleRepository.findAll());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<WorkSchedule> getById(@PathVariable Long id) {
         return workScheduleRepository.findById(id)
                 .map(ResponseEntity::ok)

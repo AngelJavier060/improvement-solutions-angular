@@ -10,7 +10,7 @@
       <button type="button" class="btn btn-light border shadow-sm" (click)="exportCsv()">
         <i class="fas fa-file-download me-2"></i>Exportar reporte
       </button>
-      <button type="button" class="doc-btn-primary" (click)="irRegistro()">
+      <button *ngIf="canWrite" type="button" class="doc-btn-primary" (click)="irRegistro()">
         <i class="fas fa-folder-plus me-2"></i>Registrar documentación
       </button>
     </div>
@@ -150,6 +150,7 @@
             title="Ver documentación"
           ><i class="fas fa-eye"></i></a>
           <a
+            *ngIf="canWrite"
             class="btn btn-outline-primary btn-sm"
             [routerLink]="['/usuario', businessRuc, 'mantenimiento', 'documentacion', 'unidad', v.id, 'registro']"
             title="Nuevo o renovar"

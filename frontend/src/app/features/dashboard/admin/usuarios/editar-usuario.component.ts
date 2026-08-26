@@ -9,6 +9,13 @@ import { environment } from '../../../../../environments/environment';
 import { ImageCacheService } from '../../../../services/image-cache.service';
 import { BusinessService } from '../../../../services/business.service';
 import { Business } from '../../../../models/business.model';
+import { AuthService } from '../../../../core/services/auth.service';
+import {
+  formatRoleName,
+  resolveUserKind,
+  userKindLabel,
+  userKindShortHelp
+} from './user-role.utils';
 
 @Component({
   selector: 'app-editar-usuario',
@@ -29,12 +36,28 @@ export class EditarUsuarioComponent implements OnInit {
   environment = environment;
   businesses: Business[] = [];
   allUsers: User[] = [];
-  availableRoles = [
-    // IMPORTANTE: IDs deben coincidir con la BD (ver V1_0__initial_schema.sql)
-    // En migraciones: primero se inserta ROLE_USER (id=1), luego ROLE_ADMIN (id=2)
+  /**
+   * Roles gestionables desde este formulario (Fase A).
+   * No incluye SUPER_ADMIN ni EMPLOYEE (esos no se crean aquí).
+   * IDs alineados con V1_0__initial_schema.sql
+   */
+  availableRoles: Array<{ id: number; name: string }> = [
     { id: 2, name: 'ROLE_ADMIN' },
     { id: 1, name: 'ROLE_USER' }
-  ];  constructor(
+  ];
+
+  /** Quién está usando el formulario */
+  isSuperAdmin = false;
+  isCompanyAdmin = false;
+  companyAdminBusinessId: number | null = null;
+
+  /** Cuenta objetivo protegida (no se cambia tipología/roles) */
+  isEmployeeAccount = false;
+  isTargetSuperAdmin = false;
+  /** Roles originales al cargar (para no perder EMPLOYEE / SUPER_ADMIN) */
+  originalRoleNames: string[] = [];
+
+  constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
@@ -42,7 +65,8 @@ export class EditarUsuarioComponent implements OnInit {
     private modalService: NgbModal,
     private notificationService: NotificationService,
     private imageCacheService: ImageCacheService,
-    private businessService: BusinessService
+    private businessService: BusinessService,
+    private authService: AuthService
   ) {
     this.userForm = this.fb.group({
       username: ['', [
@@ -70,7 +94,7 @@ export class EditarUsuarioComponent implements OnInit {
         Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
       ]],
       confirmPassword: [''],
-      userType: ['empresa', Validators.required],
+      userType: ['supervisor', Validators.required],
       businessId: [null],
       active: [true],
       roleIds: [[], Validators.required]
@@ -100,10 +124,39 @@ export class EditarUsuarioComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const current = this.authService.getCurrentUser();
+    const roles: string[] = current?.roles || [];
+    this.isSuperAdmin = roles.includes('ROLE_SUPER_ADMIN');
+    this.isCompanyAdmin = roles.includes('ROLE_ADMIN') && !this.isSuperAdmin;
+    if (this.isCompanyAdmin && current?.businesses?.length > 0) {
+      this.companyAdminBusinessId = current.businesses[0].id;
+    }
+
+    // Cargar IDs reales de roles (Supervisor / Gestor / Admin) desde API
+    this.userService.getAssignableRoles().subscribe({
+      next: (rolesList) => {
+        if (rolesList?.length) {
+          this.availableRoles = rolesList.map(r => ({ id: r.id, name: r.name }));
+          this.onUserTypeChange();
+        }
+      },
+      error: () => {
+        // Mantener fallback local si falla
+      }
+    });
+
     // Cargar empresas para el desplegable
     this.businessService.getAll().subscribe({
       next: (data) => {
-        this.businesses = data;
+        this.businesses = data || [];
+        // Admin de empresa: solo su empresa
+        if (this.isCompanyAdmin && this.companyAdminBusinessId != null) {
+          this.businesses = this.businesses.filter(
+            b => b.id != null && Number(b.id) === this.companyAdminBusinessId
+          );
+          this.userForm.get('businessId')?.setValue(this.companyAdminBusinessId);
+          this.userForm.get('businessId')?.disable({ emitEvent: false });
+        }
       },
       error: () => {
         // Silenciar errores de carga de empresas para no bloquear el formulario
@@ -116,6 +169,11 @@ export class EditarUsuarioComponent implements OnInit {
     });
     // Inicializar validadores de businessId según el userType por defecto
     this.onUserTypeChange();
+    // Admin de empresa: por defecto Supervisor; puede elegir Gestor
+    if (this.isCompanyAdmin) {
+      this.userForm.get('userType')?.setValue('supervisor');
+      this.onUserTypeChange();
+    }
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (id) {
@@ -130,12 +188,20 @@ export class EditarUsuarioComponent implements OnInit {
         // Preseleccionar tipo por query param si existe
         this.route.queryParamMap.subscribe(q => {
           const type = q.get('type');
-          if (type === 'administrador' || type === 'empresa') {
-            this.userForm.get('userType')?.setValue(type);
-            this.onUserTypeChange();
+          if (this.isCompanyAdmin) {
+            if (type === 'gestor' || type === 'supervisor') {
+              this.userForm.get('userType')?.setValue(type);
+            } else {
+              this.userForm.get('userType')?.setValue('supervisor');
+            }
+          } else if (type === 'administrador' || type === 'gestor' || type === 'supervisor' || type === 'empresa') {
+            this.userForm.get('userType')?.setValue(type === 'empresa' ? 'supervisor' : type);
           }
+          this.onUserTypeChange();
           const businessIdParam = q.get('businessId');
-          if (businessIdParam) {
+          if (this.isCompanyAdmin && this.companyAdminBusinessId != null) {
+            this.userForm.get('businessId')?.setValue(this.companyAdminBusinessId);
+          } else if (businessIdParam) {
             this.userForm.get('businessId')?.setValue(Number(businessIdParam));
           }
         });
@@ -149,6 +215,27 @@ export class EditarUsuarioComponent implements OnInit {
     this.userForm.disable({ emitEvent: false });
     this.userService.getUserById(id).subscribe({
       next: (user) => {
+        this.originalRoleNames = [...(user.roles || [])];
+        const kind = resolveUserKind(user.roles);
+        this.isTargetSuperAdmin = kind === 'superadmin';
+        this.isEmployeeAccount = kind === 'trabajador';
+
+        // Superadministrador: no se edita desde esta pantalla (Fase A)
+        if (this.isTargetSuperAdmin) {
+          this.isLoading = false;
+          this.notificationService.error('Los Superadministradores no se editan desde Gestión de Usuarios.');
+          this.router.navigate(['/dashboard/admin/usuarios']);
+          return;
+        }
+
+        // Admin de empresa no puede editar otros administradores
+        if (this.isCompanyAdmin && kind === 'admin_empresa') {
+          this.isLoading = false;
+          this.notificationService.error('No tienes permiso para editar administradores de empresa.');
+          this.router.navigate(['/dashboard/admin/usuarios']);
+          return;
+        }
+
         this.userForm.patchValue({
           username: user.username,
           email: user.email,
@@ -158,20 +245,29 @@ export class EditarUsuarioComponent implements OnInit {
           roleIds: user.roles?.map((role: string) => {
             const foundRole = this.availableRoles.find(r => r.name === role);
             return foundRole ? foundRole.id : null;
-          }).filter((id: number | null) => id !== null) || []
+          }).filter((rid: number | null) => rid !== null) || []
         });
         // Limpiar estados de validación para evitar errores visuales tras la carga
         this.userForm.markAsPristine();
         this.userForm.markAsUntouched();
-        // Definir tipo de usuario según roles
-        const isAdmin = (user.roles || []).includes('ROLE_ADMIN');
-        this.userForm.get('userType')?.setValue(isAdmin ? 'administrador' : 'empresa');
+        // Definir tipo de usuario según tipología (trabajador se muestra como "empresa" pero protegido)
+        if (kind === 'admin_empresa') {
+          this.userForm.get('userType')?.setValue('administrador');
+        } else if (kind === 'gestor') {
+          this.userForm.get('userType')?.setValue('gestor');
+        } else {
+          this.userForm.get('userType')?.setValue('supervisor');
+        }
         this.onUserTypeChange();
         // Precargar asociación de empresa si existe
         this.businessService.getByUserId(id).subscribe({
           next: (list) => {
             if (Array.isArray(list) && list.length > 0) {
               this.userForm.get('businessId')?.setValue(list[0].id ?? null);
+            }
+            if (this.isCompanyAdmin && this.companyAdminBusinessId != null) {
+              this.userForm.get('businessId')?.setValue(this.companyAdminBusinessId);
+              this.userForm.get('businessId')?.disable({ emitEvent: false });
             }
           },
           error: () => {}
@@ -216,6 +312,16 @@ export class EditarUsuarioComponent implements OnInit {
         }
         // Rehabilitar el formulario luego de cargar datos
         this.userForm.enable({ emitEvent: false });
+        if (this.isCompanyAdmin && this.companyAdminBusinessId != null) {
+          this.userForm.get('businessId')?.disable({ emitEvent: false });
+        }
+        // Trabajador: no cambiar tipología (roles se preservan en submit)
+        if (this.isEmployeeAccount) {
+          this.userForm.get('userType')?.disable({ emitEvent: false });
+          this.userForm.get('roleIds')?.clearValidators();
+          this.userForm.get('roleIds')?.setValue([]);
+          this.userForm.get('roleIds')?.updateValueAndValidity();
+        }
         this.isLoading = false;
       },
       error: (error) => {
@@ -231,20 +337,33 @@ export class EditarUsuarioComponent implements OnInit {
     if (this.userForm.invalid) {
       this.markFormGroupTouched(this.userForm);
       return;
-    }    this.isSubmitting = true;
+    }
+
+    // Seguridad Fase A: admin empresa no puede enviar ROLE_ADMIN
+    if (this.isCompanyAdmin && this.userForm.getRawValue().userType === 'administrador') {
+      this.notificationService.error('Solo un Superadministrador puede crear o asignar Administradores de empresa.');
+      return;
+    }
+
+    this.isSubmitting = true;
+    const raw = this.userForm.getRawValue(); // incluye businessId deshabilitado
     const userData: any = {
-      username: this.userForm.get('username')?.value,
-      email: this.userForm.get('email')?.value,
-      name: this.userForm.get('name')?.value,
-      phone: this.userForm.get('phone')?.value,
-      password: this.userForm.get('password')?.value,
-      active: this.userForm.get('active')?.value,
-      roleIds: this.userForm.get('roleIds')?.value
+      username: raw.username,
+      email: raw.email,
+      name: raw.name,
+      phone: raw.phone,
+      password: raw.password,
+      active: raw.active,
+      roleIds: this.resolveRoleIdsForSave(raw)
     };
 
     // Si la contraseña está vacía, eliminarla del objeto
     if (!userData.password) {
       delete userData.password;
+    }
+    // Si no hay roleIds (trabajador protegido), no enviar el campo
+    if (userData.roleIds === undefined || userData.roleIds === null) {
+      delete userData.roleIds;
     }    // Flujo de trabajo para guardar usuario y foto de perfil
     if (this.isEditMode) {
       // Caso de edición de usuario
@@ -316,6 +435,32 @@ export class EditarUsuarioComponent implements OnInit {
         error: (error) => this.handleSaveError(error)
       });
     }
+  }
+
+  /**
+   * Roles a persistir:
+   * - Trabajador: no tocar (omitir roleIds para no degradar a USER).
+   * - Resto: un solo rol según tipología del formulario.
+   */
+  private resolveRoleIdsForSave(raw: any): number[] | undefined {
+    if (this.isEmployeeAccount) {
+      return undefined;
+    }
+    const userType = raw.userType;
+    const adminRole = this.availableRoles.find(r => r.name === 'ROLE_ADMIN');
+    const managerRole = this.availableRoles.find(r => r.name === 'ROLE_MANAGER');
+    const userRole = this.availableRoles.find(r => r.name === 'ROLE_USER');
+    if (userType === 'administrador' && adminRole) {
+      return [adminRole.id];
+    }
+    if (userType === 'gestor' && managerRole) {
+      return [managerRole.id];
+    }
+    // supervisor (o legado 'empresa')
+    if (userRole) {
+      return [userRole.id];
+    }
+    return raw.roleIds || [];
   }  
   // === Validaciones de duplicados (cliente) ===
   private currentEditingId(): number | null { return this.userId; }
@@ -361,67 +506,84 @@ export class EditarUsuarioComponent implements OnInit {
     ctrl.setErrors(Object.keys(errors).length ? errors : null);
   }
   private finalizeAfterAssociation(userId: number): void {
-    const userType = this.userForm.get('userType')?.value;
-    const businessId = this.userForm.get('businessId')?.value;
-    if (userType === 'empresa' && businessId) {
+    const raw = this.userForm.getRawValue();
+    const businessId = raw.businessId;
+    // Usuario (consulta), Admin de empresa y Trabajador: siempre asociados a su empresa
+    if (businessId) {
       this.businessService.addUserToBusiness(Number(businessId), userId).subscribe({
         next: () => this.handleSaveSuccess(),
-        error: () => this.handleSaveSuccess()
+        error: (err) => {
+          this.isSubmitting = false;
+          const msg = this.extractBackendMessage(err)
+            || 'Usuario guardado, pero no se pudo asociar a la empresa. Revise e intente de nuevo.';
+          this.notificationService.error(msg);
+        }
       });
     } else {
-      // Si es administrador, remover cualquier asociación previa
-      this.businessService.getByUserId(userId).subscribe({
-        next: (list) => {
-          if (Array.isArray(list) && list.length > 0) {
-            // Remover asociaciones en cadena y finalizar
-            let pending = list.length;
-            list.forEach(b => {
-              if (b.id != null) {
-                this.businessService.removeUserFromBusiness(Number(b.id), userId).subscribe({
-                  next: () => { if (--pending === 0) this.handleSaveSuccess(); },
-                  error: () => { if (--pending === 0) this.handleSaveSuccess(); }
-                });
-              } else {
-                if (--pending === 0) this.handleSaveSuccess();
-              }
-            });
-          } else {
-            this.handleSaveSuccess();
-          }
-        },
-        error: () => this.handleSaveSuccess()
-      });
+      this.handleSaveSuccess();
     }
   }
+
   onUserTypeChange(): void {
+    // No alterar tipología de cuentas protegidas
+    if (this.isEmployeeAccount) {
+      return;
+    }
+
     const type = this.userForm.get('userType')?.value;
     const businessCtrl = this.userForm.get('businessId');
-    if (type === 'empresa') {
-      businessCtrl?.setValidators([Validators.required]);
-      // Asegurar que no tenga rol de administrador
-      const roleIdsControl = this.userForm.get('roleIds');
-      const currentRoleIds: number[] = [...(roleIdsControl?.value || [])];
-      const adminRole = this.availableRoles.find(r => r.name === 'ROLE_ADMIN');
-      if (adminRole) {
-        const idx = currentRoleIds.indexOf(adminRole.id);
-        if (idx !== -1) {
-          currentRoleIds.splice(idx, 1);
-          roleIdsControl?.setValue(currentRoleIds);
-        }
-      }
-    } else {
-      businessCtrl?.clearValidators();
-      businessCtrl?.setValue(null);
-      // Asegurar que tenga rol de administrador
-      const roleIdsControl = this.userForm.get('roleIds');
-      const currentRoleIds: number[] = [...(roleIdsControl?.value || [])];
-      const adminRole = this.availableRoles.find(r => r.name === 'ROLE_ADMIN');
-      if (adminRole && !currentRoleIds.includes(adminRole.id)) {
-        currentRoleIds.push(adminRole.id);
-        roleIdsControl?.setValue(currentRoleIds);
-      }
+    const roleIdsControl = this.userForm.get('roleIds');
+    const adminRole = this.availableRoles.find(r => r.name === 'ROLE_ADMIN');
+    const managerRole = this.availableRoles.find(r => r.name === 'ROLE_MANAGER');
+    const userRole = this.availableRoles.find(r => r.name === 'ROLE_USER');
+
+    // Todos requieren empresa
+    businessCtrl?.setValidators([Validators.required]);
+
+    if (type === 'administrador' && adminRole) {
+      roleIdsControl?.setValue([adminRole.id]);
+    } else if (type === 'gestor' && managerRole) {
+      roleIdsControl?.setValue([managerRole.id]);
+    } else if (userRole) {
+      // supervisor o legado 'empresa'
+      roleIdsControl?.setValue([userRole.id]);
     }
+
+    if (this.isCompanyAdmin && this.companyAdminBusinessId != null) {
+      businessCtrl?.setValue(this.companyAdminBusinessId);
+    }
+
     businessCtrl?.updateValueAndValidity();
+  }
+
+  /** Etiqueta legible del tipo actual (UI) */
+  getSelectedTypeLabel(): string {
+    if (this.isEmployeeAccount) {
+      return userKindLabel('trabajador');
+    }
+    const type = this.userForm.getRawValue().userType;
+    if (type === 'administrador') return userKindLabel('admin_empresa');
+    if (type === 'gestor') return userKindLabel('gestor');
+    return userKindLabel('supervisor');
+  }
+
+  getSelectedTypeHelp(): string {
+    if (this.isEmployeeAccount) {
+      return userKindShortHelp('trabajador');
+    }
+    const type = this.userForm.getRawValue().userType;
+    if (type === 'administrador') return userKindShortHelp('admin_empresa');
+    if (type === 'gestor') return userKindShortHelp('gestor');
+    return userKindShortHelp('supervisor');
+  }
+
+  formatRole(role: string): string {
+    return formatRoleName(role);
+  }
+
+  /** Puede elegir radio “Administrador de empresa” */
+  get canSelectAdminType(): boolean {
+    return this.isSuperAdmin && !this.isEmployeeAccount;
   }
   handleSaveSuccess(): void {
     this.isSubmitting = false;
@@ -611,7 +773,7 @@ export class EditarUsuarioComponent implements OnInit {
   }
   
   getSelectedBusinessLabel(): string {
-    const id = this.userForm.get('businessId')?.value;
+    const id = this.userForm.getRawValue().businessId;
     if (!id) return '—';
     const found = this.businesses.find(b => Number(b.id) === Number(id));
     if (!found) return '—';

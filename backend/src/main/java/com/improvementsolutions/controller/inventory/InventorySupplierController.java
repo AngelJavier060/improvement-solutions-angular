@@ -21,13 +21,13 @@ public class InventorySupplierController {
     }
 
     @GetMapping("/suppliers")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<InventorySupplier>> list(@PathVariable String ruc) {
         return ResponseEntity.ok(supplierService.list(ruc));
     }
 
     @PostMapping("/suppliers")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> create(@PathVariable String ruc, @RequestBody InventorySupplier input) {
         try {
             InventorySupplier created = supplierService.create(ruc, input);
@@ -42,7 +42,7 @@ public class InventorySupplierController {
     }
 
     @PutMapping("/suppliers/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> update(@PathVariable String ruc, @PathVariable Long id, @RequestBody InventorySupplier input) {
         try {
             InventorySupplier updated = supplierService.update(ruc, id, input);
@@ -57,7 +57,7 @@ public class InventorySupplierController {
     }
 
     @DeleteMapping("/suppliers/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> delete(@PathVariable String ruc, @PathVariable Long id) {
         try {
             supplierService.delete(ruc, id);
@@ -72,7 +72,7 @@ public class InventorySupplierController {
     }
 
     @PostMapping("/suppliers/import")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> importFrom(@PathVariable String ruc, @RequestParam("sourceRuc") String sourceRuc) {
         try {
             int created = supplierService.importFromRuc(ruc, sourceRuc);

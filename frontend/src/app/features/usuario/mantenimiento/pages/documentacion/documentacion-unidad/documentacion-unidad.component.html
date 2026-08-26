@@ -85,6 +85,7 @@
         <span>Descargar todo</span>
       </button>
       <a
+        *ngIf="canWrite"
         class="du-btn du-btn--primary"
         [routerLink]="registroCommands()">
         <i class="fas fa-plus"></i>
@@ -161,25 +162,27 @@
                 (click)="openPdf(d, $event)">
                 <i class="fas fa-file-pdf"></i>
               </button>
-              <a
-                class="du-icon"
-                title="Renovar"
-                [routerLink]="registroCommands()"
-                [queryParams]="{ renewFrom: d.id }"
-                [state]="{ doc: d }">
-                <i class="fas fa-sync-alt"></i>
-              </a>
-              <a
-                class="du-icon"
-                title="Editar"
-                [routerLink]="registroCommands()"
-                [queryParams]="{ docId: d.id }"
-                [state]="{ doc: d }">
-                <i class="fas fa-pen"></i>
-              </a>
-              <button type="button" class="du-icon du-icon--danger" title="Eliminar" (click)="deleteDoc(d, $event)">
-                <i class="fas fa-trash-alt"></i>
-              </button>
+              <ng-container *ngIf="canWrite">
+                <a
+                  class="du-icon"
+                  title="Renovar"
+                  [routerLink]="registroCommands()"
+                  [queryParams]="{ renewFrom: d.id }"
+                  [state]="{ doc: d }">
+                  <i class="fas fa-sync-alt"></i>
+                </a>
+                <a
+                  class="du-icon"
+                  title="Editar"
+                  [routerLink]="registroCommands()"
+                  [queryParams]="{ docId: d.id }"
+                  [state]="{ doc: d }">
+                  <i class="fas fa-pen"></i>
+                </a>
+                <button type="button" class="du-icon du-icon--danger" title="Eliminar" (click)="deleteDoc(d, $event)">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </ng-container>
             </td>
           </tr>
         </tbody>

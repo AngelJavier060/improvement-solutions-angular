@@ -82,6 +82,7 @@
         Volver
       </button>
       <button 
+        *ngIf="canWrite"
         class="btn btn-primary btn-lg btn-modern-primary shadow-sm"
         (click)="openCreateModal()">
         <i class="fas fa-plus me-2"></i>
@@ -334,7 +335,7 @@
           <i class="fas fa-users fa-4x text-muted mb-3"></i>
           <h4 class="text-muted">No hay empleados registrados</h4>
           <p class="text-muted">Comienza agregando tu primer empleado</p>
-          <button class="btn btn-primary" (click)="openCreateModal()">
+          <button *ngIf="canWrite" class="btn btn-primary" (click)="openCreateModal()">
             <i class="fas fa-plus me-2"></i>
             Agregar Primer Empleado
           </button>
@@ -458,25 +459,35 @@
                       title="Credencial">
                       <i class="fas fa-id-badge"></i>
                     </button>
+                    <button
+                      *ngIf="canWrite"
+                      class="btn btn-sm btn-outline-success me-1"
+                      (click)="openPortalAccountModal(employee)"
+                      title="Crear cuenta portal trabajador">
+                      <i class="fas fa-user-lock"></i>
+                    </button>
                     <button 
                       class="btn btn-sm btn-outline-info me-1"
                       (click)="viewEmployeeDetail(employee, 'documents')"
-                      title="Gestionar Documentos">
+                      title="Ver Documentos">
                       <i class="fas fa-file-alt"></i>
                     </button>
                     <button 
+                      *ngIf="canWrite"
                       class="btn btn-sm btn-outline-primary me-1"
                       (click)="openEditModal(employee)"
                       title="Editar">
                       <i class="fas fa-edit"></i>
                     </button>
                     <button
+                      *ngIf="canWrite"
                       class="btn btn-sm btn-outline-warning me-1"
                       (click)="toggleActive(employee)"
                       [title]="isActive(employee) ? 'Desactivar' : 'Activar'">
                       <i class="fas" [ngClass]="isActive(employee) ? 'fa-user-slash' : 'fa-user-check'"></i>
                     </button>
                     <button 
+                      *ngIf="canWrite"
                       class="btn btn-sm btn-outline-danger"
                       (click)="deleteEmployee(employee)"
                       title="Eliminar">
@@ -799,6 +810,73 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Fase D: cuenta portal trabajador -->
+<div class="modal fade" [class.show]="showPortalAccountModal"
+     [style.display]="showPortalAccountModal ? 'block' : 'none'" tabindex="-1"
+     *ngIf="showPortalAccountModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-user-lock me-2"></i>Cuenta portal del trabajador
+        </h5>
+        <button type="button" class="btn-close" (click)="closePortalAccountModal()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info py-2 small mb-3">
+          Empleado: <strong>{{ portalAccountEmployee?.name || portalAccountEmployee?.nombres }}</strong>
+          · Cédula: {{ portalAccountEmployee?.cedula }}
+        </div>
+
+        <div *ngIf="portalAccountHasAccount === true" class="alert alert-success py-2 small">
+          Ya tiene cuenta portal
+          <span *ngIf="portalAccountUsername"> (usuario: <strong>{{ portalAccountUsername }}</strong>)</span>.
+          Entra en <strong>Acceder → Usuario</strong> con su cédula.
+        </div>
+
+        <ng-container *ngIf="portalAccountHasAccount === false">
+        <div class="alert alert-warning py-2 small mb-3">
+          <strong>Automático al registrar:</strong> al crear un trabajador nuevo ya se genera la cuenta
+          (usuario = contraseña = cédula). Aquí puede <strong>re-sincronizar</strong> si falta el vínculo
+          o si el mismo trabajador está en otra empresa.
+        </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Usuario (cédula)</label>
+            <input type="text" class="form-control" [(ngModel)]="portalAccountForm.username"
+                   placeholder="Número de cédula" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Contraseña (igual a la cédula)</label>
+            <input type="text" class="form-control" [(ngModel)]="portalAccountForm.password"
+                   placeholder="Misma cédula">
+            <small class="text-muted">Puede dejarla igual a la cédula.</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Email (opcional)</label>
+            <input type="email" class="form-control" [(ngModel)]="portalAccountForm.email"
+                   placeholder="Si no tiene, se genera automáticamente">
+          </div>
+        </ng-container>
+
+        <div *ngIf="portalAccountHasAccount === null" class="text-center py-3 text-muted small">
+          <i class="fas fa-spinner fa-spin me-1"></i> Verificando cuenta…
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closePortalAccountModal()">Cerrar</button>
+        <button type="button" class="btn btn-primary"
+                *ngIf="portalAccountHasAccount === false"
+                (click)="createPortalAccount()"
+                [disabled]="portalAccountCreating || !portalAccountForm.username">
+          <i class="fas fa-spinner fa-spin me-1" *ngIf="portalAccountCreating"></i>
+          {{ portalAccountCreating ? 'Creando…' : 'Crear cuenta (cédula / cédula)' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show" *ngIf="showPortalAccountModal"></div>
 
 <!-- Toast/Snackbar -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;" *ngIf="toastVisible">

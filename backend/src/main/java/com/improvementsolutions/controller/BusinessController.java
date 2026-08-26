@@ -5,6 +5,7 @@ import com.improvementsolutions.dto.UserResponseDto;
 import com.improvementsolutions.dto.business.BusinessListDto;
 import com.improvementsolutions.dto.user.CreateUserDto;
 import com.improvementsolutions.service.BusinessService;
+import com.improvementsolutions.service.UserAdminAuthorizationService;
 import com.improvementsolutions.service.UserService;
 import com.improvementsolutions.repository.IessRepository;
 import com.improvementsolutions.repository.BusinessRepository;
@@ -17,17 +18,21 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
  import java.time.LocalDateTime;
  import java.util.ArrayList;
+ import java.util.Collection;
  import java.util.HashMap;
  import java.util.List;
  import java.util.Map;
  import java.util.Set;
  import java.util.Optional;
  import java.util.stream.Collectors;
+ import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/businesses")
@@ -43,6 +48,7 @@ public class BusinessController {
     private final ContractorBlockRepository contractorBlockRepository;
     private final RoleRepository roleRepository;
     private final com.improvementsolutions.service.ExpiryNotificationService expiryNotificationService;
+    private final UserAdminAuthorizationService userAdminAuthorizationService;
 
     // Endpoints para el administrador
     @GetMapping("/admin/dashboard")
@@ -209,7 +215,7 @@ public class BusinessController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<BusinessListDto>> getAllBusinesses() {
         List<Business> businesses = businessService.findAll();
         List<BusinessListDto> dtos = businesses.stream()
@@ -219,7 +225,7 @@ public class BusinessController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<Business> getBusinessById(@PathVariable Long id) {
         return businessService.findByIdWithAllRelations(id)
                 .map(ResponseEntity::ok)
@@ -495,9 +501,9 @@ public class BusinessController {
         return ResponseEntity.ok(response);
     }
 
-    // Detalles accesibles para ADMIN y USER: incluye contratistas, bloques y catálogos de gerencia de viajes
+    // Detalles para operación (Admin, Supervisor, Gestor): contratistas, bloques y catálogos de viajes
     @GetMapping("/{id}/details")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     @Transactional(readOnly = true)
     public ResponseEntity<Map<String, Object>> getBusinessDetails(@PathVariable Long id) {
         Business business = businessService.findByIdWithAllRelations(id)
@@ -569,22 +575,22 @@ public class BusinessController {
             response.put("contractor_company", null);
         }
 
-        // Gerencia de viajes: catálogos por empresa (misma forma que GET /{id}/admin) para usuarios USER en formularios.
+        // Gerencia de viajes: catálogos por empresa (misma forma que GET /{id}/admin) para formularios operativos.
         java.util.function.Function<Object, Map<String, Object>> viajesDetailsDto = this::toGerenciaViajeCatalogItemDto;
-        response.put("distanciaRecorrers", business.getDistanciaRecorrers().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("tipoVias", business.getTipoVias().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("condicionClimaticas", business.getCondicionClimaticas().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("horarioCirculaciones", business.getHorarioCirculaciones().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("estadoCarreteras", business.getEstadoCarreteras().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("tipoCargas", business.getTipoCargas().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("horaConducciones", business.getHoraConducciones().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("horaDescansos", business.getHoraDescansos().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("medioComunicaciones", business.getMedioComunicaciones().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("transportaPasajeros", business.getTransportaPasajeros().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("metodologiaRiesgos", business.getMetodologiaRiesgos().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("posiblesRiesgosVia", business.getPosiblesRiesgosVia().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("otrosPeligrosViajeCatalogo", business.getOtrosPeligrosViajeCatalogo().stream().map(viajesDetailsDto).collect(Collectors.toList()));
-        response.put("medidasControlTomadasViajeCatalogo", business.getMedidasControlTomadasViajeCatalogo().stream().map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("distanciaRecorrers", safeStream(business.getDistanciaRecorrers()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("tipoVias", safeStream(business.getTipoVias()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("condicionClimaticas", safeStream(business.getCondicionClimaticas()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("horarioCirculaciones", safeStream(business.getHorarioCirculaciones()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("estadoCarreteras", safeStream(business.getEstadoCarreteras()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("tipoCargas", safeStream(business.getTipoCargas()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("horaConducciones", safeStream(business.getHoraConducciones()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("horaDescansos", safeStream(business.getHoraDescansos()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("medioComunicaciones", safeStream(business.getMedioComunicaciones()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("transportaPasajeros", safeStream(business.getTransportaPasajeros()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("metodologiaRiesgos", safeStream(business.getMetodologiaRiesgos()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("posiblesRiesgosVia", safeStream(business.getPosiblesRiesgosVia()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("otrosPeligrosViajeCatalogo", safeStream(business.getOtrosPeligrosViajeCatalogo()).map(viajesDetailsDto).collect(Collectors.toList()));
+        response.put("medidasControlTomadasViajeCatalogo", safeStream(business.getMedidasControlTomadasViajeCatalogo()).map(viajesDetailsDto).collect(Collectors.toList()));
 
         java.util.function.Function<com.improvementsolutions.model.Iso9001CatalogItem, Map<String, Object>> iso9001DetailsDto = it -> {
             Map<String, Object> m = new HashMap<>();
@@ -594,7 +600,7 @@ public class BusinessController {
             m.put("catalogCode", it.getCatalogCode());
             return m;
         };
-        response.put("iso9001CatalogItems", business.getIso9001CatalogItems().stream().map(iso9001DetailsDto).collect(Collectors.toList()));
+        response.put("iso9001CatalogItems", safeStream(business.getIso9001CatalogItems()).map(iso9001DetailsDto).collect(Collectors.toList()));
 
         log.debug("[BusinessController] getBusinessDetails id={} companies={} blocks={}", id,
                 contractorCompaniesDto.size(), contractorBlocksDto.size());
@@ -810,7 +816,7 @@ public class BusinessController {
     }
 
     @GetMapping("/byUser/{userId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<Business>> getBusinessesByUserId(@PathVariable Long userId) {
         List<Business> businesses = businessService.findByUserId(userId);
         return ResponseEntity.ok(businesses);
@@ -897,48 +903,106 @@ public class BusinessController {
 
     @PostMapping("/{businessId}/users/{userId}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public ResponseEntity<Void> addUserToBusiness(
+    public ResponseEntity<?> addUserToBusiness(
             @PathVariable Long businessId,
-            @PathVariable Long userId) {
-        businessService.addUserToBusiness(businessId, userId);
-        return ResponseEntity.ok().build();
+            @PathVariable Long userId,
+            Authentication authentication) {
+        try {
+            userAdminAuthorizationService.assertCanAccessBusiness(authentication, businessId);
+            User target = userService.findByIdWithRoles(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            // No asociar Superadmins desde Admin empresa; Super puede asociar admin/user
+            if (userAdminAuthorizationService.isCompanyAdmin(authentication)
+                    && UserAdminAuthorizationService.hasRole(target, UserAdminAuthorizationService.ROLE_SUPER_ADMIN)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes asociar Superadministradores");
+            }
+            if (userAdminAuthorizationService.isCompanyAdmin(authentication)
+                    && UserAdminAuthorizationService.hasRole(target, UserAdminAuthorizationService.ROLE_ADMIN)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes asociar administradores de empresa");
+            }
+            businessService.addUserToBusiness(businessId, userId);
+            return ResponseEntity.ok().build();
+        } catch (ResponseStatusException rse) {
+            return ResponseEntity.status(rse.getStatusCode())
+                    .body(Map.of("message", rse.getReason() != null ? rse.getReason() : "Forbidden"));
+        }
     }
 
     @PostMapping("/ruc/{ruc}/users/{userId}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public ResponseEntity<Void> addUserToBusinessByRuc(
+    public ResponseEntity<?> addUserToBusinessByRuc(
             @PathVariable String ruc,
-            @PathVariable Long userId) {
-        Business business = businessService.findByRuc(ruc)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada con RUC: " + ruc));
-        businessService.addUserToBusiness(business.getId(), userId);
-        return ResponseEntity.ok().build();
+            @PathVariable Long userId,
+            Authentication authentication) {
+        try {
+            Business business = businessService.findByRuc(ruc)
+                    .orElseThrow(() -> new RuntimeException("Empresa no encontrada con RUC: " + ruc));
+            userAdminAuthorizationService.assertCanAccessBusiness(authentication, business.getId());
+            User target = userService.findByIdWithRoles(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            if (userAdminAuthorizationService.isCompanyAdmin(authentication)
+                    && (UserAdminAuthorizationService.hasRole(target, UserAdminAuthorizationService.ROLE_SUPER_ADMIN)
+                    || UserAdminAuthorizationService.hasRole(target, UserAdminAuthorizationService.ROLE_ADMIN))) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes asociar este tipo de usuario");
+            }
+            businessService.addUserToBusiness(business.getId(), userId);
+            return ResponseEntity.ok().build();
+        } catch (ResponseStatusException rse) {
+            return ResponseEntity.status(rse.getStatusCode())
+                    .body(Map.of("message", rse.getReason() != null ? rse.getReason() : "Forbidden"));
+        }
     }
 
     @GetMapping("/{businessId}/users")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public ResponseEntity<List<UserResponseDto>> getUsersByBusiness(@PathVariable Long businessId) {
-        // En producción spring.jpa.open-in-view está deshabilitado, por lo que
-        // acceder a colecciones LAZY fuera de una transacción causa LazyInitializationException.
-        // Usamos el método transaccional que inicializa todas las relaciones necesarias.
-        Business business = businessService.findByIdWithAllRelations(businessId)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
-        return ResponseEntity.ok(UserResponseDto.fromUsers(business.getUsers()));
+    public ResponseEntity<?> getUsersByBusiness(@PathVariable Long businessId,
+                                                Authentication authentication) {
+        try {
+            userAdminAuthorizationService.assertCanAccessBusiness(authentication, businessId);
+            // En producción spring.jpa.open-in-view está deshabilitado, por lo que
+            // acceder a colecciones LAZY fuera de una transacción causa LazyInitializationException.
+            // Usamos el método transaccional que inicializa todas las relaciones necesarias.
+            Business business = businessService.findByIdWithAllRelations(businessId)
+                    .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+            List<User> users = new ArrayList<>(business.getUsers() != null ? business.getUsers() : List.of());
+            users = userAdminAuthorizationService.filterVisibleUsers(authentication, users);
+            return ResponseEntity.ok(UserResponseDto.fromUsers(users));
+        } catch (ResponseStatusException rse) {
+            return ResponseEntity.status(rse.getStatusCode())
+                    .body(Map.of("message", rse.getReason() != null ? rse.getReason() : "Forbidden"));
+        }
     }
 
     @GetMapping("/available-users")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public ResponseEntity<List<User>> getAvailableUsers() {
-        return ResponseEntity.ok(businessService.getAllUsers());
+    public ResponseEntity<?> getAvailableUsers(Authentication authentication) {
+        try {
+            List<User> users = businessService.getAllUsers();
+            users = userAdminAuthorizationService.filterVisibleUsers(authentication, users);
+            return ResponseEntity.ok(users);
+        } catch (ResponseStatusException rse) {
+            return ResponseEntity.status(rse.getStatusCode())
+                    .body(Map.of("message", rse.getReason() != null ? rse.getReason() : "Forbidden"));
+        }
     }
 
     @DeleteMapping("/{businessId}/users/{userId}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public ResponseEntity<Void> removeUserFromBusiness(
+    public ResponseEntity<?> removeUserFromBusiness(
             @PathVariable Long businessId,
-            @PathVariable Long userId) {
-        businessService.removeUserFromBusiness(businessId, userId);
-        return ResponseEntity.ok().build();
+            @PathVariable Long userId,
+            Authentication authentication) {
+        try {
+            userAdminAuthorizationService.assertCanAccessBusiness(authentication, businessId);
+            User target = userService.findByIdWithRoles(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            userAdminAuthorizationService.assertCanMutateUser(authentication, target);
+            businessService.removeUserFromBusiness(businessId, userId);
+            return ResponseEntity.ok().build();
+        } catch (ResponseStatusException rse) {
+            return ResponseEntity.status(rse.getStatusCode())
+                    .body(Map.of("message", rse.getReason() != null ? rse.getReason() : "Forbidden"));
+        }
     }
 
     // Endpoints públicos
@@ -1788,5 +1852,9 @@ public class BusinessController {
             parent.put(jsonKey, nm);
         } catch (Exception ignored) {
         }
+    }
+
+    private static <T> Stream<T> safeStream(Collection<T> collection) {
+        return collection == null ? Stream.empty() : collection.stream();
     }
 }

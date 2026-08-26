@@ -105,7 +105,11 @@ public class EmployeeHistoryService {
         String n = ((be.getNombres() == null ? "" : be.getNombres()) + " " +
                 (be.getApellidos() == null ? "" : be.getApellidos())).trim();
         if (n.isBlank() && be.getName() != null) n = be.getName();
-        return n.isBlank() ? "Trabajador" : n;
+        String base = n.isBlank() ? "Trabajador" : n;
+        // Conservar identidad en histórico aunque el trabajador esté inactivo
+        boolean inactive = Boolean.FALSE.equals(be.getActive())
+                || (be.getStatus() != null && "INACTIVO".equalsIgnoreCase(be.getStatus().trim()));
+        return inactive ? base + " (inactivo)" : base;
     }
 
     private List<EmployeeHistoryItemDto.FileRef> mapFiles(List<EmployeeHistoryItemDto.FileRef> files) {

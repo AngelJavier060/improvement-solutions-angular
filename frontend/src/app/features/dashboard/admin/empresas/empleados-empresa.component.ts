@@ -99,9 +99,10 @@ export class EmpleadosEmpresaComponent implements OnInit {
 
   openCreateAccountModal(emp: EmployeeWithAccount): void {
     this.selectedEmployee = emp;
+    const cedula = (emp.cedula || '').trim();
     this.accountForm = {
-      username: emp.cedula || '',
-      password: '',
+      username: cedula,
+      password: cedula,
       email: emp.email || ''
     };
     this.showCreateModal = true;
@@ -114,12 +115,23 @@ export class EmpleadosEmpresaComponent implements OnInit {
   }
 
   createAccount(): void {
-    if (!this.selectedEmployee || !this.accountForm.password) return;
+    if (!this.selectedEmployee) return;
+    const cedula = (this.selectedEmployee.cedula || this.accountForm.username || '').trim();
+    if (!cedula) {
+      alert('El empleado no tiene cédula');
+      return;
+    }
     this.isCreating = true;
 
-    this.employeeAccountService.createAccount(this.selectedEmployee.id, this.accountForm).subscribe({
+    const payload = {
+      username: (this.accountForm.username || cedula).trim(),
+      password: (this.accountForm.password || cedula).trim(),
+      email: (this.accountForm.email || '').trim()
+    };
+
+    this.employeeAccountService.createAccount(this.selectedEmployee.id, payload).subscribe({
       next: () => {
-        alert('Cuenta creada exitosamente. El empleado puede iniciar sesión con su cédula.');
+        alert(`Cuenta creada. Usuario y contraseña = cédula (${cedula}). Solo ve su documentación.`);
         this.closeCreateModal();
         this.loadEmployees();
       },

@@ -2,6 +2,7 @@ import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitte
 import { EmployeeCourseService, EmployeeCourseResponse, CreateEmployeeCourseRequest } from '../services/employee-course.service';
 import { CourseCertificationService, CourseCertification } from '../../../../../services/course-certification.service';
 import { HttpClient, HttpResponse } from '@angular/common/http';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-employee-courses',
@@ -19,6 +20,7 @@ export class EmployeeCoursesComponent implements OnInit, OnChanges {
   loading = false;
   saving = false;
   error: string | null = null;
+  canWrite = false;
 
   // Form inputs
   selectedCourseId: string = '';
@@ -47,10 +49,12 @@ export class EmployeeCoursesComponent implements OnInit, OnChanges {
   constructor(
     private employeeCourseService: EmployeeCourseService,
     private courseCatalogService: CourseCertificationService,
-    private http: HttpClient
+    private http: HttpClient,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    this.canWrite = this.authService.canWrite();
     this.loadCatalog();
     this.loadCourses();
   }

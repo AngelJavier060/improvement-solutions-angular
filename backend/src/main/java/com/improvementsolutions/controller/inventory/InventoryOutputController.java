@@ -27,7 +27,7 @@ public class InventoryOutputController {
      * POST /api/inventory/{ruc}/outputs
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Map<String, Object>> create(@PathVariable String ruc, @RequestBody InventoryOutput output) {
         InventoryOutput created = outputService.create(ruc, output);
         return ResponseEntity.ok(Map.of(
@@ -42,7 +42,7 @@ public class InventoryOutputController {
      * GET /api/inventory/{ruc}/outputs
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<Map<String, Object>>> list(@PathVariable String ruc) {
         List<InventoryOutput> outputs = outputService.list(ruc);
         List<Map<String, Object>> dto = new java.util.ArrayList<>();
@@ -72,7 +72,7 @@ public class InventoryOutputController {
      * GET /api/inventory/{ruc}/outputs/search?startDate=2024-01-01&endDate=2024-12-31
      */
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<Map<String, Object>>> searchByDateRange(
         @PathVariable String ruc,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -106,7 +106,7 @@ public class InventoryOutputController {
      * GET /api/inventory/{ruc}/outputs/type/{outputType}
      */
     @GetMapping("/type/{outputType}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<Map<String, Object>>> findByType(
         @PathVariable String ruc,
         @PathVariable String outputType
@@ -139,7 +139,7 @@ public class InventoryOutputController {
      * GET /api/inventory/{ruc}/outputs/employee/{employeeId}
      */
     @GetMapping("/employee/{employeeId}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<Map<String, Object>>> findByEmployee(
         @PathVariable String ruc,
         @PathVariable Long employeeId
@@ -172,7 +172,7 @@ public class InventoryOutputController {
      * PATCH /api/inventory/{ruc}/outputs/{outputId}/document
      */
     @PatchMapping("/{outputId}/document")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Map<String, Object>> updateDocument(
         @PathVariable String ruc,
         @PathVariable Long outputId,
@@ -201,7 +201,7 @@ public class InventoryOutputController {
      * PATCH /api/inventory/{ruc}/outputs/{outputId}/confirm
      */
     @PatchMapping("/{outputId}/confirm")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Map<String, Object>> confirm(
         @PathVariable String ruc,
         @PathVariable Long outputId

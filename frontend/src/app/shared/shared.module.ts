@@ -14,6 +14,7 @@ import { FileUploadComponent } from './components/file-upload/file-upload.compon
 import { FileViewerComponent } from './components/file-viewer/file-viewer.component';
 import { SafePipe } from '../pipes/safe.pipe';
 import { NameResolverPipe } from '../pipes/name-resolver.pipe';
+import { CanWriteDirective } from './directives/can-write.directive';
 import { DashboardUsuarioGraficasComponent } from '../features/dashboard/usuario/graficas/dashboard-usuario-graficas.component';
 import { GraficaBarraTotalPersonalComponent } from '../features/dashboard/usuario/graficas/grafica-barra-total-personal.component';
 import { GraficaTotalPersonalComponent } from '../features/dashboard/usuario/graficas/grafica-total-personal.component';
@@ -48,12 +49,14 @@ import { GraficaCargosAsignadosComponent } from '../features/dashboard/usuario/g
     ReactiveFormsModule,
     RouterModule,
     NgbModule,
-    NgxEchartsModule
+    NgxEchartsModule,
+    CanWriteDirective
   ],
   exports: [
     CommonModule,
     RouterModule,
-    NgbModule,    
+    NgbModule,
+    CanWriteDirective,    
     LoginModalComponent,
     TestimonioCardComponent,
     ForgotPasswordModalComponent,

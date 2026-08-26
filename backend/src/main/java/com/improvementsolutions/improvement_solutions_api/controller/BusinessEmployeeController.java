@@ -245,16 +245,18 @@ public class BusinessEmployeeController {
             @RequestParam(required = false) String cedula,
             @RequestParam(required = false) String nombres,
             @RequestParam(required = false) String apellidos,
-            @RequestParam(required = false, name = "codigo") String codigoEmpleado) {
+            @RequestParam(required = false, name = "codigo") String codigoEmpleado,
+            /** Si true, solo empleados activos/vigentes. Default false: no altera otros consumidores. */
+            @RequestParam(defaultValue = "false") boolean activeOnly) {
         try {
             Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
 
-            log.info("[Paginated] Empresa: {}, page: {}, size: {}, filtros: cedula={}, nombres={}, apellidos={}, codigo={}",
-                    codigoEmpresa, page, size, cedula, nombres, apellidos, codigoEmpleado);
+            log.info("[Paginated] Empresa: {}, page: {}, size: {}, activeOnly: {}, filtros: cedula={}, nombres={}, apellidos={}, codigo={}",
+                    codigoEmpresa, page, size, activeOnly, cedula, nombres, apellidos, codigoEmpleado);
 
             Page<BusinessEmployeeResponseDto> employees = businessEmployeeService.searchEmployeesByFilters(
-                    codigoEmpresa, cedula, nombres, apellidos, codigoEmpleado, pageable);
+                    codigoEmpresa, cedula, nombres, apellidos, codigoEmpleado, activeOnly, pageable);
             return ResponseEntity.ok(employees);
         } catch (Exception e) {
             log.error("Error al obtener empleados paginados para la empresa {}: {}", codigoEmpresa, e.getMessage());

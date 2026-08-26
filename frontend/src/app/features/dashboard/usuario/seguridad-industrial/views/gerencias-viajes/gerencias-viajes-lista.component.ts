@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { GerenciaViajeService, GerenciaViajeDto, GerenciaViajeStats } from '../../services/gerencia-viaje.service';
+import { AuthService } from '../../../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-gerencias-viajes-lista',
@@ -20,6 +21,7 @@ export class GerenciasViajesListaComponent implements OnInit {
   ingresosHoy = 0;
   abiertasHoy = 0;
   cerradasHoy = 0;
+  canWrite = false;
 
   /** Desde formulario nuevo: `?cerrar=id` abre el modal de cierre al cargar. */
   private pendingCerrarId: number | null = null;
@@ -27,10 +29,12 @@ export class GerenciasViajesListaComponent implements OnInit {
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private gerenciaService: GerenciaViajeService
+    private gerenciaService: GerenciaViajeService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    this.canWrite = this.authService.canWrite();
     // Buscar el parámetro 'ruc' en la cadena de rutas ascendente
     let parent: ActivatedRoute | null = this.route;
     while (parent) {

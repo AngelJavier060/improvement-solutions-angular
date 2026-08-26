@@ -32,11 +32,17 @@ export class EmployeeAccountService {
     return this.http.get<EmployeeWithAccount[]>(`${this.baseUrl}/business/${businessId}`);
   }
 
-  createAccount(businessEmployeeId: number, payload: { username: string; password: string; email: string }): Observable<any> {
+  createAccount(businessEmployeeId: number, payload: { username?: string; password?: string; email?: string } = {}): Observable<any> {
     return this.http.post(`${this.baseUrl}/${businessEmployeeId}/create-account`, payload);
   }
 
   hasAccount(businessEmployeeId: number): Observable<{ hasAccount: boolean; username: string; userId: number }> {
-    return this.http.get<any>(`${this.baseUrl}/${businessEmployeeId}/has-account`);
+    return this.http.get<{ hasAccount: boolean; username: string; userId: number }>(
+      `${this.baseUrl}/${businessEmployeeId}/has-account`
+    );
+  }
+
+  ensureAllAccounts(businessId: number): Observable<{ processed: number; skipped: number; message: string }> {
+    return this.http.post<any>(`${this.baseUrl}/business/${businessId}/ensure-all`, {});
   }
 }

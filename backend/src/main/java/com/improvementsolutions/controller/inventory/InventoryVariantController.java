@@ -31,13 +31,13 @@ public class InventoryVariantController {
     }
 
     @GetMapping("/products/{productId}/variants")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<InventoryVariant>> listByProduct(@PathVariable String ruc, @PathVariable Long productId) {
         return ResponseEntity.ok(variantService.listByProduct(ruc, productId));
     }
 
     @PostMapping("/products/{productId}/variants")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> create(@PathVariable String ruc, @PathVariable Long productId, @RequestBody InventoryVariant input) {
         try {
             InventoryVariant created = variantService.create(ruc, productId, input);
@@ -52,7 +52,7 @@ public class InventoryVariantController {
     }
 
     @PutMapping("/products/{productId}/variants/{variantId}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> update(@PathVariable String ruc, @PathVariable Long productId, @PathVariable Long variantId, @RequestBody InventoryVariant input) {
         try {
             InventoryVariant updated = variantService.update(ruc, productId, variantId, input);
@@ -69,13 +69,13 @@ public class InventoryVariantController {
     // ── Atributos de variante ──────────────────────────────────────────
 
     @GetMapping("/variants/{variantId}/attributes")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<InventoryVariantAttribute>> listAttributes(@PathVariable String ruc, @PathVariable Long variantId) {
         return ResponseEntity.ok(attrRepository.findByVariant_Id(variantId));
     }
 
     @PostMapping("/variants/{variantId}/attributes")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> createAttribute(@PathVariable String ruc, @PathVariable Long variantId,
                                              @RequestBody InventoryVariantAttribute input) {
         try {
@@ -93,7 +93,7 @@ public class InventoryVariantController {
     }
 
     @PutMapping("/variants/{variantId}/attributes/{attributeId}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> updateAttribute(@PathVariable String ruc, @PathVariable Long variantId,
                                              @PathVariable Long attributeId,
                                              @RequestBody InventoryVariantAttribute input) {
@@ -110,7 +110,7 @@ public class InventoryVariantController {
     }
 
     @DeleteMapping("/variants/{variantId}/attributes/{attributeId}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> deleteAttribute(@PathVariable String ruc, @PathVariable Long variantId,
                                              @PathVariable Long attributeId) {
         attrRepository.deleteById(attributeId);

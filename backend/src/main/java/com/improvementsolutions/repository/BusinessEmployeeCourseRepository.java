@@ -22,7 +22,11 @@ public interface BusinessEmployeeCourseRepository extends JpaRepository<Business
            "JOIN FETCH c.businessEmployee be " +
            "JOIN FETCH c.courseCertification " +
            "JOIN be.business b " +
-           "WHERE b.ruc = :ruc AND c.active = false")
+           "WHERE b.ruc = :ruc AND (" +
+           "  c.active = false " +
+           "  OR be.active = false " +
+           "  OR UPPER(COALESCE(be.status, '')) = 'INACTIVO'" +
+           ")")
     List<BusinessEmployeeCourse> findHistoricByBusinessRuc(@Param("ruc") String ruc);
 
     @Query("SELECT DISTINCT c FROM BusinessEmployeeCourse c " +

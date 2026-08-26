@@ -83,7 +83,7 @@
       <button class="he-btn-secondary" (click)="loadRequests()">
         <span class="material-symbols-outlined">refresh</span> Actualizar
       </button>
-      <button class="he-btn-primary" (click)="openForm()">
+      <button class="he-btn-primary" *ngIf="canRequestOvertime" (click)="openForm()">
         <span class="material-symbols-outlined">add_circle</span> Registrar solicitud
       </button>
     </div>
@@ -173,7 +173,7 @@
     <div class="he-empty" *ngIf="!loading && filteredRequests.length === 0">
       <span class="material-symbols-outlined">schedule</span>
       <p>No hay solicitudes de horas extras en este período</p>
-      <button class="he-btn-primary" (click)="openForm()">
+      <button class="he-btn-primary" *ngIf="canRequestOvertime" (click)="openForm()">
         <span class="material-symbols-outlined">add_circle</span> Registrar primera solicitud
       </button>
     </div>
@@ -245,7 +245,7 @@
                 </button>
                 <!-- Upload PDF firmado -->
                 <label class="he-action-btn he-action-upload" title="Cargar PDF firmado"
-                       *ngIf="req.status !== 'APROBADO'"
+                       *ngIf="canRequestOvertime && req.status !== 'APROBADO'"
                        [class.uploading]="uploadingId === req.id">
                   <span class="material-symbols-outlined" *ngIf="uploadingId !== req.id">upload_file</span>
                   <span class="material-symbols-outlined he-spin" *ngIf="uploadingId === req.id">progress_activity</span>
@@ -254,7 +254,7 @@
                 </label>
                 <!-- Eliminar -->
                 <button class="he-action-btn he-action-delete" title="Eliminar"
-                        *ngIf="req.status !== 'APROBADO'"
+                        *ngIf="canRequestOvertime && req.status !== 'APROBADO'"
                         (click)="deleteRequest(req)">
                   <span class="material-symbols-outlined">delete</span>
                 </button>

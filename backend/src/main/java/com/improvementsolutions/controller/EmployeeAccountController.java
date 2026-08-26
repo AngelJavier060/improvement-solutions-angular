@@ -1,26 +1,26 @@
 package com.improvementsolutions.controller;
 
-import com.improvementsolutions.dto.UserResponseDto;
 import com.improvementsolutions.model.*;
 import com.improvementsolutions.repository.BusinessEmployeeRepository;
-import com.improvementsolutions.repository.RoleRepository;
-import com.improvementsolutions.service.BusinessService;
-import com.improvementsolutions.service.UserService;
+import com.improvementsolutions.service.EmployeePortalAccountService;
+import com.improvementsolutions.service.UserAdminAuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
- * Controller for creating and managing user accounts for employees.
- * Allows company admins to create login credentials for their workers.
+ * Cuentas portal trabajador.
+ * La creación es automática al registrar el empleado; estos endpoints
+ * sirven para re-sincronizar o consultar estado.
  */
 @RestController
 @RequestMapping("/api/employee-accounts")
@@ -29,85 +29,63 @@ import java.util.Set;
 public class EmployeeAccountController {
 
     private final BusinessEmployeeRepository businessEmployeeRepository;
-    private final UserService userService;
-    private final BusinessService businessService;
-    private final RoleRepository roleRepository;
+    private final UserAdminAuthorizationService authz;
+    private final EmployeePortalAccountService portalAccountService;
 
-    /**
-     * Creates a user account for an employee using their cedula as username.
-     * The employee gets ROLE_EMPLOYEE and is linked to the business.
-     */
     @PostMapping("/{businessEmployeeId}/create-account")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     @Transactional
     public ResponseEntity<?> createEmployeeAccount(
             @PathVariable Long businessEmployeeId,
-            @RequestBody Map<String, String> payload) {
+            @RequestBody(required = false) Map<String, String> payload,
+            Authentication authentication) {
         try {
             BusinessEmployee be = businessEmployeeRepository.findById(businessEmployeeId)
                     .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
 
-            if (be.getUser() != null) {
+            Long businessId = be.getBusiness() != null ? be.getBusiness().getId() : null;
+            authz.assertCanAccessBusiness(authentication, businessId);
+
+            if (!portalAccountService.isEmployeeActive(be)) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "message", "El trabajador está inactivo. No se crea cuenta portal ni acceso al módulo."
+                ));
+            }
+
+            User saved = portalAccountService.ensurePortalAccount(be);
+            if (saved == null) {
                 return ResponseEntity.badRequest()
-                        .body(Map.of("message", "Este empleado ya tiene una cuenta de usuario"));
+                        .body(Map.of("message", "No se pudo crear la cuenta (empleado inactivo o sin cédula)"));
             }
 
-            String username = payload.getOrDefault("username", be.getCedula());
-            String password = payload.get("password");
-            String email = payload.getOrDefault("email", be.getEmail());
+            String cedula = be.getCedula() != null ? be.getCedula().trim() : saved.getUsername();
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("id", saved.getId());
+            body.put("username", saved.getUsername());
+            body.put("email", saved.getEmail());
+            body.put("name", saved.getName() != null ? saved.getName() : "");
+            body.put("message", "Cuenta lista. Usuario y contraseña = cédula (" + cedula
+                    + "). Accede a la documentación de todas sus empresas.");
+            return ResponseEntity.status(HttpStatus.CREATED).body(body);
 
-            if (password == null || password.isBlank()) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("message", "La contraseña es obligatoria"));
-            }
-            if (email == null || email.isBlank()) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("message", "El email es obligatorio"));
-            }
-
-            // Create user with ROLE_EMPLOYEE
-            User user = new User();
-            user.setUsername(username);
-            user.setPassword(password); // will be encoded by UserService.create()
-            user.setEmail(email);
-            user.setName(be.getFullName());
-            user.setPhone(be.getPhone());
-            user.setActive(true);
-
-            Set<Role> roles = new HashSet<>();
-            roleRepository.findByName("ROLE_EMPLOYEE").ifPresent(roles::add);
-            user.setRoles(roles);
-
-            // Associate with business
-            if (be.getBusiness() != null) {
-                Set<Business> businesses = new HashSet<>();
-                businesses.add(be.getBusiness());
-                user.setBusinesses(businesses);
-            }
-
-            User saved = userService.create(user);
-
-            // Link user to employee record
-            be.setUser(saved);
-            businessEmployeeRepository.save(be);
-
-            log.info("Cuenta de empleado creada: username={}, employeeId={}", username, businessEmployeeId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(new UserResponseDto(saved));
-
+        } catch (ResponseStatusException rse) {
+            throw rse;
         } catch (RuntimeException e) {
-            log.error("Error al crear cuenta de empleado: {}", e.getMessage());
+            log.error("Error al crear/sincronizar cuenta de empleado: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 
-    /**
-     * Check if an employee already has a user account.
-     */
     @GetMapping("/{businessEmployeeId}/has-account")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public ResponseEntity<Map<String, Object>> hasAccount(@PathVariable Long businessEmployeeId) {
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
+    public ResponseEntity<Map<String, Object>> hasAccount(
+            @PathVariable Long businessEmployeeId,
+            Authentication authentication) {
         BusinessEmployee be = businessEmployeeRepository.findById(businessEmployeeId)
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+
+        Long businessId = be.getBusiness() != null ? be.getBusiness().getId() : null;
+        authz.assertCanAccessBusiness(authentication, businessId);
 
         boolean hasAccount = be.getUser() != null;
         Map<String, Object> result = Map.of(
@@ -118,15 +96,16 @@ public class EmployeeAccountController {
         return ResponseEntity.ok(result);
     }
 
-    /**
-     * List all employees of a business with their account status.
-     */
     @GetMapping("/business/{businessId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
-    public ResponseEntity<?> getEmployeesWithAccountStatus(@PathVariable Long businessId) {
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
+    public ResponseEntity<?> getEmployeesWithAccountStatus(
+            @PathVariable Long businessId,
+            Authentication authentication) {
+        authz.assertCanAccessBusiness(authentication, businessId);
+
         var employees = businessEmployeeRepository.findByBusinessId(businessId);
         var result = employees.stream().map(be -> {
-            Map<String, Object> map = new java.util.LinkedHashMap<>();
+            Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", be.getId());
             map.put("cedula", be.getCedula());
             map.put("nombres", be.getNombres());
@@ -144,5 +123,36 @@ public class EmployeeAccountController {
         }).collect(java.util.stream.Collectors.toList());
 
         return ResponseEntity.ok(result);
+    }
+
+    /** Re-sincroniza cuentas portal de todos los empleados activos de la empresa. */
+    @PostMapping("/business/{businessId}/ensure-all")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
+    @Transactional
+    public ResponseEntity<?> ensureAllAccounts(
+            @PathVariable Long businessId,
+            Authentication authentication) {
+        authz.assertCanAccessBusiness(authentication, businessId);
+        var employees = businessEmployeeRepository.findByBusinessId(businessId);
+        int ok = 0;
+        int skip = 0;
+        for (BusinessEmployee be : employees) {
+            if (be.getCedula() == null || be.getCedula().isBlank() || !portalAccountService.isEmployeeActive(be)) {
+                skip++;
+                continue;
+            }
+            try {
+                portalAccountService.ensurePortalAccount(be);
+                ok++;
+            } catch (Exception e) {
+                log.warn("ensure-all falló para empleado {}: {}", be.getId(), e.getMessage());
+                skip++;
+            }
+        }
+        return ResponseEntity.ok(Map.of(
+                "processed", ok,
+                "skipped", skip,
+                "message", "Cuentas sincronizadas: " + ok + " (omitidos: " + skip + ")"
+        ));
     }
 }

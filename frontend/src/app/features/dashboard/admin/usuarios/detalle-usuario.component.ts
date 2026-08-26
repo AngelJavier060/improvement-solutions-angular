@@ -7,6 +7,13 @@ import { NotificationService } from '../../../../services/notification.service';
 import { environment } from '../../../../../environments/environment';
 import { BusinessService } from '../../../../services/business.service';
 import { Business } from '../../../../models/business.model';
+import {
+  formatRoleName,
+  resolveUserKind,
+  userKindBadgeClass,
+  userKindLabel,
+  userKindShortHelp
+} from './user-role.utils';
 
 @Component({
   selector: 'app-detalle-usuario',
@@ -46,9 +53,9 @@ export class DetalleUsuarioComponent implements OnInit {
     this.userService.getUserById(this.userId).subscribe({
       next: (user) => {
         this.user = user;
-        // Cargar empresa asociada si NO es administrador
-        const isAdmin = (user.roles || []).includes('ROLE_ADMIN');
-        if (!isAdmin) {
+        // Cargar empresa asociada (Admin de empresa, Usuario consulta y Trabajador la tienen)
+        const kind = resolveUserKind(user.roles);
+        if (kind !== 'superadmin') {
           this.businessService.getByUserId(this.userId).subscribe({
             next: (list) => {
               const b: any = Array.isArray(list) && list.length > 0 ? list[0] : null;
@@ -113,8 +120,25 @@ export class DetalleUsuarioComponent implements OnInit {
   goBack(): void {
     this.router.navigate(['/dashboard/admin/usuarios']);
   }
+
   getRoleName(role: string): string {
-    return role.replace('ROLE_', '');
+    return formatRoleName(role);
+  }
+
+  getUserTypeLabel(): string {
+    return userKindLabel(resolveUserKind(this.user?.roles));
+  }
+
+  getUserTypeBadgeClass(): string {
+    return userKindBadgeClass(resolveUserKind(this.user?.roles));
+  }
+
+  getUserTypeHelp(): string {
+    return userKindShortHelp(resolveUserKind(this.user?.roles));
+  }
+
+  canEditFromHere(): boolean {
+    return resolveUserKind(this.user?.roles) !== 'superadmin';
   }
 
   getProfilePictureUrl(user: User | null): string {

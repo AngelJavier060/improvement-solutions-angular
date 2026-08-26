@@ -53,6 +53,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   exportingPdf = false;
   downloadingZip = false;
   companyLogoUrl = '';
+  canWrite = false;
   private pdfDownloadName: string | null = null;
 
   constructor(
@@ -68,6 +69,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.canWrite = this.authService.canWrite();
     this.docSub = this.docService.changes$.subscribe(() => {
       this.rebuildSections();
       this.cdr.detectChanges();

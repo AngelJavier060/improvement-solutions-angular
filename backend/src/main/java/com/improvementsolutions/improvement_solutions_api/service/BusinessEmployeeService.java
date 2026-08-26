@@ -47,6 +47,7 @@ import com.improvementsolutions.model.WorkSchedule;
 import com.improvementsolutions.model.WorkShift;
 import com.improvementsolutions.model.EmployeeMovement;
 import com.improvementsolutions.model.MovementType;
+import com.improvementsolutions.service.EmployeePortalAccountService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -96,6 +97,7 @@ public class BusinessEmployeeService {
     private final BusinessEmployeeCourseRepository businessEmployeeCourseRepository;
     private final BusinessEmployeeContractRepository businessEmployeeContractRepository;
     private final BusinessEmployeeCardRepository businessEmployeeCardRepository;
+    private final EmployeePortalAccountService employeePortalAccountService;
     private final EmployeeWorkDayRepository employeeWorkDayRepository;
     
     // Método helper para convertir RUC a Business ID
@@ -338,6 +340,7 @@ public class BusinessEmployeeService {
                                                                       String nombres,
                                                                       String apellidos,
                                                                       String codigo,
+                                                                      boolean activeOnly,
                                                                       Pageable pageable) {
         Long businessId = getBusinessIdFromRuc(codigoEmpresa);
         String fc = emptyToNull(cedula);
@@ -350,6 +353,7 @@ public class BusinessEmployeeService {
         List<BusinessEmployee> all = businessEmployeeRepository.findWithRelationsByBusinessId(businessId);
 
         List<BusinessEmployee> filtered = all.stream()
+                .filter(be -> !activeOnly || isBusinessEmployeeActive(be))
                 .filter(be -> fc == null || (be.getCedula() != null && be.getCedula().toLowerCase().contains(fc)))
                 .filter(be -> filterNombreApellidosOTextoLibre(be, fn, fa))
                 .filter(be -> fco == null || (be.getCodigoEmpresa() != null
@@ -368,6 +372,28 @@ public class BusinessEmployeeService {
         }
         int end = Math.min(start + pageSize, dtos.size());
         return new PageImpl<>(dtos.subList(start, end), pageable, dtos.size());
+    }
+
+    /**
+     * Vigente = active=true. Si active es null, se usa status ACTIVO.
+     * active=false / INACTIVO siempre se considera no vigente (prioridad del booleano).
+     */
+    private static boolean isBusinessEmployeeActive(BusinessEmployee be) {
+        if (be == null) {
+            return false;
+        }
+        if (be.getActive() != null) {
+            return Boolean.TRUE.equals(be.getActive());
+        }
+        String s = be.getStatus();
+        if (s == null || s.isBlank()) {
+            return false;
+        }
+        String u = s.trim().toUpperCase();
+        if ("INACTIVO".equals(u) || "INACTIVE".equals(u) || "0".equals(u) || "FALSE".equals(u)) {
+            return false;
+        }
+        return "ACTIVO".equals(u) || "ACTIVE".equals(u) || "1".equals(u) || "TRUE".equals(u);
     }
 
     /** Orden seguro para listados en memoria (whitelist de propiedades). */
@@ -578,6 +604,14 @@ public class BusinessEmployeeService {
         
         BusinessEmployee savedEmployee = businessEmployeeRepository.save(businessEmployee);
         log.info("Empleado creado exitosamente con ID: {}", savedEmployee.getId());
+
+        // Cuenta portal automática solo si el trabajador está activo
+        try {
+            employeePortalAccountService.syncPortalAccess(savedEmployee);
+        } catch (Exception ex) {
+            log.error("No se pudo sincronizar cuenta portal del trabajador {}: {}",
+                    savedEmployee.getCedula(), ex.getMessage());
+        }
         
         return convertToResponseDto(savedEmployee);
     }
@@ -614,6 +648,13 @@ public class BusinessEmployeeService {
         log.info("Empleado actualizado exitosamente con ID: {}", savedEmployee.getId());
         if (savedEmployee.getFechaSalida() != null) {
             purgeWorkDaysAfterExitDate(savedEmployee.getId(), savedEmployee.getFechaSalida());
+        }
+
+        try {
+            employeePortalAccountService.syncPortalAccess(savedEmployee);
+        } catch (Exception ex) {
+            log.warn("No se pudo sincronizar acceso portal al actualizar empleado {}: {}",
+                    savedEmployee.getId(), ex.getMessage());
         }
 
         return convertToResponseDto(savedEmployee);
@@ -695,6 +736,12 @@ public class BusinessEmployeeService {
             closeOpenScheduleHistoryAtExit(saved, saved.getFechaSalida());
             purgeWorkDaysAfterExitDate(saved.getId(), saved.getFechaSalida());
         }
+        try {
+            employeePortalAccountService.syncPortalAccess(saved);
+        } catch (Exception ex) {
+            log.warn("No se pudo sincronizar acceso portal al cambiar estado del empleado {}: {}",
+                    saved.getId(), ex.getMessage());
+        }
         return convertToResponseDto(saved);
     }
 
@@ -702,6 +749,7 @@ public class BusinessEmployeeService {
     public BusinessEmployeeResponseDto deactivateEmployee(Long id, String reason, LocalDate effectiveDate) {
         BusinessEmployee employee = businessEmployeeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Empleado no encontrado con ID: " + id));
+        // Solo marca inactivo: NO elimina documentos, cursos ni tarjetas (quedan para histórico / reactivación)
         employee.setActive(false);
         employee.setStatus("INACTIVO");
         LocalDate salida = effectiveDate != null ? effectiveDate : LocalDate.now();
@@ -721,6 +769,12 @@ public class BusinessEmployeeService {
         closeOpenScheduleHistoryAtExit(saved, salida);
         purgeWorkDaysAfterExitDate(saved.getId(), salida);
 
+        try {
+            employeePortalAccountService.syncPortalAccess(saved);
+        } catch (Exception ex) {
+            log.warn("No se pudo desactivar acceso portal del empleado {}: {}", saved.getId(), ex.getMessage());
+        }
+
         return convertToResponseDto(saved);
     }
 
@@ -728,6 +782,7 @@ public class BusinessEmployeeService {
     public BusinessEmployeeResponseDto reactivateEmployee(Long id, LocalDate effectiveDate) {
         BusinessEmployee employee = businessEmployeeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Empleado no encontrado con ID: " + id));
+        // Reactivación: vuelve a listados activos; documentación previa se conserva intacta
         LocalDate rehire = effectiveDate != null ? effectiveDate : LocalDate.now();
         employee.setActive(true);
         employee.setStatus("ACTIVO");
@@ -746,6 +801,12 @@ public class BusinessEmployeeService {
         employeeMovementRepository.save(mv);
 
         createRehireScheduleHistory(saved, rehire);
+
+        try {
+            employeePortalAccountService.syncPortalAccess(saved);
+        } catch (Exception ex) {
+            log.warn("No se pudo reactivar acceso portal del empleado {}: {}", saved.getId(), ex.getMessage());
+        }
 
         return convertToResponseDto(saved);
     }

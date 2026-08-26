@@ -23,7 +23,11 @@ public interface BusinessEmployeeDocumentRepository extends JpaRepository<Busine
            "JOIN FETCH d.businessEmployee be " +
            "JOIN FETCH d.typeDocument " +
            "JOIN be.business b " +
-           "WHERE b.ruc = :ruc AND d.active = false")
+           "WHERE b.ruc = :ruc AND (" +
+           "  d.active = false " +
+           "  OR be.active = false " +
+           "  OR UPPER(COALESCE(be.status, '')) = 'INACTIVO'" +
+           ")")
     List<BusinessEmployeeDocument> findHistoricByBusinessRuc(@Param("ruc") String ruc);
 
     @Query("SELECT DISTINCT d FROM BusinessEmployeeDocument d " +

@@ -15,6 +15,7 @@ import { SharedModule } from './shared/shared.module';
 // import { ApiUrlInterceptor } from './core/interceptors/api-url.interceptor'; // Temporalmente deshabilitado
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { AuthGuard } from './core/guards/auth.guard';
+import { WriteAccessGuard } from './core/guards/write-access.guard';
 import { FileService } from './services/file.service';
 
 @NgModule({
@@ -66,7 +67,8 @@ import { FileService } from './services/file.service';
       // Nueva ruta para bienvenida de usuarios
       {
         path: 'usuario/:ruc/welcome',
-        loadComponent: () => import('./features/usuario/usuario-welcome/usuario-welcome.component').then(m => m.UsuarioWelcomeComponent)
+        loadComponent: () => import('./features/usuario/usuario-welcome/usuario-welcome.component').then(m => m.UsuarioWelcomeComponent),
+        canActivate: [AuthGuard]
       },
       // Ruta para Inventario con menú lateral y sub-rutas
       {
@@ -81,17 +83,17 @@ import { FileService } from './services/file.service';
           { path: 'stock-actual', loadComponent: () => import('./features/usuario/inventario/pages/stock-actual/stock-actual.component').then(m => m.StockActualComponent) },
           { path: 'buscar-producto', loadComponent: () => import('./features/usuario/inventario/pages/buscar-producto/buscar-producto.component').then(m => m.BuscarProductoComponent) },
           // ENTRADAS
-          { path: 'nueva-entrada', loadComponent: () => import('./features/usuario/inventario/pages/nueva-entrada/nueva-entrada.component').then(m => m.NuevaEntradaComponent) },
+          { path: 'nueva-entrada', loadComponent: () => import('./features/usuario/inventario/pages/nueva-entrada/nueva-entrada.component').then(m => m.NuevaEntradaComponent), canActivate: [WriteAccessGuard] },
           { path: 'historial-entradas', loadComponent: () => import('./features/usuario/inventario/pages/historial-entradas/historial-entradas.component').then(m => m.HistorialEntradasComponent) },
           // SALIDAS
-          { path: 'nueva-salida', loadComponent: () => import('./features/usuario/inventario/pages/nueva-salida/nueva-salida.component').then(m => m.NuevaSalidaComponent) },
+          { path: 'nueva-salida', loadComponent: () => import('./features/usuario/inventario/pages/nueva-salida/nueva-salida.component').then(m => m.NuevaSalidaComponent), canActivate: [WriteAccessGuard] },
           { path: 'historial-salidas', loadComponent: () => import('./features/usuario/inventario/pages/historial-salidas/historial-salidas.component').then(m => m.HistorialSalidasComponent) },
           // GESTIÓN ESPECIAL
-          { path: 'cambios-reemplazos', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/cambios-reemplazos.component').then(m => m.CambiosReemplazosComponent) },
-          { path: 'devoluciones', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/devoluciones.component').then(m => m.DevolucionesComponent) },
-          { path: 'prestamos', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/prestamos.component').then(m => m.PrestamosComponent) },
-          { path: 'ajustes', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/ajustes.component').then(m => m.AjustesComponent) },
-          { path: 'traslados', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/traslados.component').then(m => m.TrasladosComponent) },
+          { path: 'cambios-reemplazos', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/cambios-reemplazos.component').then(m => m.CambiosReemplazosComponent), canActivate: [WriteAccessGuard] },
+          { path: 'devoluciones', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/devoluciones.component').then(m => m.DevolucionesComponent), canActivate: [WriteAccessGuard] },
+          { path: 'prestamos', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/prestamos.component').then(m => m.PrestamosComponent), canActivate: [WriteAccessGuard] },
+          { path: 'ajustes', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/ajustes.component').then(m => m.AjustesComponent), canActivate: [WriteAccessGuard] },
+          { path: 'traslados', loadComponent: () => import('./features/usuario/inventario/pages/gestion-especial/traslados.component').then(m => m.TrasladosComponent), canActivate: [WriteAccessGuard] },
           // REPORTES
           { path: 'reportes-general', loadComponent: () => import('./features/usuario/inventario/pages/reportes/reportes-general.component').then(m => m.ReportesGeneralComponent) },
           { path: 'reportes-kardex', loadComponent: () => import('./features/usuario/inventario/pages/reportes/reportes-kardex.component').then(m => m.ReportesKardexComponent) },
@@ -117,12 +119,12 @@ import { FileService } from './services/file.service';
         children: [
           { path: '', loadComponent: () => import('./features/usuario/mantenimiento/pages/lista-vehiculos/lista-vehiculos.component').then(m => m.ListaVehiculosComponent) },
           { path: 'dashboard', loadComponent: () => import('./features/usuario/mantenimiento/pages/dashboard/dashboard.component').then(m => m.MantenimientoDashboardComponent) },
-          { path: 'nueva-ficha', loadComponent: () => import('./features/usuario/mantenimiento/pages/nueva-ficha/nueva-ficha.component').then(m => m.NuevaFichaComponent) },
-          { path: 'editar-ficha/:vehicleId', loadComponent: () => import('./features/usuario/mantenimiento/pages/nueva-ficha/nueva-ficha.component').then(m => m.NuevaFichaComponent) },
+          { path: 'nueva-ficha', loadComponent: () => import('./features/usuario/mantenimiento/pages/nueva-ficha/nueva-ficha.component').then(m => m.NuevaFichaComponent), canActivate: [WriteAccessGuard] },
+          { path: 'editar-ficha/:vehicleId', loadComponent: () => import('./features/usuario/mantenimiento/pages/nueva-ficha/nueva-ficha.component').then(m => m.NuevaFichaComponent), canActivate: [WriteAccessGuard] },
           { path: 'documentacion/unidad/:vehicleId/historial', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-historial/documentacion-historial.component').then(m => m.DocumentacionHistorialComponent) },
-          { path: 'documentacion/unidad/:vehicleId/registro', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-registro/documentacion-registro.component').then(m => m.DocumentacionRegistroComponent) },
+          { path: 'documentacion/unidad/:vehicleId/registro', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-registro/documentacion-registro.component').then(m => m.DocumentacionRegistroComponent), canActivate: [WriteAccessGuard] },
           { path: 'documentacion/unidad/:vehicleId', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-unidad/documentacion-unidad.component').then(m => m.DocumentacionUnidadComponent) },
-          { path: 'documentacion/registro', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-registro/documentacion-registro.component').then(m => m.DocumentacionRegistroComponent) },
+          { path: 'documentacion/registro', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-registro/documentacion-registro.component').then(m => m.DocumentacionRegistroComponent), canActivate: [WriteAccessGuard] },
           { path: 'documentacion', loadComponent: () => import('./features/usuario/mantenimiento/pages/documentacion/documentacion-lista/documentacion-lista.component').then(m => m.DocumentacionListaComponent) },
           { path: 'mantenimiento-programado', loadComponent: () => import('./features/usuario/mantenimiento/pages/en-construccion/en-construccion.component').then(m => m.MantenimientoEnConstruccionComponent) },
           { path: 'reportes', loadComponent: () => import('./features/usuario/mantenimiento/pages/en-construccion/en-construccion.component').then(m => m.MantenimientoEnConstruccionComponent) }
@@ -173,7 +175,7 @@ import { FileService } from './services/file.service';
         path: 'dashboard/admin', 
         component: DashboardAdminComponent,
         canActivate: [AuthGuard],
-        data: { role: 'ROLE_ADMIN' },
+        data: { roles: ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'] },
         children: [
           {
             path: 'configuracion',

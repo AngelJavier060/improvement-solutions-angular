@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'welcome_screen.dart';
 import 'login_screen.dart';
+import 'employee_portal_screen.dart';
 import 'services/auth_service.dart';
 import 'employees_list_screen.dart';
 import 'units_list_screen.dart';
@@ -82,6 +83,7 @@ class MyApp extends StatelessWidget {
         '/welcome': (context) => const WelcomeScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const MyHomePage(title: 'Improvements Solutions'),
+        '/employee-home': (context) => const EmployeePortalScreen(),
         '/employees': (context) => const EmployeesListScreen(),
         '/units': (context) => const UnitsListScreen(),
         '/security-legal': (context) => const SecurityLegalScreen(),

@@ -7,6 +7,7 @@ import { EmployeeCourseService, EmployeeCourseResponse } from '../services/emplo
 import { EmployeeCardService, EmployeeCardResponse } from '../services/employee-card.service';
 import { Subscription, forkJoin, Subject, debounceTime } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 // Tipos auxiliares locales (para Employees tab unificada)
 type EmployeeUnifiedItem = {
@@ -340,7 +341,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     return this.employeeItemsMap[id] || [];
   }
 
-  // === Empleados (lista por empresa) ===
+  // === Empleados (lista por empresa) — solo ACTIVOS; docs se conservan al desactivar ===
   loadEmployeesList(): void {
     if (!this.businessRuc) return;
     this.listLoading = true;
@@ -358,10 +359,17 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
       nombres: (this.filterNombre || '').trim() || undefined,
       apellidos: (this.filterApellido || '').trim() || undefined,
       codigo: (this.filterCodigo || '').trim() || undefined,
+      // Solo vigentes: inactivos (p.ej. Elvia) no salen aquí; sus docs quedan en BD/histórico
+      activeOnly: true,
     }).subscribe({
       next: (page) => {
-        this.listEmployees = page?.content || [];
-        this.totalElements = page?.totalElements || 0;
+        const content = page?.content || [];
+        // Red de seguridad cliente: nunca mostrar inactivos en esta pestaña
+        this.listEmployees = content.filter(emp => this.isEmployeeActive(emp));
+        // total del servidor (ya filtrado por activeOnly); si el cliente quitó alguno, ajusta
+        const serverTotal = page?.totalElements ?? 0;
+        const removed = content.length - this.listEmployees.length;
+        this.totalElements = Math.max(0, serverTotal - removed);
         this.listLoading = false;
       },
       error: (err) => {
@@ -371,6 +379,25 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
         this.listLoading = false;
       }
     });
+  }
+
+  /**
+   * Activo/vigente (misma prioridad que gestión-empleados).
+   * active=false o status INACTIVO → no vigente.
+   */
+  isEmployeeActive(emp: any): boolean {
+    if (!emp) return false;
+    if (typeof emp.active === 'boolean') {
+      return emp.active === true;
+    }
+    const s = emp?.status;
+    if (typeof s === 'boolean') return s === true;
+    if (typeof s === 'string') {
+      const u = s.trim().toUpperCase();
+      if (u === 'INACTIVO' || u === 'INACTIVE' || u === '0' || u === 'FALSE') return false;
+      return u === 'ACTIVO' || u === 'ACTIVE' || u === '1' || u === 'TRUE';
+    }
+    return false;
   }
 
   nextPage(): void { if ((this.pageIndex + 1) * this.pageSize < this.totalElements) { this.pageIndex++; this.loadEmployeesList(); } }
@@ -659,9 +686,14 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     private employeeCourseService: EmployeeCourseService,
     private employeeCardService: EmployeeCardService,
     private renderer: Renderer2,
+    private authService: AuthService,
   ) {}
 
+  /** Fase C */
+  canWrite = false;
+
   ngOnInit(): void {
+    this.canWrite = this.authService.canWrite();
     this.cedula = this.route.snapshot.params['cedula'];
     // Intentar extraer businessRuc desde rutas padre
     this.businessRuc = this.findParamUp('businessRuc') || this.findParamUp('ruc');
@@ -954,7 +986,8 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     this.pickerLoading = true;
     this.employeeService.getEmployeesByBusinessRuc(this.businessRuc).subscribe({
       next: (list) => {
-        this.pickerEmployees = list || [];
+        // Selector de esta vista: solo activos (misma regla que la pestaña employees)
+        this.pickerEmployees = (list || []).filter(emp => this.isEmployeeActive(emp));
         this.pickerLoading = false;
       },
       error: (err) => {

@@ -18,21 +18,21 @@ public class ContractorCompanyController {
     private final ContractorCompanyService contractorCompanyService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<ContractorCompanyDto>> getAllCompanies() {
         List<ContractorCompanyDto> companies = contractorCompanyService.getAllCompanies();
         return ResponseEntity.ok(companies);
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<ContractorCompanyDto>> getAllActiveCompanies() {
         List<ContractorCompanyDto> companies = contractorCompanyService.getAllActiveCompanies();
         return ResponseEntity.ok(companies);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<ContractorCompanyDto> getCompanyById(@PathVariable Long id) {
         return contractorCompanyService.getCompanyById(id)
                 .map(ResponseEntity::ok)
@@ -40,14 +40,14 @@ public class ContractorCompanyController {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<ContractorCompanyDto>> searchCompaniesByName(@RequestParam String name) {
         List<ContractorCompanyDto> companies = contractorCompanyService.searchCompaniesByName(name);
         return ResponseEntity.ok(companies);
     }
 
     @GetMapping("/by-name/{name}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<ContractorCompanyDto> getCompanyByName(@PathVariable String name) {
         return contractorCompanyService.getCompanyByName(name)
                 .map(ResponseEntity::ok)
@@ -55,7 +55,7 @@ public class ContractorCompanyController {
     }
 
     @GetMapping("/by-code/{code}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<ContractorCompanyDto> getCompanyByCode(@PathVariable String code) {
         return contractorCompanyService.getCompanyByCode(code)
                 .map(ResponseEntity::ok)

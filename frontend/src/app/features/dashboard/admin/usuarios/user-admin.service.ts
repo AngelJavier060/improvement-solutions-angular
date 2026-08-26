@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../../../../environments/environment';
 import { User } from '../../../../models/user.model';
+import { UserOperationalCapability } from './user-operational-capability.model';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +13,22 @@ export class UserAdminService {
   private baseUrl = `${environment.apiUrl}/api/admin/users`;
 
   constructor(private http: HttpClient) { }
+
+  getAssignableRoles(): Observable<Array<{ id: number; name: string; description?: string }>> {
+    return this.http.get<Array<{ id: number; name: string; description?: string }>>(`${this.baseUrl}/roles`);
+  }
+
+  getCapabilitiesByBusiness(businessId: number): Observable<UserOperationalCapability[]> {
+    return this.http.get<UserOperationalCapability[]>(`${this.baseUrl}/business/${businessId}/capabilities`);
+  }
+
+  getUserCapabilities(userId: number): Observable<UserOperationalCapability> {
+    return this.http.get<UserOperationalCapability>(`${this.baseUrl}/${userId}/capabilities`);
+  }
+
+  updateUserCapabilities(userId: number, body: Partial<UserOperationalCapability>): Observable<UserOperationalCapability> {
+    return this.http.put<UserOperationalCapability>(`${this.baseUrl}/${userId}/capabilities`, body);
+  }
 
   /**
    * Obtiene la lista de todos los usuarios

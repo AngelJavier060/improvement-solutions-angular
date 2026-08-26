@@ -8,6 +8,7 @@ import { BusinessContextService } from '../../../../../core/services/business-co
 import { QrLegalDocsService } from '../../../../../core/services/qr-legal-docs.service';
 import { AuthService } from '../../../../../core/services/auth.service';
 import { AttendanceService, MonthlyClosureEntry } from '../services/attendance.service';
+import { EmployeeAccountService } from '../../../../../services/employee-account.service';
 
 @Component({
   selector: 'app-gestion-empleados',
@@ -93,6 +94,17 @@ export class GestionEmpleadosComponent implements OnInit {
   showClosureMenu = false;
   closingTarget: { year: number; month: number } | null = null;
 
+  /** Fase C: solo Admin/Super pueden escribir */
+  canWrite = false;
+
+  /** Fase D: crear cuenta portal trabajador */
+  showPortalAccountModal = false;
+  portalAccountEmployee: EmployeeResponse | null = null;
+  portalAccountForm = { username: '', password: '', email: '' };
+  portalAccountCreating = false;
+  portalAccountHasAccount: boolean | null = null;
+  portalAccountUsername: string | null = null;
+
   constructor(
     private employeeService: EmployeeService,
     private route: ActivatedRoute,
@@ -101,10 +113,12 @@ export class GestionEmpleadosComponent implements OnInit {
     private businessContext: BusinessContextService,
     private qrLegalDocsService: QrLegalDocsService,
     private authService: AuthService,
-    private attendanceService: AttendanceService
+    private attendanceService: AttendanceService,
+    private employeeAccountService: EmployeeAccountService
   ) {}
 
   ngOnInit(): void {
+    this.canWrite = this.authService.canWrite();
     // Extraer parámetros recorriendo toda la cadena de rutas ascendentes
     this.extractRouteParams();
     console.log('Business RUC para empleados:', this.businessRuc);
@@ -595,6 +609,67 @@ export class GestionEmpleadosComponent implements OnInit {
   closeEmployeeModal(): void {
     this.showEmployeeModal = false;
     this.selectedEmployee = null;
+  }
+
+  /** Fase D: abrir modal para crear cuenta portal del trabajador (usuario=contraseña=cédula) */
+  openPortalAccountModal(employee: EmployeeResponse): void {
+    if (!this.canWrite) return;
+    const cedula = (employee.cedula || '').trim();
+    this.portalAccountEmployee = employee;
+    this.portalAccountForm = {
+      username: cedula,
+      password: cedula,
+      email: employee.email || ''
+    };
+    this.portalAccountHasAccount = null;
+    this.portalAccountUsername = null;
+    this.showPortalAccountModal = true;
+    this.employeeAccountService.hasAccount(employee.id).subscribe({
+      next: (res) => {
+        this.portalAccountHasAccount = !!res?.hasAccount;
+        this.portalAccountUsername = res?.username || null;
+      },
+      error: () => {
+        this.portalAccountHasAccount = false;
+      }
+    });
+  }
+
+  closePortalAccountModal(): void {
+    this.showPortalAccountModal = false;
+    this.portalAccountEmployee = null;
+    this.portalAccountCreating = false;
+  }
+
+  createPortalAccount(): void {
+    if (!this.portalAccountEmployee) {
+      return;
+    }
+    const cedula = (this.portalAccountEmployee.cedula || this.portalAccountForm.username || '').trim();
+    if (!cedula) {
+      this.showToast('El empleado no tiene cédula', 'error');
+      return;
+    }
+    this.portalAccountCreating = true;
+    const payload = {
+      username: (this.portalAccountForm.username || cedula).trim(),
+      password: (this.portalAccountForm.password || cedula).trim(),
+      email: (this.portalAccountForm.email || '').trim()
+    };
+    this.employeeAccountService.createAccount(this.portalAccountEmployee.id, payload).subscribe({
+      next: () => {
+        this.portalAccountCreating = false;
+        this.closePortalAccountModal();
+        this.showToast(
+          `Cuenta creada. El trabajador entra con usuario y contraseña = cédula (${cedula}). Solo ve su documentación.`,
+          'success'
+        );
+      },
+      error: (err) => {
+        this.portalAccountCreating = false;
+        this.showToast(err?.error?.message || 'No se pudo crear la cuenta portal', 'error');
+      }
+    });
   }
 
   openCredentialsModal(employee: EmployeeResponse): void {

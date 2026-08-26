@@ -26,7 +26,7 @@ public class InventoryEntryController {
      * POST /api/inventory/{ruc}/entries
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<InventoryEntry> create(@PathVariable String ruc, @RequestBody InventoryEntry entry) {
         InventoryEntry created = entryService.create(ruc, entry);
         return ResponseEntity.ok(created);
@@ -37,7 +37,7 @@ public class InventoryEntryController {
      * GET /api/inventory/{ruc}/entries
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<InventoryEntry>> list(@PathVariable String ruc) {
         List<InventoryEntry> entries = entryService.list(ruc);
         return ResponseEntity.ok(entries);
@@ -48,7 +48,7 @@ public class InventoryEntryController {
      * GET /api/inventory/{ruc}/entries/search?startDate=2024-01-01&endDate=2024-12-31
      */
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<InventoryEntry>> searchByDateRange(
         @PathVariable String ruc,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -63,7 +63,7 @@ public class InventoryEntryController {
      * GET /api/inventory/{ruc}/entries/supplier/{supplierId}
      */
     @GetMapping("/supplier/{supplierId}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<InventoryEntry>> findBySupplier(
         @PathVariable String ruc,
         @PathVariable Long supplierId
@@ -77,7 +77,7 @@ public class InventoryEntryController {
      * GET /api/inventory/{ruc}/entries/kardex/{variantId}
      */
     @GetMapping("/kardex/{variantId}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<InventoryMovement>> getKardex(
         @PathVariable String ruc,
         @PathVariable Long variantId

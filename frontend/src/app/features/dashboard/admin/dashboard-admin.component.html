@@ -78,8 +78,13 @@
         <!-- Menú limitado para Admin de Empresa -->
         <ul *ngIf="isCompanyAdmin && companyId">
           <li>
+            <a href="javascript:void(0)" (click)="goToCompanyOperations($event)">
+              <i class="fas fa-briefcase"></i> Operación (docs / módulos)
+            </a>
+          </li>
+          <li>
             <a [routerLink]="['/dashboard/admin/empresas/admin', companyId]" routerLinkActive="active">
-              <i class="fas fa-building"></i> Mi Empresa
+              <i class="fas fa-cogs"></i> Parámetros / catálogos
             </a>
           </li>
           <li>
@@ -89,7 +94,7 @@
           </li>
           <li>
             <a [routerLink]="['/dashboard/admin/empresas', companyId, 'empleados']" routerLinkActive="active">
-              <i class="fas fa-id-badge"></i> Empleados
+              <i class="fas fa-id-badge"></i> Cuentas portal
             </a>
           </li>
         </ul>

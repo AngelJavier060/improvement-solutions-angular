@@ -298,7 +298,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
       await AuthService().refreshLogin(refreshToken: creds['refreshToken']!);
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, AuthService().postLoginRoute);
     } catch (e) {
       try { await BiometricAuthService().clear(); } catch (_) {}
       if (!mounted) return;

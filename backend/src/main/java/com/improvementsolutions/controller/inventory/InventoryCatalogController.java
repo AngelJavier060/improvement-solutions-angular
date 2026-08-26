@@ -94,7 +94,7 @@ public class InventoryCatalogController {
     }
 
     @GetMapping("/categories")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<CategoryCatalogDto>> listCategoryCatalog() {
         List<InventoryCategory> all = categoryRepository.findAll();
         List<InventoryCategoryGlobal> globals = globalCategoryRepository.findAll();
@@ -125,7 +125,7 @@ public class InventoryCatalogController {
     }
 
     @PostMapping("/categories")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','MANAGER')")
     public ResponseEntity<?> createCategoryCatalog(@RequestBody CategoryCatalogDto input) {
         String name = input == null || input.name == null ? "" : input.name.trim();
         if (name.isEmpty()) {
@@ -145,7 +145,7 @@ public class InventoryCatalogController {
     }
 
     @GetMapping("/categories/global")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<GlobalCategoryDto>> listGlobalCategories() {
         List<InventoryCategoryGlobal> globals = globalCategoryRepository.findAll();
         globals.sort(java.util.Comparator.comparing(
@@ -159,7 +159,7 @@ public class InventoryCatalogController {
     }
 
     @PutMapping("/categories/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','MANAGER')")
     public ResponseEntity<?> updateGlobalCategory(@PathVariable Long id, @RequestBody CategoryCatalogDto input) {
         if (id == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -188,7 +188,7 @@ public class InventoryCatalogController {
     }
 
     @DeleteMapping("/categories/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','MANAGER')")
     public ResponseEntity<?> deleteGlobalCategory(@PathVariable Long id) {
         if (id == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -205,7 +205,7 @@ public class InventoryCatalogController {
     }
 
     @GetMapping("/suppliers")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<SupplierCatalogDto>> listSupplierCatalog() {
         List<InventorySupplier> all = supplierRepository.findAll();
         // Usar RUC como clave cuando exista; si no, deduplicar por nombre en minúsculas
@@ -225,7 +225,7 @@ public class InventoryCatalogController {
 
     // Global suppliers CRUD (independiente de empresa)
     @GetMapping("/suppliers/global")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<GlobalSupplierDto>> listGlobalSuppliers() {
         List<InventorySupplierGlobal> globals = globalSupplierRepository.findAll();
         globals.sort(java.util.Comparator.comparing(
@@ -239,7 +239,7 @@ public class InventoryCatalogController {
     }
 
     @PostMapping("/suppliers")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','MANAGER')")
     public ResponseEntity<?> createGlobalSupplier(@RequestBody SupplierCatalogDto input) {
         String name = input == null || input.name == null ? "" : input.name.trim();
         if (name.isEmpty()) {
@@ -265,7 +265,7 @@ public class InventoryCatalogController {
     }
 
     @PutMapping("/suppliers/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','MANAGER')")
     public ResponseEntity<?> updateGlobalSupplier(@PathVariable Long id, @RequestBody SupplierCatalogDto input) {
         if (id == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -299,7 +299,7 @@ public class InventoryCatalogController {
     }
 
     @DeleteMapping("/suppliers/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','MANAGER')")
     public ResponseEntity<?> deleteGlobalSupplier(@PathVariable Long id) {
         if (id == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

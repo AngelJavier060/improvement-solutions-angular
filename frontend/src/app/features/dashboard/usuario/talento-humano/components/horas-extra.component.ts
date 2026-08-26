@@ -14,6 +14,7 @@ import autoTable from 'jspdf-autotable';
 import { firstValueFrom, Subject } from 'rxjs';
 import { filter, map, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { extractUsuarioRucFromRoute, resolveThBusinessFromRoute } from '../utils/th-business-from-route';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-horas-extra',
@@ -28,6 +29,9 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
   businessRucDisplay: string = '';
   businessLogoUrl: string | null = null;
   businessLogoBase64: string | null = null;
+
+  /** Matriz: registrar solicitudes de horas extras */
+  canRequestOvertime = false;
 
   employees: EmployeeResponse[] = [];
   requests: OvertimeRequest[] = [];
@@ -86,7 +90,8 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
     private attendanceService: AttendanceService,
     private employeeService: EmployeeService,
     private businessContext: BusinessContextService,
-    private businessService: BusinessService
+    private businessService: BusinessService,
+    private authService: AuthService
   ) {}
 
   get displayBusinessName(): string {
@@ -94,6 +99,7 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.canRequestOvertime = this.authService.canOvertime();
     this.initFromRoute();
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
@@ -227,6 +233,7 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
 
   // ── Formulario nuevo ────────────────────────────────────────────────────
   openForm(): void {
+    if (!this.canRequestOvertime) return;
     this.showForm = true;
     this.selectedEmployee = null;
     this.searchEmp = '';

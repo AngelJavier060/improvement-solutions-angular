@@ -22,6 +22,19 @@ export interface AuthResponse {
     email: string;
     roles: string[];
     permissions: string[];
+    operationalCapabilities?: {
+      canView: boolean;
+      canDownload: boolean;
+      canCreate: boolean;
+      canEdit: boolean;
+      canDelete: boolean;
+      canUpload: boolean;
+      canOvertime: boolean;
+      canVacations: boolean;
+      canTimeOff: boolean;
+      canWriteOps: boolean;
+      writeLockedByRole: boolean;
+    };
     businesses?: {
       id: number;
       name: string;
@@ -114,11 +127,12 @@ export class AuthService {
           if (error.status === 0) {
             errorMessage = 'Error de conexión. Por favor, verifica tu conexión a internet o que el servidor esté activo.';
           } else if (error.status === 401) {
-            errorMessage = 'Usuario o contraseña incorrectos';
+            errorMessage = error.error?.message || 'Usuario o contraseña incorrectos';
           } else if (error.status === 403) {
-            errorMessage = 'Usuario inactivo o sin permisos';
+            errorMessage = error.error?.message || 'Usuario inactivo o sin permisos';
           } else if (error.status === 404) {
-            errorMessage = 'Servicio de autenticación no encontrado';
+            errorMessage = error.error?.message
+              || 'Usuario no encontrado. Si es trabajador, cree primero su cuenta portal en Talento Humano (candado).';
           } else if (error.error?.message) {
             errorMessage = error.error.message;
           }
@@ -196,7 +210,7 @@ export class AuthService {
     if (userData) {
       try {
         const user = JSON.parse(userData);
-        return user.roles || [];
+        return this.normalizeRoles(user.roles || []);
       } catch (e) {
         console.error('Error al parsear datos del usuario:', e);
         return [];
@@ -208,6 +222,133 @@ export class AuthService {
   hasRole(role: string): boolean {
     const roles = this.getUserRoles();
     return roles.includes(role);
+  }
+
+  /**
+   * Puede crear/editar/eliminar en módulos /usuario/{ruc}/...
+   * Usa la matriz de capacidades del login (Super siempre; Admin/Gestor/Supervisor según flags).
+   */
+  canWrite(): boolean {
+    const roles = this.getUserRoles();
+    if (roles.includes('ROLE_SUPER_ADMIN')) {
+      return true;
+    }
+    const caps = this.getCurrentUser()?.operationalCapabilities;
+    if (caps && typeof caps.canWriteOps === 'boolean') {
+      return !!caps.canWriteOps;
+    }
+    // Fallback si sesión antigua sin matriz
+    return roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
+  }
+
+  /** Registrar solicitudes de horas extras (matriz). */
+  canOvertime(): boolean {
+    const roles = this.getUserRoles();
+    if (roles.includes('ROLE_SUPER_ADMIN')) return true;
+    const caps = this.getCurrentUser()?.operationalCapabilities;
+    if (caps && typeof caps.canOvertime === 'boolean') return !!caps.canOvertime;
+    return this.canWrite();
+  }
+
+  /** Registrar solicitudes de vacaciones (matriz). */
+  canVacations(): boolean {
+    const roles = this.getUserRoles();
+    if (roles.includes('ROLE_SUPER_ADMIN')) return true;
+    const caps = this.getCurrentUser()?.operationalCapabilities;
+    if (caps && typeof caps.canVacations === 'boolean') return !!caps.canVacations;
+    return this.canWrite();
+  }
+
+  /** Registrar solicitudes de permisos (matriz). */
+  canTimeOff(): boolean {
+    const roles = this.getUserRoles();
+    if (roles.includes('ROLE_SUPER_ADMIN')) return true;
+    const caps = this.getCurrentUser()?.operationalCapabilities;
+    if (caps && typeof caps.canTimeOff === 'boolean') return !!caps.canTimeOff;
+    return this.canWrite();
+  }
+
+  /**
+   * Puede consultar módulos de empresa (incluye Supervisor y Gestor).
+   * Trabajador (ROLE_EMPLOYEE) usa su portal propio, no esto.
+   */
+  canReadCompany(): boolean {
+    const roles = this.getUserRoles();
+    return this.canWrite()
+      || roles.includes('ROLE_USER')
+      || roles.includes('ROLE_MANAGER');
+  }
+
+  /** Supervisor: solo ver/descargar (ROLE_USER sin escritura). */
+  isConsultaUser(): boolean {
+    return this.hasRole('ROLE_USER') && !this.canWrite();
+  }
+
+  /** Gestor operativo (escritura sin ser Admin de parámetros). */
+  isGestor(): boolean {
+    return this.hasRole('ROLE_MANAGER') && !this.hasRole('ROLE_ADMIN') && !this.hasRole('ROLE_SUPER_ADMIN');
+  }
+
+  /**
+   * Destino post-login según rol Y puerta de acceso (intranet).
+   * - entry 'admin'  → panel de parámetros / plataforma (NO welcome)
+   * - entry 'user'   → módulos operativos /usuario/{ruc}/welcome
+   */
+  resolvePostLoginUrl(
+    rolesInput?: string[] | null,
+    businessesInput?: Array<{ id?: number; ruc?: string }> | null,
+    entry: 'admin' | 'user' = 'user'
+  ): string {
+    const roles = this.normalizeRoles(rolesInput ?? this.getUserRoles());
+    const user = this.getCurrentUser();
+    const businesses = businessesInput ?? user?.businesses ?? [];
+    const ruc = businesses?.[0]?.ruc ? String(businesses[0].ruc) : null;
+    const companyId = businesses?.[0]?.id != null ? Number(businesses[0].id) : null;
+
+    const isSuper = roles.includes('ROLE_SUPER_ADMIN');
+    const isAdmin = roles.includes('ROLE_ADMIN');
+    const isEmployee = roles.includes('ROLE_EMPLOYEE') && !isAdmin && !isSuper;
+
+    if (entry === 'admin') {
+      // Puerta Administrador: parámetros / plataforma
+      if (isSuper) {
+        return '/dashboard/admin';
+      }
+      if (isAdmin && companyId) {
+        return `/dashboard/admin/empresas/admin/${companyId}`;
+      }
+      if (isAdmin) {
+        return '/dashboard/admin';
+      }
+      // Cuenta sin privilegio admin: no pertenece a esta puerta
+      return '__FORBIDDEN_ADMIN_ENTRY__';
+    }
+
+    // Puerta Usuario: módulos operativos de la empresa
+    if (isEmployee) {
+      return '/dashboard/empleado';
+    }
+    if (isSuper) {
+      // Super no opera por esta puerta
+      return '/dashboard/admin';
+    }
+    if (ruc) {
+      return `/usuario/${ruc}/welcome`;
+    }
+    return '/';
+  }
+
+  /** true si la cuenta puede usar la puerta Administrador de la intranet */
+  canUseAdminEntry(rolesInput?: string[] | null): boolean {
+    const roles = this.normalizeRoles(rolesInput ?? this.getUserRoles());
+    return roles.includes('ROLE_SUPER_ADMIN') || roles.includes('ROLE_ADMIN');
+  }
+
+  normalizeRoles(roles: any[] | null | undefined): string[] {
+    if (!Array.isArray(roles)) return [];
+    return roles
+      .map(r => (typeof r === 'string' ? r : r?.name || r?.authority || ''))
+      .filter((r: string) => !!r);
   }
 
   getCurrentUser(): any {

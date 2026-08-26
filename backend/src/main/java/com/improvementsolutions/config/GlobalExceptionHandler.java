@@ -116,6 +116,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<?> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
+        log.warn("Acceso denegado: {}", ex.getMessage());
+        Map<String, Object> body = new HashMap<>();
+        body.put("title", "Acceso denegado");
+        body.put("message", "No tiene permisos para realizar esta acción.");
+        body.put("code", "ACCESS_DENIED");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<?> handleMaxUpload(MaxUploadSizeExceededException ex) {
         Map<String, Object> body = new HashMap<>();

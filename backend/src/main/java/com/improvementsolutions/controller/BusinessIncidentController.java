@@ -20,21 +20,21 @@ public class BusinessIncidentController {
 
     // ── GET /api/incidents/business/{ruc} ────────────────────────────────
     @GetMapping("/business/{ruc}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<List<BusinessIncidentDto>> getByRuc(@PathVariable String ruc) {
         return ResponseEntity.ok(incidentService.findByRuc(ruc));
     }
 
     // ── GET /api/incidents/{id} ──────────────────────────────────────────
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<BusinessIncidentDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(incidentService.findById(id));
     }
 
     // ── POST /api/incidents/business/{ruc} ───────────────────────────────
     @PostMapping("/business/{ruc}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<BusinessIncidentDto> create(
             @PathVariable String ruc,
             @RequestBody BusinessIncidentDto dto) {
@@ -44,7 +44,7 @@ public class BusinessIncidentController {
 
     // ── PUT /api/incidents/{id} ──────────────────────────────────────────
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<BusinessIncidentDto> update(
             @PathVariable Long id,
             @RequestBody BusinessIncidentDto dto) {
@@ -53,7 +53,7 @@ public class BusinessIncidentController {
 
     // ── PATCH /api/incidents/{id}/status ────────────────────────────────
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<BusinessIncidentDto> updateStatus(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
@@ -66,7 +66,7 @@ public class BusinessIncidentController {
 
     // ── DELETE /api/incidents/{id} ───────────────────────────────────────
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         incidentService.delete(id);
         return ResponseEntity.noContent().build();
@@ -74,21 +74,21 @@ public class BusinessIncidentController {
 
     // ── GET /api/incidents/business/{ruc}/stats ──────────────────────────
     @GetMapping("/business/{ruc}/stats")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<Map<String, Long>> getStats(@PathVariable String ruc) {
         return ResponseEntity.ok(incidentService.getStatsForBusiness(ruc));
     }
 
     // ── GET /api/incidents/business/{ruc}/safety ── Solo Salud y Seguridad
     @GetMapping("/business/{ruc}/safety")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<List<BusinessIncidentDto>> getSafetyByRuc(@PathVariable String ruc) {
         return ResponseEntity.ok(incidentService.findSafetyByRuc(ruc));
     }
 
     // ── GET /api/incidents/business/{ruc}/safety/range?from=&to= ──────────
     @GetMapping("/business/{ruc}/safety/range")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<List<BusinessIncidentDto>> getSafetyByRucAndRange(
             @PathVariable String ruc,
             @RequestParam String from,
@@ -101,7 +101,7 @@ public class BusinessIncidentController {
 
     // ── GET /api/incidents/business/{ruc}/safety/cedula/{cedula}?from=&to= ─
     @GetMapping("/business/{ruc}/safety/cedula/{cedula}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<List<BusinessIncidentDto>> getSafetyByCedula(
             @PathVariable String ruc,
             @PathVariable String cedula,

@@ -6,6 +6,7 @@ import { EChartsOption } from 'echarts';
 import { Subscription } from 'rxjs';
 import { FleetService } from '../../../../../services/fleet.service';
 import { Vehicle, VehicleKPIs } from '../../../../../models/vehicle.model';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-mantenimiento-dashboard',
@@ -24,6 +25,7 @@ export class MantenimientoDashboardComponent implements OnInit, OnDestroy {
   businessRuc = '';
   loading = true;
   error = '';
+  canWrite = false;
 
   kpis: VehicleKPIs = {
     saludOperativa: 0,
@@ -55,10 +57,12 @@ export class MantenimientoDashboardComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private fleetService: FleetService
+    private fleetService: FleetService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    this.canWrite = this.authService.canWrite();
     const parent = this.route.parent;
     if (!parent) {
       this.loading = false;

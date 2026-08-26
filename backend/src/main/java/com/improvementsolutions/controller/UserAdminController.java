@@ -9,6 +9,7 @@ import com.improvementsolutions.model.User;
 import com.improvementsolutions.repository.RoleRepository;
 import com.improvementsolutions.service.FileStorageService;
 import com.improvementsolutions.repository.UserRepository;
+import com.improvementsolutions.service.UserAdminAuthorizationService;
 import com.improvementsolutions.service.UserService;
 import jakarta.validation.Valid;
 
@@ -19,16 +20,22 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Controlador para la gestión administrativa de usuarios
+ * Controlador para la gestión administrativa de usuarios.
+ * Fase B: scope por empresa + reglas de roles (sin tocar Superadmin).
  */
 @RestController
 @RequestMapping("/api/admin/users")
@@ -47,53 +54,171 @@ public class UserAdminController {
     
     @Autowired
     private UserRepository userRepository;
-    
+
+    @Autowired
+    private UserAdminAuthorizationService authz;
+
+    @Autowired
+    private com.improvementsolutions.service.UserOperationalCapabilityService capabilityService;
+
     /**
-     * Obtiene una lista de todos los usuarios
+     * Matriz de capacidades operativas de una empresa (para habilitar acciones por usuario).
      */
-    @GetMapping
-    public ResponseEntity<List<UserDto>> getAllUsers() {
-        logger.info("Obteniendo lista de usuarios");
-        List<User> users = userService.findAllWithRoles();
-        List<UserDto> usersDto = users.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(usersDto);
+    @GetMapping("/business/{businessId}/capabilities")
+    public ResponseEntity<?> getCapabilitiesByBusiness(@PathVariable Long businessId,
+                                                       Authentication authentication) {
+        try {
+            authz.assertCanAccessBusiness(authentication, businessId);
+            List<User> users = userService.findByBusinessIdWithRoles(businessId);
+            users = authz.filterVisibleUsers(authentication, users);
+            // Solo perfiles de operación intranet (no trabajadores / no super)
+            users = users.stream()
+                    .filter(u -> !UserAdminAuthorizationService.hasRole(u, UserAdminAuthorizationService.ROLE_EMPLOYEE))
+                    .filter(u -> !UserAdminAuthorizationService.hasRole(u, UserAdminAuthorizationService.ROLE_SUPER_ADMIN))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(capabilityService.resolveForUsers(users, authentication));
+        } catch (ResponseStatusException rse) {
+            return toError(rse);
+        }
     }
-    
-    /**
-     * Obtiene usuarios filtrados por empresa
-     */
-    @GetMapping("/business/{businessId}")
-    public ResponseEntity<List<UserDto>> getUsersByBusiness(@PathVariable Long businessId) {
-        logger.info("Obteniendo usuarios de la empresa con ID: {}", businessId);
-        List<User> users = userService.findByBusinessIdWithRoles(businessId);
-        List<UserDto> usersDto = users.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(usersDto);
+
+    @GetMapping("/{id}/capabilities")
+    public ResponseEntity<?> getUserCapabilities(@PathVariable Long id, Authentication authentication) {
+        try {
+            User user = userRepository.findByIdWithRoles(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            authz.assertCanViewUser(authentication, user);
+            return ResponseEntity.ok(capabilityService.resolveForUser(user, authentication));
+        } catch (ResponseStatusException rse) {
+            return toError(rse);
+        }
+    }
+
+    @PutMapping("/{id}/capabilities")
+    public ResponseEntity<?> updateUserCapabilities(@PathVariable Long id,
+                                                    @RequestBody com.improvementsolutions.dto.user.UserOperationalCapabilityDto body,
+                                                    Authentication authentication) {
+        try {
+            User user = userRepository.findByIdWithRoles(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            authz.assertCanMutateUser(authentication, user);
+            return ResponseEntity.ok(capabilityService.updateCapabilities(id, body, authentication));
+        } catch (ResponseStatusException rse) {
+            return toError(rse);
+        }
     }
 
     /**
-     * Obtiene un usuario por su ID
+     * Roles asignables desde Gestión de Usuarios (Supervisor, Gestor, Admin empresa).
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
-        logger.info("Obteniendo usuario con ID: {}", id);
-        return userRepository.findByIdWithRoles(id)
-                .map(this::convertToDto)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    @GetMapping("/roles")
+    public ResponseEntity<?> getAssignableRoles() {
+        List<Map<String, Object>> roles = roleRepository.findAll().stream()
+                .filter(r -> {
+                    String n = r.getName();
+                    return UserAdminAuthorizationService.ROLE_USER.equals(n)
+                            || UserAdminAuthorizationService.ROLE_MANAGER.equals(n)
+                            || UserAdminAuthorizationService.ROLE_ADMIN.equals(n);
+                })
+                .map(r -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", r.getId());
+                    m.put("name", r.getName());
+                    m.put("description", r.getDescription());
+                    return m;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(roles);
     }
-      /**
-     * Actualiza un usuario existente
+    
+    /**
+     * Lista usuarios visibles para el caller.
+     * Superadmin: todos. Admin empresa: solo usuarios de su(s) empresa(s).
      */
+    @GetMapping
+    public ResponseEntity<?> getAllUsers(Authentication authentication) {
+        logger.info("Obteniendo lista de usuarios");
+        try {
+            List<User> users;
+            if (authz.isCompanyAdmin(authentication)) {
+                Set<Long> businessIds = authz.companyBusinessIds(authentication);
+                Map<Long, User> byId = new LinkedHashMap<>();
+                for (Long businessId : businessIds) {
+                    for (User u : userService.findByBusinessIdWithRoles(businessId)) {
+                        if (u.getId() != null) {
+                            byId.putIfAbsent(u.getId(), u);
+                        }
+                    }
+                }
+                users = new ArrayList<>(byId.values());
+                users = authz.filterVisibleUsers(authentication, users);
+            } else {
+                users = userService.findAllWithRoles();
+            }
+            List<UserDto> usersDto = users.stream()
+                    .map(this::convertToDto)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(usersDto);
+        } catch (ResponseStatusException rse) {
+            return toError(rse);
+        }
+    }
+    
+    /**
+     * Usuarios de una empresa (Admin empresa solo su businessId).
+     */
+    @GetMapping("/business/{businessId}")
+    public ResponseEntity<?> getUsersByBusiness(@PathVariable Long businessId,
+                                                Authentication authentication) {
+        logger.info("Obteniendo usuarios de la empresa con ID: {}", businessId);
+        try {
+            authz.assertCanAccessBusiness(authentication, businessId);
+            List<User> users = userService.findByBusinessIdWithRoles(businessId);
+            users = authz.filterVisibleUsers(authentication, users);
+            List<UserDto> usersDto = users.stream()
+                    .map(this::convertToDto)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(usersDto);
+        } catch (ResponseStatusException rse) {
+            return toError(rse);
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable Long id, Authentication authentication) {
+        logger.info("Obteniendo usuario con ID: {}", id);
+        try {
+            User user = userRepository.findByIdWithRoles(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            authz.assertCanViewUser(authentication, user);
+            return ResponseEntity.ok(convertToDto(user));
+        } catch (ResponseStatusException rse) {
+            return toError(rse);
+        }
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserUpdateDto userUpdateDto) {
+    public ResponseEntity<?> updateUser(@PathVariable Long id,
+                                        @Valid @RequestBody UserUpdateDto userUpdateDto,
+                                        Authentication authentication) {
         logger.info("Actualizando usuario con ID: {}", id);
         try {
+            User target = userRepository.findByIdWithRoles(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            authz.assertCanMutateUser(authentication, target);
+            authz.assertRoleChangeAllowed(authentication, target, userUpdateDto.getRoleIds());
+
+            // Trabajador: no permitir cambio de roles aunque el cliente envíe roleIds
+            if (UserAdminAuthorizationService.hasRole(target, UserAdminAuthorizationService.ROLE_EMPLOYEE)) {
+                userUpdateDto.setRoleIds(null);
+            }
+
+            // Roles ya validados en assertRoleChangeAllowed (Admin empresa: Supervisor o Gestor)
+
             User updatedUser = userService.updateAdmin(id, userUpdateDto);
             return ResponseEntity.ok(convertToDto(updatedUser));
+        } catch (ResponseStatusException rse) {
+            return toError(rse);
         } catch (Exception e) {
             logger.error("Error al actualizar usuario: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -101,46 +226,21 @@ public class UserAdminController {
     }
     
     /**
-     * Crea un nuevo usuario
-     * Solo SUPER_ADMIN puede crear administradores (ROLE_ADMIN, ROLE_SUPER_ADMIN)
-     * ADMIN puede crear usuarios finales (ROLE_USER)
+     * Crea usuario.
+     * Solo SUPER_ADMIN puede crear ROLE_ADMIN.
+     * ADMIN solo crea ROLE_USER.
+     * Nunca se asigna ROLE_SUPER_ADMIN ni ROLE_EMPLOYEE aquí.
      */
     @PostMapping
     public ResponseEntity<?> createUser(@Valid @RequestBody UserUpdateDto userCreateDto,
-                                        org.springframework.security.core.Authentication authentication) {
+                                        Authentication authentication) {
         logger.info("Creando nuevo usuario");
         try {
             if (userCreateDto.getPassword() == null || userCreateDto.getPassword().isEmpty()) {
                 return ResponseEntity.badRequest().body("La contraseña es obligatoria para crear un usuario");
             }
-            
-            // Verificar permisos: solo SUPER_ADMIN puede crear administradores
-            if (userCreateDto.getRoleIds() != null && !userCreateDto.getRoleIds().isEmpty()) {
-                Set<Role> rolesToAssign = userCreateDto.getRoleIds().stream()
-                        .map(roleId -> roleRepository.findById(roleId)
-                                .orElseThrow(() -> new RuntimeException("Rol no encontrado con ID: " + roleId)))
-                        .collect(java.util.stream.Collectors.toSet());
-                
-                // Verificar si se intenta asignar rol de administrador
-                boolean isAssigningAdminRole = rolesToAssign.stream()
-                        .anyMatch(role -> role.getName().equals("ROLE_ADMIN") || role.getName().equals("ROLE_SUPER_ADMIN"));
-                
-                if (isAssigningAdminRole) {
-                    // Verificar si el usuario autenticado es SUPER_ADMIN
-                    boolean isSuperAdmin = authentication.getAuthorities().stream()
-                            .anyMatch(auth -> auth.getAuthority().equals("ROLE_SUPER_ADMIN"));
-                    
-                    if (!isSuperAdmin) {
-                        logger.warn("Usuario {} intentó crear un administrador sin permisos de SUPER_ADMIN", 
-                                authentication.getName());
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                                .body(new ErrorResponse(
-                                        "Solo los Super Administradores pueden crear otros administradores",
-                                        "FORBIDDEN",
-                                        403));
-                    }
-                }
-            }
+
+            Set<Role> roles = authz.resolveRolesForCreate(authentication, userCreateDto.getRoleIds());
             
             User newUser = new User();
             newUser.setUsername(userCreateDto.getUsername());
@@ -149,61 +249,44 @@ public class UserAdminController {
             newUser.setPhone(userCreateDto.getPhone());
             newUser.setPassword(userCreateDto.getPassword());
             newUser.setActive(userCreateDto.getActive() != null ? userCreateDto.getActive() : true);
-            
-            // Procesar roles si se proporcionan
-            if (userCreateDto.getRoleIds() != null && !userCreateDto.getRoleIds().isEmpty()) {
-                Set<Role> roles = userCreateDto.getRoleIds().stream()
-                        .map(roleId -> roleRepository.findById(roleId)
-                                .orElseThrow(() -> new RuntimeException("Rol no encontrado con ID: " + roleId)))
-                        .collect(java.util.stream.Collectors.toSet());
-                newUser.setRoles(roles);
-            }
+            newUser.setRoles(roles);
             
             User createdUser = userService.create(newUser);
             return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(createdUser));
+        } catch (ResponseStatusException rse) {
+            return toError(rse);
         } catch (Exception e) {
             logger.error("Error al crear usuario: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
     
-    /**
-     * Elimina un usuario
-     * Solo SUPER_ADMIN puede eliminar administradores (ROLE_ADMIN, ROLE_SUPER_ADMIN)
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id,
                                         @RequestParam(name = "force", required = false, defaultValue = "false") boolean force,
-                                        org.springframework.security.core.Authentication authentication) {
+                                        Authentication authentication) {
         logger.info("Eliminando usuario con ID: {} (force={})", id, force);
         try {
-            // Obtener el usuario a eliminar para verificar sus roles
             User userToDelete = userRepository.findByIdWithRoles(id)
-                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-            
-            // Verificar si el usuario a eliminar tiene rol de administrador
-            boolean isAdminUser = userToDelete.getRoles().stream()
-                    .anyMatch(role -> role.getName().equals("ROLE_ADMIN") || role.getName().equals("ROLE_SUPER_ADMIN"));
-            
-            if (isAdminUser) {
-                // Verificar si el usuario autenticado es SUPER_ADMIN
-                boolean isSuperAdmin = authentication.getAuthorities().stream()
-                        .anyMatch(auth -> auth.getAuthority().equals("ROLE_SUPER_ADMIN"));
-                
-                if (!isSuperAdmin) {
-                    logger.warn("Usuario {} intentó eliminar un administrador sin permisos de SUPER_ADMIN", 
-                            authentication.getName());
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                            .body(new ErrorResponse(
-                                    "Solo los Super Administradores pueden eliminar otros administradores",
-                                    "FORBIDDEN",
-                                    403));
-                }
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+            authz.assertCanMutateUser(authentication, userToDelete);
+
+            // Solo Super puede eliminar Admin de empresa (ya bloqueado para company admin en assertCanMutate)
+            if (UserAdminAuthorizationService.hasRole(userToDelete, UserAdminAuthorizationService.ROLE_ADMIN)
+                    && !authz.isSuperAdmin(authentication)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ErrorResponse(
+                                "Solo los Super Administradores pueden eliminar otros administradores",
+                                "FORBIDDEN",
+                                403));
             }
             
             java.util.Map<String, Object> report = userService.deleteWithReport(id, force);
             String msg = force ? "Usuario eliminado con limpieza forzada" : "Usuario eliminado correctamente";
             return ResponseEntity.ok(new SuccessResponse(msg, report));
+        } catch (ResponseStatusException rse) {
+            return toError(rse);
         } catch (DataIntegrityViolationException dive) {
             logger.error("Violación de integridad al eliminar usuario {}: {}", id, dive.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -220,15 +303,20 @@ public class UserAdminController {
                             400));
         }
     }
-      /**
-     * Actualiza la foto de perfil de un usuario
-     */
+
     @PostMapping(value = "/{id}/profile-picture", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> uploadProfilePicture(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadProfilePicture(@PathVariable Long id,
+                                                  @RequestParam("file") MultipartFile file,
+                                                  Authentication authentication) {
         logger.info("Actualizando foto de perfil para usuario ID: {}", id);
         try {
+            User target = userRepository.findByIdWithRoles(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            authz.assertCanMutateUser(authentication, target);
             String profilePicturePath = userService.updateProfilePicture(id, file);
             return ResponseEntity.ok().body(new SuccessResponse("Foto de perfil actualizada correctamente", profilePicturePath));
+        } catch (ResponseStatusException rse) {
+            return toError(rse);
         } catch (Exception e) {
             logger.error("Error al actualizar foto de perfil: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -236,15 +324,18 @@ public class UserAdminController {
         }
     }
     
-    /**
-     * Activa o desactiva un usuario
-     */
     @PutMapping("/{id}/toggle-active")
-    public ResponseEntity<?> toggleUserActive(@PathVariable Long id) {
+    public ResponseEntity<?> toggleUserActive(@PathVariable Long id, Authentication authentication) {
         logger.info("Cambiando estado de activación para usuario ID: {}", id);
         try {
+            User target = userRepository.findByIdWithRoles(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            authz.assertCanMutateUser(authentication, target);
+
             User user = userService.toggleUserActive(id);
             return ResponseEntity.ok(convertToDto(user));
+        } catch (ResponseStatusException rse) {
+            return toError(rse);
         } catch (IllegalStateException ise) {
             logger.warn("Regla de negocio impide cambiar estado para usuario {}: {}", id, ise.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -260,9 +351,6 @@ public class UserAdminController {
         }
     }
     
-    /**
-     * Convierte una entidad User a DTO
-     */
     private UserDto convertToDto(User user) {
         if (user == null) return null;
         
@@ -284,5 +372,15 @@ public class UserAdminController {
         }
         
         return dto;
+    }
+
+    private ResponseEntity<ErrorResponse> toError(ResponseStatusException rse) {
+        HttpStatus status = HttpStatus.resolve(rse.getStatusCode().value());
+        if (status == null) {
+            status = HttpStatus.BAD_REQUEST;
+        }
+        String reason = rse.getReason() != null ? rse.getReason() : status.getReasonPhrase();
+        return ResponseEntity.status(status)
+                .body(new ErrorResponse(reason, status.name(), status.value()));
     }
 }

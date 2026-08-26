@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FleetService } from '../../../../../services/fleet.service';
 import { Vehicle, VehicleKPIs } from '../../../../../models/vehicle.model';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-lista-vehiculos',
@@ -30,13 +31,15 @@ export class ListaVehiculosComponent implements OnInit {
   loading = false;
   error = '';
   Math = Math;
+  canWrite = false;
 
   selectedVehicle: Vehicle | null = null;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private fleetService: FleetService
+    private fleetService: FleetService,
+    private authService: AuthService
   ) {}
 
   openVehicleDetail(vehicle: Vehicle): void {
@@ -70,6 +73,7 @@ export class ListaVehiculosComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.canWrite = this.authService.canWrite();
     const parent = this.route.parent;
     if (!parent) {
       this.error = 'Ruta inválida: falta el contexto de empresa.';

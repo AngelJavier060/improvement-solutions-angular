@@ -56,13 +56,14 @@ export class DashboardAdminComponent implements OnInit {
       this.isSuperAdmin = roles.includes('ROLE_SUPER_ADMIN');
       this.isCompanyAdmin = roles.includes('ROLE_ADMIN') && !this.isSuperAdmin;
 
-      // Si es admin de empresa, obtener su empresa
+      // Admin de empresa en /dashboard/admin → su pantalla de parámetros
       if (this.isCompanyAdmin && user.businesses && user.businesses.length > 0) {
         this.companyId = user.businesses[0].id;
         this.companyName = user.businesses[0].name || '';
-        // Si está en la ruta raíz del admin, redirigir a su empresa
-        if (this.router.url === '/dashboard/admin') {
-          this.router.navigate([`/dashboard/admin/empresas/admin/${this.companyId}`], { replaceUrl: true });
+        if (this.router.url === '/dashboard/admin' || this.router.url === '/dashboard/admin/') {
+          if (this.companyId) {
+            this.router.navigate([`/dashboard/admin/empresas/admin/${this.companyId}`], { replaceUrl: true });
+          }
         }
       }
     }
@@ -115,6 +116,17 @@ export class DashboardAdminComponent implements OnInit {
         console.error('Error en la navegación a usuarios');
       }
     });
+  }
+
+  /** Módulos operativos: donde se ingresan documentos de empleados */
+  goToCompanyOperations(event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    const user = this.authService.getCurrentUser();
+    const ruc = user?.businesses?.[0]?.ruc;
+    if (ruc) {
+      this.router.navigate([`/usuario/${ruc}/welcome`]);
+    }
   }
 
   // Alterna la visibilidad del sidebar

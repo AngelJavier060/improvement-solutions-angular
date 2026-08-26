@@ -80,9 +80,10 @@ public class BusinessModuleController {
     }
 
     // ─── Endpoint para usuarios normales: módulos activos por RUC ───
+    // Supervisor (USER) y Gestor (MANAGER) solo leen módulos ya habilitados por Admin/Super.
 
     @GetMapping("/active/{ruc}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<List<BusinessModuleDto>> getActiveModulesByRuc(@PathVariable String ruc) {
         return ResponseEntity.ok(businessModuleService.getEffectiveModulesByRuc(ruc));
     }
@@ -90,7 +91,7 @@ public class BusinessModuleController {
     // ─── Verificar si un módulo específico está activo ───────────────
 
     @GetMapping("/check/{ruc}/{moduleCode}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<Map<String, Boolean>> checkModuleActive(
             @PathVariable String ruc, @PathVariable String moduleCode) {
         boolean isActive = businessModuleService.isModuleActiveForBusiness(ruc, moduleCode);

@@ -80,7 +80,7 @@
       <h2 class="perm-title">Historial de Permisos</h2>
       <p class="perm-subtitle">Gestione y revise el estado de sus permisos y vacaciones — <strong>{{ displayBusinessName }}</strong></p>
     </div>
-    <button class="perm-btn-primary" (click)="openNewModal()">
+    <button class="perm-btn-primary" *ngIf="canManageTimeOff" (click)="openNewModal()">
       <i class="fas fa-plus-circle"></i> Nueva Solicitud
     </button>
   </div>
@@ -205,7 +205,7 @@
 
                 <!-- Subir PDF firmado: visible cuando está PENDIENTE -->
                 <button class="perm-action-btn" title="Subir PDF firmado"
-                        *ngIf="(r.status || '').toUpperCase() === 'PENDIENTE'"
+                        *ngIf="canManageTimeOff && (r.status || '').toUpperCase() === 'PENDIENTE'"
                         (click)="triggerUpload(fileInp)">
                   <i class="fas fa-file-upload"></i>
                 </button>
@@ -221,14 +221,14 @@
 
                 <!-- Rechazar solicitud/documento: visible cuando PENDIENTE -->
                 <button class="perm-action-btn perm-action-del" title="Rechazar"
-                        *ngIf="(r.status || '').toUpperCase() === 'PENDIENTE'"
+                        *ngIf="canManageTimeOff && (r.status || '').toUpperCase() === 'PENDIENTE'"
                         (click)="rejectPermission(r)">
                   <i class="fas fa-ban"></i>
                 </button>
 
                 <!-- Eliminar: oculto si está APROBADO -->
                 <button class="perm-action-btn perm-action-del"
-                        *ngIf="(r.status || '').toUpperCase() !== 'APROBADO'"
+                        *ngIf="canManageTimeOff && (r.status || '').toUpperCase() !== 'APROBADO'"
                         (click)="deleteRecord(r.id!)" title="Eliminar">
                   <i class="fas fa-trash"></i>
                 </button>

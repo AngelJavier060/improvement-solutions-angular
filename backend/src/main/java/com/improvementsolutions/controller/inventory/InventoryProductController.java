@@ -24,7 +24,7 @@ public class InventoryProductController {
     }
 
     @GetMapping("/products")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<?> list(@PathVariable String ruc) {
         logger.info("[InventoryProducts] Solicitando lista de productos para RUC: {}", ruc);
         try {
@@ -78,7 +78,7 @@ public class InventoryProductController {
     ) {}
 
     @GetMapping("/products/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<InventoryProduct> getById(@PathVariable String ruc, @PathVariable Long id) {
         return productService.getById(ruc, id)
             .map(ResponseEntity::ok)
@@ -86,7 +86,7 @@ public class InventoryProductController {
     }
 
     @PostMapping("/products")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> create(@PathVariable String ruc, @RequestBody InventoryProduct input) {
         try {
             InventoryProduct created = productService.create(ruc, input);
@@ -101,7 +101,7 @@ public class InventoryProductController {
     }
 
     @PutMapping("/products/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> update(@PathVariable String ruc, @PathVariable Long id, @RequestBody InventoryProduct input) {
         try {
             InventoryProduct updated = productService.update(ruc, id, input);
@@ -116,7 +116,7 @@ public class InventoryProductController {
     }
 
     @DeleteMapping("/products/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> delete(@PathVariable String ruc, @PathVariable Long id) {
         try {
             productService.delete(ruc, id);

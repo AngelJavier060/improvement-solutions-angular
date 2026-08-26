@@ -11,49 +11,73 @@ export class AuthGuard implements CanActivate {
   canActivate(
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): boolean {
-    
-    console.log('AuthGuard - Ruta actual:', state.url);
-    console.log('AuthGuard - Datos de ruta:', route.data);
-    
-    // Verificar si el usuario está autenticado
+
     if (!this.authService.isLoggedIn()) {
-      console.log('Usuario no autenticado - Redirigiendo a login');
-      this.router.navigate(['/auth/usuario-login'], { 
+      this.router.navigate(['/auth/usuario-login'], {
         queryParams: { returnUrl: state.url },
-        replaceUrl: true 
+        replaceUrl: true
       });
       return false;
     }
-    
-    // Si la ruta requiere un rol específico, verificar que el usuario lo tenga
-    if (route.data && route.data['role']) {
-      const requiredRole = route.data['role'];
-      console.log('Rol requerido:', requiredRole);
-      console.log('Roles del usuario:', this.authService.getUserRoles());
-      
-      if (!this.authService.hasRole(requiredRole)) {
-        console.log('Usuario no tiene el rol requerido');
-        // Redirigir según el rol del usuario
-        if (this.authService.hasRole('ROLE_SUPER_ADMIN')) {
-          this.router.navigate(['/dashboard/admin'], { replaceUrl: true });
-        } else if (this.authService.hasRole('ROLE_ADMIN')) {
-          // Admin de empresa: redirigir a su empresa
-          const user = this.authService.getCurrentUser();
-          const businesses = user?.businesses;
-          if (businesses && businesses.length > 0) {
-            this.router.navigate([`/dashboard/admin/empresas/admin/${businesses[0].id}`], { replaceUrl: true });
-          } else {
-            this.router.navigate(['/dashboard/admin'], { replaceUrl: true });
-          }
-        } else if (this.authService.hasRole('ROLE_EMPLOYEE')) {
-          this.router.navigate(['/dashboard/empleado'], { replaceUrl: true });
-        } else {
-          this.router.navigate(['/dashboard/usuario'], { replaceUrl: true });
-        }
+
+    // Fase D: trabajador solo puede usar su portal (no /usuario ni /dashboard/admin)
+    const isEmployeeOnly = this.authService.hasRole('ROLE_EMPLOYEE')
+      && !this.authService.hasRole('ROLE_ADMIN')
+      && !this.authService.hasRole('ROLE_SUPER_ADMIN');
+    if (isEmployeeOnly) {
+      const url = state.url || '';
+      const allowed = url.startsWith('/dashboard/empleado')
+        || url.startsWith('/auth/');
+      if (!allowed) {
+        this.router.navigate(['/dashboard/empleado'], { replaceUrl: true });
         return false;
       }
     }
-    
+
+    // role (uno) o roles (cualquiera)
+    const requiredRoles = this.resolveRequiredRoles(route);
+    if (requiredRoles.length > 0) {
+      const hasAny = requiredRoles.some(r => this.authService.hasRole(r));
+      if (!hasAny) {
+        this.redirectByRole();
+        return false;
+      }
+    }
+
     return true;
+  }
+
+  private resolveRequiredRoles(route: ActivatedRouteSnapshot): string[] {
+    if (route.data?.['roles'] && Array.isArray(route.data['roles'])) {
+      return route.data['roles'] as string[];
+    }
+    if (route.data?.['role']) {
+      return [route.data['role'] as string];
+    }
+    return [];
+  }
+
+  private redirectByRole(): void {
+    if (this.authService.hasRole('ROLE_SUPER_ADMIN')) {
+      this.router.navigate(['/dashboard/admin'], { replaceUrl: true });
+      return;
+    }
+    if (this.authService.hasRole('ROLE_ADMIN')) {
+      const user = this.authService.getCurrentUser();
+      const companyId = user?.businesses?.[0]?.id;
+      if (companyId) {
+        this.router.navigate([`/dashboard/admin/empresas/admin/${companyId}`], { replaceUrl: true });
+      } else {
+        this.router.navigate(['/dashboard/admin'], { replaceUrl: true });
+      }
+      return;
+    }
+    if (this.authService.hasRole('ROLE_EMPLOYEE')) {
+      this.router.navigate(['/dashboard/empleado'], { replaceUrl: true });
+      return;
+    }
+    // Usuario consulta u otros con empresa
+    const dest = this.authService.resolvePostLoginUrl();
+    this.router.navigateByUrl(dest, { replaceUrl: true });
   }
 }

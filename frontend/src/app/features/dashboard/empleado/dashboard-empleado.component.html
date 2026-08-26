@@ -1,296 +1,421 @@
-<div class="employee-panel">
-  <!-- Header -->
-  <header class="ep-header">
-    <div class="ep-header-left">
-      <div class="ep-avatar">
-        <i class="fas fa-user-circle"></i>
-      </div>
-      <div>
-        <h4 class="mb-0 fw-bold" *ngIf="dashboard">{{ dashboard.employeeName }}</h4>
-        <small class="text-muted" *ngIf="dashboard">
-          {{ dashboard.position || 'Empleado' }} · {{ dashboard.businessName }}
-        </small>
-      </div>
-    </div>
-    <div class="ep-header-right">
-      <span class="badge bg-light text-dark me-2" *ngIf="dashboard">
-        <i class="fas fa-id-card me-1"></i>{{ dashboard.cedula }}
-      </span>
-      <button class="btn btn-outline-danger btn-sm" (click)="logout()">
-        <i class="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
+<div class="tp-shell">
+  <!-- TopNavBar (Mobile) -->
+  <header class="tp-topnav">
+    <div class="tp-brand-text">Improvement</div>
+    <div class="tp-topnav-actions">
+      <button type="button" class="tp-icon-btn" title="Cerrar sesión" (click)="logout()">
+        <span class="material-symbols-outlined">logout</span>
       </button>
     </div>
   </header>
 
-  <!-- Loading -->
-  <div *ngIf="isLoading" class="text-center py-5">
-    <div class="spinner-border text-primary" role="status"></div>
-    <p class="text-muted mt-2">Cargando tu panel...</p>
-  </div>
-
-  <!-- Error -->
-  <div *ngIf="error" class="alert alert-danger m-4">
-    <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
-  </div>
-
-  <div *ngIf="!isLoading && !error && dashboard" class="ep-content">
-    <!-- Tabs -->
-    <ul class="nav nav-pills ep-tabs">
-      <li class="nav-item">
-        <a class="nav-link" [class.active]="activeTab==='resumen'" (click)="setTab('resumen')">
-          <i class="fas fa-home me-1"></i> Resumen
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" [class.active]="activeTab==='documentos'" (click)="setTab('documentos')">
-          <i class="fas fa-file-alt me-1"></i> Documentos
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" [class.active]="activeTab==='cursos'" (click)="setTab('cursos')">
-          <i class="fas fa-graduation-cap me-1"></i> Cursos
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" [class.active]="activeTab==='perfil'" (click)="setTab('perfil')">
-          <i class="fas fa-user me-1"></i> Mi Perfil
-        </a>
-      </li>
-    </ul>
-
-    <!-- Tab: Resumen -->
-    <div *ngIf="activeTab==='resumen'" class="ep-tab-content">
-      <!-- Stats Cards -->
-      <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-          <div class="ep-stat-card">
-            <div class="ep-stat-icon bg-primary-subtle text-primary">
-              <i class="fas fa-file-alt"></i>
-            </div>
-            <div class="ep-stat-value">{{ dashboard.totalDocuments }}</div>
-            <div class="ep-stat-label">Documentos</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="ep-stat-card">
-            <div class="ep-stat-icon bg-success-subtle text-success">
-              <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="ep-stat-value">{{ dashboard.documentsVigentes }}</div>
-            <div class="ep-stat-label">Vigentes</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="ep-stat-card">
-            <div class="ep-stat-icon bg-warning-subtle text-warning">
-              <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div class="ep-stat-value">{{ dashboard.documentsPorVencer }}</div>
-            <div class="ep-stat-label">Por Vencer</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="ep-stat-card">
-            <div class="ep-stat-icon bg-danger-subtle text-danger">
-              <i class="fas fa-times-circle"></i>
-            </div>
-            <div class="ep-stat-value">{{ dashboard.documentsVencidos }}</div>
-            <div class="ep-stat-label">Vencidos</div>
-          </div>
-        </div>
+  <!-- SideNavBar (Desktop) -->
+  <aside class="tp-sidenav">
+    <div class="tp-sidenav-brand">
+      <div class="tp-sidenav-logo">
+        <span class="material-symbols-outlined">corporate_fare</span>
       </div>
-
-      <!-- Courses Summary -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-4">
-          <div class="ep-stat-card">
-            <div class="ep-stat-icon bg-info-subtle text-info">
-              <i class="fas fa-graduation-cap"></i>
-            </div>
-            <div class="ep-stat-value">{{ dashboard.totalCourses }}</div>
-            <div class="ep-stat-label">Cursos Totales</div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="ep-stat-card">
-            <div class="ep-stat-icon bg-success-subtle text-success">
-              <i class="fas fa-award"></i>
-            </div>
-            <div class="ep-stat-value">{{ dashboard.coursesCompleted }}</div>
-            <div class="ep-stat-label">Completados</div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="ep-stat-card">
-            <div class="ep-stat-icon bg-warning-subtle text-warning">
-              <i class="fas fa-clock"></i>
-            </div>
-            <div class="ep-stat-value">{{ dashboard.coursesPending }}</div>
-            <div class="ep-stat-label">Pendientes</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Alerts -->
-      <div *ngIf="dashboard.alerts && dashboard.alerts.length > 0" class="mb-4">
-        <h6 class="fw-bold mb-3"><i class="fas fa-bell me-1"></i> Alertas</h6>
-        <div *ngFor="let alert of dashboard.alerts" class="alert py-2 px-3 small"
-             [ngClass]="{
-               'alert-danger': alert.type === 'VENCIDO',
-               'alert-warning': alert.type === 'POR_VENCER',
-               'alert-info': alert.type === 'INFO'
-             }">
-          <i class="fas me-1"
-             [ngClass]="{
-               'fa-times-circle': alert.type === 'VENCIDO',
-               'fa-exclamation-triangle': alert.type === 'POR_VENCER',
-               'fa-info-circle': alert.type === 'INFO'
-             }"></i>
-          {{ alert.message }}
-        </div>
-      </div>
-
-      <div *ngIf="!dashboard.alerts || dashboard.alerts.length === 0" class="text-center py-4">
-        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
-        <p class="text-muted small">No tienes alertas pendientes. ¡Todo en orden!</p>
-      </div>
+      <div class="tp-brand-text">Improvement</div>
     </div>
 
-    <!-- Tab: Documentos -->
-    <div *ngIf="activeTab==='documentos'" class="ep-tab-content">
-      <h5 class="fw-bold mb-3"><i class="fas fa-file-alt me-2"></i>Mis Documentos</h5>
-      <div *ngIf="documents.length > 0" class="table-responsive">
-        <table class="table table-hover">
-          <thead class="table-light">
-            <tr>
-              <th>Documento</th>
-              <th>Tipo</th>
-              <th>Fecha Emisión</th>
-              <th>Fecha Vencimiento</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let doc of documents">
-              <td>{{ doc.name || doc.fileName }}</td>
-              <td>{{ doc.type || '—' }}</td>
-              <td>{{ doc.issueDate || '—' }}</td>
-              <td>{{ doc.expirationDate || 'Sin vencimiento' }}</td>
-              <td><span class="badge" [ngClass]="getDocStatusClass(doc.status)">{{ doc.status }}</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div *ngIf="documents.length === 0" class="text-center py-5">
-        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
-        <p class="text-muted">No tienes documentos cargados aún.</p>
-      </div>
+    <nav class="tp-sidenav-nav">
+      <button type="button" class="tp-nav-item" [class.is-active]="activeTab==='resumen'" (click)="setTab('resumen')">
+        <span class="material-symbols-outlined">home</span>
+        <span>Resumen</span>
+      </button>
+      <button type="button" class="tp-nav-item" [class.is-active]="activeTab==='documentos'" (click)="setTab('documentos')">
+        <span class="material-symbols-outlined">description</span>
+        <span>Documentos</span>
+      </button>
+      <button type="button" class="tp-nav-item" [class.is-active]="activeTab==='cursos'" (click)="setTab('cursos')">
+        <span class="material-symbols-outlined">school</span>
+        <span>Cursos</span>
+      </button>
+      <button type="button" class="tp-nav-item" [class.is-active]="activeTab==='tarjetas'" (click)="setTab('tarjetas')">
+        <span class="material-symbols-outlined">credit_card</span>
+        <span>Tarjetas</span>
+      </button>
+      <button type="button" class="tp-nav-item" [class.is-active]="activeTab==='perfil'" (click)="setTab('perfil')">
+        <span class="material-symbols-outlined">person</span>
+        <span>Mi Perfil</span>
+      </button>
+    </nav>
+
+    <div class="tp-sidenav-footer">
+      <button type="button" class="tp-nav-item tp-nav-item--danger" (click)="logout()">
+        <span class="material-symbols-outlined">logout</span>
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="tp-main">
+    <div *ngIf="isLoading" class="tp-loading">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p>Cargando tu panel...</p>
     </div>
 
-    <!-- Tab: Cursos -->
-    <div *ngIf="activeTab==='cursos'" class="ep-tab-content">
-      <h5 class="fw-bold mb-3"><i class="fas fa-graduation-cap me-2"></i>Mis Cursos</h5>
-      <div *ngIf="courses.length > 0" class="table-responsive">
-        <table class="table table-hover">
-          <thead class="table-light">
-            <tr>
-              <th>Curso</th>
-              <th>Fecha</th>
-              <th>Duración</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let course of courses">
-              <td>{{ course.name }}</td>
-              <td>{{ course.date || '—' }}</td>
-              <td>{{ course.duration || '—' }}</td>
-              <td>
-                <span class="badge" [ngClass]="course.completed ? 'bg-success' : 'bg-warning text-dark'">
-                  {{ course.completed ? 'Completado' : 'Pendiente' }}
+    <div *ngIf="error" class="tp-alert tp-alert--error">
+      <span class="material-symbols-outlined">error</span>
+      {{ error }}
+    </div>
+
+    <div *ngIf="!isLoading && !error && dashboard" class="tp-page">
+      <!-- Profile header -->
+      <section class="tp-profile-header">
+        <div class="tp-profile-identity">
+          <div class="tp-avatar">
+            <img *ngIf="avatarUrl; else avatarFallback" [src]="avatarUrl" alt="Foto de perfil" />
+            <ng-template #avatarFallback>
+              <span class="material-symbols-outlined">person</span>
+            </ng-template>
+          </div>
+          <div class="tp-profile-text">
+            <h1>{{ dashboard.employeeName }}</h1>
+            <p>{{ dashboard.position || 'Trabajador' }}</p>
+            <p class="tp-profile-meta" *ngIf="dashboard.businesses?.length; else oneBizMeta">
+              {{ dashboard.businesses?.length }} empresa(s)
+              · Cédula {{ dashboard.cedula }}
+            </p>
+            <ng-template #oneBizMeta>
+              <p class="tp-profile-meta">
+                {{ dashboard.businessName || '—' }}
+                · Cédula {{ dashboard.cedula }}
+              </p>
+            </ng-template>
+          </div>
+        </div>
+
+        <div class="tp-profile-actions">
+          <span class="tp-status-chip" [class.is-inactive]="!dashboard.active">
+            <span class="tp-status-dot"></span>
+            {{ dashboard.active ? 'ACTIVO' : 'INACTIVO' }}
+          </span>
+        </div>
+      </section>
+
+      <!-- Horizontal tabs -->
+      <nav class="tp-tabs">
+        <button type="button" class="tp-tab" [class.is-active]="activeTab==='resumen'" (click)="setTab('resumen')">
+          <span class="material-symbols-outlined">home</span>
+          <span>Resumen</span>
+        </button>
+        <button type="button" class="tp-tab" [class.is-active]="activeTab==='documentos'" (click)="setTab('documentos')">
+          <span class="material-symbols-outlined">description</span>
+          <span>Documentos</span>
+        </button>
+        <button type="button" class="tp-tab" [class.is-active]="activeTab==='cursos'" (click)="setTab('cursos')">
+          <span class="material-symbols-outlined">school</span>
+          <span>Cursos</span>
+        </button>
+        <button type="button" class="tp-tab" [class.is-active]="activeTab==='tarjetas'" (click)="setTab('tarjetas')">
+          <span class="material-symbols-outlined">credit_card</span>
+          <span>Tarjetas</span>
+        </button>
+        <button type="button" class="tp-tab" [class.is-active]="activeTab==='perfil'" (click)="setTab('perfil')">
+          <span class="material-symbols-outlined">person</span>
+          <span>Mi Perfil</span>
+        </button>
+      </nav>
+
+      <!-- Resumen -->
+      <section *ngIf="activeTab==='resumen'" class="tp-section">
+        <div class="tp-stats-grid">
+          <div class="tp-stat-card">
+            <div class="tp-stat-icon tp-stat-icon--primary"><span class="material-symbols-outlined">description</span></div>
+            <div class="tp-stat-value">{{ dashboard.totalDocuments }}</div>
+            <div class="tp-stat-label">Documentos</div>
+          </div>
+          <div class="tp-stat-card">
+            <div class="tp-stat-icon tp-stat-icon--ok"><span class="material-symbols-outlined">check_circle</span></div>
+            <div class="tp-stat-value">{{ dashboard.documentsVigentes }}</div>
+            <div class="tp-stat-label">Vigentes</div>
+          </div>
+          <div class="tp-stat-card">
+            <div class="tp-stat-icon tp-stat-icon--warn"><span class="material-symbols-outlined">warning</span></div>
+            <div class="tp-stat-value">{{ dashboard.documentsPorVencer }}</div>
+            <div class="tp-stat-label">Por Vencer</div>
+          </div>
+          <div class="tp-stat-card">
+            <div class="tp-stat-icon tp-stat-icon--err"><span class="material-symbols-outlined">cancel</span></div>
+            <div class="tp-stat-value">{{ dashboard.documentsVencidos }}</div>
+            <div class="tp-stat-label">Vencidos</div>
+          </div>
+          <div class="tp-stat-card">
+            <div class="tp-stat-icon tp-stat-icon--info"><span class="material-symbols-outlined">school</span></div>
+            <div class="tp-stat-value">{{ dashboard.totalCourses }}</div>
+            <div class="tp-stat-label">Cursos</div>
+          </div>
+          <div class="tp-stat-card">
+            <div class="tp-stat-icon tp-stat-icon--ok"><span class="material-symbols-outlined">workspace_premium</span></div>
+            <div class="tp-stat-value">{{ dashboard.coursesCompleted }}</div>
+            <div class="tp-stat-label">Completados</div>
+          </div>
+          <div class="tp-stat-card">
+            <div class="tp-stat-icon tp-stat-icon--warn"><span class="material-symbols-outlined">schedule</span></div>
+            <div class="tp-stat-value">{{ dashboard.coursesPending }}</div>
+            <div class="tp-stat-label">Pendientes</div>
+          </div>
+        </div>
+
+        <div class="tp-card" *ngIf="dashboard.alerts?.length; else noAlerts">
+          <div class="tp-card-head">
+            <h2>Alertas</h2>
+            <span class="material-symbols-outlined">notifications</span>
+          </div>
+          <div class="tp-card-body tp-alerts">
+            <div *ngFor="let alert of dashboard.alerts" class="tp-alert-row"
+                 [class.is-danger]="alert.type === 'VENCIDO'"
+                 [class.is-warn]="alert.type === 'POR_VENCER'"
+                 [class.is-info]="alert.type === 'INFO'">
+              <span class="material-symbols-outlined">
+                {{ alert.type === 'VENCIDO' ? 'cancel' : (alert.type === 'POR_VENCER' ? 'warning' : 'info') }}
+              </span>
+              <span>{{ alert.message }}</span>
+            </div>
+          </div>
+        </div>
+        <ng-template #noAlerts>
+          <div class="tp-empty">
+            <span class="material-symbols-outlined tp-empty-icon is-ok">check_circle</span>
+            <p>No tienes alertas pendientes. ¡Todo en orden!</p>
+          </div>
+        </ng-template>
+      </section>
+
+      <!-- Documentos -->
+      <section *ngIf="activeTab==='documentos'" class="tp-section">
+        <div class="tp-card">
+          <div class="tp-card-head">
+            <h2>Mis Documentos</h2>
+            <span class="material-symbols-outlined">description</span>
+          </div>
+          <div class="tp-card-body">
+            <div *ngIf="openingFile" class="tp-inline-info">Abriendo archivo…</div>
+            <div *ngIf="documents.length > 0" class="tp-table-wrap">
+              <table class="tp-table">
+                <thead>
+                  <tr>
+                    <th>Documento</th>
+                    <th>Empresa</th>
+                    <th>Tipo</th>
+                    <th>Emisión</th>
+                    <th>Vencimiento</th>
+                    <th>Estado</th>
+                    <th>Archivo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let doc of documents">
+                    <td>{{ doc.name }}</td>
+                    <td>{{ doc.businessName || '—' }}</td>
+                    <td>{{ doc.type || '—' }}</td>
+                    <td>{{ doc.issueDate || '—' }}</td>
+                    <td>{{ doc.expirationDate || 'Sin vencimiento' }}</td>
+                    <td><span class="tp-badge" [ngClass]="getDocStatusClass(doc.status)">{{ doc.status }}</span></td>
+                    <td>
+                      <ng-container *ngIf="hasFiles(doc); else noDocFile">
+                        <button type="button" class="tp-file-btn" *ngFor="let f of doc.files"
+                                (click)="openFile(f)" [disabled]="!f.file" [title]="f.file_name || 'Ver archivo'">
+                          <span class="material-symbols-outlined">visibility</span>
+                        </button>
+                      </ng-container>
+                      <ng-template #noDocFile><span class="tp-muted">—</span></ng-template>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div *ngIf="documents.length === 0" class="tp-empty">
+              <span class="material-symbols-outlined tp-empty-icon">folder_open</span>
+              <p>No tienes documentos cargados aún.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cursos -->
+      <section *ngIf="activeTab==='cursos'" class="tp-section">
+        <div class="tp-card">
+          <div class="tp-card-head">
+            <h2>Mis Cursos</h2>
+            <span class="material-symbols-outlined">school</span>
+          </div>
+          <div class="tp-card-body">
+            <div *ngIf="courses.length > 0" class="tp-table-wrap">
+              <table class="tp-table">
+                <thead>
+                  <tr>
+                    <th>Curso</th>
+                    <th>Empresa</th>
+                    <th>Fecha</th>
+                    <th>Vencimiento</th>
+                    <th>Duración</th>
+                    <th>Estado</th>
+                    <th>Archivo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let course of courses">
+                    <td>{{ course.name }}</td>
+                    <td>{{ course.businessName || '—' }}</td>
+                    <td>{{ course.date || '—' }}</td>
+                    <td>{{ course.expirationDate || '—' }}</td>
+                    <td>{{ course.duration || '—' }}</td>
+                    <td>
+                      <span class="tp-badge" [ngClass]="getDocStatusClass(course.status || '')">
+                        {{ course.status || (course.completed ? 'VIGENTE' : 'PENDIENTE') }}
+                      </span>
+                    </td>
+                    <td>
+                      <ng-container *ngIf="hasFiles(course); else noCourseFile">
+                        <button type="button" class="tp-file-btn" *ngFor="let f of course.files"
+                                (click)="openFile(f)" [disabled]="!f.file">
+                          <span class="material-symbols-outlined">visibility</span>
+                        </button>
+                      </ng-container>
+                      <ng-template #noCourseFile><span class="tp-muted">—</span></ng-template>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div *ngIf="courses.length === 0" class="tp-empty">
+              <span class="material-symbols-outlined tp-empty-icon">menu_book</span>
+              <p>No tienes cursos asignados aún.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tarjetas -->
+      <section *ngIf="activeTab==='tarjetas'" class="tp-section">
+        <div class="tp-card">
+          <div class="tp-card-head">
+            <h2>Mis Tarjetas</h2>
+            <span class="material-symbols-outlined">credit_card</span>
+          </div>
+          <div class="tp-card-body">
+            <div *ngIf="cards.length > 0" class="tp-table-wrap">
+              <table class="tp-table">
+                <thead>
+                  <tr>
+                    <th>Tarjeta</th>
+                    <th>Empresa</th>
+                    <th>Número</th>
+                    <th>Emisión</th>
+                    <th>Vencimiento</th>
+                    <th>Estado</th>
+                    <th>Archivo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let card of cards">
+                    <td>{{ card.name }}</td>
+                    <td>{{ card.businessName || '—' }}</td>
+                    <td>{{ card.cardNumber || '—' }}</td>
+                    <td>{{ card.issueDate || '—' }}</td>
+                    <td>{{ card.expirationDate || '—' }}</td>
+                    <td><span class="tp-badge" [ngClass]="getDocStatusClass(card.status)">{{ card.status }}</span></td>
+                    <td>
+                      <ng-container *ngIf="hasFiles(card); else noCardFile">
+                        <button type="button" class="tp-file-btn" *ngFor="let f of card.files"
+                                (click)="openFile(f)" [disabled]="!f.file">
+                          <span class="material-symbols-outlined">visibility</span>
+                        </button>
+                      </ng-container>
+                      <ng-template #noCardFile><span class="tp-muted">—</span></ng-template>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div *ngIf="cards.length === 0" class="tp-empty">
+              <span class="material-symbols-outlined tp-empty-icon">badge</span>
+              <p>No tienes tarjetas registradas aún.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Perfil (bento) -->
+      <section *ngIf="activeTab==='perfil'" class="tp-section">
+        <div *ngIf="profile; else profileLoading" class="tp-bento">
+          <div class="tp-card tp-bento-main">
+            <div class="tp-card-head">
+              <h2>Información Personal</h2>
+              <span class="material-symbols-outlined">badge</span>
+            </div>
+            <div class="tp-card-body tp-data-grid">
+              <div class="tp-data-cell">
+                <span class="tp-data-label">Nombre Completo</span>
+                <span class="tp-data-value">{{ profile.fullName }}</span>
+              </div>
+              <div class="tp-data-cell">
+                <span class="tp-data-label">Cédula</span>
+                <span class="tp-data-value">{{ profile.cedula }}</span>
+              </div>
+              <div class="tp-data-cell">
+                <span class="tp-data-label">Correo Electrónico</span>
+                <span class="tp-data-value">{{ profile.email || '—' }}</span>
+              </div>
+              <div class="tp-data-cell">
+                <span class="tp-data-label">Teléfono</span>
+                <span class="tp-data-value">{{ profile.phone || '—' }}</span>
+              </div>
+              <div class="tp-data-cell">
+                <span class="tp-data-label">Tipo de Sangre</span>
+                <span class="tp-data-value">{{ profile.tipoSangre || '—' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tp-card tp-bento-side">
+            <div class="tp-card-head">
+              <h2>Detalles de Empleo</h2>
+              <span class="material-symbols-outlined">work</span>
+            </div>
+            <div class="tp-card-body tp-data-stack">
+              <div class="tp-data-cell" *ngIf="profile.businesses?.length; else singleBiz">
+                <span class="tp-data-label">Empresas</span>
+                <span class="tp-data-value tp-data-value--accent" *ngFor="let b of profile.businesses">{{ b.name }}</span>
+              </div>
+              <ng-template #singleBiz>
+                <div class="tp-data-cell">
+                  <span class="tp-data-label">Empresa</span>
+                  <span class="tp-data-value tp-data-value--accent">{{ profile.businessName || '—' }}</span>
+                </div>
+              </ng-template>
+              <div class="tp-data-cell">
+                <span class="tp-data-label">Departamento</span>
+                <span class="tp-data-value">{{ profile.department || '—' }}</span>
+              </div>
+              <div class="tp-data-cell">
+                <span class="tp-data-label">Cargo</span>
+                <span class="tp-data-value">{{ profile.position || '—' }}</span>
+              </div>
+              <div class="tp-data-cell">
+                <span class="tp-data-label">Fecha de Ingreso</span>
+                <span class="tp-data-value">{{ profile.fechaIngreso || '—' }}</span>
+              </div>
+              <div class="tp-data-cell">
+                <span class="tp-data-label">Estado</span>
+                <span class="tp-status-chip" [class.is-inactive]="!profile.active">
+                  <span class="tp-status-dot"></span>
+                  {{ profile.status || (profile.active ? 'ACTIVO' : 'INACTIVO') }}
                 </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div *ngIf="courses.length === 0" class="text-center py-5">
-        <i class="fas fa-book fa-3x text-muted mb-3"></i>
-        <p class="text-muted">No tienes cursos asignados aún.</p>
-      </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ng-template #profileLoading>
+          <div class="tp-loading">
+            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            <p>Cargando perfil...</p>
+          </div>
+        </ng-template>
+      </section>
     </div>
-
-    <!-- Tab: Perfil -->
-    <div *ngIf="activeTab==='perfil'" class="ep-tab-content">
-      <h5 class="fw-bold mb-3"><i class="fas fa-user me-2"></i>Mi Perfil</h5>
-      <div *ngIf="profile" class="row g-3">
-        <div class="col-md-6">
-          <div class="ep-profile-field">
-            <label>Nombre Completo</label>
-            <span>{{ profile.fullName }}</span>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="ep-profile-field">
-            <label>Cédula</label>
-            <span>{{ profile.cedula }}</span>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="ep-profile-field">
-            <label>Email</label>
-            <span>{{ profile.email || '—' }}</span>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="ep-profile-field">
-            <label>Teléfono</label>
-            <span>{{ profile.phone || '—' }}</span>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="ep-profile-field">
-            <label>Cargo</label>
-            <span>{{ profile.position || '—' }}</span>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="ep-profile-field">
-            <label>Departamento</label>
-            <span>{{ profile.department || '—' }}</span>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="ep-profile-field">
-            <label>Fecha Ingreso</label>
-            <span>{{ profile.fechaIngreso || '—' }}</span>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="ep-profile-field">
-            <label>Tipo de Sangre</label>
-            <span>{{ profile.tipoSangre || '—' }}</span>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="ep-profile-field">
-            <label>Empresa</label>
-            <span>{{ profile.businessName || '—' }}</span>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="ep-profile-field">
-            <label>Estado</label>
-            <span class="badge" [ngClass]="profile.active ? 'bg-success' : 'bg-secondary'">
-              {{ profile.status || (profile.active ? 'Activo' : 'Inactivo') }}
-            </span>
-          </div>
-        </div>
-      </div>
-      <div *ngIf="!profile" class="text-center py-5">
-        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-        <p class="text-muted mt-2 small">Cargando perfil...</p>
-      </div>
-    </div>
-  </div>
+  </main>
 </div>

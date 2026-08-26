@@ -29,7 +29,7 @@ public class ApprovalRequestController {
     private static final Logger logger = LoggerFactory.getLogger(ApprovalRequestController.class);
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<ApprovalResponseDto> create(@RequestBody CreateApprovalDto dto, Authentication auth) {
         String username = auth != null ? auth.getName() : null;
         if (username == null) {
@@ -101,7 +101,7 @@ public class ApprovalRequestController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Void> cancel(@PathVariable Long id, Authentication auth) {
         String username = auth != null ? auth.getName() : null;
         if (username == null) throw new RuntimeException("Usuario no autenticado");

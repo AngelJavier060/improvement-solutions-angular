@@ -218,4 +218,29 @@ class AuthService {
     }
     return null;
   }
+
+  List<String> get roles {
+    final raw = _userDetail?['roles'];
+    if (raw is! List) return const [];
+    return raw.map((e) => e.toString()).toList();
+  }
+
+  bool hasRole(String role) {
+    final target = role.startsWith('ROLE_') ? role : 'ROLE_$role';
+    return roles.any((r) => r == target || r == role);
+  }
+
+  /// Solo portal trabajador (sin roles operativos de empresa/plataforma).
+  bool get isEmployeePortalUser {
+    if (!hasRole('ROLE_EMPLOYEE')) return false;
+    const ops = {
+      'ROLE_SUPER_ADMIN',
+      'ROLE_ADMIN',
+      'ROLE_MANAGER',
+      'ROLE_USER',
+    };
+    return !roles.any(ops.contains);
+  }
+
+  String get postLoginRoute => isEmployeePortalUser ? '/employee-home' : '/home';
 }

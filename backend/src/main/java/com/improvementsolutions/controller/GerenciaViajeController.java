@@ -22,21 +22,21 @@ public class GerenciaViajeController {
 
     // ── GET /api/gerencias-viajes/business/{ruc} ───────────────────────────
     @GetMapping("/business/{ruc}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<List<GerenciaViajeDto>> getByRuc(@PathVariable String ruc) {
         return ResponseEntity.ok(gerenciaService.findByRuc(ruc));
     }
 
     // ── GET /api/gerencias-viajes/{id} ─────────────────────────────────────
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<GerenciaViajeDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(gerenciaService.findById(id));
     }
 
     // ── POST /api/gerencias-viajes/business/{ruc} ──────────────────────────
     @PostMapping("/business/{ruc}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<GerenciaViajeDto> create(
             @PathVariable String ruc,
             @RequestBody GerenciaViajeDto dto) {
@@ -46,7 +46,7 @@ public class GerenciaViajeController {
 
     // ── PUT /api/gerencias-viajes/{id} ─────────────────────────────────────
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<GerenciaViajeDto> update(
             @PathVariable Long id,
             @RequestBody GerenciaViajeDto dto) {
@@ -55,7 +55,7 @@ public class GerenciaViajeController {
 
     // ── PATCH /api/gerencias-viajes/{id}/estado ────────────────────────────
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<GerenciaViajeDto> updateEstado(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
@@ -68,7 +68,7 @@ public class GerenciaViajeController {
 
     // ── DELETE /api/gerencias-viajes/{id} ──────────────────────────────────
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         gerenciaService.delete(id);
         return ResponseEntity.noContent().build();
@@ -76,14 +76,14 @@ public class GerenciaViajeController {
 
     // ── GET /api/gerencias-viajes/business/{ruc}/stats ─────────────────────
     @GetMapping("/business/{ruc}/stats")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<Map<String, Long>> getStats(@PathVariable String ruc) {
         return ResponseEntity.ok(gerenciaService.getStatsForBusiness(ruc));
     }
 
     // ── GET /api/gerencias-viajes/business/{ruc}/next-codigo ───────────────
     @GetMapping("/business/{ruc}/next-codigo")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<Map<String, String>> previewNextCodigo(@PathVariable String ruc) {
         return ResponseEntity.ok(Map.of("codigo", gerenciaService.previewNextCodigo(ruc)));
     }
@@ -94,7 +94,7 @@ public class GerenciaViajeController {
      * cuando es el caso normal “no hay viaje activo”.
      */
     @GetMapping("/business/{ruc}/conductor/{cedula}/abierta")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<GerenciaViajeDto> getAbiertaPorConductor(
             @PathVariable String ruc,
             @PathVariable String cedula) {
@@ -103,7 +103,7 @@ public class GerenciaViajeController {
 
     // ── GET /api/gerencias-viajes/business/{ruc}/conductor/{cedula} ────────
     @GetMapping("/business/{ruc}/conductor/{cedula}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<List<GerenciaViajeDto>> getByConductor(
             @PathVariable String ruc,
             @PathVariable String cedula) {
@@ -115,7 +115,7 @@ public class GerenciaViajeController {
      * Sin gerencia abierta para esa placa devuelve 200 con cuerpo JSON {@code null}.
      */
     @GetMapping("/business/{ruc}/vehiculo/{placa}/abierta")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<GerenciaViajeDto> getAbiertaPorVehiculo(
             @PathVariable String ruc,
             @PathVariable String placa) {
@@ -124,7 +124,7 @@ public class GerenciaViajeController {
 
     // ── GET /api/gerencias-viajes/business/{ruc}/vehiculo/{placa}/ultimo-km
     @GetMapping("/business/{ruc}/vehiculo/{placa}/ultimo-km")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'ROLE_MANAGER')")
     public ResponseEntity<Map<String, Object>> getUltimoKmPorPlaca(
             @PathVariable String ruc,
             @PathVariable String placa) {
@@ -135,7 +135,7 @@ public class GerenciaViajeController {
 
     // ── PATCH /api/gerencias-viajes/{id}/cierre ───────────────────────────
     @PatchMapping("/{id}/cierre")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<GerenciaViajeDto> cerrar(
             @PathVariable Long id,
             @RequestBody GerenciaViajeCierreRequest body) {

@@ -9,6 +9,7 @@ import { EmployeeResponse } from '../models/employee.model';
 import { Subject } from 'rxjs';
 import { filter, map, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { extractUsuarioRucFromRoute, resolveThBusinessFromRoute } from '../utils/th-business-from-route';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 export interface AnnualPlanRow {
   employeeId: number;
@@ -49,6 +50,8 @@ export class VacacionesComponent implements OnInit, OnDestroy, AfterViewInit {
   qRecords: string = '';
   activeStatus: 'ALL' | 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'EN_CURSO' = 'ALL';
   showNewForm = false;
+  /** Matriz: registrar / gestionar vacaciones */
+  canManageVacations = false;
 
   form!: FormGroup;
   showForm = false;
@@ -102,7 +105,8 @@ export class VacacionesComponent implements OnInit, OnDestroy, AfterViewInit {
     private attendanceService: AttendanceService,
     private employeeService: EmployeeService,
     private businessContext: BusinessContextService,
-    private businessService: BusinessService
+    private businessService: BusinessService,
+    private authService: AuthService
   ) {}
 
   get displayBusinessName(): string {
@@ -110,6 +114,7 @@ export class VacacionesComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit(): void {
+    this.canManageVacations = this.authService.canVacations();
     this.buildForm();
     this.setDefaultSignatures();
     this.docRevisionDate = this.getTodayDateStr();
@@ -624,6 +629,7 @@ export class VacacionesComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   openNewForm(emp?: EmployeeResponse): void {
+    if (!this.canManageVacations) return;
     this.selectedEmployee = emp || null;
     this.previewRecord = null;
     this.showNewForm = true;

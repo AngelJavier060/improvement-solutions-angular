@@ -21,13 +21,13 @@ public class InventoryCategoryController {
     }
 
     @GetMapping("/categories")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
     public ResponseEntity<List<InventoryCategory>> list(@PathVariable String ruc) {
         return ResponseEntity.ok(categoryService.list(ruc));
     }
 
     @PostMapping("/categories")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> create(@PathVariable String ruc, @RequestBody InventoryCategory input) {
         try {
             InventoryCategory created = categoryService.create(ruc, input);
@@ -42,7 +42,7 @@ public class InventoryCategoryController {
     }
 
     @PutMapping("/categories/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> update(@PathVariable String ruc, @PathVariable Long id, @RequestBody InventoryCategory input) {
         try {
             InventoryCategory updated = categoryService.update(ruc, id, input);
@@ -57,7 +57,7 @@ public class InventoryCategoryController {
     }
 
     @DeleteMapping("/categories/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> delete(@PathVariable String ruc, @PathVariable Long id) {
         try {
             categoryService.delete(ruc, id);
@@ -72,7 +72,7 @@ public class InventoryCategoryController {
     }
 
     @PostMapping("/categories/import")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> importFrom(@PathVariable String ruc, @RequestParam("sourceRuc") String sourceRuc) {
         try {
             int created = categoryService.importFromRuc(ruc, sourceRuc);

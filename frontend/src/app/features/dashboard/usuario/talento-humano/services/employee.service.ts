@@ -42,6 +42,8 @@ export class EmployeeService {
     opts: {
       page?: number; size?: number; sortBy?: string; sortDir?: 'asc' | 'desc';
       cedula?: string; nombres?: string; apellidos?: string; codigo?: string;
+      /** Solo empleados activos/vigentes (pestaña employees del detalle). */
+      activeOnly?: boolean;
     }
   ): Observable<Page<EmployeeResponse>> {
     const url = `${this.apiUrl}/business-employees/company/${businessRuc}/paginated`;
@@ -54,6 +56,7 @@ export class EmployeeService {
     if (opts.nombres) params = params.set('nombres', opts.nombres);
     if (opts.apellidos) params = params.set('apellidos', opts.apellidos);
     if (opts.codigo) params = params.set('codigo', opts.codigo);
+    if (opts.activeOnly === true) params = params.set('activeOnly', 'true');
     return this.http.get<Page<EmployeeResponse>>(url, { params });
   }
 

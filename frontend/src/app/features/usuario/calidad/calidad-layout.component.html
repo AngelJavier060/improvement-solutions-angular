@@ -25,10 +25,13 @@
     </nav>
 
     <div class="sgi-sidebar__footer" *ngIf="!sidebarCollapsed">
-      <button class="sgi-btn-new">
+      <button class="sgi-btn-new" *ngIf="canWrite">
         <span class="material-symbols-outlined" style="font-size:17px;">add</span>
         Nuevo Registro
       </button>
+      <div class="alert alert-info py-2 px-2 small mb-2" *ngIf="isConsulta" role="status">
+        Modo <strong>solo consulta</strong>
+      </div>
       <div class="sgi-sidebar__footer-links">
         <button class="sgi-footer-link" (click)="goBack()">
           <span class="material-symbols-outlined">arrow_back</span>

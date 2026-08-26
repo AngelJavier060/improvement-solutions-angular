@@ -142,32 +142,35 @@
           (Cédula: {{ selectedEmployee?.cedula }})
         </div>
 
+        <div class="alert alert-warning py-2 small mb-3">
+          Usuario y contraseña = <strong>cédula</strong>. Solo consulta su documentación.
+        </div>
+
         <div class="mb-3">
-          <label class="form-label fw-semibold">Usuario</label>
+          <label class="form-label fw-semibold">Usuario (cédula)</label>
           <input type="text" class="form-control" [(ngModel)]="accountForm.username"
-                 placeholder="Número de cédula">
-          <small class="text-muted">Por defecto se usa la cédula del empleado</small>
+                 placeholder="Número de cédula" readonly>
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-semibold">Contraseña <span class="text-danger">*</span></label>
-          <input type="password" class="form-control" [(ngModel)]="accountForm.password"
-                 placeholder="Contraseña para el empleado">
+          <label class="form-label fw-semibold">Contraseña (igual a la cédula)</label>
+          <input type="text" class="form-control" [(ngModel)]="accountForm.password"
+                 placeholder="Misma cédula">
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+          <label class="form-label fw-semibold">Email (opcional)</label>
           <input type="email" class="form-control" [(ngModel)]="accountForm.email"
-                 placeholder="correo@ejemplo.com">
+                 placeholder="Si no tiene, se genera automáticamente">
         </div>
       </div>
       <div class="modal-footer border-0 bg-light">
         <button class="btn btn-outline-secondary" (click)="closeCreateModal()">Cancelar</button>
         <button class="btn btn-primary" (click)="createAccount()"
-                [disabled]="isCreating || !accountForm.password || !accountForm.email">
+                [disabled]="isCreating || !accountForm.username">
           <i class="fas fa-save me-1" *ngIf="!isCreating"></i>
           <i class="fas fa-spinner fa-spin me-1" *ngIf="isCreating"></i>
-          {{ isCreating ? 'Creando...' : 'Crear Cuenta' }}
+          {{ isCreating ? 'Creando...' : 'Crear cuenta (cédula / cédula)' }}
         </button>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { BusinessContextService } from '../../../../core/services/business-context.service';
+import { AuthService } from '../../../../core/services/auth.service';
 import { EmployeeService } from './services/employee.service';
 import { TalentoHumanoThemeService } from './services/talento-humano-theme.service';
 
@@ -16,6 +17,8 @@ export class TalentoHumanoComponent implements OnInit, OnDestroy {
   businessName = 'Improvement Solutions';
   businessRuc = '';
   isDark = false;
+  /** Fase C: Usuario consulta = solo lectura */
+  isConsulta = false;
   private themeSub?: Subscription;
 
   private readonly SIDEBAR_COLLAPSED_KEY = 'talentoHumano_sidebarCollapsed';
@@ -26,7 +29,8 @@ export class TalentoHumanoComponent implements OnInit, OnDestroy {
     private router: Router,
     private businessContext: BusinessContextService,
     private employeeService: EmployeeService,
-    private themeService: TalentoHumanoThemeService
+    private themeService: TalentoHumanoThemeService,
+    private authService: AuthService
   ) {
     this.isDark = this.themeService.isDark;
   }
@@ -78,6 +82,7 @@ export class TalentoHumanoComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.isConsulta = this.authService.isConsultaUser();
     this.loadSavedState();
     this.loadBusinessInfo();
     this.themeSub = this.themeService.theme$.subscribe(theme => {

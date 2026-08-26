@@ -49,10 +49,14 @@ export class CarnetDigitalComponent implements OnInit {
     
     // Si el usuario tiene roles, determinar el área
     if (this.user.roles && this.user.roles.length > 0) {
-      if (this.user.roles.includes('ROLE_ADMIN')) {
-        this.userArea = 'ÁREA DE ADMINISTRACIÓN';
+      if (this.user.roles.includes('ROLE_SUPER_ADMIN')) {
+        this.userArea = 'PLATAFORMA';
+      } else if (this.user.roles.includes('ROLE_ADMIN')) {
+        this.userArea = 'ADMINISTRACIÓN EMPRESA';
+      } else if (this.user.roles.includes('ROLE_EMPLOYEE')) {
+        this.userArea = 'TRABAJADOR';
       } else if (this.user.roles.includes('ROLE_USER')) {
-        this.userArea = 'ÁREA DE SISTEMAS';
+        this.userArea = 'CONSULTA EMPRESA';
       }
     }
   }

@@ -7,6 +7,7 @@ import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
 import { DocumentService, EmployeeDocumentResponse, CreateEmployeeDocumentRequest } from '../services/document.service';
 import { TipoDocumentoService } from '../../../../../services/tipo-documento.service';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-employee-documents',
@@ -27,6 +28,7 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
   loading = false;
   saving = false;
   error: string | null = null;
+  canWrite = false;
 
   // Form inputs
   selectedDocTypeId: string = '';
@@ -63,7 +65,8 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
     private http: HttpClient,
     private renderer: Renderer2,
     private overlay: Overlay,
-    private vcr: ViewContainerRef
+    private vcr: ViewContainerRef,
+    private authService: AuthService
   ) {}
 
   @HostListener('document:keydown.escape')
@@ -86,6 +89,7 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
   }
 
   ngOnInit(): void {
+    this.canWrite = this.authService.canWrite();
     this.loadDocTypes();
     this.loadDocuments();
   }

@@ -16,6 +16,8 @@ export class CalidadLayoutComponent implements OnInit {
   currentUser: any = null;
   activeNav: string = 'dashboard';
   sidebarCollapsed = false;
+  isConsulta = false;
+  canWrite = false;
 
   navItems = [
     { key: 'dashboard',        icon: 'dashboard',           label: 'Panel de Control',    route: 'dashboard' },
@@ -37,6 +39,8 @@ export class CalidadLayoutComponent implements OnInit {
       this.businessRuc = params['ruc'];
     });
     this.currentUser = this.authService.getCurrentUser();
+    this.isConsulta = this.authService.isConsultaUser();
+    this.canWrite = this.authService.canWrite();
     this.updateActiveNav(this.router.url);
     this.router.events.pipe(
       filter(e => e instanceof NavigationEnd)

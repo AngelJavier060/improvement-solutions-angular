@@ -81,14 +81,14 @@ public class BusinessObligationMatrixController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<BusinessObligationMatrix> createMatrix(@RequestBody BusinessObligationMatrix matrix) {
         BusinessObligationMatrix createdMatrix = matrixService.create(matrix);
         return new ResponseEntity<>(createdMatrix, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<BusinessObligationMatrix> updateMatrix(
             @PathVariable Long id,
             @RequestBody BusinessObligationMatrix matrix) {
@@ -97,14 +97,14 @@ public class BusinessObligationMatrixController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Void> deleteMatrix(@PathVariable Long id) {
         matrixService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Void> updateMatrixStatus(
             @PathVariable Long id,
             @RequestParam String status) {
@@ -114,7 +114,7 @@ public class BusinessObligationMatrixController {
 
     // Crear relación por empresa y catálogo con datos opcionales
     @PostMapping("/business/{businessId}/catalog/{obligationMatrixId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<BusinessObligationMatrix> createForBusinessAndCatalog(
             @PathVariable Long businessId,
             @PathVariable Long obligationMatrixId,
@@ -125,7 +125,7 @@ public class BusinessObligationMatrixController {
 
     // Marcar como cumplida/no cumplida
     @PatchMapping("/{id}/complete")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<Void> markCompletion(
             @PathVariable Long id,
             @RequestParam boolean completed) {
@@ -135,7 +135,7 @@ public class BusinessObligationMatrixController {
 
     // Renovación (nueva versión) con posibilidad de enviar nuevos detalles
     @PostMapping("/{id}/renew")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<BusinessObligationMatrix> renew(
             @PathVariable Long id,
             @RequestBody(required = false) BusinessObligationMatrix details

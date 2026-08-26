@@ -18,14 +18,14 @@ public class DepartmentController {
     private final DepartmentService departmentService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')") // Ajustar roles según sea necesario
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<List<DepartmentDto>> getAllDepartments() {
         List<DepartmentDto> departments = departmentService.getAllDepartments();
         return ResponseEntity.ok(departments);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER')") // Ajustar roles según sea necesario
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'USER', 'MANAGER')")
     public ResponseEntity<DepartmentDto> getDepartmentById(@PathVariable Long id) {
         return departmentService.getDepartmentById(id)
                 .map(ResponseEntity::ok)

@@ -4,9 +4,11 @@ import com.improvementsolutions.dto.auth.*;
 import com.improvementsolutions.dto.auth.LoginResponseDto.UserInfoDto;
 import com.improvementsolutions.exception.UserInactiveException;
 import com.improvementsolutions.exception.UserNotFoundException;
+import com.improvementsolutions.model.BusinessEmployee;
 import com.improvementsolutions.model.PasswordResetToken;
 import com.improvementsolutions.model.User;
 import com.improvementsolutions.model.UserSession;
+import com.improvementsolutions.repository.BusinessEmployeeRepository;
 import com.improvementsolutions.repository.PasswordResetTokenRepository;
 import com.improvementsolutions.repository.UserRepository;
 import com.improvementsolutions.repository.UserSessionRepository;
@@ -44,6 +46,15 @@ public class AuthService {
     
     @Autowired
     private UserSessionRepository userSessionRepository;
+
+    @Autowired
+    private UserOperationalCapabilityService capabilityService;
+
+    @Autowired
+    private BusinessEmployeeRepository businessEmployeeRepository;
+
+    @Autowired
+    private EmployeePortalAccountService employeePortalAccountService;
     
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -148,6 +159,7 @@ public class AuthService {
         }
         User user = findUserByEmailOrUsername(email, username);
         validateUserStatus(user);
+        validateEmployeePortalAccess(user);
         Authentication authentication = authenticate(user.getUsername(), password);
         String jwt = jwtTokenProvider.generateToken(authentication);
 
@@ -199,6 +211,32 @@ public class AuthService {
         }
     }
 
+    /**
+     * Trabajadores (ROLE_EMPLOYEE): solo pueden entrar si tienen al menos un registro activo.
+     */
+    private void validateEmployeePortalAccess(User user) {
+        if (user == null || !employeePortalAccountService.isPureEmployeePortalUser(user)) {
+            return;
+        }
+        List<BusinessEmployee> records = businessEmployeeRepository.findAllByUserId(user.getId());
+        if (records == null || records.isEmpty()) {
+            String cedula = user.getUsername() != null ? user.getUsername().trim() : "";
+            if (!cedula.isEmpty()) {
+                records = businessEmployeeRepository.findByCedula(cedula);
+            }
+        }
+        boolean anyActive = records != null && records.stream()
+                .anyMatch(employeePortalAccountService::isEmployeeActive);
+        if (!anyActive) {
+            if (Boolean.TRUE.equals(user.getActive())) {
+                user.setActive(false);
+                userRepository.save(user);
+            }
+            throw new UserInactiveException(
+                    "Trabajador inactivo. No tiene acceso al portal de empleado.");
+        }
+    }
+
     private Authentication authenticate(String username, String password) {
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(username, password)
@@ -242,9 +280,57 @@ public class AuthService {
         } else {
             logger.debug("Usuario {} no tiene empresas asociadas", userDetails.getUsername());
         }
+        if (user != null) {
+            try {
+                userInfo.setOperationalCapabilities(toCapabilityInfo(capabilityService.resolveForUser(user)));
+            } catch (Exception ex) {
+                logger.warn("No se pudieron cargar capacidades operativas para {}: {}. Usando defaults por rol.",
+                        user.getUsername(), ex.getMessage());
+                userInfo.setOperationalCapabilities(defaultCapabilitiesForRoles(roles));
+            }
+        }
         
         response.setUserDetail(userInfo);
         return response;
+    }
+
+    private LoginResponseDto.UserOperationalCapabilityInfoDto defaultCapabilitiesForRoles(List<String> roles) {
+        LoginResponseDto.UserOperationalCapabilityInfoDto info = new LoginResponseDto.UserOperationalCapabilityInfoDto();
+        boolean full = roles != null && (roles.contains("ROLE_SUPER_ADMIN")
+                || roles.contains("ROLE_ADMIN")
+                || roles.contains("ROLE_MANAGER"));
+        info.setCanView(true);
+        info.setCanDownload(true);
+        info.setCanCreate(full);
+        info.setCanEdit(full);
+        info.setCanDelete(full);
+        info.setCanUpload(full);
+        info.setCanOvertime(full);
+        info.setCanVacations(full);
+        info.setCanTimeOff(full);
+        info.setCanWriteOps(full);
+        info.setWriteLockedByRole(roles != null && roles.contains("ROLE_SUPER_ADMIN"));
+        return info;
+    }
+
+    private LoginResponseDto.UserOperationalCapabilityInfoDto toCapabilityInfo(
+            com.improvementsolutions.dto.user.UserOperationalCapabilityDto cap) {
+        LoginResponseDto.UserOperationalCapabilityInfoDto info = new LoginResponseDto.UserOperationalCapabilityInfoDto();
+        if (cap == null) {
+            return info;
+        }
+        info.setCanView(cap.isCanView());
+        info.setCanDownload(cap.isCanDownload());
+        info.setCanCreate(cap.isCanCreate());
+        info.setCanEdit(cap.isCanEdit());
+        info.setCanDelete(cap.isCanDelete());
+        info.setCanUpload(cap.isCanUpload());
+        info.setCanOvertime(cap.isCanOvertime());
+        info.setCanVacations(cap.isCanVacations());
+        info.setCanTimeOff(cap.isCanTimeOff());
+        info.setCanWriteOps(cap.isCanWriteOps());
+        info.setWriteLockedByRole(cap.isWriteLockedByRole());
+        return info;
     }
 
     private LoginResponseDto.UserInfoDto buildUserInfo(User user) {
@@ -265,6 +351,7 @@ public class AuthService {
                 .collect(java.util.stream.Collectors.toList());
             userInfo.setBusinesses(businesses);
         }
+        userInfo.setOperationalCapabilities(toCapabilityInfo(capabilityService.resolveForUser(user)));
         return userInfo;
     }
 

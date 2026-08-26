@@ -65,27 +65,27 @@ export class LoginModalComponent implements OnInit {
           console.log('Login exitoso, respuesta:', response);
           this.loading = false;
           
-          const roles = response.userDetail.roles || [];
-          let userPath = '/dashboard/usuario';
-          
-          if (roles.includes('ROLE_SUPER_ADMIN')) {
-            // Super Admin: panel general de administración
-            userPath = '/dashboard/admin';
-          } else if (roles.includes('ROLE_ADMIN')) {
-            // Admin de empresa: directo a su empresa
-            const businesses = response.userDetail.businesses;
-            if (businesses && businesses.length > 0) {
-              userPath = `/dashboard/admin/empresas/admin/${businesses[0].id}`;
-            } else {
-              userPath = '/dashboard/admin';
-            }
-          } else if (roles.includes('ROLE_EMPLOYEE')) {
-            // Empleado: panel restringido de empleado
-            userPath = '/dashboard/empleado';
+          const roles = this.authService.normalizeRoles(response.userDetail?.roles || []);
+          const businesses = response.userDetail?.businesses || [];
+
+          // Puerta Administrador de la intranet → parámetros / plataforma
+          if (!this.authService.canUseAdminEntry(roles)) {
+            this.authService.logout();
+            this.loading = false;
+            this.error = 'Esta cuenta no es de Administrador. Use Acceder → Usuario.';
+            return;
           }
-          
+
+          const userPath = this.authService.resolvePostLoginUrl(roles, businesses, 'admin');
+          if (userPath === '__FORBIDDEN_ADMIN_ENTRY__') {
+            this.authService.logout();
+            this.loading = false;
+            this.error = 'Esta cuenta no es de Administrador. Use Acceder → Usuario.';
+            return;
+          }
+
           this.activeModal.close('success');
-          this.router.navigate([userPath]);
+          this.router.navigateByUrl(userPath);
         },
         error: (error: any) => {
           console.error('Error en login:', error);

@@ -117,7 +117,7 @@
 
         <div class="ed-panel-body">
           <div *ngIf="listLoading" class="ed-empty">Cargando empleados...</div>
-          <div *ngIf="!listLoading && (!listEmployees || listEmployees.length === 0)" class="ed-empty">No hay empleados</div>
+          <div *ngIf="!listLoading && (!listEmployees || listEmployees.length === 0)" class="ed-empty">No hay empleados activos</div>
 
           <div *ngIf="!listLoading && listEmployees?.length" class="ed-bento-list">
             <div *ngFor="let emp of listEmployees" class="ed-bento" [class.ed-bento--warn]="employeeHasExpiring(emp)">
@@ -247,7 +247,7 @@
             <i class="fas fa-user me-2"></i>
             Perfil del Empleado
           </h5>
-          <button *ngIf="employee" class="btn btn-sm btn-modern-primary" (click)="openEdit()" aria-label="Editar perfil del empleado">
+          <button *ngIf="employee && canWrite" class="btn btn-sm btn-modern-primary" (click)="openEdit()" aria-label="Editar perfil del empleado">
             <i class="fas fa-edit me-1"></i>
             Editar
           </button>

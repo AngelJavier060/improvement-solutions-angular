@@ -2,6 +2,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { ContractService, CreateEmployeeContractRequest, EmployeeContractResponse } from '../services/contract.service';
 import { ConfigurationService, TypeContract } from '../services/configuration.service';
 import { HttpClient, HttpResponse } from '@angular/common/http';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-employee-contracts',
@@ -19,6 +20,7 @@ export class EmployeeContractsComponent implements OnInit {
   loading = false;
   saving = false;
   error: string | null = null;
+  canWrite = false;
 
   // Form inputs
   selectedTypeContractId: string = '';
@@ -31,10 +33,12 @@ export class EmployeeContractsComponent implements OnInit {
   constructor(
     private contractService: ContractService,
     private configurationService: ConfigurationService,
-    private http: HttpClient
+    private http: HttpClient,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    this.canWrite = this.authService.canWrite();
     this.loadTypeContracts();
     this.loadContracts();
   }

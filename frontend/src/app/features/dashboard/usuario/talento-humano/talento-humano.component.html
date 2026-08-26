@@ -149,6 +149,10 @@
          [class.full]="isCollapsed"
          [style.margin-left.px]="isCollapsed ? 64 : 260"
          [style.width]="isCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 260px)'">
+      <div class="alert alert-info m-3 mb-0 py-2 small" *ngIf="isConsulta" role="status">
+        <i class="fas fa-eye me-1"></i>
+        Modo <strong>solo consulta</strong>: puedes ver la información, pero no crear, editar ni eliminar.
+      </div>
       <div class="module-content flex-grow-1">
         <router-outlet></router-outlet>
       </div>

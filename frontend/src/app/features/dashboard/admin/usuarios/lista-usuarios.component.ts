@@ -10,6 +10,14 @@ import { CarnetDigitalComponent } from './carnet-digital/carnet-digital.componen
 import { Business } from '../../../../models/business.model';
 import { BusinessService } from '../../../../services/business.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import {
+  formatRoleName,
+  resolveUserKind,
+  userKindBadgeClass,
+  userKindLabel,
+  AdminUserKind
+} from './user-role.utils';
+import { UserOperationalCapability } from './user-operational-capability.model';
 
 @Component({
   selector: 'app-lista-usuarios',
@@ -28,7 +36,8 @@ export class ListaUsuariosComponent implements OnInit {
   errorBusinessesCode: number | null = null;
   errorBusinessesMessage: string = '';
   searchText = '';
-  userTypeFilter: 'todos' | 'empresa' | 'administrador' = 'empresa';
+  /** Filtros alineados a tipología Fase A (consulta / admin empresa / todos) */
+  userTypeFilter: 'todos' | 'empresa' | 'supervisor' | 'gestor' | 'administrador' | 'trabajador' = 'supervisor';
   // Empresas para filtro
   businesses: Business[] = [];
   selectedBusinessId: number | 'all' = 'all';
@@ -40,6 +49,12 @@ export class ListaUsuariosComponent implements OnInit {
   isSuperAdmin = false;
   isCompanyAdmin = false;
   companyAdminBusinessId: number | null = null;
+
+  /** Matriz de permisos operativos (por empresa seleccionada). */
+  capabilityRows: UserOperationalCapability[] = [];
+  capabilitiesLoading = false;
+  capabilitiesError = '';
+  savingCapabilityUserId: number | null = null;
 
   // Variable para almacenar las URLs de imágenes de perfil
   private profileImageUrls: Map<number, string> = new Map();
@@ -139,11 +154,16 @@ export class ListaUsuariosComponent implements OnInit {
 
     fetch$.subscribe({
       next: (data) => {
-        this.users = data;
+        // Admin de empresa: no listar Superadministradores (fuera de alcance de esta pantalla)
+        const raw = data || [];
+        this.users = this.isCompanyAdmin
+          ? raw.filter(u => !(u.roles || []).includes('ROLE_SUPER_ADMIN'))
+          : raw;
         this.errorUsersCode = null;
         this.errorUsersMessage = '';
         this.applyFilter();
         this.isLoading = false;
+        this.loadCapabilitiesMatrix();
         this.cdr.markForCheck();
       },
       error: (error) => {
@@ -151,6 +171,7 @@ export class ListaUsuariosComponent implements OnInit {
         this.users = [];
         this.filteredUsers = [];
         this.isLoading = false;
+        this.capabilityRows = [];
         this.errorUsersCode = Number(error?.status) || null;
         if (this.errorUsersCode === 401) {
           this.errorUsersMessage = 'Tu sesión ha expirado o no estás autenticado. Por favor, vuelve a iniciar sesión.';
@@ -169,6 +190,85 @@ export class ListaUsuariosComponent implements OnInit {
   // Cuando cambia la empresa seleccionada, re-fetch desde el servidor
   onBusinessChange(): void {
     this.loadUsers();
+    this.loadCapabilitiesMatrix();
+  }
+
+  loadCapabilitiesMatrix(): void {
+    this.capabilitiesError = '';
+    if (this.selectedBusinessId === 'all') {
+      this.capabilityRows = [];
+      this.capabilitiesLoading = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.capabilitiesLoading = true;
+    this.userService.getCapabilitiesByBusiness(Number(this.selectedBusinessId)).subscribe({
+      next: (rows) => {
+        this.capabilityRows = rows || [];
+        this.capabilitiesLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.capabilityRows = [];
+        this.capabilitiesLoading = false;
+        this.capabilitiesError = err?.error?.message || 'No se pudo cargar la matriz de permisos';
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  roleKindLabel(kind?: string): string {
+    switch (kind) {
+      case 'supervisor': return 'Supervisor';
+      case 'gestor': return 'Gestor';
+      case 'administrador': return 'Administrador';
+      default: return kind || '-';
+    }
+  }
+
+  onCapabilityToggle(
+    row: UserOperationalCapability,
+    field: 'canDownload' | 'canCreate' | 'canEdit' | 'canDelete' | 'canUpload' | 'canOvertime' | 'canVacations' | 'canTimeOff',
+    event: Event
+  ): void {
+    if (row.writeLockedByRole || row.editable === false) {
+      (event.target as HTMLInputElement).checked = !!row[field];
+      return;
+    }
+    const checked = (event.target as HTMLInputElement).checked;
+    row[field] = checked;
+    this.savingCapabilityUserId = row.userId;
+    this.userService.updateUserCapabilities(row.userId, {
+      canDownload: row.canDownload,
+      canCreate: row.canCreate,
+      canEdit: row.canEdit,
+      canDelete: row.canDelete,
+      canUpload: row.canUpload,
+      canOvertime: !!row.canOvertime,
+      canVacations: !!row.canVacations,
+      canTimeOff: !!row.canTimeOff
+    }).subscribe({
+      next: (updated) => {
+        Object.assign(row, updated);
+        this.savingCapabilityUserId = null;
+        this.notificationService.success(`Permisos actualizados para ${row.username || row.name}`);
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.savingCapabilityUserId = null;
+        this.loadCapabilitiesMatrix();
+        this.notificationService.error(err?.error?.message || 'No se pudo guardar el permiso');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  isCapabilityEditable(row: UserOperationalCapability): boolean {
+    if (row.writeLockedByRole) return false;
+    if (typeof row.editable === 'boolean') return row.editable;
+    // Fallback: Super puede todo; Admin empresa solo supervisores
+    if (this.isSuperAdmin) return true;
+    return this.isCompanyAdmin && row.roleKind === 'supervisor';
   }
   // Agregamos un temporizador para optimizar la búsqueda
   private searchTimeout: any = null;
@@ -202,11 +302,15 @@ export class ListaUsuariosComponent implements OnInit {
           user.email.toLowerCase().includes(searchLower)
         );
 
-    // Filtrar por tipo de usuario según roles
-    if (this.userTypeFilter === 'empresa') {
-      this.filteredUsers = base.filter(u => !(u.roles || []).includes('ROLE_ADMIN'));
+    // Filtrar por tipología (sin mezclar Usuario consulta vs Trabajador vs Admin)
+    if (this.userTypeFilter === 'empresa' || this.userTypeFilter === 'supervisor') {
+      this.filteredUsers = base.filter(u => resolveUserKind(u.roles) === 'supervisor');
+    } else if (this.userTypeFilter === 'gestor') {
+      this.filteredUsers = base.filter(u => resolveUserKind(u.roles) === 'gestor');
     } else if (this.userTypeFilter === 'administrador') {
-      this.filteredUsers = base.filter(u => (u.roles || []).includes('ROLE_ADMIN'));
+      this.filteredUsers = base.filter(u => resolveUserKind(u.roles) === 'admin_empresa');
+    } else if (this.userTypeFilter === 'trabajador') {
+      this.filteredUsers = base.filter(u => resolveUserKind(u.roles) === 'trabajador');
     } else {
       this.filteredUsers = base;
     }
@@ -221,16 +325,54 @@ export class ListaUsuariosComponent implements OnInit {
   }
 
   get totalAdministradores(): number {
-    return this.users.filter(u => (u.roles || []).includes('ROLE_ADMIN')).length;
+    return this.users.filter(u => resolveUserKind(u.roles) === 'admin_empresa').length;
   }
 
   get totalUsuariosEmpresa(): number {
-    return this.users.filter(u => !(u.roles || []).includes('ROLE_ADMIN')).length;
+    return this.users.filter(u => resolveUserKind(u.roles) === 'supervisor').length;
   }
 
-  setUserTypeFilter(type: 'todos' | 'empresa' | 'administrador'): void {
+  get totalGestores(): number {
+    return this.users.filter(u => resolveUserKind(u.roles) === 'gestor').length;
+  }
+
+  get totalTrabajadores(): number {
+    return this.users.filter(u => resolveUserKind(u.roles) === 'trabajador').length;
+  }
+
+  setUserTypeFilter(type: 'todos' | 'empresa' | 'supervisor' | 'gestor' | 'administrador' | 'trabajador'): void {
     this.userTypeFilter = type;
     this.applyFilter();
+  }
+
+  getUserKind(user: User): AdminUserKind {
+    return resolveUserKind(user?.roles);
+  }
+
+  getUserTypeLabel(user: User): string {
+    return userKindLabel(this.getUserKind(user));
+  }
+
+  getUserTypeBadgeClass(user: User): string {
+    return userKindBadgeClass(this.getUserKind(user));
+  }
+
+  formatRole(role: string): string {
+    return formatRoleName(role);
+  }
+
+  /** Superadmin: no editable/eliminable desde aquí. Trabajador: editable limitado (credenciales), no como “usuario consulta”. */
+  canEditUser(user: User): boolean {
+    const kind = this.getUserKind(user);
+    if (kind === 'superadmin') return false;
+    return true;
+  }
+
+  canDeleteUser(user: User): boolean {
+    const kind = this.getUserKind(user);
+    if (kind === 'superadmin') return false;
+    if (kind === 'admin_empresa' && this.isCompanyAdmin) return false;
+    return true;
   }
   updatePagedUsers(): void {
     // Precargar las imágenes para evitar titileos

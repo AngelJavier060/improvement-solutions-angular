@@ -139,11 +139,11 @@ public class AuthController {
         } catch (UserNotFoundException e) {
             logger.error("Usuario no encontrado: {}", e.getMessage());
             return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
+                .status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse(
-                    "Usuario no encontrado. Verifica que el nombre de usuario o email sea correcto",
-                    "NOT_FOUND",
-                    404));
+                    "Usuario o contraseña incorrectos. Si es trabajador, primero debe crearse su cuenta portal (usuario = cédula).",
+                    "UNAUTHORIZED",
+                    401));
                     
         } catch (BadCredentialsException e) {
             logger.error("Credenciales inválidas: {}", e.getMessage());
@@ -159,7 +159,9 @@ public class AuthController {
             return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponse(
-                    "Usuario inactivo. Por favor, contacta al administrador",
+                    e.getMessage() != null && !e.getMessage().isBlank()
+                            ? e.getMessage()
+                            : "Usuario inactivo. Por favor, contacta al administrador",
                     "FORBIDDEN",
                     403));
                     
