@@ -10,6 +10,7 @@ import { CarnetDigitalComponent } from './carnet-digital/carnet-digital.componen
 import { Business } from '../../../../models/business.model';
 import { BusinessService } from '../../../../services/business.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { EmployeeAccountService } from '../../../../services/employee-account.service';
 import {
   formatRoleName,
   resolveUserKind,
@@ -55,6 +56,7 @@ export class ListaUsuariosComponent implements OnInit {
   capabilitiesLoading = false;
   capabilitiesError = '';
   savingCapabilityUserId: number | null = null;
+  syncingWorkers = false;
 
   // Variable para almacenar las URLs de imágenes de perfil
   private profileImageUrls: Map<number, string> = new Map();
@@ -71,7 +73,8 @@ export class ListaUsuariosComponent implements OnInit {
     private notificationService: NotificationService,
     private imageCacheService: ImageCacheService,
     private businessService: BusinessService,
-    private authService: AuthService
+    private authService: AuthService,
+    private employeeAccountService: EmployeeAccountService
   ) { }
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
@@ -343,6 +346,39 @@ export class ListaUsuariosComponent implements OnInit {
   setUserTypeFilter(type: 'todos' | 'empresa' | 'supervisor' | 'gestor' | 'administrador' | 'trabajador'): void {
     this.userTypeFilter = type;
     this.applyFilter();
+    if (type === 'trabajador' && this.totalTrabajadores === 0 && !this.syncingWorkers) {
+      this.syncWorkerAccounts(true);
+    }
+  }
+
+  /** Crea cuentas portal (cédula/cédula) para empleados activos de las empresas. */
+  syncWorkerAccounts(silent = false): void {
+    if (this.syncingWorkers) return;
+    this.syncingWorkers = true;
+    this.cdr.markForCheck();
+    this.employeeAccountService.syncAllPortalAccounts().subscribe({
+      next: (res) => {
+        this.syncingWorkers = false;
+        if (!silent) {
+          this.notificationService.success(
+            res?.message || `Trabajadores sincronizados: ${res?.processed ?? 0}`
+          );
+        } else if ((res?.processed ?? 0) > 0) {
+          this.notificationService.success(
+            res?.message || `Se sincronizaron ${res.processed} cuentas de trabajador`
+          );
+        }
+        this.loadUsers();
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.syncingWorkers = false;
+        this.notificationService.error(
+          err?.error?.message || 'No se pudieron sincronizar las cuentas de trabajador'
+        );
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   getUserKind(user: User): AdminUserKind {

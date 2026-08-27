@@ -13,13 +13,20 @@
         <i class="fas fa-info-circle me-1"></i>
         Aquí designas <strong>Supervisores</strong> (solo ver/descargar) y <strong>Gestores</strong> (subir/editar/eliminar).
         Puedes crear 1 o muchos de cada tipo.
-        Las cuentas de <strong>Trabajador</strong> se vinculan desde Talento Humano (portal propio).
+        Las cuentas de <strong>Trabajador</strong> se crean solas al registrar el empleado en Talento Humano
+        (usuario = contraseña = cédula). Si faltan en esta lista, usa <strong>Sincronizar trabajadores</strong>.
         El Superadministrador no se gestiona en esta pantalla.
         Abajo está la <strong>matriz de permisos</strong>: el Superadministrador decide qué puede hacer cada Admin, Gestor o Supervisor
         (incluye Horas extra, Vacaciones y Permisos).
       </p>
     </div>
-    <div class="col-auto">
+    <div class="col-auto d-flex gap-2">
+      <button type="button" class="btn btn-outline-primary"
+              (click)="syncWorkerAccounts()"
+              [disabled]="syncingWorkers">
+        <i class="fas me-1" [ngClass]="syncingWorkers ? 'fa-spinner fa-spin' : 'fa-sync'"></i>
+        {{ syncingWorkers ? 'Sincronizando…' : 'Sincronizar trabajadores' }}
+      </button>
       <button type="button" class="btn btn-primary" [routerLink]="['/dashboard/admin/usuarios/nuevo']" [queryParams]="selectedBusinessId==='all' ? { type: 'empresa' } : { type: 'empresa', businessId: selectedBusinessId }">
         <i class="fas fa-user-plus me-1"></i> Nuevo Usuario
       </button>

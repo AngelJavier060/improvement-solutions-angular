@@ -258,4 +258,36 @@ public class EmployeePortalAccountService {
         }
         userRepository.save(user);
     }
+
+    /**
+     * Crea/vincula cuentas portal para todos los empleados activos (todas las empresas).
+     * Idempotente: si ya tienen cuenta, solo re-sincroniza.
+     */
+    @Transactional
+    public MapSummary ensureAllActivePortalAccounts() {
+        List<BusinessEmployee> all = businessEmployeeRepository.findAll();
+        int processed = 0;
+        int skipped = 0;
+        for (BusinessEmployee be : all) {
+            if (be.getCedula() == null || be.getCedula().isBlank() || !isEmployeeActive(be)) {
+                skipped++;
+                continue;
+            }
+            try {
+                User u = ensurePortalAccount(be);
+                if (u != null) {
+                    processed++;
+                } else {
+                    skipped++;
+                }
+            } catch (Exception e) {
+                log.warn("ensureAllActivePortalAccounts falló para BE {}: {}", be.getId(), e.getMessage());
+                skipped++;
+            }
+        }
+        log.info("Sync portal trabajadores: processed={}, skipped={}, total={}", processed, skipped, all.size());
+        return new MapSummary(processed, skipped, all.size());
+    }
+
+    public record MapSummary(int processed, int skipped, int total) {}
 }

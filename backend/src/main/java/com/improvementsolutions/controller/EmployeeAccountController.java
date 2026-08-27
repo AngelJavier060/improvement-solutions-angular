@@ -155,4 +155,57 @@ public class EmployeeAccountController {
                 "message", "Cuentas sincronizadas: " + ok + " (omitidos: " + skip + ")"
         ));
     }
+
+    /**
+     * Superadmin / Admin: sincroniza cuentas portal de trabajadores activos
+     * en todas las empresas visibles (o todas si es SUPER_ADMIN).
+     */
+    @PostMapping("/sync-all")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    @Transactional
+    public ResponseEntity<?> syncAllActiveAccounts(Authentication authentication) {
+        try {
+            if (authz.isCompanyAdmin(authentication) && !authz.isSuperAdmin(authentication)) {
+                var businessIds = authz.companyBusinessIds(authentication);
+                int ok = 0;
+                int skip = 0;
+                for (Long businessId : businessIds) {
+                    var employees = businessEmployeeRepository.findByBusinessId(businessId);
+                    for (BusinessEmployee be : employees) {
+                        if (be.getCedula() == null || be.getCedula().isBlank()
+                                || !portalAccountService.isEmployeeActive(be)) {
+                            skip++;
+                            continue;
+                        }
+                        try {
+                            portalAccountService.ensurePortalAccount(be);
+                            ok++;
+                        } catch (Exception e) {
+                            log.warn("sync-all falló BE {}: {}", be.getId(), e.getMessage());
+                            skip++;
+                        }
+                    }
+                }
+                return ResponseEntity.ok(Map.of(
+                        "processed", ok,
+                        "skipped", skip,
+                        "message", "Trabajadores sincronizados: " + ok + " (omitidos: " + skip + ")"
+                ));
+            }
+
+            var summary = portalAccountService.ensureAllActivePortalAccounts();
+            return ResponseEntity.ok(Map.of(
+                    "processed", summary.processed(),
+                    "skipped", summary.skipped(),
+                    "total", summary.total(),
+                    "message", "Trabajadores sincronizados: " + summary.processed()
+                            + " (omitidos: " + summary.skipped() + ")"
+            ));
+        } catch (ResponseStatusException rse) {
+            throw rse;
+        } catch (Exception e) {
+            log.error("Error sync-all portal trabajadores: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 }

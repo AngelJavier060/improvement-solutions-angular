@@ -45,4 +45,9 @@ export class EmployeeAccountService {
   ensureAllAccounts(businessId: number): Observable<{ processed: number; skipped: number; message: string }> {
     return this.http.post<any>(`${this.baseUrl}/business/${businessId}/ensure-all`, {});
   }
+
+  /** Sincroniza cuentas portal de trabajadores activos (todas las empresas del caller). */
+  syncAllPortalAccounts(): Observable<{ processed: number; skipped: number; total?: number; message: string }> {
+    return this.http.post<any>(`${this.baseUrl}/sync-all`, {});
+  }
 }
