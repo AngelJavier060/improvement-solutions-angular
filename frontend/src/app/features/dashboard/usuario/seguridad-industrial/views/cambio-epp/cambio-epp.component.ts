@@ -235,9 +235,10 @@ export class CambioEppComponent implements OnInit, OnDestroy {
   }
 
   loadEmployees(): void {
-    if (!this.ruc) return;
+    const ruc = this.ruc;
+    if (!ruc) return;
     // Solo activos: en Cambio EPP no deben aparecer inactivos.
-    this.employeeService.getActiveEmployeesByBusinessRuc(this.ruc).subscribe({
+    this.employeeService.getActiveEmployeesByBusinessRuc(ruc).subscribe({
       next: (data) => {
         this.employees = (data || [])
           .filter(e => EmployeeService.isEmployeeActive(e))
@@ -248,7 +249,7 @@ export class CambioEppComponent implements OnInit, OnDestroy {
       },
       error: () => {
         // Fallback: lista completa filtrada en cliente
-        this.employeeService.getEmployeesByBusinessRuc(this.ruc).subscribe({
+        this.employeeService.getEmployeesByBusinessRuc(ruc).subscribe({
           next: (all) => {
             this.employees = (all || [])
               .filter(e => EmployeeService.isEmployeeActive(e))
