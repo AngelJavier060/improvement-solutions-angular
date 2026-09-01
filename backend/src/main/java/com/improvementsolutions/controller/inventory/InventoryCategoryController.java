@@ -21,7 +21,7 @@ public class InventoryCategoryController {
     }
 
     @GetMapping("/categories")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
     public ResponseEntity<List<InventoryCategory>> list(@PathVariable String ruc) {
         return ResponseEntity.ok(categoryService.list(ruc));
     }

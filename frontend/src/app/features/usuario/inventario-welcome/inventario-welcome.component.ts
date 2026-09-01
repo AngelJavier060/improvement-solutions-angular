@@ -78,8 +78,7 @@ export class InventarioWelcomeComponent implements OnInit {
       category: ['', Validators.required],
       supplier: [null],
       unitOfMeasure: [''],
-      description: [''],
-      minStock: [0, [Validators.min(0)]]
+      description: ['']
     });
     this.variantForm = this.fb.group({
       code: ['', Validators.required],
@@ -299,12 +298,8 @@ export class InventarioWelcomeComponent implements OnInit {
       category: raw.category,
       unitOfMeasure: raw.unitOfMeasure || null,
       description: raw.description || null,
-      minStock: raw.minStock || 0,
       status: 'ACTIVO'
     };
-    if (raw.supplier) {
-      payload.supplier = { id: raw.supplier };
-    }
 
     // Si estamos editando, usar update; si no, crear
     const operation$ = this.editingProduct
@@ -331,7 +326,7 @@ export class InventarioWelcomeComponent implements OnInit {
       .subscribe({
         next: () => {
           const wasEditing = !!this.editingProduct;
-          this.form.reset({ minStock: 0 });
+          this.form.reset({});
           this.selectedFile = null;
           this.imagePreviewUrl = '';
           this.editingProduct = null;
@@ -367,10 +362,9 @@ export class InventarioWelcomeComponent implements OnInit {
       code: product.code,
       name: product.name,
       category: product.category,
-      supplier: product.supplier?.id || null,
+      supplier: null,
       unitOfMeasure: product.unitOfMeasure,
-      description: product.description || '',
-      minStock: product.minStock || 0
+      description: product.description || ''
     });
 
     // Si tiene imagen, mostrar preview
@@ -384,7 +378,7 @@ export class InventarioWelcomeComponent implements OnInit {
 
   cancelEdit(): void {
     this.editingProduct = null;
-    this.form.reset({ minStock: 0 });
+    this.form.reset({});
     this.selectedFile = null;
     this.imagePreviewUrl = '';
     this.errorMessage = '';

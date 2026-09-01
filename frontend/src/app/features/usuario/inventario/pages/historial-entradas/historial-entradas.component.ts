@@ -120,6 +120,22 @@ export class HistorialEntradasComponent implements OnInit {
     this.selectedEntry = entry;
   }
 
+  cancelEntry(entry: InventoryEntry): void {
+    if (!entry?.id || entry.status !== 'BORRADOR') return;
+    if (!confirm(`¿Anular el borrador ${entry.entryNumber}? No afectará stock.`)) return;
+    this.loading = true;
+    this.entryService.cancel(this.ruc, entry.id).subscribe({
+      next: () => {
+        entry.status = 'ANULADO';
+        this.loading = false;
+      },
+      error: (err) => {
+        this.loading = false;
+        alert(err?.error?.message || 'No se pudo anular la entrada');
+      }
+    });
+  }
+
   getTotalAmount(): number {
     return this.entries.reduce((sum, entry) => {
       const entryTotal = entry.details?.reduce((s, d) => s + (d.totalCost || 0), 0) || 0;

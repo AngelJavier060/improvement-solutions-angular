@@ -1,0 +1,619 @@
+<div class="cepp">
+  <header class="cepp-header">
+    <h1>Panel de Control EPP</h1>
+    <p>Visión general del estado de inventario y asignaciones.</p>
+  </header>
+
+  <!-- KPI -->
+  <section class="cepp-kpis">
+    <div class="cepp-kpi">
+      <div class="cepp-kpi__top">
+        <span class="material-symbols-outlined cepp-kpi__icon cepp-kpi__icon--primary">inventory_2</span>
+        <span class="cepp-kpi__meta" *ngIf="reportEmployeeId && !loading">filtro</span>
+      </div>
+      <div>
+        <p class="cepp-kpi__value">{{ reportEmployeeId && !loading ? totalCantidad : '—' }}</p>
+        <h3 class="cepp-kpi__label">EPP Entregados</h3>
+      </div>
+    </div>
+    <div class="cepp-kpi">
+      <div class="cepp-kpi__top">
+        <span class="material-symbols-outlined cepp-kpi__icon cepp-kpi__icon--secondary">pending_actions</span>
+      </div>
+      <div>
+        <p class="cepp-kpi__value">{{ reportEmployeeId && !loading ? rows.length : '—' }}</p>
+        <h3 class="cepp-kpi__label">Ítems en resumen</h3>
+      </div>
+    </div>
+    <div class="cepp-kpi cepp-kpi--alert">
+      <div class="cepp-kpi__top">
+        <span class="material-symbols-outlined cepp-kpi__icon cepp-kpi__icon--error">warning</span>
+        <span class="cepp-kpi__meta cepp-kpi__meta--error" *ngIf="reportEmployeeId && !loading && !rows.length">SIN DATOS</span>
+      </div>
+      <div>
+        <p class="cepp-kpi__value" [class.is-error]="reportEmployeeId && !loading && !rows.length">
+          {{ reportEmployeeId && !loading ? (rows.length ? 'OK' : '0') : '—' }}
+        </p>
+        <h3 class="cepp-kpi__label">Estado del filtro</h3>
+      </div>
+    </div>
+    <div class="cepp-kpi">
+      <div class="cepp-kpi__top">
+        <span class="material-symbols-outlined cepp-kpi__icon cepp-kpi__icon--primary">badge</span>
+      </div>
+      <div>
+        <p class="cepp-kpi__value cepp-kpi__value--sm">{{ selectedEmployee?.cedula || '—' }}</p>
+        <h3 class="cepp-kpi__label">Cédula seleccionada</h3>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filtro reporte -->
+  <section class="cepp-filter">
+    <div class="cepp-filter__head">
+      <div class="cepp-filter__head-title">
+        <span class="material-symbols-outlined">description</span>
+        <h2>Reporte de suministro EPP por trabajador</h2>
+      </div>
+      <span class="cepp-filter__head-meta">Resumen en pantalla</span>
+    </div>
+    <div class="cepp-filter__body">
+      <p class="cepp-filter__hint">
+        Al elegir un trabajador verás <strong>todo lo entregado</strong> (confirmado), filtrado por año o por mes.
+      </p>
+
+      <div class="cepp-filter__row">
+        <div class="cepp-field cepp-field--grow">
+          <label>Trabajador <span class="req">*</span></label>
+          <div class="cepp-select-wrap">
+            <select
+              [(ngModel)]="reportEmployeeId"
+              (ngModelChange)="onFiltersChange()">
+              <option [ngValue]="null">-- Seleccione --</option>
+              <option *ngFor="let e of employees" [ngValue]="e.id">
+                {{ employeeFilterLabel(e) }} — {{ e.cedula }}
+              </option>
+            </select>
+            <span class="material-symbols-outlined cepp-select-ico">expand_more</span>
+          </div>
+        </div>
+
+        <div class="cepp-field cepp-field--cedula" *ngIf="selectedEmployee?.cedula">
+          <label>Cédula</label>
+          <div class="cepp-cedula-box">{{ selectedEmployee?.cedula }}</div>
+        </div>
+
+        <div class="cepp-field cepp-field--year">
+          <label>Año <span class="req">*</span></label>
+          <div class="cepp-select-wrap">
+            <select
+              [(ngModel)]="reportYear"
+              (ngModelChange)="onFiltersChange()">
+              <option *ngFor="let y of reportYears" [ngValue]="y">{{ y }}</option>
+            </select>
+            <span class="material-symbols-outlined cepp-select-ico">expand_more</span>
+          </div>
+        </div>
+
+        <div class="cepp-field cepp-field--month">
+          <label>Mes (opcional)</label>
+          <div class="cepp-select-wrap">
+            <select
+              [(ngModel)]="reportMonth"
+              (ngModelChange)="onFiltersChange()">
+              <option [ngValue]="null">Todo el año</option>
+              <option *ngFor="let m of reportMonths" [ngValue]="m.value">{{ m.label }}</option>
+            </select>
+            <span class="material-symbols-outlined cepp-select-ico">expand_more</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="cepp-btn-ver"
+          (click)="loadResumen()"
+          [disabled]="loading || !reportEmployeeId">
+          <span class="material-symbols-outlined" [class.spin]="loading">{{ loading ? 'progress_activity' : 'search' }}</span>
+          Ver
+        </button>
+      </div>
+
+      <div class="cepp-alert" *ngIf="message && !loading && !rows.length">{{ message }}</div>
+    </div>
+  </section>
+
+  <!-- CTA cambios -->
+  <section class="cepp-cta">
+    <div class="cepp-cta__text">
+      <div class="cepp-cta__title">
+        <span class="material-symbols-outlined">autorenew</span>
+        <h2>Gestión de Cambios y Asignaciones</h2>
+      </div>
+      <p>
+        Inicie un nuevo proceso de recambio para trabajadores que han reportado daño o caducidad
+        en su equipo de protección personal actual.
+      </p>
+    </div>
+    <button type="button" class="cepp-cta__btn" (click)="openCambioModal()">
+      Cambio de EPP
+    </button>
+  </section>
+
+  <!-- Solicitudes generadas (pendientes de aprobación) -->
+  <section class="cepp-table-card" *ngIf="solicitudes.length > 0">
+    <div class="cepp-table-card__head">
+      <div>
+        <h3>Solicitudes de cambio de EPP</h3>
+        <p class="cepp-table-card__sub">Sin documento → pendiente · Con PDF → en espera · Dotado → Validado / Entregado · Rechazado → con motivo</p>
+      </div>
+      <span class="cepp-table-card__count">{{ solicitudes.length }} solicitud{{ solicitudes.length === 1 ? '' : 'es' }}</span>
+    </div>
+    <div class="cepp-alert" *ngIf="listMessage" style="margin: 0.75rem 1rem 0;">{{ listMessage }}</div>
+    <input
+      id="cepp-signed-upload"
+      type="file"
+      accept=".pdf,image/*"
+      hidden
+      (change)="onSignedFileSelected($event)"/>
+    <div class="cepp-table-wrap">
+      <table class="cepp-table">
+        <thead>
+          <tr>
+            <th>N° Reporte</th>
+            <th>Trabajador</th>
+            <th>Cédula</th>
+            <th>Tipo / Sección</th>
+            <th>Fecha</th>
+            <th>Severidad</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of solicitudes; let i = index" [class.is-alt]="i % 2 === 1">
+            <td class="mono">{{ s.nReporte }}</td>
+            <td class="bold">{{ s.trabajador }}</td>
+            <td class="mono">{{ s.cedula }}</td>
+            <td>
+              {{ s.tipoAcontecimiento }}
+              <div class="cepp-section-chip" *ngIf="s.sectionLabel">{{ s.sectionLabel }}</div>
+            </td>
+            <td>{{ s.fechaElaboracion }}</td>
+            <td>{{ severidadLabel(s.severidad) }}</td>
+            <td>
+              <span
+                class="cepp-badge"
+                [class.cepp-badge--pending]="s.status === 'PENDIENTE_APROBACION'"
+                [class.cepp-badge--wait]="s.status === 'EN_ESPERA_INVENTARIO' || s.status === 'VALIDADO_FIRMADO'"
+                [class.cepp-badge--ok]="s.status === 'VALIDADO_ENTREGADO' || s.status === 'ENTREGADO'"
+                [class.cepp-badge--rejected]="s.status === 'RECHAZADO'">
+                {{ statusLabel(s.status) }}
+              </span>
+              <div class="cepp-signed-name" *ngIf="s.signedFileName && s.status !== 'RECHAZADO'">{{ s.signedFileName }}</div>
+              <div class="cepp-reject-reason" *ngIf="s.status === 'RECHAZADO' && s.rejectedReason" [title]="s.rejectedReason">
+                Motivo: {{ s.rejectedReason }}
+              </div>
+            </td>
+            <td>
+              <div class="cepp-actions">
+                <button
+                  type="button"
+                  class="cepp-action-btn"
+                  title="Ver PDF del reporte (sin descargar)"
+                  (click)="viewSolicitudPdf(s)"
+                  [disabled]="downloadingId === s.id || !canViewPdf(s)">
+                  <span class="material-symbols-outlined" [class.spin]="downloadingId === s.id">
+                    {{ downloadingId === s.id ? 'progress_activity' : 'visibility' }}
+                  </span>
+                  Ver PDF
+                </button>
+                <button
+                  type="button"
+                  class="cepp-action-btn cepp-action-btn--upload"
+                  title="Subir documento validado/firmado"
+                  *ngIf="s.status === 'PENDIENTE_APROBACION'"
+                  (click)="triggerSignedUpload(s)">
+                  <span class="material-symbols-outlined">upload_file</span>
+                  Subir validado
+                </button>
+                <button
+                  type="button"
+                  class="cepp-action-btn cepp-action-btn--ghost"
+                  title="Ver documento validado (sin descargar)"
+                  *ngIf="s.signedFileName"
+                  (click)="viewSignedFile(s)">
+                  <span class="material-symbols-outlined">visibility</span>
+                  Ver validado
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Tabla: solo cuando hay selección y (cargando o hay filas) -->
+  <section class="cepp-table-card" *ngIf="reportEmployeeId && (loading || rows.length > 0)">
+    <div class="cepp-table-card__head">
+      <div>
+        <h3>Suministros dotados</h3>
+        <p class="cepp-table-card__sub" *ngIf="selectedEmployee">
+          {{ selectedEmployeeName }}
+          <span *ngIf="selectedEmployee.cedula"> · Cédula {{ selectedEmployee.cedula }}</span>
+        </p>
+      </div>
+      <span class="cepp-table-card__count" *ngIf="!loading">
+        {{ rows.length }} registro{{ rows.length === 1 ? '' : 's' }} · Cant. {{ totalCantidad }}
+      </span>
+    </div>
+
+    <div class="cepp-table-loading" *ngIf="loading">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      <span>Cargando entregas...</span>
+    </div>
+
+    <div class="cepp-table-wrap" *ngIf="!loading && rows.length > 0">
+      <table class="cepp-table">
+        <thead>
+          <tr>
+            <th>ID Reporte</th>
+            <th>Trabajador</th>
+            <th>Cédula</th>
+            <th>Tipo de EPP</th>
+            <th>Fecha Asignación</th>
+            <th>Cant.</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of rows; let i = index" [class.is-alt]="i % 2 === 1">
+            <td class="mono">{{ r.documento }}</td>
+            <td class="bold">{{ selectedEmployeeName }}</td>
+            <td class="mono">{{ selectedEmployee?.cedula || '—' }}</td>
+            <td>
+              <span class="cepp-epp-name">{{ r.descripcion }}</span>
+              <span class="cepp-epp-meta" *ngIf="r.marca && r.marca !== '—'"> · {{ r.marca }}</span>
+              <span class="cepp-epp-meta" *ngIf="r.talla && r.talla !== '—'"> · Talla {{ r.talla }}</span>
+            </td>
+            <td>{{ r.fecha }}</td>
+            <td class="mono">{{ r.cantidad }}</td>
+            <td>
+              <span class="cepp-badge cepp-badge--ok">Entregado</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<!-- Modal: formulario Cambio de EPP (solo contenido interno) -->
+<div
+  class="cepp-modal"
+  *ngIf="showCambioModal"
+  (click)="closeCambioModal()"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="cepp-modal-title">
+  <div class="cepp-modal__panel" (click)="$event.stopPropagation()">
+    <button type="button" class="cepp-modal__close" (click)="closeCambioModal()" aria-label="Cerrar">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+
+    <div class="cepp-form">
+      <div class="cepp-form__title-row">
+        <div>
+          <h1 id="cepp-modal-title">REPORTE DE SOLICITUD DE CAMBIO DE ELEMENTOS DE PROTECCIÓN PERSONAL</h1>
+          <p>Documento oficial para el registro de incidencias y uso de EPIs.</p>
+        </div>
+        <div class="cepp-form__logo">
+          <span class="material-symbols-outlined">admin_panel_settings</span>
+        </div>
+      </div>
+
+      <form (submit)="submitCambioForm($event)">
+        <!-- Datos Generales -->
+        <section class="cepp-form__section">
+          <h2 class="cepp-form__section-h">Datos Generales</h2>
+          <div class="cepp-form__grid cepp-form__grid--3">
+            <div class="cepp-form__field">
+              <label for="cepp-empresa">Empresa</label>
+              <input id="cepp-empresa" type="text" [(ngModel)]="form.empresa" name="empresa"
+                     placeholder="Nombre de la empresa contratista"/>
+            </div>
+            <div class="cepp-form__field">
+              <label for="cepp-tipo">Tipo de Acontecimiento</label>
+              <select
+                id="cepp-tipo"
+                name="tipoAcontecimiento"
+                [ngModel]="form.tipoAcontecimiento"
+                (ngModelChange)="onTipoAcontecimientoChange($event)"
+                (change)="onTipoNativeChange($event)">
+                <option value="">Seleccione...</option>
+                <option *ngFor="let t of tiposAcontecimiento" [value]="t.name">{{ t.name }}</option>
+              </select>
+              <small class="cepp-form__hint" *ngIf="!tiposAcontecimiento.length">
+                Sin tipos asignados. Configúrelos en Admin → Empresas → Inventario-Bodega → Tipo de Acontecimiento.
+              </small>
+            </div>
+            <div class="cepp-form__field">
+              <label for="cepp-nreporte">N° de Reporte</label>
+              <input id="cepp-nreporte" type="text" class="mono readonly" [(ngModel)]="form.nReporte"
+                     name="nReporte" readonly/>
+            </div>
+          </div>
+
+          <!-- Sección del catálogo: habilitada para cualquier tipo de acontecimiento -->
+          <div class="cepp-form__seccion-box is-active">
+            <div class="cepp-form__seccion-title">
+              <span class="material-symbols-outlined">category</span>
+              Sección EPP (catálogo de productos)
+              <span class="req">*</span>
+            </div>
+            <p class="cepp-form__seccion-help">
+              Elige la sección EPP asignada a esta empresa
+              (Admin → Empresas → Inventario-Bodega → Sección;
+              catálogo en Configuración → Inventario-Bodega → Sección).
+            </p>
+            <select
+              id="cepp-seccion"
+              class="cepp-form__seccion-select"
+              name="sectionCode"
+              [ngModel]="form.sectionCode"
+              (ngModelChange)="onSectionChange($event)">
+              <option value="">-- Seleccione sección --</option>
+              <option *ngFor="let sc of eppSections" [ngValue]="sc.prefix">{{ sc.label }}</option>
+            </select>
+            <div class="cepp-form__seccion-chips" *ngIf="eppSections.length">
+              <button
+                type="button"
+                class="cepp-chip"
+                *ngFor="let sc of eppSections"
+                [class.is-on]="form.sectionCode === sc.prefix"
+                (click)="onSectionChange(sc.prefix)">
+                {{ sc.label }}
+              </button>
+            </div>
+            <small class="cepp-form__hint" *ngIf="!eppSections.length">
+              Sin secciones asignadas. Configúrelas en Admin → Empresas → Inventario-Bodega → Sección.
+            </small>
+          </div>
+        </section>
+
+        <!-- Datos del Trabajador -->
+        <section class="cepp-form__section">
+          <h2 class="cepp-form__section-h">Datos del Trabajador Involucrado</h2>
+          <div class="cepp-form__grid cepp-form__grid--4">
+            <div class="cepp-form__field">
+              <label for="cepp-cedula">N° de Cédula/ID</label>
+              <input
+                id="cepp-cedula"
+                type="text"
+                class="mono"
+                [(ngModel)]="form.cedula"
+                name="cedula"
+                (ngModelChange)="onCedulaChange($event)"
+                placeholder=""
+                maxlength="13"
+                autocomplete="off"/>
+              <small class="cepp-form__hint" *ngIf="cedulaLookupMsg" [class.is-ok]="cedulaLookupMsg.includes('encontrado') || cedulaLookupMsg.includes('seleccionado')" [class.is-warn]="cedulaLookupMsg.includes('No se')">
+                {{ cedulaLookupMsg }}
+              </small>
+            </div>
+            <div class="cepp-form__field cepp-form__field--span2">
+              <label for="cepp-nombre">Nombre Completo</label>
+              <select
+                id="cepp-nombre"
+                name="formEmployeeIdNombre"
+                [(ngModel)]="formEmployeeId"
+                (ngModelChange)="onFormEmployeeSelect($event)">
+                <option [ngValue]="null">Seleccione trabajador...</option>
+                <option *ngFor="let e of activeEmployees" [ngValue]="e.id">
+                  {{ employeeFilterLabel(e) }}
+                </option>
+              </select>
+              <small class="cepp-form__hint" *ngIf="!activeEmployees.length">
+                No hay trabajadores activos cargados para esta empresa.
+              </small>
+            </div>
+            <div class="cepp-form__field">
+              <label for="cepp-cargo">Cargo</label>
+              <input id="cepp-cargo" type="text" [(ngModel)]="form.cargo" name="cargo" readonly/>
+            </div>
+            <div class="cepp-form__field cepp-form__field--span4">
+              <label for="cepp-area">Área / Zona de Trabajo</label>
+              <input id="cepp-area" type="text" [(ngModel)]="form.area" name="area" readonly/>
+            </div>
+          </div>
+        </section>
+
+        <!-- Condiciones y Tiempos -->
+        <section class="cepp-form__section">
+          <h2 class="cepp-form__section-h">Condiciones y Tiempos</h2>
+          <div class="cepp-form__grid cepp-form__grid--3">
+            <div class="cepp-form__field">
+              <label for="cepp-estado">Estado del EPI</label>
+              <select id="cepp-estado" [(ngModel)]="form.estadoEpi" name="estadoEpi">
+                <option value="" disabled>Seleccione estado...</option>
+                <option *ngFor="let e of estadosEpi" [value]="e.name">{{ e.name }}</option>
+              </select>
+              <small class="cepp-form__hint" *ngIf="!estadosEpi.length">
+                Sin estados asignados. Configúrelos en Admin → Empresas → Inventario-Bodega → Estado del EPI.
+              </small>
+            </div>
+            <div class="cepp-form__field">
+              <label for="cepp-fecha-elab">Fecha y Hora (Elaboración)</label>
+              <div class="cepp-form__input-ico">
+                <span class="material-symbols-outlined">calendar_today</span>
+                <input id="cepp-fecha-elab" type="datetime-local" class="mono"
+                       [(ngModel)]="form.fechaElaboracion" name="fechaElaboracion"/>
+              </div>
+            </div>
+            <div class="cepp-form__field">
+              <label for="cepp-fecha-notif">Fecha y Hora (Notificación)</label>
+              <div class="cepp-form__input-ico">
+                <span class="material-symbols-outlined">event_available</span>
+                <input id="cepp-fecha-notif" type="datetime-local" class="mono"
+                       [(ngModel)]="form.fechaNotificacion" name="fechaNotificacion"/>
+              </div>
+            </div>
+            <div class="cepp-form__field">
+              <label for="cepp-fecha-dot">Fecha de dotación</label>
+              <div class="cepp-form__input-ico">
+                <span class="material-symbols-outlined">calendar_month</span>
+                <input id="cepp-fecha-dot" type="date" class="mono"
+                       [(ngModel)]="form.fechaDotacion" name="fechaDotacion"/>
+              </div>
+            </div>
+            <div class="cepp-form__field">
+              <label for="cepp-talla">Talla</label>
+              <input id="cepp-talla" type="text" [(ngModel)]="form.talla" name="talla" placeholder="Ej. 37"/>
+            </div>
+          </div>
+        </section>
+
+        <!-- Acción / Severidad -->
+        <section class="cepp-form__section cepp-form__split">
+          <div>
+            <h2 class="cepp-form__section-h">Acción Requerida</h2>
+            <div class="cepp-form__checks">
+              <label>
+                <input type="checkbox" class="cepp-check" [(ngModel)]="form.accionSuspension" name="accionSuspension"/>
+                <span>Suspensión Temporal</span>
+              </label>
+              <label>
+                <input type="checkbox" class="cepp-check" [(ngModel)]="form.accionMulta" name="accionMulta"/>
+                <span>Aplicación de Multa</span>
+              </label>
+              <label>
+                <input type="checkbox" class="cepp-check" [(ngModel)]="form.accionNotificacion" name="accionNotificacion"/>
+                <span>Notificación por Escrito</span>
+              </label>
+              <label>
+                <input type="checkbox" class="cepp-check" [(ngModel)]="form.accionCambio" name="accionCambio"/>
+                <span>Cambio Obligatorio de Equipo</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <h2 class="cepp-form__section-h">Nivel de Severidad</h2>
+            <div class="cepp-form__checks cepp-form__checks--fill">
+              <label>
+                <input type="radio" class="cepp-radio" name="severidad" value="insignificante"
+                       [(ngModel)]="form.severidad"/>
+                <span>Insignificante</span>
+              </label>
+              <label>
+                <input type="radio" class="cepp-radio" name="severidad" value="poco_importante"
+                       [(ngModel)]="form.severidad"/>
+                <span>Poco Importante</span>
+              </label>
+              <label>
+                <input type="radio" class="cepp-radio" name="severidad" value="importante"
+                       [(ngModel)]="form.severidad"/>
+                <span class="is-strong">Importante</span>
+              </label>
+              <label>
+                <input type="radio" class="cepp-radio" name="severidad" value="urgente"
+                       [(ngModel)]="form.severidad"/>
+                <span class="is-urgent">Urgente / Riesgo Inminente</span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Detalles -->
+        <section class="cepp-form__section">
+          <h2 class="cepp-form__section-h">Detalles y Evidencia</h2>
+          <div class="cepp-form__grid cepp-form__grid--2">
+            <div class="cepp-form__field">
+              <label for="cepp-obs">Observaciones Generales</label>
+              <textarea id="cepp-obs" rows="5" [(ngModel)]="form.observaciones" name="observaciones"
+                        placeholder="Describa el incidente, los EPIs involucrados y las justificaciones del trabajador (si aplica)."></textarea>
+            </div>
+            <div class="cepp-form__field">
+              <label>Reporte Fotográfico</label>
+              <label class="cepp-form__drop" for="cepp-photos">
+                <span class="material-symbols-outlined">add_photo_alternate</span>
+                <span class="cepp-form__drop-title">Arrastre imágenes aquí</span>
+                <span class="cepp-form__drop-sub">o haga clic para seleccionar (máx. 2 fotos · 5MB)</span>
+                <span class="cepp-form__drop-files" *ngIf="photoNames.length">
+                  {{ photoNames.join(', ') }}
+                </span>
+              </label>
+              <input id="cepp-photos" type="file" accept="image/*" multiple hidden (change)="onPhotoSelected($event)"/>
+            </div>
+          </div>
+        </section>
+
+        <!-- Emisor -->
+        <section class="cepp-form__section">
+          <h2 class="cepp-form__section-h">Datos del Emisor (Oficial de Seguridad)</h2>
+          <div class="cepp-form__grid cepp-form__grid--2">
+            <div class="cepp-form__field">
+              <label for="cepp-emisor">Nombre del Reportante</label>
+              <select
+                id="cepp-emisor"
+                name="emisorEmployeeId"
+                [(ngModel)]="emisorEmployeeId"
+                (ngModelChange)="onEmisorEmployeeSelect($event)">
+                <option [ngValue]="null">Seleccione reportante...</option>
+                <option *ngFor="let e of activeEmployees" [ngValue]="e.id">
+                  {{ employeeFilterLabel(e) }}
+                </option>
+              </select>
+            </div>
+            <div class="cepp-form__field">
+              <label for="cepp-emisor-cargo">Cargo</label>
+              <input id="cepp-emisor-cargo" type="text" [(ngModel)]="form.cargoEmisor"
+                     name="cargoEmisor" readonly/>
+            </div>
+          </div>
+        </section>
+
+        <div class="cepp-form__alert" *ngIf="formMessage">{{ formMessage }}</div>
+
+        <div class="cepp-form__actions">
+          <button type="button" class="cepp-form__btn cepp-form__btn--ghost" (click)="resetCambioForm()" [disabled]="pdfBusy">
+            Limpiar Formulario
+          </button>
+          <button type="submit" class="cepp-form__btn cepp-form__btn--primary" [disabled]="pdfBusy">
+            <span class="material-symbols-outlined" [class.spin]="pdfBusy">{{ pdfBusy ? 'progress_activity' : 'picture_as_pdf' }}</span>
+            {{ pdfBusy ? 'Generando…' : 'Generar Reporte' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Visor documento (solo lectura, sin descarga) -->
+<div class="cepp-doc-viewer" *ngIf="showDocViewer" (click)="closeDocViewer()" role="dialog" aria-modal="true">
+  <div class="cepp-doc-viewer__panel" (click)="$event.stopPropagation()">
+    <div class="cepp-doc-viewer__bar">
+      <div class="cepp-doc-viewer__title">
+        <span class="material-symbols-outlined">visibility</span>
+        Vista previa
+        <small *ngIf="docViewerTitle">· {{ docViewerTitle }}</small>
+      </div>
+      <button type="button" class="cepp-doc-viewer__close" (click)="closeDocViewer()" aria-label="Cerrar">
+        <span class="material-symbols-outlined">close</span>
+        Cerrar
+      </button>
+    </div>
+    <div class="cepp-doc-viewer__body" (contextmenu)="$event.preventDefault()">
+      <iframe
+        *ngIf="docViewerIsPdf && docViewerSafeUrl"
+        [src]="docViewerSafeUrl"
+        title="Vista previa PDF"
+        class="cepp-doc-viewer__frame"></iframe>
+      <img
+        *ngIf="!docViewerIsPdf && docViewerImgUrl"
+        [src]="docViewerImgUrl"
+        alt="Documento"
+        class="cepp-doc-viewer__img"
+        draggable="false"/>
+    </div>
+  </div>
+</div>

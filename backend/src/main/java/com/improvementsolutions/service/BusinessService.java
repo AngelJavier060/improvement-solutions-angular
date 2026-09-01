@@ -67,6 +67,13 @@ public class BusinessService {
     private final com.improvementsolutions.repository.OtrosPeligrosViajeRepository otrosPeligrosViajeRepository;
     private final com.improvementsolutions.repository.MedidaControlTomadaViajeRepository medidaControlTomadaViajeRepository;
     private final Iso9001CatalogItemRepository iso9001CatalogItemRepository;
+    private final com.improvementsolutions.repository.EppFamilyRepository eppFamilyRepository;
+    private final com.improvementsolutions.repository.EppSectionRepository eppSectionRepository;
+    private final com.improvementsolutions.repository.inventory.InventorySupplierGlobalRepository inventorySupplierGlobalRepository;
+    private final com.improvementsolutions.repository.InventoryEntryTypeRepository inventoryEntryTypeRepository;
+    private final com.improvementsolutions.repository.InventoryOutputTypeRepository inventoryOutputTypeRepository;
+    private final com.improvementsolutions.repository.InventoryAcontecimientoTypeRepository inventoryAcontecimientoTypeRepository;
+    private final com.improvementsolutions.repository.InventoryEstadoEpiRepository inventoryEstadoEpiRepository;
 
     public List<Business> findAll() {
         return businessRepository.findAll();
@@ -165,6 +172,13 @@ public class BusinessService {
                 if (business.getOtrosPeligrosViajeCatalogo() != null) business.getOtrosPeligrosViajeCatalogo().size();
                 if (business.getMedidasControlTomadasViajeCatalogo() != null) business.getMedidasControlTomadasViajeCatalogo().size();
                 if (business.getIso9001CatalogItems() != null) business.getIso9001CatalogItems().size();
+                if (business.getEppFamilies() != null) business.getEppFamilies().size();
+                if (business.getEppSections() != null) business.getEppSections().size();
+                if (business.getInventorySupplierGlobals() != null) business.getInventorySupplierGlobals().size();
+                if (business.getInventoryEntryTypes() != null) business.getInventoryEntryTypes().size();
+                if (business.getInventoryOutputTypes() != null) business.getInventoryOutputTypes().size();
+                if (business.getInventoryAcontecimientoTypes() != null) business.getInventoryAcontecimientoTypes().size();
+                if (business.getInventoryEstadoEpis() != null) business.getInventoryEstadoEpis().size();
             } catch (Exception e) {
                 log.warn("[BusinessService] Could not initialize obligation matrices for business {}: {}", id, e.getMessage());
             }
@@ -1123,6 +1137,132 @@ public class BusinessService {
     public void removeIso9001CatalogItemFromBusiness(Long bId, Long catalogItemId) {
         Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
         b.getIso9001CatalogItems().removeIf(m -> m.getId().equals(catalogItemId));
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addEppFamilyToBusiness(Long bId, Long familyId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        EppFamily family = eppFamilyRepository.findById(familyId)
+                .orElseThrow(() -> new RuntimeException("Familia no encontrada"));
+        b.addEppFamily(family);
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void removeEppFamilyFromBusiness(Long bId, Long familyId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getEppFamilies().removeIf(f -> f.getId().equals(familyId));
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addEppSectionToBusiness(Long bId, Long sectionId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        EppSection section = eppSectionRepository.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Sección no encontrada"));
+        b.addEppSection(section);
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void removeEppSectionFromBusiness(Long bId, Long sectionId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getEppSections().removeIf(s -> s.getId().equals(sectionId));
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addInventorySupplierGlobalToBusiness(Long bId, Long supplierId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        var supplier = inventorySupplierGlobalRepository.findById(supplierId)
+                .orElseThrow(() -> new RuntimeException("Proveedor no encontrado"));
+        b.addInventorySupplierGlobal(supplier);
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void removeInventorySupplierGlobalFromBusiness(Long bId, Long supplierId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getInventorySupplierGlobals().removeIf(s -> s.getId().equals(supplierId));
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addInventoryEntryTypeToBusiness(Long bId, Long typeId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        InventoryEntryType type = inventoryEntryTypeRepository.findById(typeId)
+                .orElseThrow(() -> new RuntimeException("Tipo de entrada no encontrado"));
+        b.addInventoryEntryType(type);
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void removeInventoryEntryTypeFromBusiness(Long bId, Long typeId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getInventoryEntryTypes().removeIf(t -> t.getId().equals(typeId));
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addInventoryOutputTypeToBusiness(Long bId, Long typeId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        InventoryOutputType type = inventoryOutputTypeRepository.findById(typeId)
+                .orElseThrow(() -> new RuntimeException("Tipo de salida no encontrado"));
+        b.addInventoryOutputType(type);
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void removeInventoryOutputTypeFromBusiness(Long bId, Long typeId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getInventoryOutputTypes().removeIf(t -> t.getId().equals(typeId));
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addInventoryAcontecimientoTypeToBusiness(Long bId, Long typeId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        InventoryAcontecimientoType type = inventoryAcontecimientoTypeRepository.findById(typeId)
+                .orElseThrow(() -> new RuntimeException("Tipo de acontecimiento no encontrado"));
+        b.addInventoryAcontecimientoType(type);
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void removeInventoryAcontecimientoTypeFromBusiness(Long bId, Long typeId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getInventoryAcontecimientoTypes().removeIf(t -> t.getId().equals(typeId));
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void addInventoryEstadoEpiToBusiness(Long bId, Long estadoId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        InventoryEstadoEpi estado = inventoryEstadoEpiRepository.findById(estadoId)
+                .orElseThrow(() -> new RuntimeException("Estado del EPI no encontrado"));
+        b.addInventoryEstadoEpi(estado);
+        b.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(b);
+    }
+
+    @Transactional
+    public void removeInventoryEstadoEpiFromBusiness(Long bId, Long estadoId) {
+        Business b = businessRepository.findById(bId).orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        b.getInventoryEstadoEpis().removeIf(t -> t.getId().equals(estadoId));
         b.setUpdatedAt(LocalDateTime.now());
         businessRepository.save(b);
     }

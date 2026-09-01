@@ -28,4 +28,8 @@ public interface InventoryEntryRepository extends JpaRepository<InventoryEntry, 
     
     // Verificar si existe un número de entrada para una empresa
     boolean existsByBusinessIdAndEntryNumber(Long businessId, String entryNumber);
+
+    /** Números de entrada de la empresa que empiezan con un prefijo (ej. ENT-2026-). */
+    @Query("SELECT e.entryNumber FROM InventoryEntry e WHERE e.business.id = ?1 AND e.entryNumber LIKE CONCAT(?2, '%')")
+    List<String> findEntryNumbersByBusinessIdAndPrefix(Long businessId, String prefix);
 }

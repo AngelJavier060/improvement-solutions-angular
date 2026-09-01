@@ -31,7 +31,7 @@ public class InventoryVariantController {
     }
 
     @GetMapping("/products/{productId}/variants")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
     public ResponseEntity<List<InventoryVariant>> listByProduct(@PathVariable String ruc, @PathVariable Long productId) {
         return ResponseEntity.ok(variantService.listByProduct(ruc, productId));
     }
@@ -69,7 +69,7 @@ public class InventoryVariantController {
     // ── Atributos de variante ──────────────────────────────────────────
 
     @GetMapping("/variants/{variantId}/attributes")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
     public ResponseEntity<List<InventoryVariantAttribute>> listAttributes(@PathVariable String ruc, @PathVariable Long variantId) {
         return ResponseEntity.ok(attrRepository.findByVariant_Id(variantId));
     }

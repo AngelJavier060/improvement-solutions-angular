@@ -13,7 +13,6 @@ import com.improvementsolutions.model.Business;
 import com.improvementsolutions.model.inventory.*;
 import com.improvementsolutions.model.inventory.enums.MovementType;
 import com.improvementsolutions.model.inventory.enums.OutputStatus;
-import com.improvementsolutions.model.inventory.enums.OutputType;
 import com.improvementsolutions.repository.BusinessRepository;
 import com.improvementsolutions.repository.inventory.*;
 
@@ -49,6 +48,7 @@ public class InventoryOutputService {
             output.setNotes(notes == null || notes.isBlank() ? info : (notes + " " + info));
         }
         output.setOutputNumber(uniqueNumber);
+        output.setOutputType(normalizeOutputTypeForPersistence(output.getOutputType()));
 
         output.setBusiness(business);
 
@@ -88,13 +88,63 @@ public class InventoryOutputService {
     }
     
     private String ensureUniqueOutputNumber(Long businessId, String preferred) {
-        String base = (preferred != null && !preferred.isBlank()) ? preferred.trim() : ("SAL-" + System.currentTimeMillis());
+        String base = preferred != null ? preferred.trim() : "";
+        // Vacío o formato viejo por timestamp → consecutivo SAL-AAAA-####
+        if (base.isEmpty() || looksLikeLegacyTimestampNumber(base)) {
+            return allocateNextConsecutive(businessId, LocalDate.now().getYear());
+        }
+        if (!outputRepository.existsByBusinessIdAndOutputNumber(businessId, base)) {
+            return base;
+        }
+        if (base.toUpperCase().matches("^SAL-\\d{4}-\\d+$")) {
+            return allocateNextConsecutive(businessId, LocalDate.now().getYear());
+        }
         String candidate = base;
         int attempts = 0;
         while (outputRepository.existsByBusinessIdAndOutputNumber(businessId, candidate) && attempts < 50) {
-            String suffix = "-" + (System.currentTimeMillis() % 100000) + ((int)(Math.random() * 900) + 100);
+            String suffix = "-" + (System.currentTimeMillis() % 100000) + ((int) (Math.random() * 900) + 100);
             candidate = base + suffix;
             attempts++;
+        }
+        return candidate;
+    }
+
+    private boolean looksLikeLegacyTimestampNumber(String value) {
+        String v = value.toUpperCase();
+        // SAL-20260831-203045
+        return v.matches("^SAL-\\d{8}-\\d{4,6}$");
+    }
+
+    /**
+     * Consecutivo simple por empresa y año: SAL-2026-0001, SAL-2026-0002, ...
+     * (prefijo distinto a ENT- para no chocar con entradas)
+     */
+    public String nextOutputNumber(String ruc) {
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        return allocateNextConsecutive(business.getId(), LocalDate.now().getYear());
+    }
+
+    private String allocateNextConsecutive(Long businessId, int year) {
+        String prefix = "SAL-" + year + "-";
+        List<String> existing = outputRepository.findOutputNumbersByBusinessIdAndPrefix(businessId, prefix);
+        int max = 0;
+        for (String num : existing) {
+            if (num == null) continue;
+            String upper = num.trim().toUpperCase();
+            if (!upper.startsWith(prefix)) continue;
+            String tail = upper.substring(prefix.length());
+            try {
+                int n = Integer.parseInt(tail);
+                if (n > max) max = n;
+            } catch (NumberFormatException ignored) {}
+        }
+        int next = max + 1;
+        String candidate = prefix + String.format("%04d", next);
+        int guard = 0;
+        while (outputRepository.existsByBusinessIdAndOutputNumber(businessId, candidate) && guard < 9999) {
+            next++;
+            candidate = prefix + String.format("%04d", next);
+            guard++;
         }
         return candidate;
     }
@@ -131,7 +181,7 @@ public class InventoryOutputService {
             movement.setVariant(variant);
             movement.setMovementDate(output.getOutputDate().atStartOfDay());
             movement.setMovementType(MovementType.SALIDA);
-            movement.setDocumentType(output.getOutputType().name());
+            movement.setDocumentType(output.getOutputType() != null ? output.getOutputType() : "SALIDA");
             movement.setDocumentNumber(output.getOutputNumber());
             movement.setQuantity(detail.getQuantity().negate()); // Negativo para salidas
             movement.setQty(detail.getQuantity().intValue() * -1); // Campo legacy
@@ -175,7 +225,9 @@ public class InventoryOutputService {
     @Transactional(readOnly = true)
     public List<InventoryOutput> list(String ruc) {
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
-        return outputRepository.findByBusinessIdOrderByOutputDateDesc(business.getId());
+        List<InventoryOutput> list = outputRepository.findByBusinessIdOrderByOutputDateDesc(business.getId());
+        list.forEach(o -> o.getDetails().size());
+        return list;
     }
     
     /**
@@ -189,23 +241,93 @@ public class InventoryOutputService {
     /**
      * Buscar por tipo de salida
      */
+    @Transactional(readOnly = true)
     public List<InventoryOutput> findByType(String ruc, String outputType) {
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
-        OutputType type;
-        try {
-            type = OutputType.valueOf(outputType);
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("Tipo de salida no válido: " + outputType);
-        }
-        return outputRepository.findByBusinessIdAndOutputTypeOrderByOutputDateDesc(business.getId(), type);
+        String type = normalizeOutputTypeForPersistence(outputType);
+        List<InventoryOutput> list = outputRepository.findByBusinessIdAndOutputTypeOrderByOutputDateDesc(business.getId(), type);
+        list.forEach(o -> o.getDetails().size());
+        return list;
     }
-    
+
+    /** Tipos de salida asignados a la empresa (dinámicos). */
+    @Transactional(readOnly = true)
+    public List<java.util.Map<String, Object>> listOutputTypesForBusiness(String ruc) {
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        if (business.getInventoryOutputTypes() != null) {
+            business.getInventoryOutputTypes().size();
+        }
+        List<java.util.Map<String, Object>> out = new java.util.ArrayList<>();
+        if (business.getInventoryOutputTypes() == null) {
+            return out;
+        }
+        business.getInventoryOutputTypes().stream()
+                .filter(t -> t != null && !Boolean.FALSE.equals(t.getActive()))
+                .sorted((a, b) -> String.valueOf(a.getName()).compareToIgnoreCase(String.valueOf(b.getName())))
+                .forEach(t -> {
+                    java.util.Map<String, Object> m = new java.util.HashMap<>();
+                    m.put("id", t.getId());
+                    m.put("name", t.getName());
+                    m.put("description", t.getDescription());
+                    out.add(m);
+                });
+        return out;
+    }
+
+    /**
+     * Compatibilidad: catálogo por nombre ("Préstamo de herramienta") → código legacy (PRESTAMO).
+     */
+    private String normalizeOutputTypeForPersistence(String raw) {
+        if (raw == null || raw.isBlank()) {
+            throw new IllegalArgumentException("El tipo de salida es obligatorio");
+        }
+        String trimmed = raw.trim();
+        String key = java.text.Normalizer.normalize(trimmed, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toUpperCase(java.util.Locale.ROOT)
+                .replace('-', '_')
+                .replace(' ', '_');
+        return switch (key) {
+            case "EPP_TRABAJADOR",
+                 "ENTREGA_DE_EPP_A_TRABAJADOR",
+                 "ENTREGA_EPP_A_TRABAJADOR" -> "EPP_TRABAJADOR";
+            case "PRESTAMO",
+                 "PRESTAMO_DE_HERRAMIENTA" -> "PRESTAMO";
+            case "CONSUMO_AREA",
+                 "CONSUMO_DE_PROYECTO/AREA",
+                 "CONSUMO_DE_PROYECTO_AREA" -> "CONSUMO_AREA";
+            case "BAJA",
+                 "BAJA_DE_PRODUCTOS" -> "BAJA";
+            case "VENTA",
+                 "VENTA_DE_PRODUCTO" -> "VENTA";
+            case "DESCUENTO_TRABAJADOR",
+                 "DESCUENTO_A_TRABAJADOR_(NOMINA)",
+                 "DESCUENTO_A_TRABAJADOR_NOMINA" -> "DESCUENTO_TRABAJADOR";
+            default -> {
+                // Quitar caracteres no alfanuméricos del key por si vino con paréntesis
+                String compact = key.replaceAll("[^A-Z0-9_]", "");
+                yield switch (compact) {
+                    case "ENTREGADEEPPATRABAJADOR" -> "EPP_TRABAJADOR";
+                    case "PRESTAMODEHERRAMIENTA" -> "PRESTAMO";
+                    case "CONSUMODEPROYECTOAREA" -> "CONSUMO_AREA";
+                    case "BAJADEPRODUCTOS" -> "BAJA";
+                    case "VENTADEPRODUCTO" -> "VENTA";
+                    case "DESCUENTOATRABAJADORNOMINA" -> "DESCUENTO_TRABAJADOR";
+                    default -> trimmed.length() > 80 ? trimmed.substring(0, 80) : trimmed;
+                };
+            }
+        };
+    }
+
     /**
      * Buscar por trabajador
      */
+    @Transactional(readOnly = true)
     public List<InventoryOutput> findByEmployee(String ruc, Long employeeId) {
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
-        return outputRepository.findByBusinessIdAndEmployeeIdOrderByOutputDateDesc(business.getId(), employeeId);
+        List<InventoryOutput> list = outputRepository.findByBusinessIdAndEmployeeIdOrderByOutputDateDesc(business.getId(), employeeId);
+        list.forEach(o -> o.getDetails().size());
+        return list;
     }
     
     /**
@@ -224,6 +346,49 @@ public class InventoryOutputService {
             // Asegurar que detalles estén cargados en esta transacción
             output.getDetails().size();
             processOutputDetails(output);
+            output = outputRepository.save(output);
+        }
+        return output;
+    }
+
+    /**
+     * Marca un préstamo (u otra salida) como ya devuelto.
+     */
+    @Transactional
+    public InventoryOutput markReturned(String ruc, Long outputId, Long returnEntryId) {
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        InventoryOutput output = outputRepository.findById(outputId)
+            .orElseThrow(() -> new IllegalArgumentException("Salida de inventario no encontrada"));
+        if (!output.getBusiness().getId().equals(business.getId())) {
+            throw new AccessDeniedException("La salida no pertenece a la empresa seleccionada");
+        }
+        if (!Boolean.TRUE.equals(output.getReturned())) {
+            output.setReturned(true);
+            output.setReturnedAt(LocalDateTime.now());
+            if (returnEntryId != null) {
+                output.setReturnEntryId(returnEntryId);
+            }
+            output = outputRepository.save(output);
+        }
+        return output;
+    }
+
+    /**
+     * Anula una salida en BORRADOR (no toca stock).
+     */
+    @Transactional
+    public InventoryOutput cancel(String ruc, Long outputId) {
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        InventoryOutput output = outputRepository.findById(outputId)
+            .orElseThrow(() -> new IllegalArgumentException("Salida de inventario no encontrada"));
+        if (!output.getBusiness().getId().equals(business.getId())) {
+            throw new AccessDeniedException("La salida no pertenece a la empresa seleccionada");
+        }
+        if (output.getStatus() == OutputStatus.CONFIRMADO) {
+            throw new IllegalArgumentException("No se puede anular una salida confirmada desde este flujo (ya afectó stock)");
+        }
+        if (output.getStatus() != OutputStatus.ANULADO) {
+            output.setStatus(OutputStatus.ANULADO);
             output = outputRepository.save(output);
         }
         return output;

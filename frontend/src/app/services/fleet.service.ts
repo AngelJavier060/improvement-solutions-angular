@@ -78,9 +78,15 @@ export class FleetService {
     return `${this.baseUrl}/${encodeURIComponent(businessRuc)}/vehicles/${vehicleId}/documents/${docId}/content`;
   }
 
-  /** ZIP con los PDF vigentes de esta unidad. */
-  vehicleDocumentsZipUrl(businessRuc: string, vehicleId: number): string {
-    return `${this.baseUrl}/${encodeURIComponent(businessRuc)}/vehicles/${vehicleId}/documents/zip`;
+  /** ZIP con PDF vigentes. sections: códigos separados por coma, o vacío/ALL = todo. */
+  vehicleDocumentsZipUrl(businessRuc: string, vehicleId: number, sections?: string | string[]): string {
+    const base = `${this.baseUrl}/${encodeURIComponent(businessRuc)}/vehicles/${vehicleId}/documents/zip`;
+    if (!sections || (Array.isArray(sections) && sections.length === 0)) return base;
+    const list = (Array.isArray(sections) ? sections : [sections])
+      .map(s => (s || '').trim())
+      .filter(s => !!s && s !== 'ALL' && s !== 'TODO');
+    if (list.length === 0) return base;
+    return `${base}?section=${encodeURIComponent(list.join(','))}`;
   }
 
   recoverOrphanComplianceDocs(businessRuc: string, vehicleId: number): Observable<unknown[]> {

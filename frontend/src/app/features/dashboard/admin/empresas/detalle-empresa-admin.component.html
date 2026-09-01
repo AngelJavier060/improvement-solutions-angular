@@ -980,199 +980,6 @@
       </div>
     </div>
 
-    <!-- ── Separador: Inventario y Bodega ── -->
-    <div class="col-12 mt-3 mb-1">
-      <div class="d-flex align-items-center gap-3 pb-2" style="border-bottom: 2px solid #e9ecef;">
-        <div class="p-2 rounded-2" style="background: rgba(139,92,246,0.1);">
-          <i class="fas fa-boxes" style="font-size: 18px; color: #7c3aed;"></i>
-        </div>
-        <div>
-          <h5 class="mb-0 fw-bold text-dark">Inventario y Bodega</h5>
-          <small class="text-muted">Gestión de categorías y proveedores de inventario</small>
-        </div>
-      </div>
-    </div>
-    <!-- Categorías de Inventario -->
-    <div class="col-lg-6 col-xl-3">
-      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': (inventoryCategories.length || 0) > 0}">
-        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #8ec5fc 0%, #e0c3fc 100%);">
-          <div class="d-flex align-items-center h-100">
-            <div class="me-3">
-              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
-                <i class="fas fa-tags text-dark" style="font-size: 14px;"></i>
-              </div>
-            </div>
-            <div>
-              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Inventario - Categorías</h6>
-            </div>
-          </div>
-        </div>
-        <div class="card-body p-2">
-          <div *ngIf="invCatError" class="alert alert-danger py-1 small mb-2">{{ invCatError }}</div>
-          <div *ngIf="invCatOk" class="alert alert-success py-1 small mb-2">{{ invCatOk }}</div>
-
-          <div class="row g-2 mb-2">
-            <div class="col-12">
-              <label class="form-label" style="font-size: 11px;">Asignar desde catálogo global</label>
-              <select class="form-select form-select-sm" [(ngModel)]="selectedGlobalCategoryName" [disabled]="(availableGlobalCategoryCatalog() || []).length === 0">
-                <option [ngValue]="null">{{ (availableGlobalCategoryCatalog() || []).length === 0 ? 'No hay categorías disponibles' : 'Seleccione una categoría global' }}</option>
-                <option *ngFor="let c of availableGlobalCategoryCatalog()" [ngValue]="c.name">{{ c.name }}</option>
-              </select>
-            </div>
-            <div class="col-12 d-grid">
-              <button class="btn btn-outline-primary btn-sm" (click)="addCategoryFromGlobalCatalog()" [disabled]="invCatLoading || !selectedGlobalCategoryName">
-                <i class="fas fa-check"></i> Agregar a esta empresa
-              </button>
-            </div>
-          </div>
-
-          <div *ngIf="(activeInventoryCategories()?.length || 0) > 0" class="expanded-content">
-            <div class="mb-1" *ngFor="let c of activeInventoryCategories()">
-              <!-- Modo vista normal -->
-              <div *ngIf="editingCategoryId !== c.id" class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
-                <div class="d-flex align-items-center flex-grow-1">
-                  <i class="fas fa-tag text-info me-2" style="font-size: 10px;"></i>
-                  <div>
-                    <div class="small fw-semibold text-dark" style="font-size: 11px;">{{ c.name }}</div>
-                    <div class="text-muted" style="font-size: 9px;">{{ c.description || '-' }}</div>
-                  </div>
-                </div>
-                <div class="d-flex align-items-center gap-1">
-                  <button class="btn btn-outline-primary btn-sm p-1" title="Editar" (click)="startEditCategory(c)" style="font-size: 10px; min-width: 26px;">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button class="btn btn-outline-danger btn-sm p-1" title="Eliminar del listado" (click)="removeFromActiveCategories(c)" style="font-size: 10px; min-width: 26px;">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-              </div>
-              <!-- Modo edición inline -->
-              <div *ngIf="editingCategoryId === c.id" class="p-2 bg-white border rounded">
-                <div class="mb-2">
-                  <label class="form-label small mb-1" style="font-size: 10px;">Nombre</label>
-                  <input type="text" class="form-control form-control-sm" [(ngModel)]="editCategoryForm.name" placeholder="Nombre de la categoría" style="font-size: 11px;">
-                </div>
-                <div class="mb-2">
-                  <label class="form-label small mb-1" style="font-size: 10px;">Descripción</label>
-                  <textarea class="form-control form-control-sm" [(ngModel)]="editCategoryForm.description" placeholder="Descripción" rows="2" style="font-size: 11px;"></textarea>
-                </div>
-                <div class="d-flex gap-1">
-                  <button class="btn btn-success btn-sm" (click)="saveEditCategory()" [disabled]="invCatLoading" style="font-size: 10px;">
-                    <i class="fas fa-check me-1"></i>Guardar
-                  </button>
-                  <button class="btn btn-secondary btn-sm" (click)="cancelEditCategory()" style="font-size: 10px;">
-                    <i class="fas fa-times me-1"></i>Cancelar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div *ngIf="(activeInventoryCategories()?.length || 0) === 0" class="text-center py-2">
-            <i class="fas fa-tags fa-lg text-muted opacity-50"></i>
-            <p class="text-muted small mb-0" style="font-size: 10px;">Sin categorías</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Proveedores de Inventario -->
-    <div class="col-lg-6 col-xl-3">
-      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': (inventorySuppliers.length || 0) > 0}">
-        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #f6d365 0%, #fda085 100%);">
-          <div class="d-flex align-items-center h-100">
-            <div class="me-3">
-              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
-                <i class="fas fa-truck text-dark" style="font-size: 14px;"></i>
-              </div>
-            </div>
-            <div>
-              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Inventario - Proveedores</h6>
-            </div>
-          </div>
-        </div>
-        <div class="card-body p-2">
-          <div *ngIf="invSupError" class="alert alert-danger py-1 small mb-2">{{ invSupError }}</div>
-          <div *ngIf="invSupOk" class="alert alert-success py-1 small mb-2">{{ invSupOk }}</div>
-
-          <div class="row g-2 mb-2">
-            <div class="col-12">
-              <label class="form-label" style="font-size: 11px;">Asignar desde catálogo global</label>
-              <select class="form-select form-select-sm" [(ngModel)]="selectedGlobalSupplier" [disabled]="(availableGlobalSupplierCatalog() || []).length === 0">
-                <option [ngValue]="null">{{ (availableGlobalSupplierCatalog() || []).length === 0 ? 'No hay proveedores disponibles' : 'Seleccione un proveedor global' }}</option>
-                <option *ngFor="let s of availableGlobalSupplierCatalog()" [ngValue]="s">{{ s.name }} {{ s.ruc ? ('(RUC: ' + s.ruc + ')') : '' }}</option>
-              </select>
-            </div>
-            <div class="col-12 d-grid">
-              <button class="btn btn-outline-primary btn-sm" (click)="addSupplierFromGlobalCatalog()" [disabled]="invSupLoading || !selectedGlobalSupplier">
-                <i class="fas fa-check"></i> Agregar a esta empresa
-              </button>
-            </div>
-          </div>
-
-          <div *ngIf="(activeInventorySuppliers()?.length || 0) > 0" class="expanded-content">
-            <div class="mb-1" *ngFor="let s of activeInventorySuppliers()">
-              <!-- Modo vista normal -->
-              <div *ngIf="editingSupplierId !== s.id" class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
-                <div class="d-flex align-items-center flex-grow-1">
-                  <i class="fas fa-truck text-warning me-2" style="font-size: 10px;"></i>
-                  <div>
-                    <div class="small fw-semibold text-dark" style="font-size: 11px;">{{ s.name }}</div>
-                    <div class="text-muted" style="font-size: 9px;">RUC: {{ s.ruc || '-' }} · {{ s.phone || '-' }} · {{ s.email || '-' }}</div>
-                  </div>
-                </div>
-                <div class="d-flex align-items-center gap-1">
-                  <button class="btn btn-outline-primary btn-sm p-1" title="Editar" (click)="startEditSupplier(s)" style="font-size: 10px; min-width: 26px;">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button class="btn btn-outline-danger btn-sm p-1" title="Eliminar del listado" (click)="removeFromActiveSuppliers(s)" style="font-size: 10px; min-width: 26px;">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-              </div>
-              <!-- Modo edición inline -->
-              <div *ngIf="editingSupplierId === s.id" class="p-2 bg-white border rounded">
-                <div class="row g-2 mb-2">
-                  <div class="col-12">
-                    <label class="form-label small mb-1" style="font-size: 10px;">Nombre</label>
-                    <input type="text" class="form-control form-control-sm" [(ngModel)]="editSupplierForm.name" placeholder="Nombre del proveedor" style="font-size: 11px;">
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label small mb-1" style="font-size: 10px;">RUC</label>
-                    <input type="text" class="form-control form-control-sm" [(ngModel)]="editSupplierForm.ruc" placeholder="RUC" style="font-size: 11px;">
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small mb-1" style="font-size: 10px;">Teléfono</label>
-                    <input type="text" class="form-control form-control-sm" [(ngModel)]="editSupplierForm.phone" placeholder="Teléfono" style="font-size: 11px;">
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small mb-1" style="font-size: 10px;">Email</label>
-                    <input type="email" class="form-control form-control-sm" [(ngModel)]="editSupplierForm.email" placeholder="Email" style="font-size: 11px;">
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label small mb-1" style="font-size: 10px;">Dirección</label>
-                    <textarea class="form-control form-control-sm" [(ngModel)]="editSupplierForm.address" placeholder="Dirección" rows="2" style="font-size: 11px;"></textarea>
-                  </div>
-                </div>
-                <div class="d-flex gap-1">
-                  <button class="btn btn-success btn-sm" (click)="saveEditSupplier()" [disabled]="invSupLoading" style="font-size: 10px;">
-                    <i class="fas fa-check me-1"></i>Guardar
-                  </button>
-                  <button class="btn btn-secondary btn-sm" (click)="cancelEditSupplier()" style="font-size: 10px;">
-                    <i class="fas fa-times me-1"></i>Cancelar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div *ngIf="(activeInventorySuppliers()?.length || 0) === 0" class="text-center py-2">
-            <i class="fas fa-truck fa-lg text-muted opacity-50"></i>
-            <p class="text-muted small mb-0" style="font-size: 10px;">Sin proveedores</p>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- SECCIÓN: MANTENIMIENTO AUTOMOTRIZ -->
@@ -2287,6 +2094,88 @@
     </div>
   </section>
 
+  <!-- ═══════════════════════ SECCIÓN: INVENTARIO-BODEGA POR EMPRESA ═══════════════════════ -->
+  <section class="inventario-bodega-empresa-section mt-4 pt-4 border-top">
+    <div class="d-flex flex-column flex-md-row flex-wrap justify-content-between align-items-md-start gap-3 mb-3">
+      <div class="flex-grow-1">
+        <h3 class="h4 fw-bold mb-1" style="color: #2c2f31;">Inventario - Bodega</h3>
+        <p class="small text-muted mb-2">
+          Los parámetros (Familia / Sección / Tipo de Entrada / Tipo de Salida / Tipo de Acontecimiento / Estado del EPI / Proveedores) se definen en <strong>Configuración → Inventario-Bodega</strong>.
+          Aquí solo elige cuáles aplica esta empresa (RUC <strong>{{ empresa?.ruc || '—' }}</strong>).
+        </p>
+        <p class="small text-muted mb-0">
+          Use <strong class="text-dark">«Agregar»</strong> para vincular ítems del catálogo global a
+          <strong>{{ empresa?.name || 'esta empresa' }}</strong>.
+        </p>
+      </div>
+      <div class="flex-shrink-0 d-flex flex-wrap gap-2 align-items-start">
+        <a class="btn btn-outline-primary btn-sm" routerLink="/dashboard/admin/configuracion">
+          <i class="fas fa-external-link-alt me-1"></i>Abrir Inventario-Bodega en Configuración
+        </a>
+      </div>
+    </div>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mb-2">
+      <div class="col" *ngFor="let def of inventarioBodegaParamDefinitions">
+        <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': getInventarioBodegaItems(def.catalogKey).length > 0}">
+          <div class="card-header bg-gradient py-3 px-3 border-0" [ngStyle]="{ background: def.headerGradient }">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center gap-2">
+                <div class="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                  <i [class]="def.icon + ' text-white'" style="font-size: 14px;"></i>
+                </div>
+                <h6 class="text-white mb-0 fw-bold small">{{ def.title }}</h6>
+              </div>
+              <button type="button" class="btn btn-light btn-sm fw-semibold text-dark shadow-sm px-2 py-1 border-0"
+                      (click)="openInventarioBodegaAssignModal(def.catalogKey)" title="Elegir ítems del catálogo global">
+                <i class="fas fa-plus me-1"></i>Agregar
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-2">
+            <div class="small text-muted mb-2">
+              <i class="fas fa-database me-1"></i>
+              Fuente: <strong>Configuración → Inventario-Bodega</strong> → {{ def.title }}
+            </div>
+            <div *ngIf="getInventarioBodegaItems(def.catalogKey).length > 0" class="expanded-content">
+              <div class="mb-1" *ngFor="let row of getInventarioBodegaItems(def.catalogKey)">
+                <div class="d-flex align-items-start justify-content-between p-1 bg-light rounded">
+                  <div class="flex-grow-1 me-1">
+                    <div class="small fw-semibold text-dark" style="font-size: 11px;">
+                      <span class="badge bg-teal text-white me-1" style="background:#0f766e;font-size:10px;" *ngIf="row.code">{{ row.code }}</span>
+                      {{ row.name }}
+                    </div>
+                    <div class="text-muted" style="font-size: 10px;" *ngIf="row.description">{{ row.description }}</div>
+                    <div class="text-muted" style="font-size: 10px;" *ngIf="def.catalogKey === 'proveedores'">
+                      <span *ngIf="row.ruc">RUC: {{ row.ruc }}</span>
+                      <span *ngIf="row.phone"> · {{ row.phone }}</span>
+                      <span *ngIf="row.email"> · {{ row.email }}</span>
+                    </div>
+                  </div>
+                  <div class="d-flex gap-1 flex-shrink-0">
+                    <button type="button" class="btn btn-outline-danger btn-sm p-1" title="Quitar de la empresa"
+                            (click)="removeInventarioBodegaItem(def.catalogKey, row.id)" style="font-size: 8px;">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline-primary btn-sm w-100 mt-2" (click)="openInventarioBodegaAssignModal(def.catalogKey)">
+                <i class="fas fa-plus me-1"></i>Agregar más del catálogo
+              </button>
+            </div>
+            <div *ngIf="getInventarioBodegaItems(def.catalogKey).length === 0" class="text-center py-2 px-1">
+              <i [ngClass]="[def.icon, 'fa-lg', 'text-muted', 'opacity-50', 'd-block', 'mb-2']"></i>
+              <p class="text-muted small mb-2" style="font-size: 11px;">Ningún ítem asignado a esta empresa.</p>
+              <button type="button" class="btn btn-primary btn-sm w-100" (click)="openInventarioBodegaAssignModal(def.catalogKey)">
+                <i class="fas fa-th-list me-1"></i>Ver opciones del catálogo
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ═══════════════════════ SECCIÓN: CONFIGURACIÓN MATRIZ LEGAL ═══════════════════════ -->
   <div class="d-flex justify-content-between align-items-center mb-3 mt-4 pb-2" style="border-bottom: 2px solid #e9ecef;">
     <div class="d-flex align-items-center gap-3">
@@ -2934,6 +2823,72 @@
         <button type="button" class="btn btn-primary" (click)="assignIso9001FromGlobal()" [disabled]="!selectedIso9001CatalogIds.length || savingIso9001Assign">
           <i class="fas" [ngClass]="savingIso9001Assign ? 'fa-spinner fa-spin' : 'fa-check'"></i>
           <span class="ms-1">Asignar<span *ngIf="selectedIso9001CatalogIds.length"> ({{ selectedIso9001CatalogIds.length }})</span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Inventario-Bodega — asignar Familia / Sección / Proveedores del catálogo global -->
+<div *ngIf="showAsignInventarioBodegaModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 text-white" style="background: linear-gradient(90deg, #0f766e 0%, #14b8a6 100%);">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-warehouse me-2"></i>
+          <h5 class="modal-title mb-0">{{ inventarioBodegaAssignModalTitle() }}</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" (click)="closeAsignInventarioBodegaModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="small text-muted mb-2">
+          Marque uno o varios registros del catálogo global creados en
+          <strong>Configuración → Inventario-Bodega</strong>.
+        </p>
+        <p class="small text-muted mb-3">Empresa: <strong>{{ empresa?.name }}</strong> · RUC <strong>{{ empresa?.ruc }}</strong></p>
+        <div *ngIf="inventarioBodegaGlobalLoading" class="text-center py-4 text-muted small">
+          <i class="fas fa-spinner fa-spin fa-2x mb-2 d-block"></i>
+          Cargando opciones del catálogo…
+        </div>
+        <div class="d-flex flex-wrap gap-2 mb-2" *ngIf="!inventarioBodegaGlobalLoading">
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="inventarioBodegaAssignSelectAll()">Seleccionar todos</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="inventarioBodegaAssignClear()">Ninguno</button>
+          <span class="small text-muted align-self-center ms-auto" *ngIf="selectedInventarioBodegaIds.length">{{ selectedInventarioBodegaIds.length }} seleccionado(s)</span>
+        </div>
+        <ng-container *ngIf="!inventarioBodegaGlobalLoading">
+          <div class="border rounded p-2 gerencia-multi-pick" style="max-height: 280px; overflow-y: auto;">
+            <label *ngFor="let item of availableInventarioBodegaForAssign(); trackBy: trackByGerenciaCatId" class="d-flex align-items-start gap-2 py-2 px-2 border-bottom mb-0 gerencia-multi-pick__row">
+              <input type="checkbox" class="form-check-input mt-1 flex-shrink-0"
+                     [checked]="inventarioBodegaAssignIsSelected(item.id)"
+                     (change)="inventarioBodegaAssignToggle(item.id, $any($event.target).checked)">
+              <span class="small">
+                <span class="badge me-1" style="background:#0f766e;color:#fff;font-size:10px;" *ngIf="item.code">{{ item.code }}</span>
+                <span class="fw-semibold">{{ item.name }}</span>
+                <span *ngIf="item.description" class="text-muted d-block" style="font-size: 11px;">{{ item.description }}</span>
+                <span *ngIf="inventarioBodegaAssignKey === 'proveedores'" class="text-muted d-block" style="font-size: 11px;">
+                  <span *ngIf="item.ruc">RUC: {{ item.ruc }}</span>
+                  <span *ngIf="item.phone"> · {{ item.phone }}</span>
+                  <span *ngIf="item.email"> · {{ item.email }}</span>
+                </span>
+              </span>
+            </label>
+          </div>
+          <div *ngIf="!allInventarioBodegaGlobalForModal.length && !savingInventarioBodegaAssign" class="alert alert-info small py-2 mt-2 mb-0">
+            <i class="fas fa-info-circle me-1"></i>No hay ítems en el catálogo global. Créelos en
+            <a routerLink="/dashboard/admin/configuracion" class="alert-link fw-semibold">Configuración → Inventario-Bodega</a>.
+          </div>
+          <div *ngIf="allInventarioBodegaGlobalForModal.length && !availableInventarioBodegaForAssign().length" class="alert alert-warning small py-2 mt-2 mb-0">
+            <i class="fas fa-check-double me-1"></i>Ya están asignados a esta empresa todos los ítems disponibles de este catálogo.
+          </div>
+        </ng-container>
+      </div>
+      <div class="modal-footer border-0 bg-light">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeAsignInventarioBodegaModal()" [disabled]="savingInventarioBodegaAssign">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="assignInventarioBodegaFromGlobal()"
+                [disabled]="!selectedInventarioBodegaIds.length || savingInventarioBodegaAssign"
+                style="background:#0f766e;border-color:#0f766e;">
+          <i class="fas" [ngClass]="savingInventarioBodegaAssign ? 'fa-spinner fa-spin' : 'fa-check'"></i>
+          <span class="ms-1">Asignar<span *ngIf="selectedInventarioBodegaIds.length"> ({{ selectedInventarioBodegaIds.length }})</span></span>
         </button>
       </div>
     </div>

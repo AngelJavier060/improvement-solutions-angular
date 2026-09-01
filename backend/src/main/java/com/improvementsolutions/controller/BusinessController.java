@@ -395,6 +395,73 @@ public class BusinessController {
         };
         response.put("iso9001CatalogItems", business.getIso9001CatalogItems().stream().map(iso9001Dto).collect(Collectors.toList()));
 
+        java.util.function.Function<com.improvementsolutions.model.EppFamily, Map<String, Object>> eppFamilyDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("code", it.getCode());
+            m.put("description", it.getDescription());
+            return m;
+        };
+        java.util.function.Function<com.improvementsolutions.model.EppSection, Map<String, Object>> eppSectionDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("code", it.getCode());
+            m.put("description", it.getDescription());
+            return m;
+        };
+        response.put("eppFamilies", business.getEppFamilies().stream().map(eppFamilyDto).collect(Collectors.toList()));
+        response.put("eppSections", business.getEppSections().stream().map(eppSectionDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.InventoryEntryType, Map<String, Object>> entryTypeDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("description", it.getDescription());
+            return m;
+        };
+        response.put("inventoryEntryTypes", business.getInventoryEntryTypes().stream().map(entryTypeDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.InventoryOutputType, Map<String, Object>> outputTypeDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("description", it.getDescription());
+            return m;
+        };
+        response.put("inventoryOutputTypes", business.getInventoryOutputTypes().stream().map(outputTypeDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.InventoryAcontecimientoType, Map<String, Object>> acontecimientoDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("description", it.getDescription());
+            return m;
+        };
+        response.put("inventoryAcontecimientoTypes", business.getInventoryAcontecimientoTypes().stream().map(acontecimientoDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.InventoryEstadoEpi, Map<String, Object>> estadoEpiDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("description", it.getDescription());
+            return m;
+        };
+        response.put("inventoryEstadoEpis", business.getInventoryEstadoEpis().stream().map(estadoEpiDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.inventory.InventorySupplierGlobal, Map<String, Object>> invSupDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("ruc", it.getRuc());
+            m.put("phone", it.getPhone());
+            m.put("email", it.getEmail());
+            m.put("address", it.getAddress());
+            return m;
+        };
+        response.put("inventorySupplierGlobals", business.getInventorySupplierGlobals().stream().map(invSupDto).collect(Collectors.toList()));
+
         // Configuración de mantenimiento (JSON plano almacenado en la entidad)
         response.put("maintenanceConfig", business.getMaintenanceConfig());
         // Contactos de emergencia (JSON plano almacenado en la entidad)
@@ -601,6 +668,73 @@ public class BusinessController {
             return m;
         };
         response.put("iso9001CatalogItems", safeStream(business.getIso9001CatalogItems()).map(iso9001DetailsDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.EppFamily, Map<String, Object>> eppFamilyDetailsDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("code", it.getCode());
+            m.put("description", it.getDescription());
+            return m;
+        };
+        java.util.function.Function<com.improvementsolutions.model.EppSection, Map<String, Object>> eppSectionDetailsDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("code", it.getCode());
+            m.put("description", it.getDescription());
+            return m;
+        };
+        response.put("eppFamilies", safeStream(business.getEppFamilies()).map(eppFamilyDetailsDto).collect(Collectors.toList()));
+        response.put("eppSections", safeStream(business.getEppSections()).map(eppSectionDetailsDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.InventoryEntryType, Map<String, Object>> entryTypeDetailsDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("description", it.getDescription());
+            return m;
+        };
+        response.put("inventoryEntryTypes", safeStream(business.getInventoryEntryTypes()).map(entryTypeDetailsDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.InventoryOutputType, Map<String, Object>> outputTypeDetailsDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("description", it.getDescription());
+            return m;
+        };
+        response.put("inventoryOutputTypes", safeStream(business.getInventoryOutputTypes()).map(outputTypeDetailsDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.InventoryAcontecimientoType, Map<String, Object>> acontecimientoDetailsDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("description", it.getDescription());
+            return m;
+        };
+        response.put("inventoryAcontecimientoTypes", safeStream(business.getInventoryAcontecimientoTypes()).map(acontecimientoDetailsDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.InventoryEstadoEpi, Map<String, Object>> estadoEpiDetailsDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("description", it.getDescription());
+            return m;
+        };
+        response.put("inventoryEstadoEpis", safeStream(business.getInventoryEstadoEpis()).map(estadoEpiDetailsDto).collect(Collectors.toList()));
+
+        java.util.function.Function<com.improvementsolutions.model.inventory.InventorySupplierGlobal, Map<String, Object>> invSupDetailsDto = it -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", it.getId());
+            m.put("name", it.getName());
+            m.put("ruc", it.getRuc());
+            m.put("phone", it.getPhone());
+            m.put("email", it.getEmail());
+            m.put("address", it.getAddress());
+            return m;
+        };
+        response.put("inventorySupplierGlobals", safeStream(business.getInventorySupplierGlobals()).map(invSupDetailsDto).collect(Collectors.toList()));
 
         log.debug("[BusinessController] getBusinessDetails id={} companies={} blocks={}", id,
                 contractorCompaniesDto.size(), contractorBlocksDto.size());
@@ -1607,6 +1741,139 @@ public class BusinessController {
             @PathVariable Long businessId,
             @PathVariable Long id) {
         businessService.removeIso9001CatalogItemFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    /** Vincula una Familia del catálogo Inventario-Bodega a la empresa. */
+    @PostMapping("/{businessId}/epp-family/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addEppFamilyToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.addEppFamilyToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+
+    @DeleteMapping("/{businessId}/epp-family/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeEppFamilyFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.removeEppFamilyFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    /** Vincula una Sección del catálogo Inventario-Bodega a la empresa. */
+    @PostMapping("/{businessId}/epp-section/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addEppSectionToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.addEppSectionToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+
+    @DeleteMapping("/{businessId}/epp-section/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeEppSectionFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.removeEppSectionFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    /** Vincula un proveedor global (Inventario-Bodega) a la empresa. */
+    @PostMapping("/{businessId}/inventory-supplier-global/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addInventorySupplierGlobalToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.addInventorySupplierGlobalToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+
+    @DeleteMapping("/{businessId}/inventory-supplier-global/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeInventorySupplierGlobalFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.removeInventorySupplierGlobalFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    /** Vincula un Tipo de Entrada del catálogo Inventario-Bodega a la empresa. */
+    @PostMapping("/{businessId}/inventory-entry-type/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addInventoryEntryTypeToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.addInventoryEntryTypeToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+
+    @DeleteMapping("/{businessId}/inventory-entry-type/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeInventoryEntryTypeFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.removeInventoryEntryTypeFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    /** Vincula un Tipo de Salida del catálogo Inventario-Bodega a la empresa. */
+    @PostMapping("/{businessId}/inventory-output-type/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addInventoryOutputTypeToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.addInventoryOutputTypeToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+
+    @DeleteMapping("/{businessId}/inventory-output-type/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeInventoryOutputTypeFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.removeInventoryOutputTypeFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    /** Vincula un Tipo de Acontecimiento (Cambio EPP) a la empresa. */
+    @PostMapping("/{businessId}/inventory-acontecimiento-type/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addInventoryAcontecimientoTypeToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.addInventoryAcontecimientoTypeToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+
+    @DeleteMapping("/{businessId}/inventory-acontecimiento-type/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeInventoryAcontecimientoTypeFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.removeInventoryAcontecimientoTypeFromBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
+    }
+
+    /** Vincula un Estado del EPI (Cambio EPP) a la empresa. */
+    @PostMapping("/{businessId}/inventory-estado-epi/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addInventoryEstadoEpiToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.addInventoryEstadoEpiToBusiness(businessId, id);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Asignado"));
+    }
+
+    @DeleteMapping("/{businessId}/inventory-estado-epi/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeInventoryEstadoEpiFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long id) {
+        businessService.removeInventoryEstadoEpiFromBusiness(businessId, id);
         return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Eliminado"));
     }
 

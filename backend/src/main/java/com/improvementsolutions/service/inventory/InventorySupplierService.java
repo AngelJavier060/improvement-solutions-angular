@@ -1,12 +1,17 @@
 package com.improvementsolutions.service.inventory;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.improvementsolutions.model.Business;
 import com.improvementsolutions.model.inventory.InventorySupplier;
+import com.improvementsolutions.model.inventory.InventorySupplierGlobal;
 import com.improvementsolutions.repository.inventory.InventorySupplierRepository;
 
 @Service
@@ -25,6 +30,85 @@ public class InventorySupplierService {
     public List<InventorySupplier> list(String ruc) {
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
         return supplierRepository.findByBusiness_Id(business.getId());
+    }
+
+    /**
+     * Proveedores asignados a la empresa en Inventario-Bodega
+     * (Configuración → Proveedores → asignados en Empresas).
+     * Sincroniza a inventory_suppliers local para poder enlazar entradas.
+     */
+    @Transactional
+    public List<InventorySupplier> listFromBodega(String ruc) {
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        if (business.getInventorySupplierGlobals() != null) {
+            business.getInventorySupplierGlobals().size();
+        }
+        List<InventorySupplier> locals = new ArrayList<>(supplierRepository.findByBusiness_Id(business.getId()));
+        List<InventorySupplier> result = new ArrayList<>();
+        if (business.getInventorySupplierGlobals() == null || business.getInventorySupplierGlobals().isEmpty()) {
+            return result;
+        }
+        for (InventorySupplierGlobal g : business.getInventorySupplierGlobals()) {
+            if (g == null || g.getName() == null || g.getName().isBlank()) continue;
+            InventorySupplier local = findMatchingLocal(locals, g);
+            if (local == null) {
+                local = new InventorySupplier();
+                local.setBusiness(business);
+                local.setName(g.getName().trim());
+                local.setRuc(trimToNull(g.getRuc()));
+                local.setPhone(trimToNull(g.getPhone()));
+                local.setEmail(trimToNull(g.getEmail()));
+                local.setAddress(trimToNull(g.getAddress()));
+                local.setActive(Boolean.TRUE);
+                local = supplierRepository.save(local);
+                locals.add(local);
+            } else {
+                // Mantener datos al día desde el catálogo global
+                local.setName(g.getName().trim());
+                if (trimToNull(g.getRuc()) != null) local.setRuc(trimToNull(g.getRuc()));
+                local.setPhone(trimToNull(g.getPhone()));
+                local.setEmail(trimToNull(g.getEmail()));
+                local.setAddress(trimToNull(g.getAddress()));
+                local.setActive(Boolean.TRUE);
+                local = supplierRepository.save(local);
+            }
+            result.add(local);
+        }
+        result.sort(Comparator.comparing(s -> s.getName() == null ? "" : s.getName(), String.CASE_INSENSITIVE_ORDER));
+        return result;
+    }
+
+    private InventorySupplier findMatchingLocal(List<InventorySupplier> locals, InventorySupplierGlobal g) {
+        String gRuc = normalizeKey(g.getRuc());
+        String gName = normalizeKey(g.getName());
+        for (InventorySupplier s : locals) {
+            if (s == null) continue;
+            String sRuc = normalizeKey(s.getRuc());
+            if (!gRuc.isEmpty() && !sRuc.isEmpty() && Objects.equals(gRuc, sRuc)) {
+                return s;
+            }
+        }
+        for (InventorySupplier s : locals) {
+            if (s == null) continue;
+            String sName = normalizeKey(s.getName());
+            if (!gName.isEmpty() && Objects.equals(gName, sName)) {
+                // Si ambos tienen RUC distinto, no es el mismo
+                String sRuc = normalizeKey(s.getRuc());
+                if (!gRuc.isEmpty() && !sRuc.isEmpty() && !Objects.equals(gRuc, sRuc)) continue;
+                return s;
+            }
+        }
+        return null;
+    }
+
+    private String normalizeKey(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) return null;
+        String t = value.trim();
+        return t.isEmpty() ? null : t;
     }
 
     @Transactional

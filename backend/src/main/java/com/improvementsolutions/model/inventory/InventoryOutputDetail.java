@@ -3,6 +3,7 @@ package com.improvementsolutions.model.inventory;
 import java.math.BigDecimal;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -68,5 +69,20 @@ public class InventoryOutputDetail {
         if (this.quantity == null) this.quantity = BigDecimal.ZERO;
         if (this.unitCost == null) this.unitCost = BigDecimal.ZERO;
         if (this.totalCost == null) this.totalCost = BigDecimal.ZERO;
+    }
+
+    /** Compatibilidad FE: acepta variantId plano además de variant: { id }. */
+    @JsonProperty("variantId")
+    public Long getVariantId() {
+        return variant != null ? variant.getId() : null;
+    }
+
+    @JsonProperty("variantId")
+    public void setVariantId(Long variantId) {
+        if (variantId == null) return;
+        if (this.variant == null) {
+            this.variant = new InventoryVariant();
+        }
+        this.variant.setId(variantId);
     }
 }

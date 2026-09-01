@@ -36,6 +36,24 @@ export class EmployeeService {
     return this.http.get<EmployeeResponse[]>(url);
   }
 
+  /** Solo trabajadores activos/vigentes (para entregas EPP, préstamos, etc.). */
+  getActiveEmployeesByBusinessRuc(businessRuc: string): Observable<EmployeeResponse[]> {
+    const url = `${this.apiUrl}/business-employees/company/${businessRuc}/active`;
+    return this.http.get<EmployeeResponse[]>(url);
+  }
+
+  /** Vigente en la empresa: active=true o, si no viene, status no inactivo y sin fechaSalida. */
+  static isEmployeeActive(emp: EmployeeResponse | null | undefined): boolean {
+    if (!emp) return false;
+    if (emp.active === false) return false;
+    if (emp.active === true) return true;
+    if (typeof emp.status === 'boolean') return emp.status;
+    const s = String((emp as any).status ?? '').trim().toUpperCase();
+    if (s === 'INACTIVO' || s === 'INACTIVE' || s === '0' || s === 'FALSE') return false;
+    if (emp.fechaSalida) return false;
+    return true;
+  }
+
   // Obtener empleados paginados/filtrados por RUC
   getEmployeesByBusinessRucPaginated(
     businessRuc: string,

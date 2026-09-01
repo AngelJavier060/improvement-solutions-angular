@@ -248,6 +248,20 @@
     }
   }
 
+  &.seccion-epp {
+    .seccion-icono-wrapper { background-color: #ccfbf1; color: #0f766e; }
+    .seccion-titulo h2 { color: #115e59; }
+    .categoria-card {
+      border-left-color: transparent;
+      &:hover {
+        border-left-color: #14b8a6;
+        .icon-container { background-color: #0f766e; color: white; }
+      }
+      .icon-container { background-color: #f0fdfa; color: #0f766e; }
+    }
+    .categoria-card:hover .arrow { color: #0f766e; }
+  }
+
   &.seccion-inventario {
     background: #fafaf9;
     padding: 28px;

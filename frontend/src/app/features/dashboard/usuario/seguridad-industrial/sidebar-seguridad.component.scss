@@ -99,6 +99,34 @@
   color: #b0b7c3;
 }
 
+.nav-link-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  line-height: 1.2;
+}
+
+.nav-working-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fdba74;
+}
+
+.nav-link.active .nav-working-badge,
+.nav-link:hover:not(.disabled) .nav-working-badge {
+  background: rgba(255, 255, 255, 0.92);
+  color: #c2410c;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
 .nav-group-header {
   display: flex;
   align-items: stretch;

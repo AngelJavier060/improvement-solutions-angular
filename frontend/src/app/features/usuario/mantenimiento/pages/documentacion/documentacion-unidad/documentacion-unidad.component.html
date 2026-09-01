@@ -1,4 +1,4 @@
-<div class="du-page" *ngIf="!loading && !error && vehicle">
+<div class="du-page" *ngIf="!loading && !error && vehicle" (click)="closeZipMenu()">
   <!-- Header: ficha + resumen -->
   <section class="du-top">
     <article class="du-hero">
@@ -75,15 +75,54 @@
         (click)="exportEstadoPdf()">
         <i class="fas" [ngClass]="exportingPdf ? 'fa-spinner fa-spin' : 'fa-file-pdf'"></i>
       </button>
-      <button
-        type="button"
-        class="du-btn du-btn--zip"
-        title="Descargar todos los PDF de esta unidad en un ZIP"
-        [disabled]="downloadingZip || pdfDocsCount() === 0"
-        (click)="downloadAllPdfs()">
-        <i class="fas" [ngClass]="downloadingZip ? 'fa-spinner fa-spin' : 'fa-file-archive'"></i>
-        <span>Descargar todo</span>
-      </button>
+      <div class="du-zip" [class.is-open]="zipMenuOpen" (click)="$event.stopPropagation()">
+        <button
+          type="button"
+          class="du-btn du-btn--zip"
+          title="Descargar PDF por una o varias secciones"
+          [disabled]="downloadingZip || pdfDocsCount('ALL') === 0"
+          (click)="toggleZipMenu($event)">
+          <i class="fas" [ngClass]="downloadingZip ? 'fa-spinner fa-spin' : 'fa-file-archive'"></i>
+          <span>{{ downloadingZip ? 'Preparando…' : 'Descargar' }}</span>
+          <i class="fas fa-caret-down du-zip__caret" *ngIf="!downloadingZip"></i>
+        </button>
+        <div class="du-zip__menu" *ngIf="zipMenuOpen && !downloadingZip" role="menu">
+          <p class="du-zip__hint">Marca una o varias secciones</p>
+          <div
+            class="du-zip__item du-zip__item--check"
+            *ngFor="let opt of zipDownloadOptions"
+            [class.is-disabled]="pdfDocsCount(opt.code) === 0"
+            (click)="$event.stopPropagation()">
+            <input
+              type="checkbox"
+              [id]="'zip-sec-' + opt.code"
+              [ngModel]="isZipSectionSelected(opt.code)"
+              [ngModelOptions]="{standalone: true}"
+              [disabled]="pdfDocsCount(opt.code) === 0"
+              (ngModelChange)="setZipCheck(opt.code, $event)"
+              (click)="$event.stopPropagation()" />
+            <label class="du-zip__label" [attr.for]="'zip-sec-' + opt.code">{{ opt.label }}</label>
+            <span class="du-zip__count">{{ pdfDocsCount(opt.code) }}</span>
+          </div>
+          <div class="du-zip__links">
+            <button type="button" class="du-zip__link" (click)="selectAllZipSections($event)">Todas</button>
+            <button type="button" class="du-zip__link" (click)="clearZipSections($event)">Ninguna</button>
+          </div>
+          <button
+            type="button"
+            class="du-zip__action"
+            [disabled]="selectedZipCount() === 0"
+            (click)="downloadSelectedZip($event)">
+            Descargar seleccionadas ({{ selectedZipCount() }})
+          </button>
+          <button
+            type="button"
+            class="du-zip__action du-zip__action--ghost"
+            (click)="downloadAllZip($event)">
+            Descargar todo
+          </button>
+        </div>
+      </div>
       <a
         *ngIf="canWrite"
         class="du-btn du-btn--primary"

@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.improvementsolutions.model.inventory.enums.ItemCondition;
 
 import jakarta.persistence.*;
@@ -82,5 +83,20 @@ public class InventoryEntryDetail {
             BigDecimal costWithTax = this.unitCost.add(this.taxAmount != null ? this.taxAmount : BigDecimal.ZERO);
             this.totalCost = this.quantity.multiply(costWithTax);
         }
+    }
+
+    /** Compatibilidad FE: acepta variantId plano además de variant: { id }. */
+    @JsonProperty("variantId")
+    public Long getVariantId() {
+        return variant != null ? variant.getId() : null;
+    }
+
+    @JsonProperty("variantId")
+    public void setVariantId(Long variantId) {
+        if (variantId == null) return;
+        if (this.variant == null) {
+            this.variant = new InventoryVariant();
+        }
+        this.variant.setId(variantId);
     }
 }

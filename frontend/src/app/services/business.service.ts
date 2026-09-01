@@ -80,6 +80,63 @@ export class BusinessService {
     );
   }
 
+  /** Vincula Familia / Sección del catálogo Inventario-Bodega a la empresa. */
+  addEppFamilyToBusiness(businessId: number, familyId: number): Observable<{ message?: string }> {
+    return this.http.post<{ message?: string }>(`${this.apiUrl}/${businessId}/epp-family/${familyId}`, {});
+  }
+
+  removeEppFamilyFromBusiness(businessId: number, familyId: number): Observable<{ message?: string }> {
+    return this.http.delete<{ message?: string }>(`${this.apiUrl}/${businessId}/epp-family/${familyId}`);
+  }
+
+  addEppSectionToBusiness(businessId: number, sectionId: number): Observable<{ message?: string }> {
+    return this.http.post<{ message?: string }>(`${this.apiUrl}/${businessId}/epp-section/${sectionId}`, {});
+  }
+
+  removeEppSectionFromBusiness(businessId: number, sectionId: number): Observable<{ message?: string }> {
+    return this.http.delete<{ message?: string }>(`${this.apiUrl}/${businessId}/epp-section/${sectionId}`);
+  }
+
+  addInventorySupplierGlobalToBusiness(businessId: number, supplierId: number): Observable<{ message?: string }> {
+    return this.http.post<{ message?: string }>(`${this.apiUrl}/${businessId}/inventory-supplier-global/${supplierId}`, {});
+  }
+
+  removeInventorySupplierGlobalFromBusiness(businessId: number, supplierId: number): Observable<{ message?: string }> {
+    return this.http.delete<{ message?: string }>(`${this.apiUrl}/${businessId}/inventory-supplier-global/${supplierId}`);
+  }
+
+  addInventoryEntryTypeToBusiness(businessId: number, typeId: number): Observable<{ message?: string }> {
+    return this.http.post<{ message?: string }>(`${this.apiUrl}/${businessId}/inventory-entry-type/${typeId}`, {});
+  }
+
+  removeInventoryEntryTypeFromBusiness(businessId: number, typeId: number): Observable<{ message?: string }> {
+    return this.http.delete<{ message?: string }>(`${this.apiUrl}/${businessId}/inventory-entry-type/${typeId}`);
+  }
+
+  addInventoryOutputTypeToBusiness(businessId: number, typeId: number): Observable<{ message?: string }> {
+    return this.http.post<{ message?: string }>(`${this.apiUrl}/${businessId}/inventory-output-type/${typeId}`, {});
+  }
+
+  removeInventoryOutputTypeFromBusiness(businessId: number, typeId: number): Observable<{ message?: string }> {
+    return this.http.delete<{ message?: string }>(`${this.apiUrl}/${businessId}/inventory-output-type/${typeId}`);
+  }
+
+  addInventoryAcontecimientoTypeToBusiness(businessId: number, typeId: number): Observable<{ message?: string }> {
+    return this.http.post<{ message?: string }>(`${this.apiUrl}/${businessId}/inventory-acontecimiento-type/${typeId}`, {});
+  }
+
+  removeInventoryAcontecimientoTypeFromBusiness(businessId: number, typeId: number): Observable<{ message?: string }> {
+    return this.http.delete<{ message?: string }>(`${this.apiUrl}/${businessId}/inventory-acontecimiento-type/${typeId}`);
+  }
+
+  addInventoryEstadoEpiToBusiness(businessId: number, estadoId: number): Observable<{ message?: string }> {
+    return this.http.post<{ message?: string }>(`${this.apiUrl}/${businessId}/inventory-estado-epi/${estadoId}`, {});
+  }
+
+  removeInventoryEstadoEpiFromBusiness(businessId: number, estadoId: number): Observable<{ message?: string }> {
+    return this.http.delete<{ message?: string }>(`${this.apiUrl}/${businessId}/inventory-estado-epi/${estadoId}`);
+  }
+
   // === MÉTODOS PARA CARGOS ===
   addPositionToBusiness(businessId: number, positionId: number): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/${businessId}/positions/${positionId}`, {});

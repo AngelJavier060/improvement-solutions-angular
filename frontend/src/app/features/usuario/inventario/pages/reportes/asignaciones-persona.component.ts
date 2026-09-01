@@ -2,7 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { InventoryOutputService, InventoryOutput } from '../../../../../services/inventory-output.service';
+import { InventoryEntryService } from '../../../../../services/inventory-entry.service';
 import { EmployeeResponse } from '../../../../dashboard/usuario/talento-humano/models/employee.model';
 import { EmployeeService as THEmployeeService } from '../../../../dashboard/usuario/talento-humano/services/employee.service';
 
@@ -36,8 +38,9 @@ import { EmployeeService as THEmployeeService } from '../../../../dashboard/usua
             <button type="button" class="btn btn-outline-secondary" (click)="searchByCodigo()">Buscar</button>
           </div>
         </div>
-        <div class="col-md-4 d-flex align-items-center">
+        <div class="col-md-4 d-flex align-items-center gap-2 flex-wrap">
           <div class="fw-semibold">{{ selectedEmployee ? (selectedEmployee.nombres + ' ' + selectedEmployee.apellidos) : '—' }}</div>
+          <span *ngIf="selectedEmployee && !isEmployeeActive(selectedEmployee)" class="badge bg-secondary">INACTIVO</span>
         </div>
       </div>
 
@@ -45,10 +48,23 @@ import { EmployeeService as THEmployeeService } from '../../../../dashboard/usua
         <div class="col-12"><div class="alert alert-danger">{{ errorMessage }}</div></div>
       </div>
 
+      <div class="row" *ngIf="selectedEmployee && !isEmployeeActive(selectedEmployee)">
+        <div class="col-12">
+          <div class="alert alert-warning mb-3">
+            Trabajador inactivo<span *ngIf="selectedEmployee.fechaSalida"> (salida: {{ selectedEmployee.fechaSalida }})</span>.
+            El historial se conserva para auditoría (qué se entregó/gastó hasta su salida).
+            No se deben registrar entregas nuevas; use Devoluciones para cerrar pendientes.
+          </div>
+        </div>
+      </div>
+
       <div class="row" *ngIf="selectedEmployee">
         <div class="col-lg-6">
           <div class="card shadow-sm mb-3">
-            <div class="card-header bg-light"><div class="fw-semibold">EPP actualmente asignado</div></div>
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+              <div class="fw-semibold">EPP actualmente asignado</div>
+              <span class="badge bg-light text-dark border" *ngIf="!isEmployeeActive(selectedEmployee)">Pendiente al salir</span>
+            </div>
             <div class="card-body p-0">
               <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0">
@@ -107,7 +123,10 @@ import { EmployeeService as THEmployeeService } from '../../../../dashboard/usua
 
         <div class="col-lg-6">
           <div class="card shadow-sm">
-            <div class="card-header bg-light"><div class="fw-semibold">Historial</div></div>
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+              <div class="fw-semibold">Historial de salidas (auditoría)</div>
+              <span class="small text-muted">Total entregado: {{ totalHistoryCost | number:'1.2-2' }}</span>
+            </div>
             <div class="card-body p-0">
               <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0">
@@ -117,6 +136,7 @@ import { EmployeeService as THEmployeeService } from '../../../../dashboard/usua
                       <th>Tipo</th>
                       <th>Variante</th>
                       <th class="text-end">Cant.</th>
+                      <th class="text-end">Valor</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -125,8 +145,9 @@ import { EmployeeService as THEmployeeService } from '../../../../dashboard/usua
                       <td>{{ o.outputType }}</td>
                       <td>{{ o.detailVariantCode }}</td>
                       <td class="text-end">{{ o.detailQuantity }}</td>
+                      <td class="text-end">{{ (o.detailTotalCost || 0) | number:'1.2-2' }}</td>
                     </tr>
-                    <tr *ngIf="!outputsHistory.length"><td colspan="4" class="text-center text-muted py-2">Sin historial</td></tr>
+                    <tr *ngIf="!outputsHistory.length"><td colspan="5" class="text-center text-muted py-2">Sin historial</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -151,16 +172,22 @@ export class AsignacionesPersonaComponent implements OnInit {
 
   currentAssigned: Array<{ variantCode: string; quantity: number; unitCost?: number; totalCost?: number; } & any> = [];
   totalAssigned = 0;
+  totalHistoryCost = 0;
   currentLoans: Array<{ variantCode: string; outputDate: string; returnDate?: string; } & any> = [];
-  outputsHistory: Array<{ outputDate: string; outputType: string; detailVariantCode: string; detailQuantity: number; } & InventoryOutput> = [];
+  outputsHistory: Array<{ outputDate: string; outputType: string; detailVariantCode: string; detailQuantity: number; detailTotalCost?: number; } & InventoryOutput> = [];
 
   constructor(
     private route: ActivatedRoute,
     private outputService: InventoryOutputService,
+    private entryService: InventoryEntryService,
     private thEmployeeService: THEmployeeService
   ) {}
 
   ngOnInit(): void { this.ruc = this.route.parent?.snapshot.params['ruc'] || ''; }
+
+  isEmployeeActive(emp: EmployeeResponse | null | undefined): boolean {
+    return THEmployeeService.isEmployeeActive(emp);
+  }
 
   searchByCedula(): void {
     const c = (this.cedulaSearch || '').trim();
@@ -184,28 +211,85 @@ export class AsignacionesPersonaComponent implements OnInit {
 
   private loadForEmployee(): void {
     if (!this.selectedEmployee?.id) return;
-    this.outputService.findByEmployee(this.ruc, Number(this.selectedEmployee.id)).subscribe({
-      next: (outs) => {
-        const assigned: any[] = [];
+    const empId = Number(this.selectedEmployee.id);
+    forkJoin({
+      outs: this.outputService.findByEmployee(this.ruc, empId),
+      entries: this.entryService.list(this.ruc)
+    }).subscribe({
+      next: ({ outs, entries }) => {
+        const returnedQty = new Map<number, number>();
+        for (const e of (entries || [])) {
+          if ((e as any).entryType !== 'DEVOLUCION' || (e as any).status !== 'CONFIRMADO') continue;
+          if (String((e as any).origin || '') !== `EMP:${empId}`) continue;
+          for (const d of ((e as any).details || [])) {
+            const vid = Number(d.variantId || d.variant?.id || 0);
+            if (!vid) continue;
+            returnedQty.set(vid, (returnedQty.get(vid) || 0) + Number(d.quantity || 0));
+          }
+        }
+
+        const assignedMap = new Map<number, any>();
         const loans: any[] = [];
         const history: any[] = [];
-        const today = new Date().toISOString().slice(0,10);
+        let historyCost = 0;
+
         for (const o of (outs || [])) {
           const details = Array.isArray((o as any).details) ? (o as any).details : [];
           for (const d of details) {
-            history.push({ ...o, detailVariantCode: d.variantCode, detailQuantity: d.quantity });
+            const lineCost = Number(d.totalCost ?? (d.unitCost || 0) * (d.quantity || 0));
+            historyCost += lineCost;
+            history.push({
+              ...o,
+              detailVariantCode: d.variantCode,
+              detailQuantity: d.quantity,
+              detailTotalCost: lineCost
+            });
           }
+
           if ((o as any).status === 'CONFIRMADO' && (o as any).outputType === 'EPP_TRABAJADOR') {
-            for (const d of details) assigned.push(d);
+            for (const d of details) {
+              const vid = Number(d.variantId || 0);
+              if (!vid) continue;
+              const prev = assignedMap.get(vid) || {
+                variantId: vid,
+                variantCode: d.variantCode,
+                quantity: 0,
+                unitCost: Number(d.unitCost || 0),
+                totalCost: 0
+              };
+              prev.quantity += Number(d.quantity || 0);
+              prev.totalCost += Number(d.totalCost ?? (d.unitCost || 0) * (d.quantity || 0));
+              assignedMap.set(vid, prev);
+            }
           }
-          if ((o as any).status === 'CONFIRMADO' && (o as any).outputType === 'PRESTAMO') {
-            for (const d of details) loans.push({ variantCode: d.variantCode, outputDate: (o as any).outputDate, returnDate: (o as any).returnDate });
+
+          if ((o as any).status === 'CONFIRMADO' && (o as any).outputType === 'PRESTAMO' && !(o as any).returned) {
+            for (const d of details) {
+              loans.push({
+                variantCode: d.variantCode,
+                outputDate: (o as any).outputDate,
+                returnDate: (o as any).returnDate
+              });
+            }
           }
         }
-        this.currentAssigned = assigned;
-        this.totalAssigned = assigned.reduce((acc, it) => acc + ((it.totalCost ?? (it.unitCost||0) * it.quantity) as number), 0);
-        this.currentLoans = loans.filter(x => !x.returnDate || x.returnDate >= today);
-        this.outputsHistory = history.sort((a,b) => (a.outputDate||'').localeCompare(b.outputDate||''));
+
+        // Restar devoluciones confirmadas (origen EMP:{id})
+        for (const [vid, qtyRet] of returnedQty.entries()) {
+          const row = assignedMap.get(vid);
+          if (!row) continue;
+          const unit = row.quantity > 0 ? (row.totalCost / row.quantity) : 0;
+          row.quantity = Math.max(0, row.quantity - qtyRet);
+          row.totalCost = unit * row.quantity;
+          if (row.quantity <= 0) assignedMap.delete(vid);
+          else assignedMap.set(vid, row);
+        }
+
+        this.currentAssigned = Array.from(assignedMap.values());
+        this.totalAssigned = this.currentAssigned.reduce((acc, it) => acc + Number(it.totalCost || 0), 0);
+        this.totalHistoryCost = historyCost;
+        this.currentLoans = loans;
+        this.outputsHistory = history.sort((a, b) => (a.outputDate || '').localeCompare(b.outputDate || ''));
       },
       error: () => { this.errorMessage = 'No se pudo cargar datos del trabajador'; }
     });

@@ -32,6 +32,14 @@ public class InventoryVariant {
     @Column(length = 200)
     private String description;
 
+    /** Especificaciones generales de la variante (máx. 500 caracteres). */
+    @Column(name = "general_specs", length = 500)
+    private String generalSpecs;
+
+    /** Ruta del PDF de ficha técnica (EPP u otros). */
+    @Column(name = "tech_sheet_pdf", length = 255)
+    private String techSheetPdf;
+
     @Column(name = "size_label", length = 50)
     private String sizeLabel;
 

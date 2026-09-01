@@ -20,13 +20,15 @@ export interface InventoryEntryDetail {
   productName?: string;
   variantCode?: string;
   productImage?: string;
+  /** Stock actual en bodega al momento de agregar la línea (solo UI). */
+  currentQty?: number;
 }
 
 export interface InventoryEntry {
   id?: number;
   entryNumber: string;
   entryDate: string; // formato: YYYY-MM-DD
-  entryType: 'COMPRA' | 'DEVOLUCION' | 'TRANSFERENCIA' | 'AJUSTE' | 'DONACION';
+  entryType: string;
   supplierId?: number;
   origin?: string;
   receivedBy: string;
@@ -50,7 +52,7 @@ export class InventoryEntryService {
    * Crear nueva entrada de inventario
    */
   create(ruc: string, entry: InventoryEntry): Observable<InventoryEntry> {
-    return this.http.post<InventoryEntry>(`/api/inventory/${ruc}/entries`, entry);
+    return this.http.post<InventoryEntry>(`/api/inventory/${ruc}/entries`, this.toPayload(entry));
   }
 
   /**
@@ -58,6 +60,18 @@ export class InventoryEntryService {
    */
   list(ruc: string): Observable<InventoryEntry[]> {
     return this.http.get<InventoryEntry[]>(`/api/inventory/${ruc}/entries`);
+  }
+
+  /** Siguiente número consecutivo del año (ENT-2026-0001). */
+  nextNumber(ruc: string): Observable<{ entryNumber: string }> {
+    return this.http.get<{ entryNumber: string }>(`/api/inventory/${ruc}/entries/next-number`);
+  }
+
+  /** Tipos de entrada asignados a la empresa. */
+  listEntryTypes(ruc: string): Observable<Array<{ id: number; name: string; code: string; description?: string }>> {
+    return this.http.get<Array<{ id: number; name: string; code: string; description?: string }>>(
+      `/api/inventory/${ruc}/entries/types`
+    );
   }
 
   /**
@@ -86,5 +100,34 @@ export class InventoryEntryService {
   /** Confirma la entrada (afecta stock) */
   confirm(ruc: string, entryId: number): Observable<any> {
     return this.http.patch<any>(`/api/inventory/${ruc}/entries/${entryId}/confirm`, {});
+  }
+
+  /** Anula entrada en BORRADOR (no afecta stock) */
+  cancel(ruc: string, entryId: number): Observable<any> {
+    return this.http.patch<any>(`/api/inventory/${ruc}/entries/${entryId}/cancel`, {});
+  }
+
+  private toPayload(entry: InventoryEntry): any {
+    return {
+      ...entry,
+      details: (entry.details || []).map((d: any) => {
+        const variantId = Number(d?.variantId || d?.variant?.id || 0) || undefined;
+        return {
+          quantity: d.quantity,
+          unitCost: d.unitCost,
+          taxPercentage: d.taxPercentage ?? 0,
+          taxAmount: d.taxAmount ?? 0,
+          totalCost: d.totalCost,
+          lotNumber: d.lotNumber,
+          manufacturingDate: d.manufacturingDate,
+          expirationDate: d.expirationDate,
+          warehouseLocation: d.warehouseLocation,
+          itemCondition: d.itemCondition,
+          notes: d.notes,
+          variantId,
+          variant: variantId ? { id: variantId } : undefined
+        };
+      })
+    };
   }
 }

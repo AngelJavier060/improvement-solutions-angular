@@ -23,6 +23,11 @@ export class InventorySupplierService {
     return this.http.get<InventorySupplier[]>(`/api/inventory/${ruc}/suppliers`);
   }
 
+  /** Proveedores asignados a la empresa en Inventario-Bodega. */
+  listFromBodega(ruc: string): Observable<InventorySupplier[]> {
+    return this.http.get<InventorySupplier[]>(`/api/inventory/${ruc}/suppliers/bodega`);
+  }
+
   refresh(ruc: string): Observable<InventorySupplier[]> {
     return this.list(ruc).pipe(
       tap(list => this.suppliersSubject.next(list.filter(s => s.active !== false)))

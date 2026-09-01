@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +51,7 @@ public class InventoryEntryService {
             entry.setNotes(notes == null || notes.isBlank() ? info : (notes + " " + info));
         }
         entry.setEntryNumber(uniqueNumber);
+        entry.setEntryType(normalizeEntryTypeForPersistence(entry.getEntryType()));
 
         entry.setBusiness(business);
 
@@ -105,14 +107,86 @@ public class InventoryEntryService {
         return saved;
     }
     
+    /**
+     * Compatibilidad con CHECK antiguo (COMPRA/DEVOLUCION/…) y catálogo por nombre ("Compra").
+     * Si coincide con un tipo legacy, persiste el código; si no, el nombre libre.
+     */
+    private String normalizeEntryTypeForPersistence(String raw) {
+        if (raw == null || raw.isBlank()) {
+            throw new IllegalArgumentException("El tipo de entrada es obligatorio");
+        }
+        String trimmed = raw.trim();
+        String key = java.text.Normalizer.normalize(trimmed, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toUpperCase(java.util.Locale.ROOT)
+                .replace('-', '_')
+                .replace(' ', '_');
+        return switch (key) {
+            case "COMPRA", "DEVOLUCION", "TRANSFERENCIA", "AJUSTE", "DONACION" -> key;
+            default -> trimmed.length() > 80 ? trimmed.substring(0, 80) : trimmed;
+        };
+    }
+
     private String ensureUniqueEntryNumber(Long businessId, String preferred) {
-        String base = (preferred != null && !preferred.isBlank()) ? preferred.trim() : ("ENT-" + System.currentTimeMillis());
+        String base = preferred != null ? preferred.trim() : "";
+        // Si viene vacío o con formato viejo por timestamp, asignar consecutivo del año.
+        if (base.isEmpty() || looksLikeLegacyTimestampNumber(base)) {
+            return allocateNextConsecutive(businessId, LocalDate.now().getYear());
+        }
+        if (!entryRepository.existsByBusinessIdAndEntryNumber(businessId, base)) {
+            return base;
+        }
+        // Si el solicitado ya existe y es del patrón ENT-AAAA-####, dar el siguiente.
+        if (base.toUpperCase().matches("^ENT-\\d{4}-\\d+$")) {
+            return allocateNextConsecutive(businessId, LocalDate.now().getYear());
+        }
+        // Otros formatos: sufijo corto para no bloquear (compatibilidad).
         String candidate = base;
         int attempts = 0;
         while (entryRepository.existsByBusinessIdAndEntryNumber(businessId, candidate) && attempts < 50) {
-            String suffix = "-" + (System.currentTimeMillis() % 100000) + ((int)(Math.random() * 900) + 100);
+            String suffix = "-" + (System.currentTimeMillis() % 100000) + ((int) (Math.random() * 900) + 100);
             candidate = base + suffix;
             attempts++;
+        }
+        return candidate;
+    }
+
+    private boolean looksLikeLegacyTimestampNumber(String value) {
+        String v = value.toUpperCase();
+        // ENT-20260831-203045  /  ING-20260831-203045
+        return v.matches("^(ENT|ING)-\\d{8}-\\d{4,6}$");
+    }
+
+    /**
+     * Consecutivo simple por empresa y año: ENT-2026-0001, ENT-2026-0002, ...
+     */
+    public String nextEntryNumber(String ruc) {
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        return allocateNextConsecutive(business.getId(), LocalDate.now().getYear());
+    }
+
+    private String allocateNextConsecutive(Long businessId, int year) {
+        String prefix = "ENT-" + year + "-";
+        List<String> existing = entryRepository.findEntryNumbersByBusinessIdAndPrefix(businessId, prefix);
+        int max = 0;
+        for (String num : existing) {
+            if (num == null) continue;
+            String upper = num.trim().toUpperCase();
+            if (!upper.startsWith(prefix)) continue;
+            String tail = upper.substring(prefix.length());
+            try {
+                int n = Integer.parseInt(tail);
+                if (n > max) max = n;
+            } catch (NumberFormatException ignored) {}
+        }
+        int next = max + 1;
+        String candidate = prefix + String.format("%04d", next);
+        // Seguridad ante carrera: avanzar si ya existe.
+        int guard = 0;
+        while (entryRepository.existsByBusinessIdAndEntryNumber(businessId, candidate) && guard < 9999) {
+            next++;
+            candidate = prefix + String.format("%04d", next);
+            guard++;
         }
         return candidate;
     }
@@ -160,7 +234,7 @@ public class InventoryEntryService {
             movement.setVariant(variant);
             movement.setMovementDate(entry.getEntryDate().atStartOfDay());
             movement.setMovementType(MovementType.ENTRADA);
-            movement.setDocumentType(entry.getEntryType().name());
+            movement.setDocumentType(entry.getEntryType() != null ? entry.getEntryType() : "ENTRADA");
             movement.setDocumentNumber(entry.getEntryNumber());
             movement.setQuantity(newQty);
             movement.setQty(newQty.intValue()); // Campo legacy
@@ -211,7 +285,33 @@ public class InventoryEntryService {
     @Transactional(readOnly = true)
     public List<InventoryEntry> list(String ruc) {
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
-        return entryRepository.findByBusinessIdOrderByEntryDateDesc(business.getId());
+        List<InventoryEntry> list = entryRepository.findByBusinessIdOrderByEntryDateDesc(business.getId());
+        list.forEach(e -> e.getDetails().size());
+        return list;
+    }
+
+    /** Tipos de entrada asignados a la empresa (dinámicos). */
+    @Transactional(readOnly = true)
+    public List<java.util.Map<String, Object>> listEntryTypesForBusiness(String ruc) {
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        if (business.getInventoryEntryTypes() != null) {
+            business.getInventoryEntryTypes().size();
+        }
+        List<java.util.Map<String, Object>> out = new java.util.ArrayList<>();
+        if (business.getInventoryEntryTypes() == null) {
+            return out;
+        }
+        business.getInventoryEntryTypes().stream()
+                .filter(t -> t != null && !Boolean.FALSE.equals(t.getActive()))
+                .sorted((a, b) -> String.valueOf(a.getName()).compareToIgnoreCase(String.valueOf(b.getName())))
+                .forEach(t -> {
+                    java.util.Map<String, Object> m = new java.util.HashMap<>();
+                    m.put("id", t.getId());
+                    m.put("name", t.getName());
+                    m.put("description", t.getDescription());
+                    out.add(m);
+                });
+        return out;
     }
     
     /**
@@ -236,5 +336,49 @@ public class InventoryEntryService {
     public List<InventoryMovement> getKardex(String ruc, Long variantId) {
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
         return movementRepository.findKardexByVariant(business.getId(), variantId);
+    }
+
+    /**
+     * Confirmar una entrada existente (procesa stock, costeo y kardex).
+     */
+    @Transactional
+    public InventoryEntry confirm(String ruc, Long entryId) {
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        InventoryEntry entry = entryRepository.findById(entryId)
+            .orElseThrow(() -> new IllegalArgumentException("Entrada de inventario no encontrada"));
+        if (!entry.getBusiness().getId().equals(business.getId())) {
+            throw new AccessDeniedException("La entrada no pertenece a la empresa seleccionada");
+        }
+        if (entry.getStatus() == EntryStatus.ANULADO) {
+            throw new IllegalArgumentException("No se puede confirmar una entrada anulada");
+        }
+        if (entry.getStatus() != EntryStatus.CONFIRMADO) {
+            entry.setStatus(EntryStatus.CONFIRMADO);
+            entry.getDetails().size();
+            processEntryDetails(entry);
+            entry = entryRepository.save(entry);
+        }
+        return entry;
+    }
+
+    /**
+     * Anula una entrada en BORRADOR (no toca stock).
+     */
+    @Transactional
+    public InventoryEntry cancel(String ruc, Long entryId) {
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        InventoryEntry entry = entryRepository.findById(entryId)
+            .orElseThrow(() -> new IllegalArgumentException("Entrada de inventario no encontrada"));
+        if (!entry.getBusiness().getId().equals(business.getId())) {
+            throw new AccessDeniedException("La entrada no pertenece a la empresa seleccionada");
+        }
+        if (entry.getStatus() == EntryStatus.CONFIRMADO) {
+            throw new IllegalArgumentException("No se puede anular una entrada confirmada desde este flujo (ya afectó stock)");
+        }
+        if (entry.getStatus() != EntryStatus.ANULADO) {
+            entry.setStatus(EntryStatus.ANULADO);
+            entry = entryRepository.save(entry);
+        }
+        return entry;
     }
 }

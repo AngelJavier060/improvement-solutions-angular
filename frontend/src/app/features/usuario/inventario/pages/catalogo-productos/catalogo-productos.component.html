@@ -20,16 +20,16 @@
   <div class="cat-page-head">
     <div class="cat-page-head-left">
       <h1 class="cat-title">Catálogo de Productos</h1>
-      <p class="cat-subtitle">Visualización integral de activos, niveles de inventario y estados de abastecimiento operativo.</p>
+      <p class="cat-subtitle">Familia → Sección → Producto → Variantes. Usa Familia / Sección / códigos asignados a esta empresa.</p>
     </div>
     <div class="cat-page-head-right">
       <div class="cat-search-box">
         <span class="material-symbols-outlined cat-search-ico">search</span>
-        <input type="text" class="cat-search-input" placeholder="Buscar por código, nombre..." [(ngModel)]="searchTerm">
+        <input type="text" class="cat-search-input" placeholder="Buscar producto, código o sección..." [(ngModel)]="searchTerm">
       </div>
-      <select class="cat-select" [(ngModel)]="filterCategory">
-        <option value="">Todas las Categorías</option>
-        <option *ngFor="let name of categoryNames" [value]="name">{{ name }}</option>
+      <select class="cat-select" [(ngModel)]="filterSection">
+        <option value="">Todas las secciones</option>
+        <option *ngFor="let sc of getSectionOptionsForFilter()" [value]="sc.prefix">{{ sc.label }}</option>
       </select>
       <select class="cat-select" [(ngModel)]="filterStatus">
         <option value="">Todos</option>
@@ -37,11 +37,23 @@
         <option value="INACTIVO">Inactivos</option>
         <option value="DESCONTINUADO">Descontinuados</option>
       </select>
-      <button class="cat-btn-primary" (click)="openNewProductForm()">
+      <button class="cat-btn-primary" *ngIf="canWrite" (click)="openNewProductForm()">
         <span class="material-symbols-outlined">add</span>
         Nuevo Producto
       </button>
     </div>
+  </div>
+
+  <!-- Familia (según parámetros asignados a la empresa) -->
+  <div class="cat-kind-tabs">
+    <button type="button" class="cat-kind-tab"
+      *ngFor="let t of kindTabs"
+      [class.cat-kind-tab--active]="filterFamilyCode === t.code"
+      (click)="setFilterKind(t.code)">
+      <span class="material-symbols-outlined">{{ t.icon }}</span>
+      <span>{{ t.label }}</span>
+      <span class="cat-kind-count">{{ countByKind(t.code) }}</span>
+    </button>
   </div>
 
   <!-- Metrics -->
@@ -51,7 +63,7 @@
         <span class="material-symbols-outlined">inventory_2</span>
         <span class="cat-metric-badge cat-metric-badge--blue">TOTAL</span>
       </div>
-      <p class="cat-metric-label">Total SKU's</p>
+      <p class="cat-metric-label">Productos</p>
       <p class="cat-metric-value">{{ products.length }}</p>
     </div>
     <div class="cat-metric-card cat-metric-card--red">
@@ -64,11 +76,11 @@
     </div>
     <div class="cat-metric-card cat-metric-card--teal">
       <div class="cat-metric-top">
-        <span class="material-symbols-outlined cat-metric-icon--teal">local_shipping</span>
+        <span class="material-symbols-outlined cat-metric-icon--teal">account_tree</span>
         <span class="cat-metric-badge cat-metric-badge--teal">OK</span>
       </div>
-      <p class="cat-metric-label">Proveedores Activos</p>
-      <p class="cat-metric-value">{{ suppliers.length }}</p>
+      <p class="cat-metric-label">Visibles filtrados</p>
+      <p class="cat-metric-value">{{ getFilteredProducts().length }}</p>
     </div>
   </div>
 
@@ -85,10 +97,8 @@
           <tr>
             <th>Producto</th>
             <th>Código</th>
-            <th>Categoría</th>
-            <th class="cat-th-center">Stock categoría</th>
-            <th class="cat-th-center">Stock Mín.</th>
-            <th>Proveedor</th>
+            <th>Familia</th>
+            <th>Sección</th>
             <th>Estado</th>
             <th class="cat-th-right">Acciones</th>
           </tr>
@@ -108,18 +118,16 @@
             </td>
             <td><span class="cat-code">{{ product.code }}</span></td>
             <td>
-              <span class="cat-badge-cat">{{ getProductCategory(product) }}</span>
+              <span class="cat-badge-kind"
+                [class.cat-badge-kind--epp]="getProductKind(product) === 'EPP'"
+                [class.cat-badge-kind--tool]="getProductKind(product) === 'HERRAMIENTA'"
+                [class.cat-badge-kind--part]="getProductKind(product) === 'PIEZA'">
+                {{ kindLabel(getProductFamilyCode(product)) }}
+              </span>
             </td>
-            <td class="cat-td-center">
-              <ng-container *ngIf="getCategoryTotal(getProductCategory(product)) !== null; else catTotalLoading">
-                <span class="cat-stock-val">{{ getCategoryTotal(getProductCategory(product))! | number:'1.0-2' }}</span>
-              </ng-container>
-              <ng-template #catTotalLoading>
-                <span class="cat-text-muted">…</span>
-              </ng-template>
+            <td>
+              <span class="cat-badge-cat">{{ getProductSectionLabel(product) }}</span>
             </td>
-            <td class="cat-td-center"><span class="cat-stock-val">{{ product.minStock ?? 0 }}</span></td>
-            <td class="cat-supplier-name">{{ getSupplierName(product.supplier?.id) }}</td>
             <td>
               <span class="cat-status-badge"
                 [class.cat-status-badge--active]="product.status === 'ACTIVO'"
@@ -133,17 +141,22 @@
                 <button class="cat-action-btn" (click)="viewProductDetails(product, $event)" title="Ver detalles">
                   <span class="material-symbols-outlined">visibility</span>
                 </button>
-                <button class="cat-action-btn" (click)="openVariants(product, $event)" title="Variantes">
+                <button class="cat-action-btn" (click)="openVariants(product, $event)" title="Variantes (tallas)">
                   <span class="material-symbols-outlined">category</span>
                 </button>
-                <button class="cat-action-btn cat-action-btn--edit" (click)="openEditProductForm(product); $event.stopPropagation()" title="Editar">
+                <button *ngIf="canWrite" class="cat-action-btn cat-action-btn--edit" (click)="openEditProductForm(product); $event.stopPropagation()" title="Editar">
                   <span class="material-symbols-outlined">edit</span>
                 </button>
-                <button *ngIf="product.status === 'ACTIVO'" class="cat-action-btn cat-action-btn--warn"
+                <button *ngIf="canWrite && product.status === 'ACTIVO'" class="cat-action-btn cat-action-btn--warn"
                         (click)="confirmDeactivate(product, $event)" title="Desactivar">
                   <span class="material-symbols-outlined">block</span>
                 </button>
-                <button *ngIf="product.status === 'INACTIVO'" class="cat-action-btn cat-action-btn--del"
+                <button *ngIf="canWrite && (product.status === 'INACTIVO' || product.status === 'DESCONTINUADO')"
+                        class="cat-action-btn cat-action-btn--ok"
+                        (click)="confirmActivate(product, $event)" title="Reactivar">
+                  <span class="material-symbols-outlined">check_circle</span>
+                </button>
+                <button *ngIf="canWrite && product.status === 'INACTIVO'" class="cat-action-btn cat-action-btn--del"
                         (click)="confirmDelete(product, $event)" title="Eliminar definitivamente">
                   <span class="material-symbols-outlined">delete</span>
                 </button>
@@ -157,7 +170,7 @@
         <div class="cat-empty">
           <span class="material-symbols-outlined">inventory_2</span>
           <p>No se encontraron productos</p>
-          <button class="cat-btn-primary" (click)="openNewProductForm()">
+          <button class="cat-btn-primary" *ngIf="canWrite" (click)="openNewProductForm()">
             <span class="material-symbols-outlined">add</span> Crear primer producto
           </button>
         </div>
@@ -178,7 +191,7 @@
   <div class="cat-panel-header" (mousedown)="onPanelHeaderMouseDown($event)">
     <div>
       <h2 class="cat-panel-title">{{ editingProductId ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
-      <p class="cat-panel-sub">{{ editingProductId ? 'Modifica los campos del producto' : 'Completa los campos para crear un producto' }}</p>
+      <p class="cat-panel-sub">Elige familia y sección; el nombre se completa solo</p>
     </div>
     <button class="cat-close-btn" (click)="cancelEdit()">
       <span class="material-symbols-outlined">close</span>
@@ -186,6 +199,13 @@
   </div>
 
   <form [formGroup]="productForm" (ngSubmit)="submitProduct()" class="cat-panel-body">
+
+    <div class="cat-alert cat-alert--error" *ngIf="formPanelError" style="margin-bottom:1rem">
+      <span class="material-symbols-outlined">error</span>
+      <div style="flex:1">{{ formPanelError }}</div>
+      <button type="button" class="cat-btn-primary cat-btn-primary--sm" *ngIf="isGenericProductName(productForm.get('name')?.value)"
+              (click)="applySuggestedProductName()">Usar nombre sugerido</button>
+    </div>
 
     <!-- Image Upload -->
     <div class="cat-field">
@@ -201,37 +221,52 @@
     </div>
 
     <!-- Sección: Identificación -->
-    <div class="cat-form-section-title">Identificación del Producto</div>
+    <div class="cat-form-section-title">1. Familia y sección</div>
+    <div class="cat-form-grid cat-form-grid--3col">
+      <div class="cat-field cat-field--full">
+        <label class="cat-label">Familia <span class="cat-req">*</span></label>
+        <div class="cat-toggle-group">
+          <button type="button" class="cat-toggle-btn" *ngFor="let f of companyFamilyOptions"
+            [class.cat-toggle-btn--on]="productForm.get('familyCode')?.value === f.code"
+            (click)="selectFamily(f.code)">{{ f.label }} <small>({{ f.code }})</small></button>
+        </div>
+        <span class="cat-field-note" *ngIf="!companyFamilyOptions.length">Sin familias asignadas a esta empresa.</span>
+        <span class="cat-field-note" *ngIf="companyFamilyOptions.length">
+          {{ companyFamilyOptions.length }} familia(s) de la empresa · SKU: {{ familySkuCode() }}
+        </span>
+      </div>
+      <div class="cat-field cat-field--span2">
+        <label class="cat-label">Sección <span class="cat-req">*</span></label>
+        <select class="cat-input" formControlName="sectionCode">
+          <option *ngFor="let sc of subcategoryOptions" [ngValue]="sc.prefix">{{ sc.label }} ({{ sc.prefix }})</option>
+        </select>
+        <span class="cat-field-note">Secciones asignadas a la empresa (código para SKU)</span>
+      </div>
+    </div>
+
+    <div class="cat-form-section-title">2. Producto concreto</div>
     <div class="cat-form-grid cat-form-grid--3col">
       <div class="cat-field">
         <label class="cat-label">Código <span class="cat-req">*</span></label>
         <div class="cat-input-row">
-          <input type="text" class="cat-input" formControlName="code" placeholder="EPP-001">
-          <button type="button" class="cat-suggest-btn" (click)="suggestCode()" title="Sugerir código">
+          <input type="text" class="cat-input" formControlName="code"
+            [placeholder]="familySkuCode() + '-CAS-001'"
+            (blur)="onCodeBlur()"
+            (keydown.enter)="$event.preventDefault(); onCodeBlur()">
+          <button type="button" class="cat-suggest-btn" (click)="suggestCode(true)" title="Siguiente código consecutivo">
             <span class="material-symbols-outlined">auto_fix_high</span>
           </button>
         </div>
+        <span class="cat-field-note">Único por empresa · consecutivo automático (ej. 001, 002, 003…)</span>
       </div>
       <div class="cat-field cat-field--span2">
-        <label class="cat-label">Nombre del Producto <span class="cat-req">*</span></label>
-        <input type="text" class="cat-input" formControlName="name" placeholder="Ej: Casco de Seguridad">
-      </div>
-      <div class="cat-field">
-        <label class="cat-label">Categoría <span class="cat-req">*</span></label>
-        <select class="cat-input" formControlName="categoryName">
-          <option value="">-- Seleccionar --</option>
-          <option *ngFor="let cat of categories" [value]="cat.name">{{ cat.name }}</option>
-        </select>
-      </div>
-      <div class="cat-field">
-        <label class="cat-label">Subcategoría (prefijo)</label>
-        <select class="cat-input" formControlName="subcategoryPrefix">
-          <option *ngFor="let sc of subcategoryOptions" [value]="sc.prefix">{{ sc.label }} ({{ sc.prefix }})</option>
-        </select>
-      </div>
-      <div class="cat-field">
-        <label class="cat-label">Unidad de Medida</label>
-        <input type="text" class="cat-input" formControlName="unitOfMeasure" placeholder="UND / KG / M / PAR">
+        <label class="cat-label">Nombre del producto <span class="cat-req">*</span></label>
+        <input type="text" class="cat-input" formControlName="name"
+          placeholder="Se completa con la sección"
+          (blur)="onNameBlur()">
+        <span class="cat-field-note">
+          Debe ser <strong>único</strong>. Se llena con la sección; marca/talla van en Variantes.
+        </span>
       </div>
       <div class="cat-field">
         <label class="cat-label">Estado <span class="cat-req">*</span></label>
@@ -242,63 +277,19 @@
           <button type="button" class="cat-toggle-btn"
             [class.cat-toggle-btn--on]="productForm.get('status')?.value === 'INACTIVO'"
             (click)="productForm.get('status')?.setValue('INACTIVO')">INACTIVO</button>
-          <button type="button" class="cat-toggle-btn"
-            [class.cat-toggle-btn--on]="productForm.get('status')?.value === 'DESCONTINUADO'"
-            (click)="productForm.get('status')?.setValue('DESCONTINUADO')">DESCONT.</button>
         </div>
       </div>
-    </div>
-
-    <!-- Sección: Control de Stock y Alertas -->
-    <div class="cat-form-section-title">Control de Stock y Alertas</div>
-    <div class="cat-form-grid cat-form-grid--3col">
-      <div class="cat-field">
-        <label class="cat-label">
-          Stock Mínimo
-          <span class="cat-hint" title="El sistema alertará cuando el stock baje de este valor">ⓘ</span>
-        </label>
-        <input type="number" class="cat-input" formControlName="minStock" min="0" placeholder="Ej: 5">
-        <span class="cat-field-note">Alerta de stock bajo</span>
-      </div>
-      <div class="cat-field">
-        <label class="cat-label">
-          Stock Máximo
-          <span class="cat-hint" title="El sistema alertará cuando el stock supere este valor">ⓘ</span>
-        </label>
-        <input type="number" class="cat-input" formControlName="maxStock" min="0" placeholder="Ej: 100">
-        <span class="cat-field-note">Alerta de sobreabastecimiento</span>
-      </div>
-      <div class="cat-field">
-        <label class="cat-label">Proveedor</label>
-        <select class="cat-input" formControlName="supplierId">
-          <option [ngValue]="null">-- Seleccionar proveedor --</option>
-          <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
-        </select>
+      <div class="cat-field cat-field--span2">
+        <label class="cat-label">Descripción <span class="cat-section-opt">(opcional)</span></label>
+        <textarea class="cat-input cat-textarea" formControlName="description" rows="2"
+          placeholder="Notas breves del producto (opcional)"></textarea>
       </div>
     </div>
 
-    <!-- Nota sobre stock -->
     <div class="cat-stock-note">
       <span class="material-symbols-outlined">info</span>
-      El <strong>stock real</strong> se registra mediante <strong>Nueva Entrada</strong>. Stock Mín./Máx. definen los umbrales para alertas automáticas.
-    </div>
-
-    <!-- Sección: Ficha Técnica -->
-    <div class="cat-form-section-title">Ficha Técnica <span class="cat-section-opt">(opcional)</span></div>
-    <div class="cat-form-grid cat-form-grid--3col">
-      <div class="cat-field">
-        <label class="cat-label">Marca</label>
-        <input type="text" class="cat-input" formControlName="brand" placeholder="3M, Honeywell, Caterpillar...">
-      </div>
-      <div class="cat-field">
-        <label class="cat-label">Modelo / Referencia</label>
-        <input type="text" class="cat-input" formControlName="model" placeholder="Ref. del fabricante">
-      </div>
-      <div class="cat-field cat-field--full">
-        <label class="cat-label">Descripción</label>
-        <textarea class="cat-input cat-textarea" formControlName="description" rows="2"
-          placeholder="Especificaciones técnicas, notas de uso, normas aplicables..."></textarea>
-      </div>
+      Aquí solo defines el artículo (ej: Casco). En <strong>Variantes</strong>: marca, talla/color, stock mínimo e ingreso de compra.
+      Unidad = UND por defecto.
     </div>
 
     <p class="cat-req-note">* CAMPOS OBLIGATORIOS</p>
@@ -333,12 +324,11 @@
           </div>
           <table class="cat-detail-table">
             <tr><th>Código</th><td>{{ selectedProduct.code }}</td></tr>
-            <tr><th>Categoría</th><td>{{ getProductCategory(selectedProduct) }}</td></tr>
-            <tr><th>Unidad</th><td>{{ selectedProduct.unitOfMeasure || '-' }}</td></tr>
-            <tr><th>Stock Mín.</th><td>{{ selectedProduct.minStock ?? '—' }}</td></tr>
-            <tr><th>Stock Máx.</th><td>{{ selectedProduct.maxStock ?? '—' }}</td></tr>
-            <tr><th>Marca</th><td>{{ selectedProduct.brand || '—' }}</td></tr>
-            <tr><th>Modelo</th><td>{{ selectedProduct.model || '—' }}</td></tr>
+            <tr><th>Familia</th><td>{{ kindLabel(getProductFamilyCode(selectedProduct)) }}</td></tr>
+            <tr><th>Sección</th><td>{{ getProductSectionLabel(selectedProduct) }}</td></tr>
+            <tr><th>Unidad</th><td>{{ selectedProduct.unitOfMeasure || 'UND' }}</td></tr>
+            <tr><th>Stock Mín.</th><td colspan="1" class="cat-text-muted">Por variante</td></tr>
+            <tr><th>Marca</th><td class="cat-text-muted">Por variante</td></tr>
             <tr>
               <th>Estado</th>
               <td>
@@ -357,10 +347,21 @@
         <!-- Variants column -->
         <div class="cat-modal-variants">
           <div class="cat-variants-head">
-            <h4>Variantes ({{ productVariants.length }})</h4>
+            <h4>Variantes de este producto ({{ productVariants.length }})</h4>
             <button class="cat-btn-primary cat-btn-primary--sm" (click)="createVariant()">
               <span class="material-symbols-outlined">add</span> Nueva
             </button>
+          </div>
+          <p class="cat-field-note" style="margin:0 0 .75rem">
+            Cada fila = una talla/color/serie de <strong>{{ selectedProduct.name }}</strong>, con su propio stock.
+            Familia {{ kindLabel(getProductFamilyCode(selectedProduct)) }}
+            <span *ngIf="getProductSectionLabel(selectedProduct) !== '—'"> · Sección {{ getProductSectionLabel(selectedProduct) }}</span>.
+            No mezcles aquí otros artículos (ej. casco con pantalón).
+          </p>
+          <div class="cat-stock-note" style="margin-bottom:.75rem" *ngIf="productVariants.length">
+            <span class="material-symbols-outlined">info</span>
+            En bodega ahora: <strong>{{ totalVariantStock() | number:'1.0-2' }}</strong> und. de este producto
+            (suma de todas las tallas/colores). Un ingreso de compra se suma a la variante que elijas.
           </div>
 
           <!-- Variant form -->
@@ -372,27 +373,65 @@
                   <input type="text" class="cat-input" formControlName="code" placeholder="SKU" readonly>
                 </div>
                 <div class="cat-field">
-                  <label class="cat-label">Talla/Tamaño</label>
-                  <input type="text" class="cat-input" formControlName="sizeLabel">
+                  <label class="cat-label">Marca</label>
+                  <input type="text" [(ngModel)]="variantBrand" [ngModelOptions]="{standalone: true}" class="cat-input" placeholder="3M, Honeywell...">
                 </div>
                 <div class="cat-field">
-                  <label class="cat-label">Dimensiones</label>
-                  <input type="text" class="cat-input" formControlName="dimensions">
+                  <label class="cat-label">{{ variantSizeLabel() }}</label>
+                  <input type="text" class="cat-input" formControlName="sizeLabel"
+                    [placeholder]="getProductKind(selectedProduct!) === 'HERRAMIENTA' ? 'Ej: SN-001 / interno' : (getProductKind(selectedProduct!) === 'PIEZA' ? 'Ej: 1/2&quot;' : 'Ej: M / L / XL')">
+                </div>
+                <div class="cat-field">
+                  <label class="cat-label">Dimensiones / color extra</label>
+                  <input type="text" class="cat-input" formControlName="dimensions" placeholder="Opcional">
                 </div>
                 <div class="cat-field">
                   <label class="cat-label">Precio Venta</label>
                   <input type="number" class="cat-input" formControlName="salePrice" min="0" step="0.01">
                 </div>
                 <div class="cat-field">
-                  <label class="cat-label">Stock mín.</label>
-                  <input type="number" class="cat-input" formControlName="minQty" min="0">
+                  <label class="cat-label">Stock mín. (alerta)</label>
+                  <input type="number" class="cat-input" formControlName="minQty" min="0" placeholder="Ej: 5">
+                  <span class="cat-field-note">Por esta marca/talla</span>
+                </div>
+                <div class="cat-field" *ngIf="!editingVariant">
+                  <label class="cat-label">Unidades a Ingresar</label>
+                  <input type="number" class="cat-input" formControlName="initialQty" min="0" placeholder="Ej: 50">
+                  <span class="cat-field-note">Cantidad que entra a bodega. Se suma al stock de esta talla/color (no reemplaza). Déjalo vacío si solo creas la variante.</span>
+                </div>
+                <div class="cat-field" *ngIf="!editingVariant">
+                  <label class="cat-label">Costo unit. compra</label>
+                  <input type="number" class="cat-input" formControlName="initialUnitCost" min="0" step="0.01" placeholder="0">
                 </div>
               </div>
 
-              <!-- Atributos dinámicos -->
+              <div class="cat-field" style="margin-top:.75rem">
+                <label class="cat-label">Especificaciones Generales</label>
+                <textarea class="cat-input cat-textarea" formControlName="generalSpecs" rows="3"
+                  maxlength="500" placeholder="Material, normas, uso recomendado, etc. (máx. 500 caracteres)"></textarea>
+                <span class="cat-field-note">{{ specsCharCount() }} / 500 caracteres</span>
+              </div>
+
+              <div class="cat-field" style="margin-top:.75rem">
+                <label class="cat-label">Ficha técnica EPP (PDF)</label>
+                <div class="cat-tech-sheet">
+                  <input type="file" accept="application/pdf,.pdf" (change)="onVariantTechSheetSelected($event)" class="cat-input">
+                  <div class="cat-field-note" *ngIf="variantTechSheetName">Nuevo archivo: {{ variantTechSheetName }}</div>
+                  <div class="cat-field-note" *ngIf="!variantTechSheetName && variantTechSheetExisting">
+                    PDF actual:
+                    <a [href]="getTechSheetUrl(variantTechSheetExisting)" target="_blank" rel="noopener">Ver ficha técnica</a>
+                  </div>
+                  <button type="button" class="cat-btn-sec cat-btn-sec--xs" style="margin-top:.35rem"
+                    *ngIf="variantTechSheetName || variantTechSheetExisting"
+                    (click)="removeVariantTechSheet()">Quitar PDF</button>
+                </div>
+                <span class="cat-field-note">Solo PDF · máx. 10 MB. Opcional.</span>
+              </div>
+
+              <!-- Atributos dinámicos extra (además de Marca) -->
               <div class="cat-attr-section">
                 <div class="cat-attr-head">
-                  <span class="cat-label">Atributos (Color, Talla, Tipo...)</span>
+                  <span class="cat-label">Otros atributos (Color, material...)</span>
                   <button type="button" class="cat-btn-sec cat-btn-sec--xs" (click)="addAttrRow()">
                     <span class="material-symbols-outlined">add</span> Agregar
                   </button>
@@ -408,8 +447,8 @@
 
               <div class="cat-variant-actions">
                 <button type="button" class="cat-btn-sec" (click)="cancelVariantEdit()">Cancelar</button>
-                <button type="submit" class="cat-btn-primary cat-btn-primary--sm">
-                  {{ editingVariant ? 'Actualizar Variante' : 'Crear Variante' }}
+                <button type="submit" class="cat-btn-primary cat-btn-primary--sm" [disabled]="variantTechSheetBusy">
+                  {{ variantTechSheetBusy ? 'Subiendo PDF…' : (editingVariant ? 'Actualizar Variante' : 'Crear Variante') }}
                 </button>
               </div>
             </form>
@@ -421,9 +460,10 @@
               <tr>
                 <th>Foto</th>
                 <th>Código</th>
-                <th>Talla</th>
-                <th>Atributos</th>
-                <th>Stock</th>
+                <th>{{ variantSizeLabel() }}</th>
+                <th>Marca / attrs</th>
+                <th>Stock bodega</th>
+                <th>Ficha</th>
                 <th>Precio</th>
                 <th>Estado</th>
                 <th></th>
@@ -443,14 +483,24 @@
                     <span *ngFor="let a of getVariantAttributes(variant.id)" class="cat-attr-tag">{{ a.attributeName }}: {{ a.attributeValue }}</span>
                   </div>
                   <span *ngIf="!getVariantAttributes(variant.id).length" class="cat-text-muted">—</span>
+                  <div class="cat-text-muted" style="font-size:.75rem;margin-top:.2rem" *ngIf="variant.generalSpecs" [title]="variant.generalSpecs">
+                    {{ variant.generalSpecs.length > 60 ? (variant.generalSpecs | slice:0:60) + '…' : variant.generalSpecs }}
+                  </div>
                 </td>
                 <td>
                   <span class="cat-stock-badge"
+                    title="Cantidad actual en bodega"
                     [class.cat-stock-badge--ok]="(variant.currentQty || 0) > (variant.minQty || 0)"
                     [class.cat-stock-badge--warn]="(variant.currentQty || 0) <= (variant.minQty || 0) && (variant.currentQty || 0) > 0"
                     [class.cat-stock-badge--crit]="(variant.currentQty || 0) === 0">
                     {{ (variant.currentQty ?? 0) | number:'1.0-2' }}
                   </span>
+                </td>
+                <td>
+                  <a *ngIf="variant.techSheetPdf" class="cat-action-btn" [href]="getTechSheetUrl(variant.techSheetPdf)" target="_blank" rel="noopener" title="Ver ficha técnica PDF">
+                    <span class="material-symbols-outlined">picture_as_pdf</span>
+                  </a>
+                  <span *ngIf="!variant.techSheetPdf" class="cat-text-muted">—</span>
                 </td>
                 <td>${{ variant.salePrice | number:'1.2-2' }}</td>
                 <td>
@@ -461,9 +511,61 @@
                   </span>
                 </td>
                 <td>
+                  <button *ngIf="canWrite" class="cat-action-btn" (click)="openQuickStock(variant)" title="Unidades a ingresar">
+                    <span class="material-symbols-outlined">add_shopping_cart</span>
+                  </button>
                   <button class="cat-action-btn cat-action-btn--edit" (click)="editVariant(variant)" title="Editar">
                     <span class="material-symbols-outlined">edit</span>
                   </button>
+                </td>
+              </tr>
+              <tr *ngIf="quickStockVariantId" class="cat-tr">
+                <td colspan="9">
+                  <div class="cat-variant-form" style="margin:0">
+                    <div class="cat-stock-note" style="margin-bottom:.75rem" *ngIf="quickStockVariant()">
+                      <span class="material-symbols-outlined">inventory_2</span>
+                      Variante <strong>{{ quickStockVariant()?.code }}</strong>
+                      <span *ngIf="quickStockVariant()?.sizeLabel"> · {{ quickStockVariant()?.sizeLabel }}</span>:
+                      stock en bodega <strong>{{ (quickStockVariant()?.currentQty ?? 0) | number:'1.0-2' }}</strong>.
+                      Lo que ingreses se <strong>suma</strong> a ese saldo (no lo reemplaza).
+                    </div>
+                    <div class="cat-form-grid cat-form-grid--tight">
+                      <div class="cat-field">
+                        <label class="cat-label">Unidades a Ingresar <span class="cat-req">*</span></label>
+                        <input type="number" class="cat-input" [(ngModel)]="quickStockQty" min="1" placeholder="Ej: 20">
+                      </div>
+                      <div class="cat-field">
+                        <label class="cat-label">Costo unit. compra</label>
+                        <input type="number" class="cat-input" [(ngModel)]="quickStockUnitCost" min="0" step="0.01">
+                      </div>
+                      <div class="cat-field">
+                        <label class="cat-label">N° Lote <span class="cat-field-note">(opcional)</span></label>
+                        <input type="text" class="cat-input" [(ngModel)]="quickStockLotNumber" placeholder="Ej: LOT-2026-01">
+                      </div>
+                      <div class="cat-field">
+                        <label class="cat-label">Fabricación</label>
+                        <input type="date" class="cat-input" [(ngModel)]="quickStockManufacturingDate">
+                      </div>
+                      <div class="cat-field">
+                        <label class="cat-label">Vencimiento</label>
+                        <input type="date" class="cat-input" [(ngModel)]="quickStockExpirationDate">
+                      </div>
+                      <div class="cat-field">
+                        <label class="cat-label">Ubicación bodega</label>
+                        <input type="text" class="cat-input" [(ngModel)]="quickStockLocation" placeholder="Ej: Estante A-1">
+                      </div>
+                      <div class="cat-field" style="display:flex;align-items:flex-end;gap:.5rem;grid-column:1/-1">
+                        <button type="button" class="cat-btn-sec" (click)="cancelQuickStock()" [disabled]="quickStockBusy">Cancelar</button>
+                        <button type="button" class="cat-btn-primary cat-btn-primary--sm" (click)="submitQuickStock()" [disabled]="quickStockBusy">
+                          {{ quickStockBusy ? 'Guardando…' : 'Confirmar compra' }}
+                        </button>
+                      </div>
+                    </div>
+                    <span class="cat-field-note">
+                      Si pones N° Lote, aparecerá en Stock Actual → Detalle → Lotes.
+                      Para varias líneas o proveedor usa también <strong>Nueva Entrada</strong> del menú.
+                    </span>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -472,7 +574,7 @@
           <ng-template #noVariants>
             <div class="cat-empty cat-empty--sm">
               <span class="material-symbols-outlined">category</span>
-              <p>Sin variantes. Crea una para registrar stock.</p>
+              <p>Sin variantes. Crea una talla/color y, si quieres, indica las unidades a ingresar ahí mismo.</p>
             </div>
           </ng-template>
         </div>

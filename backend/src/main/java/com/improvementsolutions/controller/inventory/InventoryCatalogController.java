@@ -94,7 +94,7 @@ public class InventoryCatalogController {
     }
 
     @GetMapping("/categories")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
     public ResponseEntity<List<CategoryCatalogDto>> listCategoryCatalog() {
         List<InventoryCategory> all = categoryRepository.findAll();
         List<InventoryCategoryGlobal> globals = globalCategoryRepository.findAll();
@@ -145,7 +145,7 @@ public class InventoryCatalogController {
     }
 
     @GetMapping("/categories/global")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
     public ResponseEntity<List<GlobalCategoryDto>> listGlobalCategories() {
         List<InventoryCategoryGlobal> globals = globalCategoryRepository.findAll();
         globals.sort(java.util.Comparator.comparing(
@@ -205,7 +205,7 @@ public class InventoryCatalogController {
     }
 
     @GetMapping("/suppliers")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
     public ResponseEntity<List<SupplierCatalogDto>> listSupplierCatalog() {
         List<InventorySupplier> all = supplierRepository.findAll();
         // Usar RUC como clave cuando exista; si no, deduplicar por nombre en minúsculas
@@ -225,7 +225,7 @@ public class InventoryCatalogController {
 
     // Global suppliers CRUD (independiente de empresa)
     @GetMapping("/suppliers/global")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
     public ResponseEntity<List<GlobalSupplierDto>> listGlobalSuppliers() {
         List<InventorySupplierGlobal> globals = globalSupplierRepository.findAll();
         globals.sort(java.util.Comparator.comparing(

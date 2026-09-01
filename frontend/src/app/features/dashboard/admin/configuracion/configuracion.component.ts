@@ -317,6 +317,70 @@ export class ConfiguracionComponent implements OnInit {
         }
       ]
     },
+    {
+      titulo: 'Inventario-Bodega',
+      descripcion: 'Parámetros de familia, sección, tipos, estado EPI y proveedores.',
+      icono: 'fas fa-warehouse',
+      colorClase: 'seccion-epp',
+      categorias: [
+        {
+          nombre: 'Familia',
+          descripcion: 'Registrar familias (nombre, código y descripción)',
+          ruta: 'equipo-proteccion-personal',
+          rutaCommands: ['equipo-proteccion-personal', 'familia'],
+          icono: 'fas fa-layer-group',
+          proximamente: false
+        },
+        {
+          nombre: 'Sección',
+          descripcion: 'Registrar secciones (nombre, código y descripción)',
+          ruta: 'equipo-proteccion-personal',
+          rutaCommands: ['equipo-proteccion-personal', 'seccion'],
+          icono: 'fas fa-th-list',
+          proximamente: false
+        },
+        {
+          nombre: 'Tipo de Entrada',
+          descripcion: 'Motivos de ingreso (nombre y descripción): Compra, Devolución, Ajuste…',
+          ruta: 'equipo-proteccion-personal',
+          rutaCommands: ['equipo-proteccion-personal', 'tipo-entrada'],
+          icono: 'fas fa-dolly',
+          proximamente: false
+        },
+        {
+          nombre: 'Tipo de Salida',
+          descripcion: 'Motivos de egreso (nombre y descripción): Entrega EPP, Préstamo, Baja…',
+          ruta: 'equipo-proteccion-personal',
+          rutaCommands: ['equipo-proteccion-personal', 'tipo-salida'],
+          icono: 'fas fa-truck-loading',
+          proximamente: false
+        },
+        {
+          nombre: 'Tipo de Acontecimiento',
+          descripcion: 'Motivos de Cambio EPP (nombre y descripción): Solicitud, Deterioro, Pérdida…',
+          ruta: 'equipo-proteccion-personal',
+          rutaCommands: ['equipo-proteccion-personal', 'tipo-acontecimiento'],
+          icono: 'fas fa-exclamation-triangle',
+          proximamente: false
+        },
+        {
+          nombre: 'Estado del EPI',
+          descripcion: 'Estados del equipo en Cambio EPP: Buen estado, Desgaste, Deteriorado…',
+          ruta: 'equipo-proteccion-personal',
+          rutaCommands: ['equipo-proteccion-personal', 'estado-epi'],
+          icono: 'fas fa-heartbeat',
+          proximamente: false
+        },
+        {
+          nombre: 'Proveedores',
+          descripcion: 'Registrar proveedores (nombre, RUC, teléfono, email y dirección)',
+          ruta: 'equipo-proteccion-personal',
+          rutaCommands: ['equipo-proteccion-personal', 'proveedores'],
+          icono: 'fas fa-truck',
+          proximamente: false
+        }
+      ]
+    },
   ];
 
   navegarA(ruta: string): void {

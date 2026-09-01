@@ -69,7 +69,7 @@ export class InventarioLayoutComponent implements OnInit {
       type: 'group',
       expanded: true,
       items: [
-        { label: 'Catálogo de Productos', icon: 'fas fa-book', route: 'catalogo-productos' },
+        { label: 'Catálogo (EPP / Herramientas)', icon: 'fas fa-book', route: 'catalogo-productos' },
         { label: 'Stock Actual', icon: 'fas fa-boxes', route: 'stock-actual' },
         { label: 'Buscar Producto', icon: 'fas fa-search', route: 'buscar-producto' }
       ]

@@ -17,8 +17,8 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems"})
-@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems"})
+@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems", "eppFamilies", "eppSections", "inventorySupplierGlobals", "inventoryEntryTypes", "inventoryOutputTypes", "inventoryAcontecimientoTypes", "inventoryEstadoEpis"})
+@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems", "eppFamilies", "eppSections", "inventorySupplierGlobals", "inventoryEntryTypes", "inventoryOutputTypes", "inventoryAcontecimientoTypes", "inventoryEstadoEpis"})
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Business {
     @Id
@@ -409,6 +409,76 @@ public class Business {
     @JsonIgnore
     private Set<Iso9001CatalogItem> iso9001CatalogItems = new HashSet<>();
 
+    /** Familias Inventario-Bodega (catálogo global) asignadas a esta empresa. */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "business_epp_family",
+            joinColumns = @JoinColumn(name = "business_id"),
+            inverseJoinColumns = @JoinColumn(name = "epp_family_id")
+    )
+    @JsonIgnore
+    private Set<EppFamily> eppFamilies = new HashSet<>();
+
+    /** Secciones Inventario-Bodega (catálogo global) asignadas a esta empresa. */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "business_epp_section",
+            joinColumns = @JoinColumn(name = "business_id"),
+            inverseJoinColumns = @JoinColumn(name = "epp_section_id")
+    )
+    @JsonIgnore
+    private Set<EppSection> eppSections = new HashSet<>();
+
+    /** Proveedores globales (Inventario-Bodega) asignados a esta empresa. */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "business_inventory_supplier_global",
+            joinColumns = @JoinColumn(name = "business_id"),
+            inverseJoinColumns = @JoinColumn(name = "inventory_supplier_global_id")
+    )
+    @JsonIgnore
+    private Set<com.improvementsolutions.model.inventory.InventorySupplierGlobal> inventorySupplierGlobals = new HashSet<>();
+
+    /** Tipos de entrada Inventario-Bodega asignados a esta empresa. */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "business_inventory_entry_type",
+            joinColumns = @JoinColumn(name = "business_id"),
+            inverseJoinColumns = @JoinColumn(name = "inventory_entry_type_id")
+    )
+    @JsonIgnore
+    private Set<InventoryEntryType> inventoryEntryTypes = new HashSet<>();
+
+    /** Tipos de salida Inventario-Bodega asignados a esta empresa. */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "business_inventory_output_type",
+            joinColumns = @JoinColumn(name = "business_id"),
+            inverseJoinColumns = @JoinColumn(name = "inventory_output_type_id")
+    )
+    @JsonIgnore
+    private Set<InventoryOutputType> inventoryOutputTypes = new HashSet<>();
+
+    /** Tipos de acontecimiento (Cambio EPP) asignados a esta empresa. */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "business_inventory_acontecimiento_type",
+            joinColumns = @JoinColumn(name = "business_id"),
+            inverseJoinColumns = @JoinColumn(name = "inventory_acontecimiento_type_id")
+    )
+    @JsonIgnore
+    private Set<InventoryAcontecimientoType> inventoryAcontecimientoTypes = new HashSet<>();
+
+    /** Estados del EPI (Cambio EPP) asignados a esta empresa. */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "business_inventory_estado_epi",
+            joinColumns = @JoinColumn(name = "business_id"),
+            inverseJoinColumns = @JoinColumn(name = "inventory_estado_epi_id")
+    )
+    @JsonIgnore
+    private Set<InventoryEstadoEpi> inventoryEstadoEpis = new HashSet<>();
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -694,5 +764,61 @@ public class Business {
 
     public void removeIso9001CatalogItem(Iso9001CatalogItem item) {
         iso9001CatalogItems.remove(item);
+    }
+
+    public void addEppFamily(EppFamily family) {
+        eppFamilies.add(family);
+    }
+
+    public void removeEppFamily(EppFamily family) {
+        eppFamilies.remove(family);
+    }
+
+    public void addEppSection(EppSection section) {
+        eppSections.add(section);
+    }
+
+    public void removeEppSection(EppSection section) {
+        eppSections.remove(section);
+    }
+
+    public void addInventorySupplierGlobal(com.improvementsolutions.model.inventory.InventorySupplierGlobal supplier) {
+        inventorySupplierGlobals.add(supplier);
+    }
+
+    public void removeInventorySupplierGlobal(com.improvementsolutions.model.inventory.InventorySupplierGlobal supplier) {
+        inventorySupplierGlobals.remove(supplier);
+    }
+
+    public void addInventoryEntryType(InventoryEntryType type) {
+        inventoryEntryTypes.add(type);
+    }
+
+    public void removeInventoryEntryType(InventoryEntryType type) {
+        inventoryEntryTypes.remove(type);
+    }
+
+    public void addInventoryOutputType(InventoryOutputType type) {
+        inventoryOutputTypes.add(type);
+    }
+
+    public void removeInventoryOutputType(InventoryOutputType type) {
+        inventoryOutputTypes.remove(type);
+    }
+
+    public void addInventoryAcontecimientoType(InventoryAcontecimientoType type) {
+        inventoryAcontecimientoTypes.add(type);
+    }
+
+    public void removeInventoryAcontecimientoType(InventoryAcontecimientoType type) {
+        inventoryAcontecimientoTypes.remove(type);
+    }
+
+    public void addInventoryEstadoEpi(InventoryEstadoEpi estado) {
+        inventoryEstadoEpis.add(estado);
+    }
+
+    public void removeInventoryEstadoEpi(InventoryEstadoEpi estado) {
+        inventoryEstadoEpis.remove(estado);
     }
 }

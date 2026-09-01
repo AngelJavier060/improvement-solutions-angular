@@ -20,6 +20,7 @@ import { IndicadoresReactivosDashboardComponent } from './views/indicadores-reac
 import { GerenciasViajesListaComponent } from './views/gerencias-viajes/gerencias-viajes-lista.component';
 import { GerenciasViajesFormComponent } from './views/gerencias-viajes/gerencias-viajes-form.component';
 import { GerenciasViajesDetalleComponent } from './views/gerencias-viajes/gerencias-viajes-detalle.component';
+import { CambioEppComponent } from './views/cambio-epp/cambio-epp.component';
 
 @NgModule({
   declarations: [
@@ -37,7 +38,8 @@ import { GerenciasViajesDetalleComponent } from './views/gerencias-viajes/gerenc
     IndiceRiesgoComponent,
     GerenciasViajesListaComponent,
     GerenciasViajesFormComponent,
-    GerenciasViajesDetalleComponent
+    GerenciasViajesDetalleComponent,
+    CambioEppComponent
   ],
   imports: [
     CommonModule,

@@ -19,7 +19,7 @@ public class InventoryAlertController {
     }
 
     @GetMapping("/alerts")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
     public ResponseEntity<?> getAlerts(@PathVariable String ruc) {
         try {
             Map<String, Object> alerts = alertService.getAlerts(ruc);

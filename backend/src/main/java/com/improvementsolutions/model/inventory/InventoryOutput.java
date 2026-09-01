@@ -7,7 +7,6 @@ import java.util.List;
 
 import com.improvementsolutions.model.Business;
 import com.improvementsolutions.model.inventory.enums.OutputStatus;
-import com.improvementsolutions.model.inventory.enums.OutputType;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -32,9 +31,8 @@ public class InventoryOutput {
     @Column(name = "output_date", nullable = false)
     private LocalDate outputDate = LocalDate.now();
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "output_type", nullable = false, length = 20)
-    private OutputType outputType;
+    @Column(name = "output_type", nullable = false, length = 80)
+    private String outputType; // Nombre/código del catálogo (ej. EPP_TRABAJADOR o etiqueta)
 
     @Column(name = "employee_id")
     private Long employeeId;
@@ -47,6 +45,17 @@ public class InventoryOutput {
 
     @Column(name = "return_date")
     private LocalDate returnDate;
+
+    /** true cuando el préstamo ya fue devuelto (deja de aparecer como activo). */
+    @Column(name = "returned")
+    private Boolean returned = false;
+
+    @Column(name = "returned_at")
+    private LocalDateTime returnedAt;
+
+    /** Entrada de tipo DEVOLUCION que cerró el préstamo (opcional). */
+    @Column(name = "return_entry_id")
+    private Long returnEntryId;
 
     @Column(name = "authorized_by", length = 100)
     private String authorizedBy;

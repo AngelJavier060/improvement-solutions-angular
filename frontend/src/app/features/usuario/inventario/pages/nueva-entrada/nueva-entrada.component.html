@@ -36,19 +36,22 @@
           </div>
           <div class="card-body">
             <div class="row g-3">
-              <!-- Número de Documento -->
+              <!-- Número de entrada (consecutivo interno) -->
               <div class="col-md-3">
-                <label class="form-label fw-semibold">Número de Documento <span class="text-danger">*</span></label>
+                <label class="form-label fw-semibold">Nº de entrada <span class="text-danger">*</span></label>
                 <div class="input-group">
-                  <input type="text" class="form-control" formControlName="entryNumber" 
-                         placeholder="Ej: FAC-001-2024">
-                  <button type="button" class="btn btn-outline-secondary" 
-                          (click)="entryForm.patchValue({entryNumber: generateEntryNumber()})"
-                          title="Generar número único">
+                  <input type="text" class="form-control bg-light" formControlName="entryNumber"
+                         placeholder="ENT-2026-0001" readonly>
+                  <button type="button" class="btn btn-outline-secondary"
+                          (click)="loadNextEntryNumber()"
+                          title="Actualizar consecutivo">
                     <i class="fas fa-sync-alt"></i>
                   </button>
                 </div>
-                <small class="text-muted">Debe ser único. Click en <i class="fas fa-sync-alt"></i> para generar uno automático.</small>
+                <small class="text-muted">
+                  Consecutivo interno por año (<strong>ENT-2026-0001</strong>).
+                  No es la factura del proveedor: esa va en el <em>adjunto</em>.
+                </small>
               </div>
 
               <!-- Fecha de Entrada -->
@@ -61,8 +64,10 @@
               <div class="col-md-3">
                 <label class="form-label fw-semibold">Tipo de Entrada <span class="text-danger">*</span></label>
                 <select class="form-select" formControlName="entryType">
-                  <option *ngFor="let type of entryTypes" [value]="type">{{ type }}</option>
+                  <option value="" disabled *ngIf="!entryTypes.length">Sin tipos asignados</option>
+                  <option *ngFor="let type of entryTypes" [value]="type.name">{{ type.name }}</option>
                 </select>
+                <small class="text-muted">Según Inventario-Bodega de esta empresa</small>
               </div>
 
               <!-- Proveedor -->
@@ -70,8 +75,9 @@
                 <label class="form-label fw-semibold">Proveedor</label>
                 <select class="form-select" formControlName="supplierId">
                   <option [ngValue]="null">-- Seleccionar --</option>
-                  <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}</option>
+                  <option *ngFor="let s of suppliers" [ngValue]="s.id">{{ s.name }}<ng-container *ngIf="s.ruc"> ({{ s.ruc }})</ng-container></option>
                 </select>
+                <small class="text-muted">Fuente: Inventario-Bodega → Proveedores de esta empresa</small>
               </div>
 
               <!-- Origen Alternativo -->
@@ -177,6 +183,11 @@
                       <input type="number" class="form-control form-control-sm" [(ngModel)]="detail.quantity" 
                              [ngModelOptions]="{standalone: true}" min="0.01" step="0.01"
                              (ngModelChange)="calculateLineCost(detail)">
+                      <small class="d-block mt-1"
+                             [class.text-success]="(detail.currentQty || 0) > 0"
+                             [class.text-warning]="(detail.currentQty || 0) === 0">
+                        Stock: {{ detail.currentQty || 0 }}
+                      </small>
                     </td>
                     <!-- Costo Unitario -->
                     <td>

@@ -101,22 +101,8 @@ public class InventoryAlertService {
             lotesVencidos.add(item);
         }
 
-        // Stock alto (excede máximo)
+        // Stock máximo a nivel producto ya no existe (umbral solo en variante vía minQty).
         List<Map<String, Object>> stockAlto = new ArrayList<>();
-        List<InventoryVariant> allActive = variantRepository.findAllActiveByBusinessId(businessId);
-        for (InventoryVariant v : allActive) {
-            if (v.getProduct() == null) continue;
-            Integer maxStock = v.getProduct().getMaxStock();
-            if (maxStock != null && v.getCurrentQty() != null && v.getCurrentQty().intValue() > maxStock) {
-                Map<String, Object> item = new LinkedHashMap<>();
-                item.put("variantId", v.getId());
-                item.put("variantCode", v.getCode());
-                item.put("productName", v.getProduct().getName());
-                item.put("currentQty", v.getCurrentQty());
-                item.put("maxStock", maxStock);
-                stockAlto.add(item);
-            }
-        }
 
         int totalAlertas = stockBajo.size() + prestamosVencidos.size() + lotesPorVencer.size() + lotesVencidos.size() + stockAlto.size();
 

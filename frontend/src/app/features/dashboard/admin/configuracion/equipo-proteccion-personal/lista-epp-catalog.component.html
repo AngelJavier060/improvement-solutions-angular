@@ -1,0 +1,101 @@
+<div class="epp-catalog-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>{{ listaTitulo }}</h2>
+      <p>{{ listaSubtitulo }}</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-back" type="button" (click)="volverAConfiguracion()">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
+      <button class="btn btn-new" type="button" (click)="nuevo()">
+        <i class="fas fa-plus"></i> Nuevo registro
+      </button>
+    </div>
+  </div>
+
+  <div class="card" *ngIf="(catalogKey === 'tipo-entrada' || catalogKey === 'tipo-salida' || catalogKey === 'tipo-acontecimiento' || catalogKey === 'estado-epi') && !loading && !error" style="margin-bottom:1rem;padding:1rem 1.25rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+    <p style="margin:0 0 .5rem;font-weight:600;color:#0f172a;">Cómo llenar (nombre y descripción)</p>
+    <ul *ngIf="catalogKey === 'tipo-entrada'" style="margin:0;padding-left:1.25rem;color:#475569;font-size:.9rem;line-height:1.45;">
+      <li><strong>Compra</strong> — Ingreso por compra a proveedor (factura / guía).</li>
+      <li><strong>Devolución</strong> — Mercadería que regresa (trabajador, cliente u obra).</li>
+      <li><strong>Transferencia</strong> — Envío recibido desde otra bodega o sucursal.</li>
+      <li><strong>Ajuste</strong> — Corrección por conteo físico o diferencia de inventario.</li>
+      <li><strong>Donación</strong> — Ingreso por donación u obsequio.</li>
+    </ul>
+    <ul *ngIf="catalogKey === 'tipo-salida'" style="margin:0;padding-left:1.25rem;color:#475569;font-size:.9rem;line-height:1.45;">
+      <li><strong>Entrega de EPP a trabajador</strong> — Dotación / entrega de EPP al personal.</li>
+      <li><strong>Préstamo de herramienta</strong> — Salida temporal con fecha de devolución.</li>
+      <li><strong>Consumo de proyecto/área</strong> — Consumo interno de un proyecto o área.</li>
+      <li><strong>Baja de productos</strong> — Baja por daño, vencimiento u obsolescencia.</li>
+      <li><strong>Venta de producto</strong> — Salida por venta a cliente.</li>
+      <li><strong>Descuento a trabajador (nómina)</strong> — Cargo / descuento en nómina.</li>
+    </ul>
+    <ul *ngIf="catalogKey === 'tipo-acontecimiento'" style="margin:0;padding-left:1.25rem;color:#475569;font-size:.9rem;line-height:1.45;">
+      <li><strong>Solicitud de EPP</strong> — Pedido o reposición de equipo de protección.</li>
+      <li><strong>Incumplimiento de uso</strong> — Trabajador no usa el EPP correctamente.</li>
+      <li><strong>Deterioro prematuro</strong> — EPP en mal estado / deterioro prematuro.</li>
+      <li><strong>Pérdida de equipo</strong> — Extravío o pérdida del EPP asignado.</li>
+      <li><strong>Inspección de rutina</strong> — Revisión periódica del estado del EPP.</li>
+    </ul>
+    <ul *ngIf="catalogKey === 'estado-epi'" style="margin:0;padding-left:1.25rem;color:#475569;font-size:.9rem;line-height:1.45;">
+      <li><strong>Buen estado (Solo falta de uso)</strong> — Equipo en buen estado; solo reposición o falta de uso.</li>
+      <li><strong>Desgaste normal</strong> — Desgaste por uso habitual.</li>
+      <li><strong>Deteriorado / Roto</strong> — Mal estado / deteriorado / roto.</li>
+      <li><strong>No presenta el equipo</strong> — El trabajador no presenta el EPP.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando {{ nombreItemPlural }}...</span>
+    </div>
+
+    <div *ngIf="error && !loading" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button type="button" (click)="cargar()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <div *ngIf="!loading && !error" class="data-table">
+      <table *ngIf="items.length > 0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th *ngIf="showCode">Código</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of items">
+            <td>{{ item.id }}</td>
+            <td *ngIf="showCode"><span class="code-badge">{{ item.code || '—' }}</span></td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.description || '—' }}</td>
+            <td class="actions">
+              <button class="btn btn-icon" type="button" (click)="editar(item.id)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-icon btn-delete" type="button" (click)="eliminar(item.id)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="items.length === 0" class="empty-state">
+        <i class="fas fa-folder-open"></i>
+        <p>No hay {{ nombreItemPlural }} registrados</p>
+        <button type="button" class="btn btn-new" (click)="nuevo()">
+          <i class="fas fa-plus"></i> Crear el primero
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -21,9 +21,19 @@ public class InventorySupplierController {
     }
 
     @GetMapping("/suppliers")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
     public ResponseEntity<List<InventorySupplier>> list(@PathVariable String ruc) {
         return ResponseEntity.ok(supplierService.list(ruc));
+    }
+
+    /**
+     * Proveedores de Inventario-Bodega asignados a la empresa
+     * (Admin → Empresas → Inventario-Bodega → Proveedores).
+     */
+    @GetMapping("/suppliers/bodega")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
+    public ResponseEntity<List<InventorySupplier>> listFromBodega(@PathVariable String ruc) {
+        return ResponseEntity.ok(supplierService.listFromBodega(ruc));
     }
 
     @PostMapping("/suppliers")

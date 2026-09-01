@@ -31,7 +31,7 @@
               <select class="form-select" [(ngModel)]="filterEmployeeId" (change)="applyFilters()">
                 <option [ngValue]="null">-- Todos --</option>
                 <option *ngFor="let e of employees" [ngValue]="e.id">
-                  {{ e.nombres }} {{ e.apellidos }}
+                  {{ employeeFilterLabel(e) }}
                 </option>
               </select>
             </div>
@@ -57,9 +57,65 @@
     </div>
   </div>
 
+  <!-- Reporte resumen por trabajador (no altera el listado) -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm border-primary">
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-file-download me-2"></i>Reporte de suministro EPP por trabajador</span>
+          <small class="opacity-75">Resumen descargable · no modifica el historial</small>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            Descarga un PDF con <strong>todo lo entregado</strong> a una persona (confirmado), filtrado por año o por mes.
+          </p>
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label">Trabajador <span class="text-danger">*</span></label>
+              <select class="form-select" [(ngModel)]="reportEmployeeId">
+                <option [ngValue]="null">-- Seleccione --</option>
+                <option *ngFor="let e of employees" [ngValue]="e.id">
+                  {{ employeeFilterLabel(e) }} — {{ e.cedula }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Año <span class="text-danger">*</span></label>
+              <select class="form-select" [(ngModel)]="reportYear">
+                <option *ngFor="let y of reportYears" [ngValue]="y">{{ y }}</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Mes (opcional)</label>
+              <select class="form-select" [(ngModel)]="reportMonth">
+                <option [ngValue]="null">Todo el año</option>
+                <option *ngFor="let m of reportMonths" [ngValue]="m.value">{{ m.label }}</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <button type="button" class="btn btn-outline-primary w-100" (click)="downloadSuministroReport()" [disabled]="reportBusy">
+                <i class="fas me-2" [ngClass]="reportBusy ? 'fa-spinner fa-spin' : 'fa-file-pdf'"></i>
+                {{ reportBusy ? 'Generando…' : 'Descargar resumen PDF' }}
+              </button>
+            </div>
+          </div>
+          <div class="alert alert-warning mt-3 mb-0 py-2" *ngIf="reportMessage">{{ reportMessage }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Lista de Salidas -->
   <div class="row">
     <div class="col-12">
+      <div class="alert alert-success" *ngIf="actionMessage">{{ actionMessage }}</div>
+      <div class="alert alert-danger" *ngIf="actionError">{{ actionError }}</div>
+      <input
+        id="hist-signed-pdf-input"
+        type="file"
+        accept=".pdf,application/pdf"
+        class="d-none"
+        (change)="onSignedPdfSelected($event)"/>
       <div class="card shadow-sm">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
           <span><i class="fas fa-list me-2"></i>Registros: <strong>{{ outputs.length }}</strong></span>
@@ -80,7 +136,7 @@
             <table class="table table-hover align-middle">
               <thead>
                 <tr>
-                  <th>Fecha</th>
+                  <th>Fecha / Hora</th>
                   <th>Nº Documento</th>
                   <th>Tipo</th>
                   <th>Trabajador/Área</th>
@@ -91,7 +147,10 @@
               </thead>
               <tbody>
                 <tr *ngFor="let output of outputs">
-                  <td>{{ output.outputDate | date:'dd/MM/yyyy' }}</td>
+                  <td>
+                    <div class="fw-semibold font-monospace">{{ formatOutputDateTime(output) }}</div>
+                    <small class="text-muted" *ngIf="!(output.createdAt || output.updatedAt)">Sin hora de registro</small>
+                  </td>
                   <td><span class="fw-semibold">{{ output.outputNumber }}</span></td>
                   <td>
                     <span class="badge" [ngClass]="getOutputTypeBadge(output.outputType)">
@@ -99,7 +158,7 @@
                     </span>
                   </td>
                   <td>
-                    <span *ngIf="output.employeeId">{{ getEmployeeName(output.employeeId) }}</span>
+                    <span *ngIf="output.employeeId">{{ getEmployeeName(output.employeeId, output.notes) }}</span>
                     <span *ngIf="!output.employeeId && output.area" class="text-muted">{{ output.area }}</span>
                     <span *ngIf="!output.employeeId && !output.area" class="text-muted">--</span>
                   </td>
@@ -110,13 +169,35 @@
                     <span class="badge" [ngClass]="getStatusBadge(output.status)">
                       {{ output.status }}
                     </span>
+                    <div class="small text-warning mt-1" *ngIf="needsThreeSignaturesUpload(output)">
+                      Cambio EPP · pendiente PDF con 3 firmas
+                      <span class="d-block text-muted">Despacha: {{ getDespachadorLabel(output) }}</span>
+                    </div>
                   </td>
                   <td class="text-end">
-                    <a *ngIf="output.documentImage" class="btn btn-sm btn-outline-primary me-2" [href]="getDocumentUrl(output.documentImage)" target="_blank" title="Ver PDF">
-                      <i class="fas fa-file-pdf"></i>
-                    </a>
-                    <button class="btn btn-sm btn-outline-warning" (click)="viewDetails(output)" title="Ver Detalle">
+                    <button
+                      *ngIf="output.documentImage"
+                      type="button"
+                      class="btn btn-sm btn-outline-primary me-1"
+                      (click)="downloadOutputPdf(output)"
+                      title="Descargar / ver PDF">
+                      <i class="fas fa-download"></i>
+                    </button>
+                    <button
+                      *ngIf="needsThreeSignaturesUpload(output)"
+                      type="button"
+                      class="btn btn-sm btn-success me-1"
+                      (click)="triggerUploadSignedPdf(output)"
+                      [disabled]="loading"
+                      title="Cambio EPP: subir PDF validado con las 3 firmas y cerrar entrega">
+                      <i class="fas fa-file-signature"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning me-1" (click)="viewDetails(output)" title="Ver Detalle">
                       <i class="fas fa-eye"></i>
+                    </button>
+                    <button *ngIf="output.status === 'BORRADOR'" class="btn btn-sm btn-outline-danger"
+                            (click)="cancelOutput(output)" title="Anular borrador" [disabled]="loading">
+                      <i class="fas fa-ban"></i>
                     </button>
                   </td>
                 </tr>
@@ -145,8 +226,8 @@
           <div class="col-md-6">
             <table class="table table-sm">
               <tr>
-                <th style="width: 40%">Fecha:</th>
-                <td>{{ selectedOutput.outputDate | date:'dd/MM/yyyy' }}</td>
+                <th style="width: 40%">Fecha / Hora:</th>
+                <td class="font-monospace">{{ formatOutputDateTime(selectedOutput) }}</td>
               </tr>
               <tr>
                 <th>Tipo:</th>
@@ -154,7 +235,7 @@
               </tr>
               <tr *ngIf="selectedOutput.employeeId">
                 <th>Trabajador:</th>
-                <td>{{ getEmployeeName(selectedOutput.employeeId) }}</td>
+                <td>{{ getEmployeeName(selectedOutput.employeeId, selectedOutput.notes) }}</td>
               </tr>
               <tr *ngIf="selectedOutput.area">
                 <th>Área:</th>

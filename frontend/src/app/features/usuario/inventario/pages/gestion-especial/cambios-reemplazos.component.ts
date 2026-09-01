@@ -45,8 +45,17 @@ import { AuthService } from '../../../../../core/services/auth.service';
             <button type="button" class="btn btn-outline-secondary" (click)="searchByCodigo()">Buscar</button>
           </div>
         </div>
-        <div class="col-md-4 d-flex align-items-center">
+        <div class="col-md-4 d-flex align-items-center gap-2 flex-wrap">
           <div class="fw-semibold">{{ selectedEmployee ? (selectedEmployee.nombres + ' ' + selectedEmployee.apellidos) : '—' }}</div>
+          <span *ngIf="selectedEmployee && !isEmployeeActive(selectedEmployee)" class="badge bg-secondary">INACTIVO</span>
+        </div>
+      </div>
+
+      <div class="row" *ngIf="selectedEmployee && !isEmployeeActive(selectedEmployee)">
+        <div class="col-12">
+          <div class="alert alert-warning mb-3">
+            Trabajador inactivo: no se puede entregar reemplazo nuevo. Use Devoluciones / Baja para liquidar lo pendiente.
+          </div>
         </div>
       </div>
 
@@ -300,7 +309,11 @@ export class CambiosReemplazosComponent implements OnInit {
   }
 
   canSubmit(): boolean {
-    return !!(this.selectedEmployee && this.selectedOldItem && this.selectedVariant && this.selectedLotId);
+    return !!(this.selectedEmployee && this.isEmployeeActive(this.selectedEmployee) && this.selectedOldItem && this.selectedVariant && this.selectedLotId);
+  }
+
+  isEmployeeActive(emp: EmployeeResponse | null | undefined): boolean {
+    return THEmployeeService.isEmployeeActive(emp);
   }
 
   private buildNumber(prefix: string): string {
@@ -311,13 +324,22 @@ export class CambiosReemplazosComponent implements OnInit {
 
   submitChange(): void {
     if (!this.canSubmit() || !this.selectedEmployee) return;
+    if (!THEmployeeService.isEmployeeActive(this.selectedEmployee)) {
+      this.errorMessage = 'No se puede registrar reemplazo a un trabajador inactivo.';
+      return;
+    }
     this.loading = true;
     this.errorMessage = '';
     this.successMessage = '';
 
     const old = this.selectedOldItem;
     const newV = this.selectedVariant!;
-    const notesBase = `Cambio: motivo ${this.reason}, estado viejo ${this.oldState}`;
+    const empLabel = `${this.selectedEmployee.apellidos || ''} ${this.selectedEmployee.nombres || ''}`.trim()
+      + (this.selectedEmployee.cedula ? ` | CED:${this.selectedEmployee.cedula}` : '');
+    const notesBase = [
+      `Cambio: motivo ${this.reason}, estado viejo ${this.oldState}`,
+      empLabel ? `[TRABAJADOR:${empLabel}]` : ''
+    ].filter(Boolean).join(' ');
 
     const calls: any[] = [];
     if (this.oldAction === 'BAJA' || this.reason === 'PERDIO' || this.reason === 'MAL_USO') {

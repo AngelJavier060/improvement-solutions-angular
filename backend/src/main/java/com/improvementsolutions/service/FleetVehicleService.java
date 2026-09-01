@@ -623,13 +623,18 @@ public class FleetVehicleService {
 
     /**
      * ZIP con los PDF vigentes de una unidad. Ámbito: empresa (RUC) + vehículo.
+     * @param section opcional: una o varias categorías separadas por coma
+     *                (DOCUMENTOS_PRINCIPALES,CERTIFICACIONES,LIBERACIONES,DOCUMENTOS_ADICIONALES).
+     *                null / vacío / TODO / ALL = todas las secciones.
      */
     @Transactional(readOnly = true)
-    public ResponseEntity<byte[]> downloadCurrentDocumentsZip(String ruc, Long vehicleId) {
+    public ResponseEntity<byte[]> downloadCurrentDocumentsZip(String ruc, Long vehicleId, String section) {
         Business business = businessService.findByRuc(ruc)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
         FleetVehicle vehicle = fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
+
+        Set<String> sectionFilters = normalizeZipSections(section);
 
         Path base = Paths.get(uploadDir).resolve("fleet").normalize();
         List<FleetComplianceDocument> rows =
@@ -643,6 +648,9 @@ public class FleetVehicleService {
         for (FleetComplianceDocument row : rows) {
             if (row == null) continue;
             if (Boolean.FALSE.equals(row.getActive()) || Boolean.TRUE.equals(row.getHistoricMode())) continue;
+            if (sectionFilters != null && !sectionFilters.contains(normalizeDocCategory(row.getDocCategory()))) {
+                continue;
+            }
             FleetVehicleDocument file = row.getFleetVehicleDocument();
             if (file == null || file.getId() == null || !usedFileIds.add(file.getId())) continue;
             if (file.getStoredPath() == null || file.getStoredPath().isBlank()) continue;
@@ -655,10 +663,12 @@ public class FleetVehicleService {
         }
 
         if (items.isEmpty()) {
-            throw new IllegalArgumentException("No hay PDF adjuntos vigentes para esta unidad");
+            throw new IllegalArgumentException(sectionFilters == null
+                    ? "No hay PDF adjuntos vigentes para esta unidad"
+                    : "No hay PDF adjuntos vigentes en las secciones seleccionadas");
         }
 
-        String zipName = zipDownloadName(vehicle);
+        String zipName = zipDownloadName(vehicle, sectionFilters);
         byte[] zipBytes;
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -690,13 +700,75 @@ public class FleetVehicleService {
                 .body(zipBytes);
     }
 
-    private static String zipDownloadName(FleetVehicle vehicle) {
+    /** null = todas las secciones. */
+    private static Set<String> normalizeZipSections(String section) {
+        if (section == null || section.isBlank()) return null;
+        String raw = section.trim();
+        String upperAll = raw.toUpperCase().replace(' ', '_');
+        if ("ALL".equals(upperAll) || "TODO".equals(upperAll) || "TODAS".equals(upperAll)) return null;
+
+        Set<String> out = new LinkedHashSet<>();
+        for (String part : raw.split("[,;|]")) {
+            if (part == null || part.isBlank()) continue;
+            String u = part.trim().toUpperCase().replace(' ', '_');
+            if ("ALL".equals(u) || "TODO".equals(u) || "TODAS".equals(u)) {
+                return null;
+            }
+            out.add(normalizeDocCategory(u));
+        }
+        if (out.isEmpty()) return null;
+        // Si eligió las 4 categorías, es equivalente a “todo”
+        if (out.contains("DOCUMENTOS_PRINCIPALES")
+                && out.contains("CERTIFICACIONES")
+                && out.contains("LIBERACIONES")
+                && out.contains("DOCUMENTOS_ADICIONALES")) {
+            return null;
+        }
+        return out;
+    }
+
+    private static String normalizeDocCategory(String code) {
+        if (code == null || code.isBlank()) return "DOCUMENTOS_PRINCIPALES";
+        String upper = code.trim().toUpperCase().replace(' ', '_');
+        if (upper.contains("CERTIFIC")) return "CERTIFICACIONES";
+        if (upper.contains("LIBERAC")) return "LIBERACIONES";
+        if (upper.contains("ADICIONAL")) return "DOCUMENTOS_ADICIONALES";
+        if (upper.contains("LEGAL") || upper.contains("PERMISO") || upper.contains("PRINCIPAL")) {
+            return "DOCUMENTOS_PRINCIPALES";
+        }
+        if ("DOCUMENTOS_PRINCIPALES".equals(upper)
+                || "CERTIFICACIONES".equals(upper)
+                || "LIBERACIONES".equals(upper)
+                || "DOCUMENTOS_ADICIONALES".equals(upper)) {
+            return upper;
+        }
+        return "DOCUMENTOS_PRINCIPALES";
+    }
+
+    private static String zipDownloadName(FleetVehicle vehicle, Set<String> sectionFilters) {
         String placa = vehicle.getPlaca() != null ? vehicle.getPlaca().trim() : "";
         String codigo = vehicle.getCodigoEquipo() != null ? vehicle.getCodigoEquipo().trim() : "";
         String raw = "documentacion";
         if (!placa.isBlank()) raw += "_" + placa;
         if (!codigo.isBlank() && !codigo.equalsIgnoreCase(placa)) raw += "_" + codigo;
+        if (sectionFilters != null && !sectionFilters.isEmpty()) {
+            if (sectionFilters.size() == 1) {
+                raw += "_" + sectionSuffix(sectionFilters.iterator().next());
+            } else {
+                raw += "_seleccion";
+            }
+        }
         return sanitizeZipPart(raw) + ".zip";
+    }
+
+    private static String sectionSuffix(String section) {
+        return switch (section) {
+            case "DOCUMENTOS_PRINCIPALES" -> "legales_permisos";
+            case "CERTIFICACIONES" -> "certificaciones";
+            case "LIBERACIONES" -> "liberaciones";
+            case "DOCUMENTOS_ADICIONALES" -> "adicionales";
+            default -> section.toLowerCase();
+        };
     }
 
     private static String uniqueZipEntryName(String typeLabel, String originalFilename, Long fileId, Set<String> used) {

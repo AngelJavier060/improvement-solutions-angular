@@ -196,6 +196,12 @@ const routes: Routes = [
       {
         path: 'iso-9001',
         loadChildren: () => import('./iso-9001-gestion/iso-9001-gestion.module').then(m => m.Iso9001GestionModule)
+      },
+      {
+        path: 'equipo-proteccion-personal',
+        loadChildren: () =>
+          import('./equipo-proteccion-personal/equipo-proteccion-personal.module')
+            .then(m => m.EquipoProteccionPersonalModule)
       }
     ]
   }

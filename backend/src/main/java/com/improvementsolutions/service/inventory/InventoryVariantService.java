@@ -68,6 +68,8 @@ public class InventoryVariantService {
         entity.setProduct(product);
         entity.setCode(input.getCode().trim());
         entity.setDescription(input.getDescription());
+        entity.setGeneralSpecs(trimSpecs(input.getGeneralSpecs()));
+        entity.setTechSheetPdf(input.getTechSheetPdf());
         entity.setSizeLabel(input.getSizeLabel());
         entity.setDimensions(input.getDimensions());
         entity.setMinQty(input.getMinQty());
@@ -96,6 +98,10 @@ public class InventoryVariantService {
             entity.setCode(newCode);
         }
         entity.setDescription(input.getDescription());
+        entity.setGeneralSpecs(trimSpecs(input.getGeneralSpecs()));
+        if (input.getTechSheetPdf() != null) {
+            entity.setTechSheetPdf(input.getTechSheetPdf().isBlank() ? null : input.getTechSheetPdf().trim());
+        }
         entity.setSizeLabel(input.getSizeLabel());
         entity.setDimensions(input.getDimensions());
         entity.setMinQty(input.getMinQty());
@@ -104,5 +110,12 @@ public class InventoryVariantService {
         if (input.getSalePrice() != null) entity.setSalePrice(input.getSalePrice());
         if (input.getStatus() != null) entity.setStatus(input.getStatus());
         return variantRepository.save(entity);
+    }
+
+    private static String trimSpecs(String specs) {
+        if (specs == null) return null;
+        String t = specs.trim();
+        if (t.isEmpty()) return null;
+        return t.length() > 500 ? t.substring(0, 500) : t;
     }
 }

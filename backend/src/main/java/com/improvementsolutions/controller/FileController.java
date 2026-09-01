@@ -261,7 +261,7 @@ public class FileController {
     }
 
     private long maxBytesForUploadDirectory(String directory) {
-        if ("incidents-evidence".equals(directory)) {
+        if ("incidents-evidence".equals(directory) || "inventory_variants".equals(directory)) {
             return 10L * 1024 * 1024;
         }
         return 5L * 1024 * 1024;

@@ -1,0 +1,73 @@
+<div class="epp-catalog-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Proveedores</h2>
+      <p>Inventario-Bodega — catálogo global de proveedores (nombre, RUC, teléfono, email y dirección).</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-back" type="button" (click)="volverAConfiguracion()">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
+      <button class="btn btn-new" type="button" (click)="nuevo()">
+        <i class="fas fa-plus"></i> Nuevo proveedor
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando proveedores...</span>
+    </div>
+
+    <div *ngIf="error && !loading" class="error-state">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button type="button" (click)="cargar()" class="btn-retry">
+        <i class="fas fa-sync"></i> Reintentar
+      </button>
+    </div>
+
+    <div *ngIf="!loading && !error" class="data-table">
+      <table *ngIf="items.length > 0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>RUC</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>Dirección</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of items">
+            <td>{{ item.id }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.ruc || '—' }}</td>
+            <td>{{ item.phone || '—' }}</td>
+            <td>{{ item.email || '—' }}</td>
+            <td>{{ item.address || '—' }}</td>
+            <td class="actions">
+              <button class="btn btn-icon" type="button" (click)="editar(item.id)" title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-icon btn-delete" type="button" (click)="eliminar(item.id)" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="items.length === 0" class="empty-state">
+        <i class="fas fa-truck"></i>
+        <p>No hay proveedores registrados</p>
+        <button type="button" class="btn btn-new" (click)="nuevo()">
+          <i class="fas fa-plus"></i> Crear el primero
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

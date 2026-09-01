@@ -42,8 +42,17 @@ import { AuthService } from '../../../../../core/services/auth.service';
             <button type="button" class="btn btn-outline-secondary" (click)="searchByCodigo()">Buscar</button>
           </div>
         </div>
-        <div class="col-md-4 d-flex align-items-center">
+        <div class="col-md-4 d-flex align-items-center gap-2 flex-wrap">
           <div class="fw-semibold">{{ selectedEmployee ? (selectedEmployee.nombres + ' ' + selectedEmployee.apellidos) : '—' }}</div>
+          <span *ngIf="selectedEmployee && !isEmployeeActive(selectedEmployee)" class="badge bg-secondary">INACTIVO</span>
+        </div>
+      </div>
+
+      <div class="row" *ngIf="selectedEmployee && !isEmployeeActive(selectedEmployee)">
+        <div class="col-12">
+          <div class="alert alert-info mb-3">
+            Trabajador inactivo: puede registrar devoluciones para liquidar EPP/herramientas pendientes (auditoría de salida).
+          </div>
         </div>
       </div>
 
@@ -160,6 +169,10 @@ export class DevolucionesComponent implements OnInit {
     this.ruc = this.route.parent?.snapshot.params['ruc'] || '';
   }
 
+  isEmployeeActive(emp: EmployeeResponse | null | undefined): boolean {
+    return THEmployeeService.isEmployeeActive(emp);
+  }
+
   resetAll(): void {
     this.errorMessage = '';
     this.successMessage = '';
@@ -201,26 +214,53 @@ export class DevolucionesComponent implements OnInit {
 
   private loadAssignments(): void {
     if (!this.selectedEmployee?.id) { this.loading = false; return; }
-    this.outputService.findByEmployee(this.ruc, Number(this.selectedEmployee.id)).subscribe({
-      next: (outs) => {
+    const empId = Number(this.selectedEmployee.id);
+    forkJoin({
+      outs: this.outputService.findByEmployee(this.ruc, empId),
+      entries: this.entryService.list(this.ruc)
+    }).subscribe({
+      next: ({ outs, entries }) => {
+        const returnedQty = new Map<number, number>();
+        for (const e of (entries || [])) {
+          if ((e as any).entryType !== 'DEVOLUCION' || (e as any).status !== 'CONFIRMADO') continue;
+          const origin = String((e as any).origin || '');
+          if (origin !== `EMP:${empId}`) continue;
+          for (const d of ((e as any).details || [])) {
+            const vid = Number(d.variantId || d.variant?.id || 0);
+            if (!vid) continue;
+            returnedQty.set(vid, (returnedQty.get(vid) || 0) + Number(d.quantity || 0));
+          }
+        }
+
         const items: any[] = [];
         for (const o of (outs || [])) {
           const type = (o as any).outputType;
           const status = (o as any).status;
           if (!(['EPP_TRABAJADOR', 'PRESTAMO'].includes(type)) || status !== 'CONFIRMADO') continue;
+          if (type === 'PRESTAMO' && (o as any).returned) continue;
           const details = Array.isArray((o as any).details) ? (o as any).details : [];
           for (const d of details) {
+            const variantId = Number((d as any).variantId || 0);
+            let qty = Number((d as any).quantity || 0);
+            if (type === 'EPP_TRABAJADOR' && variantId) {
+              const ret = returnedQty.get(variantId) || 0;
+              const use = Math.min(qty, ret);
+              qty -= use;
+              returnedQty.set(variantId, ret - use);
+            }
+            if (qty <= 0) continue;
             items.push({
               outputId: Number((o as any).id),
               outputNumber: (o as any).outputNumber || '',
               detailId: Number((d as any).id || 0),
-              variantId: Number((d as any).variantId),
+              variantId,
               productName: (d as any).productName || '',
               variantCode: (d as any).variantCode || '',
-              quantity: Number((d as any).quantity || 0),
+              quantity: qty,
               inspection: 'PERFECTO',
               destination: 'INVENTARIO',
-              selected: false
+              selected: false,
+              outputType: type
             });
           }
         }
@@ -253,6 +293,7 @@ export class DevolucionesComponent implements OnInit {
         entryNumber: this.buildEntryNumber('DEV'),
         entryDate: new Date().toISOString().slice(0,10),
         entryType: 'DEVOLUCION',
+        origin: `EMP:${this.selectedEmployee.id}`,
         receivedBy: (this.auth.getCurrentUser()?.name || this.auth.getCurrentUser()?.username || 'Sistema') as string,
         authorizedBy: (this.auth.getCurrentUser()?.name || '') as string,
         notes: `Devolución de ${this.selectedEmployee.nombres} ${this.selectedEmployee.apellidos}`,
@@ -292,23 +333,48 @@ export class DevolucionesComponent implements OnInit {
     }
 
     if (!calls.length) { this.loading = false; return; }
+    const loanOutputIds = Array.from(new Set(
+      selected.filter(x => (x as any).outputType === 'PRESTAMO').map(x => Number(x.outputId)).filter(id => id > 0)
+    ));
     forkJoin(calls).subscribe({
       next: (results: any[]) => {
         const confirmCalls: any[] = [];
+        let entryId: number | null = null;
         for (const res of (results || [])) {
           const id = Number(res?.id);
           if (!id) continue;
-          if (res?.entryNumber) confirmCalls.push(this.entryService.confirm(this.ruc, id));
+          if (res?.entryNumber) {
+            entryId = id;
+            confirmCalls.push(this.entryService.confirm(this.ruc, id));
+          }
           if (res?.outputNumber) confirmCalls.push(this.outputService.confirm(this.ruc, id));
         }
+        const afterConfirm = () => {
+          if (!loanOutputIds.length) {
+            this.loading = false;
+            this.successMessage = 'Devolución registrada y confirmada';
+            this.loadAssignments();
+            return;
+          }
+          forkJoin(loanOutputIds.map(oid => this.outputService.markReturned(this.ruc, oid, entryId || undefined))).subscribe({
+            next: () => {
+              this.loading = false;
+              this.successMessage = 'Devolución registrada y confirmada';
+              this.loadAssignments();
+            },
+            error: () => {
+              this.loading = false;
+              this.errorMessage = 'Devolución confirmada, pero no se pudieron cerrar todos los préstamos';
+              this.loadAssignments();
+            }
+          });
+        };
         if (!confirmCalls.length) {
-          this.loading = false;
-          this.successMessage = 'Devolución registrada correctamente';
-          this.assignedItems = [];
+          afterConfirm();
           return;
         }
         forkJoin(confirmCalls).subscribe({
-          next: () => { this.loading = false; this.successMessage = 'Devolución registrada y confirmada'; this.assignedItems = []; },
+          next: () => afterConfirm(),
           error: () => { this.loading = false; this.errorMessage = 'Devolución creada pero no se pudo confirmar'; }
         });
       },

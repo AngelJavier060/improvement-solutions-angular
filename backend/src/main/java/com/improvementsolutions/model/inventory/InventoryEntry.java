@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.improvementsolutions.model.Business;
 import com.improvementsolutions.model.inventory.enums.EntryStatus;
-import com.improvementsolutions.model.inventory.enums.EntryType;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -37,9 +36,8 @@ public class InventoryEntry {
     @Column(name = "entry_date", nullable = false)
     private LocalDate entryDate; // Fecha de llegada física
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "entry_type", nullable = false, length = 30)
-    private EntryType entryType; // COMPRA, DEVOLUCION, TRANSFERENCIA, etc.
+    @Column(name = "entry_type", nullable = false, length = 80)
+    private String entryType; // Nombre del catálogo (ej. Compra, Devolución, …)
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id")

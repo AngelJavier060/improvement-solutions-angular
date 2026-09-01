@@ -6,24 +6,45 @@ export interface InventoryProduct {
   id?: number;
   code: string;
   category?: string;
+  /** Tipo operativo / familia: EPP | HERRAMIENTA | PIEZA */
+  productKind?: 'EPP' | 'HERRAMIENTA' | 'PIEZA';
+  /** Sección dentro de la familia (CAS, PAN, TAL...) */
+  sectionCode?: string | null;
+  sectionLabel?: string | null;
   categoryRef?: { id: number; name?: string } | null;
   name: string;
   description?: string;
   unitOfMeasure?: string;
-  brand?: string;
-  model?: string;
-  specsJson?: string;
-  certificationsJson?: string;
   image?: string;
   status?: 'ACTIVO' | 'INACTIVO' | 'DESCONTINUADO';
-  minStock?: number;
-  maxStock?: number;
-  supplier?: { id: number } | null;
+}
+
+export interface InventoryBodegaFamily {
+  id: number;
+  name: string;
+  code: string;
+  description?: string;
+}
+
+export interface InventoryBodegaSection {
+  id: number;
+  name: string;
+  code: string;
+  description?: string;
+}
+
+export interface InventoryBodegaParams {
+  families: InventoryBodegaFamily[];
+  sections: InventoryBodegaSection[];
 }
 
 @Injectable({ providedIn: 'root' })
 export class InventoryProductService {
   constructor(private http: HttpClient) {}
+
+  getBodegaParams(ruc: string): Observable<InventoryBodegaParams> {
+    return this.http.get<InventoryBodegaParams>(`/api/inventory/${ruc}/bodega-params`);
+  }
 
   list(ruc: string): Observable<InventoryProduct[]> {
     return this.http.get<InventoryProduct[]>(`/api/inventory/${ruc}/products`);

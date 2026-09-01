@@ -45,8 +45,9 @@ import { AuthService } from '../../../../../core/services/auth.service';
             <button type="button" class="btn btn-outline-secondary" (click)="searchByCodigo()">Buscar</button>
           </div>
         </div>
-        <div class="col-md-4 d-flex align-items-center">
+        <div class="col-md-4 d-flex align-items-center gap-2">
           <div class="fw-semibold">{{ selectedEmployee ? (selectedEmployee.nombres + ' ' + selectedEmployee.apellidos) : '—' }}</div>
+          <span *ngIf="selectedEmployee && !isEmployeeActive(selectedEmployee)" class="badge bg-secondary">INACTIVO</span>
         </div>
       </div>
 
@@ -200,9 +201,15 @@ export class PrestamosComponent implements OnInit {
       next: (outs) => {
         const res: any[] = [];
         for (const o of (outs || [])) {
+          if ((o as any).status !== 'CONFIRMADO') continue;
+          if ((o as any).returned) continue;
           const details = Array.isArray((o as any).details) ? (o as any).details : [];
           for (const d of details) {
-            res.push({ ...o, detailVariantCode: (d as any).variantCode });
+            res.push({
+              ...o,
+              detailVariantCode: (d as any).variantCode,
+              detailVariantId: (d as any).variantId
+            });
           }
         }
         this.loans = res;
@@ -212,13 +219,26 @@ export class PrestamosComponent implements OnInit {
     });
   }
 
+  isEmployeeActive(emp: EmployeeResponse | null | undefined): boolean {
+    return THEmployeeService.isEmployeeActive(emp);
+  }
+
   searchByCedula(): void {
     const c = (this.cedulaSearch || '').trim();
     if (!c) return;
     this.loading = true;
     this.errorMessage = '';
+    this.selectedEmployee = null;
     this.thEmployeeService.getEmployeeByCedulaScopedByRuc(this.ruc, c).subscribe({
-      next: (emp) => { this.selectedEmployee = emp; this.loading = false; },
+      next: (emp) => {
+        if (!THEmployeeService.isEmployeeActive(emp)) {
+          this.loading = false;
+          this.errorMessage = 'Trabajador inactivo: no se puede registrar préstamo nuevo. El historial queda en reportes/auditoría.';
+          return;
+        }
+        this.selectedEmployee = emp;
+        this.loading = false;
+      },
       error: () => { this.loading = false; this.errorMessage = 'No se encontró trabajador con esa cédula'; }
     });
   }
@@ -228,11 +248,23 @@ export class PrestamosComponent implements OnInit {
     if (!code) return;
     this.loading = true;
     this.errorMessage = '';
-    this.thEmployeeService.getEmployeesByBusinessRucPaginated(this.ruc, { page: 0, size: 1, codigo: code }).subscribe({
+    this.selectedEmployee = null;
+    this.thEmployeeService.getEmployeesByBusinessRucPaginated(this.ruc, { page: 0, size: 1, codigo: code, activeOnly: true }).subscribe({
       next: (page) => {
         const emp = page?.content?.[0];
-        if (emp) { this.selectedEmployee = emp as any; this.loading = false; }
-        else { this.loading = false; this.errorMessage = 'Código no encontrado'; }
+        if (emp) { this.selectedEmployee = emp as any; this.loading = false; return; }
+        this.thEmployeeService.getEmployeesByBusinessRucPaginated(this.ruc, { page: 0, size: 1, codigo: code }).subscribe({
+          next: (allPage) => {
+            const any = allPage?.content?.[0];
+            this.loading = false;
+            if (any && !THEmployeeService.isEmployeeActive(any as any)) {
+              this.errorMessage = 'Trabajador inactivo: no se puede registrar préstamo nuevo. El historial queda en reportes/auditoría.';
+            } else {
+              this.errorMessage = 'Código no encontrado';
+            }
+          },
+          error: () => { this.loading = false; this.errorMessage = 'Código no encontrado'; }
+        });
       },
       error: () => { this.loading = false; this.errorMessage = 'Error buscando por código'; }
     });
@@ -284,7 +316,7 @@ export class PrestamosComponent implements OnInit {
     this.successMessage = '';
     const details = Array.isArray(loan.details) ? loan.details : [];
     const entryDetails = details.map((d: any) => ({
-      variantId: Number(d.variantId || d.variant?.id || 0),
+      variantId: Number(d.variantId || d.variant?.id || loan.detailVariantId || 0),
       quantity: Number(d.quantity || 1),
       unitCost: Number(d.unitCost || 0),
       taxPercentage: 0,
@@ -292,15 +324,18 @@ export class PrestamosComponent implements OnInit {
       totalCost: 0,
       itemCondition: 'USADO',
       notes: `Devolución del préstamo ${loan.outputNumber}`
-    }));
-    if (!entryDetails.length && loan.detailVariantCode) {
-      // Fallback: solo tenemos el código de variante, usamos variantId del préstamo si existe
-      entryDetails.push({ variantId: 0, quantity: 1, unitCost: 0, taxPercentage: 0, taxAmount: 0, totalCost: 0, itemCondition: 'USADO', notes: `Devolución ${loan.outputNumber}` });
+    })).filter((d: any) => d.variantId > 0);
+    if (!entryDetails.length) {
+      this.loading = false;
+      this.errorMessage = 'No se pudo identificar la variante del préstamo';
+      return;
     }
+    const employeeId = Number(loan.employeeId || this.selectedEmployee?.id || 0);
     const entry: InventoryEntry = {
       entryNumber: this.buildNumber('DEV'),
       entryDate: new Date().toISOString().slice(0, 10),
       entryType: 'DEVOLUCION',
+      origin: employeeId ? `EMP:${employeeId}` : undefined,
       receivedBy: (this.auth.getCurrentUser()?.name || this.auth.getCurrentUser()?.username || 'Sistema') as string,
       authorizedBy: (this.auth.getCurrentUser()?.name || '') as string,
       notes: `Devolución del préstamo ${loan.outputNumber}`,
@@ -312,7 +347,27 @@ export class PrestamosComponent implements OnInit {
         const id = Number(created?.id);
         if (!id) { this.loading = false; this.successMessage = 'Devolución registrada'; this.reloadLists(); return; }
         this.entryService.confirm(this.ruc, id).subscribe({
-          next: () => { this.loading = false; this.successMessage = 'Devolución registrada y confirmada correctamente'; this.reloadLists(); },
+          next: () => {
+            const outputId = Number(loan.id);
+            if (!outputId) {
+              this.loading = false;
+              this.successMessage = 'Devolución registrada y confirmada correctamente';
+              this.reloadLists();
+              return;
+            }
+            this.outputService.markReturned(this.ruc, outputId, id).subscribe({
+              next: () => {
+                this.loading = false;
+                this.successMessage = 'Devolución registrada y préstamo cerrado';
+                this.reloadLists();
+              },
+              error: () => {
+                this.loading = false;
+                this.errorMessage = 'Devolución confirmada, pero no se pudo marcar el préstamo como devuelto';
+                this.reloadLists();
+              }
+            });
+          },
           error: () => { this.loading = false; this.errorMessage = 'Devolución creada pero no se pudo confirmar'; this.reloadLists(); }
         });
       },
@@ -328,11 +383,20 @@ export class PrestamosComponent implements OnInit {
 
   submitLoan(): void {
     if (!this.canSubmit() || !this.selectedEmployee || !this.selectedVariant) return;
+    if (!THEmployeeService.isEmployeeActive(this.selectedEmployee)) {
+      this.errorMessage = 'No se puede registrar préstamo a un trabajador inactivo.';
+      return;
+    }
     this.loading = true;
     this.errorMessage = '';
     this.successMessage = '';
     const selectedLot = (this.selectedVariant?.id && this.lotOptions[this.selectedVariant.id]) ? this.lotOptions[this.selectedVariant.id].find(l => l.id === this.selectedLotId!) : null;
-    const notes = `Accesorios: ${this.accessories || '—'} | Propósito: ${this.purpose || '—'} | Estado: ${this.stateOnExit}`;
+    const empLabel = `${this.selectedEmployee.apellidos || ''} ${this.selectedEmployee.nombres || ''}`.trim()
+      + (this.selectedEmployee.cedula ? ` | CED:${this.selectedEmployee.cedula}` : '');
+    const notes = [
+      `Accesorios: ${this.accessories || '—'} | Propósito: ${this.purpose || '—'} | Estado: ${this.stateOnExit}`,
+      empLabel ? `[TRABAJADOR:${empLabel}]` : ''
+    ].filter(Boolean).join(' ');
     const payload: any = {
       outputNumber: this.buildNumber('PREST'),
       outputDate: this.loanDate,

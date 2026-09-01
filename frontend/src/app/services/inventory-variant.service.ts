@@ -6,6 +6,10 @@ export interface InventoryVariant {
   id?: number;
   code: string;
   description?: string;
+  /** Especificaciones generales (máx. 500 caracteres) */
+  generalSpecs?: string;
+  /** Ruta PDF ficha técnica */
+  techSheetPdf?: string;
   sizeLabel?: string;
   dimensions?: string;
   salePrice?: number;

@@ -36,8 +36,8 @@ export class NuevaEntradaComponent implements OnInit {
   variants: InventoryVariant[] = [];
   selectedVariant: InventoryVariant | null = null;
   
-  // Tipos de entrada
-  entryTypes = ['COMPRA', 'DEVOLUCION', 'TRANSFERENCIA', 'AJUSTE', 'DONACION'];
+  // Tipos de entrada (dinámicos por empresa; se guarda el nombre)
+  entryTypes: Array<{ name: string }> = [];
   itemConditions = ['NUEVO', 'USADO', 'REACONDICIONADO'];
   
   // Subida de documento
@@ -62,11 +62,10 @@ export class NuevaEntradaComponent implements OnInit {
     private authService: AuthService
   ) {
     const today = new Date().toISOString().split('T')[0];
-    const suggestedNumber = this.generateEntryNumber();
     this.entryForm = this.fb.group({
-      entryNumber: [suggestedNumber, Validators.required],
+      entryNumber: ['', Validators.required],
       entryDate: [today, Validators.required],
-      entryType: ['COMPRA', Validators.required],
+      entryType: ['', Validators.required],
       supplierId: [null],
       origin: [''],
       receivedBy: ['', Validators.required],
@@ -79,6 +78,8 @@ export class NuevaEntradaComponent implements OnInit {
     this.ruc = this.route.parent?.snapshot.params['ruc'] || '';
     this.loadSuppliers();
     this.loadProducts();
+    this.loadNextEntryNumber();
+    this.loadEntryTypes();
 
     // Metadatos visuales
     const now = new Date();
@@ -91,10 +92,62 @@ export class NuevaEntradaComponent implements OnInit {
     }
   }
 
+  /** Carga / regenera el consecutivo ENT-AAAA-#### de la empresa. */
+  loadNextEntryNumber(): void {
+    if (!this.ruc) {
+      this.entryForm.patchValue({ entryNumber: this.generateEntryNumberFallback() });
+      return;
+    }
+    this.entryService.nextNumber(this.ruc).subscribe({
+      next: (res) => {
+        const num = (res?.entryNumber || '').toString().trim();
+        this.entryForm.patchValue({ entryNumber: num || this.generateEntryNumberFallback() });
+      },
+      error: () => {
+        this.entryForm.patchValue({ entryNumber: this.generateEntryNumberFallback() });
+      }
+    });
+  }
+
+  /** Tipos de entrada asignados a esta empresa. */
+  loadEntryTypes(): void {
+    if (!this.ruc) {
+      this.entryTypes = [];
+      return;
+    }
+    this.entryService.listEntryTypes(this.ruc).subscribe({
+      next: (list) => {
+        this.entryTypes = (list || [])
+          .filter(t => !!(t?.name || t?.code))
+          .map(t => ({ name: (t.name || t.code || '').toString().trim() }))
+          .filter(t => !!t.name);
+        const current = (this.entryForm.get('entryType')?.value || '').toString().trim();
+        const stillValid = this.entryTypes.some(t => t.name === current);
+        if (!stillValid) {
+          this.entryForm.patchValue({
+            entryType: this.entryTypes[0]?.name || ''
+          });
+        }
+        if (!this.entryTypes.length) {
+          this.errorMessage =
+            'Esta empresa no tiene Tipos de Entrada asignados. Configúrelos en Admin → Empresas → Inventario-Bodega.';
+        }
+      },
+      error: () => {
+        this.entryTypes = [];
+        this.errorMessage = 'No se pudieron cargar los Tipos de Entrada de la empresa.';
+      }
+    });
+  }
+
   loadSuppliers(): void {
-    this.supplierService.list(this.ruc).subscribe({
-      next: (data) => this.suppliers = data,
-      error: () => this.suppliers = []
+    this.supplierService.listFromBodega(this.ruc).subscribe({
+      next: (data) => {
+        this.suppliers = (data || []).filter(s => s.active !== false);
+      },
+      error: () => {
+        this.suppliers = [];
+      }
     });
   }
 
@@ -139,7 +192,8 @@ export class NuevaEntradaComponent implements OnInit {
       itemCondition: 'NUEVO',
       productName: this.selectedProduct?.name,
       variantCode: this.selectedVariant.code,
-      productImage: this.selectedProduct?.image
+      productImage: this.selectedProduct?.image,
+      currentQty: Number(this.selectedVariant.currentQty ?? 0)
     };
     
     this.details.push(detail);
@@ -171,14 +225,15 @@ export class NuevaEntradaComponent implements OnInit {
   }
 
   generateEntryNumber(): string {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hour = String(now.getHours()).padStart(2, '0');
-    const minute = String(now.getMinutes()).padStart(2, '0');
-    const second = String(now.getSeconds()).padStart(2, '0');
-    return `ENT-${year}${month}${day}-${hour}${minute}${second}`;
+    // Compat: el botón de refresco pide el siguiente al backend.
+    this.loadNextEntryNumber();
+    return this.entryForm?.get('entryNumber')?.value || this.generateEntryNumberFallback();
+  }
+
+  /** Fallback local si el API no responde (no garantiza unicidad). */
+  private generateEntryNumberFallback(): string {
+    const year = new Date().getFullYear();
+    return `ENT-${year}-0001`;
   }
 
   onFileSelected(event: any): void {
@@ -237,7 +292,7 @@ export class NuevaEntradaComponent implements OnInit {
     const payload: any = {
       entryNumber: raw.entryNumber,
       entryDate: raw.entryDate,
-      entryType: raw.entryType,
+      entryType: this.toEntryTypeCode(raw.entryType),
       supplier: raw.supplierId ? { id: raw.supplierId } : null,
       origin: raw.origin || null,
       receivedBy: raw.receivedBy,
@@ -318,5 +373,21 @@ export class NuevaEntradaComponent implements OnInit {
     if (!imagePath) return 'assets/img/company-placeholder.svg';
     if (imagePath.startsWith('http')) return imagePath;
     return `/api/files/${imagePath}`;
+  }
+
+  /**
+   * Compatibilidad con CHECK antiguo en BD (COMPRA/DEVOLUCION/…).
+   * La UI sigue mostrando el nombre del catálogo ("Compra").
+   */
+  private toEntryTypeCode(name: string): string {
+    const raw = (name || '').toString().trim();
+    if (!raw) return raw;
+    const key = raw
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[\s-]+/g, '_');
+    const known = ['COMPRA', 'DEVOLUCION', 'TRANSFERENCIA', 'AJUSTE', 'DONACION'];
+    return known.includes(key) ? key : raw;
   }
 }

@@ -82,10 +82,14 @@ public class SupervisorWriteCapabilityFilter extends OncePerRequestFilter {
             return;
         }
 
-        boolean isSuper = auth.getAuthorities().stream()
+        // Superadmin, Admin empresa y Gestor: escritura operativa siempre (sin matriz).
+        // Solo ROLE_USER (Supervisor/consulta) se valida contra la matriz de capacidades.
+        boolean bypassMatrix = auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .anyMatch("ROLE_SUPER_ADMIN"::equals);
-        if (isSuper) {
+                .anyMatch(a -> "ROLE_SUPER_ADMIN".equals(a)
+                        || "ROLE_ADMIN".equals(a)
+                        || "ROLE_MANAGER".equals(a));
+        if (bypassMatrix) {
             filterChain.doFilter(request, response);
             return;
         }

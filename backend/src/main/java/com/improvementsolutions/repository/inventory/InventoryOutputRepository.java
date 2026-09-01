@@ -8,10 +8,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.improvementsolutions.model.inventory.InventoryOutput;
-import com.improvementsolutions.model.inventory.enums.OutputType;
 
 public interface InventoryOutputRepository extends JpaRepository<InventoryOutput, Long> {
     boolean existsByBusinessIdAndOutputNumber(Long businessId, String outputNumber);
+
+    /** Números de salida de la empresa que empiezan con un prefijo (ej. SAL-2026-). */
+    @Query("SELECT o.outputNumber FROM InventoryOutput o WHERE o.business.id = ?1 AND o.outputNumber LIKE CONCAT(?2, '%')")
+    List<String> findOutputNumbersByBusinessIdAndPrefix(Long businessId, String prefix);
     
     List<InventoryOutput> findByBusinessIdOrderByOutputDateDesc(Long businessId);
     
@@ -22,10 +25,10 @@ public interface InventoryOutputRepository extends JpaRepository<InventoryOutput
         @Param("endDate") LocalDate endDate
     );
     
-    List<InventoryOutput> findByBusinessIdAndOutputTypeOrderByOutputDateDesc(Long businessId, OutputType outputType);
+    List<InventoryOutput> findByBusinessIdAndOutputTypeOrderByOutputDateDesc(Long businessId, String outputType);
     
     List<InventoryOutput> findByBusinessIdAndEmployeeIdOrderByOutputDateDesc(Long businessId, Long employeeId);
 
-    @Query("SELECT o FROM InventoryOutput o WHERE o.business.id = :businessId AND o.outputType = 'PRESTAMO' AND o.status = 'CONFIRMADO'")
+    @Query("SELECT o FROM InventoryOutput o WHERE o.business.id = :businessId AND o.outputType = 'PRESTAMO' AND o.status = 'CONFIRMADO' AND (o.returned IS NULL OR o.returned = false)")
     List<InventoryOutput> findActiveLoans(@Param("businessId") Long businessId);
 }

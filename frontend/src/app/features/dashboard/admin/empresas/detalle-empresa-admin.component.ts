@@ -24,7 +24,7 @@ import { WorkShift } from '../../../../models/work-shift.model';
 import { environment } from '../../../../../environments/environment';
 import { BusinessAdapterService } from '../../../../core/adapters/business-adapter.service';
 import { QrLegalDocsService } from '../../../../core/services/qr-legal-docs.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { User } from './user-modal/user-modal.component';
 import { EmployeeService } from '../../usuario/talento-humano/services/employee.service';
 import { EmployeeResponse } from '../../usuario/talento-humano/models/employee.model';
@@ -37,6 +37,7 @@ import { MetodologiaRiesgo } from '../../../../models/metodologia-riesgo.model';
 import { MetodologiaRiesgoService } from '../../../../services/metodologia-riesgo.service';
 import { parametroFactorParaCatalogo } from '../configuracion/shared/metodologia-factor-viaje.util';
 import { Iso9001CatalogKey, Iso9001CatalogService } from '../../../../services/iso-9001-catalog.service';
+import { EppCatalogKey, EppCatalogItem, EppCatalogService } from '../../../../services/epp-catalog.service';
 import { FLEET_DOC_CATEGORIES, normalizeFleetDocCategory } from '../../../../models/tipo-documento-vehiculo.model';
 
 @Component({
@@ -403,6 +404,28 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   savingIso9001Assign = false;
   iso9001GlobalCatalogLoading = false;
 
+  // === Inventario-Bodega — Familia / Sección / Tipo Entrada-Salida / Proveedores ===
+  readonly inventarioBodegaParamDefinitions: ReadonlyArray<{
+    catalogKey: 'familia' | 'seccion' | 'tipo-entrada' | 'tipo-salida' | 'tipo-acontecimiento' | 'estado-epi' | 'proveedores';
+    title: string;
+    icon: string;
+    headerGradient: string;
+  }> = [
+    { catalogKey: 'familia', title: 'Familia', icon: 'fas fa-layer-group', headerGradient: 'linear-gradient(90deg, #0f766e 0%, #14b8a6 100%)' },
+    { catalogKey: 'seccion', title: 'Sección', icon: 'fas fa-th-list', headerGradient: 'linear-gradient(90deg, #0369a1 0%, #38bdf8 100%)' },
+    { catalogKey: 'tipo-entrada', title: 'Tipo de Entrada', icon: 'fas fa-dolly', headerGradient: 'linear-gradient(90deg, #6d28d9 0%, #a78bfa 100%)' },
+    { catalogKey: 'tipo-salida', title: 'Tipo de Salida', icon: 'fas fa-truck-loading', headerGradient: 'linear-gradient(90deg, #be123c 0%, #fb7185 100%)' },
+    { catalogKey: 'tipo-acontecimiento', title: 'Tipo de Acontecimiento', icon: 'fas fa-exclamation-triangle', headerGradient: 'linear-gradient(90deg, #c2410c 0%, #fb923c 100%)' },
+    { catalogKey: 'estado-epi', title: 'Estado del EPI', icon: 'fas fa-heartbeat', headerGradient: 'linear-gradient(90deg, #047857 0%, #34d399 100%)' },
+    { catalogKey: 'proveedores', title: 'Proveedores', icon: 'fas fa-truck', headerGradient: 'linear-gradient(90deg, #b45309 0%, #f59e0b 100%)' }
+  ];
+  showAsignInventarioBodegaModal = false;
+  inventarioBodegaAssignKey: 'familia' | 'seccion' | 'tipo-entrada' | 'tipo-salida' | 'tipo-acontecimiento' | 'estado-epi' | 'proveedores' | null = null;
+  allInventarioBodegaGlobalForModal: any[] = [];
+  selectedInventarioBodegaIds: number[] = [];
+  savingInventarioBodegaAssign = false;
+  inventarioBodegaGlobalLoading = false;
+
   // Modal para editar empresa
   showEditEmpresaModal = false;
   savingEmpresa = false;
@@ -470,7 +493,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private userAdminService: UserAdminService,
     private http: HttpClient,
     private metodologiaRiesgoService: MetodologiaRiesgoService,
-    private iso9001CatalogService: Iso9001CatalogService
+    private iso9001CatalogService: Iso9001CatalogService,
+    private eppCatalogService: EppCatalogService
   ) {}
 
   ngOnInit(): void {
@@ -2768,6 +2792,173 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       return;
     }
     this.businessService.removeIso9001CatalogItemFromBusiness(this.empresaId, id).subscribe({
+      next: () => this.loadData(),
+      error: () => alert('Error al quitar el ítem.')
+    });
+  }
+
+  // === Inventario-Bodega por empresa (Familia / Sección / Proveedores desde Configuración) ===
+  getInventarioBodegaItems(catalogKey: 'familia' | 'seccion' | 'tipo-entrada' | 'tipo-salida' | 'tipo-acontecimiento' | 'estado-epi' | 'proveedores'): Array<{ id: number; name: string; code?: string; description?: string; ruc?: string; phone?: string; email?: string; address?: string }> {
+    if (catalogKey === 'familia') {
+      return (((this.empresa as any)?.eppFamilies as any[]) || []);
+    }
+    if (catalogKey === 'seccion') {
+      return (((this.empresa as any)?.eppSections as any[]) || []);
+    }
+    if (catalogKey === 'tipo-entrada') {
+      return (((this.empresa as any)?.inventoryEntryTypes as any[]) || []);
+    }
+    if (catalogKey === 'tipo-salida') {
+      return (((this.empresa as any)?.inventoryOutputTypes as any[]) || []);
+    }
+    if (catalogKey === 'tipo-acontecimiento') {
+      return (((this.empresa as any)?.inventoryAcontecimientoTypes as any[]) || []);
+    }
+    if (catalogKey === 'estado-epi') {
+      return (((this.empresa as any)?.inventoryEstadoEpis as any[]) || []);
+    }
+    return (((this.empresa as any)?.inventorySupplierGlobals as any[]) || []);
+  }
+
+  inventarioBodegaAssignModalTitle(): string {
+    const def = this.inventarioBodegaParamDefinitions.find(d => d.catalogKey === this.inventarioBodegaAssignKey);
+    return def ? `Asignar — ${def.title}` : 'Asignar parámetro Inventario-Bodega';
+  }
+
+  openInventarioBodegaAssignModal(catalogKey: 'familia' | 'seccion' | 'tipo-entrada' | 'tipo-salida' | 'tipo-acontecimiento' | 'estado-epi' | 'proveedores'): void {
+    this.inventarioBodegaAssignKey = catalogKey;
+    this.selectedInventarioBodegaIds = [];
+    this.allInventarioBodegaGlobalForModal = [];
+    this.showAsignInventarioBodegaModal = true;
+    this.inventarioBodegaGlobalLoading = true;
+    const req$: Observable<any[]> = catalogKey === 'proveedores'
+      ? this.inventorySupplierService.listGlobal()
+      : this.eppCatalogService.getAll(catalogKey);
+    req$.subscribe({
+      next: (data: any[]) => {
+        this.allInventarioBodegaGlobalForModal = data || [];
+        this.inventarioBodegaGlobalLoading = false;
+      },
+      error: (err: any) => {
+        this.inventarioBodegaGlobalLoading = false;
+        console.error(err);
+        alert(
+          'No se pudo cargar el catálogo global. Cree primero los parámetros en Configuración → Inventario-Bodega.'
+        );
+      }
+    });
+  }
+
+  closeAsignInventarioBodegaModal(): void {
+    this.showAsignInventarioBodegaModal = false;
+    this.inventarioBodegaAssignKey = null;
+    this.selectedInventarioBodegaIds = [];
+    this.allInventarioBodegaGlobalForModal = [];
+    this.inventarioBodegaGlobalLoading = false;
+  }
+
+  availableInventarioBodegaForAssign(): any[] {
+    if (!this.inventarioBodegaAssignKey) {
+      return [];
+    }
+    const assigned = new Set(
+      this.getInventarioBodegaItems(this.inventarioBodegaAssignKey).map((x) => Number(x.id))
+    );
+    return (this.allInventarioBodegaGlobalForModal || []).filter(
+      (x: any) => x?.id != null && !assigned.has(Number(x.id))
+    );
+  }
+
+  inventarioBodegaAssignIsSelected(id: number): boolean {
+    return this.selectedInventarioBodegaIds.includes(id);
+  }
+
+  inventarioBodegaAssignToggle(id: number, checked: boolean): void {
+    const i = this.selectedInventarioBodegaIds.indexOf(id);
+    if (checked && i < 0) {
+      this.selectedInventarioBodegaIds.push(id);
+    }
+    if (!checked && i >= 0) {
+      this.selectedInventarioBodegaIds.splice(i, 1);
+    }
+  }
+
+  inventarioBodegaAssignSelectAll(): void {
+    this.selectedInventarioBodegaIds.length = 0;
+    this.availableInventarioBodegaForAssign().forEach((x: any) => {
+      if (x?.id != null) {
+        this.selectedInventarioBodegaIds.push(Number(x.id));
+      }
+    });
+  }
+
+  inventarioBodegaAssignClear(): void {
+    this.selectedInventarioBodegaIds.length = 0;
+  }
+
+  assignInventarioBodegaFromGlobal(): void {
+    const key = this.inventarioBodegaAssignKey;
+    const uniq = [...new Set(this.selectedInventarioBodegaIds.filter((id) => id != null))];
+    if (!uniq.length || !this.empresaId || !key) {
+      return;
+    }
+    this.savingInventarioBodegaAssign = true;
+    const calls = uniq.map((id) => {
+      if (key === 'familia') {
+        return this.businessService.addEppFamilyToBusiness(this.empresaId, id);
+      }
+      if (key === 'seccion') {
+        return this.businessService.addEppSectionToBusiness(this.empresaId, id);
+      }
+      if (key === 'tipo-entrada') {
+        return this.businessService.addInventoryEntryTypeToBusiness(this.empresaId, id);
+      }
+      if (key === 'tipo-salida') {
+        return this.businessService.addInventoryOutputTypeToBusiness(this.empresaId, id);
+      }
+      if (key === 'tipo-acontecimiento') {
+        return this.businessService.addInventoryAcontecimientoTypeToBusiness(this.empresaId, id);
+      }
+      if (key === 'estado-epi') {
+        return this.businessService.addInventoryEstadoEpiToBusiness(this.empresaId, id);
+      }
+      return this.businessService.addInventorySupplierGlobalToBusiness(this.empresaId, id);
+    });
+    forkJoin(calls).subscribe({
+      next: () => {
+        this.savingInventarioBodegaAssign = false;
+        this.closeAsignInventarioBodegaModal();
+        this.loadData();
+      },
+      error: (err: any) => {
+        this.savingInventarioBodegaAssign = false;
+        console.error(err);
+        alert('Error al asignar uno o más ítems. Es posible que ya estuvieran vinculados.');
+      }
+    });
+  }
+
+  removeInventarioBodegaItem(catalogKey: 'familia' | 'seccion' | 'tipo-entrada' | 'tipo-salida' | 'tipo-acontecimiento' | 'estado-epi' | 'proveedores', id: number): void {
+    if (!this.empresaId) {
+      return;
+    }
+    if (!confirm('¿Quitar este ítem de la empresa? (El registro global en Configuración no se elimina.)')) {
+      return;
+    }
+    const req = catalogKey === 'familia'
+      ? this.businessService.removeEppFamilyFromBusiness(this.empresaId, id)
+      : catalogKey === 'seccion'
+        ? this.businessService.removeEppSectionFromBusiness(this.empresaId, id)
+        : catalogKey === 'tipo-entrada'
+          ? this.businessService.removeInventoryEntryTypeFromBusiness(this.empresaId, id)
+          : catalogKey === 'tipo-salida'
+            ? this.businessService.removeInventoryOutputTypeFromBusiness(this.empresaId, id)
+            : catalogKey === 'tipo-acontecimiento'
+              ? this.businessService.removeInventoryAcontecimientoTypeFromBusiness(this.empresaId, id)
+              : catalogKey === 'estado-epi'
+                ? this.businessService.removeInventoryEstadoEpiFromBusiness(this.empresaId, id)
+          : this.businessService.removeInventorySupplierGlobalFromBusiness(this.empresaId, id);
+    req.subscribe({
       next: () => this.loadData(),
       error: () => alert('Error al quitar el ítem.')
     });

@@ -80,6 +80,10 @@ public class GlobalExceptionHandler {
                 userMessage = "Uno o más campos obligatorios están vacíos. Verifique los datos enviados.";
             } else if (rootMsg.contains("foreign key") || rootMsg.contains("referenced")) {
                 userMessage = "El registro está referenciado por otros datos y no puede ser modificado o eliminado.";
+            } else if (rootMsg.contains("entry_type_check") || (rootMsg.contains("check") && rootMsg.contains("entry_type"))) {
+                userMessage = "El tipo de entrada no es válido para la base de datos. Reinicie el backend o contacte soporte (restricción antigua de tipos).";
+            } else if (rootMsg.contains("check")) {
+                userMessage = "Uno de los valores no cumple una regla de la base de datos. Revise tipo de entrada y demás campos.";
             }
         }
 

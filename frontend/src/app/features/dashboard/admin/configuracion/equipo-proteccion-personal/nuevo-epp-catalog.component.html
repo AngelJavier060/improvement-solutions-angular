@@ -1,0 +1,110 @@
+<div class="epp-catalog-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>{{ nuevoTitulo }}</h2>
+      <p>{{ nuevoSubtitulo }}</p>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn-secondary" [routerLink]="listaUrl()">
+        <i class="fas fa-arrow-left"></i> Volver a Lista
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div *ngIf="successMessage" class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+
+      <div *ngIf="error" class="alert alert-error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ error }}</span>
+      </div>
+
+      <div class="form-group">
+        <label for="epp-name">Nombre <span class="required">*</span></label>
+        <input
+          type="text"
+          id="epp-name"
+          formControlName="name"
+          [class.is-invalid]="form.get('name')?.invalid && (form.get('name')?.touched || formSubmitted)"
+          [placeholder]="namePlaceholder"/>
+        <small class="hint" *ngIf="catalogKey === 'tipo-entrada'">
+          Use un nombre corto y claro: Compra, Devolución, Transferencia, Ajuste, Donación…
+        </small>
+        <small class="hint" *ngIf="catalogKey === 'tipo-salida'">
+          Use un nombre claro: Entrega de EPP a trabajador, Préstamo de herramienta, Baja de productos…
+        </small>
+        <small class="hint" *ngIf="catalogKey === 'tipo-acontecimiento'">
+          Use un nombre claro: Solicitud de EPP, Incumplimiento de uso, Deterioro prematuro…
+        </small>
+        <small class="hint" *ngIf="catalogKey === 'estado-epi'">
+          Use un nombre claro: Buen estado, Desgaste normal, Deteriorado / Roto…
+        </small>
+        <div *ngIf="form.get('name')?.invalid && (form.get('name')?.touched || formSubmitted)" class="error-message">
+          <span *ngIf="form.get('name')?.errors?.['required']">El nombre es obligatorio</span>
+          <span *ngIf="form.get('name')?.errors?.['maxlength']">Máximo 80 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="!catalogApi.isNameOnly(catalogKey)">
+        <label for="epp-code">Código <span class="required">*</span></label>
+        <input
+          type="text"
+          id="epp-code"
+          formControlName="code"
+          maxlength="4"
+          class="code-input"
+          (blur)="onCodeBlur()"
+          [class.is-invalid]="form.get('code')?.invalid && (form.get('code')?.touched || formSubmitted)"
+          [placeholder]="codePlaceholder"/>
+        <small class="hint">2 a 4 caracteres (letras/números). Se guarda en mayúsculas.</small>
+        <div *ngIf="form.get('code')?.invalid && (form.get('code')?.touched || formSubmitted)" class="error-message">
+          <span *ngIf="form.get('code')?.errors?.['required']">El código es obligatorio</span>
+          <span *ngIf="form.get('code')?.errors?.['pattern']">Use 2 a 4 letras o números (ej. EPP, CAS)</span>
+        </div>
+        <p *ngIf="skuPreview()" class="sku-preview">
+          Vista previa SKU: <strong>{{ skuPreview() }}</strong>
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label for="epp-desc">Descripción</label>
+        <textarea
+          id="epp-desc"
+          formControlName="description"
+          rows="3"
+          [class.is-invalid]="form.get('description')?.invalid && (form.get('description')?.touched || formSubmitted)"
+          [placeholder]="descriptionPlaceholder"></textarea>
+        <small class="hint" *ngIf="catalogKey === 'tipo-entrada'">
+          Explique cuándo se usa este tipo (opcional). Ej.: “Ingreso por compra a proveedor”.
+        </small>
+        <small class="hint" *ngIf="catalogKey === 'tipo-salida'">
+          Explique cuándo se usa este tipo (opcional). Ej.: “Dotación de EPP al personal”.
+        </small>
+        <small class="hint" *ngIf="catalogKey === 'tipo-acontecimiento'">
+          Explique cuándo se usa este tipo (opcional). Ej.: “Pedido o reposición de EPP”.
+        </small>
+        <small class="hint" *ngIf="catalogKey === 'estado-epi'">
+          Explique cuándo aplica este estado (opcional). Ej.: “Equipo usable, solo falta de uso”.
+        </small>
+        <div *ngIf="form.get('description')?.invalid && (form.get('description')?.touched || formSubmitted)" class="error-message">
+          <span *ngIf="form.get('description')?.errors?.['maxlength']">Máximo 255 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="cancelar()" [disabled]="submitting">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="submitting">
+          <i *ngIf="submitting" class="fas fa-spinner fa-spin"></i>
+          <i *ngIf="!submitting" class="fas fa-save"></i>
+          {{ submitting ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

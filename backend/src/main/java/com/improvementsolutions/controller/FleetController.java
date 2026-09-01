@@ -134,11 +134,14 @@ public class FleetController {
         }
     }
 
-    /** ZIP con los PDF vigentes de esta unidad (por empresa / RUC). */
+    /** ZIP: ?section=CODIGO o varias separadas por coma. */
     @GetMapping("/{ruc}/vehicles/{id}/documents/zip")
-    public ResponseEntity<?> downloadVehicleDocumentsZip(@PathVariable String ruc, @PathVariable Long id) {
+    public ResponseEntity<?> downloadVehicleDocumentsZip(
+            @PathVariable String ruc,
+            @PathVariable Long id,
+            @RequestParam(value = "section", required = false) String section) {
         try {
-            return fleetVehicleService.downloadCurrentDocumentsZip(ruc, id);
+            return fleetVehicleService.downloadCurrentDocumentsZip(ruc, id, section);
         } catch (IllegalArgumentException e) {
             String msg = e.getMessage() != null ? e.getMessage() : "No hay documentos";
             HttpStatus status = msg.toLowerCase().contains("no hay") ? HttpStatus.BAD_REQUEST : HttpStatus.NOT_FOUND;

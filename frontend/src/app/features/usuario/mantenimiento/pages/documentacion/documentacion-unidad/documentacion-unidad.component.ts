@@ -52,9 +52,17 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
   @ViewChild('estadoReport') estadoReport?: ElementRef<HTMLElement>;
   exportingPdf = false;
   downloadingZip = false;
+  zipMenuOpen = false;
+  /** Selección múltiple por sección (checkbox). */
+  zipChecks: Partial<Record<FleetDocCategory, boolean>> = {};
   companyLogoUrl = '';
   canWrite = false;
   private pdfDownloadName: string | null = null;
+
+  /** Opciones del menú de descarga ZIP por sección. */
+  readonly zipDownloadOptions: { code: FleetDocCategory; label: string }[] = [
+    ...FLEET_DOC_CATEGORIES.map(c => ({ code: c.code as FleetDocCategory, label: c.label }))
+  ];
 
   constructor(
     private route: ActivatedRoute,
@@ -511,21 +519,113 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     return !!(doc.attachedFleetDocumentId || (doc.attachedDocumentUrl && doc.attachedDocumentUrl.trim()));
   }
 
-  pdfDocsCount(): number {
-    return this.docService.getCurrentDocuments(this.vehicleId).filter(d => this.hasPdf(d)).length;
+  pdfDocsCount(section?: 'ALL' | FleetDocCategory | FleetDocCategory[]): number {
+    const docs = this.docService.getCurrentDocuments(this.vehicleId).filter(d => this.hasPdf(d));
+    if (!section || section === 'ALL') return docs.length;
+    if (Array.isArray(section)) {
+      if (section.length === 0) return 0;
+      const set = new Set(section);
+      return docs.filter(d => set.has(normalizeFleetDocCategory(d.docCategory))).length;
+    }
+    return docs.filter(d => normalizeFleetDocCategory(d.docCategory) === section).length;
   }
 
-  downloadAllPdfs(): void {
+  selectedZipSectionsList(): FleetDocCategory[] {
+    return this.zipDownloadOptions
+      .map(o => o.code)
+      .filter(code => !!this.zipChecks[code] && this.pdfDocsCount(code) > 0);
+  }
+
+  selectedZipCount(): number {
+    return this.pdfDocsCount(this.selectedZipSectionsList());
+  }
+
+  isZipSectionSelected(code: FleetDocCategory): boolean {
+    return !!this.zipChecks[code];
+  }
+
+  setZipCheck(code: FleetDocCategory, checked: boolean): void {
+    if (this.pdfDocsCount(code) === 0) {
+      this.zipChecks = { ...this.zipChecks, [code]: false };
+    } else {
+      this.zipChecks = { ...this.zipChecks, [code]: !!checked };
+    }
+    this.cdr.detectChanges();
+  }
+
+  selectAllZipSections(ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    const next: Partial<Record<FleetDocCategory, boolean>> = {};
+    for (const opt of this.zipDownloadOptions) {
+      next[opt.code] = this.pdfDocsCount(opt.code) > 0;
+    }
+    this.zipChecks = next;
+    this.cdr.detectChanges();
+  }
+
+  clearZipSections(ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    this.zipChecks = {};
+    this.cdr.detectChanges();
+  }
+
+  toggleZipMenu(ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    if (this.downloadingZip || this.pdfDocsCount('ALL') === 0) return;
+    this.zipMenuOpen = !this.zipMenuOpen;
+    if (this.zipMenuOpen) {
+      this.selectAllZipSections();
+    }
+    this.cdr.detectChanges();
+  }
+
+  closeZipMenu(): void {
+    if (!this.zipMenuOpen) return;
+    this.zipMenuOpen = false;
+    this.cdr.detectChanges();
+  }
+
+  downloadSelectedZip(ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    const selected = this.selectedZipSectionsList();
+    if (selected.length === 0) {
+      alert('Selecciona al menos una sección para descargar.');
+      return;
+    }
+    this.downloadZipSections(selected);
+  }
+
+  downloadAllZip(ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    this.downloadZipSections([]);
+  }
+
+  private downloadZipSections(sections: FleetDocCategory[]): void {
+    this.zipMenuOpen = false;
     if (!this.ensureSession()) return;
-    if (this.pdfDocsCount() === 0) {
-      alert('Esta unidad no tiene PDF adjuntos para descargar.');
+    const count = sections.length === 0 ? this.pdfDocsCount('ALL') : this.pdfDocsCount(sections);
+    if (count === 0) {
+      alert(sections.length === 0
+        ? 'Esta unidad no tiene PDF adjuntos para descargar.'
+        : 'No hay PDF en las secciones seleccionadas.');
       return;
     }
     this.downloadingZip = true;
-    const url = this.fleetService.vehicleDocumentsZipUrl(this.businessRuc, this.vehicleId);
+    this.cdr.detectChanges();
+    const url = this.fleetService.vehicleDocumentsZipUrl(
+      this.businessRuc,
+      this.vehicleId,
+      sections.length === 0 ? undefined : sections
+    );
     this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
       next: (resp: HttpResponse<Blob>) => {
         this.downloadingZip = false;
+        this.cdr.detectChanges();
         const blob = resp.body;
         if (!blob || blob.size === 0) {
           alert('No se pudo generar el archivo ZIP.');
@@ -550,10 +650,19 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.downloadingZip = false;
+        this.cdr.detectChanges();
         console.error(err);
-        alert('No se pudo descargar el ZIP de esta unidad.');
+        const msg = err?.error?.message || err?.message;
+        alert(typeof msg === 'string' && msg.trim()
+          ? msg
+          : 'No se pudo descargar el ZIP de esta unidad.');
       }
     });
+  }
+
+  /** @deprecated */
+  downloadAllPdfs(): void {
+    this.downloadAllZip();
   }
 
   private zipDownloadName(disposition: string | null): string {

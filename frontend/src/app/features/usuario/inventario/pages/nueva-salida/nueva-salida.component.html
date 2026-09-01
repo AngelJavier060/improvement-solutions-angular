@@ -7,6 +7,22 @@
     </div>
   </div>
 
+  <!-- Pestañas -->
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab === 'salida'" (click)="setTab('salida')">
+        <i class="fas fa-dolly me-1"></i> Nueva salida
+      </button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab === 'solicitudes'" (click)="setTab('solicitudes')">
+        <i class="fas fa-hard-hat me-1"></i>
+        Solicitudes cambio EPP
+        <span class="badge bg-warning text-dark ms-1" *ngIf="cambioSolicitudes.length">{{ cambioSolicitudes.length }}</span>
+      </button>
+    </li>
+  </ul>
+
   <!-- Alertas -->
   <div class="row" *ngIf="errorMessage">
     <div class="col-12">
@@ -26,7 +42,96 @@
     </div>
   </div>
 
-  <form [formGroup]="outputForm" (ngSubmit)="submit()" *ngIf="outputForm">
+  <!-- Tab: solicitudes en espera de validación / dotación en inventario -->
+  <div *ngIf="activeTab === 'solicitudes'">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-clipboard-check me-2"></i>Solicitudes cambio EPP · en espera de validación</span>
+        <button type="button" class="btn btn-sm btn-light" (click)="loadCambioSolicitudes()">
+          <i class="fas fa-sync-alt me-1"></i> Actualizar
+        </button>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">
+          Aquí llegan las solicitudes de <strong>Cambio de EPP</strong> con PDF firmado, aún <strong>sin validar</strong>.
+          Si procede: <strong>Validar · nueva dotación</strong>. Si no procede: <strong>Rechazar</strong> indicando el motivo
+          (en Seguridad Industrial verán el estado Rechazado y el motivo).
+        </p>
+
+        <div *ngIf="cambioSolicitudes.length === 0" class="text-center text-muted py-5">
+          <i class="fas fa-inbox fa-3x mb-3"></i>
+          <p class="mb-0">No hay solicitudes en espera de validación.</p>
+        </div>
+
+        <div class="table-responsive" *ngIf="cambioSolicitudes.length > 0">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>N° Reporte</th>
+                <th>Trabajador</th>
+                <th>Cédula</th>
+                <th>Tipo / Sección</th>
+                <th>Severidad</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let s of cambioSolicitudes">
+                <td class="font-monospace">{{ s.nReporte }}</td>
+                <td class="fw-semibold">{{ s.trabajador }}</td>
+                <td class="font-monospace">{{ s.cedula }}</td>
+                <td>
+                  {{ s.tipoAcontecimiento }}
+                  <div class="small text-primary fw-semibold" *ngIf="s.sectionLabel">Sección: {{ s.sectionLabel }}</div>
+                </td>
+                <td>{{ severidadCambioLabel(s.severidad) }}</td>
+                <td>
+                  <span class="badge bg-warning text-dark">En espera · validando</span>
+                  <div class="small text-muted" *ngIf="s.signedFileName">{{ s.signedFileName }}</div>
+                </td>
+                <td>
+                  <div class="d-flex flex-wrap gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="viewCambioSigned(s)" title="Ver documento firmado (solo lectura)">
+                      <i class="fas fa-eye"></i> Ver
+                    </button>
+                    <button type="button" class="btn btn-sm btn-success" (click)="prepareCambioEntrega(s)" title="Si procede, preparar nueva dotación">
+                      <i class="fas fa-box-open me-1"></i> Validar · nueva dotación
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" (click)="openRejectCambioModal(s)" title="Rechazar con motivo">
+                      <i class="fas fa-times me-1"></i> Rechazar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form [formGroup]="outputForm" (ngSubmit)="submit()" *ngIf="outputForm && activeTab === 'salida'">
+    <!-- Banner solicitud activa -->
+    <div class="alert alert-primary d-flex flex-wrap justify-content-between align-items-center gap-2" *ngIf="activeCambioSolicitud">
+      <div>
+        <strong><i class="fas fa-hard-hat me-2"></i>Entrega por solicitud de cambio:</strong>
+        {{ activeCambioSolicitud.nReporte }} · {{ activeCambioSolicitud.trabajador }}
+        <span class="text-muted">({{ activeCambioSolicitud.cedula }})</span>
+        <div class="mt-1" *ngIf="getCambioSectionCode()">
+          <span class="badge bg-dark">Sección fija: {{ getCambioSectionLabel() }} ({{ getCambioSectionCode() }})</span>
+          <span class="small ms-2">Solo se dota el EPP solicitado; no se elige otro producto.</span>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-1">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearCambioEntregaLocal()" title="Salir de la preparación sin rechazar">
+          Volver
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger" (click)="openRejectCambioModal()" title="Rechazar solicitud con motivo">
+          Rechazar solicitud
+        </button>
+      </div>
+    </div>
     <!-- Datos Generales de la Salida -->
     <div class="row">
       <div class="col-12">
@@ -39,8 +144,8 @@
               <!-- Número de Documento -->
               <div class="col-md-3">
                 <label class="form-label fw-semibold">Número de Documento <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" formControlName="outputNumber" placeholder="Auto-generado" readonly>
-                <small class="text-muted">Generado automáticamente y no editable.</small>
+                <input type="text" class="form-control" formControlName="outputNumber" placeholder="SAL-2026-0001" readonly>
+                <small class="text-muted">Consecutivo interno por año (<strong>SAL-2026-0001</strong>). No se cruza con entradas (ENT-…).</small>
               </div>
 
               <!-- Fecha de Salida -->
@@ -53,14 +158,31 @@
               <div class="col-md-3">
                 <label class="form-label fw-semibold">Tipo de Salida <span class="text-danger">*</span></label>
                 <select class="form-select" formControlName="outputType">
+                  <option value="" disabled *ngIf="!outputTypes.length">Sin tipos asignados</option>
                   <option *ngFor="let type of outputTypes" [value]="type.value">{{ type.label }}</option>
                 </select>
+                <small class="text-muted">Según Inventario-Bodega de esta empresa</small>
               </div>
 
-              <!-- Entregado Por -->
-              <div class="col-md-3">
+              <!-- Entregado Por (salida normal) -->
+              <div class="col-md-3" *ngIf="!activeCambioSolicitud">
                 <label class="form-label fw-semibold">Entregado Por</label>
                 <input type="text" class="form-control" formControlName="authorizedBy" placeholder="Nombre de quien entrega">
+              </div>
+
+              <!-- Quién despacha (entrega por solicitud de cambio EPP) -->
+              <div class="col-md-6" *ngIf="activeCambioSolicitud">
+                <label class="form-label fw-semibold">Persona que despacha EPP <span class="text-danger">*</span></label>
+                <select
+                  class="form-select"
+                  [ngModel]="despachadorEmployeeId"
+                  [ngModelOptions]="{standalone: true}"
+                  (ngModelChange)="onDespachadorSelect($event)">
+                  <option [ngValue]="null">-- Seleccione quien despacha --</option>
+                  <option *ngFor="let e of employees" [ngValue]="e.id">{{ e.nombres }} {{ e.apellidos }}</option>
+                </select>
+                <div class="form-text" *ngIf="despachadorCargo">Cargo: {{ despachadorCargo }}</div>
+                <div class="form-text" *ngIf="!despachadorCargo && despachadorEmployeeId">Cargo no registrado en ficha del trabajador.</div>
               </div>
 
               <!-- Trabajador (para EPP y préstamos) -->
@@ -70,7 +192,11 @@
                   <option [ngValue]="null">-- Seleccionar --</option>
                   <option *ngFor="let e of employees" [ngValue]="e.id">{{ e.nombres }} {{ e.apellidos }}</option>
                 </select>
-                <div class="row g-2 mt-2">
+                <div class="form-text" *ngIf="!activeCambioSolicitud">Solo trabajadores activos. Los inactivos se consultan en Historial / Asignaciones (auditoría).</div>
+                <div class="form-text text-success" *ngIf="activeCambioSolicitud && outputForm.value.employeeId">
+                  Autocompletado desde la solicitud de cambio EPP.
+                </div>
+                <div class="row g-2 mt-2" *ngIf="!activeCambioSolicitud">
                   <div class="col-md-6">
                     <div class="input-group input-group-sm">
                       <span class="input-group-text"><i class="fas fa-id-card"></i></span>
@@ -126,8 +252,8 @@
                 <textarea class="form-control" formControlName="bajaReason" rows="2" placeholder="Ej: Vencidos, rotos, obsoletos"></textarea>
               </div>
 
-              <!-- Documento Adjunto (solo EPP, visible al tener BORRADOR creado) -->
-              <div class="col-md-12" *ngIf="outputForm.value.outputType === 'EPP_TRABAJADOR' && createdOutputId">
+              <!-- Documento Adjunto (solo EPP normal). En cambio desde Seguridad ya viene firmado. -->
+              <div class="col-md-12" *ngIf="outputForm.value.outputType === 'EPP_TRABAJADOR' && createdOutputId && !activeCambioSolicitud">
                 <label class="form-label fw-semibold">Documento PDF de Entrega/Firma</label>
                 <input type="file" class="form-control" (change)="onFileSelected($event)" accept="application/pdf,.pdf">
                 <small class="text-muted">Solo archivos PDF. Tamaño máximo 2 MB.</small>
@@ -149,6 +275,22 @@
                 </div>
               </div>
 
+              <div class="col-md-12" *ngIf="activeCambioSolicitud">
+                <div class="alert alert-success mb-0 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                  <div>
+                    <i class="fas fa-file-signature me-2"></i>
+                    <strong>Documento ya firmado desde Seguridad Industrial.</strong>
+                    Inventario solo valida y dota; no se vuelve a pedir firma ni PDF.
+                    <span class="d-block small text-muted mt-1" *ngIf="activeCambioSolicitud.signedFileName">
+                      Archivo: {{ activeCambioSolicitud.signedFileName }}
+                    </span>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-success" (click)="viewCambioSigned(activeCambioSolicitud!)">
+                    <i class="fas fa-eye me-1"></i> Ver firmado
+                  </button>
+                </div>
+              </div>
+
               
             </div>
           </div>
@@ -162,11 +304,27 @@
         <div class="card shadow-sm mb-4">
           <div class="card-header bg-light d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="fas fa-list me-2"></i>Productos que Salen</h5>
-            <button type="button" class="btn btn-primary btn-sm" (click)="openProductModal()">
-              <i class="fas fa-plus me-2"></i>Agregar Producto
+            <button
+              type="button"
+              class="btn btn-primary btn-sm"
+              *ngIf="!isCambioEntregaLocked() || details.length === 0"
+              (click)="openProductModal()">
+              <i class="fas fa-plus me-2"></i>
+              <ng-container *ngIf="!isCambioEntregaLocked(); else cambioPick">Agregar Producto</ng-container>
+              <ng-template #cambioPick>Elegir variante de {{ getCambioSectionLabel() || 'sección' }}</ng-template>
             </button>
+            <span class="badge bg-secondary" *ngIf="isCambioEntregaLocked() && details.length > 0">
+              Fijado por solicitud · {{ getCambioSectionLabel() }}
+            </span>
           </div>
           <div class="card-body">
+            <div class="alert alert-info py-2 small mb-3" *ngIf="isCambioEntregaLocked()">
+              <i class="fas fa-lock me-1"></i>
+              Producto precargado según la sección de la solicitud
+              <strong>{{ getCambioSectionLabel() }}</strong>.
+              No se permite agregar otro tipo de EPP (evita inconsistencias).
+              Si necesita otra talla/variante de la misma sección, quite la línea y elija de nuevo.
+            </div>
             <div class="table-responsive">
               <table class="table table-hover align-middle">
                 <thead>
@@ -192,6 +350,9 @@
                     <td>
                       <div class="fw-semibold">{{ detail.productName }}</div>
                       <small class="text-muted">{{ detail.variantCode }}</small>
+                      <div class="small text-primary" *ngIf="isCambioEntregaLocked()">
+                        Sección: {{ getCambioSectionLabel() }}
+                      </div>
                     </td>
                     <!-- Cantidad -->
                     <td>
@@ -241,7 +402,11 @@
                   <tr *ngIf="details.length === 0">
                     <td colspan="8" class="text-center text-muted py-4">
                       <i class="fas fa-inbox fa-2x mb-2"></i>
-                      <p>No hay productos agregados. Haz clic en "Agregar Producto"</p>
+                      <p *ngIf="!isCambioEntregaLocked()">No hay productos agregados. Haz clic en "Agregar Producto"</p>
+                      <p *ngIf="isCambioEntregaLocked()">
+                        Cargando EPP de sección <strong>{{ getCambioSectionLabel() }}</strong>…
+                        Si no aparece, no hay stock o falta el producto en el catálogo.
+                      </p>
                     </td>
                   </tr>
                 </tbody>
@@ -256,8 +421,8 @@
       </div>
     </div>
 
-    <!-- Firmas -->
-    <div class="row">
+    <!-- Firmas: en cambio EPP desde Seguridad no se pide firma otra vez -->
+    <div class="row" *ngIf="!activeCambioSolicitud">
       <div class="col-12">
         <div class="card shadow-sm mb-4">
           <div class="card-header bg-light">
@@ -294,8 +459,39 @@
       </div>
     </div>
 
-    <!-- Documentos Generados (listado local para impresión) -->
-    <div class="row" *ngIf="generatedDocs.length > 0">
+    <div class="row" *ngIf="activeCambioSolicitud">
+      <div class="col-12">
+        <div class="card shadow-sm mb-4 border-success">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-file-signature me-2 text-success"></i>Firma (desde Seguridad Industrial)</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3 align-items-center">
+              <div class="col-md-4">
+                <div class="mb-1 fw-semibold">Entrega</div>
+                <div class="text-muted small">Responsable inventario</div>
+                <div class="border rounded p-2">{{ (outputForm.value.authorizedBy || deliveredBy) || '—' }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-1 fw-semibold">Recibe</div>
+                <div class="text-muted small">Trabajador</div>
+                <div class="border rounded p-2">{{ getEmployeeFullName() || activeCambioSolicitud.trabajador || '—' }}</div>
+              </div>
+              <div class="col-md-4">
+                <div class="alert alert-success mb-0 py-2">
+                  <i class="fas fa-check-circle me-1"></i>
+                  Firma ya registrada en el PDF de Cambio de EPP.
+                  No se solicita nuevamente por deterioro u otra solicitud de Seguridad.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documentos Generados (listado local para impresión) — no aplica al flujo cambio EPP -->
+    <div class="row" *ngIf="generatedDocs.length > 0 && !activeCambioSolicitud">
       <div class="col-12">
         <div class="card shadow-sm mb-4">
           <div class="card-header bg-light d-flex justify-content-between align-items-center">
@@ -355,19 +551,32 @@
         <button type="button" class="btn btn-outline-secondary me-2" routerLink="../historial-salidas">
           <i class="fas fa-times me-2"></i>Cancelar
         </button>
-        <button type="button" class="btn btn-outline-primary me-2" *ngIf="!(createdOutputId && outputForm.value.outputType === 'EPP_TRABAJADOR')" (click)="generatePdf()" [disabled]="outputForm.value.outputType === 'EPP_TRABAJADOR' && !createdOutputId">
+        <button type="button" class="btn btn-outline-primary me-2"
+                *ngIf="!activeCambioSolicitud && !(createdOutputId && outputForm.value.outputType === 'EPP_TRABAJADOR')"
+                (click)="generatePdf()"
+                [disabled]="outputForm.value.outputType === 'EPP_TRABAJADOR' && !createdOutputId">
           <i class="fas fa-file-pdf me-2"></i>Generar PDF
         </button>
-        <button type="submit" class="btn btn-danger" *ngIf="!(createdOutputId && outputForm.value.outputType === 'EPP_TRABAJADOR')" [disabled]="loading || !isHeaderValid() || details.length === 0">
+        <button type="submit" class="btn btn-danger"
+                *ngIf="!activeCambioSolicitud && !(createdOutputId && outputForm.value.outputType === 'EPP_TRABAJADOR')"
+                [disabled]="loading || !isHeaderValid() || details.length === 0">
           <i class="fas fa-save me-2"></i>
           <span *ngIf="!loading">Registrar Salida</span>
           <span *ngIf="loading"><i class="fas fa-spinner fa-spin me-2"></i>Guardando...</span>
         </button>
-        <button type="button" class="btn btn-success ms-2" *ngIf="createdOutputId && outputForm.value.outputType === 'EPP_TRABAJADOR'"
+        <button type="button" class="btn btn-success"
+                *ngIf="activeCambioSolicitud && !createdOutputId"
+                (click)="approveAndDeliverCambio()"
+                [disabled]="loading || !isHeaderValid() || details.length === 0">
+          <i class="fas fa-check-double me-2"></i>
+          <span *ngIf="!loading">Validar y entregar EPP</span>
+          <span *ngIf="loading"><i class="fas fa-spinner fa-spin me-2"></i>Procesando...</span>
+        </button>
+        <button type="button" class="btn btn-success ms-2" *ngIf="!activeCambioSolicitud && createdOutputId && outputForm.value.outputType === 'EPP_TRABAJADOR'"
                 (click)="confirmCreatedOutput()" [disabled]="loading || !documentUploaded">
           <i class="fas fa-check me-2"></i>Confirmar Salida
         </button>
-        <button type="button" class="btn btn-outline-secondary ms-2" *ngIf="createdOutputId" (click)="newProcess()">
+        <button type="button" class="btn btn-outline-secondary ms-2" *ngIf="createdOutputId" (click)="newProcess(); clearCambioEntregaLocal()">
           <i class="fas fa-plus me-2"></i>Nueva Salida
         </button>
       </div>
@@ -375,66 +584,128 @@
   </form>
 </div>
 
-<!-- Área imprimible -->
+<!-- Área imprimible — Acta de Entrega EPP -->
 <div id="print-receipt" [class.d-none]="!printing">
-  <div class="receipt">
-    <div class="receipt-header">
-      <div class="title">Comprobante de Entrega / Salida</div>
-      <div class="meta">
-        <div><strong>Número:</strong> {{ outputForm.value.outputNumber }}</div>
-        <div><strong>Fecha:</strong> {{ outputForm.value.outputDate }}</div>
-        <div><strong>Tipo:</strong> {{ outputForm.value.outputType }}</div>
+  <div class="acta-pdf">
+    <header class="acta-header">
+      <div class="acta-logo">
+        <img *ngIf="businessLogoDataUrl" [src]="businessLogoDataUrl" alt="Logo">
+        <span *ngIf="!businessLogoDataUrl" class="acta-logo-text">{{ businessName || 'Sii' }}</span>
       </div>
-    </div>
-    <div class="receipt-body">
-      <div class="row mb-2">
-        <div class="col">
-          <div><strong>Trabajador:</strong> {{ getEmployeeFullName() || '—' }}</div>
-          <div><strong>Cédula:</strong> {{ getSelectedEmployee()?.cedula || '—' }}</div>
+      <div class="acta-title">Acta de Entrega</div>
+    </header>
+
+    <section class="acta-admin">
+      <div class="acta-photo">
+        <img *ngIf="employeePhotoDataUrl" [src]="employeePhotoDataUrl" alt="Foto">
+        <span *ngIf="!employeePhotoDataUrl">FOTO</span>
+      </div>
+      <div class="acta-admin-fields">
+        <div class="acta-row">
+          <div class="acta-label">NOMBRE Y APELLIDO:</div>
+          <div class="acta-value acta-value--bold">{{ getEmployeeFullName() || '—' }}</div>
         </div>
-        <div class="col">
-          <div><strong>Área:</strong> {{ outputForm.value.area || getSelectedEmployee()?.departmentName || '—' }}</div>
-          <div><strong>Cargo:</strong> {{ getSelectedEmployee()?.positionName || '—' }}</div>
+        <div class="acta-row">
+          <div class="acta-label">CÉDULA:</div>
+          <div class="acta-value">{{ getSelectedEmployee()?.cedula || '—' }}</div>
+        </div>
+        <div class="acta-row">
+          <div class="acta-label">DEPARTAMENTO:</div>
+          <div class="acta-value">{{ getSelectedEmployee()?.departmentName || outputForm.value.area || '—' }}</div>
+        </div>
+        <div class="acta-row">
+          <div class="acta-label">CARGO:</div>
+          <div class="acta-value">{{ getSelectedEmployee()?.positionName || '—' }}</div>
+        </div>
+        <div class="acta-row">
+          <div class="acta-label">FECHA DE ENTREGA:</div>
+          <div class="acta-value">{{ formatActaDate(outputForm.value.outputDate) }}</div>
         </div>
       </div>
-      <table class="table table-sm">
+    </section>
+
+    <section class="acta-table-wrap">
+      <table class="acta-table">
         <thead>
           <tr>
-            <th>Producto/Variante</th>
-            <th style="width:120px">Cantidad</th>
+            <th>Item No.</th>
+            <th>Cantidad</th>
+            <th>Talla</th>
+            <th>Descripcion</th>
+            <th>Especificaciones Generales</th>
+            <th>Proveedor</th>
+            <th>Marca</th>
+            <th>Tiempo minimo de uso</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let d of details">
-            <td>{{ d.productName }} <small class="text-muted">{{ d.variantCode }}</small></td>
+          <tr *ngFor="let d of details; let i = index">
+            <td>{{ i + 1 }}</td>
             <td>{{ d.quantity }}</td>
+            <td>{{ d.issuedSize || '—' }}</td>
+            <td class="text-start">{{ d.productName || d.variantCode || '—' }}</td>
+            <td class="text-start">
+              {{ d.generalSpecs || '—' }}
+              <span *ngIf="d.techSheetPdf"> · ADJUNTO: Ficha técnica</span>
+            </td>
+            <td>{{ d.supplierName || '—' }}</td>
+            <td>{{ d.brand || 'NA' }}</td>
+            <td>{{ d.minUseTime || '1 AÑO' }}</td>
+          </tr>
+          <tr *ngIf="!details.length">
+            <td colspan="8">Sin ítems</td>
           </tr>
         </tbody>
       </table>
-      <div class="row mt-4">
-        <div class="col text-center">
-          <div class="fw-semibold">ENTREGA</div>
-          <div class="mt-5">______________________________</div>
-          <div class="small">{{ (outputForm.value.authorizedBy || deliveredBy) || '—' }}</div>
-        </div>
-        <div class="col text-center">
-          <div class="fw-semibold">RECIBE</div>
-          <div class="signature-box mt-2">
-            <img *ngIf="signatureDataUrl" [src]="signatureDataUrl" alt="Firma" style="max-height:90px"/>
-          </div>
-          <div class="mt-2">______________________________</div>
-          <div class="small">{{ getEmployeeFullName() || '—' }}</div>
+    </section>
+
+    <section class="acta-obs">
+      <h3>OBSERVACIONES:</h3>
+      <div class="acta-obs-grid" *ngIf="details.length; else noObs">
+        <div class="acta-obs-item" *ngFor="let d of details">
+          <p [title]="d.productName || d.variantCode">{{ d.productName || d.variantCode || 'Item' }}</p>
+          <img *ngIf="d.productImage" [src]="getImageUrl(d.productImage)" [alt]="d.productName || 'producto'">
+          <div *ngIf="!d.productImage" class="acta-obs-empty">Sin foto</div>
         </div>
       </div>
-    </div>
+      <ng-template #noObs>
+        <p>{{ outputForm.value.notes || 'Sin observaciones adicionales.' }}</p>
+      </ng-template>
+    </section>
+
+    <section class="acta-clause">
+      <div class="acta-clause-title">CLAUSULA DE COMPROMISO</div>
+      <div class="acta-clause-body">
+        <p><strong>Certifico</strong> que los Equipos de Protección Personal (EPP) detallados en el presente documento me han sido entregados de forma gratuita, en cumplimiento del Decreto Ejecutivo N.º 255, para su adecuado uso, cuidado y custodia, con el propósito de cumplir con las tareas y funciones propias de mi cargo. Declaro que dichos equipos son de mi única y exclusiva responsabilidad.</p>
+        <p><strong>Asumo</strong> las consecuencias económicas que se deriven de la pérdida, daño o deterioro de los EPP cuando estos ocurran por negligencia o incumplimiento de los instructivos establecidos. En tal caso, autorizo expresamente a la empresa {{ businessName || deliveredBy || 'correspondiente' }} a efectuar el descuento correspondiente al valor de reposición del EPP afectado, el cual podrá ser deducido de mis salarios, prestaciones sociales o cualquier otro valor que se me adeude.</p>
+        <p><strong>Declaro</strong> haber recibido los Equipos de Protección Personal detallados en el presente documento y me comprometo a:</p>
+        <ul>
+          <li>Utilizarlos de manera obligatoria durante el desarrollo de mis actividades laborales.</li>
+          <li>Cuidarlos y mantenerlos en buen estado.</li>
+          <li>No prestarlos, transferirlos ni modificarlos bajo ninguna circunstancia.</li>
+        </ul>
+        <p><strong>Declaro</strong> también conocer y aceptar que:</p>
+        <ul>
+          <li>La vida útil de los EPP es de mínimo un (1) año a partir de la fecha de entrega, salvo condiciones especiales de uso.</li>
+          <li>No se realizarán cambios de talla posteriores derivados de variaciones físicas del trabajador.</li>
+          <li>En caso de pérdida o daño por negligencia, antes de cumplirse el periodo de vida útil establecido, deberé asumir el costo de reposición del equipo.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="acta-signs">
+      <div class="acta-signs-title">FIRMAS</div>
+      <div class="acta-signs-row">
+        <div class="acta-sign">
+          <div class="acta-sign-label">ENTREGA<br>Representante de<br>{{ businessName || deliveredBy || '—' }}</div>
+        </div>
+        <div class="acta-sign">
+          <img *ngIf="signatureDataUrl" [src]="signatureDataUrl" alt="Firma" class="acta-sign-img">
+          <div class="acta-sign-label">RECIBE<br>{{ getEmployeeFullName() || '—' }}</div>
+        </div>
+      </div>
+    </section>
   </div>
-  <style>
-    @media print {
-      body * { visibility: hidden; }
-      #print-receipt, #print-receipt * { visibility: visible; }
-      #print-receipt { position: absolute; left: 0; top: 0; width: 100%; padding: 24px; }
-    }
-  </style>
 </div>
 
 <!-- Modal de Selección de Producto -->
@@ -442,14 +713,19 @@
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-search me-2"></i>Seleccionar Producto y Variante</h5>
+        <h5 class="modal-title">
+          <i class="fas fa-search me-2"></i>
+          <ng-container *ngIf="!isCambioEntregaLocked(); else cambioModalTitle">Seleccionar Producto y Variante</ng-container>
+          <ng-template #cambioModalTitle>Variante de {{ getCambioSectionLabel() }} (solo sección solicitada)</ng-template>
+        </h5>
         <button type="button" class="btn-close" (click)="showProductModal = false"></button>
       </div>
       <div class="modal-body">
         <div class="row">
           <!-- Lista de Productos -->
           <div class="col-md-6">
-            <h6 class="mb-3">1. Selecciona el Producto</h6>
+            <h6 class="mb-2">1. Selecciona el Producto</h6>
+            <div class="small text-muted mb-2">{{ productPickerHint() }}</div>
             <div class="list-group" style="max-height: 400px; overflow-y: auto;">
               <button type="button" class="list-group-item list-group-item-action d-flex align-items-center"
                       *ngFor="let product of products" (click)="selectProduct(product)"
@@ -462,7 +738,12 @@
                 </div>
               </button>
               <div *ngIf="products.length === 0" class="text-center text-muted py-3">
-                Sin productos disponibles
+                <ng-container *ngIf="isCambioEntregaLocked(); else noKind">
+                  Sin productos de sección {{ getCambioSectionLabel() }} en el catálogo.
+                </ng-container>
+                <ng-template #noKind>
+                  Sin productos de este tipo. Clasifícalos en Catálogo (EPP / Herramienta / Pieza).
+                </ng-template>
               </div>
             </div>
           </div>
@@ -501,6 +782,73 @@
         <button type="button" class="btn btn-secondary" (click)="showProductModal = false">Cancelar</button>
         <button type="button" class="btn btn-primary" (click)="addDetailLine()" [disabled]="!selectedVariant">
           <i class="fas fa-plus me-2"></i>Agregar Línea
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Visor documento firmado (solo lectura) -->
+<div class="signed-viewer" *ngIf="showSignedViewer" (click)="closeSignedViewer()" role="dialog" aria-modal="true">
+  <div class="signed-viewer__panel" (click)="$event.stopPropagation()">
+    <div class="signed-viewer__bar">
+      <div class="signed-viewer__title">
+        <i class="fas fa-file-pdf me-2 text-danger"></i>
+        Documento firmado
+        <small *ngIf="signedViewerTitle">· {{ signedViewerTitle }}</small>
+      </div>
+      <button type="button" class="btn btn-sm btn-light" (click)="closeSignedViewer()" aria-label="Cerrar">
+        <i class="fas fa-times me-1"></i> Cerrar
+      </button>
+    </div>
+    <div class="signed-viewer__body" (contextmenu)="$event.preventDefault()">
+      <iframe
+        *ngIf="signedViewerIsPdf && signedViewerSafeUrl"
+        [src]="signedViewerSafeUrl"
+        title="Vista previa PDF firmado"
+        class="signed-viewer__frame"></iframe>
+      <img
+        *ngIf="!signedViewerIsPdf && signedViewerImgUrl"
+        [src]="signedViewerImgUrl"
+        alt="Documento firmado"
+        class="signed-viewer__img"
+        draggable="false"/>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: rechazar solicitud con motivo -->
+<div class="modal fade show d-block" *ngIf="showRejectModal" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="fas fa-ban me-2"></i>Rechazar solicitud de cambio EPP</h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeRejectCambioModal()" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2" *ngIf="rejectTarget">
+          Solicitud <strong class="font-monospace">{{ rejectTarget.nReporte }}</strong>
+          · {{ rejectTarget.trabajador }}
+          <span class="text-muted" *ngIf="rejectTarget.sectionLabel"> · {{ rejectTarget.sectionLabel }}</span>
+        </p>
+        <p class="text-muted small">
+          El motivo será visible en <strong>Seguridad Industrial → Cambio de EPP</strong> con estado <strong>Rechazado</strong>.
+        </p>
+        <label class="form-label fw-semibold">Motivo del rechazo <span class="text-danger">*</span></label>
+        <textarea
+          class="form-control"
+          rows="4"
+          [(ngModel)]="rejectReason"
+          [ngModelOptions]="{standalone: true}"
+          maxlength="500"
+          placeholder="Ej.: No procede el cambio; el EPP aún está en buen estado / sin stock / documentación incompleta…"></textarea>
+        <div class="form-text">{{ (rejectReason || '').length }}/500</div>
+        <div class="alert alert-danger py-2 small mt-2 mb-0" *ngIf="rejectError">{{ rejectError }}</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeRejectCambioModal()">Cancelar</button>
+        <button type="button" class="btn btn-danger" (click)="confirmRejectCambio()">
+          <i class="fas fa-times me-1"></i> Confirmar rechazo
         </button>
       </div>
     </div>
