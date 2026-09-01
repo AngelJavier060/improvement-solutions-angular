@@ -236,13 +236,30 @@ export class CambioEppComponent implements OnInit, OnDestroy {
 
   loadEmployees(): void {
     if (!this.ruc) return;
-    this.employeeService.getEmployeesByBusinessRuc(this.ruc).subscribe({
+    // Solo activos: en Cambio EPP no deben aparecer inactivos.
+    this.employeeService.getActiveEmployeesByBusinessRuc(this.ruc).subscribe({
       next: (data) => {
-        this.employees = (data || []).slice().sort((a, b) =>
-          this.employeeFilterLabel(a).localeCompare(this.employeeFilterLabel(b), 'es', { sensitivity: 'base' })
-        );
+        this.employees = (data || [])
+          .filter(e => EmployeeService.isEmployeeActive(e))
+          .slice()
+          .sort((a, b) =>
+            this.employeeFilterLabel(a).localeCompare(this.employeeFilterLabel(b), 'es', { sensitivity: 'base' })
+          );
       },
-      error: () => this.employees = []
+      error: () => {
+        // Fallback: lista completa filtrada en cliente
+        this.employeeService.getEmployeesByBusinessRuc(this.ruc).subscribe({
+          next: (all) => {
+            this.employees = (all || [])
+              .filter(e => EmployeeService.isEmployeeActive(e))
+              .slice()
+              .sort((a, b) =>
+                this.employeeFilterLabel(a).localeCompare(this.employeeFilterLabel(b), 'es', { sensitivity: 'base' })
+              );
+          },
+          error: () => this.employees = []
+        });
+      }
     });
   }
 
@@ -548,7 +565,8 @@ export class CambioEppComponent implements OnInit, OnDestroy {
         this.applyEmployeeToForm(emp);
         this.cedulaLookupMsg = 'Trabajador encontrado.';
         this.formMessage = '';
-        if (!this.employees.some(e => Number(e.id) === Number(emp.id))) {
+        // No agregar inactivos; la lista ya es solo activos.
+        if (EmployeeService.isEmployeeActive(emp) && !this.employees.some(e => Number(e.id) === Number(emp.id))) {
           this.employees = [...this.employees, emp].sort((a, b) =>
             this.employeeFilterLabel(a).localeCompare(this.employeeFilterLabel(b), 'es', { sensitivity: 'base' })
           );

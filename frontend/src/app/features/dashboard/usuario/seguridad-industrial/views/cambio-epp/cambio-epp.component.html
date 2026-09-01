@@ -70,7 +70,7 @@
               [(ngModel)]="reportEmployeeId"
               (ngModelChange)="onFiltersChange()">
               <option [ngValue]="null">-- Seleccione --</option>
-              <option *ngFor="let e of employees" [ngValue]="e.id">
+              <option *ngFor="let e of activeEmployees" [ngValue]="e.id">
                 {{ employeeFilterLabel(e) }} — {{ e.cedula }}
               </option>
             </select>
