@@ -20,6 +20,7 @@ export class EditarIso9001CatalogComponent implements OnInit {
   catalogKey!: Iso9001CatalogKey;
   editarTitulo = '';
   editarSubtitulo = '';
+  codeRequired = false;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -28,6 +29,7 @@ export class EditarIso9001CatalogComponent implements OnInit {
     private readonly catalogApi: Iso9001CatalogService
   ) {
     this.form = this.fb.group({
+      code: [''],
       name: ['', [Validators.required, Validators.maxLength(50)]],
       description: ['', [Validators.maxLength(255)]]
     });
@@ -37,12 +39,36 @@ export class EditarIso9001CatalogComponent implements OnInit {
     const data = this.route.parent?.snapshot.data as Iso9001CatalogRouteData | undefined;
     if (data?.catalogKey) {
       this.catalogKey = data.catalogKey;
+      this.codeRequired = this.catalogKey === 'tipo-documento' || this.catalogKey === 'proceso';
       this.editarTitulo = `Editar — ${data.listaTitulo}`;
-      this.editarSubtitulo = 'Modifique nombre y descripción del registro seleccionado.';
+      this.editarSubtitulo = this.codeRequired
+        ? 'Modifique nombre, código (número de registro) y descripción.'
+        : 'Modifique código, nombre y descripción del registro seleccionado.';
+      this.applyCodeValidators();
     }
     this.itemId = Number(this.route.snapshot.paramMap.get('id'));
     if (this.catalogKey && this.itemId) {
       this.cargar();
+    }
+  }
+
+  private applyCodeValidators(): void {
+    const ctrl = this.form.get('code');
+    if (!ctrl) {
+      return;
+    }
+    const validators = this.codeRequired
+      ? [Validators.required, Validators.pattern(/^[A-Za-z]{2,5}$/), Validators.maxLength(5)]
+      : [Validators.pattern(/^([A-Za-z]{2,5})?$/), Validators.maxLength(5)];
+    ctrl.setValidators(validators);
+    ctrl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  onCodeBlur(): void {
+    const ctrl = this.form.get('code');
+    const v = (ctrl?.value as string | null)?.trim();
+    if (v) {
+      ctrl?.setValue(v.toUpperCase(), { emitEvent: false });
     }
   }
 
@@ -63,6 +89,7 @@ export class EditarIso9001CatalogComponent implements OnInit {
           return;
         }
         this.form.patchValue({
+          code: row.code ?? '',
           name: row.name,
           description: row.description ?? ''
         });
@@ -77,6 +104,7 @@ export class EditarIso9001CatalogComponent implements OnInit {
   }
 
   onSubmit(): void {
+    this.onCodeBlur();
     if (this.form.invalid) {
       return;
     }
@@ -85,7 +113,14 @@ export class EditarIso9001CatalogComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.catalogApi.update(this.catalogKey, this.itemId, this.form.value).subscribe({
+    const raw = this.form.value;
+    const payload = {
+      name: raw.name,
+      description: raw.description || null,
+      code: (raw.code as string)?.trim() ? String(raw.code).trim().toUpperCase() : null
+    };
+
+    this.catalogApi.update(this.catalogKey, this.itemId, payload).subscribe({
       next: () => {
         this.successMessage = 'Registro actualizado correctamente';
         this.submitting = false;
@@ -96,11 +131,13 @@ export class EditarIso9001CatalogComponent implements OnInit {
       error: err => {
         console.error(err);
         if (err.status === 409) {
-          this.errorMessage = 'Ya existe otro registro con ese nombre en este catálogo.';
+          this.errorMessage = 'Ya existe otro registro con ese nombre o código en este catálogo.';
         } else if (err.status === 403) {
           this.errorMessage = 'No tiene permisos para actualizar registros.';
         } else if (err.status === 404) {
           this.errorMessage = 'El registro no fue encontrado.';
+        } else if (err.status === 400) {
+          this.errorMessage = 'Solicitud no válida. Verifique el código (2–5 letras) y el nombre.';
         } else {
           this.errorMessage = 'Error al actualizar. Por favor, intente nuevamente.';
         }

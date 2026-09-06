@@ -1,91 +1,329 @@
-<div class="doc-root">
+<div class="lmd-root">
 
-  <!-- HEADER -->
-  <div class="doc-header">
-    <div>
-      <span class="doc-eyebrow">SGI ISO 9001:2015</span>
-      <h1 class="doc-title">Lista Maestra de Documentos</h1>
-      <p class="doc-subtitle">Control de Documentos y Gestión del Ciclo de Vida</p>
+  <!-- Page header -->
+  <section class="lmd-page-head">
+    <div class="lmd-breadcrumb">
+      <span class="lmd-breadcrumb__brand">SGI ISO 9001</span>
+      <span class="lmd-breadcrumb__sep">/</span>
+      <span>Módulo de Calidad</span>
     </div>
-    <div class="doc-header__actions">
-      <button class="doc-btn doc-btn--outline">
-        <span class="material-symbols-outlined">download</span>
-        Exportar CSV
-      </button>
-      <button class="doc-btn doc-btn--primary" (click)="openNewRecordForm()">
-        <span class="material-symbols-outlined">upload_file</span>
-        Nuevo Documento
-      </button>
+    <div class="lmd-page-head__row">
+      <div>
+        <h1 class="lmd-page-title">Lista Maestra de Documentos</h1>
+        <p class="lmd-page-sub">Control documental multiempresa · Ciclo de vida ISO</p>
+      </div>
+      <div class="lmd-page-badges">
+        <span class="lmd-pill lmd-pill--ok">
+          <span class="lmd-pill__dot"></span>
+          Matriz actualizada
+        </span>
+        <span class="lmd-pill lmd-pill--muted">Rev. Anual</span>
+      </div>
     </div>
-  </div>
+  </section>
+
+  <!-- KPI cards -->
+  <section class="lmd-kpi-grid">
+    <article class="lmd-kpi lmd-kpi--brand">
+      <div class="lmd-kpi__top">
+        <div>
+          <span class="lmd-kpi__label">Documentos principales</span>
+          <div class="lmd-kpi__value">{{ rootDocuments.length }}</div>
+        </div>
+        <div class="lmd-kpi__icon lmd-kpi__icon--brand">
+          <span class="material-symbols-outlined">description</span>
+        </div>
+      </div>
+      <div class="lmd-kpi__foot lmd-kpi__foot--ok">Lista maestra por empresa</div>
+    </article>
+
+    <article class="lmd-kpi lmd-kpi--sky">
+      <div class="lmd-kpi__top">
+        <div>
+          <span class="lmd-kpi__label">Internos (INS/FOR…)</span>
+          <div class="lmd-kpi__value">{{ documents.length - rootDocuments.length }}</div>
+        </div>
+        <div class="lmd-kpi__icon lmd-kpi__icon--sky">
+          <span class="material-symbols-outlined">account_tree</span>
+        </div>
+      </div>
+      <div class="lmd-kpi__foot">Documentos bajo procedimientos</div>
+    </article>
+
+    <article class="lmd-kpi lmd-kpi--amber">
+      <div class="lmd-kpi__top">
+        <div>
+          <span class="lmd-kpi__label">Procesos cubiertos</span>
+          <div class="lmd-kpi__value">{{ kpiProcesosCubiertos }}</div>
+        </div>
+        <div class="lmd-kpi__icon lmd-kpi__icon--amber">
+          <span class="material-symbols-outlined">groups</span>
+        </div>
+      </div>
+      <div class="lmd-kpi__foot">Procesos con documentos registrados</div>
+    </article>
+
+    <article class="lmd-kpi lmd-kpi--green">
+      <div class="lmd-kpi__top">
+        <div>
+          <span class="lmd-kpi__label">Próxima revisión</span>
+          <div class="lmd-kpi__value lmd-kpi__value--sm">{{ kpiProximaRevision }}</div>
+        </div>
+        <div class="lmd-kpi__icon lmd-kpi__icon--green">
+          <span class="material-symbols-outlined">calendar_month</span>
+        </div>
+      </div>
+      <div class="lmd-kpi__foot" [class.lmd-kpi__foot--ok]="kpiSinAlertas">
+        {{ kpiSinAlertas ? 'Sin alertas de caducidad' : 'Hay documentos por revisar' }}
+      </div>
+    </article>
+  </section>
+
+  <!-- Master table card -->
+  <section class="lmd-card">
+    <div class="lmd-card__head">
+      <div class="lmd-card__title-wrap">
+        <div class="lmd-card__title-icon">
+          <span class="material-symbols-outlined">description</span>
+        </div>
+        <div>
+          <h2 class="lmd-card__title">Control de Lista Maestra de Documentos</h2>
+          <p class="lmd-card__subtitle">Clic en fila = acordeón de internos · Archivo con vista previa</p>
+        </div>
+      </div>
+      <div class="lmd-card__actions">
+        <button type="button" class="lmd-btn lmd-btn--ghost" (click)="loadDocuments()">
+          <span class="material-symbols-outlined">refresh</span>
+          Actualizar
+        </button>
+        <button type="button" class="lmd-btn lmd-btn--primary" (click)="openNewRecordForm()">
+          <span class="material-symbols-outlined">add</span>
+          Nuevo registro
+        </button>
+      </div>
+    </div>
+
+    <div class="lmd-filters">
+      <div class="lmd-filters__left">
+        <label class="lmd-filter">
+          <span>Proceso</span>
+          <select [(ngModel)]="filterProceso" name="filterProceso">
+            <option value="ALL">Todos los procesos</option>
+            <option *ngFor="let p of procesoFilterOptions" [value]="p.code">{{ p.name }} ({{ p.code }})</option>
+          </select>
+        </label>
+        <label class="lmd-filter">
+          <span>Tipo</span>
+          <select [(ngModel)]="filterTipo" name="filterTipo">
+            <option value="ALL">Todos los tipos</option>
+            <option *ngFor="let t of tipoFilterOptions" [value]="t.code">{{ t.name }} ({{ t.code }})</option>
+          </select>
+        </label>
+        <label class="lmd-filter lmd-filter--search">
+          <span>Buscar</span>
+          <input type="text" [(ngModel)]="filterSearch" name="filterSearch" placeholder="Código, nombre, responsable…" />
+        </label>
+      </div>
+    </div>
+
+    <div *ngIf="listLoading" class="lmd-empty">
+      <span class="material-symbols-outlined">hourglass_top</span>
+      <p>Cargando documentos…</p>
+    </div>
+
+    <div class="lmd-table-wrap" *ngIf="!listLoading">
+      <table class="lmd-table" *ngIf="filteredRootDocuments.length">
+        <thead>
+          <tr>
+            <th class="lmd-th-icon"></th>
+            <th>N°</th>
+            <th>Tipo</th>
+            <th>Proceso</th>
+            <th>Código</th>
+            <th>Nombre del documento</th>
+            <th>Elaboración</th>
+            <th>Revisión</th>
+            <th class="text-center">Versión</th>
+            <th>Próx. revisión</th>
+            <th class="text-center">Días</th>
+            <th class="text-center">Estado</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let d of filteredRootDocuments; let i = index">
+            <tr class="lmd-row" (click)="toggleExpand(d)">
+              <td class="lmd-td-icon">
+                <button type="button" class="lmd-chevron" (click)="toggleExpand(d, $event)" [attr.aria-expanded]="isExpanded(d.id)">
+                  <span class="material-symbols-outlined">{{ isExpanded(d.id) ? 'expand_more' : 'chevron_right' }}</span>
+                </button>
+              </td>
+              <td class="lmd-mono">{{ (i + 1) | number:'3.0-0' }}</td>
+              <td><span class="lmd-chip">{{ d.tipoCode }}</span></td>
+              <td class="lmd-strong">{{ d.procesoCode }}</td>
+              <td>
+                <span class="lmd-code">{{ d.codigo }}</span>
+                <span class="lmd-count" *ngIf="childCount(d.id) > 0">{{ childCount(d.id) }}</span>
+              </td>
+              <td>
+                <div class="lmd-doc-name">{{ d.nombre }}</div>
+                <div class="lmd-doc-meta" *ngIf="d.responsable">{{ d.responsable }}</div>
+              </td>
+              <td class="lmd-mono lmd-muted">{{ d.fechaElaboracion || '—' }}</td>
+              <td class="lmd-mono lmd-muted">{{ d.fechaRevision || '—' }}</td>
+              <td class="text-center"><span class="lmd-ver">{{ d.version || '01' }}</span></td>
+              <td class="lmd-mono">{{ d.fechaProxRevision || '—' }}</td>
+              <td class="text-center">
+                <span class="lmd-days" *ngIf="d.diasVigencia != null">{{ d.diasVigencia }} d</span>
+                <span *ngIf="d.diasVigencia == null">—</span>
+              </td>
+              <td class="text-center">
+                <span class="lmd-status" [ngClass]="statusClass(d.estado)">{{ d.estado }}</span>
+              </td>
+              <td class="text-right" (click)="$event.stopPropagation()">
+                <div class="lmd-row-actions">
+                  <button *ngIf="d.filePath" type="button" class="lmd-icon-btn" title="Ver archivo" (click)="viewFile(d, $event)">
+                    <span class="material-symbols-outlined">visibility</span>
+                  </button>
+                  <button type="button" class="lmd-icon-btn" title="Agregar interno" (click)="openChildForm(d, $event)">
+                    <span class="material-symbols-outlined">add</span>
+                  </button>
+                  <button type="button" class="lmd-icon-btn lmd-icon-btn--danger" title="Eliminar" (click)="deleteDocument(d.id, $event)">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="isExpanded(d.id)" class="lmd-accordion">
+              <td colspan="13">
+                <div class="lmd-acc">
+                  <div class="lmd-acc__head">
+                    <div>
+                      <strong>Internos de {{ d.codigo }}</strong>
+                      <span class="lmd-acc__hint">{{ d.codigo }}.INS.01 · {{ d.codigo }}.FOR.01 …</span>
+                    </div>
+                    <button type="button" class="lmd-btn lmd-btn--primary lmd-btn--sm" (click)="openChildForm(d, $event)">
+                      <span class="material-symbols-outlined">add</span>
+                      Agregar formato / instructivo
+                    </button>
+                  </div>
+
+                  <div *ngIf="!childrenOf(d.id).length" class="lmd-acc__empty">
+                    Sin internos. Pulse <strong>Agregar formato / instructivo</strong>.
+                  </div>
+
+                  <table *ngIf="childrenOf(d.id).length" class="lmd-table lmd-table--nested">
+                    <thead>
+                      <tr>
+                        <th>Tipo</th>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Versión</th>
+                        <th>Estado</th>
+                        <th>Archivo</th>
+                        <th>Responsable</th>
+                        <th class="text-right">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let c of childrenOf(d.id)">
+                        <td><span class="lmd-chip lmd-chip--amber">{{ c.tipoCode }}</span></td>
+                        <td class="lmd-code">{{ c.codigo }}</td>
+                        <td>{{ c.nombre }}</td>
+                        <td class="text-center">{{ c.version }}</td>
+                        <td class="text-center"><span class="lmd-status" [ngClass]="statusClass(c.estado)">{{ c.estado }}</span></td>
+                        <td>
+                          <button *ngIf="c.filePath" type="button" class="lmd-link" (click)="viewFile(c, $event)">Ver</button>
+                          <span *ngIf="!c.filePath">—</span>
+                        </td>
+                        <td>{{ c.responsable || '—' }}</td>
+                        <td class="text-right">
+                          <button type="button" class="lmd-icon-btn lmd-icon-btn--danger" (click)="deleteDocument(c.id, $event)">
+                            <span class="material-symbols-outlined">delete</span>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+
+      <div *ngIf="!filteredRootDocuments.length" class="lmd-empty">
+        <span class="material-symbols-outlined">folder_open</span>
+        <p>No hay documentos con los filtros actuales.</p>
+        <p class="lmd-empty__hint">Pulse <strong>Nuevo registro</strong> o limpie los filtros.</p>
+      </div>
+    </div>
+
+    <div class="lmd-card__foot">
+      <div class="lmd-total">
+        Total: <strong>{{ documents.length }}</strong>
+      </div>
+      <span class="lmd-card__foot-muted">Mostrando {{ filteredRootDocuments.length }} documento(s) principal(es)</span>
+    </div>
+  </section>
+
+  <footer class="lmd-disclaimer">
+    <span class="material-symbols-outlined">info</span>
+    <span><strong>Cláusula 7.5</strong> — La lista maestra garantiza el control de la información documentada.</span>
+  </footer>
+
+  <!-- Modal nuevo registro (lógica intacta) -->
   <div class="doc-modal" *ngIf="showNewRecordForm" (click)="closeNewRecordForm()">
-    <div class="doc-modal__dialog" (click)="$event.stopPropagation()">
+    <div class="doc-modal__dialog doc-modal__dialog--wide" (click)="$event.stopPropagation()">
       <button class="doc-modal__close" type="button" (click)="closeNewRecordForm()">
         <span class="material-symbols-outlined">close</span>
       </button>
       <div class="doc-form-shell">
-        <div class="doc-form-topbar">
-          <nav class="doc-breadcrumbs">
-            <a href="javascript:void(0)">Sistema de Gestión</a>
-            <span class="material-symbols-outlined">chevron_right</span>
-            <a href="javascript:void(0)">Documentos</a>
-            <span class="material-symbols-outlined">chevron_right</span>
-            <span class="is-active">Nuevo Registro</span>
-          </nav>
-        </div>
-
         <div class="doc-form-heading">
           <div>
-            <h2 class="doc-form-title">Nuevo Registro de Documento</h2>
-            <p class="doc-form-copy">Complete el formulario para la inscripción de nuevos documentos en el sistema de gestión de calidad ISO 9001:2015.</p>
-          </div>
-          <div class="doc-form-pill">
-            <span class="doc-form-pill__dot"></span>
-            <span>SISTEMA EN LÍNEA</span>
+            <h2 class="doc-form-title">
+              {{ formParent ? 'Nuevo documento interno' : 'Nuevo registro de documento' }}
+            </h2>
+            <p class="doc-form-copy" *ngIf="!formParent">Proceso + tipo → código automático. Adjunte el documento si lo tiene.</p>
+            <p class="doc-form-copy" *ngIf="formParent">Bajo <strong>{{ formParent.codigo }}</strong> — {{ formParent.nombre }}.</p>
           </div>
         </div>
-
         <div class="doc-form-card">
           <form class="doc-register-form" (ngSubmit)="saveRecord()">
+            <div *ngIf="formError" class="doc-form-error">{{ formError }}</div>
+
             <section class="doc-register-section">
               <div class="doc-register-section__header">
                 <span class="doc-register-section__step">01</span>
                 <h3 class="doc-register-section__title">Identificación del Documento</h3>
               </div>
-
               <div class="doc-register-grid">
-                <div class="doc-field doc-field--third">
-                  <label class="doc-field__label">Proceso Principal</label>
-                  <select class="doc-field__control" [(ngModel)]="formModel.procesoPrincipal" name="procesoPrincipal">
+                <div class="doc-field doc-field--third" *ngIf="!formParent">
+                  <label class="doc-field__label">Proceso *</label>
+                  <select class="doc-field__control" [(ngModel)]="formModel.procesoId" name="procesoId" (ngModelChange)="onFormIdentityChange()">
                     <option value="">Seleccione proceso</option>
-                    <option *ngFor="let option of processOptions" [value]="option">{{ option }}</option>
+                    <option *ngFor="let option of processOptions" [value]="option.id">{{ labelProceso(option) }}</option>
                   </select>
                 </div>
-
+                <div class="doc-field doc-field--third" *ngIf="formParent">
+                  <label class="doc-field__label">Proceso (del padre)</label>
+                  <input class="doc-field__control" type="text" readonly [value]="formParent.procesoCode + ' — ' + formParent.procesoName" />
+                </div>
                 <div class="doc-field doc-field--third">
-                  <label class="doc-field__label">Tipo de Documento</label>
-                  <select class="doc-field__control" [(ngModel)]="formModel.tipoDocumento" name="tipoDocumento">
+                  <label class="doc-field__label">Tipo de Documento *</label>
+                  <select class="doc-field__control" [(ngModel)]="formModel.tipoId" name="tipoId" (ngModelChange)="onFormIdentityChange()">
                     <option value="">Seleccione tipo</option>
-                    <option *ngFor="let option of documentTypeOptions" [value]="option">{{ option }}</option>
+                    <option *ngFor="let option of documentTypeOptions" [value]="option.id">{{ labelTipo(option) }}</option>
                   </select>
                 </div>
-
                 <div class="doc-field doc-field--third">
-                  <label class="doc-field__label">Código Interno</label>
-                  <select class="doc-field__control" [(ngModel)]="formModel.codigoInterno" name="codigoInterno">
-                    <option value="">Seleccione código</option>
-                    <option *ngFor="let option of codeOptions" [value]="option">{{ option }}</option>
-                  </select>
+                  <label class="doc-field__label">Código generado</label>
+                  <input class="doc-field__control doc-field__control--code" [value]="codigoPreview || '—'" type="text" readonly tabindex="-1" />
                 </div>
-
-                <div class="doc-field doc-field--third">
-                  <label class="doc-field__label">Fecha de Elaboración</label>
-                  <input class="doc-field__control" [(ngModel)]="formModel.fechaElaboracion" name="fechaElaboracion" type="date" />
-                </div>
-
                 <div class="doc-field doc-field--wide">
-                  <label class="doc-field__label">Nombre del Documento</label>
-                  <input class="doc-field__control" [(ngModel)]="formModel.nombreDocumento" name="nombreDocumento" placeholder="Ingrese el nombre descriptivo completo" type="text" />
+                  <label class="doc-field__label">Nombre del Documento *</label>
+                  <input class="doc-field__control" [(ngModel)]="formModel.nombreDocumento" name="nombreDocumento" type="text" placeholder="Nombre descriptivo completo" />
                 </div>
               </div>
             </section>
@@ -93,19 +331,43 @@
             <section class="doc-register-section">
               <div class="doc-register-section__header">
                 <span class="doc-register-section__step">02</span>
-                <h3 class="doc-register-section__title">Responsabilidad y Clasificación</h3>
+                <h3 class="doc-register-section__title">Ciclo de vida y control</h3>
               </div>
-
               <div class="doc-register-grid">
-                <div class="doc-field doc-field--full">
-                  <label class="doc-field__label">Responsable del Registro</label>
-                  <div class="doc-field__icon-wrap">
-                    <span class="material-symbols-outlined">person</span>
-                    <select class="doc-field__control doc-field__control--icon" [(ngModel)]="formModel.responsable" name="responsable">
-                      <option value="">Seleccione responsable</option>
-                      <option *ngFor="let option of responsibleOptions" [value]="option">{{ option }}</option>
-                    </select>
-                  </div>
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Fecha Elaboración</label>
+                  <input class="doc-field__control" [(ngModel)]="formModel.fechaElaboracion" name="fechaElaboracion" type="date" (ngModelChange)="onVigenciaDatesChange()" />
+                </div>
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Fecha Revisión</label>
+                  <input class="doc-field__control" [(ngModel)]="formModel.fechaRevision" name="fechaRevision" type="date" (ngModelChange)="onVigenciaDatesChange()" />
+                  <small class="doc-field__help">Si está vacía, se copia la de elaboración.</small>
+                </div>
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Vigencia</label>
+                  <select class="doc-field__control" [(ngModel)]="formModel.vigencia" name="vigencia" (ngModelChange)="onVigenciaDatesChange()">
+                    <option *ngFor="let v of vigenciaOptions" [value]="v">{{ v }}</option>
+                  </select>
+                </div>
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Fecha Próx. Revisión</label>
+                  <input class="doc-field__control doc-field__control--code" [(ngModel)]="formModel.fechaProxRevision" name="fechaProxRevision" type="date" readonly tabindex="-1" />
+                  <small class="doc-field__help">Automático según vigencia</small>
+                </div>
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Días Vigencia</label>
+                  <input class="doc-field__control doc-field__control--code" [(ngModel)]="formModel.diasVigencia" name="diasVigencia" type="text" readonly tabindex="-1" placeholder="—" />
+                  <small class="doc-field__help">Automático</small>
+                </div>
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Versión</label>
+                  <input class="doc-field__control" [(ngModel)]="formModel.version" name="version" type="text" maxlength="10" placeholder="01" />
+                </div>
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Estado</label>
+                  <select class="doc-field__control" [(ngModel)]="formModel.estado" name="estado">
+                    <option *ngFor="let e of estadoOptions" [value]="e">{{ e }}</option>
+                  </select>
                 </div>
               </div>
             </section>
@@ -113,218 +375,91 @@
             <section class="doc-register-section">
               <div class="doc-register-section__header">
                 <span class="doc-register-section__step">03</span>
-                <h3 class="doc-register-section__title">Información Adicional</h3>
+                <h3 class="doc-register-section__title">Clasificación y responsabilidad</h3>
               </div>
+              <div class="doc-register-grid">
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Almacenamiento</label>
+                  <select class="doc-field__control" [(ngModel)]="formModel.almacenamiento" name="almacenamiento">
+                    <option value="">Seleccione</option>
+                    <option *ngFor="let a of almacenamientoOptions" [value]="a">{{ a }}</option>
+                  </select>
+                </div>
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Disposición final</label>
+                  <select class="doc-field__control" [(ngModel)]="formModel.disposicionFinal" name="disposicionFinal">
+                    <option value="">Seleccione</option>
+                    <option *ngFor="let d of disposicionOptions" [value]="d">{{ d }}</option>
+                  </select>
+                </div>
+                <div class="doc-field doc-field--third">
+                  <label class="doc-field__label">Responsable</label>
+                  <input class="doc-field__control" [(ngModel)]="formModel.responsable" name="responsable" type="text" placeholder="Nombre o cargo" />
+                </div>
+              </div>
+            </section>
 
+            <section class="doc-register-section">
+              <div class="doc-register-section__header">
+                <span class="doc-register-section__step">04</span>
+                <h3 class="doc-register-section__title">Archivo y observaciones</h3>
+              </div>
               <div class="doc-register-grid">
                 <div class="doc-field doc-field--full">
-                  <label class="doc-field__label">Adjuntar Documento</label>
+                  <label class="doc-field__label">Subir documento</label>
                   <label class="doc-upload-box">
                     <div class="doc-upload-box__content">
                       <span class="material-symbols-outlined">cloud_upload</span>
-                      <p class="doc-upload-box__title">Cargar Archivo</p>
-                      <p class="doc-upload-box__hint">PDF, DOCX, XLSX (MÁX. 10MB)</p>
+                      <p class="doc-upload-box__title">Cargar archivo</p>
+                      <p class="doc-upload-box__hint">PDF, DOCX, XLSX</p>
                       <p *ngIf="selectedFileName" class="doc-upload-box__file">{{ selectedFileName }}</p>
                     </div>
                     <input class="doc-upload-box__input" type="file" (change)="onFileSelected($event)" />
                   </label>
                 </div>
-
                 <div class="doc-field doc-field--full">
-                  <label class="doc-field__label">Observaciones Generales</label>
-                  <textarea class="doc-field__control doc-field__control--textarea" [(ngModel)]="formModel.observaciones" name="observaciones" placeholder="Describa el propósito de este documento o cualquier consideración especial para la auditoría..." rows="4"></textarea>
+                  <label class="doc-field__label">Observaciones</label>
+                  <textarea class="doc-field__control doc-field__control--textarea" [(ngModel)]="formModel.observaciones" name="observaciones" rows="3" placeholder="Notas…"></textarea>
                 </div>
               </div>
             </section>
 
             <div class="doc-register-actions">
-              <button class="doc-btn doc-btn--ghost" type="button" (click)="closeNewRecordForm()">Cancelar</button>
-              <button class="doc-btn doc-btn--primary doc-btn--xl" type="submit">Guardar Registro</button>
+              <button class="doc-btn doc-btn--ghost" type="button" (click)="closeNewRecordForm()" [disabled]="saving">Cancelar</button>
+              <button class="doc-btn doc-btn--primary doc-btn--xl" type="submit" [disabled]="saving">
+                {{ saving ? 'Guardando…' : 'Guardar registro' }}
+              </button>
             </div>
           </form>
         </div>
+      </div>
+    </div>
+  </div>
 
-        <div class="doc-form-info-grid">
-          <div class="doc-form-note">
-            <h3>Nota Técnica de Cumplimiento</h3>
-            <p>Este registro forma parte del control de información documentada según la cláusula 7.5 de la norma ISO 9001:2015. Al guardar, el documento entrará en estado "En Revisión" y se notificará automáticamente al responsable del proceso para su validación técnica.</p>
-          </div>
-
-          <div class="doc-form-hero">
-            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBS8_cHA4i_OX9xJ5gcOMqj2fEa8EDDzr35HVNR1R6CEk1-jQoTUhoCJkrTljMPgiaYeTckos9oCnUQgSJW8y_coxMyRhSf9mAWcACYPL80qGUxDdNv0RAM-tQ3MmR4lJx6HfSm_LDoLHNGiy7LOp3Fexe-qhSzL6gdB2u0SYKXdz-Dt9_5Hi_3DNsx9pC9dhvrRUs8vqPj355cnjDjyJ3xuaEFDWQ8bRNZ67I8cUCZlzY0CkLS-1TUO2Q9AJXJNXkrGJlqXpYa9H36" alt="Document control background" />
-            <div class="doc-form-hero__overlay"></div>
-            <div class="doc-form-hero__content">
-              <span class="material-symbols-outlined">gavel</span>
-              <p>Garantía de Integridad de Datos Industrial</p>
-            </div>
-          </div>
+  <!-- Modal vista previa -->
+  <div class="doc-modal doc-file-viewer" *ngIf="showFileViewer" (click)="closeFileViewer()">
+    <div class="doc-modal__dialog doc-file-viewer__dialog" (click)="$event.stopPropagation()">
+      <div class="doc-file-viewer__header">
+        <div class="doc-file-viewer__title">
+          <span class="material-symbols-outlined">visibility</span>
+          <span>{{ fileViewerTitle }}</span>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- BENTO STATS -->
-  <div class="doc-bento">
-    <div class="doc-stat" [ngClass]="s.border" *ngFor="let s of stats">
-      <span class="doc-stat__label">{{ s.label }}</span>
-      <div class="doc-stat__val-row">
-        <span class="doc-stat__val" [class.doc-stat__val--err]="s.urgent">{{ s.value }}</span>
-        <span *ngIf="s.trendUp" class="doc-stat__trend">
-          <span class="material-symbols-outlined" style="font-size:12px;">trending_up</span>
-          {{ s.trend }}
-        </span>
-        <span *ngIf="s.urgent" class="doc-stat__urgent">URGENTE</span>
-        <span *ngIf="s.sub" class="doc-stat__sub">{{ s.sub }}</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- FILTERS -->
-  <div class="doc-filters">
-    <div class="doc-filters__icon-label">
-      <span class="material-symbols-outlined" style="font-size:20px;color:#94a3b8;">filter_list</span>
-      <span class="doc-filters__text">Filtros:</span>
-    </div>
-    <div class="doc-filters__selects">
-      <select class="doc-select">
-        <option>Proceso (Todos)</option>
-        <option>Operaciones</option>
-        <option>Calidad</option>
-        <option>Mantenimiento</option>
-        <option>Logística</option>
-      </select>
-      <select class="doc-select">
-        <option>Estado (Todos)</option>
-        <option>VIGENTE</option>
-        <option>NO PRESENTA</option>
-        <option>EN REVISIÓN</option>
-      </select>
-      <select class="doc-select">
-        <option>Tipo (Todos)</option>
-        <option>Manual</option>
-        <option>Procedimiento</option>
-        <option>Instructivo</option>
-        <option>Formato</option>
-      </select>
-    </div>
-    <span class="doc-filters__count">Mostrando 1,248 registros</span>
-  </div>
-
-  <!-- CARD TABLE (scroll horizontal igual a gerencias-viajes) -->
-  <div class="doc-card shadow-sm">
-
-    <!-- Card header -->
-    <div class="doc-card__header">
-      <div class="d-flex align-items-center gap-2">
-        <span class="material-symbols-outlined" style="font-size:22px;color:#9b0000;">description</span>
-        <div>
-          <h2 class="doc-card__title">Control de Lista Maestra de Documentos</h2>
-          <p class="doc-card__subtitle">Matriz completa de parámetros documentales, estados y gestión del ciclo de vida ISO.</p>
-        </div>
-      </div>
-      <div class="d-flex gap-2 align-items-center">
-        <button class="doc-btn doc-btn--outline doc-btn--sm">
-          <span class="material-symbols-outlined">refresh</span>
-          Actualizar
-        </button>
-        <button class="doc-btn doc-btn--primary doc-btn--sm" (click)="openNewRecordForm()">
-          <span class="material-symbols-outlined">add</span>
-          Nuevo Registro
+        <button type="button" class="lmd-btn lmd-btn--ghost lmd-btn--sm" (click)="closeFileViewer()">
+          <span class="material-symbols-outlined">close</span>
+          Cerrar
         </button>
       </div>
-    </div>
-
-    <!-- Scroll wrapper -->
-    <div class="doc-table-wrapper">
-      <div class="doc-table-inner">
-        <table class="doc-table doc-table--full">
-          <thead>
-            <tr>
-              <th style="width:50px;">N°</th>
-              <th style="width:110px;">Tipo Documento</th>
-              <th style="width:130px;">Proceso</th>
-              <th style="width:110px;">Código</th>
-              <th style="width:280px;">Nombre del Documento</th>
-              <th style="width:130px;">Fecha Elaboración</th>
-              <th style="width:120px;">Fecha Revisión</th>
-              <th style="width:80px;" class="text-center">Versión</th>
-              <th style="width:140px;">Fecha Próx. Revisión</th>
-              <th style="width:110px;" class="text-center">Días Vigencia</th>
-              <th style="width:120px;" class="text-center">Estado</th>
-              <th style="width:140px;">Almacenamiento</th>
-              <th style="width:180px;">Responsable</th>
-              <th style="width:100px;" class="text-center">Vigencia</th>
-              <th style="width:160px;">Disposición Final</th>
-              <th style="width:240px;">Enlace al Documento</th>
-              <th style="width:200px;">Observaciones</th>
-              <th class="doc-th-sticky-right text-center" style="width:130px;right:0;z-index:3;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let d of documents" class="doc-table__row">
-              <td class="doc-td-n">{{ d.n }}</td>
-              <td><span class="doc-chip">{{ d.tipo }}</span></td>
-              <td>{{ d.proceso }}</td>
-              <td class="doc-td-code">{{ d.codigo }}</td>
-              <td class="doc-td-name">{{ d.nombre }}</td>
-              <td>{{ d.elaboracion }}</td>
-              <td>{{ d.revision }}</td>
-              <td class="text-center"><strong>{{ d.version }}</strong></td>
-              <td [class.doc-td-exp]="d.statusClass === 'st--err'">{{ d.proxRevision }}</td>
-              <td class="text-center" [class.doc-td-exp]="d.diasVigencia === 0">{{ d.diasVigencia === 0 ? 'Vencido' : d.diasVigencia }}</td>
-              <td class="text-center">
-                <span class="doc-status" [ngClass]="d.statusClass">{{ d.estado }}</span>
-              </td>
-              <td>{{ d.almacenamiento }}</td>
-              <td>{{ d.responsable }}</td>
-              <td class="text-center">{{ d.vigencia }}</td>
-              <td>{{ d.disposicion }}</td>
-              <td>
-                <a [href]="d.enlace" target="_blank" class="doc-link" title="{{ d.enlace }}">
-                  <span class="material-symbols-outlined" style="font-size:14px;">open_in_new</span>
-                  Ver enlace
-                </a>
-              </td>
-              <td><small class="doc-td-obs">{{ d.observaciones }}</small></td>
-              <td class="doc-td-sticky-right text-center" style="right:0;z-index:2;" (click)="$event.stopPropagation()">
-                <div class="doc-table__actions">
-                  <button class="doc-act-btn" title="Ver"><span class="material-symbols-outlined">visibility</span></button>
-                  <button class="doc-act-btn" title="Editar"><span class="material-symbols-outlined">edit</span></button>
-                  <button class="doc-act-btn doc-act-btn--danger" title="Eliminar"><span class="material-symbols-outlined">delete</span></button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="doc-file-viewer__body">
+        <div *ngIf="fileViewerLoading" class="doc-file-viewer__msg">Cargando archivo…</div>
+        <div *ngIf="fileViewerError" class="doc-file-viewer__msg doc-file-viewer__msg--err">{{ fileViewerError }}</div>
+        <ng-container *ngIf="!fileViewerLoading && !fileViewerError">
+          <iframe *ngIf="fileViewerSafeUrl && fileViewerKind === 'pdf'" class="doc-file-viewer__frame" [src]="fileViewerSafeUrl" title="Vista previa PDF"></iframe>
+          <img *ngIf="fileViewerObjectUrl && fileViewerKind === 'image'" class="doc-file-viewer__img" [src]="fileViewerObjectUrl" [alt]="fileViewerTitle" />
+          <div *ngIf="fileViewerKind === 'other'" class="doc-file-viewer__msg">
+            Este tipo de archivo no tiene vista previa en el navegador. Use PDF o imagen.
+          </div>
+        </ng-container>
       </div>
     </div>
-
-    <!-- Pagination -->
-    <div class="doc-pagination">
-      <span class="doc-pagination__info">
-        Hoja <strong>1</strong> de <strong>52</strong> &nbsp;·&nbsp; Registros <strong>1–20</strong> de 1,248
-      </span>
-      <div class="doc-pagination__btns">
-        <button class="doc-page-btn"><span class="material-symbols-outlined">chevron_left</span></button>
-        <button class="doc-page-btn doc-page-btn--active">1</button>
-        <button class="doc-page-btn">2</button>
-        <button class="doc-page-btn">3</button>
-        <span class="doc-pagination__ellipsis">...</span>
-        <button class="doc-page-btn">52</button>
-        <button class="doc-page-btn"><span class="material-symbols-outlined">chevron_right</span></button>
-      </div>
-    </div>
-
-    <!-- Footer summary -->
-    <div class="doc-card__footer">
-      <span class="doc-card__footer-info">
-        <span class="material-symbols-outlined" style="font-size:16px;">schedule</span>
-        Última actualización: Hace 5 minutos
-      </span>
-      <span class="doc-badge-total">Total: 1,248 documentos</span>
-    </div>
-
   </div>
-
-
 </div>

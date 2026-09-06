@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Iso9001CatalogKey, Iso9001CatalogService } from '../../../../../services/iso-9001-catalog.service';
-import { TypeContract } from '../../../../../models/type-contract.model';
+import { Iso9001CatalogItem, Iso9001CatalogKey, Iso9001CatalogService } from '../../../../../services/iso-9001-catalog.service';
 
 export interface Iso9001CatalogRouteData {
   catalogKey: Iso9001CatalogKey;
@@ -16,7 +15,7 @@ export interface Iso9001CatalogRouteData {
   styleUrls: ['./iso-9001-catalog.shared.scss']
 })
 export class ListaIso9001CatalogComponent implements OnInit {
-  items: TypeContract[] = [];
+  items: Iso9001CatalogItem[] = [];
   loading = false;
   error: string | null = null;
 

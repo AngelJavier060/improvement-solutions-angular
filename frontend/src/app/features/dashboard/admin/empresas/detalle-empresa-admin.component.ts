@@ -2691,7 +2691,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   }
 
   // === ISO 9001 por empresa (Sistema de Gestión ISO 9001-2018) — catálogo global en Configuración ===
-  getIso9001Items(catalogCode: string): Array<{ id: number; name: string; description?: string; catalogCode?: string }> {
+  getIso9001Items(catalogCode: string): Array<{ id: number; name: string; code?: string; description?: string; catalogCode?: string }> {
     const list = ((this.empresa as any)?.iso9001CatalogItems as any[]) || [];
     return list.filter((x: any) => x && String(x.catalogCode) === catalogCode);
   }

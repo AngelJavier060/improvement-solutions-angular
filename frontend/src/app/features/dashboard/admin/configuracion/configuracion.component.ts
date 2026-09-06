@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
 /** Tarjeta de acceso a un catálogo de configuración (ruta simple o varios segmentos). */
@@ -13,37 +14,112 @@ export interface CategoriaConfiguracionCard {
   proximamente: boolean;
 }
 
+interface HubScrollPos {
+  windowY: number;
+  mainY: number;
+}
+
 @Component({
   selector: 'app-configuracion',
   templateUrl: './configuracion.component.html',
   styleUrls: ['./configuracion.component.scss']
 })
-export class ConfiguracionComponent implements OnInit {
+export class ConfiguracionComponent implements OnInit, OnDestroy {
   isChildRouteActive = false;
 
-  constructor(private router: Router, private route: ActivatedRoute) {
-    console.log('ConfiguracionComponent constructor - Current route:', this.router.url);
-  }
+  private static readonly HUB_SCROLL_KEY = 'admin.configuracion.hubScroll';
+  private static readonly HUB_PATH = '/dashboard/admin/configuracion';
+  private routeSub?: Subscription;
+
+  constructor(private router: Router, private route: ActivatedRoute) {}
 
   ngOnInit() {
-    // Verificamos la ruta inicial
     this.checkActiveChildRoute(this.router.url);
-    console.log('ConfiguracionComponent - Initial route check:', this.router.url, 'Child route active:', this.isChildRouteActive);
-    
-    // Nos suscribimos a los cambios de ruta
-    this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd)
-    ).subscribe((event: any) => {
-      this.checkActiveChildRoute(event.url);
-      console.log('ConfiguracionComponent - Route changed:', event.url, 'Child route active:', this.isChildRouteActive);
-    });
+    if (!this.isChildRouteActive) {
+      this.scheduleHubScrollRestore();
+    }
+
+    this.routeSub = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(event => {
+        const wasChild = this.isChildRouteActive;
+        const url = event.urlAfterRedirects || event.url;
+        this.checkActiveChildRoute(url);
+        // Al volver al hub desde un catálogo, restaurar la posición de scroll
+        if (wasChild && !this.isChildRouteActive) {
+          this.scheduleHubScrollRestore();
+        }
+      });
   }
-  
+
+  ngOnDestroy(): void {
+    this.routeSub?.unsubscribe();
+  }
+
   private checkActiveChildRoute(url: string) {
-    // Verificamos si estamos en una subruta de configuración
-    const basePath = '/dashboard/admin/configuracion';
-    this.isChildRouteActive = url !== basePath && url.startsWith(basePath);
-    console.log('ConfiguracionComponent - Ruta secundaria activa:', this.isChildRouteActive, 'URL:', url);
+    const path = (url || '').split('?')[0].split('#')[0];
+    this.isChildRouteActive =
+      path !== ConfiguracionComponent.HUB_PATH && path.startsWith(ConfiguracionComponent.HUB_PATH + '/');
+  }
+
+  private captureScroll(): HubScrollPos {
+    const main = document.querySelector('main.main-content') as HTMLElement | null;
+    return {
+      windowY: window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0,
+      mainY: main ? main.scrollTop : 0
+    };
+  }
+
+  /** Guarda la posición del hub antes de entrar a un catálogo. */
+  private persistHubScroll(): void {
+    try {
+      sessionStorage.setItem(ConfiguracionComponent.HUB_SCROLL_KEY, JSON.stringify(this.captureScroll()));
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }
+
+  private readHubScroll(): HubScrollPos | null {
+    try {
+      const raw = sessionStorage.getItem(ConfiguracionComponent.HUB_SCROLL_KEY);
+      if (!raw) {
+        return null;
+      }
+      const pos = JSON.parse(raw) as HubScrollPos;
+      if (typeof pos?.windowY !== 'number' || typeof pos?.mainY !== 'number') {
+        return null;
+      }
+      return pos;
+    } catch {
+      return null;
+    }
+  }
+
+  private applyScroll(pos: HubScrollPos): void {
+    const main = document.querySelector('main.main-content') as HTMLElement | null;
+    if (main) {
+      main.scrollTop = pos.mainY;
+    }
+    window.scrollTo(0, pos.windowY);
+    document.documentElement.scrollTop = pos.windowY;
+    document.body.scrollTop = pos.windowY;
+  }
+
+  /**
+   * Restaura el scroll tras recrear el hub (*ngIf).
+   * Varios intentos porque el layout/contenido se monta de forma asíncrona.
+   */
+  private scheduleHubScrollRestore(): void {
+    const pos = this.readHubScroll();
+    if (!pos) {
+      return;
+    }
+    const apply = () => this.applyScroll(pos);
+    requestAnimationFrame(apply);
+    setTimeout(apply, 0);
+    setTimeout(apply, 50);
+    setTimeout(apply, 150);
+    setTimeout(apply, 300);
   }
 
   // Las categorías de configuración que se mostrarán
@@ -384,11 +460,8 @@ export class ConfiguracionComponent implements OnInit {
   ];
 
   navegarA(ruta: string): void {
-    console.log('Navegando a:', ruta);
-    console.log('Ruta completa:', '/dashboard/admin/configuracion/' + ruta);
-    this.router.navigate([ruta], { relativeTo: this.route })
-      .then(success => console.log(`Navegación a ${ruta} ${success ? 'exitosa' : 'fallida'}`))
-      .catch(error => console.error(`Error al navegar a ${ruta}:`, error));
+    this.persistHubScroll();
+    this.router.navigate([ruta], { relativeTo: this.route });
   }
 
   /** Comandos de enlace para `routerLink` (soporta rutas de varios segmentos). */
@@ -400,10 +473,9 @@ export class ConfiguracionComponent implements OnInit {
     if (categoria.proximamente) {
       return;
     }
+    this.persistHubScroll();
     const parts = this.linkCommands(categoria);
-    this.router.navigate(parts, { relativeTo: this.route })
-      .then(success => console.log(`Navegación ${success ? 'exitosa' : 'fallida'}`, parts))
-      .catch(error => console.error('Error al navegar:', error));
+    this.router.navigate(parts, { relativeTo: this.route });
   }
 
   opciones = [

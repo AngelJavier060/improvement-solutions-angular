@@ -389,6 +389,7 @@ public class BusinessController {
             Map<String, Object> m = new HashMap<>();
             m.put("id", it.getId());
             m.put("name", it.getName());
+            m.put("code", it.getCode());
             m.put("description", it.getDescription());
             m.put("catalogCode", it.getCatalogCode());
             return m;
@@ -663,6 +664,7 @@ public class BusinessController {
             Map<String, Object> m = new HashMap<>();
             m.put("id", it.getId());
             m.put("name", it.getName());
+            m.put("code", it.getCode());
             m.put("description", it.getDescription());
             m.put("catalogCode", it.getCatalogCode());
             return m;

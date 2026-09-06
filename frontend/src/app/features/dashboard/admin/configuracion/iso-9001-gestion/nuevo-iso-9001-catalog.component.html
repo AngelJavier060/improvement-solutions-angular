@@ -39,6 +39,32 @@
       </div>
 
       <div class="form-group">
+        <label for="iso-code">
+          Código
+          <span class="required" *ngIf="codeRequired">*</span>
+          <span class="text-muted" *ngIf="!codeRequired"> (opcional)</span>
+        </label>
+        <input
+          type="text"
+          id="iso-code"
+          formControlName="code"
+          maxlength="5"
+          style="text-transform: uppercase; max-width: 140px;"
+          [class.is-invalid]="form.get('code')?.invalid && (form.get('code')?.touched || formSubmitted)"
+          placeholder="Ej. PRO"
+          (blur)="onCodeBlur()"
+        />
+        <small class="text-muted d-block mt-1">
+          2 a 5 letras (A–Z). Se usa en el número de registro del sistema de gestión (p. ej. PRO, MAN, FOR).
+        </small>
+        <div *ngIf="form.get('code')?.invalid && (form.get('code')?.touched || formSubmitted)" class="error-message">
+          <span *ngIf="form.get('code')?.errors?.['required']">El código es obligatorio</span>
+          <span *ngIf="form.get('code')?.errors?.['pattern']">Solo letras, entre 2 y 5 caracteres</span>
+          <span *ngIf="form.get('code')?.errors?.['maxlength']">Máximo 5 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-group">
         <label for="iso-desc">Descripción</label>
         <textarea
           id="iso-desc"

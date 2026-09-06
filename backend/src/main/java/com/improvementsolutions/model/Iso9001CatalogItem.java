@@ -20,6 +20,12 @@ public class Iso9001CatalogItem {
     @Column(name = "catalog_code", nullable = false, length = 64)
     private String catalogCode;
 
+    /**
+     * Código corto (p. ej. PRO, MAN, FOR) usado en el número de registro del sistema de gestión.
+     */
+    @Column(name = "item_code", length = 5)
+    private String code;
+
     @Column(nullable = false)
     private String name;
 

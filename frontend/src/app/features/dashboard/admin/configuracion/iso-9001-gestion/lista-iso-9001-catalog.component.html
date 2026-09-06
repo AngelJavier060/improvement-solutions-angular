@@ -34,6 +34,7 @@
           <tr>
             <th>ID</th>
             <th>Nombre</th>
+            <th>Código</th>
             <th>Descripción</th>
             <th>Acciones</th>
           </tr>
@@ -42,6 +43,10 @@
           <tr *ngFor="let item of items">
             <td>{{ item.id }}</td>
             <td>{{ item.name }}</td>
+            <td>
+              <span *ngIf="item.code" class="fw-semibold">{{ item.code }}</span>
+              <span *ngIf="!item.code" class="text-muted">—</span>
+            </td>
             <td>{{ item.description }}</td>
             <td class="actions">
               <button class="btn btn-icon" type="button" (click)="editar(item.id)" title="Editar" [disabled]="!item.id">

@@ -19,6 +19,8 @@ export class NuevoIso9001CatalogComponent implements OnInit {
   catalogKey!: Iso9001CatalogKey;
   nuevoTitulo = '';
   nuevoSubtitulo = '';
+  /** En tipo-documento el código es obligatorio para el número de registro. */
+  codeRequired = false;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -27,6 +29,7 @@ export class NuevoIso9001CatalogComponent implements OnInit {
     private readonly catalogApi: Iso9001CatalogService
   ) {
     this.form = this.fb.group({
+      code: [''],
       name: ['', [Validators.required, Validators.maxLength(50)]],
       description: ['', Validators.maxLength(255)]
     });
@@ -36,8 +39,33 @@ export class NuevoIso9001CatalogComponent implements OnInit {
     const data = this.route.parent?.snapshot.data as Iso9001CatalogRouteData | undefined;
     if (data?.catalogKey) {
       this.catalogKey = data.catalogKey;
+      this.codeRequired = this.catalogKey === 'tipo-documento' || this.catalogKey === 'proceso';
       this.nuevoTitulo = `Nuevo — ${data.listaTitulo}`;
-      this.nuevoSubtitulo = 'Complete el formulario (nombre y descripción).';
+      this.nuevoSubtitulo = this.codeRequired
+        ? 'Indique el nombre y el código (2–5 letras) que formará parte del número de registro.'
+        : 'Complete el formulario (código opcional, nombre y descripción).';
+      this.applyCodeValidators();
+    }
+  }
+
+  private applyCodeValidators(): void {
+    const ctrl = this.form.get('code');
+    if (!ctrl) {
+      return;
+    }
+    const validators = this.codeRequired
+      ? [Validators.required, Validators.pattern(/^[A-Za-z]{2,5}$/), Validators.maxLength(5)]
+      : [Validators.pattern(/^([A-Za-z]{2,5})?$/), Validators.maxLength(5)];
+    ctrl.setValidators(validators);
+    ctrl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  /** Normaliza a mayúsculas al salir del campo. */
+  onCodeBlur(): void {
+    const ctrl = this.form.get('code');
+    const v = (ctrl?.value as string | null)?.trim();
+    if (v) {
+      ctrl?.setValue(v.toUpperCase(), { emitEvent: false });
     }
   }
 
@@ -46,6 +74,7 @@ export class NuevoIso9001CatalogComponent implements OnInit {
   }
 
   onSubmit(): void {
+    this.onCodeBlur();
     if (this.form.invalid || !this.catalogKey) {
       this.formSubmitted = true;
       return;
@@ -55,7 +84,14 @@ export class NuevoIso9001CatalogComponent implements OnInit {
     this.error = null;
     this.successMessage = null;
 
-    this.catalogApi.create(this.catalogKey, this.form.value).subscribe({
+    const raw = this.form.value;
+    const payload = {
+      name: raw.name,
+      description: raw.description || null,
+      code: (raw.code as string)?.trim() ? String(raw.code).trim().toUpperCase() : null
+    };
+
+    this.catalogApi.create(this.catalogKey, payload).subscribe({
       next: () => {
         this.successMessage = 'Registro creado correctamente';
         this.submitting = false;
@@ -68,11 +104,11 @@ export class NuevoIso9001CatalogComponent implements OnInit {
       error: err => {
         console.error(err);
         if (err.status === 409) {
-          this.error = 'Ya existe un registro con ese nombre en este catálogo.';
+          this.error = 'Ya existe un registro con ese nombre o código en este catálogo.';
         } else if (err.status === 403) {
           this.error = 'No tiene permisos para crear registros.';
         } else if (err.status === 400) {
-          this.error = 'Solicitud no válida. Verifique los datos.';
+          this.error = 'Solicitud no válida. Verifique el código (2–5 letras) y el nombre.';
         } else {
           this.error = 'Error al guardar. Por favor, intente nuevamente.';
         }

@@ -27,13 +27,13 @@ const routes: Routes = [
   ...catalogRoutes('tipo-documento', {
     catalogKey: 'tipo-documento',
     listaTitulo: 'Tipo de Documento',
-    listaSubtitulo: 'Sistema de Gestión ISO 9001-2018 — catálogo de tipos de documento.',
+    listaSubtitulo: 'Sistema de Gestión ISO 9001 — tipos de documento con código corto para el número de registro (p. ej. PRO, MAN, FOR).',
     nombreItemPlural: 'tipos de documento'
   }),
   ...catalogRoutes('proceso', {
     catalogKey: 'proceso',
     listaTitulo: 'Proceso',
-    listaSubtitulo: 'Sistema de Gestión ISO 9001-2018 — catálogo de procesos.',
+    listaSubtitulo: 'Sistema de Gestión ISO 9001 — procesos con código corto para el número de registro (p. ej. CAL, OPE, RH).',
     nombreItemPlural: 'procesos'
   }),
   ...catalogRoutes('codigo', {

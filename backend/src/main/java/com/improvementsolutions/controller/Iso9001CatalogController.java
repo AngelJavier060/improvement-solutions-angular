@@ -48,7 +48,7 @@ public class Iso9001CatalogController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         } catch (IllegalStateException e) {
-            if ("DUPLICATE_NAME".equals(e.getMessage())) {
+            if ("DUPLICATE_NAME".equals(e.getMessage()) || "DUPLICATE_CODE".equals(e.getMessage())) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).build();
             }
             throw e;
@@ -69,7 +69,7 @@ public class Iso9001CatalogController {
             if ("NOT_FOUND".equals(e.getMessage())) {
                 return ResponseEntity.notFound().build();
             }
-            if ("DUPLICATE_NAME".equals(e.getMessage())) {
+            if ("DUPLICATE_NAME".equals(e.getMessage()) || "DUPLICATE_CODE".equals(e.getMessage())) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).build();
             }
             throw e;

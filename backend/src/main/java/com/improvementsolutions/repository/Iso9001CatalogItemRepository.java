@@ -15,4 +15,8 @@ public interface Iso9001CatalogItemRepository extends JpaRepository<Iso9001Catal
     Optional<Iso9001CatalogItem> findByCatalogCodeAndName(String catalogCode, String name);
 
     boolean existsByCatalogCodeAndNameAndIdNot(String catalogCode, String name, Long id);
+
+    Optional<Iso9001CatalogItem> findByCatalogCodeAndCodeIgnoreCase(String catalogCode, String code);
+
+    boolean existsByCatalogCodeAndCodeIgnoreCaseAndIdNot(String catalogCode, String code, Long id);
 }

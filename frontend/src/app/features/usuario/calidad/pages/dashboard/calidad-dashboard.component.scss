@@ -58,6 +58,7 @@
 
   &--outline { background: #fff; color: #334155; &:hover { background: #f8fafc; } }
   &--dark    { background: #0f172a; color: #fff; border-color: #0f172a; &:hover { background: #1e293b; } }
+  &:disabled { opacity: .45; cursor: not-allowed; }
 }
 
 /* ── KPI GRID ── */
@@ -104,6 +105,7 @@
     letter-spacing: -.03em;
     line-height: 1;
     margin-bottom: 8px;
+    &--sm { font-size: 32px; }
   }
   &__trend {
     display: flex;
@@ -308,6 +310,7 @@
     letter-spacing: .1em;
     color: var(--green);
     margin: 12px 0 0;
+    &--warn { color: var(--p); }
   }
 }
 .db-gauge {
@@ -334,6 +337,8 @@
     border-bottom-color: transparent;
     border-left-color: transparent;
   }
+  &--warn &__arc { border-color: #b45309; border-bottom-color: transparent; border-left-color: transparent; }
+  &--err &__arc { border-color: var(--p); border-bottom-color: transparent; border-left-color: transparent; }
   &__value {
     position: relative;
     z-index: 2;
@@ -422,6 +427,27 @@
   text-transform: uppercase;
   letter-spacing: .05em;
 
-  &--ok  { background: rgba(33,113,40,.15); color: #005713; }
-  &--err { background: var(--p); color: #fff; }
+  &--ok   { background: rgba(33,113,40,.15); color: #005713; }
+  &--warn { background: #fffbeb; color: #b45309; }
+  &--err  { background: var(--p); color: #fff; }
+}
+
+.db-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 16px;
+  color: #64748b;
+  text-align: center;
+  .material-symbols-outlined { font-size: 36px; color: #cbd5e1; }
+  p { margin: 0; font-size: 13px; }
+  &--err { color: var(--p); .material-symbols-outlined { color: var(--p); } }
+}
+.db-inline-empty {
+  padding: 24px 8px;
+  text-align: center;
+  font-size: 12px;
+  color: #94a3b8;
 }
