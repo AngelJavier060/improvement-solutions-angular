@@ -127,6 +127,33 @@ public class EmployeeDocumentController {
         }
     }
 
+    @PutMapping(value = "/employee_document/{id}", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> updateEmployeeDocument(
+            @PathVariable Long id,
+            @RequestParam(value = "start_date", required = false) String startDateRaw,
+            @RequestParam(value = "end_date", required = false) String endDateRaw,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "files[]", required = false) MultipartFile[] files
+    ) {
+        try {
+            List<MultipartFile> fileList = files != null ? Arrays.asList(files) : List.of();
+            return ResponseEntity.ok(documentService.update(id, parseDate(startDateRaw), parseDate(endDateRaw), description, fileList));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", "VALIDATION_ERROR", "message", ex.getMessage()));
+        } catch (Exception e) {
+            log.error("Error interno al actualizar documento", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "error", "INTERNAL_ERROR",
+                    "message", e.getMessage() != null ? e.getMessage() : "Error interno del servidor"
+            ));
+        }
+    }
+
+    private LocalDate parseDate(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        return LocalDate.parse(raw);
+    }
+
     @DeleteMapping("/employee_document/{id}")
     public ResponseEntity<Void> deleteEmployeeDocument(@PathVariable Long id) {
         try {

@@ -1,56 +1,69 @@
-<div class="employee-detail-container th-md-page">
-  <header class="ed-topbar">
-    <h2 class="ed-topbar-title">
-      <span class="material-symbols-outlined">person</span>
-      Detalle del Empleado
-    </h2>
-    <button type="button" class="ed-back-btn" (click)="goBack()">
-      <span class="material-symbols-outlined">arrow_back</span>
-      Volver
-    </button>
+<div class="employee-detail-container th-md-page ed-dash">
+  <header class="ed-dash-head no-print">
+    <div class="ed-dash-head-left">
+      <div class="ed-dash-head-ico">
+        <span class="material-symbols-outlined">person</span>
+      </div>
+      <div>
+        <h1>
+          Detalle del Empleado
+          <span class="ed-dash-pill">Reporte Consolidado</span>
+        </h1>
+        <p>Gestión de cumplimiento: Documentos Personales, Cursos y Tarjetas HSEQ</p>
+      </div>
+    </div>
+    <div class="ed-dash-head-actions">
+      <button type="button" class="ed-dash-btn" (click)="goBack()">
+        <span class="material-symbols-outlined">arrow_back</span>
+        Volver
+      </button>
+    </div>
   </header>
 
   <div class="ed-canvas">
-    <div class="ed-kpis">
-      <div class="ed-kpi">
-        <div class="ed-kpi-icon">
+    <section class="ed-dash-kpis">
+      <article class="ed-dash-kpi">
+        <div class="ed-dash-kpi-ico is-blue">
           <span class="material-symbols-outlined">group</span>
         </div>
         <div>
-          <p class="ed-kpi-label">Total Empleados</p>
-          <p class="ed-kpi-value">{{ totalElements }}</p>
+          <p class="ed-dash-kpi-label">Total Empleados</p>
+          <p class="ed-dash-kpi-value">{{ totalElements }}</p>
         </div>
-      </div>
-      <div class="ed-kpi">
-        <div class="ed-kpi-icon warn">
+      </article>
+      <article class="ed-dash-kpi is-warn">
+        <div class="ed-dash-kpi-ico is-amber">
           <span class="material-symbols-outlined">warning</span>
         </div>
         <div>
-          <p class="ed-kpi-label">Documentos por Vencer</p>
-          <p class="ed-kpi-value warn">{{ kpiExpiringCount }}</p>
+          <p class="ed-dash-kpi-label is-amber">Documentos por Vencer</p>
+          <div class="ed-dash-kpi-row">
+            <span class="ed-dash-kpi-value is-amber">{{ kpiExpiringCount }}</span>
+            <span class="ed-dash-chip-mini">≤ 30 días</span>
+          </div>
         </div>
-      </div>
-      <div class="ed-kpi">
-        <div class="ed-kpi-icon ok">
+      </article>
+      <article class="ed-dash-kpi">
+        <div class="ed-dash-kpi-ico is-green">
           <span class="material-symbols-outlined">check_circle</span>
         </div>
         <div>
-          <p class="ed-kpi-label">Ingreso al mes</p>
-          <p class="ed-kpi-value">{{ kpiHiresThisMonth }}</p>
+          <p class="ed-dash-kpi-label">Documentos Vigentes</p>
+          <p class="ed-dash-kpi-value">{{ kpiVigentesCount }}</p>
         </div>
-      </div>
-      <div class="ed-kpi">
-        <div class="ed-kpi-icon add">
+      </article>
+      <article class="ed-dash-kpi">
+        <div class="ed-dash-kpi-ico is-indigo">
           <span class="material-symbols-outlined">person_add</span>
         </div>
         <div>
-          <p class="ed-kpi-label">Total anual</p>
-          <p class="ed-kpi-value">{{ kpiHiresThisYear }}</p>
+          <p class="ed-dash-kpi-label">Ingresos del Año</p>
+          <p class="ed-dash-kpi-value">{{ kpiHiresThisYear }}</p>
         </div>
-      </div>
-    </div>
+      </article>
+    </section>
 
-    <nav class="ed-tabs">
+    <nav class="ed-tabs no-print">
       <a class="ed-tab" [class.active]="activeTab === 'employees'" [routerLink]="[]" [queryParams]="{ tab: 'employees' }" queryParamsHandling="merge">
         <span class="material-symbols-outlined" [class.filled]="activeTab === 'employees'">group</span>
         Empleados
@@ -83,162 +96,267 @@
 
   <div class="tab-content">
     <div class="tab-pane fade" [class.show]="activeTab === 'employees'" [class.active]="activeTab === 'employees'">
-      <div class="ed-panel">
-        <div class="ed-panel-head">
-          <div class="ed-panel-head-row">
-            <h3 class="ed-panel-title">
-              <span class="material-symbols-outlined">group</span>
-              Empleados de la empresa
-            </h3>
-            <button type="button" class="ed-link-btn" (click)="loadEmployeesList()">
-              <span class="material-symbols-outlined">refresh</span>
-              Recargar
-            </button>
+      <section class="ed-dash-filters no-print">
+        <div class="ed-dash-filters-head">
+          <div class="ed-dash-filters-title">
+            <span class="material-symbols-outlined">filter_alt</span>
+            Filtros de Búsqueda de Colaboradores
           </div>
-          <div class="ed-filters">
-            <div class="ed-field">
-              <label>Identificación</label>
-              <input type="text" [(ngModel)]="filterCedula" (ngModelChange)="onFilterChanged()" placeholder="Cédula">
-            </div>
-            <div class="ed-field">
-              <label>Nombre</label>
-              <input type="text" [(ngModel)]="filterNombre" (ngModelChange)="onFilterChanged()" placeholder="Nombre">
-            </div>
-            <div class="ed-field">
-              <label>Apellido</label>
-              <input type="text" [(ngModel)]="filterApellido" (ngModelChange)="onFilterChanged()" placeholder="Apellido">
-            </div>
-            <div class="ed-field">
-              <label>Código Empleado</label>
-              <input type="text" [(ngModel)]="filterCodigo" (ngModelChange)="onFilterChanged()" placeholder="Código">
-            </div>
+          <button type="button" class="ed-dash-reload" (click)="loadEmployeesList()">
+            <span class="material-symbols-outlined">refresh</span>
+            Recargar
+          </button>
+        </div>
+        <div class="ed-dash-filters-grid">
+          <div class="ed-dash-field">
+            <label>Identificación</label>
+            <input type="text" [(ngModel)]="filterCedula" (ngModelChange)="onFilterChanged()" placeholder="Ej: Cédula o RUC...">
+          </div>
+          <div class="ed-dash-field">
+            <label>Nombre</label>
+            <input type="text" [(ngModel)]="filterNombre" (ngModelChange)="onFilterChanged()" placeholder="Buscar por nombre...">
+          </div>
+          <div class="ed-dash-field">
+            <label>Apellido</label>
+            <input type="text" [(ngModel)]="filterApellido" (ngModelChange)="onFilterChanged()" placeholder="Buscar por apellido...">
+          </div>
+          <div class="ed-dash-field">
+            <label>Código Empleado</label>
+            <input type="text" [(ngModel)]="filterCodigo" (ngModelChange)="onFilterChanged()" placeholder="Ej: 003...">
           </div>
         </div>
+      </section>
 
-        <div class="ed-panel-body">
-          <div *ngIf="listLoading" class="ed-empty">Cargando empleados...</div>
-          <div *ngIf="!listLoading && (!listEmployees || listEmployees.length === 0)" class="ed-empty">No hay empleados activos</div>
+      <div *ngIf="listLoading" class="ed-dash-empty">Cargando empleados...</div>
+      <div *ngIf="!listLoading && (!listEmployees || listEmployees.length === 0)" class="ed-dash-empty">No hay empleados activos</div>
 
-          <div *ngIf="!listLoading && listEmployees?.length" class="ed-bento-list">
-            <div *ngFor="let emp of listEmployees" class="ed-bento" [class.ed-bento--warn]="employeeHasExpiring(emp)">
-              <ng-container *ngIf="ensureEmployeeOverview(emp)"></ng-container>
-              <div class="ed-bento-side">
-                <div class="ed-emp-head">
-                  <div class="ed-avatar">
-                    <img [src]="getImageUrlFor(emp)" alt="Foto" (error)="onImgError($event)" loading="lazy" decoding="async">
-                  </div>
-                  <div class="ed-emp-copy">
-                    <h4 class="ed-emp-name" (click)="goToEmployeeTab(emp, 'profile')">
-                      {{ (emp.nombres || emp.name) | capitalize }} {{ (emp.apellidos || '') | capitalize }}
-                    </h4>
-                    <p class="ed-emp-meta">{{ emp.positionName || '-' }}</p>
-                  </div>
-                  <button type="button"
-                          class="ed-cv-icon"
-                          (click)="openEmployeeCv(emp, $event)"
-                          title="Hoja de vida"
-                          aria-label="Ver hoja de vida">
-                    <span class="material-symbols-outlined" aria-hidden="true">description</span>
+      <div *ngIf="!listLoading && listEmployees?.length" class="ed-dash-list">
+        <article *ngFor="let emp of listEmployees" class="ed-dash-card" [class.has-alert]="employeeHasExpiring(emp)">
+          <ng-container *ngIf="ensureEmployeeOverview(emp)"></ng-container>
+          <div class="ed-dash-card-grid">
+            <aside class="ed-dash-side">
+              <div class="ed-dash-profile">
+                <div class="ed-dash-avatar" [class.is-alert]="employeeHasExpiring(emp)">
+                  <img [src]="getImageUrlFor(emp)" alt="Foto" (error)="onImgError($event)" loading="lazy" decoding="async">
+                  <span class="ed-dash-dot" [class.is-alert]="employeeHasExpiring(emp)" [title]="employeeHasExpiring(emp) ? 'Tiene documentos por vencer' : 'Estado: Activo'"></span>
+                </div>
+                <h3 class="ed-dash-name" (click)="goToEmployeeTab(emp, 'profile')">
+                  {{ (emp.nombres || emp.name) | capitalize }} {{ (emp.apellidos || '') | capitalize }}
+                </h3>
+                <p class="ed-dash-role">{{ emp.positionName || '—' }}</p>
+                <div class="ed-dash-code-row">
+                  <span class="ed-dash-code">Código: <strong>{{ emp.codigoTrabajador || '—' }}</strong></span>
+                </div>
+
+                <div class="ed-dash-actions no-print">
+                  <button type="button" class="ed-dash-act" title="Ver Hoja de Vida" (click)="openEmployeeCv(emp, $event)">
+                    <span class="ed-dash-act-left">
+                      <span class="material-symbols-outlined">description</span>
+                      Hoja de Vida
+                    </span>
+                    <span class="ed-dash-act-hint">Ver CV</span>
                   </button>
+                  <button type="button"
+                          class="ed-dash-act"
+                          [class.is-alert]="employeeHasExpiring(emp)"
+                          title="Consultar estado consolidado de documentación"
+                          [disabled]="isExportingStatusPdf(emp)"
+                          (click)="exportEmployeeStatusPdf(emp, $event)">
+                    <span class="ed-dash-act-left">
+                      <span class="material-symbols-outlined">{{ isExportingStatusPdf(emp) ? 'progress_activity' : (employeeHasExpiring(emp) ? 'warning' : 'verified') }}</span>
+                      Estado de Documentación
+                    </span>
+                    <span class="ed-dash-act-hint" [class.is-ok]="!employeeHasExpiring(emp)" [class.is-alert]="employeeHasExpiring(emp)">
+                      {{ employeeHasExpiring(emp) ? (employeeExpiringCount(emp) + ' alerta' + (employeeExpiringCount(emp) === 1 ? '' : 's')) : 'Al día' }}
+                    </span>
+                  </button>
+                  <div class="ed-dash-zip" [class.open]="isZipMenuOpen(emp)">
+                    <button type="button"
+                            class="ed-dash-act is-zip"
+                            title="Descargar expediente o una sección en ZIP"
+                            [disabled]="isZipping(emp)"
+                            (click)="toggleZipMenu(emp, $event)">
+                      <span class="ed-dash-act-left">
+                        <span class="material-symbols-outlined">{{ isZipping(emp) ? 'progress_activity' : 'download' }}</span>
+                        Descarga de Documentación
+                      </span>
+                      <span class="ed-dash-act-hint is-zip">ZIP</span>
+                    </button>
+                    <div class="ed-dash-zip-menu" *ngIf="isZipMenuOpen(emp)" (click)="$event.stopPropagation()">
+                      <p class="ed-dash-zip-hint">Marca una o varias secciones</p>
+                      <label class="ed-dash-zip-opt" [class.is-off]="!sectionHasFiles(emp, 'document')">
+                        <input type="checkbox" [checked]="zipPick.document" [disabled]="!sectionHasFiles(emp, 'document')" (change)="toggleZipPick('document', $event)">
+                        Documentos
+                      </label>
+                      <label class="ed-dash-zip-opt" [class.is-off]="!sectionHasFiles(emp, 'course')">
+                        <input type="checkbox" [checked]="zipPick.course" [disabled]="!sectionHasFiles(emp, 'course')" (change)="toggleZipPick('course', $event)">
+                        Cursos
+                      </label>
+                      <label class="ed-dash-zip-opt" [class.is-off]="!sectionHasFiles(emp, 'card')">
+                        <input type="checkbox" [checked]="zipPick.card" [disabled]="!sectionHasFiles(emp, 'card')" (change)="toggleZipPick('card', $event)">
+                        Tarjetas
+                      </label>
+                      <div class="ed-dash-zip-foot">
+                        <button type="button" class="ed-dash-zip-all" (click)="selectAllZipSections(emp, $event)" [disabled]="!sectionHasFiles(emp)">
+                          Marcar todo
+                        </button>
+                        <button type="button" class="ed-dash-zip-go" (click)="downloadEmployeeZip(emp, $event)" [disabled]="!hasZipSelection(emp)">
+                          Descargar ZIP
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="ed-emp-code">
-                  <strong>Código:</strong> {{ emp.codigoTrabajador || '-' }}
+
+                <div class="ed-dash-alertbar" *ngIf="employeeHasExpiring(emp)">
+                  <span class="material-symbols-outlined">warning</span>
+                  {{ employeeExpiringCount(emp) }} documento{{ employeeExpiringCount(emp) === 1 ? '' : 's' }} por renovar
                 </div>
-                <div class="ed-emp-links">
-                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'profile')">Perfil</a>
-                  <span class="sep">•</span>
-                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'documents')">Documentos</a>
-                  <span class="sep">•</span>
-                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'courses')">Cursos</a>
-                  <span class="sep">•</span>
-                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'cards')">Tarjetas</a>
-                  <span class="sep">•</span>
-                  <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'history')">Histórico</a>
+
+                <div class="ed-dash-meta">
+                  <div>
+                    <span>Estado laboral:</span>
+                    <strong [class.is-ok]="!employeeHasExpiring(emp)" [class.is-warn]="employeeHasExpiring(emp)">
+                      {{ employeeHasExpiring(emp) ? 'Por Regularizar' : 'Activo' }}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Área / Sede:</span>
+                    <em>{{ workplaceLabel(emp) }}</em>
+                  </div>
                 </div>
               </div>
 
-              <div class="ed-bento-main">
-                <ng-container *ngIf="getBusinessEmployeeIdFor(emp) as beId">
-                  <ng-container *ngIf="employeeItemsMap[beId] as items; else awaitingItems">
-                    <ng-container *ngIf="items.length; else noItems">
-                      <div *ngFor="let it of items"
-                           class="ed-doc-row"
-                           [class.ed-doc-row--warn]="getExpiryStatus(it.expiry_date) === 'Próximo a vencer'">
-                        <div class="ed-doc-info">
-                          <div class="ed-doc-icon">
-                            <span class="material-symbols-outlined">{{ itemIcon(it) }}</span>
-                          </div>
-                          <div>
-                            <p class="ed-doc-name">{{ it.name }}</p>
-                            <p class="ed-doc-cat">{{ it.category }}</p>
-                          </div>
-                        </div>
-                        <div class="ed-doc-meta">
-                          <div class="ed-doc-date">
-                            <span class="lbl">Emisión</span>
-                            <span>{{ it.issue_date | dateDmy }}</span>
-                          </div>
-                          <div class="ed-doc-date">
-                            <span class="lbl">Vencimiento</span>
-                            <span>{{ it.expiry_date | dateDmy }}</span>
-                          </div>
-                          <div class="ed-doc-status">
-                            <span class="ed-badge" [ngClass]="expiryTone(it.expiry_date)">{{ getExpiryStatus(it.expiry_date) }}</span>
-                            <div class="ed-days">
-                              <span class="n">{{ getDaysLeft(it.expiry_date) }}</span>
-                              <span class="u">Días</span>
-                            </div>
-                            <button type="button" class="ed-pdf-btn"
-                                    *ngIf="it.files?.length && isPdf(it.files[0])"
-                                    (click)="openDocFile(it.files[0])"
-                                    title="Ver PDF">
-                              <span class="material-symbols-outlined">picture_as_pdf</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+              <nav class="ed-dash-anchors no-print">
+                <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'profile')">Perfil</a>
+                <span>•</span>
+                <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'documents')" [class.is-alert]="sectionHasAlert(emp, 'document')">Documentos</a>
+                <span>•</span>
+                <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'courses')" [class.is-alert]="sectionHasAlert(emp, 'course')">Cursos</a>
+                <span>•</span>
+                <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'cards')" [class.is-alert]="sectionHasAlert(emp, 'card')">Tarjetas</a>
+                <span>•</span>
+                <a href="javascript:void(0)" (click)="goToEmployeeTab(emp, 'history')">Histórico</a>
+              </nav>
+            </aside>
+
+            <div class="ed-dash-main" *ngIf="getBusinessEmployeeIdFor(emp) as beId">
+              <ng-container *ngIf="employeeItemsMap[beId] as items; else awaitingItems">
+                <section class="ed-dash-sec" [class.has-alert]="sectionHasAlert(emp, 'document')">
+                  <header>
+                    <h4><span class="dot is-doc"></span> Documentos Personales</h4>
+                    <small [class.is-alert]="sectionHasAlert(emp, 'document')">{{ sectionHint(emp, 'document') }}</small>
+                  </header>
+                  <div class="ed-dash-rows" *ngIf="itemsOfType(emp, 'document').length">
+                    <ng-container *ngFor="let it of itemsOfType(emp, 'document')">
+                      <ng-container *ngTemplateOutlet="dashItemTpl; context: { $implicit: it }"></ng-container>
                     </ng-container>
-                    <ng-template #noItems>
-                      <p class="ed-no-docs">
-                        <span class="material-symbols-outlined">info</span>
-                        Sin registros de documentos
-                      </p>
-                    </ng-template>
-                  </ng-container>
-                  <ng-template #awaitingItems>
-                    <p class="ed-no-docs">
-                      <span class="material-symbols-outlined">info</span>
-                      {{ employeeItemsLoading[beId] ? 'Cargando...' : 'Sin registros de documentos' }}
-                    </p>
-                  </ng-template>
-                </ng-container>
-              </div>
+                  </div>
+                  <p class="ed-dash-none" *ngIf="!itemsOfType(emp, 'document').length">Sin registros en este grupo.</p>
+                </section>
+
+                <section class="ed-dash-sec" [class.has-alert]="sectionHasAlert(emp, 'course')">
+                  <header>
+                    <h4><span class="dot is-course"></span> Cursos</h4>
+                    <small [class.is-alert]="sectionHasAlert(emp, 'course')">{{ sectionHint(emp, 'course') }}</small>
+                  </header>
+                  <div class="ed-dash-rows" *ngIf="itemsOfType(emp, 'course').length">
+                    <ng-container *ngFor="let it of itemsOfType(emp, 'course')">
+                      <ng-container *ngTemplateOutlet="dashItemTpl; context: { $implicit: it }"></ng-container>
+                    </ng-container>
+                  </div>
+                  <p class="ed-dash-none" *ngIf="!itemsOfType(emp, 'course').length">Sin registros en este grupo.</p>
+                </section>
+
+                <section class="ed-dash-sec" [class.has-alert]="sectionHasAlert(emp, 'card')">
+                  <header>
+                    <h4><span class="dot is-card"></span> Tarjetas</h4>
+                    <small [class.is-alert]="sectionHasAlert(emp, 'card')">{{ sectionHint(emp, 'card') }}</small>
+                  </header>
+                  <div class="ed-dash-rows" *ngIf="itemsOfType(emp, 'card').length">
+                    <ng-container *ngFor="let it of itemsOfType(emp, 'card')">
+                      <ng-container *ngTemplateOutlet="dashItemTpl; context: { $implicit: it }"></ng-container>
+                    </ng-container>
+                  </div>
+                  <p class="ed-dash-none" *ngIf="!itemsOfType(emp, 'card').length">Sin registros en este grupo.</p>
+                </section>
+              </ng-container>
+              <ng-template #awaitingItems>
+                <p class="ed-dash-none">{{ employeeItemsLoading[beId] ? 'Cargando...' : 'Sin registros de documentos' }}</p>
+              </ng-template>
             </div>
           </div>
-        </div>
+        </article>
+      </div>
 
-        <div class="ed-panel-foot" *ngIf="!listLoading">
-          <span>Mostrando {{ totalElements === 0 ? 0 : (pageIndex * pageSize + 1) }} - {{ Math.min(totalElements, (pageIndex + 1) * pageSize) }} de {{ totalElements }}</span>
-          <div class="ed-pager">
-            <span>Tamaño</span>
+      <footer class="ed-dash-pager no-print" *ngIf="!listLoading">
+        <div>
+          Mostrando
+          <strong>{{ totalElements === 0 ? 0 : (pageIndex * pageSize + 1) }} - {{ Math.min(totalElements, (pageIndex + 1) * pageSize) }}</strong>
+          de <strong>{{ totalElements }}</strong> colaboradores
+        </div>
+        <div class="ed-dash-pager-right">
+          <label>
+            Tamaño de página:
             <select [ngModel]="pageSize" (ngModelChange)="changePageSize($event)">
               <option [ngValue]="10">10</option>
               <option [ngValue]="25">25</option>
               <option [ngValue]="50">50</option>
               <option [ngValue]="100">100</option>
             </select>
-            <div class="ed-pager-btns">
-              <button type="button" [disabled]="pageIndex === 0" (click)="prevPage()">
-                <span class="material-symbols-outlined">chevron_left</span>
-              </button>
-              <button type="button" [disabled]="(pageIndex + 1) * pageSize >= totalElements" (click)="nextPage()">
-                <span class="material-symbols-outlined">chevron_right</span>
-              </button>
-            </div>
+          </label>
+          <div class="ed-dash-pager-btns">
+            <button type="button" [disabled]="pageIndex === 0" (click)="prevPage()">&lt;</button>
+            <span>{{ pageIndex + 1 }}</span>
+            <button type="button" [disabled]="(pageIndex + 1) * pageSize >= totalElements" (click)="nextPage()">&gt;</button>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <ng-template #dashItemTpl let-it>
+      <div class="ed-dash-item" [class.is-warn]="getExpiryStatus(it.expiry_date) === 'Próximo a vencer'" [class.is-err]="getExpiryStatus(it.expiry_date) === 'Caducado'">
+        <div class="ed-dash-item-info">
+          <div class="ed-dash-item-ico" [ngClass]="it.type">
+            <span class="material-symbols-outlined">{{ itemIcon(it) }}</span>
+          </div>
+          <div>
+            <h5>{{ it.name }}</h5>
+            <p>{{ it.category }}</p>
+          </div>
+        </div>
+        <div class="ed-dash-item-meta">
+          <div>
+            <span>Emisión</span>
+            <strong>{{ it.issue_date | dateDmy }}</strong>
+          </div>
+          <div>
+            <span>Vencimiento</span>
+            <strong [class.is-warn]="getExpiryStatus(it.expiry_date) === 'Próximo a vencer'">{{ it.expiry_date | dateDmy }}</strong>
+          </div>
+          <em class="ed-dash-chip" [ngClass]="expiryTone(it.expiry_date)">{{ statusChipLabel(it.expiry_date) }}</em>
+          <div class="ed-dash-days" [class.is-warn]="getExpiryStatus(it.expiry_date) === 'Próximo a vencer'">
+            <b>{{ getDaysLeft(it.expiry_date) }}</b>
+            <small>Días</small>
+          </div>
+          <div class="ed-dash-file-btns" *ngIf="it.files?.length">
+            <button type="button"
+                    class="ed-dash-pdf"
+                    *ngIf="isPdf(it.files[0])"
+                    (click)="openDocFile(it.files[0])"
+                    title="Ver PDF">
+              <span class="material-symbols-outlined">picture_as_pdf</span>
+            </button>
+            <button type="button"
+                    class="ed-dash-dl"
+                    (click)="downloadDocFile(it.files[0])"
+                    title="Descargar archivo">
+              <span class="material-symbols-outlined">download</span>
+            </button>
           </div>
         </div>
       </div>
-    </div>
+    </ng-template>
     <!-- Profile Tab -->
     <div class="tab-pane fade" [class.show]="activeTab === 'profile'" [class.active]="activeTab === 'profile'">
       <div class="card modern-card">
@@ -687,3 +805,120 @@
   [businessRuc]="businessRuc || ''"
   (closed)="closeEmployeeCv()">
 </app-employee-cv-overlay>
+
+<div class="ed-status-report-host" aria-hidden="true">
+  <div #estadoReport class="ed-status-report" *ngIf="reportEmployee as emp">
+    <div class="ed-status-report__body">
+      <header class="ed-status-report__header">
+        <div class="ed-status-report__logo">
+          <img *ngIf="reportLogoUrl" [src]="reportLogoUrl" alt="Logo empresa" />
+          <div class="ed-status-report__brand" *ngIf="!reportLogoUrl">
+            <span class="top">{{ reportBrandLine('top') }}</span>
+            <span class="mid">{{ reportBrandLine('bottom') }}</span>
+            <span class="bot">Consultoría &amp; HSEQ</span>
+          </div>
+        </div>
+        <div class="ed-status-report__title-wrap">
+          <h1>Reporte de Estado de Documentación</h1>
+          <p>Trabajador: <strong>{{ statusReportName(emp) }}</strong></p>
+        </div>
+        <div class="ed-status-report__meta-r">
+          <div>
+            <span>FECHA DE DESCARGA:</span>
+            <b>{{ statusReportDownloadDate() }}</b>
+          </div>
+          <div>
+            <span>CÓDIGO:</span>
+            <b class="mono">{{ statusReportCode(emp) }}</b>
+          </div>
+        </div>
+      </header>
+
+      <section class="ed-status-report__card">
+        <div class="ed-status-report__photo">
+          <div class="ed-status-report__photo-frame">
+            <img [src]="reportPhotoUrl || getImageUrlFor(emp)" [alt]="statusReportName(emp)" />
+          </div>
+        </div>
+        <div class="ed-status-report__info">
+          <span class="ed-status-report__badge" [class.is-off]="emp.active === false">
+            {{ emp.active === false ? 'INACTIVO' : 'TRABAJADOR ACTIVO' }}
+          </span>
+          <h2>{{ statusReportName(emp) }}</h2>
+          <p class="ed-status-report__role">{{ emp.positionName || '—' }}</p>
+          <div class="ed-status-report__grid">
+            <div>
+              <dt>CÓDIGO</dt>
+              <dd class="mono">{{ emp.codigoTrabajador || '—' }}</dd>
+            </div>
+            <div>
+              <dt>CÉDULA</dt>
+              <dd class="mono">{{ emp.cedula || '—' }}</dd>
+            </div>
+            <div>
+              <dt>EMPRESA</dt>
+              <dd>{{ reportCompanyName || emp.businessName || '—' }}</dd>
+            </div>
+            <div>
+              <dt>CORREO</dt>
+              <dd>{{ emp.email || '—' }}</dd>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ed-status-report__block" *ngFor="let sec of statusReportSections(emp)">
+        <div class="ed-status-report__block-head">
+          <h3>{{ sec.label }}</h3>
+          <span class="ed-status-report__count">{{ sec.items.length }}</span>
+        </div>
+        <div class="ed-status-report__table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>DOCUMENTO</th>
+                <th class="ctr">FECHA EMISIÓN</th>
+                <th class="ctr">VENCIMIENTO</th>
+                <th class="ctr">DÍAS DE VIGENCIA</th>
+                <th class="ctr">ESTADO</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="sec.items.length === 0">
+                <td colspan="5" class="ed-status-report__empty">Sin registros en este grupo.</td>
+              </tr>
+              <tr *ngFor="let it of sec.items">
+                <td>
+                  <div class="ed-status-report__doc">
+                    <div class="ed-status-report__doc-ico" [attr.data-tone]="statusDataTone(it.expiry_date)">
+                      <span class="material-symbols-outlined">{{ sec.icon }}</span>
+                    </div>
+                    <div>
+                      <p class="ed-status-report__doc-name">{{ it.name }}</p>
+                      <p class="ed-status-report__doc-sub">{{ it.category }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="ctr mono">{{ formatReportDate(it.issue_date) }}</td>
+                <td class="ctr mono" [attr.data-tone]="statusDataTone(it.expiry_date)">{{ formatReportDate(it.expiry_date) }}</td>
+                <td class="ctr">
+                  <span class="ed-status-report__chip" [attr.data-tone]="statusDataTone(it.expiry_date)">{{ vigenciaText(it.expiry_date) }}</span>
+                </td>
+                <td class="ctr">
+                  <span class="ed-status-report__pill" [attr.data-tone]="statusDataTone(it.expiry_date)">
+                    {{ statusChipLabel(it.expiry_date) }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <footer class="ed-status-report__footer">
+      <p>Documento generado electrónicamente por el Sistema HSEQ {{ reportCompanyName || emp.businessName || '' }}. Válido sin tachaduras ni enmendaduras.</p>
+      <p class="mono">ID Verificación: {{ statusReportVerifyId(emp) }}</p>
+    </footer>
+  </div>
+</div>

@@ -62,6 +62,40 @@ public class EmployeeCardController {
         }
     }
 
+    @PutMapping(value = "/employee_card/{id}", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> updateEmployeeCard(
+            @PathVariable Long id,
+            @RequestParam(value = "card_number", required = false) String cardNumber,
+            @RequestParam(value = "issue_date", required = false) String issueDateRaw,
+            @RequestParam(value = "expiry_date", required = false) String expiryDateRaw,
+            @RequestParam(value = "observations", required = false) String observations,
+            @RequestParam(value = "files[]", required = false) MultipartFile[] files
+    ) {
+        try {
+            List<MultipartFile> fileList = files != null ? Arrays.asList(files) : List.of();
+            EmployeeCardResponse resp = cardService.update(id, cardNumber, parseDate(issueDateRaw), parseDate(expiryDateRaw), observations, fileList);
+            return ResponseEntity.ok(resp);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "error", "VALIDATION_ERROR",
+                    "message", ex.getMessage()
+            ));
+        } catch (Exception e) {
+            log.error("Error interno al actualizar tarjeta", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(java.util.Map.of(
+                    "error", "INTERNAL_ERROR",
+                    "message", e.getMessage() != null ? e.getMessage() : "Unexpected error"
+            ));
+        }
+    }
+
+    private LocalDate parseDate(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        return LocalDate.parse(raw);
+    }
+
     @DeleteMapping("/employee_card/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         try {

@@ -64,6 +64,36 @@ public class EmployeeCourseController {
         }
     }
 
+    @PutMapping(value = "/employee_course/{id}", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> updateEmployeeCourse(
+            @PathVariable Long id,
+            @RequestParam(value = "issue_date", required = false) String issueDateRaw,
+            @RequestParam(value = "expiry_date", required = false) String expiryDateRaw,
+            @RequestParam(value = "hours", required = false) Integer hours,
+            @RequestParam(value = "score", required = false) String score,
+            @RequestParam(value = "observations", required = false) String observations,
+            @RequestParam(value = "files[]", required = false) MultipartFile[] files
+    ) {
+        try {
+            List<MultipartFile> fileList = files != null ? Arrays.asList(files) : List.of();
+            LocalDate issue = (issueDateRaw == null || issueDateRaw.isBlank()) ? null : LocalDate.parse(issueDateRaw);
+            LocalDate expiry = (expiryDateRaw == null || expiryDateRaw.isBlank()) ? null : LocalDate.parse(expiryDateRaw);
+            EmployeeCourseResponse resp = courseService.update(id, issue, expiry, hours, score, observations, fileList);
+            return ResponseEntity.ok(resp);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "error", "VALIDATION_ERROR",
+                    "message", ex.getMessage()
+            ));
+        } catch (Exception e) {
+            log.error("Error interno al actualizar curso", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(java.util.Map.of(
+                    "error", "INTERNAL_ERROR",
+                    "message", e.getMessage() != null ? e.getMessage() : "Unexpected error"
+            ));
+        }
+    }
+
     @DeleteMapping("/employee_course/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         try {

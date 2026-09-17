@@ -1,15 +1,15 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { ContractService, CreateEmployeeContractRequest, EmployeeContractResponse } from '../services/contract.service';
 import { ConfigurationService, TypeContract } from '../services/configuration.service';
-import { HttpClient, HttpResponse } from '@angular/common/http';
 import { AuthService } from '../../../../../core/services/auth.service';
+import { ThFilePreviewService } from '../services/th-file-preview.service';
 
 @Component({
   selector: 'app-employee-contracts',
   templateUrl: './employee-contracts.component.html',
   styleUrls: ['./employee-contracts.component.scss']
 })
-export class EmployeeContractsComponent implements OnInit {
+export class EmployeeContractsComponent implements OnInit, OnDestroy {
   @Input() employeeId!: number;
   @Input() employeeCedula!: string;
   @Input() businessId!: number;
@@ -33,9 +33,13 @@ export class EmployeeContractsComponent implements OnInit {
   constructor(
     private contractService: ContractService,
     private configurationService: ConfigurationService,
-    private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private filePreview: ThFilePreviewService
   ) {}
+
+  ngOnDestroy(): void {
+    this.filePreview.close();
+  }
 
   ngOnInit(): void {
     this.canWrite = this.authService.canWrite();
@@ -116,22 +120,7 @@ export class EmployeeContractsComponent implements OnInit {
     });
   }
 
-  // Abrir archivo con autenticación (evitar 401 en enlaces directos)
-  openFile(file: { file: string; file_name?: string }): void {
-    const url = file.file;
-    this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
-      next: (resp: HttpResponse<Blob>) => {
-        const blob = resp.body as Blob;
-        const contentType = resp.headers.get('Content-Type') || 'application/pdf';
-        const typed = new Blob([blob], { type: contentType });
-        const objectUrl = window.URL.createObjectURL(typed);
-        window.open(objectUrl, '_blank');
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-      },
-      error: (err) => {
-        console.error('Error abriendo archivo de contrato', err);
-        alert('No se pudo abrir el archivo');
-      }
-    });
+  openFile(file: { file: string; file_name?: string; file_type?: string }): void {
+    this.filePreview.open(file);
   }
 }

@@ -1,15 +1,15 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { EmployeeCardService, EmployeeCardResponse, CreateEmployeeCardRequest } from '../services/employee-card.service';
 import { CardService, CardCatalog } from '../../../../../services/card.service';
-import { HttpClient, HttpResponse } from '@angular/common/http';
 import { AuthService } from '../../../../../core/services/auth.service';
+import { ThFilePreviewService } from '../services/th-file-preview.service';
 
 @Component({
   selector: 'app-employee-cards',
   templateUrl: './employee-cards.component.html',
   styleUrls: ['./employee-cards.component.scss']
 })
-export class EmployeeCardsComponent implements OnInit, OnChanges {
+export class EmployeeCardsComponent implements OnInit, OnChanges, OnDestroy {
   @Input() employeeId!: number;
   @Input() employeeCedula!: string;
   @Output() changed = new EventEmitter<void>();
@@ -44,12 +44,27 @@ export class EmployeeCardsComponent implements OnInit, OnChanges {
   renewFileError: string | null = null;
   renewCardName: string = '';
 
+  showEditForm = false;
+  editSaving = false;
+  editTarget: EmployeeCardResponse | null = null;
+  editCardName = '';
+  editCardNumber = '';
+  editIssueDate = '';
+  editExpiryDate = '';
+  editObservations = '';
+  editFiles: File[] = [];
+  editFileError: string | null = null;
+
   constructor(
     private employeeCardService: EmployeeCardService,
     private cardCatalogService: CardService,
-    private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private filePreview: ThFilePreviewService
   ) {}
+
+  ngOnDestroy(): void {
+    this.filePreview.close();
+  }
 
   ngOnInit(): void {
     this.canWrite = this.authService.canWrite();
@@ -65,7 +80,10 @@ export class EmployeeCardsComponent implements OnInit, OnChanges {
 
   loadCatalog(): void {
     this.cardCatalogService.getAll().subscribe({
-      next: (items) => (this.catalog = items || []),
+      next: (items) => {
+        this.catalog = items || [];
+        this.syncSelectedCard();
+      },
       error: (err) => console.error('Error loading card catalog', err)
     });
   }
@@ -77,6 +95,7 @@ export class EmployeeCardsComponent implements OnInit, OnChanges {
     this.employeeCardService.getByBusinessEmployeeId(this.employeeId, true).subscribe({
       next: (items) => {
         this.records = items || [];
+        this.syncSelectedCard();
         this.loading = false;
       },
       error: (err) => {
@@ -90,44 +109,84 @@ export class EmployeeCardsComponent implements OnInit, OnChanges {
     try {
       return String(s || '')
         .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // quitar tildes
+        .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, ' ') // no alfanum => espacio
+        .replace(/[^a-z0-9]+/g, ' ')
         .trim()
-        .replace(/\s+/g, ' '); // colapsar espacios
+        .replace(/\s+/g, ' ');
     } catch {
       return String(s || '').toLowerCase().trim();
     }
   }
 
-  // Lista vigente: última tarjeta activa. El histórico vive en la pestaña Histórico.
-  filteredCards(): EmployeeCardResponse[] {
+  /** Última tarjeta vigente por tipo (no histórico). Caducadas se consideran pendientes de renovar. */
+  private currentActiveCards(): EmployeeCardResponse[] {
     const items = this.records || [];
     const hasActive = items.some(r => (r as any).active !== undefined);
-    const base = hasActive ? items.filter(r => (r as any).active === true || (r as any).active === undefined) : items;
+    const base = hasActive
+      ? items.filter(r => (r as any).active === true || (r as any).active === undefined)
+      : items;
 
-    const score = (r: EmployeeCardResponse): number => {
-      const toTs = (s?: string) => {
-        if (!s) return Number.NEGATIVE_INFINITY;
-        const t = new Date(s as string).getTime();
-        return isNaN(t) ? Number.NEGATIVE_INFINITY : t;
-      };
-      const exp = toTs(r.expiry_date);
-      if (exp !== Number.NEGATIVE_INFINITY) return exp;
-      return toTs(r.issue_date);
-    };
-
-    // Agrupar por nombre normalizado de la tarjeta (no por id), para colapsar duplicados de catálogo con distinto id
-    const byCardName = new Map<string, EmployeeCardResponse>();
+    const byKey = new Map<string, EmployeeCardResponse>();
     for (const r of base) {
-      const key = this.normalizeName(((r as any)?.card?.name || ''));
-      const prev = byCardName.get(key);
-      if (!prev || score(r) > score(prev)) {
-        byCardName.set(key, r);
+      const id = Number((r as any)?.card?.id);
+      const key = !Number.isNaN(id) && id > 0
+        ? `id:${id}`
+        : `name:${this.normalizeName((r as any)?.card?.name || '')}`;
+      const prev = byKey.get(key);
+      if (!prev || this.cardScore(r) > this.cardScore(prev)) {
+        byKey.set(key, r);
       }
     }
+    return Array.from(byKey.values());
+  }
 
-    const latest = Array.from(byCardName.values());
+  private cardScore(r: EmployeeCardResponse): number {
+    const toTs = (s?: string) => {
+      if (!s) return Number.NEGATIVE_INFINITY;
+      const t = new Date(s as string).getTime();
+      return isNaN(t) ? Number.NEGATIVE_INFINITY : t;
+    };
+    const exp = toTs(r.expiry_date);
+    if (exp !== Number.NEGATIVE_INFINITY) return exp;
+    return toTs(r.issue_date);
+  }
+
+  /**
+   * Catálogo pendiente de subir.
+   * Si ya hay un registro activo y no caducado, esa tarjeta no aparece.
+   * Vuelve a listarse cuando está caducada (renovación) o se elimina.
+   */
+  availableCards(): CardCatalog[] {
+    const usedIds = new Set<number>();
+    const usedNames = new Set<string>();
+    for (const r of this.currentActiveCards()) {
+      if (this.getExpiryStatus(r.expiry_date) === 'Caducado') {
+        continue;
+      }
+      const id = Number((r as any)?.card?.id);
+      if (!Number.isNaN(id) && id > 0) usedIds.add(id);
+      const name = this.normalizeName((r as any)?.card?.name || '');
+      if (name) usedNames.add(name);
+    }
+    return (this.catalog || []).filter(c => {
+      const id = Number(c.id);
+      if (!Number.isNaN(id) && usedIds.has(id)) return false;
+      const name = this.normalizeName(c.name || '');
+      return !name || !usedNames.has(name);
+    });
+  }
+
+  private syncSelectedCard(): void {
+    if (!this.selectedCardId) return;
+    const stillAvailable = this.availableCards()
+      .some(c => String(c.id) === String(this.selectedCardId));
+    if (!stillAvailable) this.selectedCardId = '';
+  }
+
+  // Lista vigente: última tarjeta activa. El histórico vive en la pestaña Histórico.
+  filteredCards(): EmployeeCardResponse[] {
+    const latest = [...this.currentActiveCards()];
     latest.sort((a, b) => ((a as any)?.card?.name || '').localeCompare(((b as any)?.card?.name || '')));
     return latest;
   }
@@ -149,6 +208,13 @@ export class EmployeeCardsComponent implements OnInit, OnChanges {
   createCard(): void {
     if (!this.employeeId || !this.selectedCardId) {
       this.error = 'Seleccione la tarjeta';
+      return;
+    }
+    const stillAvailable = this.availableCards()
+      .some(c => String(c.id) === String(this.selectedCardId));
+    if (!stillAvailable) {
+      this.error = 'Esta tarjeta ya está registrada. Elimínela o renuévela cuando caduque.';
+      this.syncSelectedCard();
       return;
     }
     this.saving = true;
@@ -188,44 +254,8 @@ export class EmployeeCardsComponent implements OnInit, OnChanges {
     });
   }
 
-  // Abrir archivo usando token
-  openFile(file: { file: string; file_name?: string }): void {
-    const url = file.file;
-    this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
-      next: (resp: HttpResponse<Blob>) => {
-        const blob = resp.body as Blob;
-        const contentType = resp.headers.get('Content-Type') || 'application/octet-stream';
-        const blobWithType = new Blob([blob], { type: contentType });
-        const fileName = file.file_name || this.extractFileNameFromUrl(url);
-        const blobUrl = window.URL.createObjectURL(blobWithType);
-        const isViewable = contentType.startsWith('application/pdf') || contentType.startsWith('image/');
-        if (isViewable) {
-          window.open(blobUrl, '_blank');
-        } else {
-          const a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = fileName || 'archivo';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        }
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-      },
-      error: (err) => {
-        console.error('Error abriendo archivo', err);
-        alert('No se pudo abrir el archivo');
-      }
-    });
-  }
-
-  private extractFileNameFromUrl(url: string): string {
-    try {
-      const lastSlash = url.lastIndexOf('/');
-      if (lastSlash >= 0) return url.substring(lastSlash + 1);
-      return url;
-    } catch {
-      return 'archivo';
-    }
+  openFile(file: { file: string; file_name?: string; file_type?: string }): void {
+    this.filePreview.open(file);
   }
 
   // === Helpers de vigencia ===
@@ -260,6 +290,72 @@ export class EmployeeCardsComponent implements OnInit, OnChanges {
     if (status === 'Próximo a vencer') return 'bg-warning text-dark';
     if (status === 'Vigente') return 'bg-success';
     return 'bg-secondary';
+  }
+
+  // === Edición ===
+  openEdit(r: EmployeeCardResponse): void {
+    this.editTarget = r;
+    this.editCardName = (r as any)?.card?.name || 'tarjeta';
+    this.editCardNumber = r.card_number || '';
+    this.editIssueDate = this.toInputDate(r.issue_date);
+    this.editExpiryDate = this.toInputDate(r.expiry_date);
+    this.editObservations = r.observations || '';
+    this.editFiles = [];
+    this.editFileError = null;
+    this.showEditForm = true;
+  }
+
+  cancelEditForm(): void {
+    this.showEditForm = false;
+    this.editSaving = false;
+    this.editTarget = null;
+    this.editCardName = '';
+    this.editCardNumber = '';
+    this.editIssueDate = '';
+    this.editExpiryDate = '';
+    this.editObservations = '';
+    this.editFiles = [];
+    this.editFileError = null;
+  }
+
+  onEditFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length) this.editFiles = Array.from(input.files);
+  }
+
+  submitEdit(): void {
+    if (!this.editTarget) return;
+    if (this.editIssueDate && this.editExpiryDate && this.editIssueDate > this.editExpiryDate) {
+      this.editFileError = 'La fecha de emisión no puede ser posterior a la fecha de expiración.';
+      return;
+    }
+    this.editSaving = true;
+    this.editFileError = null;
+    this.employeeCardService.update(this.editTarget.id, {
+      card_number: this.editCardNumber || undefined,
+      issue_date: this.editIssueDate || undefined,
+      expiry_date: this.editExpiryDate || undefined,
+      observations: this.editObservations || undefined,
+      files: this.editFiles.length ? this.editFiles : undefined
+    }).subscribe({
+      next: () => {
+        this.editSaving = false;
+        this.cancelEditForm();
+        this.loadCards();
+        this.changed.emit();
+      },
+      error: (err) => {
+        console.error('Error actualizando tarjeta', err);
+        this.editSaving = false;
+        this.editFileError = err?.error?.message || 'No se pudo guardar la edición.';
+      }
+    });
+  }
+
+  private toInputDate(value?: string | null): string {
+    if (!value) return '';
+    const s = String(value);
+    return s.length >= 10 ? s.substring(0, 10) : s;
   }
 
   // === Renovación ===

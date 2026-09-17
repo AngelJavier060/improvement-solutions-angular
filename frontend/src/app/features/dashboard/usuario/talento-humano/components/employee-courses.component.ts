@@ -1,15 +1,15 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { EmployeeCourseService, EmployeeCourseResponse, CreateEmployeeCourseRequest } from '../services/employee-course.service';
 import { CourseCertificationService, CourseCertification } from '../../../../../services/course-certification.service';
-import { HttpClient, HttpResponse } from '@angular/common/http';
 import { AuthService } from '../../../../../core/services/auth.service';
+import { ThFilePreviewService } from '../services/th-file-preview.service';
 
 @Component({
   selector: 'app-employee-courses',
   templateUrl: './employee-courses.component.html',
   styleUrls: ['./employee-courses.component.scss']
 })
-export class EmployeeCoursesComponent implements OnInit, OnChanges {
+export class EmployeeCoursesComponent implements OnInit, OnChanges, OnDestroy {
   @Input() employeeId!: number;
   @Input() employeeCedula!: string;
   @Output() changed = new EventEmitter<void>();
@@ -46,12 +46,28 @@ export class EmployeeCoursesComponent implements OnInit, OnChanges {
   renewFileError: string | null = null;
   renewCourseName: string = '';
 
+  showEditForm = false;
+  editSaving = false;
+  editTarget: EmployeeCourseResponse | null = null;
+  editCourseName = '';
+  editIssueDate = '';
+  editExpiryDate = '';
+  editHours = '';
+  editScore = '';
+  editObservations = '';
+  editFiles: File[] = [];
+  editFileError: string | null = null;
+
   constructor(
     private employeeCourseService: EmployeeCourseService,
     private courseCatalogService: CourseCertificationService,
-    private http: HttpClient,
-    private authService: AuthService
+    private authService: AuthService,
+    private filePreview: ThFilePreviewService
   ) {}
+
+  ngOnDestroy(): void {
+    this.filePreview.close();
+  }
 
   ngOnInit(): void {
     this.canWrite = this.authService.canWrite();
@@ -177,37 +193,8 @@ export class EmployeeCoursesComponent implements OnInit, OnChanges {
     });
   }
 
-  // Abrir archivo con token (similar a documentos)
-  openFile(file: { file: string; file_name?: string }): void {
-    const raw = file.file || '';
-    const url = raw.replace('/api/files/download/', '/api/files/');
-    this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
-      next: (resp: HttpResponse<Blob>) => {
-        const blob = resp.body as Blob;
-        // Forzar PDF si el nombre termina en .pdf
-        const name = (file.file_name || this.extractFileNameFromUrl(url) || '').toLowerCase();
-        const headerCt = resp.headers.get('Content-Type') || '';
-        const ct = name.endsWith('.pdf') ? 'application/pdf' : (headerCt || 'application/octet-stream');
-        const typed = new Blob([blob], { type: ct });
-        const blobUrl = window.URL.createObjectURL(typed);
-        window.open(blobUrl, '_blank');
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-      },
-      error: (err) => {
-        console.error('Error abriendo archivo', err);
-        alert('No se pudo abrir el archivo');
-      }
-    });
-  }
-
-  private extractFileNameFromUrl(url: string): string {
-    try {
-      const lastSlash = url.lastIndexOf('/');
-      if (lastSlash >= 0) return url.substring(lastSlash + 1);
-      return url;
-    } catch {
-      return 'archivo';
-    }
+  openFile(file: { file: string; file_name?: string; file_type?: string }): void {
+    this.filePreview.open(file);
   }
 
   // === Helpers de vigencia ===
@@ -242,6 +229,74 @@ export class EmployeeCoursesComponent implements OnInit, OnChanges {
     if (status === 'Próximo a vencer') return 'bg-warning text-dark';
     if (status === 'Vigente') return 'bg-success';
     return 'bg-secondary';
+  }
+
+  // === Edición ===
+  openEdit(c: EmployeeCourseResponse): void {
+    this.editTarget = c;
+    this.editCourseName = (c as any)?.course?.name || 'curso';
+    this.editIssueDate = this.toInputDate(c.issue_date);
+    this.editExpiryDate = this.toInputDate(c.expiry_date);
+    this.editHours = c.hours != null ? String(c.hours) : '';
+    this.editScore = c.score || '';
+    this.editObservations = c.observations || '';
+    this.editFiles = [];
+    this.editFileError = null;
+    this.showEditForm = true;
+  }
+
+  cancelEditForm(): void {
+    this.showEditForm = false;
+    this.editSaving = false;
+    this.editTarget = null;
+    this.editCourseName = '';
+    this.editIssueDate = '';
+    this.editExpiryDate = '';
+    this.editHours = '';
+    this.editScore = '';
+    this.editObservations = '';
+    this.editFiles = [];
+    this.editFileError = null;
+  }
+
+  onEditFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length) this.editFiles = Array.from(input.files);
+  }
+
+  submitEdit(): void {
+    if (!this.editTarget) return;
+    if (this.editIssueDate && this.editExpiryDate && this.editIssueDate > this.editExpiryDate) {
+      this.editFileError = 'La fecha de emisión no puede ser posterior a la fecha de expiración.';
+      return;
+    }
+    this.editSaving = true;
+    this.employeeCourseService.update(this.editTarget.id, {
+      issue_date: this.editIssueDate || undefined,
+      expiry_date: this.editExpiryDate || undefined,
+      hours: this.editHours ? Number(this.editHours) : undefined,
+      score: this.editScore || undefined,
+      observations: this.editObservations || undefined,
+      files: this.editFiles.length ? this.editFiles : undefined
+    }).subscribe({
+      next: () => {
+        this.editSaving = false;
+        this.cancelEditForm();
+        this.loadCourses();
+        this.changed.emit();
+      },
+      error: (err) => {
+        console.error('Error actualizando curso', err);
+        this.editSaving = false;
+        this.editFileError = err?.error?.message || 'No se pudo guardar la edición.';
+      }
+    });
+  }
+
+  private toInputDate(value?: string | null): string {
+    if (!value) return '';
+    const s = String(value);
+    return s.length >= 10 ? s.substring(0, 10) : s;
   }
 
   // === Renovación ===

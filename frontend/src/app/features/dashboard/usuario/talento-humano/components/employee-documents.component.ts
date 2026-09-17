@@ -8,6 +8,7 @@ import { TemplatePortal } from '@angular/cdk/portal';
 import { DocumentService, EmployeeDocumentResponse, CreateEmployeeDocumentRequest } from '../services/document.service';
 import { TipoDocumentoService } from '../../../../../services/tipo-documento.service';
 import { AuthService } from '../../../../../core/services/auth.service';
+import { ThFilePreviewService } from '../services/th-file-preview.service';
 
 @Component({
   selector: 'app-employee-documents',
@@ -21,6 +22,7 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
 
   @ViewChild('renewConfirmTpl') renewConfirmTpl!: TemplateRef<unknown>;
   @ViewChild('renewFormTpl') renewFormTpl!: TemplateRef<unknown>;
+  @ViewChild('editFormTpl') editFormTpl!: TemplateRef<unknown>;
 
   documents: EmployeeDocumentResponse[] = [];
   docTypes: Array<{ id: number; name: string }> = [];
@@ -51,6 +53,16 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
   renewFileError: string | null = null;
   renewTypeName: string = '';
 
+  showEditForm = false;
+  editSaving = false;
+  editTarget: EmployeeDocumentResponse | null = null;
+  editTypeName = '';
+  editStartDate = '';
+  editEndDate = '';
+  editDescription = '';
+  editFiles: File[] = [];
+  editFileError: string | null = null;
+
   /** Overlay montado en document.body (evita titileo del iframe dentro del layout) */
   private pdfOverlayEl: HTMLElement | null = null;
   private pdfBlobUrl: string | null = null;
@@ -66,11 +78,16 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
     private renderer: Renderer2,
     private overlay: Overlay,
     private vcr: ViewContainerRef,
-    private authService: AuthService
+    private authService: AuthService,
+    private filePreview: ThFilePreviewService
   ) {}
 
   @HostListener('document:keydown.escape')
   onEscapeModals(): void {
+    if (this.showEditForm) {
+      this.cancelEditForm();
+      return;
+    }
     if (this.showPdfOverlayOpen()) {
       this.closePdfPreview();
       return;
@@ -267,37 +284,10 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
   }
 
   /**
-   * Ver PDF sin descargar: UNA sola vista a pantalla completa con ✕ Cerrar.
-   * No abre pestaña nueva. Los datos del trabajador se mantienen detrás.
+   * Ver archivo a pantalla completa con ✕ Cerrar. No descarga.
    */
   openFile(file: { file: string; file_name?: string; file_type?: string }): void {
-    const rawUrl = file?.file || '';
-    const url = this.normalizeFileUrlForView(rawUrl);
-    const fileName = file.file_name || this.extractFileNameFromUrl(url);
-    const looksPdf =
-      (file.file_type || '').toLowerCase().includes('pdf') ||
-      fileName.toLowerCase().endsWith('.pdf') ||
-      url.toLowerCase().includes('.pdf');
-
-    this.closePdfPreview();
-
-    this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
-      next: (resp: HttpResponse<Blob>) => {
-        const blob = resp.body as Blob;
-        const headerType = (resp.headers.get('Content-Type') || '').toLowerCase();
-        const mime = looksPdf || headerType.includes('pdf')
-          ? 'application/pdf'
-          : (headerType.startsWith('image/') ? headerType : 'application/pdf');
-        const typed = new Blob([blob], { type: mime });
-        this.pdfBlobUrl = window.URL.createObjectURL(typed);
-        this.mountPdfViewerOverlay(fileName || 'Documento PDF', this.pdfBlobUrl);
-      },
-      error: (err) => {
-        console.error('Error abriendo archivo', err);
-        this.closePdfPreview();
-        alert('No se pudo abrir el archivo');
-      }
-    });
+    this.filePreview.open(file);
   }
 
   closePdfPreview(): void {
@@ -418,6 +408,7 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
   }
 
   ngOnDestroy(): void {
+    this.filePreview.close();
     this.closePdfPreview();
     this.closeRenewOverlay();
   }
@@ -492,6 +483,75 @@ export class EmployeeDocumentsComponent implements OnInit, OnChanges, OnDestroy 
     if (status === 'Próximo a vencer') return 'is-soon';
     if (status === 'Vigente') return 'is-ok';
     return 'is-muted';
+  }
+
+  // === Edición ===
+  openEdit(doc: EmployeeDocumentResponse): void {
+    this.editTarget = doc;
+    this.editTypeName = doc?.type_document?.name || 'Documento';
+    this.editStartDate = this.toInputDate(doc.start_date);
+    this.editEndDate = this.toInputDate(doc.end_date);
+    this.editDescription = doc.description || '';
+    this.editFiles = [];
+    this.editFileError = null;
+    this.showEditForm = true;
+    setTimeout(() => this.openRenewOverlay(this.editFormTpl, () => this.cancelEditForm()), 0);
+  }
+
+  cancelEditForm(): void {
+    this.showEditForm = false;
+    this.editSaving = false;
+    this.editTarget = null;
+    this.editTypeName = '';
+    this.editStartDate = '';
+    this.editEndDate = '';
+    this.editDescription = '';
+    this.editFiles = [];
+    this.editFileError = null;
+    this.closeRenewOverlay();
+  }
+
+  onEditFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length) {
+      const files = Array.from(input.files);
+      const pdfs = files.filter(f => (f.type || '').toLowerCase() === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+      this.editFiles = pdfs;
+      this.editFileError = files.length !== pdfs.length ? 'Solo se aceptan archivos PDF.' : null;
+    }
+  }
+
+  submitEdit(): void {
+    if (!this.editTarget) return;
+    if (this.editStartDate && this.editEndDate && this.editStartDate > this.editEndDate) {
+      this.editFileError = 'La fecha de emisión no puede ser posterior a la fecha de expiración.';
+      return;
+    }
+    this.editSaving = true;
+    this.documentService.update(this.editTarget.id, {
+      start_date: this.editStartDate || undefined,
+      end_date: this.editEndDate || undefined,
+      description: this.editDescription || undefined,
+      files: this.editFiles.length ? this.editFiles : undefined
+    }).subscribe({
+      next: () => {
+        this.editSaving = false;
+        this.cancelEditForm();
+        this.loadDocuments();
+        this.changed.emit();
+      },
+      error: (err) => {
+        console.error('Error actualizando documento', err);
+        this.editSaving = false;
+        this.editFileError = err?.error?.message || 'No se pudo guardar la edición.';
+      }
+    });
+  }
+
+  private toInputDate(value?: string | null): string {
+    if (!value) return '';
+    const s = String(value);
+    return s.length >= 10 ? s.substring(0, 10) : s;
   }
 
   // === Renovación ===

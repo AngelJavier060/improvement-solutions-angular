@@ -1,13 +1,15 @@
-import { Component, OnInit, OnDestroy, Renderer2 } from '@angular/core';
+import { Component, OnInit, OnDestroy, Renderer2, ViewChild, ElementRef, ChangeDetectorRef, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EmployeeService } from '../services/employee.service';
 import { EmployeeResponse } from '../models/employee.model';
 import { DocumentService, EmployeeDocumentResponse as ApiEmployeeDocumentResponse } from '../services/document.service';
 import { EmployeeCourseService, EmployeeCourseResponse } from '../services/employee-course.service';
 import { EmployeeCardService, EmployeeCardResponse } from '../services/employee-card.service';
-import { Subscription, forkJoin, Subject, debounceTime } from 'rxjs';
+import { Subscription, forkJoin, Subject, debounceTime, firstValueFrom } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../../../core/services/auth.service';
+import { ThFilePreviewService } from '../services/th-file-preview.service';
+import { BusinessService } from '../../../../../services/business.service';
 
 // Tipos auxiliares locales (para Employees tab unificada)
 type EmployeeUnifiedItem = {
@@ -106,6 +108,18 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   openMenuForId: number | null = null;
   /** Hoja de vida abierta sobre la pestaña Empleados (no navega). */
   cvEmployee: EmployeeResponse | null = null;
+  /** Plantilla A4 del reporte de estado documental. */
+  @ViewChild('estadoReport') estadoReport?: ElementRef<HTMLElement>;
+  reportEmployee: EmployeeResponse | null = null;
+  reportLogoUrl = '';
+  reportPhotoUrl = '';
+  reportCompanyName = '';
+  exportingPdfBeId: number | null = null;
+  zipMenuOpenFor: number | null = null;
+  zippingBeId: number | null = null;
+  zipPick: { document: boolean; course: boolean; card: boolean } = { document: false, course: false, card: false };
+  private pdfDownloadName: string | null = null;
+  private businessLogoPath = '';
 
   // ID del BusinessEmployee para usar en hijos (documentos, cursos, tarjetas)
   get businessEmployeeId(): number | null {
@@ -341,6 +355,53 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     return this.employeeItemsMap[id] || [];
   }
 
+  itemsOfType(emp: EmployeeResponse | any, type: 'document' | 'course' | 'card'): EmployeeUnifiedItem[] {
+    return this.itemsFor(emp).filter(it => it.type === type);
+  }
+
+  sectionHasAlert(emp: EmployeeResponse | any, type?: 'document' | 'course' | 'card'): boolean {
+    const items = type ? this.itemsOfType(emp, type) : this.itemsFor(emp);
+    return items.some(it => this.getExpiryStatus(it.expiry_date) === 'Próximo a vencer');
+  }
+
+  employeeExpiringCount(emp: EmployeeResponse | any): number {
+    return this.itemsFor(emp).filter(it => this.getExpiryStatus(it.expiry_date) === 'Próximo a vencer').length;
+  }
+
+  get kpiVigentesCount(): number {
+    let n = 0;
+    Object.values(this.employeeItemsMap).forEach(items => {
+      (items || []).forEach(it => {
+        if (this.getExpiryStatus(it.expiry_date) === 'Vigente') n++;
+      });
+    });
+    return n;
+  }
+
+  sectionHint(emp: EmployeeResponse | any, type: 'document' | 'course' | 'card'): string {
+    const items = this.itemsOfType(emp, type);
+    const warn = items.filter(it => this.getExpiryStatus(it.expiry_date) === 'Próximo a vencer').length;
+    if (warn > 0) {
+      return warn === 1 ? '1 Próximo a vencer' : `${warn} Próximos a vencer`;
+    }
+    const n = items.length;
+    if (type === 'card') return n === 1 ? '1 Registrada' : `${n} Registradas`;
+    return n === 1 ? '1 Registrado' : `${n} Registrados`;
+  }
+
+  statusChipLabel(dateStr?: string | null): string {
+    const s = this.getExpiryStatus(dateStr);
+    return s === '-' ? 'Sin vigencia' : s;
+  }
+
+  workplaceLabel(emp: EmployeeResponse | any): string {
+    return emp?.departmentName || emp?.contractorBlockName || emp?.contractorCompanyName || '—';
+  }
+
+  printEmployeesView(): void {
+    window.print();
+  }
+
   // === Empleados (lista por empresa) — solo ACTIVOS; docs se conservan al desactivar ===
   loadEmployeesList(): void {
     if (!this.businessRuc) return;
@@ -477,27 +538,9 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   private pdfKeyHandler: ((e: KeyboardEvent) => void) | null = null;
   private bodyOverflowBackup: string | null = null;
 
-  openDocFile(file: { file: string; file_name?: string }): void {
-    const rawUrl = this.normalizeFileUrl(file?.file || '');
-    const url = rawUrl.replace('/api/files/download/', '/api/files/');
-    const name = (file.file_name || '').toLowerCase();
+  openDocFile(file: { file: string; file_name?: string; file_type?: string }): void {
     this.closePdfPreview();
-    this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
-      next: (resp) => {
-        const blob = resp.body as Blob;
-        const header = (resp.headers.get('Content-Type') || '').toLowerCase();
-        const mime = header.includes('pdf') || name.endsWith('.pdf') || url.toLowerCase().includes('.pdf')
-          ? 'application/pdf'
-          : (header.startsWith('image/') ? header : 'application/pdf');
-        const typed = new Blob([blob], { type: mime });
-        this.pdfBlobUrl = window.URL.createObjectURL(typed);
-        this.mountPdfViewerOverlay(file.file_name || 'Documento PDF', this.pdfBlobUrl);
-      },
-      error: () => {
-        this.closePdfPreview();
-        alert('No se pudo abrir el archivo');
-      }
-    });
+    this.filePreview.open(file);
   }
 
   closePdfPreview(): void {
@@ -513,6 +556,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
       try { URL.revokeObjectURL(this.pdfBlobUrl); } catch { /* ignore */ }
       this.pdfBlobUrl = null;
     }
+    this.pdfDownloadName = null;
     if (this.bodyOverflowBackup !== null) {
       document.body.style.overflow = this.bodyOverflowBackup;
       this.bodyOverflowBackup = null;
@@ -552,10 +596,16 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
             <span style="background:#0058be;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;">PDF</span>
             <span class="ed-pdf-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
           </div>
-          <button type="button" class="ed-pdf-close" title="Cerrar (Esc)"
-            style="border:0;border-radius:6px;background:rgba(255,255,255,.12);color:#f9fafb;font:600 13px/1 Inter,system-ui,sans-serif;padding:8px 14px;cursor:pointer;">
-            ✕ Cerrar
-          </button>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <button type="button" class="ed-pdf-download" title="Descargar PDF"
+              style="display:none;border:0;border-radius:6px;background:#0058be;color:#fff;font:600 13px/1 Inter,system-ui,sans-serif;padding:8px 12px;cursor:pointer;">
+              Descargar
+            </button>
+            <button type="button" class="ed-pdf-close" title="Cerrar (Esc)"
+              style="border:0;border-radius:6px;background:rgba(255,255,255,.12);color:#f9fafb;font:600 13px/1 Inter,system-ui,sans-serif;padding:8px 14px;cursor:pointer;">
+              ✕ Cerrar
+            </button>
+          </div>
         </div>
         <div class="ed-pdf-body" style="flex:1 1 auto;position:relative;min-height:0;overflow:hidden;background:#374151;"></div>
       </div>
@@ -565,6 +615,11 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     nameEl.textContent = title;
     const closeBtn = root.querySelector('.ed-pdf-close') as HTMLButtonElement;
     closeBtn.addEventListener('click', () => this.closePdfPreview());
+    const downloadBtn = root.querySelector('.ed-pdf-download') as HTMLButtonElement;
+    if (this.pdfDownloadName) {
+      downloadBtn.style.display = 'inline-flex';
+      downloadBtn.addEventListener('click', () => this.downloadCurrentPdf());
+    }
 
     const body = root.querySelector('.ed-pdf-body') as HTMLElement;
     const embed = this.renderer.createElement('embed') as HTMLEmbedElement;
@@ -616,6 +671,149 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  @HostListener('document:click')
+  closeZipMenuOnOutsideClick(): void {
+    if (this.zipMenuOpenFor !== null) this.zipMenuOpenFor = null;
+  }
+
+  isZipMenuOpen(emp: EmployeeResponse): boolean {
+    return this.zipMenuOpenFor !== null && this.zipMenuOpenFor === this.getBusinessEmployeeIdFor(emp);
+  }
+
+  isZipping(emp: EmployeeResponse): boolean {
+    return this.zippingBeId !== null && this.zippingBeId === this.getBusinessEmployeeIdFor(emp);
+  }
+
+  toggleZipMenu(emp: EmployeeResponse, ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    if (this.isZipping(emp)) return;
+    const beId = this.getBusinessEmployeeIdFor(emp);
+    if (this.zipMenuOpenFor === beId) {
+      this.zipMenuOpenFor = null;
+      return;
+    }
+    this.zipPick = { document: false, course: false, card: false };
+    this.zipMenuOpenFor = beId;
+  }
+
+  toggleZipPick(type: 'document' | 'course' | 'card', ev?: Event): void {
+    ev?.stopPropagation();
+    this.zipPick = { ...this.zipPick, [type]: !this.zipPick[type] };
+  }
+
+  selectAllZipSections(emp: EmployeeResponse, ev?: Event): void {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    this.zipPick = {
+      document: this.sectionHasFiles(emp, 'document'),
+      course: this.sectionHasFiles(emp, 'course'),
+      card: this.sectionHasFiles(emp, 'card')
+    };
+  }
+
+  hasZipSelection(emp: EmployeeResponse | any): boolean {
+    return (this.zipPick.document && this.sectionHasFiles(emp, 'document'))
+      || (this.zipPick.course && this.sectionHasFiles(emp, 'course'))
+      || (this.zipPick.card && this.sectionHasFiles(emp, 'card'));
+  }
+
+  sectionHasFiles(emp: EmployeeResponse | any, type?: 'document' | 'course' | 'card'): boolean {
+    const items = type ? this.itemsOfType(emp, type) : this.itemsFor(emp);
+    return items.some(it => (it.files || []).some(f => !!f?.file));
+  }
+
+  async downloadEmployeeZip(emp: EmployeeResponse, ev?: Event): Promise<void> {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    if (!emp || this.zippingBeId !== null) return;
+    const types: Array<'document' | 'course' | 'card'> = [];
+    if (this.zipPick.document) types.push('document');
+    if (this.zipPick.course) types.push('course');
+    if (this.zipPick.card) types.push('card');
+    this.zipMenuOpenFor = null;
+    const beId = this.getBusinessEmployeeIdFor(emp);
+    this.ensureEmployeeOverview(emp);
+    const started = Date.now();
+    while (this.employeeItemsLoading[beId] && Date.now() - started < 8000) {
+      await new Promise(r => setTimeout(r, 80));
+    }
+    const items = types.length
+      ? this.itemsFor(emp).filter(it => types.includes(it.type))
+      : [];
+    const entries: Array<{ folder: string; name: string; url: string }> = [];
+    items.forEach(it => {
+      const folder = it.type === 'course' ? 'Cursos' : it.type === 'card' ? 'Tarjetas' : 'Documentos';
+      (it.files || []).forEach((f, idx) => {
+        if (!f?.file) return;
+        const rawName = f.file_name || `${it.name || 'archivo'}-${idx + 1}`;
+        entries.push({ folder, name: this.safeZipName(rawName), url: this.normalizeFileUrl(f.file) });
+      });
+    });
+    if (!entries.length) {
+      alert('No hay archivos adjuntos para esa selección.');
+      return;
+    }
+    this.zippingBeId = beId;
+    this.cdr.detectChanges();
+    try {
+      const mod: any = await import('jszip');
+      const JSZip = mod.default || mod;
+      const zip = new JSZip();
+      const used = new Set<string>();
+      let added = 0;
+      for (const entry of entries) {
+        try {
+          const blob = await firstValueFrom(this.http.get(entry.url, { responseType: 'blob' }));
+          if (!blob || blob.size === 0) continue;
+          let path = `${entry.folder}/${entry.name}`;
+          let n = 1;
+          const dot = entry.name.lastIndexOf('.');
+          const base = dot > 0 ? entry.name.slice(0, dot) : entry.name;
+          const ext = dot > 0 ? entry.name.slice(dot) : '';
+          while (used.has(path.toLowerCase())) {
+            path = `${entry.folder}/${base}-${++n}${ext}`;
+          }
+          used.add(path.toLowerCase());
+          zip.file(path, blob);
+          added++;
+        } catch (err) {
+          console.warn('No se pudo incluir en el ZIP', entry.url, err);
+        }
+      }
+      if (!added) {
+        alert('No se pudieron descargar los archivos seleccionados.');
+        return;
+      }
+      const content = await zip.generateAsync({ type: 'blob' });
+      const labels: string[] = [];
+      if (types.includes('document')) labels.push('documentos');
+      if (types.includes('course')) labels.push('cursos');
+      if (types.includes('card')) labels.push('tarjetas');
+      const scopeLabel = labels.length === 3 ? 'expediente' : (labels.join('-') || 'expediente');
+      const safeName = (this.statusReportName(emp) || emp.cedula || 'trabajador').replace(/[^\w-]+/g, '_');
+      const a = document.createElement('a');
+      const objectUrl = URL.createObjectURL(content);
+      a.href = objectUrl;
+      a.download = `${scopeLabel}-${safeName}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo generar el ZIP. Intente de nuevo.');
+    } finally {
+      this.zippingBeId = null;
+      this.cdr.detectChanges();
+    }
+  }
+
+  private safeZipName(raw: string): string {
+    const cleaned = String(raw || 'archivo').replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, ' ').trim();
+    return cleaned || 'archivo';
+  }
+
   // Normalizar URL de archivos (PDFs, imágenes, etc.) servidos por el backend
   private normalizeFileUrl(raw: string): string {
     try {
@@ -641,6 +839,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
 
   goToEmployeeTab(emp: EmployeeResponse, tab: 'profile' | 'documents' | 'courses' | 'cards' | 'history' | 'docs-certs'): void {
     this.openMenuForId = null;
+    this.zipMenuOpenFor = null;
     if (this.businessRuc) {
       this.router.navigate(['/usuario', this.businessRuc, 'talento-humano', 'employee', emp.cedula], {
         queryParams: { tab }
@@ -656,6 +855,262 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
 
   closeEmployeeCv(): void {
     this.cvEmployee = null;
+  }
+
+  isExportingStatusPdf(emp: EmployeeResponse): boolean {
+    return this.exportingPdfBeId !== null && this.exportingPdfBeId === this.getBusinessEmployeeIdFor(emp);
+  }
+
+  statusReportName(emp: EmployeeResponse | any): string {
+    return `${emp?.nombres || emp?.name || ''} ${emp?.apellidos || ''}`.replace(/\s+/g, ' ').trim().toUpperCase();
+  }
+
+  statusReportDownloadDate(): string {
+    return new Date().toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  statusReportCode(emp: EmployeeResponse | any): string {
+    const year = new Date().getFullYear();
+    const code = String(emp?.codigoTrabajador || emp?.cedula || '000').replace(/\s+/g, '');
+    const tail = code.slice(-3).padStart(3, '0');
+    return `REP-${year}-${tail}`;
+  }
+
+  statusReportVerifyId(emp: EmployeeResponse | any): string {
+    const year = new Date().getFullYear();
+    const code = String(emp?.codigoTrabajador || emp?.cedula || '000').replace(/\s+/g, '');
+    return `#HSEQ-${code}-${year}`;
+  }
+
+  reportBrandLine(part: 'top' | 'bottom'): string {
+    const name = (this.reportCompanyName || 'Improvement Solutions').trim();
+    const bits = name.split(/\s+/);
+    if (part === 'top') return (bits[0] || 'IMPROVEMENT').toUpperCase();
+    return (bits.slice(1).join(' ') || 'SOLUTIONS').toUpperCase();
+  }
+
+  formatReportDate(dateStr?: string | null): string {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  vigenciaText(dateStr?: string | null): string {
+    const raw = this.getDaysLeft(dateStr);
+    if (raw === '-') return '—';
+    return `${raw} días`;
+  }
+
+  statusDataTone(dateStr?: string | null): 'ok' | 'warn' | 'err' | 'muted' {
+    const t = this.expiryTone(dateStr);
+    if (t === 'expired') return 'err';
+    return t;
+  }
+
+  statusReportSections(emp: EmployeeResponse | any): Array<{ code: string; label: string; icon: string; items: EmployeeUnifiedItem[] }> {
+    const items = this.itemsFor(emp);
+    return [
+      { code: 'document', label: 'Documentos personales', icon: 'badge', items: items.filter(i => i.type === 'document') },
+      { code: 'course', label: 'Cursos', icon: 'school', items: items.filter(i => i.type === 'course') },
+      { code: 'card', label: 'Tarjetas', icon: 'credit_card', items: items.filter(i => i.type === 'card') }
+    ];
+  }
+
+  async exportEmployeeStatusPdf(emp: EmployeeResponse, ev?: Event): Promise<void> {
+    ev?.preventDefault();
+    ev?.stopPropagation();
+    if (!emp || this.exportingPdfBeId !== null) return;
+    const beId = this.getBusinessEmployeeIdFor(emp);
+    this.exportingPdfBeId = beId;
+    this.ensureEmployeeOverview(emp);
+    const started = Date.now();
+    while (this.employeeItemsLoading[beId] && Date.now() - started < 8000) {
+      await new Promise(r => setTimeout(r, 80));
+    }
+    const photoUrl = this.getImageUrlFor(emp);
+    const [logoData, photoData] = await Promise.all([
+      this.businessLogoPath ? this.toDataUrl(this.businessLogoPath) : Promise.resolve(null),
+      photoUrl ? this.toDataUrl(photoUrl) : Promise.resolve(null)
+    ]);
+    this.reportPhotoUrl = photoData || photoUrl;
+    this.reportLogoUrl = logoData || this.businessLogoPath;
+    this.reportEmployee = emp;
+    this.cdr.detectChanges();
+    await new Promise(r => setTimeout(r, 0));
+    this.cdr.detectChanges();
+    await new Promise(r => setTimeout(r, 120));
+    const el = this.estadoReport?.nativeElement;
+    if (!el) {
+      this.exportingPdfBeId = null;
+      this.reportEmployee = null;
+      alert('No se pudo preparar el reporte.');
+      return;
+    }
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight
+      });
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const usableW = pageW - margin * 2;
+      const usableH = pageH - margin * 2;
+      const imgW = usableW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      const pxPerMm = canvas.width / imgW;
+
+      if (imgH <= usableH + 2) {
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW, imgH);
+      } else {
+        const pageHeightPx = Math.floor(usableH * pxPerMm);
+        const src = canvas.getContext('2d');
+        let srcY = 0;
+        let pageIndex = 0;
+        while (srcY < canvas.height) {
+          const remaining = canvas.height - srcY;
+          if (remaining < 16) break;
+          const idealEnd = Math.min(srcY + pageHeightPx, canvas.height);
+          const cutY = idealEnd >= canvas.height
+            ? canvas.height
+            : this.findPdfRowBreak(src, canvas.width, srcY, idealEnd);
+          const sliceH = cutY - srcY;
+          if (sliceH < 16) break;
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = sliceH;
+          const ctx = pageCanvas.getContext('2d');
+          if (!ctx) break;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+          if (pageIndex > 0) pdf.addPage();
+          pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW, sliceH / pxPerMm);
+          srcY = this.skipPdfBlankRows(src, canvas.width, canvas.height, cutY);
+          pageIndex++;
+        }
+      }
+      const safeName = (this.statusReportName(emp) || emp.cedula || 'trabajador').replace(/[^\w-]+/g, '_');
+      const fileName = `estado-documentacion-${safeName}.pdf`;
+      const blob = pdf.output('blob');
+      this.closePdfPreview();
+      this.pdfDownloadName = fileName;
+      this.pdfBlobUrl = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      this.mountPdfViewerOverlay(`Estado de documentación — ${this.statusReportName(emp)}`, this.pdfBlobUrl);
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo generar el PDF. Intente de nuevo.');
+    } finally {
+      this.exportingPdfBeId = null;
+      this.reportEmployee = null;
+      this.cdr.detectChanges();
+    }
+  }
+
+  private downloadCurrentPdf(): void {
+    if (!this.pdfBlobUrl || !this.pdfDownloadName) return;
+    const a = document.createElement('a');
+    a.href = this.pdfBlobUrl;
+    a.download = this.pdfDownloadName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  private loadBusinessForReport(): void {
+    if (!this.businessRuc) return;
+    this.businessService.getByRuc(this.businessRuc).subscribe({
+      next: (b: any) => {
+        this.reportCompanyName = (b?.nameShort || b?.name || '').toString();
+        const logo = b?.logo || '';
+        if (!logo) return;
+        this.businessLogoPath = logo.startsWith('http') ? logo
+          : logo.startsWith('logos/') ? `/api/files/${logo}`
+          : `/api/files/logos/${logo}`;
+        this.reportLogoUrl = this.businessLogoPath;
+      },
+      error: () => { /* sin logo */ }
+    });
+  }
+
+  private async toDataUrl(url: string): Promise<string | null> {
+    try {
+      const blob = await firstValueFrom(this.http.get(url, { responseType: 'blob' }));
+      return await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  private findPdfRowBreak(
+    ctx: CanvasRenderingContext2D | null,
+    width: number,
+    startY: number,
+    idealEnd: number
+  ): number {
+    if (!ctx) return idealEnd;
+    const minY = startY + Math.floor((idealEnd - startY) * 0.55);
+    let best = idealEnd;
+    let bestRun = 0;
+    let run = 0;
+    let runStart = idealEnd;
+    for (let y = idealEnd - 1; y >= minY; y--) {
+      if (this.isPdfMostlyWhiteRow(ctx, width, y)) {
+        run++;
+        runStart = y;
+        if (run >= 3 && run >= bestRun) {
+          bestRun = run;
+          best = runStart + Math.floor(run / 2);
+        }
+      } else {
+        run = 0;
+      }
+    }
+    return best;
+  }
+
+  private skipPdfBlankRows(
+    ctx: CanvasRenderingContext2D | null,
+    width: number,
+    height: number,
+    y: number
+  ): number {
+    if (!ctx) return y;
+    let next = y;
+    while (next < height && this.isPdfMostlyWhiteRow(ctx, width, next)) next++;
+    return next;
+  }
+
+  private isPdfMostlyWhiteRow(ctx: CanvasRenderingContext2D, width: number, y: number): boolean {
+    try {
+      const data = ctx.getImageData(0, y, width, 1).data;
+      let dark = 0;
+      const step = 12;
+      for (let i = 0; i < data.length; i += 4 * step) {
+        if (data[i] < 200 || data[i + 1] < 200 || data[i + 2] < 200) {
+          dark++;
+          if (dark > 3) return false;
+        }
+      }
+      return true;
+    } catch {
+      return true;
+    }
   }
 
   private tryNavigateToFirstEmployee(): void {
@@ -687,6 +1142,9 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
     private employeeCardService: EmployeeCardService,
     private renderer: Renderer2,
     private authService: AuthService,
+    private filePreview: ThFilePreviewService,
+    private businessService: BusinessService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   /** Fase C */
@@ -706,6 +1164,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
       this.loadDocumentTypes();
     }
     this.loadHireKpis();
+    this.loadBusinessForReport();
 
     this.fallbackTimeoutId = setTimeout(() => {
       if (!this.loading && !this.employee) {
@@ -749,6 +1208,7 @@ export class EmployeeDetailComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.closeEmployeeCv();
     this.closePdfPreview();
+    this.filePreview.close();
     if (this.queryParamsSubscription) {
       this.queryParamsSubscription.unsubscribe();
     }

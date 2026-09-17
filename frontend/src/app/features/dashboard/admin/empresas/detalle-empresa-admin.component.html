@@ -312,9 +312,13 @@
           </div>
         </div>
         <div class="card-body p-2">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <button class="btn btn-warning btn-sm w-100" (click)="openAsignCardModal()">
+          <div class="d-flex justify-content-between align-items-center gap-1 mb-2">
+            <button class="btn btn-warning btn-sm flex-grow-1" (click)="openAsignCardModal()">
               <i class="fas fa-plus me-1"></i>Agregar
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" title="Abrir catálogo global de tarjetas"
+                    (click)="goToConfig('tarjetas')">
+              <i class="fas fa-cog"></i>
             </button>
           </div>
 

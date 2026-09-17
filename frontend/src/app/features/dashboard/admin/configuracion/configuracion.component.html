@@ -24,8 +24,10 @@
       <div class="categorias-grid">
         <a *ngFor="let categoria of seccion.categorias"
           [routerLink]="linkCommands(categoria)"
+          [attr.id]="categoria.ruta === 'tarjetas' ? 'catalogo-tarjetas' : null"
           (click)="$event.preventDefault(); !categoria.proximamente && navegarACategoria(categoria)"
           class="categoria-card"
+          [class.categoria-card--tarjetas]="categoria.ruta === 'tarjetas'"
           [class.disabled]="categoria.proximamente">
           <div class="icon-container">
             <i [class]="categoria.icono"></i>

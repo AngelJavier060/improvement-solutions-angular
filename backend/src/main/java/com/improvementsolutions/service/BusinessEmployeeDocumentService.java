@@ -158,6 +158,41 @@ public class BusinessEmployeeDocumentService {
     }
 
     @Transactional
+    public EmployeeDocumentResponse update(Long id,
+                                           LocalDate startDate,
+                                           LocalDate endDate,
+                                           String description,
+                                           List<MultipartFile> files) {
+        BusinessEmployeeDocument doc = documentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Documento no encontrado: " + id));
+        doc.setStartDate(startDate);
+        doc.setEndDate(endDate);
+        doc.setObservations(description == null || description.isBlank() ? null : description.trim());
+
+        if (files != null) {
+            for (MultipartFile f : files) {
+                if (f == null || f.isEmpty()) continue;
+                String storedPath = storeFile("employee-docs", f);
+                BusinessEmployeeDocumentFile ff = new BusinessEmployeeDocumentFile();
+                ff.setDocument(doc);
+                ff.setFilePath(storedPath);
+                ff.setFile(storedPath);
+                ff.setFileName(f.getOriginalFilename());
+                ff.setFileType(f.getContentType());
+                String n = f.getOriginalFilename();
+                if (n == null || n.isBlank()) {
+                    n = storedPath;
+                    int idx = n.lastIndexOf('/');
+                    if (idx >= 0 && idx < n.length() - 1) n = n.substring(idx + 1);
+                }
+                ff.setName(n == null || n.isBlank() ? "document-file" : n);
+                doc.getFiles().add(ff);
+            }
+        }
+        return toResponse(documentRepository.save(doc));
+    }
+
+    @Transactional
     public void delete(Long id) {
         if (!documentRepository.existsById(id)) {
             throw new IllegalArgumentException("Documento no encontrado: " + id);

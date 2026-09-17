@@ -16,8 +16,8 @@
         Las cuentas de <strong>Trabajador</strong> se crean solas al registrar el empleado en Talento Humano
         (usuario = contraseña = cédula). Si faltan en esta lista, usa <strong>Sincronizar trabajadores</strong>.
         El Superadministrador no se gestiona en esta pantalla.
-        Abajo está la <strong>matriz de permisos</strong>: el Superadministrador decide qué puede hacer cada Admin, Gestor o Supervisor
-        (incluye Horas extra, Vacaciones y Permisos).
+        El <strong>Administrador de empresa</strong> también puede cargar, editar y eliminar documentos, cursos y tarjetas.
+        La matriz de abajo solo restringe a <strong>Supervisores</strong>.
       </p>
     </div>
     <div class="col-auto d-flex gap-2">
@@ -253,9 +253,9 @@
             <i class="fas fa-table me-2"></i>Matriz de permisos operativos
           </h3>
           <p class="text-muted small mb-0">
-            El <strong>Superadministrador</strong> habilita o quita acciones a Administradores, Gestores y Supervisores.
-            El Admin de empresa solo puede ajustar <strong>Supervisores</strong>.
-            Por defecto: Admin/Gestor = todo; Supervisor = solo ver/descargar.
+            El Superadministrador y el Admin de empresa solo ajustan <strong>Supervisores</strong>.
+            Administrador de empresa y Gestor tienen escritura plena en documentos, cursos y tarjetas (no se restringe aquí).
+            Supervisor: por defecto solo ver/descargar.
           </p>
         </div>
         <button type="button" class="btn btn-outline-secondary btn-sm" (click)="loadCapabilitiesMatrix()" [disabled]="capabilitiesLoading">

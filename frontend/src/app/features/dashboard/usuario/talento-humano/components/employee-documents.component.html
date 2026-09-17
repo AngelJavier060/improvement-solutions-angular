@@ -88,7 +88,7 @@
                         class="ed-docs__pdf-btn"
                         *ngFor="let f of d.files"
                         (click)="openFile(f)"
-                        [title]="(f.file_name || 'Ver PDF') + ' (vista previa)'">
+                        [title]="(f.file_name || 'Ver archivo') + ' (visualizar)'">
                   <i class="far fa-file-pdf"></i>
                 </button>
               </ng-container>
@@ -96,6 +96,9 @@
             </td>
             <td class="text-end">
               <div class="ed-docs__row-actions" *ngIf="canWrite">
+                <button type="button" class="ed-docs__icon-btn" (click)="openEdit(d)" title="Editar">
+                  <i class="fas fa-edit"></i>
+                </button>
                 <button type="button" class="ed-docs__icon-btn" (click)="openRenewConfirm(d)" title="Renovar">
                   <i class="fas fa-sync"></i>
                 </button>
@@ -206,6 +209,56 @@
                   [disabled]="renewSaving || !renewFiles.length || (renewStartDate && renewEndDate && renewStartDate > renewEndDate)">
             <span class="material-symbols-outlined" aria-hidden="true">{{ renewSaving ? 'progress_activity' : 'history' }}</span>
             {{ renewSaving ? 'Guardando...' : 'Guardar renovación en histórico' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #editFormTpl>
+    <div class="ed-modal" (click)="cancelEditForm()">
+      <div class="ed-rform" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <div class="ed-rform__header">
+          <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+          <h2 class="ed-rform__title">Editar {{ editTypeName }}</h2>
+        </div>
+        <div class="ed-rform__body">
+          <div class="ed-rform__grid">
+            <div class="ed-rform__field">
+              <label>Fecha emisión</label>
+              <div class="ed-rform__date">
+                <th-date-field [(ngModel)]="editStartDate" name="editStartDate"></th-date-field>
+              </div>
+            </div>
+            <div class="ed-rform__field">
+              <label>Fecha expiración</label>
+              <div class="ed-rform__date">
+                <th-date-field [(ngModel)]="editEndDate" name="editEndDate" align="end"></th-date-field>
+              </div>
+            </div>
+          </div>
+          <div class="ed-rform__field">
+            <label>Descripción</label>
+            <textarea rows="3" [(ngModel)]="editDescription" placeholder="Descripción (opcional)"></textarea>
+          </div>
+          <div class="ed-rform__field">
+            <label>Agregar archivos (PDF)</label>
+            <div class="ed-rform__file">
+              <input #editFileInput type="file" accept="application/pdf" (change)="onEditFilesSelected($event)" multiple hidden />
+              <button type="button" class="ed-rform__file-btn" (click)="editFileInput.click()">Elegir archivos</button>
+              <span class="ed-rform__file-name">{{ editFiles.length ? (editFiles.length + ' archivo(s) seleccionado(s)') : 'Se mantienen los actuales si no elige otros' }}</span>
+            </div>
+            <div class="ed-rform__error" *ngIf="editFileError">{{ editFileError }}</div>
+          </div>
+        </div>
+        <div class="ed-rform__footer">
+          <button type="button" class="ed-rform__btn ed-rform__btn--ghost" (click)="cancelEditForm()">Cancelar</button>
+          <button type="button"
+                  class="ed-rform__btn ed-rform__btn--primary"
+                  (click)="submitEdit()"
+                  [disabled]="editSaving || (editStartDate && editEndDate && editStartDate > editEndDate)">
+            <span class="material-symbols-outlined" aria-hidden="true">{{ editSaving ? 'progress_activity' : 'save' }}</span>
+            {{ editSaving ? 'Guardando...' : 'Guardar cambios' }}
           </button>
         </div>
       </div>

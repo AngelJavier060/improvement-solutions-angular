@@ -89,17 +89,20 @@
               <td>{{ c.observations || '-' }}</td>
               <td>
                 <ng-container *ngIf="c.files && c.files.length > 0; else nofiles">
-                  <button type="button" class="btn btn-link p-0 me-2" *ngFor="let f of c.files" (click)="openFile(f)" [title]="f.file_name || 'Abrir archivo'">
+                  <button type="button" class="btn btn-link p-0 me-2" *ngFor="let f of c.files" (click)="openFile(f)" [title]="f.file_name || 'Visualizar'">
                     <i class="far fa-file-pdf"></i>
                   </button>
                 </ng-container>
                 <ng-template #nofiles>-</ng-template>
               </td>
               <td class="text-end" *ngIf="canWrite">
+                <button class="btn btn-sm btn-outline-secondary me-2" (click)="openEdit(c)" title="Editar">
+                  <i class="fas fa-edit"></i>
+                </button>
                 <button class="btn btn-sm btn-outline-primary me-2" (click)="openRenewConfirm(c)" title="Renovar">
                   <i class="fas fa-sync"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-danger" (click)="deleteCourse(c)">
+                <button class="btn btn-sm btn-outline-danger" (click)="deleteCourse(c)" title="Eliminar">
                   <i class="fas fa-trash"></i>
                 </button>
               </td>
@@ -214,6 +217,64 @@
                 [disabled]="renewSaving || !renewFiles.length || (renewIssueDate && renewExpiryDate && renewIssueDate > renewExpiryDate)">
           <span class="material-symbols-outlined" aria-hidden="true">{{ renewSaving ? 'progress_activity' : 'history' }}</span>
           {{ renewSaving ? 'Guardando...' : 'Guardar renovación en histórico' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario de edición -->
+  <div class="ed-renew-layer" *ngIf="showEditForm">
+    <div class="ed-renew-dim" (click)="cancelEditForm()" aria-hidden="true"></div>
+    <div class="ed-rform" role="dialog" aria-modal="true">
+      <div class="ed-rform__header">
+        <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+        <h2 class="ed-rform__title">Editar {{ editCourseName }}</h2>
+      </div>
+      <div class="ed-rform__body">
+        <div class="ed-rform__grid">
+          <div class="ed-rform__field">
+            <label>Fecha emisión</label>
+            <div class="ed-rform__date">
+              <th-date-field [(ngModel)]="editIssueDate" name="editCourseIssue"></th-date-field>
+            </div>
+          </div>
+          <div class="ed-rform__field">
+            <label>Fecha expiración</label>
+            <div class="ed-rform__date">
+              <th-date-field [(ngModel)]="editExpiryDate" name="editCourseExpiry" align="end"></th-date-field>
+            </div>
+          </div>
+          <div class="ed-rform__field">
+            <label>Horas</label>
+            <input type="number" [(ngModel)]="editHours" min="0" />
+          </div>
+          <div class="ed-rform__field">
+            <label>Calificación</label>
+            <input type="text" [(ngModel)]="editScore" />
+          </div>
+        </div>
+        <div class="ed-rform__field">
+          <label>Observaciones</label>
+          <textarea rows="3" [(ngModel)]="editObservations" placeholder="Opcional"></textarea>
+        </div>
+        <div class="ed-rform__field">
+          <label>Agregar archivos (PDF)</label>
+          <div class="ed-rform__file">
+            <input #editCourseFile type="file" accept="application/pdf" (change)="onEditFilesSelected($event)" multiple hidden />
+            <button type="button" class="ed-rform__file-btn" (click)="editCourseFile.click()">Elegir archivos</button>
+            <span class="ed-rform__file-name">{{ editFiles.length ? (editFiles.length + ' archivo(s) seleccionado(s)') : 'Se mantienen los actuales si no elige otros' }}</span>
+          </div>
+          <div class="ed-rform__error" *ngIf="editFileError">{{ editFileError }}</div>
+        </div>
+      </div>
+      <div class="ed-rform__footer">
+        <button type="button" class="ed-rform__btn ed-rform__btn--ghost" (click)="cancelEditForm()">Cancelar</button>
+        <button type="button"
+                class="ed-rform__btn ed-rform__btn--primary"
+                (click)="submitEdit()"
+                [disabled]="editSaving || (editIssueDate && editExpiryDate && editIssueDate > editExpiryDate)">
+          <span class="material-symbols-outlined" aria-hidden="true">{{ editSaving ? 'progress_activity' : 'save' }}</span>
+          {{ editSaving ? 'Guardando...' : 'Guardar cambios' }}
         </button>
       </div>
     </div>

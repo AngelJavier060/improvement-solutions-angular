@@ -94,6 +94,37 @@ public class BusinessEmployeeCourseService {
     }
 
     @Transactional
+    public EmployeeCourseResponse update(Long id,
+                                         LocalDate issueDate,
+                                         LocalDate expiryDate,
+                                         Integer hours,
+                                         String score,
+                                         String observations,
+                                         List<MultipartFile> files) {
+        BusinessEmployeeCourse course = courseRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Registro de curso no encontrado: " + id));
+        course.setIssueDate(issueDate);
+        course.setExpiryDate(expiryDate);
+        course.setHours(hours);
+        course.setScore(score == null || score.isBlank() ? null : score.trim());
+        course.setObservations(observations == null || observations.isBlank() ? null : observations.trim());
+
+        if (files != null) {
+            for (MultipartFile f : files) {
+                if (f == null || f.isEmpty()) continue;
+                String storedPath = storeFile("employee-courses", f);
+                BusinessEmployeeCourseFile cf = new BusinessEmployeeCourseFile();
+                cf.setCourse(course);
+                cf.setFilePath(storedPath);
+                cf.setFileName(f.getOriginalFilename());
+                cf.setFileType(f.getContentType());
+                course.getFiles().add(cf);
+            }
+        }
+        return toResponse(courseRepository.save(course));
+    }
+
+    @Transactional
     public void delete(Long id) {
         if (!courseRepository.existsById(id)) {
             throw new IllegalArgumentException("Registro de curso no encontrado: " + id);

@@ -59,6 +59,17 @@ export class DocumentService {
     return this.http.post<EmployeeDocumentResponse>(url, form);
   }
 
+  update(id: number, req: Omit<CreateEmployeeDocumentRequest, 'business_employee_id' | 'type_document_id'>): Observable<EmployeeDocumentResponse> {
+    const form = new FormData();
+    form.append('start_date', req.start_date || '');
+    form.append('end_date', req.end_date || '');
+    form.append('description', req.description || '');
+    if (req.files && req.files.length) {
+      req.files.forEach(f => form.append('files[]', f));
+    }
+    return this.http.put<EmployeeDocumentResponse>(`${this.apiUrl}/employee_document/${id}`, form);
+  }
+
   delete(id: number): Observable<void> {
     const url = `${this.apiUrl}/employee_document/${id}`;
     return this.http.delete<void>(url);

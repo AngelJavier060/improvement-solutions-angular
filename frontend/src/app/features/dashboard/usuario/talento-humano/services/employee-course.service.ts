@@ -60,6 +60,19 @@ export class EmployeeCourseService {
     return this.http.post<EmployeeCourseResponse>(url, form);
   }
 
+  update(id: number, req: Omit<CreateEmployeeCourseRequest, 'business_employee_id' | 'course_certification_id'>): Observable<EmployeeCourseResponse> {
+    const form = new FormData();
+    form.append('issue_date', req.issue_date || '');
+    form.append('expiry_date', req.expiry_date || '');
+    if (req.hours !== undefined && req.hours !== null) form.append('hours', String(req.hours));
+    form.append('score', req.score || '');
+    form.append('observations', req.observations || '');
+    if (req.files && req.files.length) {
+      req.files.forEach(f => form.append('files[]', f));
+    }
+    return this.http.put<EmployeeCourseResponse>(`${this.apiUrl}/employee_course/${id}`, form);
+  }
+
   delete(id: number): Observable<void> {
     const url = `${this.apiUrl}/employee_course/${id}`;
     return this.http.delete<void>(url);

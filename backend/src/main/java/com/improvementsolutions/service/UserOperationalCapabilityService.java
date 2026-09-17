@@ -205,7 +205,8 @@ public class UserOperationalCapabilityService {
             canDownload = false;
             canCreate = canEdit = canDelete = canUpload = false;
             canOvertime = canVacations = canTimeOff = false;
-        } else if (locked) {
+        } else if (locked || defaultsFull) {
+            // Super, Admin de empresa y Gestor: escritura operativa plena (no la limita la matriz).
             canCreate = canEdit = canDelete = canUpload = true;
             canOvertime = canVacations = canTimeOff = true;
         } else if (stored != null) {
@@ -218,10 +219,6 @@ public class UserOperationalCapabilityService {
             canOvertime = stored.isCanOvertime();
             canVacations = stored.isCanVacations();
             canTimeOff = stored.isCanTimeOff();
-        } else if (defaultsFull) {
-            // Admin/Gestor sin fila: todo habilitado hasta que Super lo restrinja
-            canCreate = canEdit = canDelete = canUpload = true;
-            canOvertime = canVacations = canTimeOff = true;
         } else {
             // Supervisor sin fila: solo lectura
             canCreate = canEdit = canDelete = canUpload = false;
@@ -242,8 +239,8 @@ public class UserOperationalCapabilityService {
                 .canOvertime(canOvertime)
                 .canVacations(canVacations)
                 .canTimeOff(canTimeOff)
-                .writeLockedByRole(locked)
-                .editable(isEditableForViewer(user, viewer))
+                .writeLockedByRole(locked || defaultsFull)
+                .editable(isEditableForViewer(user, viewer) && !defaultsFull)
                 .canWriteOps(canCreate || canEdit || canDelete || canUpload)
                 .build();
     }

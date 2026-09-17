@@ -57,6 +57,19 @@ export class EmployeeCardService {
     return this.http.post<EmployeeCardResponse>(url, form);
   }
 
+  update(id: number, req: Omit<CreateEmployeeCardRequest, 'business_employee_id' | 'card_id'>): Observable<EmployeeCardResponse> {
+    const url = `${this.apiUrl}/employee_card/${id}`;
+    const form = new FormData();
+    form.append('card_number', req.card_number || '');
+    form.append('issue_date', req.issue_date || '');
+    form.append('expiry_date', req.expiry_date || '');
+    form.append('observations', req.observations || '');
+    if (req.files && req.files.length) {
+      req.files.forEach(f => form.append('files[]', f));
+    }
+    return this.http.put<EmployeeCardResponse>(url, form);
+  }
+
   delete(id: number): Observable<void> {
     const url = `${this.apiUrl}/employee_card/${id}`;
     return this.http.delete<void>(url);

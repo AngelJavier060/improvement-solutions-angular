@@ -226,19 +226,21 @@ export class AuthService {
 
   /**
    * Puede crear/editar/eliminar en módulos /usuario/{ruc}/...
-   * Usa la matriz de capacidades del login (Super siempre; Admin/Gestor/Supervisor según flags).
+   * Administrador de empresa y Gestor siempre escriben (igual que el backend).
+   * La matriz de capacidades aplica a Supervisores (ROLE_USER).
    */
   canWrite(): boolean {
     const roles = this.getUserRoles();
-    if (roles.includes('ROLE_SUPER_ADMIN')) {
+    if (roles.includes('ROLE_SUPER_ADMIN')
+        || roles.includes('ROLE_ADMIN')
+        || roles.includes('ROLE_MANAGER')) {
       return true;
     }
     const caps = this.getCurrentUser()?.operationalCapabilities;
     if (caps && typeof caps.canWriteOps === 'boolean') {
       return !!caps.canWriteOps;
     }
-    // Fallback si sesión antigua sin matriz
-    return roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
+    return false;
   }
 
   /** Registrar solicitudes de horas extras (matriz). */

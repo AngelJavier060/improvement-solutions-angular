@@ -127,6 +127,22 @@
     color: #3b82f6;
     transform: translateX(4px);
   }
+
+  &--tarjetas {
+    border-left-color: #f59e0b;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.18);
+    .icon-container {
+      background-color: #fffbeb;
+      color: #d97706;
+    }
+    &:hover {
+      border-left-color: #d97706;
+      .icon-container {
+        background-color: #d97706;
+        color: white;
+      }
+    }
+  }
 }
 
 // ─── Estilos de Secciones ───────────────────────────────────────────

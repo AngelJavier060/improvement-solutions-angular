@@ -1,5 +1,6 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
-import { HttpClient, HttpResponse } from '@angular/common/http';
+import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ThFilePreviewService } from '../services/th-file-preview.service';
 
 export type HistorySection = 'document' | 'course' | 'card';
 
@@ -31,7 +32,7 @@ export interface EmployeeHistoryGroup {
   templateUrl: './employee-history.component.html',
   styleUrls: ['./employee-history.component.scss']
 })
-export class EmployeeHistoryComponent implements OnInit, OnChanges {
+export class EmployeeHistoryComponent implements OnInit, OnChanges, OnDestroy {
   @Input() businessRuc = '';
 
   loading = false;
@@ -41,7 +42,11 @@ export class EmployeeHistoryComponent implements OnInit, OnChanges {
   yearFilter = '';
   workerFilter = '';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private filePreview: ThFilePreviewService) {}
+
+  ngOnDestroy(): void {
+    this.filePreview.close();
+  }
 
   ngOnInit(): void {
     this.load();
@@ -135,25 +140,10 @@ export class EmployeeHistoryComponent implements OnInit, OnChanges {
   }
 
   openFile(file: { file: string; fileName?: string; file_name?: string; fileType?: string }): void {
-    const raw = file?.file || '';
-    const url = String(raw).replace('/api/files/download/', '/api/files/');
-    this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
-      next: (resp: HttpResponse<Blob>) => {
-        const blob = resp.body as Blob;
-        const name = this.fileLabel(file).toLowerCase();
-        const headerCt = (resp.headers.get('Content-Type') || '').toLowerCase();
-        const mime = name.endsWith('.pdf') || headerCt.includes('pdf') || (file.fileType || '').includes('pdf')
-          ? 'application/pdf'
-          : (headerCt || 'application/octet-stream');
-        const typed = new Blob([blob], { type: mime });
-        const blobUrl = window.URL.createObjectURL(typed);
-        window.open(blobUrl, '_blank');
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
-      },
-      error: (err) => {
-        console.error('Error abriendo archivo histórico', err);
-        alert('No se pudo abrir el archivo');
-      }
+    this.filePreview.open({
+      file: file.file,
+      file_name: file.fileName || file.file_name,
+      file_type: file.fileType
     });
   }
 

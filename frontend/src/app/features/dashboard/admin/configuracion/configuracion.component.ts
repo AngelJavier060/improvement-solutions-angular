@@ -57,9 +57,14 @@ export class ConfiguracionComponent implements OnInit, OnDestroy {
   }
 
   private checkActiveChildRoute(url: string) {
+    const path = this.normalizeHubPath(url);
+    this.isChildRouteActive = path.startsWith(ConfiguracionComponent.HUB_PATH + '/');
+  }
+
+  /** Quita locale (`/en-US`) para detectar bien el hub vs. un catálogo hijo. */
+  private normalizeHubPath(url: string): string {
     const path = (url || '').split('?')[0].split('#')[0];
-    this.isChildRouteActive =
-      path !== ConfiguracionComponent.HUB_PATH && path.startsWith(ConfiguracionComponent.HUB_PATH + '/');
+    return path.replace(/^\/[a-z]{2}-[A-Z]{2}(?=\/)/, '') || path;
   }
 
   private captureScroll(): HubScrollPos {
@@ -252,15 +257,16 @@ export class ConfiguracionComponent implements OnInit, OnDestroy {
       icono: 'fas fa-users',
       colorClase: 'seccion-rrhh',
       categorias: [
+        { nombre: 'Tarjetas', descripcion: 'Catálogo global de tarjetas de personal. Las empresas (p. ej. Orientoil) eligen cuáles consumir.', ruta: 'tarjetas', icono: 'fas fa-id-badge', proximamente: false },
+        { nombre: 'Cursos y certificaciones', descripcion: 'Gestionar catálogo de cursos y certificaciones', ruta: 'cursos-certificaciones', icono: 'fas fa-certificate', proximamente: false },
+        { nombre: 'Documentos personales', descripcion: 'Gestionar los tipos de documentos personales', ruta: 'tipo-documento', icono: 'fas fa-id-card', proximamente: false },
         { nombre: 'Género', descripcion: 'Gestionar los tipos de género para los empleados', ruta: 'genero', icono: 'fas fa-venus-mars', proximamente: false },
         { nombre: 'Estudios / Educación', descripcion: 'Gestionar los niveles educativos', ruta: 'estudio', icono: 'fas fa-graduation-cap', proximamente: false },
         { nombre: 'Estado Civil', descripcion: 'Gestionar los diferentes estados civiles', ruta: 'estado-civil', icono: 'fas fa-ring', proximamente: false },
         { nombre: 'Tipo de Residencia', descripcion: 'Gestionar los tipos de residencia', ruta: 'tipo-residencia', icono: 'fas fa-home', proximamente: false },
         { nombre: 'Etnias', descripcion: 'Gestionar los grupos étnicos', ruta: 'etnias', icono: 'fas fa-users', proximamente: false },
-        { nombre: 'Documentos personales', descripcion: 'Gestionar los tipos de documentos personales', ruta: 'tipo-documento', icono: 'fas fa-id-card', proximamente: false },
         { nombre: 'Departamentos', descripcion: 'Gestionar los departamentos de la empresa', ruta: 'departamentos', icono: 'fas fa-building', proximamente: false },
         { nombre: 'Cargos', descripcion: 'Gestionar los cargos disponibles en la empresa', ruta: 'cargos', icono: 'fas fa-briefcase', proximamente: false },
-        { nombre: 'Cursos y certificaciones', descripcion: 'Gestionar catálogo de cursos y certificaciones', ruta: 'cursos-certificaciones', icono: 'fas fa-certificate', proximamente: false },
         { nombre: 'Jornadas de Trabajo', descripcion: 'Gestionar las jornadas de trabajo del personal', ruta: 'jornadas-trabajo', icono: 'fas fa-calendar-alt', proximamente: false },
         { nombre: 'Horarios de Trabajo', descripcion: 'Gestionar los horarios de trabajo del personal', ruta: 'horarios-trabajo', icono: 'fas fa-clock', proximamente: false },
       ]

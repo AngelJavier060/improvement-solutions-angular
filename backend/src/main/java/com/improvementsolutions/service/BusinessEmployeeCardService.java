@@ -86,6 +86,45 @@ public class BusinessEmployeeCardService {
     }
 
     @Transactional
+    public EmployeeCardResponse update(Long id,
+                                       String cardNumber,
+                                       LocalDate issueDate,
+                                       LocalDate expiryDate,
+                                       String observations,
+                                       List<MultipartFile> files) {
+        BusinessEmployeeCard rec = cardRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Registro de tarjeta no encontrado: " + id));
+
+        rec.setCardNumber(blankToNull(cardNumber));
+        rec.setIssueDate(issueDate);
+        rec.setExpiryDate(expiryDate);
+        rec.setObservations(blankToNull(observations));
+
+        if (files != null) {
+            for (MultipartFile f : files) {
+                if (f != null && !f.isEmpty()) {
+                    String storedPath = storeFile("employee-cards", f);
+                    BusinessEmployeeCardFile cf = new BusinessEmployeeCardFile();
+                    cf.setCard(rec);
+                    cf.setFilePath(storedPath);
+                    cf.setFileName(f.getOriginalFilename());
+                    cf.setFileType(f.getContentType());
+                    rec.getFiles().add(cf);
+                }
+            }
+        }
+
+        rec = cardRepository.save(rec);
+        return toResponse(rec);
+    }
+
+    private String blankToNull(String value) {
+        if (value == null) return null;
+        String t = value.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    @Transactional
     public void delete(Long id) {
         if (!cardRepository.existsById(id)) {
             throw new IllegalArgumentException("Registro de tarjeta no encontrado: " + id);

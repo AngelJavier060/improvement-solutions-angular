@@ -2,7 +2,8 @@
  * Tipología de usuarios de empresa / plataforma.
  *
  * - Superadministrador (ROLE_SUPER_ADMIN): plataforma.
- * - Administrador de empresa (ROLE_ADMIN): parámetros/catálogos; designa Gestores y Supervisores.
+ * - Administrador de empresa (ROLE_ADMIN): parámetros/catálogos, designa Gestores/Supervisores y opera documentos/cursos/tarjetas.
+ * - Gestor operativo (ROLE_MANAGER): subir/editar/eliminar docs y operación (TH, flota…).
  * - Gestor operativo (ROLE_MANAGER): subir/editar/eliminar docs y operación (TH, flota…).
  * - Supervisor (ROLE_USER): solo ver y descargar.
  * - Trabajador (ROLE_EMPLOYEE): portal propio.

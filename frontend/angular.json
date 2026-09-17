@@ -57,7 +57,8 @@
               "raf",
               "rgbcolor",
               "html2canvas",
-              "pdfmake"
+              "pdfmake",
+              "jszip"
             ]
           },
           "configurations": {
