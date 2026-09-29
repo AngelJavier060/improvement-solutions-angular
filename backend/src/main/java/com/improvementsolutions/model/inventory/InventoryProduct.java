@@ -6,7 +6,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.improvementsolutions.model.Business;
 import com.improvementsolutions.model.inventory.enums.ProductCategory;
+import com.improvementsolutions.model.inventory.enums.ProductCategoryConverter;
 import com.improvementsolutions.model.inventory.enums.ProductStatus;
+import com.improvementsolutions.model.inventory.enums.ProductStatusConverter;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,12 +38,13 @@ public class InventoryProduct {
      * Tipo operativo del producto: EPP | HERRAMIENTA | PIEZA.
      * Separado de la categoría libre (category / categoryRef).
      */
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = ProductCategoryConverter.class)
     @Column(name = "product_kind", length = 20)
     private ProductCategory productKind = ProductCategory.EPP;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "business", "parent"})
     private InventoryCategory categoryRef;
 
@@ -67,7 +70,7 @@ public class InventoryProduct {
     @Column(length = 255)
     private String image;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = ProductStatusConverter.class)
     @Column(nullable = false, length = 30)
     private ProductStatus status = ProductStatus.ACTIVO;
 

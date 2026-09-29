@@ -4,16 +4,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.improvementsolutions.model.EppFamily;
-import com.improvementsolutions.model.EppSection;
-
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.improvementsolutions.dto.inventory.InventoryProductListDto;
 import com.improvementsolutions.model.Business;
 import com.improvementsolutions.model.inventory.InventoryCategory;
 import com.improvementsolutions.model.inventory.InventoryProduct;
@@ -34,92 +36,123 @@ public class InventoryProductService {
     private final InventoryProductRepository productRepository;
     private final InventoryCategoryRepository categoryRepository;
     private final InventoryAuthorizationService authService;
+    private final InventoryProductSchemaService schemaService;
     private final JdbcTemplate jdbc;
     @PersistenceContext
     private EntityManager em;
-    private volatile boolean productKindEnsured = false;
-    private volatile boolean productSectionEnsured = false;
 
     public InventoryProductService(
             InventoryProductRepository productRepository,
             InventoryCategoryRepository categoryRepository,
             InventoryAuthorizationService authService,
+            InventoryProductSchemaService schemaService,
             JdbcTemplate jdbc) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.authService = authService;
+        this.schemaService = schemaService;
         this.jdbc = jdbc;
     }
 
-    /** Crea product_kind si falta (local sin Flyway / backend sin reiniciar). */
-    public void ensureProductKindColumn() {
-        if (productKindEnsured) return;
-        synchronized (this) {
-            if (productKindEnsured) return;
-            try {
-                Boolean exists = jdbc.queryForObject(
-                        "SELECT EXISTS (" +
-                                " SELECT 1 FROM information_schema.columns" +
-                                " WHERE table_schema = 'public'" +
-                                "   AND table_name = 'inventory_products'" +
-                                "   AND column_name = 'product_kind'" +
-                                ")",
-                        Boolean.class
-                );
-                if (!Boolean.TRUE.equals(exists)) {
-                    jdbc.execute("ALTER TABLE inventory_products ADD COLUMN product_kind VARCHAR(20) DEFAULT 'EPP'");
-                    log.info("[InventoryProduct] Columna product_kind creada on-demand.");
-                }
-                jdbc.execute("UPDATE inventory_products SET product_kind = 'EPP' WHERE product_kind IS NULL");
-                productKindEnsured = true;
-            } catch (Exception e) {
-                log.warn("[InventoryProduct] No se pudo asegurar product_kind: {}", e.getMessage());
-            }
+    @Transactional(readOnly = true)
+    public Map<String, Object> getBodegaParams(String ruc) {
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        Long bid = business.getId();
+        List<Map<String, Object>> families = new ArrayList<>();
+        List<Map<String, Object>> sections = new ArrayList<>();
+        try {
+            families.addAll(jdbc.query(
+                    "SELECT f.id, f.name, f.code, f.description FROM epp_families f " +
+                    "INNER JOIN business_epp_family x ON x.epp_family_id = f.id " +
+                    "WHERE x.business_id = ? AND COALESCE(f.active, TRUE) = TRUE ORDER BY f.name",
+                    (rs, i) -> {
+                        Map<String, Object> m = new HashMap<>();
+                        m.put("id", rs.getLong("id"));
+                        m.put("name", rs.getString("name"));
+                        m.put("code", rs.getString("code"));
+                        m.put("description", rs.getString("description"));
+                        return m;
+                    },
+                    bid
+            ));
+        } catch (Exception e) {
+            log.warn("[InventoryProduct] bodega families: {}", e.getMessage());
+        }
+        try {
+            sections.addAll(jdbc.query(
+                    "SELECT s.id, s.name, s.code, s.description FROM epp_sections s " +
+                    "INNER JOIN business_epp_section x ON x.epp_section_id = s.id " +
+                    "WHERE x.business_id = ? AND COALESCE(s.active, TRUE) = TRUE ORDER BY s.name",
+                    (rs, i) -> {
+                        Map<String, Object> m = new HashMap<>();
+                        m.put("id", rs.getLong("id"));
+                        m.put("name", rs.getString("name"));
+                        m.put("code", rs.getString("code"));
+                        m.put("description", rs.getString("description"));
+                        return m;
+                    },
+                    bid
+            ));
+        } catch (Exception e) {
+            log.warn("[InventoryProduct] bodega sections: {}", e.getMessage());
+        }
+        Map<String, Object> body = new HashMap<>();
+        body.put("families", families);
+        body.put("sections", sections);
+        return body;
+    }
+
+    /**
+     * Listado seguro: DTO plano, sin proxies JPA. Si Hibernate falla, usa SQL nativo.
+     * No debe lanzar: el catálogo puede quedar vacío, pero no 500.
+     */
+    public List<InventoryProductListDto> listDtos(String ruc) {
+        try {
+            schemaService.ensureColumns();
+        } catch (Exception e) {
+            log.warn("[InventoryProduct] ensureColumns: {}", e.getMessage());
+        }
+        Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        Long bid = business.getId();
+        List<InventoryProduct> items;
+        try {
+            items = productRepository.findByBusiness_Id(bid);
+        } catch (Exception e) {
+            log.error("[InventoryProduct] JPA list falló, SQL nativo: {}", e.getMessage(), e);
+            items = listNativeSafe(bid);
+        }
+        try {
+            return filterToAssignedCatalog(bid, items).stream()
+                    .map(this::toListDtoSafe)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("[InventoryProduct] Filtro/DTO falló, devolviendo sin filtro: {}", e.getMessage(), e);
+            return items.stream()
+                    .map(this::toListDtoSafe)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
         }
     }
 
-    /** Crea section_code / section_label si faltan. */
-    public void ensureProductSectionColumns() {
-        if (productSectionEnsured) return;
-        synchronized (this) {
-            if (productSectionEnsured) return;
+    private List<InventoryProduct> listNativeSafe(Long businessId) {
+        try {
+            return listLightWithKind(businessId);
+        } catch (Exception e) {
+            log.warn("[InventoryProduct] SQL con kind falló: {}", e.getMessage());
             try {
-                for (String[] col : new String[][]{
-                        {"section_code", "VARCHAR(10)"},
-                        {"section_label", "VARCHAR(80)"}
-                }) {
-                    Boolean exists = jdbc.queryForObject(
-                            "SELECT EXISTS (" +
-                                    " SELECT 1 FROM information_schema.columns" +
-                                    " WHERE table_schema = 'public'" +
-                                    "   AND table_name = 'inventory_products'" +
-                                    "   AND column_name = ?" +
-                                    ")",
-                            Boolean.class,
-                            col[0]
-                    );
-                    if (!Boolean.TRUE.equals(exists)) {
-                        jdbc.execute("ALTER TABLE inventory_products ADD COLUMN " + col[0] + " " + col[1]);
-                        log.info("[InventoryProduct] Columna {} creada on-demand.", col[0]);
-                    }
-                }
-                productSectionEnsured = true;
-            } catch (Exception e) {
-                log.warn("[InventoryProduct] No se pudo asegurar section_*: {}", e.getMessage());
+                return listLightLegacy(businessId);
+            } catch (Exception e2) {
+                log.error("[InventoryProduct] SQL legacy falló: {}", e2.getMessage(), e2);
+                return List.of();
             }
         }
     }
 
     @Transactional(readOnly = true)
     public List<InventoryProduct> list(String ruc) {
-        ensureProductKindColumn();
-        ensureProductSectionColumns();
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
-        // Fuerza carga LAZY de catálogo empresa (Familia/Sección asignadas).
-        if (business.getEppFamilies() != null) business.getEppFamilies().size();
-        if (business.getEppSections() != null) business.getEppSections().size();
-        List<InventoryProduct> items = productRepository.findByBusiness_Id(business.getId());
-        return filterToAssignedCatalog(business, items);
+        return filterToAssignedCatalog(business.getId(), productRepository.findByBusiness_Id(business.getId()));
     }
 
     /**
@@ -128,63 +161,59 @@ public class InventoryProductService {
      */
     @Transactional(readOnly = true)
     public List<InventoryProduct> listLight(String ruc) {
-        ensureProductKindColumn();
-        ensureProductSectionColumns();
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
-        if (business.getEppFamilies() != null) business.getEppFamilies().size();
-        if (business.getEppSections() != null) business.getEppSections().size();
-        try {
-            return filterToAssignedCatalog(business, listLightWithKind(business.getId()));
-        } catch (Exception ex) {
-            log.warn("[InventoryProduct] listLight con product_kind falló, usando legacy: {}", ex.getMessage());
-            return filterToAssignedCatalog(business, listLightLegacy(business.getId()));
-        }
+        return filterToAssignedCatalog(business.getId(), listNativeSafe(business.getId()));
     }
 
     @SuppressWarnings("unchecked")
     private List<InventoryProduct> listLightWithKind(Long businessId) {
         String sql = "SELECT id, code, category, name, description, unit_of_measure, image, status, product_kind, section_code, section_label "
                    + "FROM inventory_products WHERE business_id = :bid ORDER BY id DESC";
-        List<Object[]> rows = em.createNativeQuery(sql)
+        List<?> rows = em.createNativeQuery(sql)
             .setParameter("bid", businessId)
             .getResultList();
-        List<InventoryProduct> out = new ArrayList<>();
-        for (Object[] row : rows) {
-            InventoryProduct p = mapLightRow(row, true);
-            out.add(p);
-        }
-        return out;
+        return mapNativeRows(rows, true);
     }
 
     @SuppressWarnings("unchecked")
     private List<InventoryProduct> listLightLegacy(Long businessId) {
         String sql = "SELECT id, code, category, name, description, unit_of_measure, image, status "
                    + "FROM inventory_products WHERE business_id = :bid ORDER BY id DESC";
-        List<Object[]> rows = em.createNativeQuery(sql)
+        List<?> rows = em.createNativeQuery(sql)
             .setParameter("bid", businessId)
             .getResultList();
+        return mapNativeRows(rows, false);
+    }
+
+    private List<InventoryProduct> mapNativeRows(List<?> rows, boolean withKind) {
         List<InventoryProduct> out = new ArrayList<>();
-        for (Object[] row : rows) {
-            out.add(mapLightRow(row, false));
+        if (rows == null) return out;
+        for (Object raw : rows) {
+            try {
+                Object[] row = raw instanceof Object[] arr ? arr : new Object[]{ raw };
+                out.add(mapLightRow(row, withKind));
+            } catch (Exception e) {
+                log.warn("[InventoryProduct] Fila nativa omitida: {}", e.getMessage());
+            }
         }
         return out;
     }
 
     private InventoryProduct mapLightRow(Object[] row, boolean withKind) {
         InventoryProduct p = new InventoryProduct();
-        p.setId(((Number) row[0]).longValue());
-        p.setCode((String) row[1]);
-        p.setCategory((String) row[2]);
-        p.setName((String) row[3]);
-        p.setDescription((String) row[4]);
-        p.setUnitOfMeasure((String) row[5]);
-        p.setImage((String) row[6]);
-        String status = (String) row[7];
+        p.setId(asLong(row, 0));
+        p.setCode(asString(row, 1));
+        p.setCategory(asString(row, 2));
+        p.setName(asString(row, 3));
+        p.setDescription(asString(row, 4));
+        p.setUnitOfMeasure(asString(row, 5));
+        p.setImage(asString(row, 6));
+        String status = asString(row, 7);
         if (status != null) {
-            try { p.setStatus(ProductStatus.valueOf(status)); } catch (Exception ignore) {}
+            try { p.setStatus(ProductStatus.valueOf(status)); } catch (Exception ignore) { p.setStatus(ProductStatus.ACTIVO); }
         }
         if (withKind && row.length > 8 && row[8] != null) {
-            try { p.setProductKind(ProductCategory.valueOf(String.valueOf(row[8]))); }
+            try { p.setProductKind(ProductCategory.valueOf(String.valueOf(row[8]).trim().toUpperCase())); }
             catch (Exception ignore) { p.setProductKind(ProductCategory.EPP); }
             if (row.length > 10) {
                 if (row[9] != null) p.setSectionCode(String.valueOf(row[9]));
@@ -197,6 +226,17 @@ public class InventoryProductService {
             inferSectionFromCode(p);
         }
         return p;
+    }
+
+    private Long asLong(Object[] row, int i) {
+        if (row == null || i >= row.length || row[i] == null) return null;
+        if (row[i] instanceof Number n) return n.longValue();
+        try { return Long.parseLong(String.valueOf(row[i])); } catch (Exception e) { return null; }
+    }
+
+    private String asString(Object[] row, int i) {
+        if (row == null || i >= row.length || row[i] == null) return null;
+        return String.valueOf(row[i]);
     }
 
     private void inferSectionFromCode(InventoryProduct p) {
@@ -239,24 +279,31 @@ public class InventoryProductService {
     }
 
     @Transactional(readOnly = true)
+    public Optional<InventoryProductListDto> getByIdDto(String ruc, Long id) {
+        authService.requireBusinessForRucAndCurrentUser(ruc);
+        return productRepository.findByBusiness_RucAndId(ruc, id).map(p -> {
+            try {
+                if (p.getCategoryRef() != null) p.getCategoryRef().getName();
+            } catch (Exception ignore) {}
+            return toListDtoSafe(p);
+        });
+    }
+
+    @Transactional(readOnly = true)
     public Optional<InventoryProduct> getById(String ruc, Long id) {
         authService.requireBusinessForRucAndCurrentUser(ruc);
         return productRepository.findByBusiness_RucAndId(ruc, id).map(p -> {
-            // Forzar carga de asociaciones LAZY para serializar nombre de categoría.
             if (p.getCategoryRef() != null) {
-                p.getCategoryRef().getName();
+                try { p.getCategoryRef().getName(); } catch (Exception ignore) {}
             }
             return p;
         });
     }
 
     @Transactional
-    public InventoryProduct create(String ruc, InventoryProduct input) {
-        ensureProductKindColumn();
-        ensureProductSectionColumns();
+    public InventoryProductListDto create(String ruc, InventoryProduct input) {
+        schemaService.ensureColumns();
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
-        if (business.getEppSections() != null) business.getEppSections().size();
-        if (business.getEppFamilies() != null) business.getEppFamilies().size();
 
         if (input.getCode() == null || input.getCode().trim().isEmpty()) {
             throw new IllegalArgumentException("El código del producto es obligatorio");
@@ -285,7 +332,7 @@ public class InventoryProductService {
         entity.setName(input.getName().trim());
         entity.setProductKind(resolveProductKind(input));
         applySection(entity, input);
-        assertSectionAssigned(business, entity.getSectionCode());
+        assertSectionAssigned(business.getId(), entity.getSectionCode());
         applyCategory(business, entity, input);
         entity.setDescription(input.getDescription());
         entity.setUnitOfMeasure(
@@ -296,16 +343,23 @@ public class InventoryProductService {
         entity.setImage(input.getImage());
         entity.setStatus(input.getStatus() != null ? input.getStatus() : ProductStatus.ACTIVO);
 
-        return productRepository.save(entity);
+        try {
+            InventoryProduct saved = productRepository.saveAndFlush(entity);
+            try {
+                if (saved.getCategoryRef() != null) saved.getCategoryRef().getName();
+            } catch (Exception ignore) {}
+            InventoryProductListDto dto = toListDtoSafe(saved);
+            if (dto == null) throw new IllegalStateException("No se pudo preparar la respuesta del producto creado");
+            return dto;
+        } catch (DataIntegrityViolationException ex) {
+            throw new IllegalArgumentException(friendlyIntegrityMessage(ex), ex);
+        }
     }
 
     @Transactional
-    public InventoryProduct update(String ruc, Long id, InventoryProduct input) {
-        ensureProductKindColumn();
-        ensureProductSectionColumns();
+    public InventoryProductListDto update(String ruc, Long id, InventoryProduct input) {
+        schemaService.ensureColumns();
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
-        if (business.getEppSections() != null) business.getEppSections().size();
-        if (business.getEppFamilies() != null) business.getEppFamilies().size();
         InventoryProduct entity = productRepository.findByBusiness_RucAndId(ruc, id)
             .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado"));
 
@@ -330,7 +384,7 @@ public class InventoryProductService {
             entity.setProductKind(input.getProductKind());
         }
         applySection(entity, input);
-        assertSectionAssigned(business, entity.getSectionCode());
+        assertSectionAssigned(business.getId(), entity.getSectionCode());
         if (input.getCategory() == null || input.getCategory().trim().isEmpty()) {
             input.setCategory(defaultCategoryForKind(entity.getProductKind()));
         }
@@ -344,7 +398,17 @@ public class InventoryProductService {
         entity.setImage(input.getImage());
         if (input.getStatus() != null) entity.setStatus(input.getStatus());
 
-        return productRepository.save(entity);
+        try {
+            InventoryProduct saved = productRepository.saveAndFlush(entity);
+            try {
+                if (saved.getCategoryRef() != null) saved.getCategoryRef().getName();
+            } catch (Exception ignore) {}
+            InventoryProductListDto dto = toListDtoSafe(saved);
+            if (dto == null) throw new IllegalStateException("No se pudo preparar la respuesta del producto actualizado");
+            return dto;
+        } catch (DataIntegrityViolationException ex) {
+            throw new IllegalArgumentException(friendlyIntegrityMessage(ex), ex);
+        }
     }
 
     @Transactional
@@ -464,12 +528,11 @@ public class InventoryProductService {
     /**
      * El catálogo de productos de la empresa solo incluye SKUs de las
      * familias/secciones asignadas en Inventario-Bodega.
-     * Evita mostrar ítems de prueba u otras secciones (CHE, GUA, etc.).
      */
-    private List<InventoryProduct> filterToAssignedCatalog(Business business, List<InventoryProduct> items) {
+    private List<InventoryProduct> filterToAssignedCatalog(Long businessId, List<InventoryProduct> items) {
         if (items == null || items.isEmpty()) return items;
-        Set<String> sections = assignedSectionCodes(business);
-        Set<String> families = assignedFamilyCodes(business);
+        Set<String> sections = assignedSectionCodes(businessId);
+        Set<String> families = assignedFamilyCodes(businessId);
         if (sections.isEmpty() && families.isEmpty()) {
             return items;
         }
@@ -490,8 +553,8 @@ public class InventoryProductService {
         return true;
     }
 
-    private void assertSectionAssigned(Business business, String sectionCode) {
-        Set<String> sections = assignedSectionCodes(business);
+    private void assertSectionAssigned(Long businessId, String sectionCode) {
+        Set<String> sections = assignedSectionCodes(businessId);
         if (sections.isEmpty()) return;
         String code = sectionCode == null ? "" : sectionCode.trim().toUpperCase(Locale.ROOT);
         if (code.isEmpty() || !sections.contains(code)) {
@@ -500,24 +563,36 @@ public class InventoryProductService {
         }
     }
 
-    private Set<String> assignedSectionCodes(Business business) {
-        if (business.getEppSections() == null) return Set.of();
-        return business.getEppSections().stream()
-                .filter(s -> s != null && !Boolean.FALSE.equals(s.getActive()))
-                .map(EppSection::getCode)
-                .filter(c -> c != null && !c.isBlank())
-                .map(c -> c.trim().toUpperCase(Locale.ROOT))
-                .collect(Collectors.toSet());
+    private Set<String> assignedSectionCodes(Long businessId) {
+        try {
+            List<String> rows = jdbc.queryForList(
+                    "SELECT UPPER(TRIM(s.code)) FROM epp_sections s " +
+                    "INNER JOIN business_epp_section x ON x.epp_section_id = s.id " +
+                    "WHERE x.business_id = ? AND s.code IS NOT NULL AND TRIM(s.code) <> ''",
+                    String.class,
+                    businessId
+            );
+            return rows.stream().filter(c -> c != null && !c.isBlank()).collect(Collectors.toSet());
+        } catch (Exception e) {
+            log.warn("[InventoryProduct] No se pudieron leer secciones asignadas: {}", e.getMessage());
+            return Set.of();
+        }
     }
 
-    private Set<String> assignedFamilyCodes(Business business) {
-        if (business.getEppFamilies() == null) return Set.of();
-        return business.getEppFamilies().stream()
-                .filter(f -> f != null && !Boolean.FALSE.equals(f.getActive()))
-                .map(EppFamily::getCode)
-                .filter(c -> c != null && !c.isBlank())
-                .map(c -> c.trim().toUpperCase(Locale.ROOT))
-                .collect(Collectors.toSet());
+    private Set<String> assignedFamilyCodes(Long businessId) {
+        try {
+            List<String> rows = jdbc.queryForList(
+                    "SELECT UPPER(TRIM(f.code)) FROM epp_families f " +
+                    "INNER JOIN business_epp_family x ON x.epp_family_id = f.id " +
+                    "WHERE x.business_id = ? AND f.code IS NOT NULL AND TRIM(f.code) <> ''",
+                    String.class,
+                    businessId
+            );
+            return rows.stream().filter(c -> c != null && !c.isBlank()).collect(Collectors.toSet());
+        } catch (Exception e) {
+            log.warn("[InventoryProduct] No se pudieron leer familias asignadas: {}", e.getMessage());
+            return Set.of();
+        }
     }
 
     private String resolveSectionCode(InventoryProduct p) {
@@ -536,5 +611,54 @@ public class InventoryProductService {
         if (p.getProductKind() == ProductCategory.HERRAMIENTA) return "HER";
         if (p.getProductKind() == ProductCategory.PIEZA) return "PIE";
         return p.getProductKind() == ProductCategory.EPP ? "EPP" : null;
+    }
+
+    private InventoryProductListDto toListDtoSafe(InventoryProduct p) {
+        if (p == null) return null;
+        try {
+            InventoryProductListDto dto = new InventoryProductListDto();
+            dto.id = p.getId();
+            dto.code = p.getCode();
+            dto.category = p.getCategory();
+            dto.productKind = p.getProductKind() != null ? p.getProductKind().name() : "EPP";
+            dto.sectionCode = p.getSectionCode();
+            dto.sectionLabel = p.getSectionLabel();
+            dto.name = p.getName();
+            dto.description = p.getDescription();
+            dto.unitOfMeasure = p.getUnitOfMeasure();
+            dto.image = p.getImage();
+            dto.status = p.getStatus() != null ? p.getStatus().name() : "ACTIVO";
+            try {
+                if (p.getCategoryRef() != null) {
+                    dto.categoryRef = new InventoryProductListDto.CategoryRefDto(
+                            p.getCategoryRef().getId(), p.getCategoryRef().getName());
+                    if (dto.category == null || dto.category.isBlank()) {
+                        dto.category = p.getCategoryRef().getName();
+                    }
+                }
+            } catch (Exception ignore) {
+                // open-in-view=false / proxy LAZY
+            }
+            return dto;
+        } catch (Exception e) {
+            log.warn("[InventoryProduct] No se pudo mapear producto id={}: {}", p.getId(), e.getMessage());
+            return null;
+        }
+    }
+
+    private String friendlyIntegrityMessage(DataIntegrityViolationException ex) {
+        Throwable root = ex;
+        while (root.getCause() != null && root.getCause() != root) root = root.getCause();
+        String msg = root.getMessage() != null ? root.getMessage().toLowerCase() : "";
+        if (msg.contains("unique") || msg.contains("duplicate") || msg.contains("uq_inventory_products")) {
+            return "Ya existe un producto con el mismo código o nombre en esta empresa.";
+        }
+        if (msg.contains("not-null") || msg.contains("null value") || msg.contains("not null")) {
+            return "Faltan datos obligatorios del producto (código, nombre o sección).";
+        }
+        if (msg.contains("foreign key") || msg.contains("fk_")) {
+            return "Hay una referencia inválida (categoría o empresa). Recargue e intente de nuevo.";
+        }
+        return "No se pudo guardar el producto por una restricción de la base de datos.";
     }
 }
