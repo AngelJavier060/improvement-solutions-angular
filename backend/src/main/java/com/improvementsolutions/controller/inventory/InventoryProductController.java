@@ -82,6 +82,7 @@ public class InventoryProductController {
 
     @GetMapping("/products")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
+    @Transactional(readOnly = true)
     public ResponseEntity<?> list(@PathVariable String ruc) {
         logger.info("[InventoryProducts] Solicitando lista de productos para RUC: {}", ruc);
         // Asegurar columna antes de cualquier SELECT JPA (prod sin Flyway).
@@ -90,28 +91,16 @@ public class InventoryProductController {
         } catch (Exception ignore) {}
         try {
             List<InventoryProduct> items = productService.list(ruc);
-            logger.info("[InventoryProducts] Se encontraron {} productos", items.size());
-            return ResponseEntity.ok(items);
+            List<ProductListDto> dtos = items.stream().map(this::toListDto).toList();
+            logger.info("[InventoryProducts] Se encontraron {} productos", dtos.size());
+            return ResponseEntity.ok(dtos);
         } catch (Exception e) {
             logger.error("[InventoryProducts] Error al listar productos (normal): {}", e.getMessage(), e);
             // Fallback de compatibilidad: intentar consulta "ligera" por si faltan columnas nuevas
             try {
                 logger.warn("[InventoryProducts] Intentando consulta ligera como fallback...");
                 List<InventoryProduct> light = productService.listLight(ruc);
-                // Mapear a DTO seguro
-                List<ProductListDto> dtos = light.stream().map(p -> new ProductListDto(
-                    p.getId(),
-                    p.getCode(),
-                    p.getCategory(),
-                    p.getProductKind() != null ? p.getProductKind().name() : "EPP",
-                    p.getSectionCode(),
-                    p.getSectionLabel(),
-                    p.getName(),
-                    p.getDescription(),
-                    p.getUnitOfMeasure(),
-                    p.getImage(),
-                    p.getStatus() != null ? p.getStatus().name() : null
-                )).toList();
+                List<ProductListDto> dtos = light.stream().map(this::toListDto).toList();
                 logger.info("[InventoryProducts] Consulta ligera exitosa: {} productos", dtos.size());
                 return ResponseEntity.ok(dtos);
             } catch (Exception ex) {
@@ -125,7 +114,38 @@ public class InventoryProductController {
         }
     }
 
-    // DTO liviano para listado
+    private ProductListDto toListDto(InventoryProduct p) {
+        String category = p.getCategory();
+        CategoryRefDto categoryRef = null;
+        if (p.getCategoryRef() != null) {
+            try {
+                categoryRef = new CategoryRefDto(p.getCategoryRef().getId(), p.getCategoryRef().getName());
+                if (category == null || category.isBlank()) {
+                    category = p.getCategoryRef().getName();
+                }
+            } catch (Exception ignore) {
+                // Evita LazyInitializationException en producción (open-in-view=false).
+            }
+        }
+        return new ProductListDto(
+            p.getId(),
+            p.getCode(),
+            category,
+            p.getProductKind() != null ? p.getProductKind().name() : "EPP",
+            p.getSectionCode(),
+            p.getSectionLabel(),
+            p.getName(),
+            p.getDescription(),
+            p.getUnitOfMeasure(),
+            p.getImage(),
+            p.getStatus() != null ? p.getStatus().name() : null,
+            categoryRef
+        );
+    }
+
+    public static record CategoryRefDto(Long id, String name) {}
+
+    // DTO liviano para listado (no serializa proxies JPA)
     public static record ProductListDto(
             Long id,
             String code,
@@ -137,27 +157,31 @@ public class InventoryProductController {
             String description,
             String unitOfMeasure,
             String image,
-            String status
+            String status,
+            CategoryRefDto categoryRef
     ) {}
 
     @GetMapping("/products/{id}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
-    public ResponseEntity<InventoryProduct> getById(@PathVariable String ruc, @PathVariable Long id) {
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getById(@PathVariable String ruc, @PathVariable Long id) {
         return productService.getById(ruc, id)
-            .map(ResponseEntity::ok)
+            .map(p -> ResponseEntity.ok(toListDto(p)))
             .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/products")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
+    @Transactional
     public ResponseEntity<?> create(@PathVariable String ruc, @RequestBody InventoryProduct input) {
         try {
             InventoryProduct created = productService.create(ruc, input);
-            return new ResponseEntity<>(created, HttpStatus.CREATED);
+            return new ResponseEntity<>(toListDto(created), HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new com.improvementsolutions.dto.ErrorResponse(e.getMessage(), "BAD_REQUEST", 400));
         } catch (Exception e) {
+            logger.error("[InventoryProducts] Error al crear producto: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new com.improvementsolutions.dto.ErrorResponse("Error interno al crear producto", "INTERNAL_SERVER_ERROR", 500));
         }
@@ -165,14 +189,16 @@ public class InventoryProductController {
 
     @PutMapping("/products/{id}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
+    @Transactional
     public ResponseEntity<?> update(@PathVariable String ruc, @PathVariable Long id, @RequestBody InventoryProduct input) {
         try {
             InventoryProduct updated = productService.update(ruc, id, input);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok(toListDto(updated));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new com.improvementsolutions.dto.ErrorResponse(e.getMessage(), "BAD_REQUEST", 400));
         } catch (Exception e) {
+            logger.error("[InventoryProducts] Error al actualizar producto: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new com.improvementsolutions.dto.ErrorResponse("Error interno al actualizar producto", "INTERNAL_SERVER_ERROR", 500));
         }

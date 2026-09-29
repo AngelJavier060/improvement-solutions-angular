@@ -35,6 +35,7 @@ public class InventoryCategory {
     // Jerarquía de categorías (opcional)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
+    @JsonIgnore
     private InventoryCategory parent;
 
     @Column(name = "level")
