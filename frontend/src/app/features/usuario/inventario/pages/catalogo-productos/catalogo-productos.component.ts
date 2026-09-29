@@ -11,7 +11,6 @@ import { InventoryEntryService, InventoryEntry } from '../../../../../services/i
 import { FileService } from '../../../../../services/file.service';
 import { AuthService } from '../../../../../core/services/auth.service';
 import {
-  INVENTORY_SECTIONS_BY_KIND,
   InventoryProductKind,
   InventoryProductSection,
   inventorySectionLabel
@@ -57,7 +56,7 @@ export class CatalogoProductosComponent implements OnInit {
   private familyLabelByCode: Record<string, string> = {};
   /** Secciones de la empresa (todas las asignadas). */
   private companySectionsFlat: InventoryProductSection[] = [];
-  subcategoryOptions: InventoryProductSection[] = [...INVENTORY_SECTIONS_BY_KIND.EPP];
+  subcategoryOptions: InventoryProductSection[] = [];
   bodegaParamsLoaded = false;
   bodegaParamsError = '';
 
@@ -165,7 +164,7 @@ export class CatalogoProductosComponent implements OnInit {
     ];
     this.applyFamilyOptions(defaults);
     this.companySectionsFlat = [];
-    this.subcategoryOptions = [...INVENTORY_SECTIONS_BY_KIND.EPP];
+    this.subcategoryOptions = [];
   }
 
   /** Mapea código/nombre de familia al enum operativo del backend (EPP|HERRAMIENTA|PIEZA). */
@@ -244,7 +243,7 @@ export class CatalogoProductosComponent implements OnInit {
 
     this.subcategoryOptions = this.companySectionsFlat.length
       ? [...this.companySectionsFlat]
-      : [...INVENTORY_SECTIONS_BY_KIND.EPP];
+      : [];
 
     if (this.productForm && !this.fillingForm) {
       const currentFamily = (this.productForm.get('familyCode')?.value || '').toString().toUpperCase();
@@ -389,11 +388,7 @@ export class CatalogoProductosComponent implements OnInit {
 
   getSectionOptionsForFilter(): { prefix: string; label: string }[] {
     if (this.companySectionsFlat.length) return [...this.companySectionsFlat];
-    return [
-      ...INVENTORY_SECTIONS_BY_KIND.EPP,
-      ...INVENTORY_SECTIONS_BY_KIND.HERRAMIENTA,
-      ...INVENTORY_SECTIONS_BY_KIND.PIEZA
-    ];
+    return [];
   }
 
   getProductSectionCode(p: InventoryProduct): string {
@@ -476,9 +471,31 @@ export class CatalogoProductosComponent implements OnInit {
   }
 
   countByKind(familyCode: string): number {
-    if (!familyCode) return this.products.length;
+    const scoped = this.productsInCompanyCatalog();
+    if (!familyCode) return scoped.length;
     const code = familyCode.toUpperCase();
-    return this.products.filter(p => this.getProductFamilyCode(p) === code).length;
+    return scoped.filter(p => this.getProductFamilyCode(p) === code).length;
+  }
+
+  /** SKUs que pertenecen a Familia/Sección asignadas a esta empresa. */
+  productsInCompanyCatalog(): InventoryProduct[] {
+    return (this.products || []).filter(p => this.isProductInCompanyCatalog(p));
+  }
+
+  isProductInCompanyCatalog(p: InventoryProduct): boolean {
+    if (!this.bodegaParamsLoaded) return true;
+    const assignedSecs = this.companySectionsFlat || [];
+    const assignedFams = this.companyFamilyOptions || [];
+    if (!assignedSecs.length && !assignedFams.length) return true;
+    if (assignedSecs.length) {
+      const section = this.getProductSectionCode(p);
+      if (!section || !assignedSecs.some(s => s.prefix === section)) return false;
+    }
+    if (assignedFams.length) {
+      const fam = this.getProductFamilyCode(p);
+      if (fam && !assignedFams.some(f => f.code === fam)) return false;
+    }
+    return true;
   }
 
   /** Evita que valueChanges pise valores al rellenar el formulario de edición. */
@@ -543,7 +560,7 @@ export class CatalogoProductosComponent implements OnInit {
     // Secciones son las de la empresa (todas), no dependen de la familia.
     this.subcategoryOptions = this.companySectionsFlat.length
       ? [...this.companySectionsFlat]
-      : [...INVENTORY_SECTIONS_BY_KIND.EPP];
+      : [];
     const familyCode = this.familySkuCode();
     const kind = this.productKindForFamily(familyCode);
     const current = (this.productForm.get('sectionCode')?.value || this.productForm.get('subcategoryPrefix')?.value || '').toString();
@@ -788,7 +805,7 @@ export class CatalogoProductosComponent implements OnInit {
   }
 
   getFilteredProducts(): InventoryProduct[] {
-    return this.products.filter(p => {
+    return this.productsInCompanyCatalog().filter(p => {
       const catName = this.getProductCategory(p);
       const section = this.getProductSectionCode(p);
       const sectionLabel = this.getProductSectionLabel(p);
@@ -873,6 +890,10 @@ export class CatalogoProductosComponent implements OnInit {
       return;
     }
     this.cancelEdit();
+    if (this.bodegaParamsLoaded && !this.companySectionsFlat.length) {
+      this.errorMessage = 'Esta empresa no tiene secciones asignadas. Agrégalas en Inventario-Bodega y vuelve a intentar.';
+      return;
+    }
     this.showProductForm = true;
     this.loadSuppliers();
     this.loadCategories();
@@ -885,7 +906,7 @@ export class CatalogoProductosComponent implements OnInit {
     this.ensureCategoryOption(cat);
     this.subcategoryOptions = this.companySectionsFlat.length
       ? [...this.companySectionsFlat]
-      : [...INVENTORY_SECTIONS_BY_KIND.EPP];
+      : [];
     const section = this.subcategoryOptions[0]?.prefix || 'OTR';
     this.productForm.patchValue({
       familyCode,
@@ -943,7 +964,7 @@ export class CatalogoProductosComponent implements OnInit {
     this.ensureCategoryOption(catName);
     this.subcategoryOptions = this.companySectionsFlat.length
       ? [...this.companySectionsFlat]
-      : [...INVENTORY_SECTIONS_BY_KIND.EPP];
+      : [];
     const section = this.getProductSectionCode(p) || this.subcategoryOptions[0]?.prefix || 'OTR';
     this.fillingForm = true;
     this.productForm.patchValue({
@@ -957,7 +978,7 @@ export class CatalogoProductosComponent implements OnInit {
   }
 
   getInactiveCount(): number {
-    return this.products.filter(p => p.status === 'INACTIVO' || p.status === 'DESCONTINUADO').length;
+    return this.productsInCompanyCatalog().filter(p => p.status === 'INACTIVO' || p.status === 'DESCONTINUADO').length;
   }
 
   createVariant(): void {
@@ -1593,7 +1614,7 @@ export class CatalogoProductosComponent implements OnInit {
     this.ensureCategoryOption(catName);
     this.subcategoryOptions = this.companySectionsFlat.length
       ? [...this.companySectionsFlat]
-      : [...INVENTORY_SECTIONS_BY_KIND.EPP];
+      : [];
     const sectionCode = (p.sectionCode || this.extractSubPrefixFromCode(p.code || '') || this.subcategoryOptions[0]?.prefix || 'OTR').toString().toUpperCase();
     const sectionOk = this.subcategoryOptions.some(s => s.prefix === sectionCode)
       ? sectionCode
@@ -1641,7 +1662,7 @@ export class CatalogoProductosComponent implements OnInit {
     const kind = family?.productKind || 'EPP';
     this.subcategoryOptions = this.companySectionsFlat.length
       ? [...this.companySectionsFlat]
-      : [...INVENTORY_SECTIONS_BY_KIND.EPP];
+      : [];
     const section = this.subcategoryOptions[0]?.prefix || 'OTR';
     this.productForm.reset({
       code: '',
@@ -1776,6 +1797,11 @@ export class CatalogoProductosComponent implements OnInit {
     const sectionCode = (raw.sectionCode || raw.subcategoryPrefix || '').toString().toUpperCase();
     if (!sectionCode) {
       this.formPanelError = this.errorMessage = 'Selecciona la sección (Casco, Pantalón, etc.).';
+      return;
+    }
+    if (this.companySectionsFlat.length && !this.companySectionsFlat.some(s => s.prefix === sectionCode)) {
+      this.formPanelError = this.errorMessage =
+        `La sección “${sectionCode}” no está asignada a esta empresa. Usa solo las de Inventario-Bodega.`;
       return;
     }
     const sectionLabel = this.sectionLabelForPrefix(sectionCode);

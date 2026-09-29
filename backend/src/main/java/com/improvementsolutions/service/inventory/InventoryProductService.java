@@ -1,8 +1,14 @@
 package com.improvementsolutions.service.inventory;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.improvementsolutions.model.EppFamily;
+import com.improvementsolutions.model.EppSection;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -109,7 +115,11 @@ public class InventoryProductService {
         ensureProductKindColumn();
         ensureProductSectionColumns();
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
-        return productRepository.findByBusiness_Id(business.getId());
+        // Fuerza carga LAZY de catálogo empresa (Familia/Sección asignadas).
+        if (business.getEppFamilies() != null) business.getEppFamilies().size();
+        if (business.getEppSections() != null) business.getEppSections().size();
+        List<InventoryProduct> items = productRepository.findByBusiness_Id(business.getId());
+        return filterToAssignedCatalog(business, items);
     }
 
     /**
@@ -121,11 +131,13 @@ public class InventoryProductService {
         ensureProductKindColumn();
         ensureProductSectionColumns();
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        if (business.getEppFamilies() != null) business.getEppFamilies().size();
+        if (business.getEppSections() != null) business.getEppSections().size();
         try {
-            return listLightWithKind(business.getId());
+            return filterToAssignedCatalog(business, listLightWithKind(business.getId()));
         } catch (Exception ex) {
             log.warn("[InventoryProduct] listLight con product_kind falló, usando legacy: {}", ex.getMessage());
-            return listLightLegacy(business.getId());
+            return filterToAssignedCatalog(business, listLightLegacy(business.getId()));
         }
     }
 
@@ -243,6 +255,8 @@ public class InventoryProductService {
         ensureProductKindColumn();
         ensureProductSectionColumns();
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        if (business.getEppSections() != null) business.getEppSections().size();
+        if (business.getEppFamilies() != null) business.getEppFamilies().size();
 
         if (input.getCode() == null || input.getCode().trim().isEmpty()) {
             throw new IllegalArgumentException("El código del producto es obligatorio");
@@ -271,6 +285,7 @@ public class InventoryProductService {
         entity.setName(input.getName().trim());
         entity.setProductKind(resolveProductKind(input));
         applySection(entity, input);
+        assertSectionAssigned(business, entity.getSectionCode());
         applyCategory(business, entity, input);
         entity.setDescription(input.getDescription());
         entity.setUnitOfMeasure(
@@ -289,6 +304,8 @@ public class InventoryProductService {
         ensureProductKindColumn();
         ensureProductSectionColumns();
         Business business = authService.requireBusinessForRucAndCurrentUser(ruc);
+        if (business.getEppSections() != null) business.getEppSections().size();
+        if (business.getEppFamilies() != null) business.getEppFamilies().size();
         InventoryProduct entity = productRepository.findByBusiness_RucAndId(ruc, id)
             .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado"));
 
@@ -313,6 +330,7 @@ public class InventoryProductService {
             entity.setProductKind(input.getProductKind());
         }
         applySection(entity, input);
+        assertSectionAssigned(business, entity.getSectionCode());
         if (input.getCategory() == null || input.getCategory().trim().isEmpty()) {
             input.setCategory(defaultCategoryForKind(entity.getProductKind()));
         }
@@ -441,5 +459,82 @@ public class InventoryProductService {
             throw new IllegalArgumentException(
                     "El nombre debe ser un producto concreto (ej: Casco 3M H-700), no la familia o sección (EPP, Herramientas, etc.)");
         }
+    }
+
+    /**
+     * El catálogo de productos de la empresa solo incluye SKUs de las
+     * familias/secciones asignadas en Inventario-Bodega.
+     * Evita mostrar ítems de prueba u otras secciones (CHE, GUA, etc.).
+     */
+    private List<InventoryProduct> filterToAssignedCatalog(Business business, List<InventoryProduct> items) {
+        if (items == null || items.isEmpty()) return items;
+        Set<String> sections = assignedSectionCodes(business);
+        Set<String> families = assignedFamilyCodes(business);
+        if (sections.isEmpty() && families.isEmpty()) {
+            return items;
+        }
+        return items.stream()
+                .filter(p -> matchesAssignedCatalog(p, families, sections))
+                .collect(Collectors.toList());
+    }
+
+    private boolean matchesAssignedCatalog(InventoryProduct p, Set<String> families, Set<String> sections) {
+        String section = resolveSectionCode(p);
+        String family = resolveFamilyCode(p);
+        if (!sections.isEmpty() && (section == null || !sections.contains(section))) {
+            return false;
+        }
+        if (!families.isEmpty() && family != null && !families.contains(family)) {
+            return false;
+        }
+        return true;
+    }
+
+    private void assertSectionAssigned(Business business, String sectionCode) {
+        Set<String> sections = assignedSectionCodes(business);
+        if (sections.isEmpty()) return;
+        String code = sectionCode == null ? "" : sectionCode.trim().toUpperCase(Locale.ROOT);
+        if (code.isEmpty() || !sections.contains(code)) {
+            throw new IllegalArgumentException(
+                    "La sección no está asignada a esta empresa. Asígnala en Inventario-Bodega (Familia / Sección) e inténtalo de nuevo.");
+        }
+    }
+
+    private Set<String> assignedSectionCodes(Business business) {
+        if (business.getEppSections() == null) return Set.of();
+        return business.getEppSections().stream()
+                .filter(s -> s != null && !Boolean.FALSE.equals(s.getActive()))
+                .map(EppSection::getCode)
+                .filter(c -> c != null && !c.isBlank())
+                .map(c -> c.trim().toUpperCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+    }
+
+    private Set<String> assignedFamilyCodes(Business business) {
+        if (business.getEppFamilies() == null) return Set.of();
+        return business.getEppFamilies().stream()
+                .filter(f -> f != null && !Boolean.FALSE.equals(f.getActive()))
+                .map(EppFamily::getCode)
+                .filter(c -> c != null && !c.isBlank())
+                .map(c -> c.trim().toUpperCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+    }
+
+    private String resolveSectionCode(InventoryProduct p) {
+        if (p.getSectionCode() != null && !p.getSectionCode().isBlank()) {
+            return p.getSectionCode().trim().toUpperCase(Locale.ROOT);
+        }
+        String code = p.getCode() != null ? p.getCode().trim().toUpperCase(Locale.ROOT) : "";
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^[A-Z0-9]{2,4}-([A-Z0-9]{2,4})(?:-|$)").matcher(code);
+        return m.find() ? m.group(1) : null;
+    }
+
+    private String resolveFamilyCode(InventoryProduct p) {
+        String code = p.getCode() != null ? p.getCode().trim().toUpperCase(Locale.ROOT) : "";
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^([A-Z0-9]{2,4})-").matcher(code);
+        if (m.find()) return m.group(1);
+        if (p.getProductKind() == ProductCategory.HERRAMIENTA) return "HER";
+        if (p.getProductKind() == ProductCategory.PIEZA) return "PIE";
+        return p.getProductKind() == ProductCategory.EPP ? "EPP" : null;
     }
 }
