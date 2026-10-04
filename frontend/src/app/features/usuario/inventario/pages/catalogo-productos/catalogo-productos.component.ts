@@ -68,6 +68,7 @@ export class CatalogoProductosComponent implements OnInit {
   // Modal de detalle
   selectedProduct: InventoryProduct | null = null;
   productVariants: InventoryVariant[] = [];
+  variantsLoadError = '';
   // Gestión de variantes (en modal)
   variantForm!: FormGroup;
   editingVariant: InventoryVariant | null = null;
@@ -834,6 +835,7 @@ export class CatalogoProductosComponent implements OnInit {
   }
 
   loadVariants(productId: number): void {
+    this.variantsLoadError = '';
     this.variantService.listByProduct(this.ruc, productId).subscribe({
       next: (data) => {
         const list = Array.isArray(data) ? data : [];
@@ -843,10 +845,12 @@ export class CatalogoProductosComponent implements OnInit {
           minQty: this.toNum((v as any).minQty),
           salePrice: this.toNum((v as any).salePrice)
         }));
-        // Load attributes for each variant
         this.productVariants.forEach(v => { if (v.id) this.loadVariantAttributes(v.id); });
       },
-      error: () => this.productVariants = []
+      error: (err) => {
+        this.productVariants = [];
+        this.variantsLoadError = err?.error?.message || 'No se pudieron cargar las variantes. Intenta de nuevo.';
+      }
     });
   }
 

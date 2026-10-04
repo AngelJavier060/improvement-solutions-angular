@@ -3,11 +3,16 @@ package com.improvementsolutions.controller.inventory;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import com.improvementsolutions.dto.ErrorResponse;
+import com.improvementsolutions.dto.inventory.InventoryVariantListDto;
 import com.improvementsolutions.model.inventory.InventoryVariant;
 import com.improvementsolutions.model.inventory.InventoryVariantAttribute;
 import com.improvementsolutions.service.inventory.InventoryVariantService;
@@ -17,6 +22,8 @@ import com.improvementsolutions.repository.inventory.InventoryVariantRepository;
 @RestController
 @RequestMapping("/api/inventory/{ruc}")
 public class InventoryVariantController {
+
+    private static final Logger logger = LoggerFactory.getLogger(InventoryVariantController.class);
 
     private final InventoryVariantService variantService;
     private final InventoryVariantAttributeRepository attrRepository;
@@ -32,22 +39,38 @@ public class InventoryVariantController {
 
     @GetMapping("/products/{productId}/variants")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
-    public ResponseEntity<List<InventoryVariant>> listByProduct(@PathVariable String ruc, @PathVariable Long productId) {
-        return ResponseEntity.ok(variantService.listByProduct(ruc, productId));
+    public ResponseEntity<?> listByProduct(@PathVariable String ruc, @PathVariable Long productId) {
+        try {
+            List<InventoryVariantListDto> dtos = variantService.listDtos(ruc, productId);
+            return ResponseEntity.ok(dtos);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorResponse(e.getMessage(), "FORBIDDEN", 403));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse(e.getMessage(), "BAD_REQUEST", 400));
+        } catch (Exception e) {
+            logger.error("[InventoryVariants] list: {}", e.getMessage(), e);
+            return ResponseEntity.ok(List.of());
+        }
     }
 
     @PostMapping("/products/{productId}/variants")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> create(@PathVariable String ruc, @PathVariable Long productId, @RequestBody InventoryVariant input) {
         try {
-            InventoryVariant created = variantService.create(ruc, productId, input);
+            InventoryVariantListDto created = variantService.create(ruc, productId, input);
             return new ResponseEntity<>(created, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new com.improvementsolutions.dto.ErrorResponse(e.getMessage(), "BAD_REQUEST", 400));
+                .body(new ErrorResponse(e.getMessage(), "BAD_REQUEST", 400));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(e.getMessage(), "FORBIDDEN", 403));
         } catch (Exception e) {
+            logger.error("[InventoryVariants] create: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new com.improvementsolutions.dto.ErrorResponse("Error interno al crear variante", "INTERNAL_SERVER_ERROR", 500));
+                .body(new ErrorResponse("Error interno al crear variante", "INTERNAL_SERVER_ERROR", 500));
         }
     }
 
@@ -55,14 +78,18 @@ public class InventoryVariantController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'MANAGER')")
     public ResponseEntity<?> update(@PathVariable String ruc, @PathVariable Long productId, @PathVariable Long variantId, @RequestBody InventoryVariant input) {
         try {
-            InventoryVariant updated = variantService.update(ruc, productId, variantId, input);
+            InventoryVariantListDto updated = variantService.update(ruc, productId, variantId, input);
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new com.improvementsolutions.dto.ErrorResponse(e.getMessage(), "BAD_REQUEST", 400));
+                .body(new ErrorResponse(e.getMessage(), "BAD_REQUEST", 400));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(e.getMessage(), "FORBIDDEN", 403));
         } catch (Exception e) {
+            logger.error("[InventoryVariants] update: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new com.improvementsolutions.dto.ErrorResponse("Error interno al actualizar variante", "INTERNAL_SERVER_ERROR", 500));
+                .body(new ErrorResponse("Error interno al actualizar variante", "INTERNAL_SERVER_ERROR", 500));
         }
     }
 
@@ -70,8 +97,13 @@ public class InventoryVariantController {
 
     @GetMapping("/variants/{variantId}/attributes")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
-    public ResponseEntity<List<InventoryVariantAttribute>> listAttributes(@PathVariable String ruc, @PathVariable Long variantId) {
-        return ResponseEntity.ok(attrRepository.findByVariant_Id(variantId));
+    public ResponseEntity<?> listAttributes(@PathVariable String ruc, @PathVariable Long variantId) {
+        try {
+            return ResponseEntity.ok(attrRepository.findByVariant_Id(variantId));
+        } catch (Exception e) {
+            logger.error("[InventoryVariants] attributes: {}", e.getMessage(), e);
+            return ResponseEntity.ok(List.of());
+        }
     }
 
     @PostMapping("/variants/{variantId}/attributes")
@@ -85,10 +117,15 @@ public class InventoryVariantController {
             attr.setVariant(variant);
             attr.setAttributeName(input.getAttributeName());
             attr.setAttributeValue(input.getAttributeValue());
-            return new ResponseEntity<>(attrRepository.save(attr), HttpStatus.CREATED);
+            InventoryVariantAttribute saved = attrRepository.save(attr);
+            return new ResponseEntity<>(attributeDto(saved), HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("[InventoryVariants] createAttribute: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Error interno al crear atributo", "INTERNAL_SERVER_ERROR", 500));
         }
     }
 
@@ -102,10 +139,15 @@ public class InventoryVariantController {
                 .orElseThrow(() -> new IllegalArgumentException("Atributo no encontrado"));
             attr.setAttributeName(input.getAttributeName());
             attr.setAttributeValue(input.getAttributeValue());
-            return ResponseEntity.ok(attrRepository.save(attr));
+            InventoryVariantAttribute saved = attrRepository.save(attr);
+            return ResponseEntity.ok(attributeDto(saved));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("[InventoryVariants] updateAttribute: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Error interno al actualizar atributo", "INTERNAL_SERVER_ERROR", 500));
         }
     }
 
@@ -115,5 +157,13 @@ public class InventoryVariantController {
                                              @PathVariable Long attributeId) {
         attrRepository.deleteById(attributeId);
         return ResponseEntity.noContent().build();
+    }
+
+    private static Map<String, Object> attributeDto(InventoryVariantAttribute saved) {
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("id", saved.getId());
+        body.put("attributeName", saved.getAttributeName());
+        body.put("attributeValue", saved.getAttributeValue());
+        return body;
     }
 }

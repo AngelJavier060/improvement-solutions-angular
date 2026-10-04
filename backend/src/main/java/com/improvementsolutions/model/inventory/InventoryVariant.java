@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.improvementsolutions.model.inventory.enums.VariantStatus;
+import com.improvementsolutions.model.inventory.enums.VariantStatusConverter;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,6 +18,7 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"product", "attributes", "hibernateLazyInitializer", "handler"})
 public class InventoryVariant {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +26,9 @@ public class InventoryVariant {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private InventoryProduct product;
 
     @Column(nullable = false, length = 100)
@@ -64,11 +69,14 @@ public class InventoryVariant {
     @Column(length = 255)
     private String image;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = VariantStatusConverter.class)
     @Column(nullable = false, length = 30)
     private VariantStatus status = VariantStatus.ACTIVO;
 
     @OneToMany(mappedBy = "variant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private List<InventoryVariantAttribute> attributes = new ArrayList<>();
 
     @Version

@@ -574,8 +574,9 @@
 
           <ng-template #noVariants>
             <div class="cat-empty cat-empty--sm">
-              <span class="material-symbols-outlined">category</span>
-              <p>Sin variantes. Crea una talla/color y, si quieres, indica las unidades a ingresar ahí mismo.</p>
+              <span class="material-symbols-outlined">{{ variantsLoadError ? 'error' : 'category' }}</span>
+              <p *ngIf="variantsLoadError">{{ variantsLoadError }}</p>
+              <p *ngIf="!variantsLoadError">Sin variantes. Crea una talla/color y, si quieres, indica las unidades a ingresar ahí mismo.</p>
             </div>
           </ng-template>
         </div>
