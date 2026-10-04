@@ -682,6 +682,30 @@
   }
 }
 
+/* Capacitaciones SSA: imprimir solo la hoja clonada, sin página en blanco del layout */
+.ssa-print-root { display: none; }
+
+@media print {
+  body.ssa-print-doc {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    height: auto !important;
+    width: auto !important;
+  }
+
+  body.ssa-print-doc > *:not(.ssa-print-root) {
+    display: none !important;
+  }
+
+  body.ssa-print-doc > .ssa-print-root {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
 @media print {
   /* Credencial: misma orientación de página; el contenido sigue centrado con su propio transform */
   body.print-credential-only {

@@ -1,0 +1,1649 @@
+<div class="hub-wrap">
+  <header class="hub-top" *ngIf="data">
+    <div class="hub-top__row">
+      <div class="hub-brand">
+        <div class="hub-mark">
+          <img *ngIf="data.logoUrl" [src]="data.logoUrl" [alt]="companyLabel">
+          <span *ngIf="!data.logoUrl">{{ companyInitials }}</span>
+        </div>
+        <div>
+          <div class="hub-brand__line">
+            <strong>{{ companyLabel }}</strong>
+            <span>SST Executive Hub</span>
+          </div>
+          <small>Control integral de capacitación SSA · {{ data.year }}</small>
+        </div>
+      </div>
+      <div class="hub-top__tools">
+        <div class="hub-live" *ngIf="census?.syncAt">
+          <i></i>
+          En vivo · {{ census?.syncAt }}
+        </div>
+        <label class="hub-year">
+          Año
+          <select [(ngModel)]="selectedYear" (change)="onYearChange()">
+            <option *ngFor="let y of data.availableYears" [ngValue]="y">{{ y }}</option>
+          </select>
+        </label>
+        <span class="hub-chip" *ngIf="data.current">Vigente</span>
+        <span class="hub-chip hub-chip--muted" *ngIf="!data.current">Histórico</span>
+        <span class="hub-chip hub-chip--ok" *ngIf="isApproved">Aprobado</span>
+        <span class="hub-chip hub-chip--warn" *ngIf="!isApproved">Pendiente</span>
+        <button type="button" class="hub-btn hub-btn--ghost" (click)="openDoc()">
+          <span class="material-symbols-outlined">picture_as_pdf</span>
+          Exportar informe
+        </button>
+        <button type="button" class="hub-btn hub-btn--ghost" (click)="resetHubFilters(); load(selectedYear ?? undefined)" title="Actualizar y restablecer filtros">
+          <span class="material-symbols-outlined">refresh</span>
+        </button>
+        <button type="button" class="hub-btn hub-btn--amber" *ngIf="canWrite" (click)="openExtra()">
+          <span class="material-symbols-outlined">bolt</span>
+          Evento extraordinario
+        </button>
+        <button type="button" class="hub-btn" *ngIf="canWrite" (click)="openActivity()">
+          <span class="material-symbols-outlined">add</span>
+          Nueva capacitación
+        </button>
+      </div>
+    </div>
+    <div class="hub-filters" *ngIf="sites.length">
+      <span>Frente</span>
+      <button type="button" [class.on]="selectedSiteId === 'all'" (click)="selectSite('all')">Consolidado</button>
+      <button type="button" *ngFor="let s of sites" [class.on]="selectedSiteId === s.id" (click)="selectSite(s.id)">
+        {{ s.name }}
+        <em>{{ s.count }}</em>
+      </button>
+    </div>
+  </header>
+
+  <div class="alert alert-danger py-2" *ngIf="error">{{ error }}</div>
+  <div class="alert alert-success py-2" *ngIf="ok">{{ ok }}</div>
+  <div class="text-center py-5" *ngIf="loading">
+    <div class="spinner-border text-primary"></div>
+    <div class="text-muted mt-2">Cargando plan SSA…</div>
+  </div>
+
+  <ng-container *ngIf="!loading && data">
+    <nav class="hub-tabs">
+      <button type="button" [class.active]="tab === 'dashboard'" (click)="setTab('dashboard')">
+        <span class="material-symbols-outlined">space_dashboard</span>
+        Dashboard
+      </button>
+      <button type="button" [class.active]="tab === 'cronograma'" (click)="setTab('cronograma')">
+        <span class="material-symbols-outlined">calendar_month</span>
+        Cronograma {{ planYear }}
+      </button>
+      <button type="button" [class.active]="tab === 'ingreso'" (click)="setTab('ingreso')">
+        <span class="material-symbols-outlined">post_add</span>
+        Ingreso capacitaciones
+      </button>
+      <button type="button" [class.active]="tab === 'extras'" (click)="setTab('extras')">
+        <span class="material-symbols-outlined">bolt</span>
+        Temas inmediatos
+        <em *ngIf="extraItems.length">{{ extraItems.length }}</em>
+      </button>
+      <button type="button" [class.active]="tab === 'faltantes'" (click)="setTab('faltantes')">
+        <span class="material-symbols-outlined">person_off</span>
+        Falta capacitación
+      </button>
+      <button type="button" [class.active]="tab === 'trabajador'" (click)="setTab('trabajador')">
+        <span class="material-symbols-outlined">person</span>
+        Por trabajador
+      </button>
+    </nav>
+
+    <section class="hub-dash" *ngIf="tab === 'dashboard'">
+      <div class="hub-census">
+        <article class="hub-hero">
+          <div class="hub-hero__top">
+            <span class="material-symbols-outlined">supervised_user_circle</span>
+            Censo corporativo
+            <b *ngIf="census?.headcount">100% en TH</b>
+          </div>
+          <div class="hub-hero__num">
+            <strong>{{ census?.headcount || 0 }}</strong>
+            <span>Colaboradores activos</span>
+          </div>
+          <p>Población registrada en Talento Humano bajo el plan SSA {{ data.year }}.</p>
+          <div class="hub-split">
+            <span>Propios {{ census?.direct || 0 }} ({{ pct(census?.direct, census?.headcount) }}%)</span>
+            <span>Contratistas {{ census?.contractor || 0 }} ({{ pct(census?.contractor, census?.headcount) }}%)</span>
+          </div>
+          <div class="hub-bar">
+            <i [style.width.%]="pct(census?.direct, census?.headcount)"></i>
+            <em [style.width.%]="pct(census?.contractor, census?.headcount)"></em>
+          </div>
+        </article>
+        <article class="hub-demo">
+          <h3><span class="material-symbols-outlined">demography</span> Demografía</h3>
+          <div class="hub-demo__grid">
+            <div>
+              <span>Hombres</span>
+              <b>{{ pct(census?.men, census?.headcount) }}%</b>
+              <small>{{ census?.men || 0 }} pers.</small>
+              <div class="hub-mini"><i [style.width.%]="pct(census?.men, census?.headcount)"></i></div>
+            </div>
+            <div>
+              <span>Mujeres</span>
+              <b>{{ pct(census?.women, census?.headcount) }}%</b>
+              <small>{{ census?.women || 0 }} pers.</small>
+              <div class="hub-mini hub-mini--rose"><i [style.width.%]="pct(census?.women, census?.headcount)"></i></div>
+            </div>
+            <div>
+              <span>At. prioritaria</span>
+              <b>{{ pct(census?.priority, census?.headcount) }}%</b>
+              <small>{{ census?.priority || 0 }} pers.</small>
+              <div class="hub-mini hub-mini--ok"><i [style.width.%]="pct(census?.priority, census?.headcount)"></i></div>
+            </div>
+          </div>
+        </article>
+        <article class="hub-demo">
+          <h3><span class="material-symbols-outlined">hub</span> Frentes y operadores</h3>
+          <div class="hub-sites" *ngIf="sites.length || operators.length">
+            <div *ngFor="let s of sites">
+              <div>
+                <b>{{ s.name }}</b>
+                <small>{{ s.companyName || 'Frente operativo' }}</small>
+              </div>
+              <span>{{ s.count }}</span>
+            </div>
+            <div *ngFor="let o of operators">
+              <div>
+                <b>{{ o.name }}</b>
+                <small>Contratista / operador</small>
+              </div>
+              <span>{{ o.count }}</span>
+            </div>
+          </div>
+          <p class="hub-hint" *ngIf="!sites.length && !operators.length">No hay bloques ni contratistas en Talento Humano. Se muestra el consolidado de esta empresa.</p>
+        </article>
+      </div>
+
+      <section class="hub-panel" *ngIf="roles.length">
+        <div class="hub-panel__head">
+          <div>
+            <h3>Cumplimiento por cargos</h3>
+            <p>Datos reales del personal activo y de las asistencias SSA de {{ data.year }}.</p>
+          </div>
+          <button type="button" class="hub-btn hub-btn--ghost" *ngIf="selectedRole" (click)="clearRole()">Quitar filtro</button>
+        </div>
+        <div class="hub-roles">
+          <button type="button" class="hub-role" *ngFor="let r of roles"
+                  [class.on]="selectedRole === r.name"
+                  [class.warn]="(r.percent || 0) < 80"
+                  (click)="selectRole(r.name)">
+            <div class="hub-role__ico">
+              <span class="material-symbols-outlined">{{ r.icon || 'engineering' }}</span>
+              <em>{{ r.percent || 0 }}%</em>
+            </div>
+            <b>{{ r.name }}</b>
+            <small>{{ r.count }} pers.</small>
+            <div class="hub-mini"><i [style.width.%]="r.percent || 0"></i></div>
+          </button>
+        </div>
+      </section>
+
+      <div class="hub-gauges">
+        <article class="hub-panel">
+          <div class="hub-panel__head">
+            <div>
+              <span class="hub-k">KPI corporativo anual</span>
+              <h3>% cumplimiento del plan SSA</h3>
+              <p>Cupos cubiertos sobre la población obligada de cada tema.</p>
+            </div>
+            <span class="hub-code">{{ data.docCode }}</span>
+          </div>
+          <div class="hub-gauge">
+            <div class="hub-arc">
+              <svg viewBox="0 0 220 120">
+                <path d="M 25 105 A 85 85 0 0 1 195 105" fill="none" stroke="#f1f5f9" stroke-linecap="round" stroke-width="14"></path>
+                <path d="M 25 105 A 85 85 0 0 1 195 105" fill="none" stroke="#06b6d4" stroke-linecap="round" stroke-width="14"
+                      stroke-dasharray="267" [attr.stroke-dashoffset]="arcOffset(data.percent)"></path>
+                <g [attr.transform]="'rotate(' + needleDeg(data.percent) + ' 110 105)'">
+                  <line x1="110" y1="105" x2="175" y2="105" stroke="#0f172a" stroke-width="3" stroke-linecap="round"></line>
+                  <circle cx="110" cy="105" r="6" fill="#fff" stroke="#0f172a" stroke-width="3"></circle>
+                </g>
+              </svg>
+              <strong>{{ data.percent || 0 }}%</strong>
+              <span>Avance global</span>
+            </div>
+            <div class="hub-metrics">
+              <div>
+                <small>Población activa</small>
+                <b>{{ census?.headcount || 0 }}</b>
+              </div>
+              <div>
+                <small>Cupos cubiertos</small>
+                <b>{{ data.trainedTotal || 0 }} / {{ data.obligatedTotal || 0 }}</b>
+                <div class="hub-mini"><i [style.width.%]="data.percent || 0"></i></div>
+              </div>
+              <div>
+                <small>Personas con al menos una asistencia</small>
+                <b>{{ census?.trainedPeople || 0 }} · faltan {{ census?.pendingPeople || 0 }}</b>
+              </div>
+            </div>
+          </div>
+        </article>
+        <article class="hub-panel">
+          <div class="hub-panel__head">
+            <div>
+              <span class="hub-k hub-k--ok">Rendimiento</span>
+              <h3>Personas con registro de asistencia</h3>
+              <p>Quiénes ya tienen al menos una sesión marcada en {{ data.year }}.</p>
+            </div>
+          </div>
+          <div class="hub-gauge">
+            <div class="hub-arc">
+              <svg viewBox="0 0 220 120">
+                <path d="M 25 105 A 85 85 0 0 1 195 105" fill="none" stroke="#f1f5f9" stroke-linecap="round" stroke-width="14"></path>
+                <path d="M 25 105 A 85 85 0 0 1 195 105" fill="none" stroke="#10b981" stroke-linecap="round" stroke-width="14"
+                      stroke-dasharray="267" [attr.stroke-dashoffset]="arcOffset(census?.percentPeople)"></path>
+                <g [attr.transform]="'rotate(' + needleDeg(census?.percentPeople) + ' 110 105)'">
+                  <line x1="110" y1="105" x2="175" y2="105" stroke="#059669" stroke-width="3" stroke-linecap="round"></line>
+                  <circle cx="110" cy="105" r="6" fill="#fff" stroke="#059669" stroke-width="3"></circle>
+                </g>
+              </svg>
+              <strong>{{ census?.percentPeople || 0 }}%</strong>
+              <span>Con asistencia</span>
+            </div>
+            <div class="hub-metrics">
+              <div>
+                <small>Temas atrasados</small>
+                <b>{{ data.overdueTopics || 0 }}</b>
+              </div>
+              <div class="hub-gap" *ngIf="(data.overdueTopics || 0) > 0">
+                <span>Hay temas del cronograma con gente pendiente.</span>
+                <button type="button" (click)="filterStatus = 'pendientes'">Ver brechas</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="hub-panel__head">
+        <div>
+          <h3>Programa de formación SSA</h3>
+          <p>Temas del cronograma de esta empresa. Se crean al pulsar Nueva capacitación.</p>
+        </div>
+        <label class="hub-status">
+          Estado
+          <select [(ngModel)]="filterStatus">
+            <option value="todos">Todos</option>
+            <option value="pendientes">Con brecha</option>
+            <option value="completos">100% cubiertos</option>
+          </select>
+        </label>
+      </div>
+      <p class="hub-hint" *ngIf="!scheduleItems.length">Aún no hay temas en el cronograma. Pulse Nueva capacitación para ingresarlos.</p>
+      <p class="hub-hint" *ngIf="scheduleItems.length && !filteredModules.length">No hay módulos con el filtro actual.</p>
+      <div class="hub-mods">
+        <article class="hub-mod" *ngFor="let it of filteredModules" [class.warn]="(it.missing || 0) > 0">
+          <div class="hub-mod__top">
+            <span>{{ it.audienceLabel || 'Todas las áreas' }}</span>
+            <small>{{ it.duration || '—' }}</small>
+          </div>
+          <h4>{{ it.name }}</h4>
+          <div class="hub-donut">
+            <svg viewBox="0 0 88 88">
+              <circle cx="44" cy="44" r="34" fill="none" stroke="#f1f5f9" stroke-width="7"></circle>
+              <circle cx="44" cy="44" r="34" fill="none" [attr.stroke]="(it.missing || 0) > 0 ? '#f59e0b' : '#254e8c'"
+                      stroke-width="7" stroke-linecap="round"
+                      [attr.stroke-dasharray]="213.6" [attr.stroke-dashoffset]="donutOffset(it.percent)"
+                      transform="rotate(-90 44 44)"></circle>
+            </svg>
+            <b>{{ it.percent || 0 }}%</b>
+          </div>
+          <div class="hub-mod__foot">
+            <span>Faltantes: <strong>{{ it.missing || 0 }}</strong></span>
+            <button type="button" (click)="openModule(it)">{{ (it.missing || 0) > 0 ? 'Gestionar faltante' : 'Ver ficha' }}</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <div class="sched" *ngIf="tab === 'cronograma'">
+      <section class="sched-kpis">
+        <article>
+          <div>
+            <span>Avance cronograma {{ data.year }}</span>
+            <b>{{ scheduleStats.percent }}%</b>
+            <small>{{ scheduleStats.trained }} / {{ scheduleStats.obligated }} cupos · {{ scheduleStats.count }} temas</small>
+          </div>
+          <span class="material-symbols-outlined">pie_chart</span>
+        </article>
+        <article class="sched-kpis--amber">
+          <div>
+            <span>Fuera de cronograma</span>
+            <b>{{ extraStats.count }} {{ extraStats.count === 1 ? 'evento' : 'eventos' }}</b>
+            <small>{{ extraStats.pending }} con gente pendiente</small>
+          </div>
+          <span class="material-symbols-outlined">bolt</span>
+        </article>
+        <article>
+          <div>
+            <span>Atendidos en extras</span>
+            <b>{{ extraStats.attended }}</b>
+            <small>{{ extraStats.sessions }} sesiones registradas</small>
+          </div>
+          <span class="material-symbols-outlined">groups</span>
+        </article>
+        <article>
+          <div>
+            <span>Validación del plan</span>
+            <b>{{ isApproved ? 'Auditado OK' : 'Pendiente' }}</b>
+            <small>{{ isApproved ? (data.approvedAt || 'PDF validado') : 'Suba el PDF validado del cronograma' }}</small>
+          </div>
+          <span class="material-symbols-outlined">verified_user</span>
+        </article>
+      </section>
+
+      <section class="sched-panel">
+        <div class="sched-panel__bar">
+          <div>
+            <div class="sched-panel__title">
+              <h2>Cronograma anual {{ data.year }} — plan maestro</h2>
+              <em>{{ scheduleItems.length }} temas SSA</em>
+            </div>
+            <p>Cobertura mensual por audiencia. Los datos son de {{ companyLabel }}.</p>
+          </div>
+          <div class="sched-panel__tools">
+            <label class="sched-search">
+              <span class="material-symbols-outlined">search</span>
+              <input type="text" [(ngModel)]="scheduleQuery" (ngModelChange)="resetSchedulePage()" placeholder="Buscar tema…">
+            </label>
+            <select [(ngModel)]="scheduleAudience" (ngModelChange)="resetSchedulePage()">
+              <option value="all">Todas las audiencias</option>
+              <option value="ALL">Todas las áreas</option>
+              <option value="SUPERVISORS">Supervisores y jefaturas</option>
+              <option value="DRIVERS">Conductores</option>
+              <option value="BRIGADE">Proyectos y brigadistas</option>
+            </select>
+            <label class="cap-upload" *ngIf="canWrite">
+              {{ uploadingDoc ? 'Subiendo…' : (isApproved ? 'Reemplazar PDF' : 'Subir PDF validado') }}
+              <input type="file" accept="application/pdf" (change)="onValidatedFile($event)" [disabled]="uploadingDoc">
+            </label>
+          </div>
+        </div>
+        <div class="sched-table-wrap">
+          <table class="sched-table">
+            <thead>
+              <tr>
+                <th>Tema / detalle</th>
+                <th class="text-center">Participantes</th>
+                <th>Audiencia</th>
+                <th>Facilitador</th>
+                <th class="text-center" *ngFor="let m of months">{{ m }}</th>
+                <th class="text-center">%</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let it of pagedSchedule" [class.sched-row--late]="it.overdue">
+                <td>
+                  <strong>{{ it.name }}</strong>
+                  <small>{{ it.origin === 'EVENTUAL' ? 'Eventual' : 'Planificada' }} · {{ it.trained || 0 }}/{{ it.obligated || 0 }} capacitados</small>
+                </td>
+                <td class="text-center">
+                  <span class="sched-pax">{{ topicPeople(it) }}</span>
+                </td>
+                <td>{{ it.audienceLabel || 'Todas las áreas' }}</td>
+                <td>
+                  <span class="sched-fac"><span class="material-symbols-outlined">badge</span>{{ facilitatorLabel(it) }}</span>
+                </td>
+                <td class="text-center" *ngFor="let m of months; let i = index">
+                  <span class="sched-dot" *ngIf="hasMonth(it, i + 1)"><span class="material-symbols-outlined">check</span></span>
+                  <span class="sched-empty" *ngIf="!hasMonth(it, i + 1)">–</span>
+                </td>
+                <td class="text-center">
+                  <b [class.sched-pct--low]="(it.percent || 0) < 60">{{ it.percent || 0 }}%</b>
+                </td>
+                <td class="sched-act">
+                  <button type="button" class="sched-act__main" *ngIf="canWrite" (click)="startSession(it)">Asistencia</button>
+                  <button type="button" class="sched-ico" (click)="openMissing(it)" title="Faltantes">
+                    <span class="material-symbols-outlined">person</span>
+                  </button>
+                  <button type="button" class="sched-ico" *ngIf="canWrite" (click)="openEdit(it)" title="Editar">
+                    <span class="material-symbols-outlined">edit</span>
+                  </button>
+                  <button type="button" class="sched-ico sched-ico--danger" *ngIf="canWrite" (click)="askDelete(it)" title="Eliminar">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="!pagedSchedule.length">
+                <td colspan="17" class="text-muted">No hay temas del cronograma anual con ese filtro.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="sched-foot">
+          <span>Mostrando {{ pagedSchedule.length ? ((schedulePage - 1) * schedulePageSize + 1) : 0 }}
+            a {{ min(schedulePage * schedulePageSize, filteredSchedule.length) }}
+            de {{ filteredSchedule.length }} capacitaciones anuales</span>
+          <div class="sched-pager" *ngIf="schedulePages > 1">
+            <button type="button" [disabled]="schedulePage === 1" (click)="setSchedulePage(schedulePage - 1)">‹</button>
+            <button type="button" *ngFor="let p of schedulePageList()" [class.on]="p === schedulePage" (click)="setSchedulePage(p)">{{ p }}</button>
+            <button type="button" [disabled]="schedulePage === schedulePages" (click)="setSchedulePage(schedulePage + 1)">›</button>
+          </div>
+        </div>
+      </section>
+
+      <ng-container *ngTemplateOutlet="extrasBlock"></ng-container>
+    </div>
+
+    <div class="sched" *ngIf="tab === 'extras'">
+      <ng-container *ngTemplateOutlet="extrasBlock"></ng-container>
+    </div>
+
+    <ng-template #extrasBlock>
+      <section class="extra-panel">
+        <div class="extra-panel__head">
+          <div>
+            <div class="extra-panel__title">
+              <span class="extra-badge"><span class="material-symbols-outlined">bolt</span> Fuera de cronograma</span>
+              <h2>Capacitaciones no programadas y requerimientos inmediatos</h2>
+              <em>{{ extraItems.length }} {{ extraItems.length === 1 ? 'registro' : 'registros' }}</em>
+            </div>
+            <p>Eventos eventuales de {{ companyLabel }} en {{ data.year }}. No forman parte del plan maestro anual.</p>
+          </div>
+          <button type="button" class="hub-btn hub-btn--amber" *ngIf="canWrite" (click)="openExtra()">
+            <span class="material-symbols-outlined">add</span>
+            Registrar
+          </button>
+        </div>
+        <div class="extra-panel__tools">
+          <label class="sched-search">
+            <span class="material-symbols-outlined">search</span>
+            <input type="text" [(ngModel)]="extraQuery" placeholder="Buscar alerta o tema…">
+          </label>
+          <div class="extra-pills">
+            <button type="button" [class.on]="extraKindFilter === 'all'" (click)="extraKindFilter = 'all'">Todos ({{ extraKindCount('all') }})</button>
+            <button type="button" *ngFor="let k of extraKinds" [class.on]="extraKindFilter === k.id" (click)="extraKindFilter = k.id">
+              {{ k.label }} ({{ extraKindCount(k.id) }})
+            </button>
+          </div>
+          <button type="button" class="hub-btn hub-btn--ghost" (click)="toggleAllExtras()">
+            {{ extraExpandAll ? 'Colapsar todos' : 'Expandir todos' }}
+          </button>
+        </div>
+        <div class="extra-list">
+          <article class="extra-item" *ngFor="let it of filteredExtras" [class.open]="extraOpen(it)">
+            <button type="button" class="extra-item__head" (click)="toggleExtra(it)">
+              <span class="extra-kind extra-kind--{{ extraKindOf(it) | lowercase }}">
+                <span class="material-symbols-outlined">{{ extraKindMeta(it).icon }}</span>
+                {{ extraKindMeta(it).label }}
+              </span>
+              <code>{{ extraCode(it) }}</code>
+              <div class="extra-item__title">
+                <strong>{{ it.name }}</strong>
+                <small>{{ extraText(it) || it.place || it.audienceLabel }}</small>
+              </div>
+              <span class="sched-fac" *ngIf="facilitatorLabel(it)"><span class="material-symbols-outlined">badge</span>{{ facilitatorLabel(it) }}</span>
+              <span class="sched-pax">{{ topicPeople(it) }}</span>
+              <span class="extra-pct" [class.ok]="(it.percent || 0) >= 100" [class.warn]="(it.missing || 0) > 0 && (it.percent || 0) < 100">
+                {{ (it.percent || 0) >= 100 ? '100% cumplido' : ((it.percent || 0) + '%') }}
+              </span>
+              <span class="extra-date" *ngIf="extraDate(it)">{{ extraDate(it) }}</span>
+              <span class="material-symbols-outlined extra-chevron">expand_more</span>
+            </button>
+              <div class="extra-item__body" *ngIf="extraOpen(it)">
+              <div class="extra-grid">
+                <div>
+                  <span>Motivo</span>
+                  <b>{{ extraText(it) || 'Registro eventual SSA' }}</b>
+                </div>
+                <div>
+                  <span>Facilitador</span>
+                  <b>{{ facilitatorLabel(it) }}</b>
+                  <small>{{ it.facilitatorType === 'EXTERNO' ? 'Externo' : 'Interno SSA' }}</small>
+                </div>
+                <div>
+                  <span>Lugar y duración</span>
+                  <b>{{ it.place || 'Por definir' }}</b>
+                  <small>{{ it.duration || '—' }} · {{ it.methodology || 'Presencial' }}</small>
+                </div>
+                <div>
+                  <span>Cobertura</span>
+                  <b>{{ it.trained || 0 }} / {{ it.obligated || 0 }} capacitados</b>
+                  <small>{{ it.missing || 0 }} pendientes · {{ itemSessions(it.id).length }} sesiones</small>
+                </div>
+              </div>
+              <div class="extra-people" *ngIf="ingresoPeople(it).length">
+                <span>Personas que recibieron esta capacitación</span>
+                <ul class="ingreso-people">
+                  <li *ngFor="let p of ingresoPeople(it)">
+                    <strong>{{ p.fullName }}</strong>
+                    <small>{{ p.cedula || '—' }} · {{ p.position || 'Sin cargo' }}</small>
+                  </li>
+                </ul>
+              </div>
+              <div class="ingreso-session" *ngFor="let s of itemSessions(it.id)">
+                <div class="ingreso-session__meta">
+                  <b>{{ formatSessionDate(s.sessionDate) }}</b>
+                  <small>{{ s.place || it.place || '—' }} · {{ s.presentCount || 0 }} presentes</small>
+                  <button type="button" class="ingreso-pdf" *ngIf="s.evidenceUrl" (click)="openEvidence(s.evidenceUrl); $event.stopPropagation()">
+                    <span class="material-symbols-outlined">picture_as_pdf</span>
+                    Ver acta
+                  </button>
+                  <button type="button" class="hub-btn hub-btn--ghost" *ngFor="let u of s.evidencePhotoUrls; let i = index" (click)="openEvidence(u); $event.stopPropagation()">
+                    Foto {{ i + 1 }}
+                  </button>
+                </div>
+              </div>
+              <p class="extra-people__empty" *ngIf="!ingresoPeople(it).length">Aún no hay personas registradas. Tome asistencia para listarlas aquí.</p>
+              <div class="extra-item__foot">
+                <small>Audiencia: {{ it.audienceLabel || 'Todas las áreas' }}</small>
+                <div class="sched-act">
+                  <button type="button" class="sched-act__main" *ngIf="canWrite" (click)="startSession(it)">Asistencia</button>
+                  <button type="button" class="ingreso-pdf" *ngIf="it.evidencePdfUrl" (click)="openEvidence(it.evidencePdfUrl)">
+                    <span class="material-symbols-outlined">picture_as_pdf</span>
+                    Ver acta
+                  </button>
+                  <button type="button" class="hub-btn hub-btn--ghost" *ngFor="let u of it.evidencePhotoUrls; let i = index" (click)="openEvidence(u)">
+                    Foto {{ i + 1 }}
+                  </button>
+                  <button type="button" class="hub-btn hub-btn--ghost" *ngIf="latestSession(it)?.evidenceUrl" (click)="openEvidence(latestSession(it)?.evidenceUrl)">Registro</button>
+                  <button type="button" class="hub-btn hub-btn--ghost" *ngIf="canWrite" (click)="openEdit(it)">Editar</button>
+                  <button type="button" class="hub-btn hub-btn--ghost" *ngIf="canWrite" (click)="askDelete(it)">Eliminar</button>
+                </div>
+              </div>
+            </div>
+          </article>
+          <div class="extra-empty" *ngIf="!filteredExtras.length">
+            <span class="material-symbols-outlined">search_off</span>
+            <p>No hay capacitaciones extraordinarias con esos criterios.</p>
+            <button type="button" class="hub-btn hub-btn--amber" *ngIf="canWrite" (click)="openExtra()">Registrar la primera</button>
+          </div>
+        </div>
+      </section>
+    </ng-template>
+
+    <div class="cap-card p-3" *ngIf="tab === 'faltantes'">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+        <div>
+          <h2 class="h6 mb-1">Falta capacitación</h2>
+          <p class="small text-muted mb-0">Elija el tema. Se abre el registro PDF con las personas de Talento Humano que aún no tienen asistencia, listas para imprimir.</p>
+        </div>
+        <button type="button" class="hub-btn" *ngIf="missing" (click)="openMissingDoc()">
+          <span class="material-symbols-outlined">picture_as_pdf</span>
+          Visualizar registro
+        </button>
+      </div>
+      <select class="form-select form-select-sm mb-3 cap-tema" style="max-width:480px"
+              [ngModel]="missing?.itemId"
+              (ngModelChange)="openMissing({ id: $event })">
+        <option [ngValue]="undefined">Elija un tema del cronograma</option>
+        <option *ngFor="let it of missingTopicOptions" [ngValue]="it.id" class="cap-tema">{{ it.name }} ({{ it.missing }} faltan)</option>
+      </select>
+      <div *ngIf="loadingMissing" class="text-muted">Cargando…</div>
+      <div *ngIf="missing && !loadingMissing">
+        <p class="small text-muted"><span class="cap-tema">{{ missing.topicName }}</span> · audiencia: {{ missing.audienceLabel }} ·
+          capacitados {{ missing.trained }} / {{ missing.obligated }} · faltan <strong>{{ missing.missing }}</strong></p>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Trabajador</th><th>Cédula</th><th>Cargo</th><th>Teléfono</th><th>Correo</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let p of missing.people" class="cap-click" (click)="openWorker(p.id)">
+                <td class="text-uppercase"><button type="button" class="btn btn-link p-0 text-uppercase">{{ p.fullName }}</button></td>
+                <td>{{ p.cedula }}</td>
+                <td class="small">{{ p.position }}</td>
+                <td>{{ p.phone || '—' }}</td>
+                <td>{{ p.email || '—' }}</td>
+              </tr>
+              <tr *ngIf="!missing.people?.length"><td colspan="5" class="text-muted">Nadie pendiente en este tema.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" *ngIf="canWrite && missing.itemId" (click)="startSession({ id: missing.itemId })">
+          Registrar asistencia de este tema
+        </button>
+      </div>
+    </div>
+
+    <div class="ingreso" *ngIf="tab === 'ingreso'">
+      <section class="ingreso-panel">
+        <div class="ingreso-panel__bar">
+          <div>
+            <div class="sched-panel__title">
+              <h2>Ingreso de capacitaciones</h2>
+              <em>{{ filteredIngreso.length }} {{ filteredIngreso.length === 1 ? 'registro' : 'registros' }}</em>
+            </div>
+            <p>Solo aparecen los temas con asistencia guardada. Pulse un tema para ver a las personas capacitadas; si dicta el mismo tema en otra fecha, los nuevos se suman aquí.</p>
+          </div>
+        </div>
+        <div class="ingreso-panel__tools">
+          <label class="sched-search">
+            <span class="material-symbols-outlined">search</span>
+            <input type="text" [(ngModel)]="ingresoQuery" placeholder="Buscar tema, trabajador o facilitador…">
+          </label>
+          <div class="extra-pills">
+            <button type="button" [class.on]="ingresoOrigin === 'all'" (click)="ingresoOrigin = 'all'">Todos ({{ ingresoCount('all') }})</button>
+            <button type="button" [class.on]="ingresoOrigin === 'PLAN'" (click)="ingresoOrigin = 'PLAN'">Plan anual ({{ ingresoCount('PLAN') }})</button>
+            <button type="button" [class.on]="ingresoOrigin === 'REINDUCCION'" (click)="ingresoOrigin = 'REINDUCCION'">Reinducción ({{ ingresoCount('REINDUCCION') }})</button>
+            <button type="button" [class.on]="ingresoOrigin === 'EXTRA'" (click)="ingresoOrigin = 'EXTRA'">Fuera de cronograma ({{ ingresoCount('EXTRA') }})</button>
+          </div>
+          <button type="button" class="hub-btn hub-btn--ghost" *ngIf="filteredIngreso.length" (click)="toggleAllIngreso()">
+            {{ ingresoExpandAll ? 'Colapsar todos' : 'Expandir todos' }}
+          </button>
+        </div>
+        <div class="ingreso-list">
+          <article class="ingreso-item" *ngFor="let it of filteredIngreso" [class.open]="ingresoOpen(it)">
+            <button type="button" class="ingreso-item__head" (click)="toggleIngreso(it)">
+              <span class="ingreso-tag" *ngIf="it.origin !== 'EVENTUAL'">Plan anual</span>
+              <span class="ingreso-tag ingreso-tag--extra" *ngIf="it.origin === 'EVENTUAL'">{{ extraKindMeta(it).label }}</span>
+              <span class="ingreso-tag ingreso-tag--reind" *ngIf="itemHasReinduction(it)">Reinducción</span>
+              <div class="ingreso-item__title">
+                <strong>{{ it.name }}</strong>
+                <small>{{ itemSessions(it.id).length }} {{ itemSessions(it.id).length === 1 ? 'fecha' : 'fechas' }}
+                  · {{ ingresoPeople(it).length }} {{ ingresoPeople(it).length === 1 ? 'persona' : 'personas' }}
+                  · {{ facilitatorLabel(it) }}</small>
+              </div>
+              <span class="sched-pax">{{ it.trained || ingresoPeople(it).length }} / {{ it.obligated || 0 }}</span>
+              <span class="material-symbols-outlined extra-chevron">expand_more</span>
+            </button>
+            <div class="ingreso-item__body" *ngIf="ingresoOpen(it)">
+              <div class="ingreso-session" *ngFor="let s of itemSessions(it.id)">
+                <div class="ingreso-session__meta">
+                  <b>{{ formatSessionDate(s.sessionDate) }}</b>
+                  <span class="ingreso-tag" [class.ingreso-tag--reind]="s.reinduction || s.origin === 'REINDUCCION'"
+                        [class.ingreso-tag--extra]="s.origin === 'EVENTUAL'">{{ sessionKindLabel(s) }}</span>
+                  <small>{{ s.place || it.place || '—' }} · {{ s.facilitator || facilitatorLabel(it) }} · {{ s.presentCount || 0 }} presentes</small>
+                  <button type="button" class="ingreso-pdf" *ngIf="s.evidenceUrl" (click)="openEvidence(s.evidenceUrl); $event.stopPropagation()">
+                    <span class="material-symbols-outlined">picture_as_pdf</span>
+                    Ver acta
+                  </button>
+                  <button type="button" class="hub-btn hub-btn--ghost" *ngFor="let u of s.evidencePhotoUrls; let i = index" (click)="openEvidence(u); $event.stopPropagation()">
+                    Foto {{ i + 1 }}
+                  </button>
+                </div>
+                <ul class="ingreso-people">
+                  <li *ngFor="let p of s.attendees">
+                    <strong>{{ p.fullName }}</strong>
+                    <small>{{ p.cedula || '—' }} · {{ p.position || 'Sin cargo' }}</small>
+                  </li>
+                  <li class="ingreso-people__empty" *ngIf="!s.attendees?.length">Esta fecha no tiene personas marcadas como presentes.</li>
+                </ul>
+              </div>
+              <div class="ingreso-item__foot">
+                <small>Las personas se acumulan en este tema. Cada fecha nueva suma capacitados y alimenta las estadísticas.</small>
+                <button type="button" class="sched-act__main" *ngIf="canWrite" (click)="startSession(it); $event.stopPropagation()">Registrar otra fecha</button>
+              </div>
+            </div>
+          </article>
+          <div class="extra-empty" *ngIf="!filteredIngreso.length">
+            <span class="material-symbols-outlined">post_add</span>
+            <p>Aún no hay ingresos. Tome asistencia desde el cronograma o desde un tema inmediato y el registro aparecerá aquí.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="cap-card p-3" *ngIf="tab === 'trabajador'">
+      <h2 class="h6">Historial por trabajador</h2>
+      <p class="small text-muted">Busque a una persona para ver los temas que ya recibió, los pendientes y descargar su cartilla PDF de {{ data.year }}.</p>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <input class="form-control form-control-sm" style="max-width:280px"
+               [(ngModel)]="workerFilter" placeholder="Nombre o cédula"
+               (keyup.enter)="loadWorkers()">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="loadWorkers()">Buscar</button>
+      </div>
+      <div *ngIf="loadingWorkers" class="text-muted mb-2">Cargando personal…</div>
+      <div class="row g-3">
+        <div class="col-md-5">
+          <div class="table-responsive" style="max-height:420px; overflow:auto;">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Trabajador</th><th>Cédula</th><th class="text-end">Recibidas</th><th class="text-end">Pendientes</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let w of workers" class="cap-click" [class.table-active]="selectedWorker?.id === w.id" (click)="openWorker(w.id, false)">
+                  <td class="text-uppercase">{{ w.fullName }}</td>
+                  <td>{{ w.cedula }}</td>
+                  <td class="text-end">{{ w.received || 0 }}</td>
+                  <td class="text-end">{{ w.pending || 0 }}</td>
+                </tr>
+                <tr *ngIf="!workers.length && !loadingWorkers"><td colspan="4" class="text-muted">No hay personal activo.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="col-md-7">
+          <div *ngIf="loadingWorker" class="text-muted">Cargando historial…</div>
+          <ng-container *ngIf="selectedWorker && !loadingWorker">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+              <div>
+                <h3 class="h6 text-uppercase mb-1">{{ selectedWorker.fullName }}</h3>
+                <p class="small text-muted mb-0">{{ selectedWorker.cedula }} · {{ selectedWorker.position || '—' }} ·
+                  {{ selectedWorker.received || 0 }} recibidas · {{ selectedWorker.pending || 0 }} pendientes</p>
+              </div>
+              <button type="button" class="hub-btn" (click)="openWorkerDoc()">
+                <span class="material-symbols-outlined">picture_as_pdf</span>
+                Cartilla PDF
+              </button>
+            </div>
+            <h4 class="h6 mt-3">Temas impartidos</h4>
+            <table class="table table-sm">
+              <thead><tr><th>Fecha</th><th>Tema</th><th>Facilitador</th><th>Registro</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let r of selectedWorker.records">
+                  <td>{{ r.sessionDate }}</td>
+                  <td class="cap-tema">{{ r.topicName }}</td>
+                  <td class="small">{{ r.facilitator || '—' }}</td>
+                  <td>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" *ngIf="r.evidenceUrl" (click)="openEvidence(r.evidenceUrl)">Ver</button>
+                    <span class="text-muted small" *ngIf="!r.evidenceUrl">—</span>
+                  </td>
+                </tr>
+                <tr *ngIf="!selectedWorker.records?.length"><td colspan="4" class="text-muted">Aún no tiene asistencias registradas.</td></tr>
+              </tbody>
+            </table>
+            <h4 class="h6 mt-3">Temas pendientes</h4>
+            <ul class="small mb-2" *ngIf="selectedWorker.pendingTopics?.length">
+              <li *ngFor="let t of selectedWorker.pendingTopics">
+                <span class="cap-tema">{{ t.topicName }}</span>
+                <button type="button" class="btn btn-link btn-sm p-0 ms-1" *ngIf="canWrite" (click)="startSession({ id: t.itemId })">Tomar asistencia</button>
+              </li>
+            </ul>
+            <p class="text-muted small" *ngIf="!selectedWorker.pendingTopics?.length">No le faltan temas de su audiencia.</p>
+          </ng-container>
+          <p class="text-muted small" *ngIf="!selectedWorker && !loadingWorker">Seleccione un trabajador de la lista.</p>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>
+
+<div class="hub-mask" *ngIf="drawerItem" (click)="closeDrawer()"></div>
+<aside class="hub-drawer" *ngIf="drawerItem" (click)="$event.stopPropagation()">
+  <div class="hub-drawer__head">
+    <div>
+      <span>{{ drawerItem.audienceLabel }}</span>
+      <h3>{{ drawerItem.name }}</h3>
+    </div>
+    <button type="button" (click)="closeDrawer()" aria-label="Cerrar">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+  <div class="hub-drawer__gap" [class.ok]="!(drawerItem.missing)">
+    <span>{{ (drawerItem.missing || 0) > 0 ? 'Personal pendiente' : 'Cobertura completa' }}</span>
+    <b>{{ drawerItem.missing || 0 }}</b>
+  </div>
+  <div *ngIf="loadingMissing" class="text-muted">Cargando faltantes…</div>
+  <div class="hub-drawer__list" *ngIf="missing && missing.itemId === drawerItem.id && !loadingMissing">
+    <article *ngFor="let p of missing.people">
+      <div>
+        <b class="text-uppercase">{{ p.fullName }}</b>
+        <small>{{ p.cedula }} · {{ p.position || '—' }}</small>
+      </div>
+      <button type="button" class="hub-btn hub-btn--ghost" (click)="openWorker(p.id)">Ficha</button>
+    </article>
+    <p *ngIf="!missing.people?.length">Nadie pendiente en este tema.</p>
+  </div>
+  <button type="button" class="hub-btn" *ngIf="canWrite && drawerItem.id" (click)="startSession(drawerItem); closeDrawer()">
+    Registrar asistencia
+  </button>
+</aside>
+
+<!-- Flotante: registrar actividad (solo recuadro interno del modelo) -->
+<div class="sst-overlay" *ngIf="showActivity" (click)="closeActivity()">
+  <div class="sst-panel" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <button type="button" class="sst-close" (click)="closeActivity()" aria-label="Cerrar">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+
+    <div class="sst-hero" [class.sst-hero--extra]="extraMode">
+      <div>
+        <div class="sst-crumb">{{ extraMode
+          ? (editingId ? 'Editar evento fuera de cronograma' : 'Alerta, requerimiento o inducción urgente')
+          : (editingId ? 'Editar actividad del cronograma' : 'Plan anual ' + (data?.year || '') + ' · Registrar nueva actividad') }}</div>
+        <h2>{{ extraMode
+          ? (editingId ? 'Editar capacitación extraordinaria' : 'Registrar capacitación fuera de cronograma')
+          : (editingId ? 'Editar capacitación SSA' : 'Registro de actividad de capacitación SSA') }}</h2>
+        <p>{{ extraMode
+          ? 'Este tema no entra al plan maestro anual. Queda en la bitácora de extras de esta empresa.'
+          : (editingId ? 'Los cambios se guardan en el cronograma de esta empresa.' : 'Al guardar, el tema entra al cronograma de esta empresa y queda listo para tomar asistencia.') }}</p>
+      </div>
+      <span class="sst-badge">{{ extraMode ? 'Fuera de programa' : ('Vigencia ' + (data?.year || '')) }}</span>
+    </div>
+
+    <div class="sst-grid">
+      <div class="sst-main">
+        <section class="sst-card">
+          <div class="sst-card__head">
+            <div class="sst-num">01</div>
+            <div>
+              <h3>Datos de la actividad</h3>
+              <small>El tema se identifica por su nombre en esta empresa</small>
+            </div>
+          </div>
+          <div class="sst-fields">
+            <label class="sst-span">Tema / título de la capacitación <span>*</span>
+              <input type="text" maxlength="160" [(ngModel)]="form.name" placeholder="Ej. Seguridad y control de energías peligrosas (LOTO)">
+            </label>
+            <label class="sst-span" *ngIf="extraMode">Tipo de evento extraordinario
+              <select [(ngModel)]="form.extraKind">
+                <option *ngFor="let k of extraKinds" [ngValue]="k.id">{{ k.label }}</option>
+              </select>
+            </label>
+            <label class="sst-span">{{ extraMode ? 'Motivo / justificación' : 'Alcance y objetivos' }}
+              <textarea rows="2" [(ngModel)]="form.description" [placeholder]="extraMode ? 'Por qué se dicta fuera del plan anual…' : 'Qué debe aprender el personal…'"></textarea>
+            </label>
+            <label *ngIf="extraMode && !editingId">Fecha de la actividad
+              <input type="date" [(ngModel)]="form.extraDate">
+            </label>
+          </div>
+        </section>
+
+        <section class="sst-card">
+          <div class="sst-card__head">
+            <div class="sst-num">02</div>
+            <div>
+              <h3>Audiencia, facilitador y modalidad</h3>
+              <small>Quiénes se capacitan y cómo se dicta</small>
+            </div>
+          </div>
+          <div class="sst-fields">
+            <div class="sst-span">
+              <span class="sst-lbl">Participantes objetivo</span>
+              <div class="sst-chips">
+                <button type="button" [class.on]="form.audienceCode === 'ALL'" (click)="setAudience('ALL')">Todas las áreas</button>
+                <button type="button" [class.on]="form.audienceCode === 'SUPERVISORS'" (click)="setAudience('SUPERVISORS')">Supervisores</button>
+                <button type="button" [class.on]="form.audienceCode === 'DRIVERS'" (click)="setAudience('DRIVERS')">Conductores</button>
+                <button type="button" [class.on]="form.audienceCode === 'BRIGADE'" (click)="setAudience('BRIGADE')">Brigada</button>
+              </div>
+            </div>
+            <label>N° de participantes
+              <input type="number" min="0" [value]="audienceHeadcount(form.audienceCode)" readonly>
+            </label>
+            <div class="sst-span">
+              <span class="sst-lbl">Tipo de actividad</span>
+              <div class="sst-seg">
+                <button type="button" [class.on]="form.activityType === 'CAPACITACION'" (click)="form.activityType = 'CAPACITACION'">Capacitación</button>
+                <button type="button" [class.on]="form.activityType === 'ENTRENAMIENTO'" (click)="form.activityType = 'ENTRENAMIENTO'">Entrenamiento</button>
+                <button type="button" [class.on]="form.activityType === 'SIMULACRO'" (click)="form.activityType = 'SIMULACRO'">Simulacro</button>
+              </div>
+            </div>
+            <div>
+              <span class="sst-lbl">Tipo de facilitador</span>
+              <div class="sst-seg">
+                <button type="button" [class.on]="form.facilitatorType === 'INTERNO'" (click)="form.facilitatorType = 'INTERNO'">Interno (SSA)</button>
+                <button type="button" [class.on]="form.facilitatorType === 'EXTERNO'" (click)="form.facilitatorType = 'EXTERNO'">Externo</button>
+              </div>
+            </div>
+            <label class="sst-span">Facilitador / instructor <span>*</span>
+              <input type="text" maxlength="160" [(ngModel)]="form.facilitator" placeholder="Nombre y credencial SSA">
+            </label>
+            <label>Metodología
+              <select [(ngModel)]="form.methodology">
+                <option>Presencial</option>
+                <option>Virtual sincrónica</option>
+                <option>E-learning</option>
+                <option>Práctica en campo</option>
+              </select>
+            </label>
+            <label>Duración
+              <div class="sst-dur">
+                <input type="number" min="0.5" step="0.5" [(ngModel)]="form.durationValue">
+                <select [(ngModel)]="form.durationUnit">
+                  <option>Horas</option>
+                  <option>Minutos</option>
+                  <option>Jornada</option>
+                </select>
+              </div>
+            </label>
+            <label>Lugar / sede
+              <input type="text" [(ngModel)]="form.place" placeholder="Auditorio, planta, patio…">
+            </label>
+            <div class="sst-span">
+              <span class="sst-lbl">Materiales didácticos</span>
+              <div class="sst-mats">
+                <label><input type="checkbox" [(ngModel)]="form.matVideos"> Videos</label>
+                <label><input type="checkbox" [(ngModel)]="form.matPpt"> Presentación PPT</label>
+                <label><input type="checkbox" [(ngModel)]="form.matKit"> Material práctico</label>
+                <label><input type="checkbox" [(ngModel)]="form.matExam"> Evaluación escrita</label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sst-card" *ngIf="extraMode">
+          <div class="sst-card__head">
+            <div class="sst-num">03</div>
+            <div>
+              <h3>Acta PDF y evidencia fotográfica</h3>
+              <small>Un PDF del registro y de 1 a 4 fotos de la actividad. Si carga fotos nuevas, reemplazan las anteriores.</small>
+            </div>
+          </div>
+          <div class="sst-fields">
+            <div class="sst-span">
+              <span class="sst-lbl">Acta / registro PDF <span>*</span></span>
+              <label class="sst-drop">
+                <span class="material-symbols-outlined">picture_as_pdf</span>
+                <div>
+                  <strong>{{ extraPdf ? extraPdf.name : (existingEvidencePdf ? 'PDF ya cargado · pulse para reemplazar' : 'Haga clic para subir el PDF') }}</strong>
+                  <small>PDF hasta 15 MB</small>
+                </div>
+                <input type="file" accept="application/pdf" (change)="onExtraPdf($event)">
+              </label>
+            </div>
+            <div class="sst-span">
+              <span class="sst-lbl">Fotos de evidencia (1 a 4) <span>*</span></span>
+              <div class="sst-photos">
+                <button type="button" class="sst-photo" *ngFor="let p of extraPhotos; let i = index">
+                  <img [src]="p.url" alt="Evidencia">
+                  <span class="material-symbols-outlined" (click)="removeExtraPhoto(i)">close</span>
+                </button>
+                <button type="button" class="sst-photo sst-photo--saved" *ngFor="let u of extraPhotos.length ? [] : existingEvidencePhotos" (click)="openEvidence(u)">
+                  <span class="material-symbols-outlined">image</span>
+                  Foto
+                </button>
+                <label class="sst-photo sst-photo--add" *ngIf="extraPhotos.length < 4">
+                  <span class="material-symbols-outlined">add_a_photo</span>
+                  Agregar
+                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple (change)="onExtraPhotos($event)">
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sst-card" *ngIf="extraMode && !editingId">
+          <div class="sst-card__head">
+            <div class="sst-num">04</div>
+            <div>
+              <h3>Asistencia</h3>
+              <small>Marque quién asistió. Quienes no se marquen quedan como no asistieron.</small>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+            <small class="text-muted">PDF {{ printPick.size }} · Asistieron {{ present.size }} · {{ extraAbsentCount }} no asistieron · {{ sessionPeople.length }} en TH</small>
+            <div class="d-flex gap-2 flex-wrap">
+              <input class="form-control form-control-sm" style="width:200px" [(ngModel)]="peopleFilter" placeholder="Buscar nombre o cédula">
+              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleAllPrintVisible()">PDF visibles</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleAllVisible()">Asistencia visibles</button>
+              <button type="button" class="hub-btn hub-btn--ghost" (click)="openConvocadosDoc()">
+                <span class="material-symbols-outlined">picture_as_pdf</span>
+                Imprimir registro
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive cap-att">
+            <table class="table table-sm mb-0">
+              <thead><tr><th class="att-col">PDF</th><th class="att-col">Asistió</th><th>Trabajador</th><th>Cédula</th><th>Cargo</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let p of filteredPeople()" [class.table-success]="present.has(p.id)">
+                  <td><input type="checkbox" [checked]="printPick.has(p.id)" (change)="togglePrintPick(p.id)" title="Sale en el registro impreso"></td>
+                  <td><input type="checkbox" [checked]="present.has(p.id)" (change)="togglePresent(p.id)" title="Se guarda como capacitado"></td>
+                  <td class="text-uppercase">{{ p.fullName }}</td>
+                  <td>{{ p.cedula }}</td>
+                  <td class="small">{{ p.position }}</td>
+                  <td>
+                    <span class="att-ok" *ngIf="present.has(p.id)">Asistió</span>
+                    <span class="att-no" *ngIf="!present.has(p.id)">No asistió</span>
+                  </td>
+                </tr>
+                <tr *ngIf="!filteredPeople().length">
+                  <td colspan="6" class="text-muted">No hay personal activo de Talento Humano para esta audiencia.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="sst-card" *ngIf="!extraMode">
+          <div class="sst-card__head">
+            <div class="sst-num">03</div>
+            <div>
+              <h3>Cronograma de ejecución {{ data?.year }}</h3>
+              <small>Marque los meses previstos (X en la matriz)</small>
+            </div>
+            <span class="sst-sessions">{{ selectedMonthCount }} {{ selectedMonthCount === 1 ? 'sesión' : 'sesiones' }}</span>
+          </div>
+          <div class="sst-months">
+            <button type="button" *ngFor="let m of months; let i = index"
+                    [class.on]="form.months.includes(i + 1)"
+                    (click)="toggleMonth(i + 1)">
+              <strong>{{ m }}</strong>
+              <small>{{ data?.year }}</small>
+              <span class="sst-x" *ngIf="form.months.includes(i + 1)">X</span>
+            </button>
+          </div>
+          <div class="sst-q">
+            <div *ngFor="let q of [1,2,3,4]">
+              <div class="sst-q__row"><span>Q{{ q }}</span><b>{{ quarterPct($any(q)) }}%</b></div>
+              <div class="sst-q__bar"><i [style.width.%]="quarterPct($any(q))"></i></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="sst-side">
+        <section class="sst-card">
+          <h3>Últimos registros del plan</h3>
+          <p class="sst-hint">Se cargan desde la base de datos de esta empresa.</p>
+          <div class="sst-mini" *ngFor="let it of lastItems">
+            <div class="sst-mini__name">{{ it.name }}</div>
+            <div class="sst-mini__meta">
+              {{ it.audienceLabel }} · {{ it.duration || '—' }}
+              <span *ngFor="let m of it.months">{{ monthLabel(m) }}</span>
+            </div>
+          </div>
+          <p class="sst-hint" *ngIf="!lastItems.length">Aún no hay temas cargados.</p>
+        </section>
+        <div class="sst-tip">
+          <span class="material-symbols-outlined">tips_and_updates</span>
+          <div>
+            <strong>Cómo ingresar</strong>
+            <p>{{ extraMode
+              ? 'Marque quién asistió, suba el acta y pulse Registrar. El evento queda en Fuera de cronograma con la asistencia cargada.'
+              : 'Complete el recuadro, marque los meses y pulse Insertar en cronograma. Después use Asistencia para cargar el registro y marcar al personal.' }}</p>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="sst-foot">
+      <div>
+        <strong>{{ extraMode ? 'Listo para registrar fuera de cronograma' : 'Listo para publicar en el cronograma' }}</strong>
+        <small>{{ extraMode
+          ? 'Complete tema, fecha, lugar y facilitador. El PDF se llena con eso y con el personal de TTHH de la audiencia.'
+          : 'Se guarda en PostgreSQL y aparece en la matriz de esta empresa.' }}</small>
+        <p class="text-danger small mb-0 mt-1" *ngIf="error">{{ error }}</p>
+      </div>
+      <div class="sst-foot__btns">
+        <button type="button" class="sst-btn sst-btn--ghost" (click)="closeActivity()">Cancelar</button>
+        <button type="button" class="hub-btn hub-btn--ghost" *ngIf="extraMode" (click)="openConvocadosDoc()">
+          <span class="material-symbols-outlined">picture_as_pdf</span>
+          Imprimir registro
+        </button>
+        <button type="button" class="sst-btn sst-btn--go" (click)="saveActivity()" [disabled]="savingActivity">
+          {{ savingActivity ? 'Guardando…' : (editingId ? 'Guardar cambios' : (extraMode ? 'Registrar evento extraordinario' : 'Insertar en cronograma')) }}
+        </button>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<!-- Flotante: asistencia de una sesión -->
+<div class="sst-overlay" *ngIf="showSession" (click)="closeSession()">
+  <div class="sst-panel sst-panel--sm" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <button type="button" class="sst-close" (click)="closeSession()" aria-label="Cerrar">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <div class="sst-hero">
+      <div>
+        <div class="sst-crumb">Registro de asistencia</div>
+        <h2>{{ topicName(sessionItemId) }}</h2>
+        <p>El facilitador carga el registro (lista firmada o PDF) y marca quién asistió. Quienes no se marquen siguen en Faltantes de este tema.</p>
+      </div>
+    </div>
+    <div class="sst-card" style="margin: 0 1.25rem 1rem;">
+      <div class="sst-fields">
+        <label>Fecha <input type="date" [(ngModel)]="sessionDate"></label>
+        <label>Horas <input type="number" min="0" [(ngModel)]="sessionHours"></label>
+        <label>Lugar <input [(ngModel)]="sessionPlace"></label>
+        <label>Facilitador <input [(ngModel)]="sessionFacilitator" placeholder="Quién dictó la capacitación"></label>
+        <label class="sst-span">Notas <input [(ngModel)]="sessionNotes"></label>
+        <label class="sst-span">Registro de asistencia (PDF)
+          <input type="file" accept="application/pdf,.pdf" (change)="onSessionFile($event)">
+        </label>
+        <small class="sst-span text-muted" *ngIf="sessionFile">Archivo: {{ sessionFile.name }}</small>
+        <div class="sst-span">
+          <span class="sst-lbl">Fotos de evidencia (1 a 4) <span>*</span></span>
+          <div class="sst-photos">
+            <button type="button" class="sst-photo" *ngFor="let p of sessionPhotos; let i = index">
+              <img [src]="p.url" alt="Evidencia">
+              <span class="material-symbols-outlined" (click)="removeSessionPhoto(i)">close</span>
+            </button>
+            <label class="sst-photo sst-photo--add" *ngIf="sessionPhotos.length < 4">
+              <span class="material-symbols-outlined">add_a_photo</span>
+              Agregar
+              <input type="file" accept="image/jpeg,image/png,image/webp" multiple (change)="onSessionPhotos($event)">
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center my-2">
+        <small class="text-muted">Izquierda (PDF): quién sale en el papel. Derecha (Asistió): quién se guarda en estadísticas. Son independientes.</small>
+        <div class="d-flex gap-2 flex-wrap">
+          <input class="form-control form-control-sm" style="width:200px" [(ngModel)]="peopleFilter" placeholder="Buscar nombre o cédula">
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleAllPrintVisible()">PDF visibles</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleAllVisible()">Asistencia visibles</button>
+          <button type="button" class="hub-btn hub-btn--ghost" (click)="openConvocadosDoc()">
+            <span class="material-symbols-outlined">picture_as_pdf</span>
+            Imprimir registro
+          </button>
+        </div>
+      </div>
+      <div class="table-responsive cap-att">
+        <table class="table table-sm mb-0">
+          <thead><tr><th class="att-col">PDF</th><th class="att-col">Asistió</th><th>Trabajador</th><th>Cédula</th><th>Cargo</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let p of filteredPeople()" [class.table-success]="present.has(p.id)">
+              <td><input type="checkbox" [checked]="printPick.has(p.id)" (change)="togglePrintPick(p.id)" title="Sale en el registro impreso"></td>
+              <td><input type="checkbox" [checked]="present.has(p.id)" (change)="togglePresent(p.id)" title="Se guarda como capacitado"></td>
+              <td class="text-uppercase">{{ p.fullName }}</td>
+              <td>{{ p.cedula }}</td>
+              <td class="small">{{ p.position }}</td>
+              <td>
+                <span class="att-ok" *ngIf="present.has(p.id)">Asistió</span>
+                <span class="att-no" *ngIf="!present.has(p.id)">No asistió</span>
+                <span class="badge bg-success ms-1" *ngIf="p.trained">Ya capacitado</span>
+              </td>
+            </tr>
+            <tr *ngIf="!filteredPeople().length">
+              <td colspan="6" class="text-muted">No hay personal activo de Talento Humano para este tema.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="text-end mt-3">
+        <p class="text-danger small text-start mb-2" *ngIf="error">{{ error }}</p>
+        <button type="button" class="sst-btn sst-btn--go" (click)="saveSession()" [disabled]="saving || !sessionItemId">
+          {{ saving ? 'Guardando…' : 'Guardar sesión (' + present.size + ' presentes)' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Documento oficial A4 horizontal -->
+<div class="doc-overlay" *ngIf="showDoc && data" (click)="closeDoc()">
+  <aside class="doc-toolbar no-print" (click)="$event.stopPropagation()">
+    <div>
+      <strong>Vista de documento oficial · {{ paperSize }} horizontal</strong>
+      <p>{{ data.docCode }} · {{ companyLabel }} · A3 deja más espacio a los temas</p>
+    </div>
+    <div class="doc-toolbar__btns">
+      <div class="doc-size" role="group" aria-label="Tamaño de hoja">
+        <button type="button" [class.on]="paperSize === 'A4'" (click)="setPaper('A4')">A4</button>
+        <button type="button" [class.on]="paperSize === 'A3'" (click)="setPaper('A3')">A3</button>
+      </div>
+      <button type="button" class="cap-cta" (click)="printDoc()">
+        <span class="material-symbols-outlined">print</span>
+        Imprimir / Guardar PDF
+      </button>
+      <label class="cap-upload" *ngIf="canWrite">
+        {{ uploadingDoc ? 'Subiendo…' : 'Subir PDF validado' }}
+        <input type="file" accept="application/pdf" (change)="onValidatedFile($event)" [disabled]="uploadingDoc">
+      </label>
+      <button type="button" class="sst-btn sst-btn--ghost" (click)="closeDoc()">Cerrar</button>
+    </div>
+  </aside>
+
+  <main class="doc-sheet" [class.doc-sheet--a3]="paperSize === 'A3'" [class.doc-sheet--a4]="paperSize === 'A4'" (click)="$event.stopPropagation()">
+    <header class="doc-head">
+      <div class="doc-head__grid">
+        <div class="doc-logo">
+          <img *ngIf="data.logoUrl" [src]="data.logoUrl" [alt]="companyLabel">
+          <div class="doc-logo__text">{{ companyShortLabel }}</div>
+        </div>
+        <div class="doc-title">
+          <h2>PROGRAMA ANUAL DE CAPACITACIONES Y ENTRENAMIENTOS SST {{ data.year }}</h2>
+          <span>{{ companyLabel }}</span>
+        </div>
+        <div class="doc-meta">
+          <div><span>Código:</span><b>{{ data.docCode }}</b></div>
+          <div><span>Fecha de revisión:</span><b>{{ data.revisionDate || '—' }}</b></div>
+          <div><span>Versión:</span><b>{{ data.version || '01' }}</b></div>
+          <div><span>Empresa / RUC:</span><b>{{ data.ruc }}</b></div>
+        </div>
+      </div>
+      <div class="doc-scope">
+        <div>
+          <div class="doc-scope__row"><b>ALCANCE:</b><span>Es aplicado para todo el personal de {{ companyLabel }}</span></div>
+          <div class="doc-scope__row"><b>DEPENDENCIA RESPONSABLE:</b><span>Seguridad Industrial / SSA — {{ companyLabel }}</span></div>
+        </div>
+        <div>
+          <div class="doc-scope__row"><b>OBJETIVO:</b><span>Desarrollar competencias, conocimientos y habilidades del personal, fortaleciendo su desempeño laboral y la prevención de riesgos en {{ companyLabel }}.</span></div>
+          <div class="doc-scope__row"><b>RESPONSABLE:</b><span>{{ companyOwner }}</span></div>
+        </div>
+      </div>
+    </header>
+
+    <table class="doc-table">
+      <colgroup>
+        <col class="c-dep">
+        <col class="c-n">
+        <col class="c-tema">
+        <col class="c-part">
+        <col class="c-x">
+        <col class="c-x">
+        <col class="c-x">
+        <col class="c-x">
+        <col class="c-met">
+        <col class="c-np">
+        <col class="c-dur">
+        <col class="c-lug">
+        <col class="c-res">
+        <col class="c-m" *ngFor="let m of months">
+        <col class="c-est">
+      </colgroup>
+      <thead>
+        <tr>
+          <th rowspan="2">DEP.</th>
+          <th rowspan="2">N°</th>
+          <th rowspan="2">TEMAS</th>
+          <th rowspan="2">AUDIENCIA</th>
+          <th colspan="2">TIPO</th>
+          <th colspan="2">FACILITADOR</th>
+          <th rowspan="2">METODOLOGÍA</th>
+          <th rowspan="2">N° PART.</th>
+          <th rowspan="2">DURACIÓN</th>
+          <th rowspan="2">LUGAR</th>
+          <th rowspan="2">RESPONSABLE</th>
+          <th colspan="12">CRONOGRAMA DE ACTIVIDADES {{ data.year }}</th>
+          <th rowspan="2">ESTRATEGIAS</th>
+        </tr>
+        <tr>
+          <th>CAPAC.</th>
+          <th>ENTRE.</th>
+          <th>INT.</th>
+          <th>EXT.</th>
+          <th *ngFor="let m of months">{{ m }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let it of plannedItems; let i = index">
+          <td *ngIf="i === 0" class="doc-dep" [attr.rowspan]="plannedItems.length">SEGURIDAD INDUSTRIAL</td>
+          <td>{{ i + 1 }}</td>
+          <td class="doc-tema">
+            <b>{{ it.name }}</b>
+            <small *ngIf="itemObjective(it)">{{ itemObjective(it) }}</small>
+          </td>
+          <td>{{ docAudience(it) }}</td>
+          <td [class.doc-x]="isCapac(it)">{{ isCapac(it) ? 'X' : '' }}</td>
+          <td [class.doc-x]="isEntre(it)">{{ isEntre(it) ? 'X' : '' }}</td>
+          <td [class.doc-x]="isInternal(it)">{{ isInternal(it) ? 'X' : '' }}</td>
+          <td [class.doc-x]="!isInternal(it)">{{ !isInternal(it) ? 'X' : '' }}</td>
+          <td>{{ docMethodology(it) }}</td>
+          <td>{{ participantCount(it) }}</td>
+          <td>{{ docDuration(it) }}</td>
+          <td>{{ docPlace(it) }}</td>
+          <td>Seguridad Industrial</td>
+          <td *ngFor="let m of months; let mi = index" [class.doc-on]="hasMonth(it, mi + 1)">{{ hasMonth(it, mi + 1) ? 'X' : '' }}</td>
+          <td class="doc-est">{{ docStrategies(it) }}</td>
+        </tr>
+        <tr class="doc-sep">
+          <td colspan="26">SIMULACROS PREVENTIVOS</td>
+        </tr>
+        <tr *ngFor="let it of drillItems; let i = index">
+          <td *ngIf="i === 0" class="doc-dep" [attr.rowspan]="drillItems.length">SIMULACROS</td>
+          <td>{{ plannedItems.length + i + 1 }}</td>
+          <td class="doc-tema">
+            <b>{{ it.name }}</b>
+            <small *ngIf="itemObjective(it)">{{ itemObjective(it) }}</small>
+          </td>
+          <td>{{ docAudience(it) }}</td>
+          <td [class.doc-x]="isCapac(it)">{{ isCapac(it) ? 'X' : '' }}</td>
+          <td [class.doc-x]="isEntre(it)">{{ isEntre(it) ? 'X' : '' }}</td>
+          <td [class.doc-x]="isInternal(it)">{{ isInternal(it) ? 'X' : '' }}</td>
+          <td [class.doc-x]="!isInternal(it)">{{ !isInternal(it) ? 'X' : '' }}</td>
+          <td>{{ docMethodology(it) }}</td>
+          <td>{{ participantCount(it) }}</td>
+          <td>{{ docDuration(it) }}</td>
+          <td>{{ docPlace(it) }}</td>
+          <td>Seguridad Industrial</td>
+          <td *ngFor="let m of months; let mi = index" [class.doc-on]="hasMonth(it, mi + 1)">{{ hasMonth(it, mi + 1) ? 'X' : '' }}</td>
+          <td class="doc-est">{{ docStrategies(it) }}</td>
+        </tr>
+        <tr *ngIf="!drillItems.length">
+          <td class="doc-dep">SIMULACROS</td>
+          <td colspan="25" class="doc-empty-drill">Sin simulacros registrados. Agréguelos con Nueva capacitación → tipo Simulacro.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <footer class="doc-sign">
+      <div>
+        <i></i>
+        <b>DEPARTAMENTO DE SEGURIDAD</b>
+        <span>Elaborado por</span>
+      </div>
+      <div>
+        <i></i>
+        <b>TALENTO HUMANO</b>
+        <span>Revisado por</span>
+      </div>
+      <div>
+        <i></i>
+        <b>{{ companyOwner }}</b>
+        <span>Aprobado por · {{ companyLabel }}</span>
+      </div>
+    </footer>
+    <div class="doc-foot">
+      <span>Sistema de Gestión SST · {{ companyLabel }} · Documento confidencial</span>
+      <span>Hoja 1 de 1 · {{ data.year }}</span>
+    </div>
+  </main>
+</div>
+
+<div class="doc-overlay miss-overlay" *ngIf="showMissingDoc && data" (click)="closeMissingDoc()">
+  <aside class="doc-toolbar miss-toolbar no-print" (click)="$event.stopPropagation()">
+    <div>
+      <strong>{{ registerTitle }}</strong>
+      <p *ngIf="registerKind === 'convocados'">{{ printPick.size > 0
+        ? ('Registro en papel: ' + printPick.size + ' persona(s) del recuadro PDF. La asistencia guardada es el otro recuadro.')
+        : 'Nadie marcado en PDF: se listan todos. Marque el recuadro PDF de quienes deben salir en el papel.' }}</p>
+      <p *ngIf="registerKind === 'missing'">Formato de Calidad de {{ companyLabel }} · {{ registerCode }} · personal de TTHH que falta en este tema</p>
+    </div>
+    <div class="doc-toolbar__btns">
+      <button type="button" class="cap-cta" (click)="printMissingDoc()">
+        <span class="material-symbols-outlined">print</span>
+        Imprimir / Guardar PDF
+      </button>
+      <button type="button" class="sst-btn sst-btn--ghost" (click)="closeMissingDoc()">Cerrar</button>
+    </div>
+  </aside>
+  <main class="doc-sheet miss-sheet gth-sheet" (click)="$event.stopPropagation()">
+    <table class="gth">
+      <colgroup>
+        <col class="c1">
+        <col class="c2">
+        <col class="c3">
+        <col class="c4">
+        <col class="c5">
+        <col class="c6">
+      </colgroup>
+      <tr>
+        <td colspan="6" class="gth-banner">{{ registerTitle }}</td>
+      </tr>
+      <tr>
+        <td class="gth-side">
+          <div><b>PROCESO:</b> {{ registerProcess }}</div>
+        </td>
+        <td class="gth-logo" colspan="2" rowspan="2">
+          <img *ngIf="data.logoUrl" [src]="data.logoUrl" [alt]="companyLabel">
+          <span *ngIf="!data.logoUrl">{{ companyShortLabel }}</span>
+        </td>
+        <td class="gth-side gth-side--right" colspan="3">
+          <div><b>Código:</b> {{ registerCode }}</div>
+        </td>
+      </tr>
+      <tr>
+        <td class="gth-side">
+          <div><b>Aprobado por:</b> {{ registerApprovedBy }}</div>
+        </td>
+        <td class="gth-side gth-side--right" colspan="3">
+          <div><b>Fecha de Elaboración:</b> {{ registerDate }}</div>
+          <div><b>Página:</b> 1 de {{ registerPages }}.</div>
+        </td>
+      </tr>
+      <tr>
+        <td class="gth-lab"><b>FECHA:</b> {{ registerSessionDate }}</td>
+        <td class="gth-lab"><b>DURACIÓN:</b> {{ registerDuration }}</td>
+        <td class="gth-lab" colspan="2"><b>LUGAR</b> {{ registerPlace }}</td>
+        <td class="gth-tipo-h" colspan="2">TIPO</td>
+      </tr>
+      <tr>
+        <td class="gth-lab" colspan="4"><b>RESPONSABLE DE LA CAPACITACIÓN:</b> {{ registerFacilitator }}</td>
+        <td class="gth-tipo-l">Inducción</td>
+        <td class="gth-x">{{ missingTypeMark('IND') ? 'X' : '' }}</td>
+      </tr>
+      <tr>
+        <td class="gth-lab" colspan="4"><b>TEMA DESARROLLADO</b> {{ registerTopicName }}</td>
+        <td class="gth-tipo-l">Capacitación</td>
+        <td class="gth-x">{{ missingTypeMark('CAP') ? 'X' : '' }}</td>
+      </tr>
+      <tr>
+        <td class="gth-sub" colspan="4" rowspan="2"><b>SUBTEMAS</b> {{ missingSubtema }}</td>
+        <td class="gth-tipo-l">Entrenamiento</td>
+        <td class="gth-x">{{ missingTypeMark('ENT') ? 'X' : '' }}</td>
+      </tr>
+      <tr>
+        <td class="gth-tipo-l">Pre-operacional</td>
+        <td class="gth-x">{{ missingTypeMark('PRE') ? 'X' : '' }}</td>
+      </tr>
+    </table>
+
+    <table class="gth gth-people">
+      <thead>
+        <tr>
+          <th class="n">Nº</th>
+          <th>NOMBRES Y APELLIDOS</th>
+          <th>Nº CEDULA</th>
+          <th>CARGO</th>
+          <th>FIRMA</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of missingPrintRows">
+          <td class="n">{{ row.n }}</td>
+          <td class="nom">{{ row.person?.fullName || '' }}</td>
+          <td>{{ row.person?.cedula || '' }}</td>
+          <td>{{ row.person?.position || '' }}</td>
+          <td class="sign"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="gth-firma">
+      <b>Firma del Responsable de la Capacitacion</b>
+      <i></i>
+    </div>
+  </main>
+</div>
+
+<div class="doc-overlay cart-overlay" *ngIf="showWorkerDoc && selectedWorker && data" (click)="closeWorkerDoc()">
+  <aside class="doc-toolbar cart-toolbar no-print" (click)="$event.stopPropagation()">
+    <div class="cart-toolbar__id">
+      <span class="material-symbols-outlined">assignment_ind</span>
+      <div>
+        <strong>Cartilla de Registro Individual SST</strong>
+        <p>{{ workerDocCode }} · Emisión {{ workerDocDate }} · {{ selectedWorker.fullName }}</p>
+      </div>
+    </div>
+    <div class="doc-toolbar__btns">
+      <label class="cart-pick">
+        <span class="material-symbols-outlined">badge</span>
+        <select [ngModel]="selectedWorker.id" (ngModelChange)="onCartWorkerChange($event)">
+          <option *ngFor="let w of workers" [ngValue]="w.id">{{ w.fullName }} · {{ w.cedula }}</option>
+        </select>
+      </label>
+      <button type="button" class="sst-btn sst-btn--ghost" (click)="printWorkerDoc()">
+        <span class="material-symbols-outlined">print</span>
+        Imprimir
+      </button>
+      <button type="button" class="cap-cta" (click)="printWorkerDoc()">
+        <span class="material-symbols-outlined">picture_as_pdf</span>
+        Descargar PDF
+      </button>
+      <button type="button" class="sst-btn sst-btn--ghost" (click)="closeWorkerDoc()">Cerrar</button>
+    </div>
+  </aside>
+
+  <main class="doc-sheet cart-sheet" (click)="$event.stopPropagation()">
+    <header class="cart-head">
+      <div class="cart-brand">
+        <div class="cart-logo">
+          <img *ngIf="data.logoUrl" [src]="data.logoUrl" [alt]="companyLabel">
+          <span *ngIf="!data.logoUrl">{{ companyInitials }}</span>
+        </div>
+        <div>
+          <div class="cart-brand__row">
+            <b>{{ companyLabel }}</b>
+            <em>SIG · SST</em>
+          </div>
+          <span>Departamento de Seguridad, Salud y Ambiente en el Trabajo</span>
+        </div>
+      </div>
+      <div class="cart-trace">
+        <span>Código: <strong>{{ workerDocCode }}</strong></span>
+        <span>Versión: <strong>{{ data.version || '01' }}</strong> · Vigencia: <strong>{{ planYear }}</strong></span>
+        <span>Tipo: <strong>Expediente individual de capacitación</strong></span>
+      </div>
+    </header>
+
+    <div class="cart-banner">
+      <span class="material-symbols-outlined">verified</span>
+      <h1>Cartilla Individual de Capacitaciones, Entrenamiento y Competencias SST</h1>
+    </div>
+    <p class="cart-legal">Documento generado desde el plan anual {{ planYear }} y las asistencias registradas en TTHH. No sustituye actas originales de cada sesión.</p>
+
+    <section class="cart-id">
+      <div class="cart-photo">
+        <img *ngIf="workerPhotoSrc" [src]="workerPhotoSrc" [alt]="selectedWorker.fullName" (error)="onWorkerPhotoError()">
+        <span *ngIf="!workerPhotoSrc">{{ workerInitials }}</span>
+        <small *ngIf="selectedWorker.companyCode">{{ selectedWorker.companyCode }}</small>
+      </div>
+      <div class="cart-id__grid">
+        <div>
+          <span>Colaborador</span>
+          <b>{{ selectedWorker.fullName }}</b>
+        </div>
+        <div>
+          <span>Cédula / DNI</span>
+          <b class="mono">{{ selectedWorker.cedula || '—' }}</b>
+        </div>
+        <div>
+          <span>Puesto / cargo</span>
+          <b>{{ selectedWorker.position || '—' }}</b>
+        </div>
+        <div>
+          <span>Área / bloque</span>
+          <b>{{ workerArea }}</b>
+        </div>
+        <div>
+          <span>Ingreso y contrato</span>
+          <b>{{ selectedWorker.hireDate || '—' }}{{ selectedWorker.contractType ? ' · ' + selectedWorker.contractType : '' }}</b>
+        </div>
+        <div>
+          <span>Grupo sanguíneo</span>
+          <b>{{ selectedWorker.bloodType || '—' }}</b>
+        </div>
+        <div class="wide" *ngIf="selectedWorker.iess">
+          <span class="material-symbols-outlined">badge</span>
+          Afiliación IESS: <strong>{{ selectedWorker.iess }}</strong>
+        </div>
+        <div class="wide" *ngIf="selectedWorker.phone || selectedWorker.email">
+          Contacto TTHH: {{ selectedWorker.phone || '—' }} · {{ selectedWorker.email || '—' }}
+        </div>
+      </div>
+    </section>
+
+    <section class="cart-kpis">
+      <article>
+        <span>Cursos recibidos</span>
+        <b>{{ selectedWorker.received || 0 }}</b>
+        <small>Eventos SST {{ planYear }}</small>
+      </article>
+      <article>
+        <span>Horas lectivas</span>
+        <b>{{ workerHoursLabel }}</b>
+        <small>Horas en asistencia</small>
+      </article>
+      <article>
+        <span>Plan anual {{ planYear }}</span>
+        <b>{{ workerPlanPercent }}%</b>
+        <small>{{ workerStatusLabel }}</small>
+      </article>
+      <article class="dark">
+        <span>Pendientes</span>
+        <b>{{ selectedWorker.pending || 0 }}</b>
+        <small>Temas de su audiencia</small>
+      </article>
+    </section>
+
+    <section class="cart-hist">
+      <div class="cart-hist__head">
+        <h2><span class="material-symbols-outlined">history_edu</span> Registro cronológico de cursos y entrenamientos</h2>
+        <em>{{ selectedWorker.records?.length || 0 }} registro(s)</em>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Sesión</th>
+            <th>Tema / competencia</th>
+            <th>Modalidad / h</th>
+            <th>Fecha</th>
+            <th>Facilitador</th>
+            <th>Carácter</th>
+            <th>Acta</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of selectedWorker.records">
+            <td class="mono">SES-{{ r.sessionId }}</td>
+            <td class="tema">{{ r.topicName }}</td>
+            <td>{{ workerRecordModality(r) }}</td>
+            <td class="mono">{{ workerRecordDate(r.sessionDate) }}</td>
+            <td>{{ r.facilitator || '—' }}</td>
+            <td><span class="cart-tag" [attr.data-k]="workerRecordKindClass(r)">{{ workerRecordKind(r) }}</span></td>
+            <td class="mono">{{ workerEvidenceLabel(r) }}</td>
+          </tr>
+          <tr *ngIf="!selectedWorker.records?.length">
+            <td colspan="7" class="empty">Aún no tiene asistencias registradas en {{ planYear }}.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="cart-pend" *ngIf="selectedWorker.pendingTopics?.length">
+      <span>Temas pendientes de su audiencia</span>
+      <div>
+        <article *ngFor="let t of selectedWorker.pendingTopics">
+          <b>{{ t.topicName }}</b>
+          <small>{{ t.audienceLabel || 'Audiencia del plan' }}</small>
+        </article>
+      </div>
+    </section>
+    <section class="cart-pend cart-pend--ok" *ngIf="!selectedWorker.pendingTopics?.length">
+      <span>Temas pendientes de su audiencia</span>
+      <p>No le faltan temas obligatorios de su audiencia en {{ planYear }}.</p>
+    </section>
+
+    <section class="cart-sign">
+      <div>
+        <i></i>
+        <b>{{ selectedWorker.fullName }}</b>
+        <small class="mono">C.I. {{ selectedWorker.cedula || '—' }}</small>
+        <em>Firma del trabajador</em>
+      </div>
+      <div>
+        <i></i>
+        <b>{{ companyOwner }}</b>
+        <small>{{ companyLabel }}</small>
+        <em>Representante legal / aprobación</em>
+      </div>
+    </section>
+
+    <footer class="cart-foot">
+      <span>{{ companyLabel }}{{ data.ruc ? ' · RUC ' + data.ruc : '' }} · Cartilla SST {{ planYear }}</span>
+      <strong>Página 1 · Legajo técnico de capacitación</strong>
+    </footer>
+  </main>
+</div>
+
+<div class="sst-overlay" *ngIf="deletingId" (click)="cancelDelete()">
+  <div class="sst-panel sst-panel--sm" style="width:min(480px,100%)" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <button type="button" class="sst-close" (click)="cancelDelete()" aria-label="Cerrar">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <div class="sst-hero">
+      <div>
+        <div class="sst-crumb">Eliminar del cronograma</div>
+        <h2>¿Quitar este tema?</h2>
+        <p>Se eliminará <strong>{{ deletingItem?.name }}</strong> y sus sesiones de asistencia. Esta acción no se puede deshacer.</p>
+      </div>
+    </div>
+    <footer class="sst-foot">
+      <div></div>
+      <div class="sst-foot__btns">
+        <button type="button" class="sst-btn sst-btn--ghost" (click)="cancelDelete()">Cancelar</button>
+        <button type="button" class="sst-btn sst-btn--danger" (click)="confirmDelete()" [disabled]="deleting">
+          {{ deleting ? 'Eliminando…' : 'Eliminar' }}
+        </button>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<div class="sst-overlay evid-overlay" *ngIf="previewUrl && previewKind !== 'other'" (click)="closePreview()">
+  <div class="evid-box" [class.evid-box--pdf]="previewKind === 'pdf'" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    <button type="button" class="sst-close" (click)="closePreview()" aria-label="Cerrar">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <a *ngIf="previewUrl" class="evid-open" [href]="previewUrl" target="_blank" rel="noopener">Abrir en pestaña</a>
+    <img *ngIf="previewKind === 'image'" [src]="previewUrl" alt="Evidencia">
+    <iframe *ngIf="previewKind === 'pdf' && previewSafe" [src]="previewSafe" title="Acta PDF"></iframe>
+  </div>
+</div>
+

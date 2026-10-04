@@ -21,6 +21,7 @@ import { GerenciasViajesListaComponent } from './views/gerencias-viajes/gerencia
 import { GerenciasViajesFormComponent } from './views/gerencias-viajes/gerencias-viajes-form.component';
 import { GerenciasViajesDetalleComponent } from './views/gerencias-viajes/gerencias-viajes-detalle.component';
 import { CambioEppComponent } from './views/cambio-epp/cambio-epp.component';
+import { CapacitacionesSsaComponent } from './views/capacitaciones/capacitaciones-ssa.component';
 
 @NgModule({
   declarations: [
@@ -39,7 +40,8 @@ import { CambioEppComponent } from './views/cambio-epp/cambio-epp.component';
     GerenciasViajesListaComponent,
     GerenciasViajesFormComponent,
     GerenciasViajesDetalleComponent,
-    CambioEppComponent
+    CambioEppComponent,
+    CapacitacionesSsaComponent
   ],
   imports: [
     CommonModule,

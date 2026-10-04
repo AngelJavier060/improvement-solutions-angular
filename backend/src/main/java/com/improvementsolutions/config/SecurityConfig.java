@@ -56,7 +56,8 @@ public class SecurityConfig {    private final JwtAuthenticationEntryPoint unaut
             "/api/files/upload/**",
             "/api/files/staging/**",
             "/api/files/delete/**",
-            "/api/calidad/**"
+            "/api/calidad/**",
+            "/api/ssa-training/**"
     };
 
     public SecurityConfig(

@@ -16,6 +16,7 @@ import { GerenciasViajesListaComponent } from './views/gerencias-viajes/gerencia
 import { GerenciasViajesFormComponent } from './views/gerencias-viajes/gerencias-viajes-form.component';
 import { GerenciasViajesDetalleComponent } from './views/gerencias-viajes/gerencias-viajes-detalle.component';
 import { CambioEppComponent } from './views/cambio-epp/cambio-epp.component';
+import { CapacitacionesSsaComponent } from './views/capacitaciones/capacitaciones-ssa.component';
 import { WriteAccessGuard } from '../../../../core/guards/write-access.guard';
 
 const routes: Routes = [
@@ -45,7 +46,8 @@ const routes: Routes = [
       { path: 'accidentes-incidentes', component: AccidentesIncidentesComponent },
       { path: 'accidentes-incidentes/nuevo', component: IncidentFormComponent, canActivate: [WriteAccessGuard] },
       { path: 'accidentes-incidentes/:id', component: IncidentFormComponent },
-      { path: 'cambio-epp', component: CambioEppComponent }
+      { path: 'cambio-epp', component: CambioEppComponent },
+      { path: 'capacitaciones', component: CapacitacionesSsaComponent }
     ]
   }
 ];

@@ -25,6 +25,15 @@ public interface BusinessEmployeeRepository extends JpaRepository<BusinessEmploy
     })
     List<BusinessEmployee> findWithRelationsByBusinessId(Long businessId);
     
+    @EntityGraph(attributePaths = {
+        "business", "gender", "civilStatus", "etnia", "degree",
+        "positionEntity", "department", "typeContract",
+        "contractorCompany", "contractorBlock",
+        "workSchedule", "workShift"
+    })
+    @Query("SELECT e FROM BusinessEmployee e WHERE e.id = :id")
+    Optional<BusinessEmployee> findDetailedById(@Param("id") Long id);
+
     Optional<BusinessEmployee> findByBusinessIdAndEmployeeId(Long businessId, Long employeeId);
     
     List<BusinessEmployee> findByBusinessIdAndStatus(Long businessId, String status);

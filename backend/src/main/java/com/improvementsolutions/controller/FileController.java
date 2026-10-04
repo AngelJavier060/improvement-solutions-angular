@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -117,9 +118,7 @@ public class FileController {
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
         try {
             Resource file = storageService.loadAsResource(filename);
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
-                    .body(file);
+            return fileResponse(file, filename, true);
         } catch (StorageException e) {
             logger.error("Archivo no encontrado: {}", filename, e);
             return ResponseEntity.notFound().build();
@@ -134,9 +133,7 @@ public class FileController {
         try {
             validateDirectory(directory);
             Resource file = storageService.loadAsResource(directory + "/" + filename);
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
-                    .body(file);
+            return fileResponse(file, filename, !"ssa-training".equals(directory));
         } catch (StorageException e) {
             logger.error("Archivo no encontrado en directorio {}: {}", directory, filename, e);
             return ResponseEntity.notFound().build();
@@ -227,15 +224,31 @@ public class FileController {
             logger.info("Solicitando imagen de perfil: {}", filename);
             // Aplicar la ruta correcta
             Resource file = storageService.loadAsResource("profiles", filename);
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"")
-                    .header(HttpHeaders.CACHE_CONTROL, "max-age=31536000") // Caché por un año
-                    .header(HttpHeaders.PRAGMA, "cache")
-                    .body(file);
+            return fileResponse(file, filename, false);
         } catch (StorageException e) {
             logger.error("Imagen de perfil no encontrada: {}", filename, e);
             return ResponseEntity.notFound().build();
         }
+    }
+
+    private ResponseEntity<Resource> fileResponse(Resource file, String filename, boolean forceAttachment) {
+        String type = contentTypeFor(filename);
+        boolean inline = !forceAttachment && (type.startsWith("image/") || "application/pdf".equals(type));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        (inline ? "inline" : "attachment") + "; filename=\"" + file.getFilename() + "\"")
+                .contentType(MediaType.parseMediaType(type))
+                .body(file);
+    }
+
+    private String contentTypeFor(String filename) {
+        String n = filename == null ? "" : filename.toLowerCase();
+        if (n.endsWith(".pdf")) return "application/pdf";
+        if (n.endsWith(".png")) return "image/png";
+        if (n.endsWith(".webp")) return "image/webp";
+        if (n.endsWith(".gif")) return "image/gif";
+        if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+        return "application/octet-stream";
     }
 
     private String getFileExtension(String filename) {
