@@ -285,7 +285,7 @@
                 (click)="selectRow(row)">
               <td class="pm-td-name">
                 <div class="pm-emp-name">
-                  {{ row.fullName }}
+                  {{ row.fullName | uppercase }}
                   <span class="pm-badge-inactive" *ngIf="row.active === false" title="Colaborador inactivo (histórico)">Inactivo</span>
                 </div>
                 <div class="pm-emp-cargo">{{ row.position || 'Sin cargo' }}</div>
@@ -818,7 +818,7 @@
                   <div class="pm-ad-namecell">
                     <div class="pm-ad-avatar" [ngClass]="attendanceDetailAvatarClass(i)">{{ row.initials }}</div>
                     <div>
-                      <p class="pm-ad-name">{{ row.fullName }}</p>
+                      <p class="pm-ad-name">{{ row.fullName | uppercase }}</p>
                       <p class="pm-ad-role">{{ row.position }}</p>
                     </div>
                   </div>

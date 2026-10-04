@@ -57,6 +57,20 @@ public class BusinessEmployeeController {
         }
     }
 
+    @GetMapping("/employee/{ruc}/birthdays/today")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','MANAGER','USER')")
+    public ResponseEntity<?> todaysBirthdays(@PathVariable String ruc) {
+        try {
+            return ResponseEntity.ok(businessEmployeeService.getTodaysBirthdays(ruc));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponseDto(e.getMessage(), "BAD_REQUEST", 400));
+        } catch (Exception e) {
+            log.error("Error al listar cumpleaños de {}: {}", ruc, e.getMessage());
+            return ResponseEntity.ok(new com.improvementsolutions.dto.birthday.BirthdayGreetingTodayDto());
+        }
+    }
+
     // Nuevos endpoints para estadísticas completamente calculadas en el backend
     @GetMapping("/businesses/{businessId}/stats")
     public ResponseEntity<EmployeeStatsDto> getEmployeeStatsByBusinessId(@PathVariable Long businessId) {
@@ -586,6 +600,27 @@ public class BusinessEmployeeController {
         } catch (Exception e) {
             log.error("Error inesperado al desactivar empleado {}: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PatchMapping("/employees/{id}/exit-date")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<?> correctExitDate(
+            @PathVariable Long id,
+            @RequestBody EmployeeMovementRequestDto body) {
+        try {
+            LocalDate exitDate = body != null ? body.getEffectiveDate() : null;
+            String reason = body != null ? body.getReason() : null;
+            BusinessEmployeeResponseDto updated = businessEmployeeService.correctExitDate(id, exitDate, reason);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            log.warn("Corrección fecha salida empleado {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponseDto(e.getMessage(), "BAD_REQUEST", 400));
+        } catch (Exception e) {
+            log.error("Error al corregir fecha de salida del empleado {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponseDto("No se pudo corregir la fecha de desvinculación", "INTERNAL_SERVER_ERROR", 500));
         }
     }
 

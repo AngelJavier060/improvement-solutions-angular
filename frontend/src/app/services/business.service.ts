@@ -339,4 +339,23 @@ export class BusinessService {
   runExpiryAlerts(businessId: number): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/${businessId}/expiry-alerts/run`, {});
   }
+
+  getBirthdayGreetingConfig(businessId: number): Observable<{ enabled?: boolean; message?: string; showPhoto?: boolean }> {
+    return this.http.get<any>(`${this.apiUrl}/${businessId}/birthday-greeting`);
+  }
+
+  updateBirthdayGreetingConfig(
+    businessId: number,
+    config: { enabled: boolean; message?: string; showPhoto?: boolean }
+  ): Observable<{ enabled?: boolean; message?: string; showPhoto?: boolean }> {
+    return this.http.put<any>(`${this.apiUrl}/${businessId}/birthday-greeting`, config);
+  }
+
+  getBirthdayUpcoming(businessId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${businessId}/birthday-greeting/upcoming`);
+  }
+
+  sendBirthdayGreetingNow(businessId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/birthday-greeting/send-now`, {});
+  }
 }

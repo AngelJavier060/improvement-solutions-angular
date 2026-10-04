@@ -57,6 +57,16 @@ public class Business {
     private String legalRepresentative;
     
     private String logo;
+
+    /** Felicitación flotante de cumpleaños en el portal de la empresa. Por defecto apagado. */
+    @Column(name = "birthday_greeting_enabled")
+    private Boolean birthdayGreetingEnabled = Boolean.FALSE;
+
+    @Column(name = "birthday_greeting_message", length = 500)
+    private String birthdayGreetingMessage;
+
+    @Column(name = "birthday_greeting_show_photo")
+    private Boolean birthdayGreetingShowPhoto = Boolean.TRUE;
     
     private boolean active = true;
     

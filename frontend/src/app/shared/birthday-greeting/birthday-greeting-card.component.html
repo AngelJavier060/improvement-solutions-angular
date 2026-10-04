@@ -1,0 +1,42 @@
+<div class="bdg-overlay" *ngIf="person" (click)="closed.emit()">
+  <article class="bdg-card" (click)="$event.stopPropagation()" role="dialog" [attr.aria-label]="preview ? 'Vista previa de felicitación' : 'Felicitación de cumpleaños'">
+    <button type="button" class="bdg-close" (click)="closed.emit()" aria-label="Cerrar">×</button>
+
+    <div class="bdg-balloon bdg-balloon--gold"></div>
+    <div class="bdg-balloon bdg-balloon--navy"></div>
+    <div class="bdg-confetti" aria-hidden="true">✦ ✦ ✦</div>
+
+    <p class="bdg-preview-note" *ngIf="preview">
+      Vista previa · así se verá el día 0 en las pestañas de esta empresa.
+      <span *ngIf="emailTo"> El correo a {{ emailTo }} llevará la misma frase.</span>
+      <span *ngIf="!emailTo"> El correo del trabajador llevará la misma frase.</span>
+      No se envía nada al abrir esta vista.
+    </p>
+
+    <div class="bdg-grid">
+      <div class="bdg-photo-wrap">
+        <img *ngIf="photoUrl(person.photo)" class="bdg-photo" [src]="photoUrl(person.photo)" [alt]="person.fullName" (error)="onImgError($event)">
+        <div *ngIf="!photoUrl(person.photo)" class="bdg-photo bdg-photo--fallback">{{ person.firstName?.charAt(0) || '★' }}</div>
+      </div>
+
+      <div class="bdg-copy">
+        <div class="bdg-brand">
+          <img *ngIf="logoUrl()" class="bdg-logo" [src]="logoUrl()" alt="" (error)="onImgError($event)">
+          <span>{{ companyName }}</span>
+        </div>
+        <p class="bdg-kicker">Hoy celebramos a una gran persona</p>
+        <h2 class="bdg-title">¡Feliz cumpleaños,</h2>
+        <h3 class="bdg-name">{{ person.fullName }}!</h3>
+        <p class="bdg-phrase">{{ phrase }}</p>
+        <p class="bdg-sign">Con cariño, todo el equipo de {{ companyName }}.</p>
+        <p class="bdg-tag">Personas que hacen cosas grandes</p>
+      </div>
+    </div>
+
+    <div class="bdg-actions">
+      <span class="bdg-count" *ngIf="peopleCount > 1 && !preview">{{ index + 1 }} de {{ peopleCount }}</span>
+      <button type="button" class="bdg-btn bdg-btn--ghost" (click)="closed.emit()">Cerrar</button>
+      <button type="button" class="bdg-btn" *ngIf="!preview && peopleCount > 1 && index < peopleCount - 1" (click)="next.emit()">Siguiente</button>
+    </div>
+  </article>
+</div>

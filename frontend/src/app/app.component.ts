@@ -10,6 +10,7 @@ import { IdleTimeoutService } from './core/services/idle-timeout.service';
   template: `
     <app-notification></app-notification>
     <router-outlet></router-outlet>
+    <app-birthday-greeting-overlay></app-birthday-greeting-overlay>
 
     <!-- Cierre por inactividad (todas las rutas con sesión iniciada) -->
     <div *ngIf="idleTimeout.showWarning"

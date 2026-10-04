@@ -778,6 +778,116 @@ public class BusinessEmployeeService {
         return convertToResponseDto(saved);
     }
 
+    @Transactional(readOnly = true)
+    public com.improvementsolutions.dto.birthday.BirthdayGreetingTodayDto getTodaysBirthdays(String ruc) {
+        com.improvementsolutions.dto.birthday.BirthdayGreetingTodayDto out =
+                new com.improvementsolutions.dto.birthday.BirthdayGreetingTodayDto();
+        out.setEnabled(false);
+        out.setPeople(new java.util.ArrayList<>());
+        try {
+            var business = businessRepository.findByRuc(ruc)
+                    .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada con RUC: " + ruc));
+            out.setCompanyName(business.getTradeName() != null && !business.getTradeName().isBlank()
+                    ? business.getTradeName() : business.getName());
+            out.setCompanyLogo(business.getLogo());
+            boolean enabled = Boolean.TRUE.equals(business.getBirthdayGreetingEnabled());
+            out.setEnabled(enabled);
+            out.setShowPhoto(business.getBirthdayGreetingShowPhoto() == null
+                    || Boolean.TRUE.equals(business.getBirthdayGreetingShowPhoto()));
+            String msg = business.getBirthdayGreetingMessage();
+            String name = out.getCompanyName() != null && !out.getCompanyName().isBlank()
+                    ? out.getCompanyName() : "la empresa";
+            if (msg == null || msg.isBlank()) {
+                msg = "De parte de todo el equipo de " + name
+                        + ", te deseamos un día lleno de alegría y muchos éxitos. "
+                        + "Que este nuevo año de vida venga acompañado de grandes momentos y nuevas oportunidades.\n\n"
+                        + "¡Muchas felicidades!";
+            } else {
+                msg = msg.replace("[Nombre de la empresa]", name)
+                        .replace("[nombre de la empresa]", name)
+                        .replace("[empresa]", name);
+            }
+            out.setMessage(msg);
+            if (!enabled) return out;
+
+            java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("America/Guayaquil"));
+            List<BusinessEmployee> rows = businessEmployeeRepository.findActiveBirthdaysOnDay(
+                    business.getId(), today.getMonthValue(), today.getDayOfMonth());
+            for (BusinessEmployee e : rows) {
+                com.improvementsolutions.dto.birthday.BirthdayPersonDto p =
+                        new com.improvementsolutions.dto.birthday.BirthdayPersonDto();
+                p.setId(e.getId());
+                String nombres = e.getNombres() != null ? e.getNombres().trim() : "";
+                String apellidos = e.getApellidos() != null ? e.getApellidos().trim() : "";
+                String full = (nombres + " " + apellidos).trim();
+                if (full.isEmpty()) full = e.getName() != null ? e.getName().trim() : "Colaborador";
+                p.setFullName(full);
+                p.setFirstName(nombres.isEmpty() ? full.split("\\s+")[0] : nombres.split("\\s+")[0]);
+                p.setPosition(e.getPosition());
+                p.setPhoto(e.getImagePath() != null && !e.getImagePath().isBlank() ? e.getImagePath() : e.getImage());
+                if (e.getDateBirth() != null) {
+                    p.setAge(java.time.Period.between(e.getDateBirth().toLocalDate(), today).getYears());
+                }
+                out.getPeople().add(p);
+            }
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Cumpleaños del día: {}", e.getMessage());
+        }
+        return out;
+    }
+
+    /**
+     * Corrección de fecha de desvinculación (solo personal inactivo).
+     * Actualiza fecha_salida, el último movimiento DEACTIVATION y recorta planilla/horarios.
+     */
+    @Transactional
+    public BusinessEmployeeResponseDto correctExitDate(Long id, LocalDate newExitDate, String reason) {
+        if (newExitDate == null) {
+            throw new IllegalArgumentException("La fecha de desvinculación es obligatoria");
+        }
+        BusinessEmployee employee = businessEmployeeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Empleado no encontrado con ID: " + id));
+        if (!Boolean.FALSE.equals(employee.getActive())) {
+            throw new IllegalArgumentException("Solo se puede corregir la fecha de un trabajador inactivo");
+        }
+        if (employee.getFechaIngreso() != null && newExitDate.isBefore(employee.getFechaIngreso())) {
+            throw new IllegalArgumentException("La fecha de salida no puede ser anterior a la fecha de ingreso");
+        }
+        LocalDate old = employee.getFechaSalida();
+        employee.setFechaSalida(newExitDate);
+        employee.setUpdatedAt(LocalDateTime.now());
+        BusinessEmployee saved = businessEmployeeRepository.save(employee);
+
+        List<EmployeeMovement> lastOut = employeeMovementRepository.findDeactivationsForEmployeeNewestFirst(
+                saved.getId(), MovementType.DEACTIVATION, PageRequest.of(0, 1));
+        String note = (reason != null && !reason.isBlank())
+                ? reason.trim()
+                : ("Corrección de fecha de desvinculación"
+                    + (old != null ? " (" + old + " → " + newExitDate + ")" : " → " + newExitDate));
+        if (lastOut != null && !lastOut.isEmpty()) {
+            EmployeeMovement mv = lastOut.get(0);
+            mv.setEffectiveDate(newExitDate);
+            String prev = mv.getReason();
+            mv.setReason(prev == null || prev.isBlank() ? note : prev + " | " + note);
+            employeeMovementRepository.save(mv);
+        } else {
+            EmployeeMovement mv = new EmployeeMovement();
+            mv.setBusinessEmployee(saved);
+            mv.setBusiness(saved.getBusiness());
+            mv.setType(MovementType.DEACTIVATION);
+            mv.setEffectiveDate(newExitDate);
+            mv.setReason(note);
+            employeeMovementRepository.save(mv);
+        }
+
+        closeOpenScheduleHistoryAtExit(saved, newExitDate);
+        purgeWorkDaysAfterExitDate(saved.getId(), newExitDate);
+        log.info("Fecha de salida corregida empleado {} : {} → {}", id, old, newExitDate);
+        return convertToResponseDto(saved);
+    }
+
     @Transactional
     public BusinessEmployeeResponseDto reactivateEmployee(Long id, LocalDate effectiveDate) {
         BusinessEmployee employee = businessEmployeeRepository.findById(id)

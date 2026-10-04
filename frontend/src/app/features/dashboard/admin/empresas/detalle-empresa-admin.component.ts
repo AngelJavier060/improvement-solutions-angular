@@ -82,10 +82,16 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   companyEmployees: EmployeeResponse[] = [];
   employeesLoading = false;
   employeesFilter = '';
+  employeesStatusFilter: 'all' | 'active' | 'inactive' = 'all';
+  employeesExitMsg: string | null = null;
+  employeesExitErr: string | null = null;
   // Edición de código del trabajador (solo admin en este panel)
   editingEmployeeCodeId: number | null = null;
   editEmployeeCodeValue: string = '';
   savingEmployeeCode = false;
+  editingEmployeeExitId: number | null = null;
+  editEmployeeExitDate = '';
+  savingEmployeeExit = false;
 
   // Variables para crear usuarios
   showCreateUserModal = false;
@@ -256,6 +262,17 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   expiryAlertPreview: any = null;
   loadingExpiryPreview = false;
   sendingExpiryTest = false;
+
+  birthdayGreeting = { enabled: false, message: '', showPhoto: true };
+  savingBirthdayGreeting = false;
+  birthdayGreetingMsg = '';
+  birthdayGreetingErr = '';
+  birthdayGreetingWarn = '';
+  birthdayUpcoming: any = null;
+  loadingBirthdayUpcoming = false;
+  birthdayPreviewOpen = false;
+  birthdayPreviewPerson: any = null;
+  birthdayPreviewEmail: string | null = null;
 
   // Tipos de Combustible
   tipoCombustibles: any[] = [];
@@ -740,6 +757,105 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     });
   }
 
+  loadBirthdayGreetingConfig(): void {
+    if (!this.empresaId) return;
+    this.businessService.getBirthdayGreetingConfig(this.empresaId).subscribe({
+      next: (cfg) => {
+        this.birthdayGreeting = {
+          enabled: !!cfg?.enabled,
+          message: cfg?.message || '',
+          showPhoto: cfg?.showPhoto !== false
+        };
+      },
+      error: () => {
+        this.birthdayGreeting = { enabled: false, message: '', showPhoto: true };
+      }
+    });
+    this.loadBirthdayUpcoming();
+  }
+
+  loadBirthdayUpcoming(): void {
+    if (!this.empresaId) return;
+    this.loadingBirthdayUpcoming = true;
+    this.businessService.getBirthdayUpcoming(this.empresaId).subscribe({
+      next: (res) => {
+        this.birthdayUpcoming = res;
+        this.loadingBirthdayUpcoming = false;
+        this.birthdayGreetingWarn = res && !res.mailConfigured
+          ? 'La tarjeta del día 0 sí sale en las pestañas de la empresa. El correo automático necesita SMTP en el servidor (08:00 y 15:00 Ecuador).'
+          : '';
+      },
+      error: () => {
+        this.loadingBirthdayUpcoming = false;
+        this.birthdayUpcoming = null;
+      }
+    });
+  }
+
+  birthdayPreviewCompanyName(): string {
+    return (this.empresa?.tradeName || this.empresa?.name || 'la empresa').trim();
+  }
+
+  birthdayPreviewPhrase(): string {
+    const company = this.birthdayPreviewCompanyName();
+    const custom = (this.birthdayGreeting.message || '').trim();
+    const raw = custom || this.birthdayUpcoming?.message ||
+      (`De parte de todo el equipo de ${company}, te deseamos un día lleno de alegría y muchos éxitos. `
+        + 'Que este nuevo año de vida venga acompañado de grandes momentos y nuevas oportunidades.\n\n¡Muchas felicidades!');
+    return raw
+      .replace(/\[Nombre de la empresa\]/gi, company)
+      .replace(/\[empresa\]/gi, company);
+  }
+
+  openBirthdayPreview(item?: any): void {
+    const it = item || this.birthdayUpcoming?.items?.[0];
+    const fullName = it?.fullName || 'Nombre del trabajador';
+    this.birthdayPreviewPerson = {
+      id: it?.id || 0,
+      fullName,
+      firstName: String(fullName).split(/\s+/)[0],
+      photo: it?.photo || null,
+      position: it?.position || ''
+    };
+    this.birthdayPreviewEmail = it?.hasEmail ? it.email : null;
+    this.birthdayPreviewOpen = true;
+  }
+
+  closeBirthdayPreview(): void {
+    this.birthdayPreviewOpen = false;
+    this.birthdayPreviewPerson = null;
+    this.birthdayPreviewEmail = null;
+  }
+
+  saveBirthdayGreetingConfig(): void {
+    if (!this.empresaId) return;
+    this.savingBirthdayGreeting = true;
+    this.birthdayGreetingMsg = '';
+    this.birthdayGreetingErr = '';
+    this.businessService.updateBirthdayGreetingConfig(this.empresaId, {
+      enabled: !!this.birthdayGreeting.enabled,
+      message: this.birthdayGreeting.message || '',
+      showPhoto: this.birthdayGreeting.showPhoto !== false
+    }).subscribe({
+      next: (saved) => {
+        this.birthdayGreeting = {
+          enabled: !!saved?.enabled,
+          message: saved?.message || '',
+          showPhoto: saved?.showPhoto !== false
+        };
+        this.savingBirthdayGreeting = false;
+        this.birthdayGreetingMsg = this.birthdayGreeting.enabled
+          ? 'Felicitación activada. El día 0 sale sola la tarjeta en esta empresa y el correo al trabajador (08:00 y 15:00).'
+          : 'Felicitación de cumpleaños desactivada.';
+        this.loadBirthdayUpcoming();
+      },
+      error: () => {
+        this.savingBirthdayGreeting = false;
+        this.birthdayGreetingErr = 'No se pudo guardar la felicitación de cumpleaños.';
+      }
+    });
+  }
+
   sendExpiryAlertTest(): void {
     if (!this.empresaId) return;
     this.addExpiryAlertEmail();
@@ -1148,11 +1264,85 @@ export class DetalleEmpresaAdminComponent implements OnInit {
 
   filteredCompanyEmployees(): EmployeeResponse[] {
     const term = (this.employeesFilter || '').trim().toLowerCase();
-    if (!term) return this.companyEmployees || [];
     return (this.companyEmployees || []).filter((e: any) => {
+      const active = this.isCompanyEmployeeActive(e);
+      if (this.employeesStatusFilter === 'active' && !active) return false;
+      if (this.employeesStatusFilter === 'inactive' && active) return false;
+      if (!term) return true;
       const full = `${e.nombres || ''} ${e.apellidos || ''} ${e.name || ''}`.toLowerCase();
       const ced = String(e.cedula || '').toLowerCase();
-      return full.includes(term) || ced.includes(term);
+      const code = String(e.codigoTrabajador || e.codigoEmpresa || '').toLowerCase();
+      return full.includes(term) || ced.includes(term) || code.includes(term);
+    });
+  }
+
+  isCompanyEmployeeActive(emp: any): boolean {
+    if (emp && typeof emp.active === 'boolean') return !!emp.active;
+    const s = emp?.status;
+    if (typeof s === 'string') {
+      const u = s.toUpperCase();
+      if (u === 'INACTIVO' || u === 'INACTIVE') return false;
+      if (u === 'ACTIVO' || u === 'ACTIVE') return true;
+    }
+    if (emp?.fechaSalida) return false;
+    return true;
+  }
+
+  formatAdminFechaSalida(emp: any): string {
+    const raw = emp?.fechaSalida;
+    if (!raw) return '—';
+    const d = String(raw).split('T')[0];
+    const parts = d.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return d;
+  }
+
+  toAdminDateInput(raw: any): string {
+    if (!raw) return '';
+    return String(raw).split('T')[0];
+  }
+
+  startEditEmployeeExitDate(emp: EmployeeResponse): void {
+    if (!this.isSuperAdmin) return;
+    this.employeesExitMsg = null;
+    this.employeesExitErr = null;
+    this.editingEmployeeExitId = emp?.id ?? null;
+    this.editEmployeeExitDate = this.toAdminDateInput(emp?.fechaSalida) || new Date().toISOString().slice(0, 10);
+  }
+
+  cancelEditEmployeeExitDate(): void {
+    this.editingEmployeeExitId = null;
+    this.editEmployeeExitDate = '';
+  }
+
+  saveEmployeeExitDate(emp: EmployeeResponse): void {
+    if (!this.isSuperAdmin || !emp?.id) return;
+    const date = (this.editEmployeeExitDate || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      this.employeesExitErr = 'Ingrese una fecha válida.';
+      return;
+    }
+    this.savingEmployeeExit = true;
+    this.employeesExitErr = null;
+    this.employeeService.correctExitDate(emp.id, {
+      effectiveDate: date,
+      reason: 'Corrección desde panel administrador de empresa'
+    }).subscribe({
+      next: (updated) => {
+        this.savingEmployeeExit = false;
+        this.cancelEditEmployeeExitDate();
+        const idx = this.companyEmployees.findIndex(x => x.id === emp.id);
+        if (idx >= 0) {
+          this.companyEmployees[idx] = { ...this.companyEmployees[idx], ...updated };
+        } else {
+          this.loadCompanyEmployees();
+        }
+        this.employeesExitMsg = `Fecha de desvinculación actualizada. En Talento Humano de ${this.empresa?.name || 'la empresa'} se verá ${this.formatAdminFechaSalida(updated)}.`;
+      },
+      error: (err) => {
+        this.savingEmployeeExit = false;
+        this.employeesExitErr = err?.error?.message || 'No se pudo actualizar la fecha de desvinculación.';
+      }
     });
   }
 
@@ -2126,6 +2316,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         // Cargar configuración de mantenimiento específica de esta empresa
         this.loadMaintenanceConfig();
         this.loadExpiryAlertConfig();
+        this.loadBirthdayGreetingConfig();
         
         // Cargar todos los parámetros de mantenimiento asignados a la empresa
         this.tipoVehiculos = empresa.tipoVehiculos || [];

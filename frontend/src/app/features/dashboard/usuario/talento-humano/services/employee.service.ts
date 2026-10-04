@@ -261,6 +261,11 @@ export class EmployeeService {
     return this.http.post<EmployeeResponse>(url, body);
   }
 
+  /** Corrección de fecha de desvinculación (solo Superadmin / panel empresas). */
+  correctExitDate(id: number, body: { effectiveDate: string; reason?: string }): Observable<EmployeeResponse> {
+    return this.http.patch<EmployeeResponse>(`${this.apiUrl}/employees/${id}/exit-date`, body);
+  }
+
   /** Historial de salidas y reingresos (persistido; no se borra al reactivar). */
   /** Historial laboral de toda la empresa (salidas/reingresos). */
   getCompanyEmployeeMovements(ruc: string): Observable<Array<{

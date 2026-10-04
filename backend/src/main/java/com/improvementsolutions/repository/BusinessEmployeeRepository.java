@@ -86,5 +86,25 @@ public interface BusinessEmployeeRepository extends JpaRepository<BusinessEmploy
 
     // Para desasociar empleados del cargo antes de eliminarlo definitivamente
     List<BusinessEmployee> findByPositionEntityId(Long positionId);
+
+    @Query(value = "SELECT * FROM business_employees e " +
+            "WHERE e.business_id = :businessId " +
+            "AND COALESCE(e.active, TRUE) = TRUE " +
+            "AND (e.status IS NULL OR UPPER(e.status) <> 'INACTIVO') " +
+            "AND e.date_birth IS NOT NULL " +
+            "AND EXTRACT(MONTH FROM e.date_birth) = :month " +
+            "AND EXTRACT(DAY FROM e.date_birth) = :day " +
+            "ORDER BY e.nombres, e.apellidos",
+            nativeQuery = true)
+    List<BusinessEmployee> findActiveBirthdaysOnDay(
+            @Param("businessId") Long businessId,
+            @Param("month") int month,
+            @Param("day") int day);
+
+    @Query("SELECT e FROM BusinessEmployee e WHERE e.business.id = :businessId " +
+            "AND (e.active = true OR e.active IS NULL) " +
+            "AND (e.status IS NULL OR UPPER(e.status) <> 'INACTIVO') " +
+            "AND e.dateBirth IS NOT NULL")
+    List<BusinessEmployee> findActiveWithBirthDate(@Param("businessId") Long businessId);
 }
 

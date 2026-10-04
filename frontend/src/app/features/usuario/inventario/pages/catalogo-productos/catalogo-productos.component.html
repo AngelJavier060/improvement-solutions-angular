@@ -287,6 +287,16 @@
       </div>
     </div>
 
+    <div class="cat-stock-note" *ngIf="editingProductId">
+      <span class="material-symbols-outlined">inventory_2</span>
+      <span *ngIf="editingProductStockLoading">Consultando stock de bodega…</span>
+      <span *ngIf="!editingProductStockLoading">
+        <strong>Stock bodega:</strong>
+        {{ (editingProductStock ?? 0) | number:'1.0-2' }} und.
+        (suma de todas las tallas/colores). El saldo se mueve en Variantes, no aquí.
+      </span>
+    </div>
+
     <div class="cat-stock-note">
       <span class="material-symbols-outlined">info</span>
       Aquí solo defines el artículo (ej: Casco). En <strong>Variantes</strong>: marca, talla/color, stock mínimo e ingreso de compra.
@@ -328,6 +338,17 @@
             <tr><th>Familia</th><td>{{ kindLabel(getProductFamilyCode(selectedProduct)) }}</td></tr>
             <tr><th>Sección</th><td>{{ getProductSectionLabel(selectedProduct) }}</td></tr>
             <tr><th>Unidad</th><td>{{ selectedProduct.unitOfMeasure || 'UND' }}</td></tr>
+            <tr>
+              <th>Stock bodega</th>
+              <td>
+                <span class="cat-stock-badge"
+                  [class.cat-stock-badge--ok]="totalVariantStock() > 0"
+                  [class.cat-stock-badge--crit]="totalVariantStock() === 0">
+                  {{ totalVariantStock() | number:'1.0-2' }}
+                </span>
+                <span class="cat-text-muted"> und.</span>
+              </td>
+            </tr>
             <tr><th>Stock Mín.</th><td colspan="1" class="cat-text-muted">Por variante</td></tr>
             <tr><th>Marca</th><td class="cat-text-muted">Por variante</td></tr>
             <tr>
@@ -394,6 +415,11 @@
                   <label class="cat-label">Stock mín. (alerta)</label>
                   <input type="number" class="cat-input" formControlName="minQty" min="0" placeholder="Ej: 5">
                   <span class="cat-field-note">Por esta marca/talla</span>
+                </div>
+                <div class="cat-field" *ngIf="editingVariant">
+                  <label class="cat-label">Stock bodega</label>
+                  <input type="text" class="cat-input" [value]="(editingVariant.currentQty ?? 0) | number:'1.0-2'" readonly>
+                  <span class="cat-field-note">Saldo actual de esta talla/color. Para ingresar unidades usa el carrito de la fila.</span>
                 </div>
                 <div class="cat-field" *ngIf="!editingVariant">
                   <label class="cat-label">Unidades a Ingresar</label>

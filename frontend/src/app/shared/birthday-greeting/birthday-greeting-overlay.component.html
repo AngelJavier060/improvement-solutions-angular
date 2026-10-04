@@ -1,0 +1,13 @@
+<div class="bdg-host" *ngIf="visible && person">
+  <app-birthday-greeting-card
+    [person]="person"
+    [companyName]="data?.companyName || ''"
+    [companyLogo]="data?.companyLogo || null"
+    [phrase]="phrase"
+    [showPhoto]="data?.showPhoto !== false"
+    [peopleCount]="peopleCount"
+    [index]="index"
+    (closed)="close()"
+    (next)="next()">
+  </app-birthday-greeting-card>
+</div>

@@ -12,6 +12,7 @@ import { HomeComponent } from './features/home/home.component';
 import { DashboardAdminComponent } from './features/dashboard/admin/dashboard-admin.component';
 import { DashboardEmpleadoComponent } from './features/dashboard/empleado/dashboard-empleado.component';
 import { SharedModule } from './shared/shared.module';
+import { BirthdayGreetingOverlayComponent } from './shared/birthday-greeting/birthday-greeting-overlay.component';
 // import { ApiUrlInterceptor } from './core/interceptors/api-url.interceptor'; // Temporalmente deshabilitado
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { AuthGuard } from './core/guards/auth.guard';
@@ -38,6 +39,7 @@ import { FileService } from './services/file.service';
     NgbDropdownModule,
     NgbModalModule,
     SharedModule,
+    BirthdayGreetingOverlayComponent,
     RouterModule.forRoot([
       { path: '', component: HomeComponent },
 

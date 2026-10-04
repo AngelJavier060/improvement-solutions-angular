@@ -2332,6 +2332,138 @@
     </div>
   </div>
 
+  <!-- Felicitación de cumpleaños (portal de la empresa) -->
+  <div class="row g-2 mb-3">
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-header py-2 px-3" style="background: linear-gradient(90deg, #b45309 0%, #d4a017 100%);">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-birthday-cake text-white me-2"></i>
+              <div>
+                <h6 class="text-white mb-0 fw-bold">Felicitación de cumpleaños</h6>
+                <small class="text-white-50">Listado 0–10 días · frase el día 0 · correo al trabajador 2 veces al día</small>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="birthday-greeting-enabled" [(ngModel)]="birthdayGreeting.enabled">
+                <label class="form-check-label text-white small" for="birthday-greeting-enabled">Activar</label>
+              </div>
+              <button type="button" class="btn btn-sm btn-light" (click)="saveBirthdayGreetingConfig()" [disabled]="savingBirthdayGreeting">
+                <i class="fas" [ngClass]="savingBirthdayGreeting ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                <span class="ms-1">Guardar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-3">
+          <div *ngIf="birthdayGreetingErr" class="alert alert-danger py-2 small mb-2">{{ birthdayGreetingErr }}</div>
+          <div *ngIf="birthdayGreetingMsg" class="alert alert-success py-2 small mb-2">{{ birthdayGreetingMsg }}</div>
+          <div *ngIf="birthdayGreetingWarn" class="alert alert-warning py-2 small mb-2">{{ birthdayGreetingWarn }}</div>
+          <p class="small text-muted mb-2">
+            Con esto activo, el <strong>día 0</strong> sale solo: la tarjeta en las pestañas de
+            <strong>{{ empresa?.name }}</strong> (mañana y tarde) y el correo al trabajador a las 08:00 y 15:00 (Ecuador).
+            No hay que pulsar enviar.
+          </p>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="birthday-show-photo" [(ngModel)]="birthdayGreeting.showPhoto">
+            <label class="form-check-label small" for="birthday-show-photo">Mostrar foto del trabajador</label>
+          </div>
+          <label class="form-label small fw-semibold mb-1">Frase (opcional)</label>
+          <textarea class="form-control form-control-sm" rows="3" maxlength="500"
+                    [(ngModel)]="birthdayGreeting.message"
+                    placeholder="De parte de todo el equipo de [Nombre de la empresa], te deseamos un día lleno de alegría y muchos éxitos. Que este nuevo año de vida venga acompañado de grandes momentos y nuevas oportunidades. ¡Muchas felicidades!"></textarea>
+          <div class="small text-muted mt-1 mb-3">Si escribe [Nombre de la empresa], se reemplaza por el nombre real. Es la misma frase de la tarjeta y del correo.</div>
+
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <h6 class="mb-0 fw-semibold">Cumpleaños cercanos (máx. 10 días)</h6>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="loadBirthdayUpcoming()" [disabled]="loadingBirthdayUpcoming">
+              <i class="fas" [ngClass]="loadingBirthdayUpcoming ? 'fa-spinner fa-spin' : 'fa-sync'"></i>
+              <span class="ms-1">Actualizar</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-primary" (click)="openBirthdayPreview()">
+              <i class="fas fa-eye me-1"></i>Ver cómo sale el feliz cumpleaños
+            </button>
+            <span class="small text-muted" *ngIf="birthdayUpcoming">
+              SMTP: {{ birthdayUpcoming.mailConfigured ? 'configurado' : 'no configurado' }}
+              · {{ birthdayUpcoming.info }}
+            </span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0" *ngIf="birthdayUpcoming?.items?.length">
+              <thead class="table-light">
+                <tr>
+                  <th>Trabajador</th>
+                  <th>Correo</th>
+                  <th>Nacimiento</th>
+                  <th>Faltan</th>
+                  <th>Correos hoy</th>
+                  <th>Frase (día 0)</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let it of birthdayUpcoming.items" [class.table-warning]="it.daysLeft === 0">
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <img *ngIf="birthdayGreeting.showPhoto" [src]="getEmployeePhotoUrlAdmin(it)" alt=""
+                           class="rounded-circle" style="width:32px;height:32px;object-fit:cover;" (error)="onImgError($event)">
+                      <div>
+                        <div class="fw-semibold text-uppercase">{{ it.fullName }}</div>
+                        <div class="small text-muted" *ngIf="it.position">{{ it.position }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span *ngIf="it.hasEmail">{{ it.email }}</span>
+                    <span *ngIf="!it.hasEmail" class="badge bg-warning text-dark">Sin correo</span>
+                  </td>
+                  <td>{{ it.birthDayMonth }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="it.daysLeft === 0 ? 'bg-success' : 'bg-secondary'">
+                      {{ it.daysLeft === 0 ? 'HOY' : (it.daysLeft + ' día' + (it.daysLeft === 1 ? '' : 's')) }}
+                    </span>
+                    <div class="small text-muted" *ngIf="it.ageTurning">cumple {{ it.ageTurning }}</div>
+                  </td>
+                  <td>
+                    <span *ngIf="it.daysLeft === 0">{{ it.emailsSentToday || 0 }}/2</span>
+                    <span *ngIf="it.daysLeft !== 0" class="text-muted">—</span>
+                  </td>
+                  <td class="small" style="max-width:280px;">
+                    <span *ngIf="it.daysLeft === 0">{{ it.phrase }}</span>
+                    <span *ngIf="it.daysLeft !== 0" class="text-muted">Se muestra y se envía el día 0</span>
+                  </td>
+                  <td class="text-nowrap">
+                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="openBirthdayPreview(it)" title="Ver cómo sale">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="text-muted small py-2" *ngIf="!loadingBirthdayUpcoming && !birthdayUpcoming?.items?.length">
+              {{ birthdayUpcoming?.info || 'No hay cumpleaños en los próximos 10 días.' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <app-birthday-greeting-card
+    *ngIf="birthdayPreviewOpen && birthdayPreviewPerson"
+    [person]="birthdayPreviewPerson"
+    [companyName]="birthdayPreviewCompanyName()"
+    [companyLogo]="empresa?.logo"
+    [phrase]="birthdayPreviewPhrase()"
+    [showPhoto]="birthdayGreeting.showPhoto !== false"
+    [preview]="true"
+    [emailTo]="birthdayPreviewEmail"
+    (closed)="closeBirthdayPreview()">
+  </app-birthday-greeting-card>
+
   <!-- Sección Personal (MOVIDA AL FINAL DESPUÉS DE MANTENIMIENTO) -->
   <div class="row g-4 mb-4">
     <div class="col-12">
@@ -2357,6 +2489,20 @@
               <i class="fas fa-users me-2"></i>Gestionar personal de la empresa
             </h6>
             <div class="d-flex align-items-center gap-2">
+              <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn"
+                  [class.btn-dark]="employeesStatusFilter === 'all'"
+                  [class.btn-outline-secondary]="employeesStatusFilter !== 'all'"
+                  (click)="employeesStatusFilter = 'all'">Todos</button>
+                <button type="button" class="btn"
+                  [class.btn-success]="employeesStatusFilter === 'active'"
+                  [class.btn-outline-secondary]="employeesStatusFilter !== 'active'"
+                  (click)="employeesStatusFilter = 'active'">Activos</button>
+                <button type="button" class="btn"
+                  [class.btn-secondary]="employeesStatusFilter === 'inactive'"
+                  [class.btn-outline-secondary]="employeesStatusFilter !== 'inactive'"
+                  (click)="employeesStatusFilter = 'inactive'">Inactivos</button>
+              </div>
               <div class="input-group input-group-sm" style="width: 280px;">
                 <span class="input-group-text"><i class="fas fa-search"></i></span>
                 <input type="text" class="form-control" placeholder="Buscar por nombre o cédula" [(ngModel)]="employeesFilter">
@@ -2374,7 +2520,10 @@
 
           <div class="px-3 py-2 border-bottom bg-light small text-muted" *ngIf="!employeesLoading">
             Mostrando {{ filteredCompanyEmployees().length }} empleado{{ filteredCompanyEmployees().length === 1 ? '' : 's' }}
+            <span *ngIf="isSuperAdmin" class="ms-2">· Los inactivos muestran fecha de desvinculación; solo Superadmin puede corregirla.</span>
           </div>
+          <div class="alert alert-success py-2 px-3 mx-3 mt-2 mb-0 small" *ngIf="employeesExitMsg">{{ employeesExitMsg }}</div>
+          <div class="alert alert-danger py-2 px-3 mx-3 mt-2 mb-0 small" *ngIf="employeesExitErr">{{ employeesExitErr }}</div>
 
           <div *ngIf="employeesLoading" class="text-center py-5">Cargando personal...</div>
           <div *ngIf="!employeesLoading && filteredCompanyEmployees().length === 0" class="text-center py-5 text-muted">
@@ -2390,7 +2539,9 @@
                   <th style="width: 180px;">Cédula</th>
                   <th style="width: 200px;">Código del trabajador</th>
                   <th style="width: 240px;">Departamento</th>
-                  <th style="width: 280px;">Cargo</th>
+                  <th style="width: 240px;">Cargo</th>
+                  <th style="width: 110px;">Estado</th>
+                  <th style="width: 220px;">Fecha de desvinculación</th>
                 </tr>
               </thead>
               <tbody>
@@ -2424,6 +2575,36 @@
                   </td>
                   <td>{{ getDepartmentNameByEmployee(e) }}</td>
                   <td>{{ getPositionNameByEmployee(e) }}</td>
+                  <td>
+                    <span class="badge" [class.bg-success]="isCompanyEmployeeActive(e)" [class.bg-secondary]="!isCompanyEmployeeActive(e)">
+                      {{ isCompanyEmployeeActive(e) ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </td>
+                  <td>
+                    <ng-container *ngIf="isCompanyEmployeeActive(e); else exitDateCell">
+                      <span class="text-muted">—</span>
+                    </ng-container>
+                    <ng-template #exitDateCell>
+                      <div *ngIf="editingEmployeeExitId !== e.id; else editExitTpl">
+                        <span class="fw-semibold">{{ formatAdminFechaSalida(e) }}</span>
+                        <button *ngIf="isSuperAdmin" class="btn btn-sm btn-outline-primary ms-2"
+                                (click)="startEditEmployeeExitDate(e)" title="Corregir fecha de desvinculación">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                      </div>
+                      <ng-template #editExitTpl>
+                        <div class="input-group input-group-sm" style="max-width: 240px;">
+                          <input type="date" class="form-control" [(ngModel)]="editEmployeeExitDate" [disabled]="savingEmployeeExit">
+                          <button class="btn btn-success" (click)="saveEmployeeExitDate(e)" [disabled]="savingEmployeeExit">
+                            <i class="fas" [ngClass]="savingEmployeeExit ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                          </button>
+                          <button class="btn btn-outline-secondary" (click)="cancelEditEmployeeExitDate()" [disabled]="savingEmployeeExit">
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+                      </ng-template>
+                    </ng-template>
+                  </td>
                 </tr>
               </tbody>
             </table>

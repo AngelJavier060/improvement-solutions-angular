@@ -300,6 +300,44 @@ public class BusinessService {
         return businessRepository.save(business);
     }
 
+    @Transactional(readOnly = true)
+    public com.improvementsolutions.dto.birthday.BirthdayGreetingConfigDto getBirthdayGreeting(Long businessId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        return toBirthdayDto(business);
+    }
+
+    @Transactional
+    public com.improvementsolutions.dto.birthday.BirthdayGreetingConfigDto saveBirthdayGreeting(
+            Long businessId,
+            com.improvementsolutions.dto.birthday.BirthdayGreetingConfigDto dto) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        business.setBirthdayGreetingEnabled(dto != null && Boolean.TRUE.equals(dto.getEnabled()));
+        String msg = dto != null ? dto.getMessage() : null;
+        if (msg != null) {
+            String t = msg.trim();
+            if (t.length() > 500) t = t.substring(0, 500);
+            business.setBirthdayGreetingMessage(t.isEmpty() ? null : t);
+        }
+        if (dto != null && dto.getShowPhoto() != null) {
+            business.setBirthdayGreetingShowPhoto(dto.getShowPhoto());
+        }
+        business.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(business);
+        return toBirthdayDto(business);
+    }
+
+    private com.improvementsolutions.dto.birthday.BirthdayGreetingConfigDto toBirthdayDto(Business business) {
+        com.improvementsolutions.dto.birthday.BirthdayGreetingConfigDto d =
+                new com.improvementsolutions.dto.birthday.BirthdayGreetingConfigDto();
+        d.setEnabled(Boolean.TRUE.equals(business.getBirthdayGreetingEnabled()));
+        d.setMessage(business.getBirthdayGreetingMessage());
+        d.setShowPhoto(business.getBirthdayGreetingShowPhoto() == null
+                || Boolean.TRUE.equals(business.getBirthdayGreetingShowPhoto()));
+        return d;
+    }
+
     @Transactional
     public void delete(Long id) {
         log.info("[BusinessService] Deleting business id={} ...", id);

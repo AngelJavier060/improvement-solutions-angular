@@ -48,6 +48,7 @@ public class BusinessController {
     private final ContractorBlockRepository contractorBlockRepository;
     private final RoleRepository roleRepository;
     private final com.improvementsolutions.service.ExpiryNotificationService expiryNotificationService;
+    private final com.improvementsolutions.service.BirthdayGreetingNotificationService birthdayGreetingNotificationService;
     private final UserAdminAuthorizationService userAdminAuthorizationService;
 
     // Endpoints para el administrador
@@ -255,6 +256,10 @@ public class BusinessController {
         response.put("tradeName", business.getTradeName());
         response.put("legalRepresentative", business.getLegalRepresentative());
         response.put("logo", business.getLogo());
+        response.put("birthdayGreetingEnabled", Boolean.TRUE.equals(business.getBirthdayGreetingEnabled()));
+        response.put("birthdayGreetingMessage", business.getBirthdayGreetingMessage());
+        response.put("birthdayGreetingShowPhoto", business.getBirthdayGreetingShowPhoto() == null
+                || Boolean.TRUE.equals(business.getBirthdayGreetingShowPhoto()));
         response.put("active", business.isActive());
         response.put("registrationDate", business.getRegistrationDate());
         response.put("createdAt", business.getCreatedAt());
@@ -592,6 +597,10 @@ public class BusinessController {
         response.put("tradeName", business.getTradeName());
         response.put("legalRepresentative", business.getLegalRepresentative());
         response.put("logo", business.getLogo());
+        response.put("birthdayGreetingEnabled", Boolean.TRUE.equals(business.getBirthdayGreetingEnabled()));
+        response.put("birthdayGreetingMessage", business.getBirthdayGreetingMessage());
+        response.put("birthdayGreetingShowPhoto", business.getBirthdayGreetingShowPhoto() == null
+                || Boolean.TRUE.equals(business.getBirthdayGreetingShowPhoto()));
         response.put("active", business.isActive());
         response.put("registrationDate", business.getRegistrationDate());
         response.put("createdAt", business.getCreatedAt());
@@ -1425,6 +1434,35 @@ public class BusinessController {
     public ResponseEntity<com.improvementsolutions.dto.expiry.ExpiryAlertPreviewDto> runExpiryAlerts(
             @PathVariable Long businessId) {
         return ResponseEntity.ok(expiryNotificationService.runForBusiness(businessId));
+    }
+
+    @GetMapping("/{businessId}/birthday-greeting")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<com.improvementsolutions.dto.birthday.BirthdayGreetingConfigDto> getBirthdayGreeting(
+            @PathVariable Long businessId) {
+        return ResponseEntity.ok(businessService.getBirthdayGreeting(businessId));
+    }
+
+    @PutMapping("/{businessId}/birthday-greeting")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<com.improvementsolutions.dto.birthday.BirthdayGreetingConfigDto> updateBirthdayGreeting(
+            @PathVariable Long businessId,
+            @RequestBody com.improvementsolutions.dto.birthday.BirthdayGreetingConfigDto body) {
+        return ResponseEntity.ok(businessService.saveBirthdayGreeting(businessId, body));
+    }
+
+    @GetMapping("/{businessId}/birthday-greeting/upcoming")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<com.improvementsolutions.dto.birthday.BirthdayUpcomingDto> upcomingBirthdays(
+            @PathVariable Long businessId) {
+        return ResponseEntity.ok(birthdayGreetingNotificationService.upcoming(businessId));
+    }
+
+    @PostMapping("/{businessId}/birthday-greeting/send-now")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<com.improvementsolutions.dto.birthday.BirthdaySendResultDto> sendBirthdayGreetingNow(
+            @PathVariable Long businessId) {
+        return ResponseEntity.ok(birthdayGreetingNotificationService.sendNow(businessId));
     }
 
     // === ENDPOINTS DE CONTACTOS DE EMERGENCIA (por empresa) ===

@@ -91,6 +91,9 @@ export class CatalogoProductosComponent implements OnInit {
   // Formulario (columna izquierda)
   productForm!: FormGroup;
   editingProductId: number | null = null;
+  /** Stock actual en bodega del producto que se está editando (suma de variantes). */
+  editingProductStock: number | null = null;
+  editingProductStockLoading = false;
   suppliers: InventorySupplier[] = [];
   statusOptions = ['ACTIVO', 'INACTIVO', 'DESCONTINUADO'];
 
@@ -943,13 +946,31 @@ export class CatalogoProductosComponent implements OnInit {
       this.loadCategories(() => this.reapplyEditingCategory(p));
     };
     if (product?.id) {
+      this.loadEditingProductStock(product.id);
       this.productService.getById(this.ruc, product.id).subscribe({
         next: (full) => apply(full || product),
         error: () => apply(product)
       });
     } else {
+      this.editingProductStock = null;
       apply(product);
     }
+  }
+
+  private loadEditingProductStock(productId: number): void {
+    this.editingProductStockLoading = true;
+    this.editingProductStock = null;
+    this.variantService.listByProduct(this.ruc, productId).subscribe({
+      next: (data) => {
+        const list = Array.isArray(data) ? data : [];
+        this.editingProductStock = list.reduce((acc, v) => acc + this.toNum((v as any).currentQty), 0);
+        this.editingProductStockLoading = false;
+      },
+      error: () => {
+        this.editingProductStock = 0;
+        this.editingProductStockLoading = false;
+      }
+    });
   }
 
   /** Tras cargar el combo de categorías, deja seleccionada la del producto en BD. */
@@ -1660,6 +1681,8 @@ export class CatalogoProductosComponent implements OnInit {
 
   cancelEdit(): void {
     this.editingProductId = null;
+    this.editingProductStock = null;
+    this.editingProductStockLoading = false;
     this.showProductForm = false;
     const family = this.companyFamilyOptions[0];
     const familyCode = family?.code || 'EPP';

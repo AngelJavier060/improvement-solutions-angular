@@ -14,6 +14,7 @@ import { DashboardEmpresasComponent } from './dashboard-empresas.component';
 import { UserModalComponent } from './user-modal/user-modal.component';
 import { EmpresasRoutingModule } from './empresas-routing.module';
 import { SharedModule } from '../../../../shared/shared.module';
+import { BirthdayGreetingCardComponent } from '../../../../shared/birthday-greeting/birthday-greeting-card.component';
 import { ApprovalsListComponent } from './approvals-list.component';
 import { MatrixConfigComponent } from './matrix-config.component';
 import { DiagnosticoBdComponent } from './diagnostico-bd.component';
@@ -44,6 +45,7 @@ import { EmpleadosEmpresaComponent } from './empleados-empresa.component';
     RouterModule,
     EmpresasRoutingModule,
     SharedModule,
+    BirthdayGreetingCardComponent,
     MatDialogModule,
     DragDropModule
   ]
