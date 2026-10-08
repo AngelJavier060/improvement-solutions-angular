@@ -971,7 +971,9 @@ public class TrainingPlanService {
     }
 
     private String storeEvidence(String ruc, MultipartFile file) {
-        if (file == null || file.isEmpty()) return null;
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Adjunte el PDF del registro de asistencia.");
+        }
         String orig = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase(Locale.ROOT);
         String type = file.getContentType() == null ? "" : file.getContentType().toLowerCase(Locale.ROOT);
         boolean ok = type.contains("pdf") || type.contains("jpeg") || type.contains("jpg")
@@ -995,9 +997,7 @@ public class TrainingPlanService {
     private String storeSessionPhotos(String ruc, List<MultipartFile> photos) {
         List<MultipartFile> pics = photos == null ? List.of() : photos.stream()
                 .filter(f -> f != null && !f.isEmpty()).limit(4).toList();
-        if (pics.isEmpty()) {
-            throw new IllegalArgumentException("Adjunte de 1 a 4 fotos de evidencia.");
-        }
+        if (pics.isEmpty()) return null;
         List<String> stored = new ArrayList<>();
         for (MultipartFile pic : pics) stored.add(storeItemPhoto(ruc, pic));
         return String.join(",", stored);
@@ -1011,7 +1011,6 @@ public class TrainingPlanService {
         boolean hasPdf = pdf != null && !pdf.isEmpty();
         if (requireForExtra && eventual) {
             if (!hasPdf) throw new IllegalArgumentException("Adjunte el PDF del acta o registro.");
-            if (pics.isEmpty()) throw new IllegalArgumentException("Adjunte de 1 a 4 fotos de evidencia.");
         }
         if (hasPdf) it.setEvidencePdf(storeItemPdf(ruc, pdf));
         if (!pics.isEmpty()) {

@@ -909,7 +909,7 @@
             <div class="sst-num">03</div>
             <div>
               <h3>Acta PDF y evidencia fotográfica</h3>
-              <small>Un PDF del registro y de 1 a 4 fotos de la actividad. Si carga fotos nuevas, reemplazan las anteriores.</small>
+              <small>El PDF del registro es obligatorio. Las fotos de evidencia son opcionales (hasta 4). Si carga fotos nuevas, reemplazan las anteriores.</small>
             </div>
           </div>
           <div class="sst-fields">
@@ -925,7 +925,7 @@
               </label>
             </div>
             <div class="sst-span">
-              <span class="sst-lbl">Fotos de evidencia (1 a 4) <span>*</span></span>
+              <span class="sst-lbl">Fotos de evidencia (opcional, hasta 4)</span>
               <div class="sst-photos">
                 <button type="button" class="sst-photo" *ngFor="let p of extraPhotos; let i = index">
                   <img [src]="p.url" alt="Evidencia">
@@ -1082,12 +1082,12 @@
         <label>Lugar <input [(ngModel)]="sessionPlace"></label>
         <label>Facilitador <input [(ngModel)]="sessionFacilitator" placeholder="Quién dictó la capacitación"></label>
         <label class="sst-span">Notas <input [(ngModel)]="sessionNotes"></label>
-        <label class="sst-span">Registro de asistencia (PDF)
+        <label class="sst-span">Registro de asistencia (PDF) <span>*</span>
           <input type="file" accept="application/pdf,.pdf" (change)="onSessionFile($event)">
         </label>
         <small class="sst-span text-muted" *ngIf="sessionFile">Archivo: {{ sessionFile.name }}</small>
         <div class="sst-span">
-          <span class="sst-lbl">Fotos de evidencia (1 a 4) <span>*</span></span>
+          <span class="sst-lbl">Fotos de evidencia (opcional, hasta 4)</span>
           <div class="sst-photos">
             <button type="button" class="sst-photo" *ngFor="let p of sessionPhotos; let i = index">
               <img [src]="p.url" alt="Evidencia">
@@ -1125,8 +1125,8 @@
               <td class="small">{{ p.position }}</td>
               <td>
                 <span class="att-ok" *ngIf="present.has(p.id)">Asistió</span>
-                <span class="att-no" *ngIf="!present.has(p.id)">No asistió</span>
-                <span class="badge bg-success ms-1" *ngIf="p.trained">Ya capacitado</span>
+                <span class="badge bg-success" *ngIf="!present.has(p.id) && p.trained">Ya capacitado</span>
+                <span class="att-no" *ngIf="!present.has(p.id) && !p.trained">Pendiente</span>
               </td>
             </tr>
             <tr *ngIf="!filteredPeople().length">

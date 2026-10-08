@@ -949,10 +949,6 @@ export class CapacitacionesSsaComponent implements OnInit {
         this.error = 'Adjunte el PDF del acta o registro.';
         return;
       }
-      if (!this.extraPhotos.length) {
-        this.error = 'Adjunte de 1 a 4 fotos de evidencia.';
-        return;
-      }
     }
     this.savingActivity = true;
     this.error = '';
@@ -1202,8 +1198,8 @@ export class CapacitacionesSsaComponent implements OnInit {
 
   saveSession(): void {
     if (!this.canWrite || !this.sessionItemId) return;
-    if (!this.sessionPhotos.length) {
-      this.error = 'Adjunte de 1 a 4 fotos de evidencia.';
+    if (!this.sessionFile) {
+      this.error = 'Adjunte el PDF del registro de asistencia.';
       return;
     }
     this.saving = true;
