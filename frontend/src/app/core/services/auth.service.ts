@@ -131,8 +131,14 @@ export class AuthService {
           } else if (error.status === 403) {
             errorMessage = error.error?.message || 'Usuario inactivo o sin permisos';
           } else if (error.status === 404) {
+            const html404 = typeof error.error === 'string' && /<html/i.test(error.error);
+            errorMessage = html404
+              ? 'El servidor API no está disponible. No es un error de usuario o contraseña.'
+              : (error.error?.message
+                || 'Usuario no encontrado. Si es trabajador, cree primero su cuenta portal en Talento Humano (candado).');
+          } else if (error.status === 502 || error.status === 503 || error.status === 504) {
             errorMessage = error.error?.message
-              || 'Usuario no encontrado. Si es trabajador, cree primero su cuenta portal en Talento Humano (candado).';
+              || 'El servidor API no está disponible. Intente de nuevo en unos minutos.';
           } else if (error.error?.message) {
             errorMessage = error.error.message;
           }

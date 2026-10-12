@@ -33,7 +33,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - proxy-network
+      proxy-network:
+        aliases:
+          - improvement-backend
+      app-net:
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8081/health"]
       interval: 30s
@@ -54,6 +57,7 @@ services:
         condition: service_started
     networks:
       - proxy-network
+      - app-net
 
 volumes:
   backend-uploads:
@@ -62,3 +66,5 @@ volumes:
 networks:
   proxy-network:
     external: true
+  app-net:
+    driver: bridge
