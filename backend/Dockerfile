@@ -26,11 +26,11 @@ EXPOSE 8081
 
 # Variables de entorno por defecto
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV JAVA_OPTS="-Xmx512m -Xms256m"
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 
 # Comando para ejecutar la aplicación
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
 
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Healthcheck (el de docker-compose.prod.yml manda en producción)
+HEALTHCHECK --interval=15s --timeout=5s --start-period=90s --retries=4 \
   CMD curl -fsS http://localhost:8081/health || exit 1

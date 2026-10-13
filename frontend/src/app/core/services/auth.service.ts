@@ -138,7 +138,7 @@ export class AuthService {
                 || 'Usuario no encontrado. Si es trabajador, cree primero su cuenta portal en Talento Humano (candado).');
           } else if (error.status === 502 || error.status === 503 || error.status === 504) {
             errorMessage = error.error?.message
-              || 'El servidor API no está disponible. Intente de nuevo en unos minutos.';
+              || 'El servidor se está recuperando. Espere unos segundos e intente de nuevo.';
           } else if (error.error?.message) {
             errorMessage = error.error.message;
           }

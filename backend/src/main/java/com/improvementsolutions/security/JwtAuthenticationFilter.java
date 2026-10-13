@@ -35,8 +35,11 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
         logger.debug("Verificando filtro para ruta: {}", path);
 
         // Permitir rutas públicas
-        return path.startsWith("/api/auth/") || 
-               path.startsWith("/api/public/") || 
+        return path.startsWith("/api/auth/") ||
+               path.startsWith("/api/public/") ||
+               path.equals("/health") ||
+               path.equals("/api/health") ||
+               path.startsWith("/actuator/") ||
                path.equals("/error") ||
                request.getMethod().equals("OPTIONS");
     }    @Override

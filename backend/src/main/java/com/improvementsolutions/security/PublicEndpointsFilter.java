@@ -36,19 +36,15 @@ public class PublicEndpointsFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         
         String requestPath = request.getServletPath();
-        logger.info("PublicEndpointsFilter: Procesando ruta pública: {}", requestPath);
-          // Los encabezados CORS son manejados por la configuración central de Spring Security
+        logger.debug("PublicEndpointsFilter: {} {}", request.getMethod(), requestPath);
+
+        // Los encabezados CORS son manejados por la configuración central de Spring Security
         
         // Manejar las solicitudes OPTIONS (preflight)
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_OK);
             return;
         }
-        
-        // Registrar la información de la solicitud para diagnóstico
-        logger.info("Solicitud a endpoint público: {} {}", request.getMethod(), requestPath);
-        logger.info("Origin: {}", request.getHeader("Origin"));
-        logger.info("User-Agent: {}", request.getHeader("User-Agent"));
         
         // Continuar con la cadena de filtros
         filterChain.doFilter(request, response);

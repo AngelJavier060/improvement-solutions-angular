@@ -24,46 +24,20 @@ public class RequestLoggingFilter implements Filter {
             throws IOException, ServletException {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
-
-        // Log de la petición entrante
-        logger.info("=== INICIO DE PETICIÓN ===");
-        logger.info("Método: {}", req.getMethod());
-        logger.info("URI: {}", req.getRequestURI());
-        logger.info("Query String: {}", req.getQueryString());
-        logger.info("Content Type: {}", req.getContentType());
-        logger.info("Content Length: {}", req.getContentLength());
-
-        // Log de los headers de la petición
-        logger.info("=== HEADERS DE LA PETICIÓN ===");
-        java.util.Enumeration<String> headerNames = req.getHeaderNames();
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            logger.info("{}: {}", headerName, req.getHeader(headerName));
+        String uri = req.getRequestURI() == null ? "" : req.getRequestURI();
+        boolean healthProbe = uri.equals("/health") || uri.equals("/api/health")
+                || uri.startsWith("/actuator/health");
+        if (healthProbe || !logger.isDebugEnabled()) {
+            chain.doFilter(request, response);
+            return;
         }
 
         long startTime = System.currentTimeMillis();
-        
         try {
-            // Continuar con la cadena de filtros
             chain.doFilter(request, response);
         } finally {
-            long duration = System.currentTimeMillis() - startTime;
-            
-            // Log de la respuesta
-            logger.info("=== RESPUESTA ===");
-            logger.info("Status: {}", res.getStatus());
-            logger.info("Content Type: {}", res.getContentType());
-            
-            // Log de los headers de la respuesta
-            logger.info("=== HEADERS DE LA RESPUESTA ===");
-            res.getHeaderNames().forEach(headerName -> 
-                logger.info("{}: {}", headerName, res.getHeader(headerName))
-            );
-            
-            logger.info("Response: {} {} completed in {}ms", req.getMethod(), 
-                        req.getRequestURI(), duration);
-            
-            logger.info("=== FIN DE PETICIÓN ===\n");
+            logger.debug("{} {} -> {} ({} ms)", req.getMethod(), uri, res.getStatus(),
+                    System.currentTimeMillis() - startTime);
         }
     }
 }

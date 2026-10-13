@@ -15,6 +15,7 @@ import { SharedModule } from './shared/shared.module';
 import { BirthdayGreetingOverlayComponent } from './shared/birthday-greeting/birthday-greeting-overlay.component';
 // import { ApiUrlInterceptor } from './core/interceptors/api-url.interceptor'; // Temporalmente deshabilitado
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
+import { GatewayRetryInterceptor } from './core/interceptors/gateway-retry.interceptor';
 import { AuthGuard } from './core/guards/auth.guard';
 import { WriteAccessGuard } from './core/guards/write-access.guard';
 import { FileService } from './services/file.service';
@@ -216,7 +217,8 @@ import { FileService } from './services/file.service';
   providers: [
     FileService,
     // { provide: HTTP_INTERCEPTORS, useClass: ApiUrlInterceptor, multi: true }, // Temporalmente deshabilitado para usar proxy
-    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    { provide: HTTP_INTERCEPTORS, useClass: GatewayRetryInterceptor, multi: true }
   ],
   bootstrap: [AppComponent]
 })
