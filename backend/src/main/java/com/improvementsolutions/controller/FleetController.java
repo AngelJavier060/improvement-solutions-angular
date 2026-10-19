@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
 import java.util.Map;
@@ -135,23 +136,20 @@ public class FleetController {
     }
 
     /** ZIP: ?section=CODIGO o varias separadas por coma. */
-    @GetMapping("/{ruc}/vehicles/{id}/documents/zip")
-    public ResponseEntity<?> downloadVehicleDocumentsZip(
+    @GetMapping(value = "/{ruc}/vehicles/{id}/documents/zip", produces = "application/zip")
+    public ResponseEntity<StreamingResponseBody> downloadVehicleDocumentsZip(
             @PathVariable String ruc,
             @PathVariable Long id,
             @RequestParam(value = "section", required = false) String section) {
-        try {
-            return fleetVehicleService.downloadCurrentDocumentsZip(ruc, id, section);
-        } catch (IllegalArgumentException e) {
-            String msg = e.getMessage() != null ? e.getMessage() : "No hay documentos";
-            HttpStatus status = msg.toLowerCase().contains("no hay") ? HttpStatus.BAD_REQUEST : HttpStatus.NOT_FOUND;
-            return ResponseEntity.status(status)
-                    .body(new ErrorResponse(msg, status == HttpStatus.BAD_REQUEST ? "BAD_REQUEST" : "NOT_FOUND", status.value()));
-        } catch (Exception e) {
-            log.error("[Fleet] zip documents: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al generar el ZIP de documentos", "INTERNAL", 500));
-        }
+        return fleetVehicleService.downloadCurrentDocumentsZip(ruc, id, section);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleZipArgs(IllegalArgumentException e) {
+        String msg = e.getMessage() != null ? e.getMessage() : "No hay documentos";
+        HttpStatus status = msg.toLowerCase().contains("no hay") ? HttpStatus.BAD_REQUEST : HttpStatus.NOT_FOUND;
+        return ResponseEntity.status(status)
+                .body(new ErrorResponse(msg, status == HttpStatus.BAD_REQUEST ? "BAD_REQUEST" : "NOT_FOUND", status.value()));
     }
 
     @PostMapping(value = "/{ruc}/vehicles/{id}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

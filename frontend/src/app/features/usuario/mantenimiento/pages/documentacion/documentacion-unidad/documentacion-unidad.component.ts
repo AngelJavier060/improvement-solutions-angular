@@ -656,6 +656,8 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
         let msg = err?.error?.message || err?.message;
         if (status === 502 || status === 503 || status === 504) {
           msg = 'No se pudo armar el ZIP (archivos pesados o el servidor se saturó). Intente de nuevo o descargue menos secciones.';
+        } else if (status === 500) {
+          msg = 'No se pudo generar el ZIP. Intente de nuevo; si persiste, descargue por sección.';
         }
         alert(typeof msg === 'string' && msg.trim()
           ? msg

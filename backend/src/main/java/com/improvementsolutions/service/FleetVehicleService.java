@@ -629,6 +629,7 @@ public class FleetVehicleService {
      *                (DOCUMENTOS_PRINCIPALES,CERTIFICACIONES,LIBERACIONES,DOCUMENTOS_ADICIONALES).
      *                null / vacío / TODO / ALL = todas las secciones.
      */
+    @Transactional(readOnly = true)
     public ResponseEntity<StreamingResponseBody> downloadCurrentDocumentsZip(String ruc, Long vehicleId, String section) {
         Business business = businessService.findByRuc(ruc)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
@@ -654,13 +655,17 @@ public class FleetVehicleService {
             }
             FleetVehicleDocument file = row.getFleetVehicleDocument();
             if (file == null || file.getId() == null || !usedFileIds.add(file.getId())) continue;
-            if (file.getStoredPath() == null || file.getStoredPath().isBlank()) continue;
-            Path filePath = Paths.get(uploadDir).resolve(file.getStoredPath()).normalize();
-            if (!filePath.startsWith(base) || !Files.isRegularFile(filePath)) continue;
-            items.add(new ZipItem(
-                    uniqueZipEntryName(row.getTypeLabel(), file.getOriginalFilename(), file.getId(), usedNames),
-                    filePath
-            ));
+            String stored = file.getStoredPath();
+            if (stored == null || stored.isBlank()) continue;
+            Path filePath = Paths.get(uploadDir).resolve(stored.replace('\\', '/')).normalize();
+            if (!filePath.startsWith(base) || !Files.isRegularFile(filePath)) {
+                log.warn("[Fleet] ZIP omite archivo ausente vehiculo={} path={}", vehicleId, stored);
+                continue;
+            }
+            String label = row.getTypeLabel();
+            String original = file.getOriginalFilename();
+            Long fileId = file.getId();
+            items.add(new ZipItem(uniqueZipEntryName(label, original, fileId, usedNames), filePath));
         }
 
         if (items.isEmpty()) {
@@ -675,21 +680,21 @@ public class FleetVehicleService {
 
         StreamingResponseBody body = output -> {
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(output, 65536))) {
-                zos.setLevel(Deflater.NO_COMPRESSION);
+                zos.setLevel(Deflater.BEST_SPEED);
                 byte[] buf = new byte[65536];
                 for (ZipItem item : items) {
+                    if (!Files.isRegularFile(item.path())) continue;
                     zos.putNextEntry(new ZipEntry(item.entryName()));
                     try (InputStream in = Files.newInputStream(item.path())) {
                         int n;
                         while ((n = in.read(buf)) >= 0) {
                             zos.write(buf, 0, n);
                         }
+                    } catch (IOException ex) {
+                        log.warn("[Fleet] ZIP omite {} : {}", item.entryName(), ex.getMessage());
                     }
                     zos.closeEntry();
                 }
-            } catch (IOException e) {
-                log.error("[Fleet] ZIP streaming unidad {}: {}", vehicleId, e.getMessage());
-                throw e;
             }
         };
 
