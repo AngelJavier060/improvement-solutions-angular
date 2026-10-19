@@ -39,6 +39,10 @@ export class GatewayRetryInterceptor implements HttpInterceptor {
     if (!url.includes('/api/')) {
       return false;
     }
+    // ZIP y blobs: reintentar duplica RAM y puede tumbar el backend (502).
+    if (url.includes('/documents/zip') || req.responseType === 'blob') {
+      return false;
+    }
     const method = (req.method || 'GET').toUpperCase();
     if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
       return true;

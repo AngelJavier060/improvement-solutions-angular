@@ -652,7 +652,11 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
         this.downloadingZip = false;
         this.cdr.detectChanges();
         console.error(err);
-        const msg = err?.error?.message || err?.message;
+        const status = err?.status;
+        let msg = err?.error?.message || err?.message;
+        if (status === 502 || status === 503 || status === 504) {
+          msg = 'No se pudo armar el ZIP (archivos pesados o el servidor se saturó). Intente de nuevo o descargue menos secciones.';
+        }
         alert(typeof msg === 'string' && msg.trim()
           ? msg
           : 'No se pudo descargar el ZIP de esta unidad.');

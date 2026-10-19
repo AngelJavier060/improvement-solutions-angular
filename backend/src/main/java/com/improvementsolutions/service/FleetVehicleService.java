@@ -18,8 +18,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -33,6 +34,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -627,8 +629,7 @@ public class FleetVehicleService {
      *                (DOCUMENTOS_PRINCIPALES,CERTIFICACIONES,LIBERACIONES,DOCUMENTOS_ADICIONALES).
      *                null / vacío / TODO / ALL = todas las secciones.
      */
-    @Transactional(readOnly = true)
-    public ResponseEntity<byte[]> downloadCurrentDocumentsZip(String ruc, Long vehicleId, String section) {
+    public ResponseEntity<StreamingResponseBody> downloadCurrentDocumentsZip(String ruc, Long vehicleId, String section) {
         Business business = businessService.findByRuc(ruc)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
         FleetVehicle vehicle = fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
@@ -669,11 +670,13 @@ public class FleetVehicleService {
         }
 
         String zipName = zipDownloadName(vehicle, sectionFilters);
-        byte[] zipBytes;
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-                byte[] buf = new byte[8192];
+        String encoded = URLEncoder.encode(zipName, StandardCharsets.UTF_8).replace("+", "%20");
+        log.info("[Fleet] ZIP unidad {} ({} archivos, streaming)", vehicleId, items.size());
+
+        StreamingResponseBody body = output -> {
+            try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(output, 65536))) {
+                zos.setLevel(Deflater.NO_COMPRESSION);
+                byte[] buf = new byte[65536];
                 for (ZipItem item : items) {
                     zos.putNextEntry(new ZipEntry(item.entryName()));
                     try (InputStream in = Files.newInputStream(item.path())) {
@@ -684,20 +687,18 @@ public class FleetVehicleService {
                     }
                     zos.closeEntry();
                 }
+            } catch (IOException e) {
+                log.error("[Fleet] ZIP streaming unidad {}: {}", vehicleId, e.getMessage());
+                throw e;
             }
-            zipBytes = baos.toByteArray();
-        } catch (IOException e) {
-            throw new IllegalStateException("No se pudo comprimir los PDF de la unidad", e);
-        }
+        };
 
-        String encoded = URLEncoder.encode(zipName, StandardCharsets.UTF_8).replace("+", "%20");
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("application/zip"))
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + zipName.replace("\"", "") + "\"; filename*=UTF-8''" + encoded)
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
-                .contentLength(zipBytes.length)
-                .body(zipBytes);
+                .body(body);
     }
 
     /** null = todas las secciones. */
