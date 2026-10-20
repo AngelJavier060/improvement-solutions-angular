@@ -12,8 +12,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -136,12 +137,13 @@ public class FleetController {
     }
 
     /** ZIP: ?section=CODIGO o varias separadas por coma. */
-    @GetMapping(value = "/{ruc}/vehicles/{id}/documents/zip", produces = "application/zip")
-    public ResponseEntity<StreamingResponseBody> downloadVehicleDocumentsZip(
+    @GetMapping("/{ruc}/vehicles/{id}/documents/zip")
+    public void downloadVehicleDocumentsZip(
             @PathVariable String ruc,
             @PathVariable Long id,
-            @RequestParam(value = "section", required = false) String section) {
-        return fleetVehicleService.downloadCurrentDocumentsZip(ruc, id, section);
+            @RequestParam(value = "section", required = false) String section,
+            HttpServletResponse response) throws IOException {
+        fleetVehicleService.writeCurrentDocumentsZip(ruc, id, section, response);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -10,12 +10,29 @@ import java.util.Optional;
 
 public interface FleetComplianceDocumentRepository extends JpaRepository<FleetComplianceDocument, Long> {
 
+    interface ZipFileRow {
+        String getTypeLabel();
+        String getDocCategory();
+        Boolean getActive();
+        Boolean getHistoricMode();
+        Long getFileId();
+        String getOriginalFilename();
+        String getStoredPath();
+    }
+
     List<FleetComplianceDocument> findByFleetVehicle_IdOrderByUpdatedAtDesc(Long fleetVehicleId);
 
     @Query("SELECT c FROM FleetComplianceDocument c " +
            "LEFT JOIN FETCH c.fleetVehicleDocument " +
            "WHERE c.fleetVehicle.id = :vehicleId")
     List<FleetComplianceDocument> findByFleetVehicleIdWithFile(@Param("vehicleId") Long vehicleId);
+
+    @Query("SELECT c.typeLabel AS typeLabel, c.docCategory AS docCategory, " +
+           "c.active AS active, c.historicMode AS historicMode, " +
+           "f.id AS fileId, f.originalFilename AS originalFilename, f.storedPath AS storedPath " +
+           "FROM FleetComplianceDocument c LEFT JOIN c.fleetVehicleDocument f " +
+           "WHERE c.fleetVehicle.id = :vehicleId")
+    List<ZipFileRow> findZipFileRowsByVehicleId(@Param("vehicleId") Long vehicleId);
 
     Optional<FleetComplianceDocument> findByIdAndFleetVehicle_Id(Long id, Long fleetVehicleId);
 

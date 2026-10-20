@@ -18,8 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -625,47 +625,41 @@ public class FleetVehicleService {
 
     /**
      * ZIP con los PDF vigentes de una unidad. Ámbito: empresa (RUC) + vehículo.
-     * @param section opcional: una o varias categorías separadas por coma
-     *                (DOCUMENTOS_PRINCIPALES,CERTIFICACIONES,LIBERACIONES,DOCUMENTOS_ADICIONALES).
-     *                null / vacío / TODO / ALL = todas las secciones.
+     * Escribe directo al response (sin StreamingResponseBody: Spring lo serializaba mal y devolvía 500).
      */
-    @Transactional(readOnly = true)
-    public ResponseEntity<StreamingResponseBody> downloadCurrentDocumentsZip(String ruc, Long vehicleId, String section) {
+    public void writeCurrentDocumentsZip(String ruc, Long vehicleId, String section, HttpServletResponse response)
+            throws IOException {
         Business business = businessService.findByRuc(ruc)
                 .orElseThrow(() -> new IllegalArgumentException("Empresa no encontrada para RUC: " + ruc));
         FleetVehicle vehicle = fleetVehicleRepository.findByIdAndBusiness_Id(vehicleId, business.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
 
         Set<String> sectionFilters = normalizeZipSections(section);
-
-        Path base = Paths.get(uploadDir).resolve("fleet").normalize();
-        List<FleetComplianceDocument> rows =
-                fleetComplianceDocumentRepository.findByFleetVehicleIdWithFile(vehicleId);
+        Path uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
+        List<FleetComplianceDocumentRepository.ZipFileRow> rows =
+                fleetComplianceDocumentRepository.findZipFileRowsByVehicleId(vehicleId);
 
         record ZipItem(String entryName, Path path) {}
         List<ZipItem> items = new ArrayList<>();
         Set<String> usedNames = new HashSet<>();
         Set<Long> usedFileIds = new HashSet<>();
 
-        for (FleetComplianceDocument row : rows) {
+        for (FleetComplianceDocumentRepository.ZipFileRow row : rows) {
             if (row == null) continue;
             if (Boolean.FALSE.equals(row.getActive()) || Boolean.TRUE.equals(row.getHistoricMode())) continue;
             if (sectionFilters != null && !sectionFilters.contains(normalizeDocCategory(row.getDocCategory()))) {
                 continue;
             }
-            FleetVehicleDocument file = row.getFleetVehicleDocument();
-            if (file == null || file.getId() == null || !usedFileIds.add(file.getId())) continue;
-            String stored = file.getStoredPath();
-            if (stored == null || stored.isBlank()) continue;
-            Path filePath = Paths.get(uploadDir).resolve(stored.replace('\\', '/')).normalize();
-            if (!filePath.startsWith(base) || !Files.isRegularFile(filePath)) {
-                log.warn("[Fleet] ZIP omite archivo ausente vehiculo={} path={}", vehicleId, stored);
+            if (row.getFileId() == null || !usedFileIds.add(row.getFileId())) continue;
+            Path filePath = resolveUploadedFile(uploadRoot, row.getStoredPath());
+            if (filePath == null) {
+                log.warn("[Fleet] ZIP omite archivo ausente vehiculo={} path={}", vehicleId, row.getStoredPath());
                 continue;
             }
-            String label = row.getTypeLabel();
-            String original = file.getOriginalFilename();
-            Long fileId = file.getId();
-            items.add(new ZipItem(uniqueZipEntryName(label, original, fileId, usedNames), filePath));
+            items.add(new ZipItem(
+                    uniqueZipEntryName(row.getTypeLabel(), row.getOriginalFilename(), row.getFileId(), usedNames),
+                    filePath
+            ));
         }
 
         if (items.isEmpty()) {
@@ -676,34 +670,48 @@ public class FleetVehicleService {
 
         String zipName = zipDownloadName(vehicle, sectionFilters);
         String encoded = URLEncoder.encode(zipName, StandardCharsets.UTF_8).replace("+", "%20");
-        log.info("[Fleet] ZIP unidad {} ({} archivos, streaming)", vehicleId, items.size());
+        log.info("[Fleet] ZIP unidad {} ({} archivos)", vehicleId, items.size());
 
-        StreamingResponseBody body = output -> {
-            try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(output, 65536))) {
-                zos.setLevel(Deflater.BEST_SPEED);
-                byte[] buf = new byte[65536];
-                for (ZipItem item : items) {
-                    if (!Files.isRegularFile(item.path())) continue;
-                    zos.putNextEntry(new ZipEntry(item.entryName()));
-                    try (InputStream in = Files.newInputStream(item.path())) {
-                        int n;
-                        while ((n = in.read(buf)) >= 0) {
-                            zos.write(buf, 0, n);
-                        }
-                    } catch (IOException ex) {
-                        log.warn("[Fleet] ZIP omite {} : {}", item.entryName(), ex.getMessage());
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("application/zip");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + zipName.replace("\"", "") + "\"; filename*=UTF-8''" + encoded);
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store");
+
+        try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(response.getOutputStream(), 65536))) {
+            zos.setLevel(Deflater.BEST_SPEED);
+            byte[] buf = new byte[65536];
+            for (ZipItem item : items) {
+                if (!Files.isRegularFile(item.path())) continue;
+                zos.putNextEntry(new ZipEntry(item.entryName()));
+                try (InputStream in = Files.newInputStream(item.path())) {
+                    int n;
+                    while ((n = in.read(buf)) >= 0) {
+                        zos.write(buf, 0, n);
                     }
-                    zos.closeEntry();
+                } catch (IOException ex) {
+                    log.warn("[Fleet] ZIP omite {} : {}", item.entryName(), ex.getMessage());
                 }
+                zos.closeEntry();
             }
-        };
+        }
+    }
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/zip"))
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + zipName.replace("\"", "") + "\"; filename*=UTF-8''" + encoded)
-                .header(HttpHeaders.CACHE_CONTROL, "no-store")
-                .body(body);
+    private Path resolveUploadedFile(Path uploadRoot, String stored) {
+        if (stored == null || stored.isBlank()) return null;
+        String rel = stored.replace('\\', '/').replaceFirst("^/+", "");
+        Path candidate = uploadRoot.resolve(rel).normalize();
+        if (candidate.startsWith(uploadRoot) && Files.isRegularFile(candidate)) return candidate;
+        if (rel.startsWith("uploads/")) {
+            candidate = uploadRoot.resolve(rel.substring("uploads/".length())).normalize();
+            if (candidate.startsWith(uploadRoot) && Files.isRegularFile(candidate)) return candidate;
+        }
+        int fleetAt = rel.indexOf("fleet/");
+        if (fleetAt > 0) {
+            candidate = uploadRoot.resolve(rel.substring(fleetAt)).normalize();
+            if (candidate.startsWith(uploadRoot) && Files.isRegularFile(candidate)) return candidate;
+        }
+        return null;
     }
 
     /** null = todas las secciones. */

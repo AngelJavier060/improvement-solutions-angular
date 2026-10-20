@@ -1,9 +1,9 @@
 import { Component, OnDestroy, OnInit, ChangeDetectorRef, Renderer2, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { Subscription, forkJoin, of } from 'rxjs';
+import { Subscription, firstValueFrom, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { FleetService } from '../../../../../../services/fleet.service';
 import { FleetDocumentationService } from '../../../../../../services/fleet-documentation.service';
@@ -615,55 +615,93 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
         : 'No hay PDF en las secciones seleccionadas.');
       return;
     }
+    void this.buildClientZip(sections);
+  }
+
+  /** Arma el ZIP en el navegador con los PDF que ya se pueden ver (evita el 500 del endpoint /zip). */
+  private async buildClientZip(sections: FleetDocCategory[]): Promise<void> {
+    const docs = this.docService.getCurrentDocuments(this.vehicleId)
+      .filter(d => this.hasPdf(d))
+      .filter(d => sections.length === 0 || sections.includes(normalizeFleetDocCategory(d.docCategory)));
+    const entries = docs
+      .map(d => ({
+        name: (d.fileName || d.typeLabel || 'documento').trim(),
+        url: this.pdfUrlForDoc(d)
+      }))
+      .filter(e => !!e.url);
+    if (!entries.length) {
+      alert('No hay PDF adjuntos para descargar.');
+      return;
+    }
     this.downloadingZip = true;
     this.cdr.detectChanges();
-    const url = this.fleetService.vehicleDocumentsZipUrl(
-      this.businessRuc,
-      this.vehicleId,
-      sections.length === 0 ? undefined : sections
-    );
-    this.http.get(url, { observe: 'response', responseType: 'blob' }).subscribe({
-      next: (resp: HttpResponse<Blob>) => {
-        this.downloadingZip = false;
-        this.cdr.detectChanges();
-        const blob = resp.body;
-        if (!blob || blob.size === 0) {
-          alert('No se pudo generar el archivo ZIP.');
-          return;
+    try {
+      const mod: any = await import('jszip');
+      const JSZip = mod.default || mod;
+      const zip = new JSZip();
+      const used = new Set<string>();
+      let added = 0;
+      for (const entry of entries) {
+        try {
+          const blob = await firstValueFrom(this.http.get(entry.url as string, { responseType: 'blob' }));
+          if (!blob || blob.size === 0) continue;
+          const type = (blob.type || '').toLowerCase();
+          if (type.includes('json') || type.includes('text/html')) continue;
+          let name = this.safeZipFileName(entry.name);
+          let n = 1;
+          const dot = name.lastIndexOf('.');
+          const base = dot > 0 ? name.slice(0, dot) : name;
+          const ext = dot > 0 ? name.slice(dot) : '.pdf';
+          while (used.has(name.toLowerCase())) {
+            name = `${base}_${++n}${ext}`;
+          }
+          used.add(name.toLowerCase());
+          zip.file(name, blob);
+          added++;
+        } catch (err) {
+          console.warn('No se pudo incluir en el ZIP', entry.url, err);
         }
-        const headerType = (resp.headers.get('Content-Type') || '').toLowerCase();
-        if (headerType.includes('json') || headerType.includes('text/html')) {
-          blob.text().then(t => {
-            console.error('ZIP respuesta no binaria', t);
-            alert('No hay PDF para comprimir o no se pudo generar el ZIP.');
-          });
-          return;
-        }
-        const a = document.createElement('a');
-        const objectUrl = URL.createObjectURL(blob);
-        a.href = objectUrl;
-        a.download = this.zipDownloadName(resp.headers.get('Content-Disposition'));
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
-      },
-      error: err => {
-        this.downloadingZip = false;
-        this.cdr.detectChanges();
-        console.error(err);
-        const status = err?.status;
-        let msg = err?.error?.message || err?.message;
-        if (status === 502 || status === 503 || status === 504) {
-          msg = 'No se pudo armar el ZIP (archivos pesados o el servidor se saturó). Intente de nuevo o descargue menos secciones.';
-        } else if (status === 500) {
-          msg = 'No se pudo generar el ZIP. Intente de nuevo; si persiste, descargue por sección.';
-        }
-        alert(typeof msg === 'string' && msg.trim()
-          ? msg
-          : 'No se pudo descargar el ZIP de esta unidad.');
       }
-    });
+      if (!added) {
+        alert('No se pudieron descargar los PDF seleccionados.');
+        return;
+      }
+      const content = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      const objectUrl = URL.createObjectURL(content);
+      a.href = objectUrl;
+      a.download = this.zipDownloadName(null);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo generar el ZIP. Intente de nuevo.');
+    } finally {
+      this.downloadingZip = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  private pdfUrlForDoc(doc: FleetComplianceDoc): string | null {
+    const url = (doc.attachedDocumentUrl || '').trim();
+    if (url) return url;
+    if (doc.attachedFleetDocumentId) {
+      return this.fleetService.vehicleDocumentContentUrl(
+        this.businessRuc,
+        this.vehicleId,
+        doc.attachedFleetDocumentId
+      );
+    }
+    return null;
+  }
+
+  private safeZipFileName(raw: string): string {
+    let name = (raw || 'documento').replace(/[\\/:*?"<>|]+/g, '_').trim();
+    if (!name) name = 'documento';
+    if (!/\.pdf$/i.test(name)) name += '.pdf';
+    return name;
   }
 
   /** @deprecated */
