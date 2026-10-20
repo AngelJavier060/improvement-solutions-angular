@@ -615,10 +615,41 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
         : 'No hay PDF en las secciones seleccionadas.');
       return;
     }
-    void this.buildClientZip(sections);
+    this.downloadingZip = true;
+    this.cdr.detectChanges();
+    void this.downloadZipFast(sections);
   }
 
-  /** Arma el ZIP en el navegador con los PDF que ya se pueden ver (evita el 500 del endpoint /zip). */
+  /** Primero una sola petición al servidor (rápido). Si falla, ZIP en el navegador. */
+  private async downloadZipFast(sections: FleetDocCategory[]): Promise<void> {
+    try {
+      try {
+        const url = this.fleetService.vehicleDocumentsZipUrl(
+          this.businessRuc,
+          this.vehicleId,
+          sections.length === 0 ? undefined : sections
+        );
+        const resp = await firstValueFrom(this.http.get(url, { observe: 'response', responseType: 'blob' }));
+        const blob = resp.body;
+        const headerType = (resp.headers.get('Content-Type') || '').toLowerCase();
+        if (blob && blob.size > 0 && !headerType.includes('json') && !headerType.includes('text/html')) {
+          this.saveBlob(blob, this.zipDownloadName(resp.headers.get('Content-Disposition')));
+          return;
+        }
+      } catch (err) {
+        console.warn('ZIP del servidor no disponible, se arma en el navegador', err);
+      }
+      await this.buildClientZip(sections);
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo generar el ZIP. Intente de nuevo.');
+    } finally {
+      this.downloadingZip = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  /** Arma el ZIP en el navegador (varios PDF en paralelo, sin recomprimir). */
   private async buildClientZip(sections: FleetDocCategory[]): Promise<void> {
     const docs = this.docService.getCurrentDocuments(this.vehicleId)
       .filter(d => this.hasPdf(d))
@@ -628,60 +659,71 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
         name: (d.fileName || d.typeLabel || 'documento').trim(),
         url: this.pdfUrlForDoc(d)
       }))
-      .filter(e => !!e.url);
+      .filter(e => !!e.url) as { name: string; url: string }[];
     if (!entries.length) {
       alert('No hay PDF adjuntos para descargar.');
       return;
     }
-    this.downloadingZip = true;
-    this.cdr.detectChanges();
-    try {
-      const mod: any = await import('jszip');
-      const JSZip = mod.default || mod;
-      const zip = new JSZip();
-      const used = new Set<string>();
-      let added = 0;
-      for (const entry of entries) {
+    const mod: any = await import('jszip');
+    const JSZip = mod.default || mod;
+    const zip = new JSZip();
+    const used = new Set<string>();
+    const blobs = await this.fetchBlobsParallel(entries.map(e => e.url), 4);
+    let added = 0;
+    entries.forEach((entry, idx) => {
+      const blob = blobs[idx];
+      if (!blob || blob.size === 0) return;
+      const type = (blob.type || '').toLowerCase();
+      if (type.includes('json') || type.includes('text/html')) return;
+      let name = this.safeZipFileName(entry.name);
+      let n = 1;
+      const dot = name.lastIndexOf('.');
+      const base = dot > 0 ? name.slice(0, dot) : name;
+      const ext = dot > 0 ? name.slice(dot) : '.pdf';
+      while (used.has(name.toLowerCase())) {
+        name = `${base}_${++n}${ext}`;
+      }
+      used.add(name.toLowerCase());
+      zip.file(name, blob, { compression: 'STORE' });
+      added++;
+    });
+    if (!added) {
+      alert('No se pudieron descargar los PDF seleccionados.');
+      return;
+    }
+    const content = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+    this.saveBlob(content, this.zipDownloadName(null));
+  }
+
+  private async fetchBlobsParallel(urls: string[], limit: number): Promise<(Blob | null)[]> {
+    const out: (Blob | null)[] = urls.map(() => null);
+    let next = 0;
+    const worker = async () => {
+      while (next < urls.length) {
+        const i = next++;
         try {
-          const blob = await firstValueFrom(this.http.get(entry.url as string, { responseType: 'blob' }));
-          if (!blob || blob.size === 0) continue;
-          const type = (blob.type || '').toLowerCase();
-          if (type.includes('json') || type.includes('text/html')) continue;
-          let name = this.safeZipFileName(entry.name);
-          let n = 1;
-          const dot = name.lastIndexOf('.');
-          const base = dot > 0 ? name.slice(0, dot) : name;
-          const ext = dot > 0 ? name.slice(dot) : '.pdf';
-          while (used.has(name.toLowerCase())) {
-            name = `${base}_${++n}${ext}`;
-          }
-          used.add(name.toLowerCase());
-          zip.file(name, blob);
-          added++;
+          const blob = await firstValueFrom(this.http.get(urls[i], { responseType: 'blob' }));
+          out[i] = blob && blob.size > 0 ? blob : null;
         } catch (err) {
-          console.warn('No se pudo incluir en el ZIP', entry.url, err);
+          console.warn('No se pudo incluir en el ZIP', urls[i], err);
+          out[i] = null;
         }
       }
-      if (!added) {
-        alert('No se pudieron descargar los PDF seleccionados.');
-        return;
-      }
-      const content = await zip.generateAsync({ type: 'blob' });
-      const a = document.createElement('a');
-      const objectUrl = URL.createObjectURL(content);
-      a.href = objectUrl;
-      a.download = this.zipDownloadName(null);
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
-    } catch (err) {
-      console.error(err);
-      alert('No se pudo generar el ZIP. Intente de nuevo.');
-    } finally {
-      this.downloadingZip = false;
-      this.cdr.detectChanges();
-    }
+    };
+    const n = Math.max(1, Math.min(limit, urls.length));
+    await Promise.all(Array.from({ length: n }, () => worker()));
+    return out;
+  }
+
+  private saveBlob(blob: Blob, filename: string): void {
+    const a = document.createElement('a');
+    const objectUrl = URL.createObjectURL(blob);
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
   }
 
   private pdfUrlForDoc(doc: FleetComplianceDoc): string | null {
