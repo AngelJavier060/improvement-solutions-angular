@@ -15,7 +15,6 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,7 +50,6 @@ public class FleetVehicleService {
     private final FleetVehicleDocumentRepository fleetVehicleDocumentRepository;
     private final FleetComplianceDocumentRepository fleetComplianceDocumentRepository;
     private final BusinessService businessService;
-    private final JdbcTemplate jdbcTemplate;
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
@@ -628,18 +626,8 @@ public class FleetVehicleService {
     public record DocumentsZipItem(String entryName, Path path) {}
     public record DocumentsZipPlan(String fileName, List<DocumentsZipItem> items) {}
 
-    private record ZipRow(
-            String typeLabel,
-            String docCategory,
-            Boolean active,
-            Boolean historic,
-            Long fileId,
-            String originalFilename,
-            String storedPath) {}
-
     /**
-     * Arma la lista de PDF del ZIP (SQL nativo, misma ruta de disco que /content).
-     * No escribe la respuesta: así la transacción no queda abierta mientras se comprime.
+     * Lista PDF del ZIP con la misma consulta y la misma ruta de disco que /content.
      */
     @Transactional(readOnly = true)
     public DocumentsZipPlan prepareCurrentDocumentsZip(String ruc, Long vehicleId, String section) {
@@ -649,26 +637,25 @@ public class FleetVehicleService {
                 .orElseThrow(() -> new IllegalArgumentException("Vehículo no encontrado"));
 
         Set<String> sectionFilters = normalizeZipSections(section);
-        List<ZipRow> rows = loadZipRows(vehicleId);
-
         List<DocumentsZipItem> items = new ArrayList<>();
         Set<String> usedNames = new HashSet<>();
         Set<Long> usedFileIds = new HashSet<>();
 
-        for (ZipRow row : rows) {
-            if (row == null) continue;
-            if (Boolean.FALSE.equals(row.active()) || Boolean.TRUE.equals(row.historic())) continue;
-            if (sectionFilters != null && !sectionFilters.contains(normalizeDocCategory(row.docCategory()))) {
+        for (FleetComplianceDocument c : fleetComplianceDocumentRepository.findByFleetVehicle_IdOrderByUpdatedAtDesc(vehicleId)) {
+            if (c == null) continue;
+            if (Boolean.FALSE.equals(c.getActive()) || Boolean.TRUE.equals(c.getHistoricMode())) continue;
+            if (sectionFilters != null && !sectionFilters.contains(normalizeDocCategory(c.getDocCategory()))) {
                 continue;
             }
-            if (row.fileId() == null || !usedFileIds.add(row.fileId())) continue;
-            Path filePath = resolveFleetPdf(row.storedPath());
+            FleetVehicleDocument f = c.getFleetVehicleDocument();
+            if (f == null || f.getId() == null || !usedFileIds.add(f.getId())) continue;
+            Path filePath = resolveContentFile(f.getStoredPath());
             if (filePath == null) {
-                log.warn("[Fleet] ZIP omite archivo ausente vehiculo={} path={}", vehicleId, row.storedPath());
+                log.warn("[Fleet] ZIP omite archivo ausente vehiculo={} path={}", vehicleId, f.getStoredPath());
                 continue;
             }
-            String folder = zipSectionFolder(row.docCategory());
-            String fileName = uniqueZipEntryName(row.typeLabel(), row.originalFilename(), row.fileId(), usedNames, folder);
+            String folder = zipSectionFolder(c.getDocCategory());
+            String fileName = uniqueZipEntryName(c.getTypeLabel(), f.getOriginalFilename(), f.getId(), usedNames, folder);
             items.add(new DocumentsZipItem(folder + "/" + fileName, filePath));
         }
 
@@ -711,65 +698,15 @@ public class FleetVehicleService {
         }
     }
 
-    private List<ZipRow> loadZipRows(Long vehicleId) {
-        try {
-            return jdbcTemplate.query(
-                    """
-                    SELECT c.type_label AS type_label,
-                           c.doc_category AS doc_category,
-                           c.active AS active,
-                           c.historic_mode AS historic_mode,
-                           f.id AS file_id,
-                           f.original_filename AS original_filename,
-                           f.stored_path AS stored_path
-                    FROM fleet_compliance_documents c
-                    INNER JOIN fleet_vehicle_documents f ON f.id = c.fleet_vehicle_document_id
-                    WHERE c.fleet_vehicle_id = ?
-                      AND COALESCE(c.active, TRUE) = TRUE
-                      AND COALESCE(c.historic_mode, FALSE) = FALSE
-                    """,
-                    (rs, n) -> new ZipRow(
-                            rs.getString("type_label"),
-                            rs.getString("doc_category"),
-                            zipBool(rs.getObject("active")),
-                            zipBool(rs.getObject("historic_mode")),
-                            rs.getObject("file_id") != null ? rs.getLong("file_id") : null,
-                            rs.getString("original_filename"),
-                            rs.getString("stored_path")
-                    ),
-                    vehicleId
-            );
-        } catch (RuntimeException ex) {
-            log.warn("[Fleet] ZIP SQL falló, se usa JPA: {}", ex.getMessage());
-            return zipRowsFromEntities(vehicleId);
+    /** Idéntico a GET /documents/{id}/content. */
+    private Path resolveContentFile(String storedPath) {
+        if (storedPath == null || storedPath.isBlank()) return null;
+        Path base = Paths.get(uploadDir).resolve("fleet").normalize();
+        Path filePath = Paths.get(uploadDir).resolve(storedPath).normalize();
+        if (!filePath.startsWith(base) || !Files.isRegularFile(filePath)) {
+            return null;
         }
-    }
-
-    /** Misma resolución de disco que GET /documents/{id}/content, con respaldos de ruta. */
-    private Path resolveFleetPdf(String stored) {
-        if (stored == null || stored.isBlank()) return null;
-        String rel = stored.replace('\\', '/').replaceFirst("^/+", "");
-        Path upload = Paths.get(uploadDir);
-        Path base = upload.resolve("fleet").normalize();
-        Path absBase = base.toAbsolutePath().normalize();
-
-        List<Path> candidates = new ArrayList<>();
-        candidates.add(upload.resolve(rel));
-        if (rel.startsWith("uploads/")) {
-            candidates.add(upload.resolve(rel.substring("uploads/".length())));
-        }
-        int fleetAt = rel.indexOf("fleet/");
-        if (fleetAt >= 0) {
-            candidates.add(upload.resolve(rel.substring(fleetAt)));
-        }
-
-        for (Path raw : candidates) {
-            Path p = raw.normalize();
-            Path abs = p.toAbsolutePath().normalize();
-            if (p.startsWith(base) && Files.isRegularFile(p)) return p;
-            if (abs.startsWith(absBase) && Files.isRegularFile(abs)) return abs;
-        }
-        return null;
+        return filePath;
     }
 
     /** null = todas las secciones. */
@@ -833,24 +770,6 @@ public class FleetVehicleService {
         return sanitizeZipPart(raw) + ".zip";
     }
 
-    private List<ZipRow> zipRowsFromEntities(Long vehicleId) {
-        List<ZipRow> rows = new ArrayList<>();
-        for (FleetComplianceDocument c : fleetComplianceDocumentRepository.findByFleetVehicleIdWithFile(vehicleId)) {
-            if (c == null) continue;
-            FleetVehicleDocument f = c.getFleetVehicleDocument();
-            rows.add(new ZipRow(
-                    c.getTypeLabel(),
-                    c.getDocCategory(),
-                    c.getActive(),
-                    c.getHistoricMode(),
-                    f != null ? f.getId() : null,
-                    f != null ? f.getOriginalFilename() : null,
-                    f != null ? f.getStoredPath() : null
-            ));
-        }
-        return rows;
-    }
-
     private static String zipSectionFolder(String category) {
         return switch (normalizeDocCategory(category)) {
             case "CERTIFICACIONES" -> "Certificaciones Técnicas";
@@ -858,16 +777,6 @@ public class FleetVehicleService {
             case "DOCUMENTOS_ADICIONALES" -> "Documentos Adicionales";
             default -> "Documentos Legales y Permisos";
         };
-    }
-
-    private static Boolean zipBool(Object value) {
-        if (value instanceof Boolean b) return b;
-        if (value instanceof Number n) return n.intValue() != 0;
-        if (value == null) return null;
-        String s = String.valueOf(value);
-        if ("t".equalsIgnoreCase(s) || "true".equalsIgnoreCase(s) || "1".equals(s)) return true;
-        if ("f".equalsIgnoreCase(s) || "false".equalsIgnoreCase(s) || "0".equals(s)) return false;
-        return null;
     }
 
     private static String sectionSuffix(String section) {

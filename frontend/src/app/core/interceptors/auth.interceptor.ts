@@ -53,12 +53,9 @@ export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas pú
     const isFileEndpoint = request.url.includes('/api/files/');
     const expectsBlob = (request as any).responseType === 'blob' || isFileEndpoint;
     
-    console.log(`[AuthInterceptor] URL: ${request.url}, Es ruta pública: ${isPublicRoute}, Es subida de archivo: ${isFileUpload}`);
-    
     // Si es una ruta pública no añadimos el token
     if (!isPublicRoute) {
       if (token) {
-        console.log('[AuthInterceptor] Añadiendo token a la solicitud');
         
         // Preparar los headers según el tipo de petición
         let headers: { [key: string]: string } = {
@@ -77,7 +74,6 @@ export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas pú
         });
       }
     } else {
-      console.log('[AuthInterceptor] Ruta pública, no se requiere token');
       
       // Para peticiones que no son de archivos en rutas públicas
       if (!isFileUpload && !expectsBlob) {
@@ -93,8 +89,11 @@ export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas pú
     return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
         // Solo loggear errores reales (no status 200)
-        if (error.status !== 200 && !request.url.includes('/documents/zip')) {
-          console.error('[AuthInterceptor] Error:', error.status, 'URL:', request.url);
+        if (error.status !== 200 && error.status !== 0) {
+          const url = request.url || '';
+          if (!url.includes('/documents/zip') && !url.includes('/content')) {
+            console.error('[AuthInterceptor] Error:', error.status, 'URL:', url);
+          }
         }
         
         if (error.status === 403) {

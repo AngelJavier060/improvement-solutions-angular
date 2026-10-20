@@ -618,40 +618,12 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     }
     this.downloadingZip = true;
     this.cdr.detectChanges();
-    void this.downloadZipFast(sections);
+    void this.buildClientZip(sections);
   }
 
-  /** Primero una sola petición al servidor (rápido). Si falla, ZIP en el navegador. */
-  private async downloadZipFast(sections: FleetDocCategory[]): Promise<void> {
-    try {
-      try {
-        const url = this.fleetService.vehicleDocumentsZipUrl(
-          this.businessRuc,
-          this.vehicleId,
-          sections.length === 0 ? undefined : sections
-        );
-        const resp = await firstValueFrom(this.http.get(url, { observe: 'response', responseType: 'blob' }));
-        const blob = resp.body;
-        const headerType = (resp.headers.get('Content-Type') || '').toLowerCase();
-        if (blob && blob.size > 0 && !headerType.includes('json') && !headerType.includes('text/html')) {
-          this.saveBlob(blob, this.zipDownloadName(resp.headers.get('Content-Disposition')));
-          return;
-        }
-      } catch {
-        // El servidor no armó el ZIP; se genera en el navegador sin ensuciar la consola.
-      }
-      await this.buildClientZip(sections);
-    } catch (err) {
-      console.error(err);
-      alert('No se pudo generar el ZIP. Intente de nuevo.');
-    } finally {
-      this.downloadingZip = false;
-      this.cdr.detectChanges();
-    }
-  }
-
-  /** Arma el ZIP en el navegador (varios PDF en paralelo, sin recomprimir). */
+  /** ZIP en el navegador: cada PDF por /content (ruta que sí funciona) y carpetas por sección. */
   private async buildClientZip(sections: FleetDocCategory[]): Promise<void> {
+    try {
     const docs = this.docService.getCurrentDocuments(this.vehicleId)
       .filter(d => this.hasPdf(d))
       .filter(d => sections.length === 0 || sections.includes(normalizeFleetDocCategory(d.docCategory)));
@@ -696,6 +668,13 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     }
     const content = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
     this.saveBlob(content, this.zipDownloadName(null));
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo generar el ZIP. Intente de nuevo.');
+    } finally {
+      this.downloadingZip = false;
+      this.cdr.detectChanges();
+    }
   }
 
   private async fetchBlobsParallel(urls: string[], limit: number): Promise<(Blob | null)[]> {
