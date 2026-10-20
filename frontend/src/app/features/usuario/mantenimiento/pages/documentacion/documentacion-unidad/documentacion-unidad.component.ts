@@ -14,6 +14,7 @@ import { FleetComplianceDoc } from '../../../../../../models/fleet-documentation
 import {
   FLEET_DOC_CATEGORIES,
   FleetDocCategory,
+  fleetDocCategoryLabel,
   normalizeFleetDocCategory
 } from '../../../../../../models/tipo-documento-vehiculo.model';
 import { activeBusinessRuc } from '../documentacion-ruc.helper';
@@ -656,10 +657,11 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
       .filter(d => sections.length === 0 || sections.includes(normalizeFleetDocCategory(d.docCategory)));
     const entries = docs
       .map(d => ({
+        folder: fleetDocCategoryLabel(normalizeFleetDocCategory(d.docCategory)),
         name: (d.fileName || d.typeLabel || 'documento').trim(),
         url: this.pdfUrlForDoc(d)
       }))
-      .filter(e => !!e.url) as { name: string; url: string }[];
+      .filter(e => !!e.url) as { folder: string; name: string; url: string }[];
     if (!entries.length) {
       alert('No hay PDF adjuntos para descargar.');
       return;
@@ -675,16 +677,17 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
       if (!blob || blob.size === 0) return;
       const type = (blob.type || '').toLowerCase();
       if (type.includes('json') || type.includes('text/html')) return;
-      let name = this.safeZipFileName(entry.name);
+      const fileName = this.safeZipFileName(entry.name);
+      let path = `${entry.folder}/${fileName}`;
       let n = 1;
-      const dot = name.lastIndexOf('.');
-      const base = dot > 0 ? name.slice(0, dot) : name;
-      const ext = dot > 0 ? name.slice(dot) : '.pdf';
-      while (used.has(name.toLowerCase())) {
-        name = `${base}_${++n}${ext}`;
+      const dot = fileName.lastIndexOf('.');
+      const base = dot > 0 ? fileName.slice(0, dot) : fileName;
+      const ext = dot > 0 ? fileName.slice(dot) : '.pdf';
+      while (used.has(path.toLowerCase())) {
+        path = `${entry.folder}/${base}_${++n}${ext}`;
       }
-      used.add(name.toLowerCase());
-      zip.file(name, blob, { compression: 'STORE' });
+      used.add(path.toLowerCase());
+      zip.file(path, blob, { compression: 'STORE' });
       added++;
     });
     if (!added) {

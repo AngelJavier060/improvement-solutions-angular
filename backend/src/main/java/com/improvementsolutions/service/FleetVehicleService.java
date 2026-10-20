@@ -627,6 +627,7 @@ public class FleetVehicleService {
      * ZIP con los PDF vigentes de una unidad. Ámbito: empresa (RUC) + vehículo.
      * Escribe directo al response (sin StreamingResponseBody: Spring lo serializaba mal y devolvía 500).
      */
+    @Transactional(readOnly = true)
     public void writeCurrentDocumentsZip(String ruc, Long vehicleId, String section, HttpServletResponse response)
             throws IOException {
         Business business = businessService.findByRuc(ruc)
@@ -636,30 +637,41 @@ public class FleetVehicleService {
 
         Set<String> sectionFilters = normalizeZipSections(section);
         Path uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
-        List<FleetComplianceDocumentRepository.ZipFileRow> rows =
-                fleetComplianceDocumentRepository.findZipFileRowsByVehicleId(vehicleId);
+        List<Object[]> rows;
+        try {
+            rows = fleetComplianceDocumentRepository.findZipFileTuplesByVehicleId(vehicleId);
+        } catch (RuntimeException ex) {
+            log.warn("[Fleet] ZIP consulta compacta falló, se usa carga de entidades: {}", ex.getMessage());
+            rows = zipRowsFromEntities(vehicleId);
+        }
 
         record ZipItem(String entryName, Path path) {}
         List<ZipItem> items = new ArrayList<>();
         Set<String> usedNames = new HashSet<>();
         Set<Long> usedFileIds = new HashSet<>();
 
-        for (FleetComplianceDocumentRepository.ZipFileRow row : rows) {
-            if (row == null) continue;
-            if (Boolean.FALSE.equals(row.getActive()) || Boolean.TRUE.equals(row.getHistoricMode())) continue;
-            if (sectionFilters != null && !sectionFilters.contains(normalizeDocCategory(row.getDocCategory()))) {
+        for (Object[] row : rows) {
+            if (row == null || row.length < 7) continue;
+            String typeLabel = zipStr(row[0]);
+            String docCategory = zipStr(row[1]);
+            Boolean active = zipBool(row[2]);
+            Boolean historic = zipBool(row[3]);
+            Long fileId = zipLong(row[4]);
+            String originalFilename = zipStr(row[5]);
+            String storedPath = zipStr(row[6]);
+            if (Boolean.FALSE.equals(active) || Boolean.TRUE.equals(historic)) continue;
+            if (sectionFilters != null && !sectionFilters.contains(normalizeDocCategory(docCategory))) {
                 continue;
             }
-            if (row.getFileId() == null || !usedFileIds.add(row.getFileId())) continue;
-            Path filePath = resolveUploadedFile(uploadRoot, row.getStoredPath());
+            if (fileId == null || !usedFileIds.add(fileId)) continue;
+            Path filePath = resolveUploadedFile(uploadRoot, storedPath);
             if (filePath == null) {
-                log.warn("[Fleet] ZIP omite archivo ausente vehiculo={} path={}", vehicleId, row.getStoredPath());
+                log.warn("[Fleet] ZIP omite archivo ausente vehiculo={} path={}", vehicleId, storedPath);
                 continue;
             }
-            items.add(new ZipItem(
-                    uniqueZipEntryName(row.getTypeLabel(), row.getOriginalFilename(), row.getFileId(), usedNames),
-                    filePath
-            ));
+            String folder = zipSectionFolder(docCategory);
+            String fileName = uniqueZipEntryName(typeLabel, originalFilename, fileId, usedNames, folder);
+            items.add(new ZipItem(folder + "/" + fileName, filePath));
         }
 
         if (items.isEmpty()) {
@@ -775,6 +787,47 @@ public class FleetVehicleService {
         return sanitizeZipPart(raw) + ".zip";
     }
 
+    private List<Object[]> zipRowsFromEntities(Long vehicleId) {
+        List<Object[]> rows = new ArrayList<>();
+        for (FleetComplianceDocument c : fleetComplianceDocumentRepository.findByFleetVehicleIdWithFile(vehicleId)) {
+            if (c == null) continue;
+            FleetVehicleDocument f = c.getFleetVehicleDocument();
+            rows.add(new Object[]{
+                    c.getTypeLabel(),
+                    c.getDocCategory(),
+                    c.getActive(),
+                    c.getHistoricMode(),
+                    f != null ? f.getId() : null,
+                    f != null ? f.getOriginalFilename() : null,
+                    f != null ? f.getStoredPath() : null
+            });
+        }
+        return rows;
+    }
+
+    private static String zipSectionFolder(String category) {
+        return switch (normalizeDocCategory(category)) {
+            case "CERTIFICACIONES" -> "Certificaciones Técnicas";
+            case "LIBERACIONES" -> "Liberaciones";
+            case "DOCUMENTOS_ADICIONALES" -> "Documentos Adicionales";
+            default -> "Documentos Legales y Permisos";
+        };
+    }
+
+    private static String zipStr(Object value) {
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private static Boolean zipBool(Object value) {
+        if (value instanceof Boolean b) return b;
+        return null;
+    }
+
+    private static Long zipLong(Object value) {
+        if (value instanceof Number n) return n.longValue();
+        return null;
+    }
+
     private static String sectionSuffix(String section) {
         return switch (section) {
             case "DOCUMENTOS_PRINCIPALES" -> "legales_permisos";
@@ -785,7 +838,8 @@ public class FleetVehicleService {
         };
     }
 
-    private static String uniqueZipEntryName(String typeLabel, String originalFilename, Long fileId, Set<String> used) {
+    private static String uniqueZipEntryName(
+            String typeLabel, String originalFilename, Long fileId, Set<String> used, String folder) {
         String base = sanitizeZipPart(typeLabel);
         if (base.isBlank()) {
             String orig = originalFilename != null ? originalFilename : "";
@@ -798,12 +852,14 @@ public class FleetVehicleService {
         }
         String name = base;
         int i = 1;
-        while (used.contains(name.toLowerCase(Locale.ROOT))) {
+        String key = (folder + "/" + name).toLowerCase(Locale.ROOT);
+        while (used.contains(key)) {
             String stem = base.replaceAll("(?i)\\.pdf$", "");
             name = stem + "_" + i + ".pdf";
+            key = (folder + "/" + name).toLowerCase(Locale.ROOT);
             i++;
         }
-        used.add(name.toLowerCase(Locale.ROOT));
+        used.add(key);
         return name;
     }
 

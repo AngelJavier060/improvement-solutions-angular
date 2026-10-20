@@ -143,7 +143,27 @@ public class FleetController {
             @PathVariable Long id,
             @RequestParam(value = "section", required = false) String section,
             HttpServletResponse response) throws IOException {
-        fleetVehicleService.writeCurrentDocumentsZip(ruc, id, section, response);
+        try {
+            fleetVehicleService.writeCurrentDocumentsZip(ruc, id, section, response);
+        } catch (IllegalArgumentException e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "No hay documentos";
+            int status = msg.toLowerCase().contains("no hay") ? 400 : 404;
+            writeZipError(response, status, msg);
+        } catch (Exception e) {
+            log.error("[Fleet] ZIP vehiculo={}: {}", id, e.getMessage(), e);
+            writeZipError(response, 500, "No se pudo generar el ZIP");
+        }
+    }
+
+    private void writeZipError(HttpServletResponse response, int status, String message) throws IOException {
+        if (response.isCommitted()) {
+            return;
+        }
+        response.reset();
+        response.setStatus(status);
+        response.setContentType("application/json;charset=UTF-8");
+        String safe = message == null ? "" : message.replace("\\", "\\\\").replace("\"", "\\\"");
+        response.getWriter().write("{\"message\":\"" + safe + "\"}");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
