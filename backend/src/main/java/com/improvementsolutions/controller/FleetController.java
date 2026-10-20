@@ -144,7 +144,9 @@ public class FleetController {
             @RequestParam(value = "section", required = false) String section,
             HttpServletResponse response) throws IOException {
         try {
-            fleetVehicleService.writeCurrentDocumentsZip(ruc, id, section, response);
+            FleetVehicleService.DocumentsZipPlan plan =
+                    fleetVehicleService.prepareCurrentDocumentsZip(ruc, id, section);
+            fleetVehicleService.streamCurrentDocumentsZip(response, plan);
         } catch (IllegalArgumentException e) {
             String msg = e.getMessage() != null ? e.getMessage() : "No hay documentos";
             int status = msg.toLowerCase().contains("no hay") ? 400 : 404;

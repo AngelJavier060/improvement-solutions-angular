@@ -12,16 +12,11 @@ public interface FleetComplianceDocumentRepository extends JpaRepository<FleetCo
 
     List<FleetComplianceDocument> findByFleetVehicle_IdOrderByUpdatedAtDesc(Long fleetVehicleId);
 
-    @Query("SELECT c FROM FleetComplianceDocument c " +
+    @Query("SELECT DISTINCT c FROM FleetComplianceDocument c " +
            "LEFT JOIN FETCH c.fleetVehicleDocument " +
-           "WHERE c.fleetVehicle.id = :vehicleId")
-    List<FleetComplianceDocument> findByFleetVehicleIdWithFile(@Param("vehicleId") Long vehicleId);
-
-    @Query("SELECT c.typeLabel, c.docCategory, c.active, c.historicMode, " +
-           "f.id, f.originalFilename, f.storedPath " +
-           "FROM FleetComplianceDocument c LEFT JOIN c.fleetVehicleDocument f JOIN c.fleetVehicle v " +
+           "JOIN c.fleetVehicle v " +
            "WHERE v.id = :vehicleId")
-    List<Object[]> findZipFileTuplesByVehicleId(@Param("vehicleId") Long vehicleId);
+    List<FleetComplianceDocument> findByFleetVehicleIdWithFile(@Param("vehicleId") Long vehicleId);
 
     Optional<FleetComplianceDocument> findByIdAndFleetVehicle_Id(Long id, Long fleetVehicleId);
 

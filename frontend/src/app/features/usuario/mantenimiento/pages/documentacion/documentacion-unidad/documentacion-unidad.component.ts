@@ -637,8 +637,8 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
           this.saveBlob(blob, this.zipDownloadName(resp.headers.get('Content-Disposition')));
           return;
         }
-      } catch (err) {
-        console.warn('ZIP del servidor no disponible, se arma en el navegador', err);
+      } catch {
+        // El servidor no armó el ZIP; se genera en el navegador sin ensuciar la consola.
       }
       await this.buildClientZip(sections);
     } catch (err) {
@@ -670,7 +670,7 @@ export class DocumentacionUnidadComponent implements OnInit, OnDestroy {
     const JSZip = mod.default || mod;
     const zip = new JSZip();
     const used = new Set<string>();
-    const blobs = await this.fetchBlobsParallel(entries.map(e => e.url), 4);
+    const blobs = await this.fetchBlobsParallel(entries.map(e => e.url), 8);
     let added = 0;
     entries.forEach((entry, idx) => {
       const blob = blobs[idx];

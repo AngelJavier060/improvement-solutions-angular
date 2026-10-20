@@ -93,7 +93,7 @@ export class AuthInterceptor implements HttpInterceptor {  // Lista de rutas pú
     return next.handle(request).pipe(
       catchError((error: HttpErrorResponse) => {
         // Solo loggear errores reales (no status 200)
-        if (error.status !== 200) {
+        if (error.status !== 200 && !request.url.includes('/documents/zip')) {
           console.error('[AuthInterceptor] Error:', error.status, 'URL:', request.url);
         }
         
