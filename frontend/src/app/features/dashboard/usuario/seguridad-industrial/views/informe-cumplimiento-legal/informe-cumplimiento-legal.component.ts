@@ -20,6 +20,8 @@ export class InformeCumplimientoLegalComponent implements OnChanges {
   @Input() catalogo: any[] = [];
   @Input() filesMap: Record<number, any[]> = {};
   @ViewChild('sheet') sheet?: ElementRef<HTMLElement>;
+  @ViewChild('sheetBody') sheetBody?: ElementRef<HTMLElement>;
+  @ViewChild('sheetFooter') sheetFooter?: ElementRef<HTMLElement>;
 
   previewOpen = false;
   downloading = false;
@@ -239,6 +241,14 @@ export class InformeCumplimientoLegalComponent implements OnChanges {
     return 'Condición: Pendiente de evidencia';
   }
 
+  statusClass(item: any): string {
+    const status = this.statusOf(item);
+    if (status === 'CUMPLIDO') return 'st-cumplido';
+    if (status === 'URGENTE' || status === 'VENCIDA') return 'st-urgente';
+    if (status === 'EN PROCESO') return 'st-proceso';
+    return 'st-pendiente';
+  }
+
   statusOf(item: any): string {
     const days = this.daysRemaining(item);
     if (!isNaN(days) && days <= 0) return 'PENDIENTE';
@@ -305,43 +315,65 @@ export class InformeCumplimientoLegalComponent implements OnChanges {
     try {
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
-      const canvas = await html2canvas(el, {
+      const bodyEl = this.sheetBody?.nativeElement || el;
+      const footEl = this.sheetFooter?.nativeElement;
+      const shot = {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
         scrollX: 0,
-        scrollY: 0,
-        windowWidth: el.scrollWidth,
-        windowHeight: el.scrollHeight
+        scrollY: 0
+      };
+      const bodyCanvas = await html2canvas(bodyEl, {
+        ...shot,
+        windowWidth: bodyEl.scrollWidth,
+        windowHeight: bodyEl.scrollHeight
       });
+      const footCanvas = footEl
+        ? await html2canvas(footEl, {
+            ...shot,
+            windowWidth: footEl.scrollWidth,
+            windowHeight: footEl.scrollHeight
+          })
+        : null;
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const imgH = (canvas.height * pageW) / canvas.width;
-      const pxPerMm = canvas.width / pageW;
-
-      if (imgH <= pageH + 1) {
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, imgH);
+      const margin = 12;
+      const innerW = pageW - margin * 2;
+      const innerH = pageH - margin * 2;
+      const bodyMm = (bodyCanvas.height * innerW) / bodyCanvas.width;
+      const footMm = footCanvas ? (footCanvas.height * innerW) / footCanvas.width : 0;
+      const room = Math.max(innerH, innerH * 2 - footMm);
+      const scale = bodyMm > room ? room / bodyMm : 1;
+      const drawW = innerW * scale;
+      const x = margin + (innerW - drawW) / 2;
+      const bodyDraw = bodyMm * scale;
+      const footDraw = footMm * scale;
+      const footY = pageH - margin - footDraw;
+      const fitsOnOnePage = bodyDraw + footDraw <= innerH - 2;
+      if (fitsOnOnePage) {
+        this.paintSlice(pdf, bodyCanvas, 0, bodyCanvas.height, x, margin, drawW, bodyDraw);
+        if (footCanvas) {
+          this.paintSlice(pdf, footCanvas, 0, footCanvas.height, x, footY, drawW, footDraw);
+        }
       } else {
-        const pageHeightPx = Math.floor(pageH * pxPerMm);
-        let srcY = 0;
-        let pageIndex = 0;
-        while (srcY < canvas.height) {
-          const sliceH = Math.min(pageHeightPx, canvas.height - srcY);
-          if (sliceH < 8) break;
-          const pageCanvas = document.createElement('canvas');
-          pageCanvas.width = canvas.width;
-          pageCanvas.height = sliceH;
-          const ctx = pageCanvas.getContext('2d');
-          if (!ctx) break;
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-          ctx.drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-          if (pageIndex > 0) pdf.addPage();
-          pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageW, sliceH / pxPerMm);
-          srcY += sliceH;
-          pageIndex++;
+        const page2Room = Math.max(40, innerH - footDraw - 4);
+        const minCutMm = Math.max(0, bodyDraw - page2Room);
+        const minCutPx = Math.round((minCutMm / bodyDraw) * bodyCanvas.height);
+        const idealPx = Math.round((Math.min(innerH, bodyDraw) / bodyDraw) * bodyCanvas.height);
+        const cutPx = this.findRowBreak(bodyCanvas, Math.min(idealPx, bodyCanvas.height - 1), minCutPx);
+        const cutMm = (cutPx / bodyCanvas.height) * bodyDraw;
+        this.paintSlice(pdf, bodyCanvas, 0, cutPx, x, margin, drawW, cutMm);
+        pdf.addPage();
+        const restPx = bodyCanvas.height - cutPx;
+        const restMm = bodyDraw - cutMm;
+        if (restPx > 4) {
+          this.paintSlice(pdf, bodyCanvas, cutPx, restPx, x, margin, drawW, restMm);
+        }
+        if (footCanvas) {
+          this.paintSlice(pdf, footCanvas, 0, footCanvas.height, x, footY, drawW, footDraw);
         }
       }
 
@@ -380,10 +412,11 @@ export class InformeCumplimientoLegalComponent implements OnChanges {
     const clone = sheet.cloneNode(true) as HTMLElement;
     doc.open();
     doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${this.escapeHtml(this.companyName)}</title><style>
-      @page { size: A4 portrait; margin: 0; }
+      @page { size: A4 portrait; margin: 12mm; }
       html, body { margin: 0; padding: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .sheet { width: 210mm !important; min-height: auto !important; margin: 0 auto !important; box-shadow: none !important; }
-      tr, .panel, .kpis, .metrics, .doc-header { break-inside: avoid; page-break-inside: avoid; }
+      .sheet { width: 100% !important; min-height: auto !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
+      tr, .panel, .kpis, .metrics, .doc-header, .doc-footer { break-inside: avoid; page-break-inside: avoid; }
+      .doc-footer { break-before: avoid; page-break-before: avoid; }
       ${css}
     </style></head><body></body></html>`);
     doc.close();
@@ -395,6 +428,49 @@ export class InformeCumplimientoLegalComponent implements OnChanges {
       setTimeout(() => iframe.remove(), 1500);
     };
     this.waitForImages(doc.body).then(finish);
+  }
+
+  private paintSlice(
+    pdf: { addImage: (data: string, format: string, x: number, y: number, w: number, h: number) => void },
+    canvas: HTMLCanvasElement,
+    srcY: number,
+    srcH: number,
+    x: number,
+    y: number,
+    drawW: number,
+    drawH: number
+  ): void {
+    const sliceH = Math.max(1, Math.round(srcH));
+    const pageCanvas = document.createElement('canvas');
+    pageCanvas.width = canvas.width;
+    pageCanvas.height = sliceH;
+    const ctx = pageCanvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+    ctx.drawImage(canvas, 0, Math.round(srcY), canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+    pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', x, y, drawW, drawH);
+  }
+
+  private findRowBreak(canvas: HTMLCanvasElement, ideal: number, floor = 0): number {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return Math.max(ideal, floor);
+    const min = Math.max(floor, ideal - Math.floor(canvas.height * 0.14));
+    for (let y = ideal; y >= min; y -= 2) {
+      if (this.rowIsWhite(ctx, canvas.width, y)) return y;
+    }
+    return Math.max(ideal, floor);
+  }
+
+  private rowIsWhite(ctx: CanvasRenderingContext2D, width: number, y: number): boolean {
+    const data = ctx.getImageData(0, y, width, 1).data;
+    let light = 0;
+    let count = 0;
+    for (let i = 0; i < data.length; i += 64) {
+      count++;
+      if (data[i] > 245 && data[i + 1] > 245 && data[i + 2] > 245) light++;
+    }
+    return count > 0 && light / count > 0.9;
   }
 
   private escapeHtml(value: string): string {
