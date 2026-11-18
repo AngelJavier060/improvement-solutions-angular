@@ -775,11 +775,11 @@ export class DashboardCumplimientoComponent implements OnInit, OnDestroy {
       const completedFlag = !!item?.completed;
       const days = this.calculateDaysRemaining(item);
 
-      // 1) Cumplido si texto lo indica o flag completed = true
-      if (completedFlag || raw.includes('CUMPLID')) return 'CUMPLIDO';
+      // Sin días restantes (hoy o vencido) vuelve a pendiente, aunque antes estuviera cumplido
+      if (!isNaN(days) && days <= 0) return 'PENDIENTE';
 
-      // 2) Vencida si la fecha ya pasó
-      if (!isNaN(days) && days < 0) return 'VENCIDA';
+      // Cumplido solo mientras la vigencia siga en curso
+      if (completedFlag || raw.includes('CUMPLID')) return 'CUMPLIDO';
 
       // 3) En proceso si está próximo a vencer (<= 5 días)
       if (!isNaN(days) && days <= 5) return 'EN PROCESO';

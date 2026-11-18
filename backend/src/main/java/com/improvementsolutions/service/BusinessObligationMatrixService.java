@@ -255,7 +255,8 @@ public class BusinessObligationMatrixService {
                     byStatus = su.contains("CUMPLID");
                 }
                 boolean byFlag = m.isCompleted();
-                if (byStatus || byFlag) {
+                boolean expired = m.getDueDate() != null && !m.getDueDate().isAfter(java.time.LocalDate.now());
+                if ((byStatus || byFlag) && !expired) {
                     completed++;
                 }
             }

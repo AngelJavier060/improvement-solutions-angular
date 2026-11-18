@@ -331,16 +331,29 @@ export class MatrizLegalUsuarioComponent implements OnInit {
     return `Hace ${overdue} día${overdue === 1 ? '' : 's'}`;
   }
 
-  // Estado automático visual
-  displayStatus(item: any): string {
-    if (item?.completed) return 'CUMPLIDO';
-    const st = (item?.status || '').toString().toUpperCase().trim();
-    if (st.includes('CUMPLID')) return 'CUMPLIDO';
+  /** Alarma de caducidad: desde 5 días antes y hasta el día previo al vencimiento. */
+  isExpiryAlarm(item: any): boolean {
     const days = this.calculateDaysRemaining(item);
+    return !isNaN(days) && days >= 1 && days <= 5;
+  }
+
+  /** Vigente solo si no llegó a cero días. En cero o vencido deja de contar como cumplido. */
+  private isStillFulfilled(item: any): boolean {
+    const days = this.calculateDaysRemaining(item);
+    if (!isNaN(days) && days <= 0) return false;
+    if (item?.completed) return true;
+    return (item?.status || '').toString().toUpperCase().includes('CUMPLID');
+  }
+
+  // Estado automático según la vigencia de cada documento de la empresa
+  displayStatus(item: any): string {
+    const days = this.calculateDaysRemaining(item);
+    if (!isNaN(days) && days <= 0) return 'PENDIENTE';
+    if (this.isStillFulfilled(item)) return 'CUMPLIDO';
+    const st = (item?.status || '').toString().toUpperCase().trim();
     if (isNaN(days)) return st || 'PENDIENTE';
-    if (days < 0) return 'VENCIDA';
     if (days <= 5) return 'URGENTE';
-    return 'EN PROCESO';
+    return st || 'EN PROCESO';
   }
 
   statusBadgeClass(item: any): string {
@@ -839,9 +852,7 @@ export class MatrizLegalUsuarioComponent implements OnInit {
   // Métodos helper para estadísticas del dashboard
   calculateCompliancePercentage(): number {
     if (!this.obligaciones || this.obligaciones.length === 0) return 0;
-    const completed = this.obligaciones.filter(item =>
-      item?.completed || (item?.status || '').toString().toUpperCase().includes('CUMPLID')
-    ).length;
+    const completed = this.obligaciones.filter(item => this.isStillFulfilled(item)).length;
     return Math.round((completed / this.obligaciones.length) * 100);
   }
 
@@ -849,7 +860,7 @@ export class MatrizLegalUsuarioComponent implements OnInit {
     if (!this.obligaciones) return 0;
     return this.obligaciones.filter(item => {
       const days = this.calculateDaysRemaining(item);
-      return !isNaN(days) && days >= 0 && days <= 5;
+      return !isNaN(days) && days >= 1 && days <= 5;
     }).length;
   }
 

@@ -160,7 +160,7 @@ export class InformeCumplimientoLegalComponent implements OnChanges {
   get atRiskCount(): number {
     return (this.obligaciones || []).filter(item => {
       const days = this.daysRemaining(item);
-      return !isNaN(days) && days >= 0 && days <= 5 && !this.isCompleted(item);
+      return !isNaN(days) && days >= 1 && days <= 5;
     }).length;
   }
 
@@ -226,7 +226,13 @@ export class InformeCumplimientoLegalComponent implements OnChanges {
 
   conditionLabel(item: any): string {
     const status = this.statusOf(item);
-    if (status === 'CUMPLIDO') return 'Condición: Verificado y Aprobado (OK)';
+    if (status === 'CUMPLIDO') {
+      const days = this.daysRemaining(item);
+      if (!isNaN(days) && days >= 1 && days <= 5) {
+        return `Condición: Verificado. Alarma: caduca en ${days} día${days === 1 ? '' : 's'}`;
+      }
+      return 'Condición: Verificado y Aprobado (OK)';
+    }
     if (status === 'VENCIDA') return 'Condición: Vencido, requiere renovación';
     if (status === 'URGENTE') return 'Condición: Vence en los próximos días';
     if (status === 'EN PROCESO') return 'Condición: En seguimiento';
@@ -234,11 +240,11 @@ export class InformeCumplimientoLegalComponent implements OnChanges {
   }
 
   statusOf(item: any): string {
-    if (this.isCompleted(item)) return 'CUMPLIDO';
     const days = this.daysRemaining(item);
-    if (!isNaN(days) && days < 0) return 'VENCIDA';
-    if (!isNaN(days) && days <= 5) return 'URGENTE';
+    if (!isNaN(days) && days <= 0) return 'PENDIENTE';
+    if (this.isCompleted(item)) return 'CUMPLIDO';
     const st = (item?.status || '').toString().toUpperCase().trim();
+    if (!isNaN(days) && days <= 5) return 'URGENTE';
     if (st.includes('PROCESO')) return 'EN PROCESO';
     return st || 'PENDIENTE';
   }
@@ -440,6 +446,8 @@ export class InformeCumplimientoLegalComponent implements OnChanges {
   }
 
   private isCompleted(item: any): boolean {
+    const days = this.daysRemaining(item);
+    if (!isNaN(days) && days <= 0) return false;
     if (item?.completed) return true;
     return (item?.status || '').toString().toUpperCase().includes('CUMPLID');
   }

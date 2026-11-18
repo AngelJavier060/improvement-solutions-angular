@@ -383,6 +383,14 @@
     }
   }
   
+  &.validity-alarm {
+    color: #c2410c;
+
+    .validity-dot {
+      background: #ea580c;
+    }
+  }
+
   &.validity-warning {
     color: #eab308;
     
@@ -412,6 +420,19 @@
   color: #64748b;
   margin-left: 0.875rem;
   margin-top: 0.125rem;
+}
+
+.expiry-alarm {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  background: #ffedd5;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 // ── Badges ─────────────────────────────────────────────────────────────────

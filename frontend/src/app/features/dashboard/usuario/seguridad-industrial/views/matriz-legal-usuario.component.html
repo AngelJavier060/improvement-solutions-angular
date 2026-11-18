@@ -132,14 +132,18 @@
                 <div class="validity-cell">
                   <span class="validity-days" 
                         [ngClass]="{
-                          'validity-error': calculateDaysRemaining(item) < 0,
-                          'validity-warning': calculateDaysRemaining(item) >= 0 && calculateDaysRemaining(item) <= 30,
+                          'validity-error': calculateDaysRemaining(item) <= 0,
+                          'validity-alarm': isExpiryAlarm(item),
+                          'validity-warning': calculateDaysRemaining(item) > 5 && calculateDaysRemaining(item) <= 30,
                           'validity-success': calculateDaysRemaining(item) > 30
                         }">
                     <span class="validity-dot"></span>
                     {{ displayDaysLabel(calculateDaysRemaining(item)) }}
                   </span>
                   <span class="validity-date">Vence: {{ formatDate(item?.dueDate) }}</span>
+                  <span class="expiry-alarm" *ngIf="isExpiryAlarm(item)">
+                    Alarma: caduca en {{ calculateDaysRemaining(item) }} día{{ calculateDaysRemaining(item) === 1 ? '' : 's' }}
+                  </span>
                 </div>
               </td>
 
