@@ -36,7 +36,7 @@
           <button class="tab-btn active">Activo</button>
           <button class="tab-btn">Archivado</button>
         </div>
-        <button class="export-btn">
+        <button class="export-btn" type="button" (click)="exportarReporte()" [disabled]="loading">
           <span class="material-symbols-outlined">file_download</span>
           Exportar Reporte
         </button>
@@ -261,6 +261,14 @@
     </div>
   </section>
 </main>
+
+<app-informe-cumplimiento-legal
+  [empresa]="empresa"
+  [ruc]="ruc"
+  [obligaciones]="obligaciones"
+  [catalogo]="catalogoMatrices"
+  [filesMap]="filesMap">
+</app-informe-cumplimiento-legal>
 
 <!-- Contextual FAB -->
 <div class="fab-container">

@@ -1,0 +1,191 @@
+<div class="pdf-stage pdf-stage--live" *ngIf="previewOpen">
+  <div class="preview-bar">
+    <span>Vista previa del informe · formato A4</span>
+    <div class="preview-actions">
+      <button type="button" (click)="downloadPdf()" [disabled]="downloading">{{ downloading ? 'Generando...' : 'Descargar' }}</button>
+      <button type="button" (click)="printReport()" [disabled]="downloading">Imprimir</button>
+      <button type="button" class="preview-close" (click)="closePreview()" [disabled]="downloading">Cerrar</button>
+    </div>
+  </div>
+  <main class="sheet" #sheet>
+    <header class="doc-header">
+      <div class="brand">
+        <div class="mark">
+          <img *ngIf="companyLogoUrl && !logoFailed" class="mark-logo" [src]="companyLogoUrl" alt="Sello de la empresa" (error)="logoFailed = true" />
+          <ng-container *ngIf="!companyLogoUrl || logoFailed">
+            <span class="mark-main">{{ companyMark }}</span>
+            <span class="mark-sub">LEGAL</span>
+          </ng-container>
+        </div>
+        <div>
+          <div class="brand-line">
+            <span class="company">{{ companyName }}</span>
+            <span class="ruc">R.U.C. {{ ruc || empresa?.ruc || '—' }}</span>
+          </div>
+          <h1>Informe ejecutivo de cumplimiento legal y gestión laboral</h1>
+          <p class="doc-kicker">Sistema Único de Trabajo y Matriz Legal Normativa · Auditoría HSEQ</p>
+        </div>
+      </div>
+      <div class="meta">
+        <p><strong>Código Doc:</strong> <span>{{ docCode }}</span></p>
+        <p><strong>Fecha Emisión:</strong> {{ issuedAt }}</p>
+        <p><strong>Período Auditado:</strong> {{ fiscalPeriod }}</p>
+      </div>
+    </header>
+
+    <section class="block">
+      <div class="band">
+        <h2>Estadísticas de personal registrado</h2>
+        <span>Fuente: Módulo Nómina y RRHH</span>
+      </div>
+      <div class="kpis">
+        <div><strong class="sky">{{ stats.total }}</strong><span>Total</span></div>
+        <div><strong class="sky">{{ stats.hombres }}</strong><span>Hombres</span></div>
+        <div><strong class="rose">{{ stats.mujeres }}</strong><span>Mujeres</span></div>
+        <div><strong class="amber">{{ stats.discapacidad }}</strong><span>Discapacidad</span></div>
+        <div><strong>{{ stats.adolescentes }}</strong><span>Adolescentes</span></div>
+        <div class="kpi-accent"><strong>{{ adultos }}</strong><span>Adultos</span></div>
+      </div>
+    </section>
+
+    <section class="split">
+      <article class="panel">
+        <div class="panel-head">
+          <h3>Matriz legal de cumplimiento</h3>
+          <span class="chip">Nivel global</span>
+        </div>
+        <div class="gauge-row">
+          <div class="gauge">
+            <svg viewBox="0 0 200 120" aria-hidden="true">
+              <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e2e8f0" stroke-linecap="round" stroke-width="22"></path>
+              <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" [attr.stroke]="gaugeColor" stroke-linecap="round" stroke-width="22"
+                    [attr.stroke-dasharray]="semiLen" [attr.stroke-dashoffset]="gaugeOffset"></path>
+              <circle cx="100" cy="100" r="5" fill="#15803d"></circle>
+              <line x1="100" y1="100" [attr.x2]="needle.x" [attr.y2]="needle.y" stroke="#15803d" stroke-width="3.5" stroke-linecap="round"></line>
+            </svg>
+            <div class="gauge-value">{{ complianceLabel }}</div>
+            <div class="gauge-caption">Tasa de cumplimiento</div>
+          </div>
+          <div class="legend">
+            <h4>Estatus de requerimientos</h4>
+            <p><i class="dot ok"></i> Cumplidos <b>{{ completedCount }}</b></p>
+            <p><i class="dot wait"></i> Pendientes <b>{{ pendingCount }}</b></p>
+            <small>{{ nextDueHint }}</small>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h3>Rango de edades de la fuerza laboral</h3>
+          <span>Demografía ocupacional</span>
+        </div>
+        <div class="age-cards">
+          <div><strong>{{ agePct(age.under18) }}</strong><span>&lt;18</span></div>
+          <div><strong>{{ agePct(age.from19To30) }}</strong><span>19-30</span></div>
+          <div [class.hot]="age.from31To50 > 0"><strong>{{ agePct(age.from31To50) }}</strong><span>31-50</span></div>
+          <div [class.hot]="age.over50 > 0"><strong>{{ agePct(age.over50) }}</strong><span>&gt;50</span></div>
+        </div>
+        <div class="bars">
+          <div>
+            <em>{{ age.under18 || '' }}</em>
+            <span [style.height.px]="barHeight(age.under18)" [class.fill]="age.under18 > 0"></span>
+            <small>&lt;18</small>
+          </div>
+          <div>
+            <em>{{ age.from19To30 || '' }}</em>
+            <span [style.height.px]="barHeight(age.from19To30)" [class.fill]="age.from19To30 > 0"></span>
+            <small>19-30</small>
+          </div>
+          <div>
+            <em>{{ age.from31To50 || '' }}</em>
+            <span [style.height.px]="barHeight(age.from31To50)" [class.fill]="age.from31To50 > 0"></span>
+            <small>31-50</small>
+          </div>
+          <div>
+            <em>{{ age.over50 || '' }}</em>
+            <span [style.height.px]="barHeight(age.over50)" [class.fill]="age.over50 > 0"></span>
+            <small>&gt;50</small>
+          </div>
+        </div>
+        <div class="age-foot">
+          <span>Promedio de edad: <strong>{{ averageAge }} años</strong></span>
+          <span>Población total: <strong>{{ ageTotal || stats.total }} personas</strong></span>
+        </div>
+      </article>
+    </section>
+
+    <section class="metrics">
+      <div><span>Total requisitos</span><strong>{{ obligaciones.length }}</strong></div>
+      <div class="metric-ok"><span>Cumplimiento</span><strong>{{ complianceLabel }}</strong></div>
+      <div><span>En riesgo</span><strong class="rose">{{ atRiskCount }}</strong></div>
+      <div><span>Próx. vencimientos</span><strong class="sky">{{ upcomingCount }}</strong></div>
+    </section>
+
+    <section class="table-block">
+      <div class="table-head">
+        <h2>Matriz de control normativo y respaldo documental</h2>
+        <span>Obligaciones de higiene, seguridad y salud en el trabajo</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Requisito legal / obligación</th>
+            <th>Regulación legal aplicable</th>
+            <th>Vigencia y vencimiento</th>
+            <th>Estado</th>
+            <th>Prioridad</th>
+            <th>Respaldo documental</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="!obligaciones.length">
+            <td colspan="6" class="empty">No hay requisitos legales registrados para esta empresa.</td>
+          </tr>
+          <tr *ngFor="let item of obligaciones; let i = index">
+            <td>
+              <div class="req">
+                <span class="idx">§{{ i + 1 }}</span>
+                <div>
+                  <p class="req-title">{{ resolveName(item) }}</p>
+                  <p class="req-cond" [class.bad]="statusOf(item) !== 'CUMPLIDO'">{{ conditionLabel(item) }}</p>
+                </div>
+              </div>
+            </td>
+            <td>{{ resolveRegulation(item) }}</td>
+            <td>
+              <div class="when" [ngClass]="daysTone(item)">{{ daysLabel(item) }}</div>
+              <small>{{ dueLabel(item) }}</small>
+            </td>
+            <td class="center">
+              <span class="badge" [ngClass]="'st-' + statusOf(item).toLowerCase().replace(' ', '-')">{{ statusOf(item) }}</span>
+            </td>
+            <td class="center">
+              <span class="prio" [ngClass]="'pr-' + priorityOf(item).toLowerCase()">{{ priorityOf(item) }}</span>
+            </td>
+            <td class="center">{{ fileLabel(item) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="doc-footer">
+      <div class="signs">
+        <div>
+          <div class="sign-line">Firma autorizada</div>
+          <p>Responsable de Seguridad y Salud / RRHH</p>
+          <small>Unidad de Talento Humano y Gestión Normativa</small>
+        </div>
+        <div>
+          <div class="sign-line">Firma autorizada</div>
+          <p>Gerencia General / Dirección Legal</p>
+          <small>Aprobación y certificación de control</small>
+        </div>
+      </div>
+      <div class="legal">
+        <span>Documento de auditoría interna generado con los datos vigentes de {{ companyName }}.</span>
+        <span>{{ docCode }}</span>
+      </div>
+    </footer>
+  </main>
+</div>

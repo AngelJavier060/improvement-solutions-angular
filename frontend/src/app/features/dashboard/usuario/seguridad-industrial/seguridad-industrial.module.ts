@@ -6,6 +6,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { SeguridadIndustrialRoutingModule } from './seguridad-industrial.routing';
 import { SeguridadIndustrialComponent } from './seguridad-industrial.component';
 import { MatrizLegalUsuarioComponent } from './views/matriz-legal-usuario.component';
+import { InformeCumplimientoLegalComponent } from './views/informe-cumplimiento-legal/informe-cumplimiento-legal.component';
 import { DashboardCumplimientoComponent } from './views/dashboard-cumplimiento/dashboard-cumplimiento.component';
 import { SidebarSeguridadComponent } from './sidebar-seguridad.component';
 import { AccidentesIncidentesComponent } from './views/accidentes-incidentes/accidentes-incidentes.component';
@@ -27,6 +28,7 @@ import { CapacitacionesSsaComponent } from './views/capacitaciones/capacitacione
   declarations: [
     SeguridadIndustrialComponent,
     MatrizLegalUsuarioComponent,
+    InformeCumplimientoLegalComponent,
     SidebarSeguridadComponent,
     AccidentesIncidentesComponent,
     IncidentFormComponent,

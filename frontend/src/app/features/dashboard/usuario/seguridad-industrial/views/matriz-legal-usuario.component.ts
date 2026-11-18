@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { InformeCumplimientoLegalComponent } from './informe-cumplimiento-legal/informe-cumplimiento-legal.component';
 import { ActivatedRoute } from '@angular/router';
 import { BusinessService } from '../../../../../services/business.service';
 import { ObligationMatrixService } from '../../../../../services/obligation-matrix.service';
@@ -13,6 +14,8 @@ import { NotificationService } from '../../../../../services/notification.servic
 })
 export class MatrizLegalUsuarioComponent implements OnInit {
   ruc: string | null = null;
+  empresa: any = null;
+  @ViewChild(InformeCumplimientoLegalComponent) informe?: InformeCumplimientoLegalComponent;
   inicioLink: any[] = ['/'];
   obligaciones: any[] = [];
   qrMode = false;
@@ -195,6 +198,7 @@ export class MatrizLegalUsuarioComponent implements OnInit {
           return;
         }
         this.businessId = Number(id);
+        this.empresa = empresa;
 
         // Cargar relaciones empresa-matriz desde servicio específico (no admin)
         this.bomService.getByBusiness(Number(id)).subscribe({
@@ -907,5 +911,10 @@ export class MatrizLegalUsuarioComponent implements OnInit {
 
   previousPage(): void {
     this.goToPage(this.currentPage - 1);
+  }
+
+  exportarReporte(): void {
+    if (!this.informe || this.loading) return;
+    this.informe.openPreview();
   }
 }
