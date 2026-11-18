@@ -48,9 +48,17 @@ export interface CreateEmployeeRequest {
   // Información laboral
   fechaIngreso?: string; // Fecha de ingreso
   codigoEmpresa: string; // RUC de la empresa
+  codigoTrabajador?: string;
+  businessId?: number;
   positionId?: number;
   departmentId?: number;
   typeContractId?: number;
+  workScheduleId?: number;
+  workShiftId?: number;
+  salario?: number;
+  residentAddress?: string;
+  contractorCompanyId?: number;
+  contractorBlockId?: number;
   
   // Información personal
   tipoSangre?: string;
@@ -111,6 +119,12 @@ export interface UpdateEmployeeRequest {
   positionId?: number;
   departmentId?: number;
   typeContractId?: number;
+  workScheduleId?: number;
+  workShiftId?: number;
+  salario?: number;
+  fechaSalida?: string;
+  nivelEducacion?: string;
+  active?: boolean;
   genderId?: number;
   civilStatusId?: number;
   etniaId?: number;

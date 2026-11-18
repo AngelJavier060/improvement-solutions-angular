@@ -1154,6 +1154,7 @@ public class BusinessEmployeeService {
         if (updateDto.getLugarNacimientoParroquia() != null) employee.setLugarNacimientoParroquia(updateDto.getLugarNacimientoParroquia());
         if (updateDto.getAddress() != null) employee.setAddress(updateDto.getAddress());
         if (updateDto.getDireccionDomiciliaria() != null) employee.setDireccionDomiciliaria(updateDto.getDireccionDomiciliaria());
+        if (updateDto.getResidentAddress() != null) employee.setResidentAddress(updateDto.getResidentAddress());
         if (updateDto.getContactName() != null) employee.setContactName(updateDto.getContactName());
         if (updateDto.getContactPhone() != null) employee.setContactPhone(updateDto.getContactPhone());
         if (updateDto.getContactKinship() != null) employee.setContactKinship(updateDto.getContactKinship());

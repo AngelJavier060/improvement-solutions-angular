@@ -24,10 +24,12 @@ import { WorkShift } from '../../../../models/work-shift.model';
 import { environment } from '../../../../../environments/environment';
 import { BusinessAdapterService } from '../../../../core/adapters/business-adapter.service';
 import { QrLegalDocsService } from '../../../../core/services/qr-legal-docs.service';
-import { forkJoin, Observable } from 'rxjs';
+import { firstValueFrom, forkJoin, Observable } from 'rxjs';
 import { User } from './user-modal/user-modal.component';
 import { EmployeeService } from '../../usuario/talento-humano/services/employee.service';
-import { EmployeeResponse } from '../../usuario/talento-humano/models/employee.model';
+import { ConfigurationService } from '../../usuario/talento-humano/services/configuration.service';
+import { CreateEmployeeRequest, EmployeeResponse, UpdateEmployeeRequest } from '../../usuario/talento-humano/models/employee.model';
+import { buildPersonnelTemplate, normalizeHeader, parsePersonnelWorkbook } from './personnel-excel.util';
 import { InventoryCategoryService, InventoryCategory } from '../../../../services/inventory-category.service';
 import { InventorySupplierService, InventorySupplier } from '../../../../services/inventory-supplier.service';
 import { BusinessContextService } from '../../../../core/services/business-context.service';
@@ -92,6 +94,10 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   editingEmployeeExitId: number | null = null;
   editEmployeeExitDate = '';
   savingEmployeeExit = false;
+  personnelExcelBusy = false;
+  private personnelLookups: { genders: any[]; civil: any[]; etnias: any[]; degrees: any[] } | null = null;
+  personnelExcelMsg: string | null = null;
+  personnelExcelErr: string | null = null;
 
   // Variables para crear usuarios
   showCreateUserModal = false;
@@ -511,7 +517,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private http: HttpClient,
     private metodologiaRiesgoService: MetodologiaRiesgoService,
     private iso9001CatalogService: Iso9001CatalogService,
-    private eppCatalogService: EppCatalogService
+    private eppCatalogService: EppCatalogService,
+    private configurationService: ConfigurationService
   ) {}
 
   ngOnInit(): void {
@@ -1371,6 +1378,290 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     if (ruc) {
       this.router.navigate(['/usuario', ruc, 'talento-humano', 'gestion-empleados']);
     }
+  }
+
+  canManagePersonnelExcel(): boolean {
+    return this.authService.hasRole('ROLE_SUPER_ADMIN') || this.authService.hasRole('ROLE_ADMIN');
+  }
+
+  async downloadPersonnelTemplate(): Promise<void> {
+    if (!this.canManagePersonnelExcel()) return;
+    const blob = await buildPersonnelTemplate();
+    const safe = (this.empresa?.name || 'empresa').toString().replace(/[\\/:*?"<>|]+/g, ' ').trim();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Plantilla-personal-${safe}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async onPersonnelExcelSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || !this.canManagePersonnelExcel()) return;
+    if (!this.empresa?.ruc || !this.empresaId) {
+      this.personnelExcelErr = 'No se pudo identificar la empresa.';
+      return;
+    }
+    this.personnelExcelBusy = true;
+    this.personnelExcelMsg = null;
+    this.personnelExcelErr = null;
+    try {
+      await this.ensurePersonnelLookups();
+      const rows = await parsePersonnelWorkbook(file);
+      if (!rows.length) {
+        this.personnelExcelErr = 'El archivo no tiene filas de personal.';
+        return;
+      }
+      const summary = await this.applyPersonnelRows(rows);
+      this.personnelExcelMsg = `Empresa ${this.empresa.name}: ${summary.created} nuevo(s), ${summary.updated} actualizado(s), ${summary.skipped} sin cambios.`;
+      if (summary.errors.length) {
+        this.personnelExcelErr = summary.errors.slice(0, 6).join(' ');
+      }
+      this.loadCompanyEmployees();
+    } catch (err: any) {
+      this.personnelExcelErr = err?.message || 'No se pudo leer el Excel.';
+    } finally {
+      this.personnelExcelBusy = false;
+    }
+  }
+
+  private async applyPersonnelRows(rows: Array<Record<string, string>>): Promise<{ created: number; updated: number; skipped: number; errors: string[] }> {
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+    const byCedula = new Map<string, EmployeeResponse>();
+    (this.companyEmployees || []).forEach(emp => {
+      const key = this.normalizeCedula(emp?.cedula);
+      if (key) byCedula.set(key, emp);
+    });
+
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
+      const line = index + 2;
+      const cedula = this.normalizeCedula(this.cell(row, 'cedula'));
+      if (!cedula) {
+        errors.push(`Fila ${line}: falta la cédula.`);
+        continue;
+      }
+      const existing = byCedula.get(cedula);
+      const mapped = this.mapPersonnelFields(row, line, errors);
+      if (!mapped) continue;
+      try {
+        if (existing?.id) {
+          const payload: UpdateEmployeeRequest = { cedula: existing.cedula, ...mapped };
+          if (mapped['codigoTrabajador']) payload.codigoEmpresa = mapped['codigoTrabajador'];
+          delete (payload as any).codigoTrabajador;
+          const keys = Object.keys(payload).filter(key => key !== 'cedula');
+          if (!keys.length) {
+            skipped++;
+            continue;
+          }
+          const saved = await firstValueFrom(this.employeeService.updateEmployee(existing.id, payload));
+          byCedula.set(cedula, { ...existing, ...saved });
+          updated++;
+        } else {
+          const missing = this.missingCreateFields(row);
+          if (missing.length) {
+            errors.push(`Fila ${line}: para un trabajador nuevo faltan ${missing.join(', ')}.`);
+            continue;
+          }
+          const payload = this.buildPersonnelCreate(row, cedula, mapped);
+          const saved = await firstValueFrom(this.employeeService.createEmployee(payload));
+          if (saved) byCedula.set(cedula, saved);
+          created++;
+        }
+      } catch (err: any) {
+        errors.push(`Fila ${line} (${cedula}): ${err?.error?.message || err?.message || 'no se pudo guardar'}.`);
+      }
+    }
+    return { created, updated, skipped, errors };
+  }
+
+  private async ensurePersonnelLookups(): Promise<void> {
+    if (this.personnelLookups) return;
+    const all = await firstValueFrom(this.configurationService.getAllConfigurations());
+    this.personnelLookups = {
+      genders: all?.genders || [],
+      civil: all?.civilStatuses || [],
+      etnias: all?.etnias || [],
+      degrees: all?.degrees || []
+    };
+  }
+
+  private mapPersonnelFields(row: Record<string, string>, line: number, errors: string[]): Record<string, any> | null {
+    const out: Record<string, any> = {};
+    let failed = false;
+    const reject = (message: string) => {
+      failed = true;
+      errors.push(`Fila ${line}: ${message} No se guardó esta fila.`);
+    };
+    const text = (header: string, key: string) => {
+      const value = this.cell(row, header);
+      if (value) out[key] = value;
+    };
+    text('apellidos', 'apellidos');
+    text('nombres', 'nombres');
+    text('email', 'email');
+    text('telefono', 'phone');
+    text('provincia de nacimiento', 'lugarNacimientoProvincia');
+    text('ciudad de nacimiento', 'lugarNacimientoCiudad');
+    text('parroquia de nacimiento', 'lugarNacimientoParroquia');
+    text('direccion', 'address');
+    text('direccion domiciliaria', 'direccionDomiciliaria');
+    if (!out['address'] && out['direccionDomiciliaria']) out['address'] = out['direccionDomiciliaria'];
+    text('direccion de residencia', 'residentAddress');
+    text('nombre contacto', 'contactName');
+    text('parentesco', 'contactKinship');
+    text('telefono contacto', 'contactPhone');
+    const code = this.cell(row, 'codigo trabajador');
+    if (code) out['codigoTrabajador'] = code;
+    const birth = this.cell(row, 'fecha nacimiento');
+    if (birth) out['dateBirth'] = `${birth} 00:00:00`;
+    const ingreso = this.cell(row, 'fecha ingreso');
+    if (ingreso) out['fechaIngreso'] = ingreso;
+    const salida = this.cell(row, 'fecha de salida');
+    if (salida) out['fechaSalida'] = salida;
+    const salary = this.cell(row, 'salario');
+    if (salary) {
+      const amount = Number(salary.replace(/\s/g, '').replace(',', '.'));
+      if (Number.isNaN(amount)) reject(`el salario "${salary}" no es un número.`);
+      else out['salario'] = amount;
+    }
+    const blood = this.cell(row, 'tipo de sangre') || this.cell(row, 'tipo sangre');
+    if (blood) {
+      const options = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+      const match = options.find(option => option.toLowerCase() === blood.toLowerCase());
+      if (!match) reject(`el tipo de sangre "${blood}" no está en la lista (A+, A-, B+, B-, AB+, AB-, O+, O-).`);
+      else out['tipoSangre'] = match;
+    }
+    const disability = this.cell(row, 'discapacidad');
+    if (disability) {
+      const options = ['No', 'Física', 'Visual', 'Auditiva', 'Intelectual', 'Psicosocial', 'Múltiple'];
+      const match = options.find(option => normalizeHeader(option) === normalizeHeader(disability));
+      if (!match) reject(`la discapacidad "${disability}" no está en la lista.`);
+      else out['discapacidad'] = match;
+    }
+    const status = this.cell(row, 'estado');
+    if (status) {
+      const normalized = normalizeHeader(status);
+      if (normalized === 'activo' || normalized === 'active') {
+        out['active'] = true;
+        out['status'] = 'ACTIVO';
+      } else if (normalized === 'inactivo' || normalized === 'inactive') {
+        out['active'] = false;
+        out['status'] = 'INACTIVO';
+      } else {
+        reject(`el estado "${status}" debe ser Activo o Inactivo.`);
+      }
+    }
+    const catalogs: Array<[string, string, any[] | undefined, any[]]> = [
+      ['departamento', 'departmentId', this.empresa?.departments, this.departamentos],
+      ['cargo', 'positionId', this.empresa?.positions, this.cargos],
+      ['tipo de contrato', 'typeContractId', this.empresa?.type_contracts, this.tiposContratos],
+      ['empresa contratista', 'contractorCompanyId', this.empresa?.contractor_companies, this.contractorCompanies],
+      ['bloque contratista', 'contractorBlockId', this.empresa?.contractor_blocks, this.contractorBlocks],
+      ['jornada de trabajo', 'workScheduleId', this.empresa?.work_schedules, this.workSchedules],
+      ['horario de trabajo', 'workShiftId', this.empresa?.work_shifts, this.workShifts],
+      ['genero', 'genderId', [], this.personnelLookups?.genders || []],
+      ['estado civil', 'civilStatusId', [], this.personnelLookups?.civil || []],
+      ['etnia', 'etniaId', [], this.personnelLookups?.etnias || []],
+      ['nivel de educacion', 'degreeId', [], this.personnelLookups?.degrees || []]
+    ];
+    catalogs.forEach(([header, key, assigned, catalog]) => {
+      const value = this.cell(row, header);
+      if (!value) return;
+      const id = this.resolveCatalogId(value, assigned, catalog);
+      if (!id) {
+        reject(`"${value}" no se puede elegir en ${header}. Use un valor que ya exista en las listas.`);
+      } else {
+        out[key] = id;
+        if (key === 'degreeId') {
+          const degree = (catalog || []).find((item: any) => Number(item?.id) === id);
+          if (degree?.name) out['nivelEducacion'] = degree.name;
+        }
+      }
+    });
+    const iess = this.cell(row, 'codigo iess');
+    if (iess) {
+      const pool = [...(this.empresa?.ieses || []), ...(this.iessList || [])];
+      const found = pool.find((item: any) => {
+        const code = normalizeHeader(item?.code || item?.codigo || '');
+        const label = normalizeHeader(`${item?.code || item?.codigo || ''} ${item?.description || item?.name || ''}`);
+        return code === normalizeHeader(iess) || label === normalizeHeader(iess);
+      });
+      if (!found) reject(`el código IESS "${iess}" no está configurado para esta empresa.`);
+      else out['codigoIess'] = found.code || found.codigo || found.name;
+    }
+    return failed ? null : out;
+  }
+
+  private buildPersonnelCreate(row: Record<string, string>, cedula: string, mapped: Record<string, any>): CreateEmployeeRequest {
+    const payload: CreateEmployeeRequest = {
+      cedula,
+      apellidos: mapped['apellidos'],
+      nombres: mapped['nombres'],
+      phone: mapped['phone'],
+      email: mapped['email'],
+      dateBirth: mapped['dateBirth'],
+      address: mapped['address'],
+      contactName: mapped['contactName'],
+      contactPhone: mapped['contactPhone'],
+      contactKinship: mapped['contactKinship'],
+      codigoEmpresa: String(this.empresa.ruc),
+      businessId: Number(this.empresaId)
+    } as CreateEmployeeRequest;
+    const extra = { ...mapped };
+    delete extra['codigoTrabajador'];
+    Object.assign(payload, extra);
+    if (mapped['codigoTrabajador']) (payload as any).codigoTrabajador = mapped['codigoTrabajador'];
+    return payload;
+  }
+
+  private missingCreateFields(row: Record<string, string>): string[] {
+    const required: Array<[string, string]> = [
+      ['apellidos', 'apellidos'],
+      ['nombres', 'nombres'],
+      ['email', 'email'],
+      ['telefono', 'teléfono'],
+      ['fecha nacimiento', 'fecha de nacimiento'],
+      ['direccion', 'dirección'],
+      ['nombre contacto', 'nombre de contacto'],
+      ['parentesco', 'parentesco'],
+      ['telefono contacto', 'teléfono de contacto']
+    ];
+    const missing = required.filter(([header]) => !this.cell(row, header)).map(([, label]) => label);
+    if (missing.includes('dirección') && this.cell(row, 'direccion domiciliaria')) {
+      return missing.filter(label => label !== 'dirección');
+    }
+    return missing;
+  }
+
+  private cell(row: Record<string, string>, header: string): string {
+    return (row[normalizeHeader(header)] || '').trim();
+  }
+
+  private normalizeCedula(value: any): string {
+    return String(value || '').replace(/\D/g, '');
+  }
+
+  private resolveCatalogId(name: string, assigned: any[] | undefined, catalog: any[]): number | null {
+    const wanted = normalizeHeader(name);
+    if (!wanted) return null;
+    const assignedList = Array.isArray(assigned) ? assigned : [];
+    const pool = assignedList.length ? assignedList : (catalog || []);
+    const found = pool.find((item: any) => {
+      const parts = [item?.name, item?.nombre, item?.title, item?.description, item?.code]
+        .filter((value: any) => value != null && String(value).trim())
+        .map((value: any) => normalizeHeader(String(value)));
+      const combo = normalizeHeader(`${item?.name || ''} ${item?.description || ''}`);
+      return parts.includes(wanted) || combo === wanted;
+    });
+    const id = Number(found?.id);
+    return found && !isNaN(id) ? id : null;
   }
 
   goToUsersAdmin(): void {

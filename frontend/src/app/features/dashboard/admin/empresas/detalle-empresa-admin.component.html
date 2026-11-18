@@ -2488,7 +2488,7 @@
             <h6 class="text-muted mb-0">
               <i class="fas fa-users me-2"></i>Gestionar personal de la empresa
             </h6>
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
               <div class="btn-group btn-group-sm" role="group">
                 <button type="button" class="btn"
                   [class.btn-dark]="employeesStatusFilter === 'all'"
@@ -2507,6 +2507,16 @@
                 <span class="input-group-text"><i class="fas fa-search"></i></span>
                 <input type="text" class="form-control" placeholder="Buscar por nombre o cédula" [(ngModel)]="employeesFilter">
               </div>
+              <ng-container *ngIf="canManagePersonnelExcel()">
+                <button class="btn btn-sm btn-outline-success" type="button" (click)="downloadPersonnelTemplate()" [disabled]="personnelExcelBusy" title="Descargar plantilla para llenar trabajadores">
+                  <i class="fas fa-file-excel me-1"></i>Plantilla Excel
+                </button>
+                <label class="btn btn-sm btn-success mb-0" [class.disabled]="personnelExcelBusy" title="Subir Excel para crear o actualizar solo los datos llenos de esta empresa">
+                  <i class="fas" [ngClass]="personnelExcelBusy ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
+                  {{ personnelExcelBusy ? 'Procesando...' : 'Subir Excel' }}
+                  <input type="file" accept=".xlsx,.csv" class="d-none" (change)="onPersonnelExcelSelected($event)" [disabled]="personnelExcelBusy || employeesLoading">
+                </label>
+              </ng-container>
               <button class="btn btn-sm btn-outline-secondary" (click)="loadCompanyEmployees()" [disabled]="employeesLoading">
                 <i class="fas" [ngClass]="employeesLoading ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
                 {{ employeesLoading ? 'Cargando...' : 'Recargar' }}
@@ -2522,6 +2532,8 @@
             Mostrando {{ filteredCompanyEmployees().length }} empleado{{ filteredCompanyEmployees().length === 1 ? '' : 's' }}
             <span *ngIf="isSuperAdmin" class="ms-2">· Los inactivos muestran fecha de desvinculación; solo Superadmin puede corregirla.</span>
           </div>
+          <div class="alert alert-success py-2 px-3 mx-3 mt-2 mb-0 small" *ngIf="personnelExcelMsg">{{ personnelExcelMsg }}</div>
+          <div class="alert alert-warning py-2 px-3 mx-3 mt-2 mb-0 small" *ngIf="personnelExcelErr">{{ personnelExcelErr }}</div>
           <div class="alert alert-success py-2 px-3 mx-3 mt-2 mb-0 small" *ngIf="employeesExitMsg">{{ employeesExitMsg }}</div>
           <div class="alert alert-danger py-2 px-3 mx-3 mt-2 mb-0 small" *ngIf="employeesExitErr">{{ employeesExitErr }}</div>
 

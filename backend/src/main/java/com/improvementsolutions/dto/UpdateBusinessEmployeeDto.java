@@ -38,6 +38,7 @@ public class UpdateBusinessEmployeeDto {
     // Direcciones
     private String address; // Dirección familiar
     private String direccionDomiciliaria;
+    private String residentAddress;
     
     // Contacto de emergencia
     private String contactName;
