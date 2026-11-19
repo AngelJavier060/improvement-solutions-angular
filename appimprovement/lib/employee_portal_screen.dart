@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'aula/aula_virtual_panel.dart';
+import 'cartilla/cartilla_panel.dart';
 import 'services/auth_service.dart';
 import 'services/employee_panel_service.dart';
 
-/// Portal del trabajador (móvil) — diseño TalentPulse / perfil empleado.
+/// Portal del trabajador. Los números y el nombre salen del servidor.
 class EmployeePortalScreen extends StatefulWidget {
   const EmployeePortalScreen({super.key});
 
@@ -12,21 +14,29 @@ class EmployeePortalScreen extends StatefulWidget {
   State<EmployeePortalScreen> createState() => _EmployeePortalScreenState();
 }
 
+class _NavTab {
+  final String label;
+  final IconData icon;
+  final Color tint;
+  const _NavTab(this.label, this.icon, this.tint);
+}
+
 class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
-  static const _bg = Color(0xFFF8F9FA);
-  static const _surfaceLowest = Color(0xFFFFFFFF);
-  static const _primary = Color(0xFF0059BB);
-  static const _onSurface = Color(0xFF191C1D);
-  static const _onSurfaceVariant = Color(0xFF414754);
-  static const _outlineVariant = Color(0xFFC1C6D7);
-  static const _tertiaryContainer = Color(0xFF008730);
-  static const _onTertiaryContainer = Color(0xFFF7FFF2);
-  static const _surface = Color(0xFFF8F9FA);
-  static const _surfaceContainer = Color(0xFFEDEEEF);
+  static const _bg = Color(0xFFF8FAFC);
+  static const _ink = Color(0xFF0F172A);
+  static const _muted = Color(0xFF64748B);
+  static const _line = Color(0xFFE2E8F0);
+  static const _blue = Color(0xFF1D4ED8);
+  static const _blueDeep = Color(0xFF1E40AF);
+
+  static const _soft = [
+    BoxShadow(color: Color(0x0F0F172A), blurRadius: 20, offset: Offset(0, 4)),
+    BoxShadow(color: Color(0x080F172A), blurRadius: 6, offset: Offset(0, 2)),
+  ];
 
   final _panel = EmployeePanelService();
 
-  int _tabIndex = 4; // Mi Perfil por defecto (como el mock)
+  int _tabIndex = 0;
   bool _loading = true;
   String? _error;
 
@@ -35,8 +45,17 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
   List<Map<String, dynamic>> _documents = const [];
   List<Map<String, dynamic>> _courses = const [];
   List<Map<String, dynamic>> _cards = const [];
+  int? _unirseCursoId;
 
-  static const _tabs = ['Resumen', 'Documentos', 'Cursos', 'Tarjetas', 'Mi Perfil'];
+  static const _tabs = <_NavTab>[
+    _NavTab('Resumen', Icons.grid_view_rounded, _blue),
+    _NavTab('Mi Perfil', Icons.person_outline, Color(0xFF475569)),
+    _NavTab('Documentos', Icons.description_outlined, _blue),
+    _NavTab('Cursos', Icons.school_outlined, Color(0xFF4F46E5)),
+    _NavTab('Tarjetas', Icons.credit_card_outlined, Color(0xFFF59E0B)),
+    _NavTab('Aula Virtual', Icons.desktop_windows_outlined, Color(0xFF7C3AED)),
+    _NavTab('Cartilla', Icons.assignment_outlined, Color(0xFF0F766E)),
+  ];
 
   @override
   void initState() {
@@ -69,15 +88,20 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
     }
   }
 
+  Future<void> _openTab(int index) async {
+    setState(() => _tabIndex = index);
+    await _ensureTabData(index);
+  }
+
   Future<void> _ensureTabData(int index) async {
     try {
-      if (index == 1 && _documents.isEmpty) {
+      if (index == 2 && _documents.isEmpty) {
         final list = await _panel.getMyDocuments();
         if (mounted) setState(() => _documents = list);
-      } else if (index == 2 && _courses.isEmpty) {
+      } else if (index == 3 && _courses.isEmpty) {
         final list = await _panel.getMyCourses();
         if (mounted) setState(() => _courses = list);
-      } else if (index == 3 && _cards.isEmpty) {
+      } else if (index == 4 && _cards.isEmpty) {
         final list = await _panel.getMyCards();
         if (mounted) setState(() => _cards = list);
       }
@@ -86,7 +110,7 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString().replaceFirst('Exception: ', '')),
-          backgroundColor: Colors.red,
+          backgroundColor: const Color(0xFFB42318),
         ),
       );
     }
@@ -121,28 +145,56 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
     return url.isEmpty ? null : url;
   }
 
+  List<Map<String, dynamic>> get _alerts {
+    final raw = _dashboard?['alerts'];
+    if (raw is! List) return const [];
+    return raw.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
+  }
+
+  TextStyle _font({
+    double size = 14,
+    FontWeight weight = FontWeight.w500,
+    Color color = _ink,
+    double height = 1.3,
+    double spacing = 0,
+  }) {
+    return GoogleFonts.plusJakartaSans(
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      height: height,
+      letterSpacing: spacing,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final textTheme = GoogleFonts.manropeTextTheme(Theme.of(context).textTheme);
-
     return Theme(
-      data: Theme.of(context).copyWith(textTheme: textTheme),
+      data: Theme.of(context).copyWith(
+        textTheme: GoogleFonts.plusJakartaSansTextTheme(Theme.of(context).textTheme),
+      ),
       child: Scaffold(
         backgroundColor: _bg,
         body: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(),
-              if (_loading)
-                const Expanded(child: Center(child: CircularProgressIndicator(color: _primary)))
-              else if (_error != null)
-                Expanded(child: _buildError())
-              else ...[
-                _buildProfileHeader(),
-                _buildTabs(),
-                Expanded(child: _buildTabBody()),
-              ],
-            ],
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 448),
+              child: Column(
+                children: [
+                  _buildAppBar(),
+                  if (_loading)
+                    const Expanded(child: Center(child: CircularProgressIndicator(color: _blue)))
+                  else if (_error != null)
+                    Expanded(child: _buildError())
+                  else ...[
+                    _buildProfileHeader(),
+                    _buildTabs(),
+                    Expanded(child: _buildTabBody()),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -151,44 +203,98 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
 
   Widget _buildAppBar() {
     return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
       decoration: const BoxDecoration(
-        color: _surfaceLowest,
-        border: Border(bottom: BorderSide(color: _outlineVariant)),
-        boxShadow: [BoxShadow(color: Color(0x0A000000), blurRadius: 4, offset: Offset(0, 1))],
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: _line)),
       ),
       child: Row(
         children: [
-          IconButton(
-            onPressed: _logout,
-            icon: const Icon(Icons.arrow_back, color: _onSurfaceVariant),
-            tooltip: 'Cerrar sesión',
-          ),
+          _roundButton(Icons.arrow_back, 'Cerrar sesión', _logout),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Perfil del Empleado',
-              style: GoogleFonts.manrope(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: _primary,
-                height: 1.4,
-              ),
+              style: _font(size: 17, weight: FontWeight.w800, spacing: -0.2),
             ),
           ),
+          _roundButton(Icons.notifications_none, 'Notificaciones', _showAlerts),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: _onSurfaceVariant),
-            onSelected: (v) {
-              if (v == 'logout') _logout();
-              if (v == 'refresh') _bootstrap();
+            tooltip: 'Opciones',
+            offset: const Offset(0, 40),
+            onSelected: (value) {
+              if (value == 'logout') _logout();
+              if (value == 'refresh') _bootstrap();
             },
             itemBuilder: (_) => const [
               PopupMenuItem(value: 'refresh', child: Text('Actualizar')),
               PopupMenuItem(value: 'logout', child: Text('Cerrar sesión')),
             ],
+            child: const SizedBox(
+              width: 36,
+              height: 36,
+              child: Icon(Icons.more_horiz, color: _muted),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _roundButton(IconData icon, String tooltip, VoidCallback onTap) {
+    return IconButton(
+      onPressed: onTap,
+      tooltip: tooltip,
+      style: IconButton.styleFrom(
+        foregroundColor: _ink,
+        fixedSize: const Size(36, 36),
+      ),
+      icon: Icon(icon, size: 22),
+    );
+  }
+
+  void _showAlerts() {
+    final alerts = _alerts;
+    if (alerts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No tienes alertas pendientes.')),
+      );
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Alertas', style: _font(size: 16, weight: FontWeight.w800)),
+              const SizedBox(height: 12),
+              ...alerts.map((map) {
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    (map['message'] ?? '').toString(),
+                    style: _font(size: 13, color: const Color(0xFF9A3412)),
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -198,17 +304,13 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Color(0xFFBA1A1A), size: 48),
+          const Icon(Icons.error_outline, color: Color(0xFFB42318), size: 48),
           const SizedBox(height: 12),
-          Text(
-            _error!,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.manrope(fontSize: 14, color: _onSurfaceVariant),
-          ),
+          Text(_error!, textAlign: TextAlign.center, style: _font(size: 14, color: _muted)),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: _bootstrap,
-            style: FilledButton.styleFrom(backgroundColor: _primary),
+            style: FilledButton.styleFrom(backgroundColor: _blue),
             child: const Text('Reintentar'),
           ),
           TextButton(onPressed: _logout, child: const Text('Cerrar sesión')),
@@ -218,82 +320,97 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
   }
 
   Widget _buildProfileHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-      decoration: const BoxDecoration(
-        color: _surfaceLowest,
-        border: Border(bottom: BorderSide(color: _outlineVariant)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 8),
       child: Column(
         children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 128,
-                height: 128,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: _surfaceLowest, width: 4),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x14000000), blurRadius: 6, offset: Offset(0, 1)),
-                  ],
-                  color: const Color(0xFFE1E3E4),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: _avatarUrl != null
-                    ? Image.network(
-                        _avatarUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 64, color: Color(0xFF717786)),
-                      )
-                    : const Icon(Icons.person, size: 64, color: Color(0xFF717786)),
-              ),
-              Positioned(
-                right: 8,
-                bottom: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _isActive ? _tertiaryContainer : const Color(0xFFE1E3E4),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: _surfaceLowest, width: 2),
+          SizedBox(
+            width: 104,
+            height: 108,
+            child: Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                Container(
+                  width: 96,
+                  height: 96,
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF1D4ED8), Color(0xFF6366F1), Color(0xFF38BDF8)],
+                    ),
                   ),
-                  child: Text(
-                    _isActive ? 'ACTIVO' : 'INACTIVO',
-                    style: GoogleFonts.manrope(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.55,
-                      color: _isActive ? _onTertiaryContainer : _onSurfaceVariant,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      color: const Color(0xFFF1F5F9),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: _avatarUrl != null
+                        ? Image.network(
+                            _avatarUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 52, color: Color(0xFF94A3B8)),
+                          )
+                        : const Icon(Icons.person, size: 52, color: Color(0xFF94A3B8)),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _isActive ? const Color(0xFF059669) : const Color(0xFF64748B),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _isActive ? 'ACTIVO' : 'INACTIVO',
+                          style: _font(size: 10, weight: FontWeight.w800, color: Colors.white, spacing: 0.6),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Text(
             _displayName,
             textAlign: TextAlign.center,
-            style: GoogleFonts.manrope(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              height: 1.4,
-              color: _onSurface,
-            ),
+            style: _font(size: 18, weight: FontWeight.w800, height: 1.25),
           ),
           const SizedBox(height: 4),
-          Text(
-            _position,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.manrope(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              height: 1.4,
-              color: _onSurfaceVariant,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(color: _blue, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  _position,
+                  textAlign: TextAlign.center,
+                  style: _font(size: 14, weight: FontWeight.w600, color: _muted),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -302,46 +419,73 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
 
   Widget _buildTabs() {
     return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: const BoxDecoration(
-        color: _surfaceLowest,
-        border: Border(bottom: BorderSide(color: _outlineVariant)),
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+        boxShadow: [BoxShadow(color: Color(0x0A0F172A), blurRadius: 8, offset: Offset(0, 2))],
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: List.generate(_tabs.length, (i) {
-            final selected = _tabIndex == i;
-            return Padding(
-              padding: const EdgeInsets.only(right: 24),
-              child: InkWell(
-                onTap: () async {
-                  setState(() => _tabIndex = i);
-                  await _ensureTabData(i);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: selected ? _primary : Colors.transparent,
-                        width: 2,
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _tabs.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 0.78,
+        ),
+        itemBuilder: (context, index) {
+          final tab = _tabs[index];
+          final selected = _tabIndex == index;
+          return Material(
+            color: selected ? _blue : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _openTab(index),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: selected ? _blue : const Color(0xFFE2E8F0)),
+                  boxShadow: selected
+                      ? const [BoxShadow(color: Color(0x402563EB), blurRadius: 10, offset: Offset(0, 4))]
+                      : null,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: selected ? Colors.white.withValues(alpha: 0.2) : Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: selected ? null : Border.all(color: const Color(0xFFF1F5F9)),
+                      ),
+                      child: Icon(tab.icon, size: 18, color: selected ? Colors.white : tab.tint),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      tab.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      style: _font(
+                        size: 10.5,
+                        weight: FontWeight.w700,
+                        color: selected ? Colors.white : const Color(0xFF334155),
+                        height: 1.1,
                       ),
                     ),
-                  ),
-                  child: Text(
-                    _tabs[i],
-                    style: GoogleFonts.manrope(
-                      fontSize: 14,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected ? _primary : _onSurfaceVariant,
-                    ),
-                  ),
+                  ],
                 ),
               ),
-            );
-          }),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -350,16 +494,15 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
     switch (_tabIndex) {
       case 0:
         return _buildResumen();
-      case 1:
+      case 2:
         return _buildListTab(
           emptyIcon: Icons.folder_open,
           emptyText: 'No tienes documentos cargados aún.',
           items: _documents,
           titleOf: (m) => (m['name'] ?? 'Documento').toString(),
-          subtitleOf: (m) =>
-              '${m['businessName'] ?? '—'} · ${m['status'] ?? '—'}',
+          subtitleOf: (m) => '${m['businessName'] ?? '—'} · ${m['status'] ?? '—'}',
         );
-      case 2:
+      case 3:
         return _buildListTab(
           emptyIcon: Icons.school_outlined,
           emptyText: 'No tienes cursos asignados aún.',
@@ -368,15 +511,21 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
           subtitleOf: (m) =>
               '${m['businessName'] ?? '—'} · ${m['status'] ?? (m['completed'] == true ? 'VIGENTE' : 'PENDIENTE')}',
         );
-      case 3:
+      case 4:
         return _buildListTab(
           emptyIcon: Icons.badge_outlined,
           emptyText: 'No tienes tarjetas registradas aún.',
           items: _cards,
           titleOf: (m) => (m['name'] ?? 'Tarjeta').toString(),
-          subtitleOf: (m) =>
-              '${m['businessName'] ?? '—'} · ${m['status'] ?? '—'}',
+          subtitleOf: (m) => '${m['businessName'] ?? '—'} · ${m['status'] ?? '—'}',
         );
+      case 5:
+        return AulaVirtualPanel(
+          unirseCursoId: _unirseCursoId,
+          onUnirseConsumido: () => _unirseCursoId = null,
+        );
+      case 6:
+        return CartillaPanel(avatarUrl: _avatarUrl, activo: _isActive);
       default:
         return _buildPerfil();
     }
@@ -385,53 +534,51 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
   Widget _buildResumen() {
     final d = _dashboard ?? {};
     final stats = <_StatItem>[
-      _StatItem('Documentos', '${d['totalDocuments'] ?? 0}', Icons.description_outlined),
-      _StatItem('Vigentes', '${d['documentsVigentes'] ?? 0}', Icons.check_circle_outline),
-      _StatItem('Por vencer', '${d['documentsPorVencer'] ?? 0}', Icons.warning_amber_outlined),
-      _StatItem('Vencidos', '${d['documentsVencidos'] ?? 0}', Icons.cancel_outlined),
-      _StatItem('Cursos', '${d['totalCourses'] ?? 0}', Icons.school_outlined),
-      _StatItem('Completados', '${d['coursesCompleted'] ?? 0}', Icons.workspace_premium_outlined),
+      _StatItem('Documentos', '${d['totalDocuments'] ?? 0}', Icons.description_outlined, _blue, const Color(0xFFEFF6FF), 2),
+      _StatItem('Vigentes', '${d['documentsVigentes'] ?? 0}', Icons.check_circle_outline, const Color(0xFF059669), const Color(0xFFECFDF5), 2),
+      _StatItem('Por vencer', '${d['documentsPorVencer'] ?? 0}', Icons.warning_amber_rounded, const Color(0xFFD97706), const Color(0xFFFFFBEB), 2),
+      _StatItem('Vencidos', '${d['documentsVencidos'] ?? 0}', Icons.cancel_outlined, const Color(0xFFE11D48), const Color(0xFFFFF1F2), 2),
+      _StatItem('Cursos', '${d['totalCourses'] ?? 0}', Icons.school_outlined, const Color(0xFF4F46E5), const Color(0xFFEEF2FF), 3),
+      _StatItem('Completados', '${d['coursesCompleted'] ?? 0}', Icons.workspace_premium_outlined, const Color(0xFF0F766E), const Color(0xFFF0FDFA), 3),
     ];
-    final alerts = (d['alerts'] as List?) ?? const [];
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
       children: [
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: stats
-              .map(
-                (s) => SizedBox(
-                  width: (MediaQuery.of(context).size.width - 44) / 2,
-                  child: _statCard(s),
-                ),
-              )
-              .toList(),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: stats.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.05,
+          ),
+          itemBuilder: (_, i) => _statCard(stats[i]),
         ),
         const SizedBox(height: 16),
-        if (alerts.isEmpty)
-          _emptyBox(Icons.check_circle, 'No tienes alertas pendientes. ¡Todo en orden!')
+        _shortcut(),
+        const SizedBox(height: 16),
+        if (_alerts.isEmpty)
+          _statusOk()
         else
           _sectionCard(
             icon: Icons.notifications_outlined,
             title: 'Alertas',
             child: Column(
-              children: alerts.map((a) {
-                final map = a is Map ? a.cast<String, dynamic>() : <String, dynamic>{};
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF4D6),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      (map['message'] ?? '').toString(),
-                      style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF9A6B00)),
-                    ),
+              children: _alerts.map((map) {
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    (map['message'] ?? '').toString(),
+                    style: _font(size: 13, color: const Color(0xFF9A3412)),
                   ),
                 );
               }).toList(),
@@ -441,31 +588,123 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
     );
   }
 
-  Widget _statCard(_StatItem s) {
+  Widget _statCard(_StatItem item) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => _openTab(item.tab),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFF1F5F9)),
+            boxShadow: _soft,
+          ),
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: item.tint,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(item.icon, color: item.color, size: 24),
+              ),
+              const SizedBox(height: 10),
+              Text(item.value, style: _font(size: 30, weight: FontWeight.w800, height: 1)),
+              const SizedBox(height: 4),
+              Text(
+                item.label.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: _font(size: 11, weight: FontWeight.w800, color: item.color, spacing: 0.4),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _shortcut() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _surfaceLowest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _outlineVariant),
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(colors: [_blue, Color(0xFF4F46E5)]),
+        boxShadow: _soft,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.school_outlined, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Aula Virtual y Cartilla', style: _font(size: 14, weight: FontWeight.w800, color: Colors.white)),
+                const SizedBox(height: 2),
+                Text(
+                  'Accede a tus materiales de inducción',
+                  style: _font(size: 12, color: const Color(0xFFDBEAFE)),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => _openTab(5),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: _blueDeep,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: Text('Ir', style: _font(size: 12, weight: FontWeight.w800, color: _blueDeep)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusOk() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: _soft,
       ),
       child: Column(
         children: [
-          Icon(s.icon, color: _primary),
-          const SizedBox(height: 8),
-          Text(
-            s.value,
-            style: GoogleFonts.manrope(fontSize: 24, fontWeight: FontWeight.w800, color: _onSurface),
-          ),
-          Text(
-            s.label.toUpperCase(),
-            style: GoogleFonts.manrope(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-              color: const Color(0xFF717786),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: const BoxDecoration(color: Color(0xFFF1F5F9), shape: BoxShape.circle),
+            alignment: Alignment.center,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(color: Color(0xFF475569), shape: BoxShape.circle),
+              child: const Icon(Icons.check, color: Colors.white, size: 22),
             ),
           ),
+          const SizedBox(height: 12),
+          Text('No tienes alertas pendientes.', style: _font(size: 14, weight: FontWeight.w700, color: _muted)),
+          const SizedBox(height: 4),
+          Text('Todo en orden con tu documentación.', style: _font(size: 12, color: const Color(0xFF94A3B8))),
         ],
       ),
     );
@@ -486,26 +725,21 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
-        final m = items[i];
+        final item = items[i];
         return Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: _surfaceLowest,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: _outlineVariant),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFF1F5F9)),
+            boxShadow: _soft,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                titleOf(m),
-                style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: _onSurface),
-              ),
+              Text(titleOf(item), style: _font(size: 14, weight: FontWeight.w700)),
               const SizedBox(height: 4),
-              Text(
-                subtitleOf(m),
-                style: GoogleFonts.manrope(fontSize: 12, color: _onSurfaceVariant),
-              ),
+              Text(subtitleOf(item), style: _font(size: 12, color: _muted)),
             ],
           ),
         );
@@ -514,46 +748,46 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
   }
 
   Widget _buildPerfil() {
-    final p = _profile ?? {};
-    final businesses = (p['businesses'] as List?) ?? const [];
+    final profile = _profile ?? {};
+    final businesses = (profile['businesses'] as List?) ?? const [];
     final empresa = businesses.isNotEmpty
         ? businesses.map((b) => (b is Map ? (b['name'] ?? '—') : '—').toString()).join(', ')
-        : (p['businessName'] ?? '—').toString();
+        : (profile['businessName'] ?? '—').toString();
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        CharlasDelPerfil(
+          onUnirme: (cursoId) {
+            setState(() {
+              _unirseCursoId = cursoId;
+              _tabIndex = 5;
+            });
+          },
+        ),
         _sectionCard(
           icon: Icons.person_outline,
-          title: 'Información Personal',
+          title: 'Información personal',
           child: Column(
             children: [
               _dataCell('NOMBRE COMPLETO', _displayName),
-              _dataCell('CÉDULA', (p['cedula'] ?? '—').toString()),
-              _dataCell('CORREO ELECTRÓNICO', (p['email'] ?? '—').toString()),
-              Row(
-                children: [
-                  Expanded(child: _dataCell('TELÉFONO', (p['phone'] ?? '—').toString())),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.28,
-                    child: _dataCell('TIPO DE SANGRE', (p['tipoSangre'] ?? '—').toString()),
-                  ),
-                ],
-              ),
+              _dataCell('CÉDULA', (profile['cedula'] ?? '—').toString()),
+              _dataCell('CORREO ELECTRÓNICO', (profile['email'] ?? '—').toString()),
+              _dataCell('TELÉFONO', (profile['phone'] ?? '—').toString()),
+              _dataCell('TIPO DE SANGRE', (profile['tipoSangre'] ?? '—').toString()),
             ],
           ),
         ),
         const SizedBox(height: 16),
         _sectionCard(
           icon: Icons.work_outline,
-          title: 'Detalles de Empleo',
+          title: 'Detalles de empleo',
           child: Column(
             children: [
               _dataCell('EMPRESA', empresa, accent: true),
-              _dataCell('DEPARTAMENTO', (p['department'] ?? '—').toString()),
-              _dataCell('CARGO', (p['position'] ?? '—').toString()),
-              _dataCell('FECHA DE INGRESO', (p['fechaIngreso'] ?? '—').toString()),
+              _dataCell('DEPARTAMENTO', (profile['department'] ?? '—').toString()),
+              _dataCell('CARGO', (profile['position'] ?? '—').toString()),
+              _dataCell('FECHA DE INGRESO', (profile['fechaIngreso'] ?? '—').toString()),
             ],
           ),
         ),
@@ -561,23 +795,18 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
         OutlinedButton.icon(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Para actualizar datos, contacta a Talento Humano.'),
-              ),
+              const SnackBar(content: Text('Para actualizar datos, contacta a Talento Humano.')),
             );
           },
           style: OutlinedButton.styleFrom(
-            foregroundColor: _onSurface,
-            backgroundColor: _surfaceContainer,
-            side: const BorderSide(color: _outlineVariant),
+            foregroundColor: _ink,
+            backgroundColor: Colors.white,
+            side: const BorderSide(color: _line),
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
           icon: const Icon(Icons.edit_outlined),
-          label: Text(
-            'Solicitar Actualización de Datos',
-            style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w500),
-          ),
+          label: Text('Solicitar actualización de datos', style: _font(size: 14, weight: FontWeight.w700)),
         ),
         const SizedBox(height: 24),
       ],
@@ -592,34 +821,22 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _surfaceLowest,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _outlineVariant),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: _soft,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.only(bottom: 8),
-            margin: const EdgeInsets.only(bottom: 8),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: _outlineVariant)),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: _primary, size: 22),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: GoogleFonts.manrope(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: _onSurface,
-                  ),
-                ),
-              ],
-            ),
+          Row(
+            children: [
+              Icon(icon, color: _blue, size: 20),
+              const SizedBox(width: 8),
+              Text(title, style: _font(size: 16, weight: FontWeight.w800)),
+            ],
           ),
+          const SizedBox(height: 12),
           child,
         ],
       ),
@@ -629,33 +846,20 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
   Widget _dataCell(String label, String value, {bool accent = false}) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(8),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: _outlineVariant),
+        color: _bg,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: GoogleFonts.manrope(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.55,
-              color: _onSurfaceVariant,
-            ),
-          ),
+          Text(label, style: _font(size: 10, weight: FontWeight.w800, color: _muted, spacing: 0.4)),
           const SizedBox(height: 4),
           Text(
             value,
-            style: GoogleFonts.manrope(
-              fontSize: 14,
-              fontWeight: accent ? FontWeight.w700 : FontWeight.w500,
-              color: accent ? _primary : _onSurface,
-            ),
+            style: _font(size: 14, weight: accent ? FontWeight.w800 : FontWeight.w600, color: accent ? _blue : _ink),
           ),
         ],
       ),
@@ -668,13 +872,9 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 48, color: const Color(0xFF717786)),
+          Icon(icon, size: 48, color: const Color(0xFF94A3B8)),
           const SizedBox(height: 12),
-          Text(
-            text,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.manrope(fontSize: 14, color: _onSurfaceVariant),
-          ),
+          Text(text, textAlign: TextAlign.center, style: _font(size: 14, color: _muted)),
         ],
       ),
     );
@@ -685,5 +885,8 @@ class _StatItem {
   final String label;
   final String value;
   final IconData icon;
-  const _StatItem(this.label, this.value, this.icon);
+  final Color color;
+  final Color tint;
+  final int tab;
+  const _StatItem(this.label, this.value, this.icon, this.color, this.tint, this.tab);
 }

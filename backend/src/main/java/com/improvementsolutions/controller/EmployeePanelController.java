@@ -9,6 +9,7 @@ import com.improvementsolutions.service.BusinessEmployeeCardService;
 import com.improvementsolutions.service.BusinessEmployeeCourseService;
 import com.improvementsolutions.service.BusinessEmployeeDocumentService;
 import com.improvementsolutions.service.UserService;
+import com.improvementsolutions.service.training.TrainingPlanService;
 import com.improvementsolutions.storage.StorageException;
 import com.improvementsolutions.storage.StorageService;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,7 @@ public class EmployeePanelController {
     private final BusinessEmployeeCourseService courseService;
     private final BusinessEmployeeCardService cardService;
     private final StorageService storageService;
+    private final TrainingPlanService trainingPlanService;
 
     @GetMapping("/my-profile")
     @PreAuthorize("hasRole('EMPLOYEE')")
@@ -67,6 +69,10 @@ public class EmployeePanelController {
             profile.put("department", be.getDepartment() != null ? be.getDepartment().getName() : null);
             profile.put("fechaIngreso", be.getFechaIngreso());
             profile.put("tipoSangre", be.getTipoSangre());
+            profile.put("direccion", firstText(be.getDireccionDomiciliaria(), be.getResidentAddress(), be.getAddress()));
+            profile.put("codigoEmpresa", be.getCodigoEmpresa());
+            profile.put("tipoContrato", be.getTypeContract() != null ? be.getTypeContract().getName() : null);
+            profile.put("jornada", be.getWorkSchedule() != null ? be.getWorkSchedule().getName() : null);
             profile.put("active", be.getActive());
             profile.put("status", be.getStatus());
             profile.put("businessName", be.getBusiness() != null ? be.getBusiness().getName() : null);
@@ -161,6 +167,36 @@ public class EmployeePanelController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
+    }
+
+    @GetMapping("/my-cartilla")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getMyCartilla(Authentication authentication) {
+        List<BusinessEmployee> records = getAuthenticatedEmployees(authentication);
+        int year = LocalDate.now().getYear();
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (BusinessEmployee be : records) {
+            if (be.getBusiness() == null || be.getBusiness().getRuc() == null || be.getBusiness().getRuc().isBlank()) {
+                continue;
+            }
+            try {
+                var dto = trainingPlanService.worker(be.getBusiness().getRuc(), be.getId(), year);
+                if (dto.getRecords() != null) {
+                    dto.getRecords().forEach(row -> row.setEvidenceUrl(null));
+                }
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("companyName", be.getBusiness().getName());
+                item.put("ruc", be.getBusiness().getRuc());
+                item.put("legalRepresentative", be.getBusiness().getLegalRepresentative());
+                item.put("year", year);
+                item.put("worker", dto);
+                out.add(item);
+            } catch (RuntimeException ex) {
+                log.warn("No se pudo armar la cartilla de {}: {}", be.getId(), ex.getMessage());
+            }
+        }
+        return ResponseEntity.ok(out);
     }
 
     @GetMapping("/my-dashboard")
@@ -417,6 +453,13 @@ public class EmployeePanelController {
                     "Trabajador inactivo. No tiene acceso al portal de empleado.");
         }
         return active;
+    }
+
+    private String firstText(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) return value.trim();
+        }
+        return null;
     }
 
     private boolean isEmployeeActive(BusinessEmployee be) {

@@ -38,6 +38,8 @@ dependencies:
   google_fonts: ^6.2.1
   pdfx: ^2.7.0
   url_launcher: ^6.3.0
+  video_player: ^2.9.2
+  web: ^1.1.0
   local_auth: ^2.1.7
   flutter_secure_storage: ^9.0.0
   flutter_localizations:

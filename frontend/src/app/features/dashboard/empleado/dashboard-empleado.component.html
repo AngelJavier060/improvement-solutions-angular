@@ -13,9 +13,12 @@
   <aside class="tp-sidenav">
     <div class="tp-sidenav-brand">
       <div class="tp-sidenav-logo">
-        <span class="material-symbols-outlined">corporate_fare</span>
+        <span class="material-symbols-outlined">bolt</span>
       </div>
-      <div class="tp-brand-text">Improvement</div>
+      <div>
+        <div class="tp-brand-text">Improvement Solutions</div>
+        <span class="tp-brand-sub">Portal del empleado</span>
+      </div>
     </div>
 
     <nav class="tp-sidenav-nav">
@@ -23,9 +26,14 @@
         <span class="material-symbols-outlined">home</span>
         <span>Resumen</span>
       </button>
+      <button type="button" class="tp-nav-item" [class.is-active]="activeTab==='perfil'" (click)="setTab('perfil')">
+        <span class="material-symbols-outlined">person</span>
+        <span>Mi Perfil</span>
+      </button>
       <button type="button" class="tp-nav-item" [class.is-active]="activeTab==='documentos'" (click)="setTab('documentos')">
         <span class="material-symbols-outlined">description</span>
         <span>Documentos</span>
+        <em class="tp-nav-badge" *ngIf="avisosDocumento">{{ avisosDocumento }}</em>
       </button>
       <button type="button" class="tp-nav-item" [class.is-active]="activeTab==='cursos'" (click)="setTab('cursos')">
         <span class="material-symbols-outlined">school</span>
@@ -35,9 +43,13 @@
         <span class="material-symbols-outlined">credit_card</span>
         <span>Tarjetas</span>
       </button>
-      <button type="button" class="tp-nav-item" [class.is-active]="activeTab==='perfil'" (click)="setTab('perfil')">
-        <span class="material-symbols-outlined">person</span>
-        <span>Mi Perfil</span>
+      <button type="button" class="tp-nav-item" [class.is-active]="activeTab==='aula'" (click)="setTab('aula')">
+        <span class="material-symbols-outlined">play_lesson</span>
+        <span>Aula Virtual</span>
+      </button>
+      <button type="button" class="tp-nav-item" [class.is-active]="activeTab==='cartilla'" (click)="setTab('cartilla')">
+        <span class="material-symbols-outlined">assignment_ind</span>
+        <span>Cartilla</span>
       </button>
     </nav>
 
@@ -72,34 +84,38 @@
             </ng-template>
           </div>
           <div class="tp-profile-text">
-            <h1>{{ dashboard.employeeName }}</h1>
-            <p>{{ dashboard.position || 'Trabajador' }}</p>
+            <div class="tp-name-row">
+              <h1>{{ dashboard.employeeName }}</h1>
+              <span class="tp-status-chip" [class.is-inactive]="!dashboard.active">
+                <span class="tp-status-dot"></span>
+                {{ dashboard.active ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+            <p class="tp-profile-role">{{ dashboard.position || 'Trabajador' }}</p>
             <p class="tp-profile-meta" *ngIf="dashboard.businesses?.length; else oneBizMeta">
               {{ dashboard.businesses?.length }} empresa(s)
-              · Cédula {{ dashboard.cedula }}
+              <span>·</span>
+              Cédula <strong>{{ dashboard.cedula }}</strong>
             </p>
             <ng-template #oneBizMeta>
               <p class="tp-profile-meta">
                 {{ dashboard.businessName || '—' }}
-                · Cédula {{ dashboard.cedula }}
+                <span>·</span>
+                Cédula <strong>{{ dashboard.cedula }}</strong>
               </p>
             </ng-template>
           </div>
         </div>
-
-        <div class="tp-profile-actions">
-          <span class="tp-status-chip" [class.is-inactive]="!dashboard.active">
-            <span class="tp-status-dot"></span>
-            {{ dashboard.active ? 'ACTIVO' : 'INACTIVO' }}
-          </span>
-        </div>
       </section>
 
-      <!-- Horizontal tabs -->
       <nav class="tp-tabs">
         <button type="button" class="tp-tab" [class.is-active]="activeTab==='resumen'" (click)="setTab('resumen')">
           <span class="material-symbols-outlined">home</span>
           <span>Resumen</span>
+        </button>
+        <button type="button" class="tp-tab" [class.is-active]="activeTab==='perfil'" (click)="setTab('perfil')">
+          <span class="material-symbols-outlined">person</span>
+          <span>Mi Perfil</span>
         </button>
         <button type="button" class="tp-tab" [class.is-active]="activeTab==='documentos'" (click)="setTab('documentos')">
           <span class="material-symbols-outlined">description</span>
@@ -113,9 +129,13 @@
           <span class="material-symbols-outlined">credit_card</span>
           <span>Tarjetas</span>
         </button>
-        <button type="button" class="tp-tab" [class.is-active]="activeTab==='perfil'" (click)="setTab('perfil')">
-          <span class="material-symbols-outlined">person</span>
-          <span>Mi Perfil</span>
+        <button type="button" class="tp-tab" [class.is-active]="activeTab==='aula'" (click)="setTab('aula')">
+          <span class="material-symbols-outlined">play_lesson</span>
+          <span>Aula Virtual</span>
+        </button>
+        <button type="button" class="tp-tab" [class.is-active]="activeTab==='cartilla'" (click)="setTab('cartilla')">
+          <span class="material-symbols-outlined">assignment_ind</span>
+          <span>Cartilla</span>
         </button>
       </nav>
 
@@ -129,17 +149,17 @@
           </div>
           <div class="tp-stat-card">
             <div class="tp-stat-icon tp-stat-icon--ok"><span class="material-symbols-outlined">check_circle</span></div>
-            <div class="tp-stat-value">{{ dashboard.documentsVigentes }}</div>
+            <div class="tp-stat-value is-ok">{{ dashboard.documentsVigentes }}</div>
             <div class="tp-stat-label">Vigentes</div>
           </div>
           <div class="tp-stat-card">
             <div class="tp-stat-icon tp-stat-icon--warn"><span class="material-symbols-outlined">warning</span></div>
-            <div class="tp-stat-value">{{ dashboard.documentsPorVencer }}</div>
+            <div class="tp-stat-value is-warn">{{ dashboard.documentsPorVencer }}</div>
             <div class="tp-stat-label">Por Vencer</div>
           </div>
           <div class="tp-stat-card">
             <div class="tp-stat-icon tp-stat-icon--err"><span class="material-symbols-outlined">cancel</span></div>
-            <div class="tp-stat-value">{{ dashboard.documentsVencidos }}</div>
+            <div class="tp-stat-value" [class.is-muted]="!dashboard.documentsVencidos" [class.is-bad]="dashboard.documentsVencidos">{{ dashboard.documentsVencidos }}</div>
             <div class="tp-stat-label">Vencidos</div>
           </div>
           <div class="tp-stat-card">
@@ -149,20 +169,23 @@
           </div>
           <div class="tp-stat-card">
             <div class="tp-stat-icon tp-stat-icon--ok"><span class="material-symbols-outlined">workspace_premium</span></div>
-            <div class="tp-stat-value">{{ dashboard.coursesCompleted }}</div>
+            <div class="tp-stat-value" [class.is-muted]="!dashboard.coursesCompleted" [class.is-ok]="dashboard.coursesCompleted">{{ dashboard.coursesCompleted }}</div>
             <div class="tp-stat-label">Completados</div>
           </div>
           <div class="tp-stat-card">
             <div class="tp-stat-icon tp-stat-icon--warn"><span class="material-symbols-outlined">schedule</span></div>
-            <div class="tp-stat-value">{{ dashboard.coursesPending }}</div>
+            <div class="tp-stat-value is-late">{{ dashboard.coursesPending }}</div>
             <div class="tp-stat-label">Pendientes</div>
           </div>
         </div>
 
         <div class="tp-card" *ngIf="dashboard.alerts?.length; else noAlerts">
           <div class="tp-card-head">
-            <h2>Alertas</h2>
-            <span class="material-symbols-outlined">notifications</span>
+            <div>
+              <h2>Alertas</h2>
+              <p class="tp-card-sub">Avisos de tus documentos y cursos</p>
+            </div>
+            <span class="tp-alert-count">{{ dashboard.alerts.length }} pendientes</span>
           </div>
           <div class="tp-card-body tp-alerts">
             <div *ngFor="let alert of dashboard.alerts" class="tp-alert-row"
@@ -173,6 +196,7 @@
                 {{ alert.type === 'VENCIDO' ? 'cancel' : (alert.type === 'POR_VENCER' ? 'warning' : 'info') }}
               </span>
               <span>{{ alert.message }}</span>
+              <button type="button" (click)="irAlerta(alert)">{{ etiquetaAlerta(alert) }}</button>
             </div>
           </div>
         </div>
@@ -233,6 +257,257 @@
             </div>
           </div>
         </div>
+      </section>
+
+      <section *ngIf="activeTab==='aula'" class="tp-section">
+        <div class="tp-card" *ngIf="!aulaAbierta">
+          <div class="tp-card-head">
+            <h2>Aula Virtual</h2>
+            <span class="material-symbols-outlined">play_lesson</span>
+          </div>
+          <div class="tp-card-body">
+            <p class="aula-worker-note">Estas son tus capacitaciones. Los certificados siguen en Cursos.</p>
+            <p class="aula-worker-note" *ngIf="aulaAviso">{{ aulaAviso }}</p>
+            <div class="aula-worker-card" *ngFor="let curso of aulaCursos">
+              <button type="button" class="aula-worker-open" (click)="abrirAula(curso.id)">
+                <p>{{ curso.area }}</p>
+                <h3>{{ curso.titulo }}</h3>
+                <small class="aula-deadline" *ngIf="curso.limite && curso.limite !== 'Por definir'">Fecha límite {{ curso.limite }}</small>
+                <small *ngIf="curso.modalidad === 'vivo' || curso.modalidad === 'charla'">Fecha de la reunión {{ fechaCharla(curso) }}</small>
+              </button>
+              <button type="button" class="aula-join" *ngIf="(curso.modalidad === 'vivo' || curso.modalidad === 'charla') && !curso.vencido" (click)="abrirAula(curso.id); entrarSala()">Unirme a la charla</button>
+              <span *ngIf="curso.modalidad !== 'vivo'" [class.is-ok]="curso.estado === 'Cumplió'" [class.is-wait]="curso.estado !== 'Cumplió'">{{ curso.estado }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tp-card" *ngIf="aulaAbierta as curso">
+          <div class="tp-card-head">
+            <div>
+              <p class="aula-worker-area">{{ curso.area }}</p>
+              <h2>{{ curso.titulo }}</h2>
+            </div>
+            <button type="button" class="aula-worker-back" (click)="cerrarAula()">Volver</button>
+          </div>
+          <div class="tp-card-body">
+            <p class="aula-worker-note" *ngIf="aulaAviso">{{ aulaAviso }}</p>
+            <p class="aula-deadline" *ngIf="curso.limite && curso.limite !== 'Por definir'">Fecha límite de la evaluación {{ curso.limite }}</p>
+            <p class="aula-blocked" *ngIf="curso.vencido">La fecha límite ya se cumplió. Esta capacitación está bloqueada.</p>
+            <ng-container *ngIf="!curso.vencido">
+            <div class="aula-player" *ngIf="curso.tieneVideo && !aulaEnSala">
+              <video class="aula-video" [src]="curso.videoSrc" controls controlsList="nodownload noplaybackrate"
+                     disablePictureInPicture playsinline
+                     (timeupdate)="registrarAvance($event)" (seeking)="bloquearSalto($event)"
+                     (play)="alReproducir()" (pause)="alPausar()"
+                     (ratechange)="fijarVelocidad($event)" (loadedmetadata)="volumenMedio($event)" (canplay)="volumenMedio($event)" (ended)="terminarVideo()"
+                     (keydown)="bloquearTeclas($event)"></video>
+            </div>
+            <div class="aula-same-live" *ngIf="curso.sala && curso.tieneVideo && !aulaEnSala">
+              <div>
+                <strong>El mismo tema en vivo</strong>
+                <p>Si el instructor está presentando ahora, entras a la reunión. El video grabado sigue aquí. Las preguntas salen solo cuando el video termina.</p>
+              </div>
+              <button type="button" (click)="entrarSala()">Unirme a la clase</button>
+            </div>
+            <div class="aula-meet" *ngIf="curso.sala && curso.tieneVideo && aulaEnSala">
+              <p class="aula-worker-note">La charla Improvement Solutions se abrió en otra ventana. Ahí tiene cámara, micrófono, chat y mano alzada.</p>
+              <button type="button" class="aula-leave" (click)="abrirCharlaEnPestana()">Volver a abrir la charla</button>
+              <button type="button" class="aula-leave" (click)="volverAlVideo()">Volver al video</button>
+            </div>
+            <div class="aula-meet" *ngIf="(curso.modalidad === 'vivo' || curso.modalidad === 'charla') && !curso.tieneVideo">
+              <div class="aula-meet-lobby" *ngIf="!aulaEnSala">
+                <span class="material-symbols-outlined">video_call</span>
+                <p>{{ curso.modalidad === 'charla' ? 'Charla virtual' : 'Clase en vivo' }}</p>
+                <h3>{{ curso.titulo }}</h3>
+                <small>Fecha de la reunión {{ fechaCharla(curso) }}</small>
+                <button type="button" (click)="entrarSala()">Unirme a la charla</button>
+              </div>
+              <ng-container *ngIf="aulaEnSala && curso.sala">
+                <p class="aula-worker-note">La charla Improvement Solutions se abrió en otra ventana. Cuando termine, pulse salir para las preguntas, si las hay.</p>
+                <button type="button" class="aula-leave" (click)="abrirCharlaEnPestana()">Volver a abrir la charla</button>
+                <button type="button" class="aula-leave" (click)="salirSala()">Salir de la clase</button>
+              </ng-container>
+            </div>
+            <div class="aula-material">
+              <span class="material-symbols-outlined">description</span>
+              <div>
+                <strong>Presentación</strong>
+                <p>{{ curso.material }}</p>
+                <button type="button" *ngIf="curso.tienePdf" (click)="abrirMaterial(curso)">Abrir PDF</button>
+              </div>
+            </div>
+
+            <p class="aula-worker-note" *ngIf="aulaVideoTerminado && !aulaPreguntas.length && !aulaVeredicto">Terminaste. Esta capacitación no tiene evaluación.</p>
+            <div *ngIf="curso.estado === 'Cumplió' && aulaNota == null && !aulaVeredicto" class="aula-score">
+              Ya cumpliste esta capacitación con {{ curso.nota }} puntos.
+            </div>
+
+            <div class="aula-result is-ok" *ngIf="aulaVeredicto === 'aprobado'">
+              <strong>Aprobado.</strong> Tu nota es {{ aulaNota }} de 100. El mínimo era {{ curso.notaMinima }}.
+            </div>
+            <div class="aula-result is-retry" *ngIf="aulaVeredicto === 'reintentar'">
+              <strong>No aprobaste.</strong> Tu nota es {{ aulaNota }} de 100. Vuelve a revisar el video y responde otra vez.
+              <button type="button" (click)="repetirVideo()">Volver a ver el video</button>
+            </div>
+            <div class="aula-result is-bad" *ngIf="aulaVeredicto === 'reprobado'">
+              <strong>Reprobado.</strong> Tu nota es {{ aulaNota }} de 100. Póngase en contacto con su tutor.
+            </div>
+
+            <div *ngIf="aulaVideoTerminado && aulaPreguntas.length && !aulaVeredicto">
+              <div class="aula-exam-head">
+                <h3>Por favor, responda las siguientes preguntas</h3>
+                <span class="aula-clock">Tiempo {{ relojLabel }}</span>
+              </div>
+              <p class="aula-worker-note">Tiene {{ curso.minutosEvaluacion || 10 }} minutos. Si el tiempo se acaba, la evaluación se envía con lo que haya marcado.</p>
+              <article class="aula-question" *ngFor="let pregunta of aulaPreguntas; let i = index">
+                <p>{{ i + 1 }}. {{ pregunta.texto }}</p>
+                <button type="button" *ngFor="let opcion of pregunta.opciones; let j = index"
+                        [class.is-selected]="aulaRespuestas[i] === j" (click)="elegirRespuesta(i, j)">
+                  {{ opcion }}
+                </button>
+              </article>
+              <button type="button" class="aula-send" (click)="enviarEvaluacion()" [disabled]="faltanRespuestas">Enviar respuestas</button>
+            </div>
+            </ng-container>
+          </div>
+        </div>
+      </section>
+
+      <section *ngIf="activeTab==='cartilla'" class="tp-section">
+        <div class="tp-loading" *ngIf="cartillaCargando">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p>Cargando tu cartilla…</p>
+        </div>
+        <p class="aula-worker-note" *ngIf="cartillaAviso">{{ cartillaAviso }}</p>
+        <ng-container *ngIf="cartillaActiva as item">
+          <div class="emp-cart-switch" *ngIf="cartillas.length > 1">
+            <button type="button" *ngFor="let fila of cartillas; let i = index"
+                    [class.is-on]="cartillaIndex === i" (click)="cartillaIndex = i">
+              {{ fila.companyName }}
+            </button>
+          </div>
+          <article class="emp-cart">
+            <header class="emp-cart-head">
+              <div class="emp-cart-brand">
+                <b>{{ siglasEmpresa(item.companyName) }}</b>
+                <div>
+                  <h2>{{ item.companyName }}</h2>
+                  <p><span>SIG · SST</span> Departamento de Seguridad, Salud y Ambiente en el Trabajo</p>
+                </div>
+              </div>
+              <div class="emp-cart-tools">
+                <div class="emp-cart-pill">
+                  <i></i>
+                  Año {{ item.year }}
+                  <em>|</em>
+                  Expediente individual
+                  <em>|</em>
+                  <strong>Solo consulta</strong>
+                </div>
+                <button type="button" class="emp-print" (click)="imprimirCartilla()">Imprimir</button>
+              </div>
+            </header>
+            <h3>Cartilla individual de capacitaciones, entrenamiento y competencias SST</h3>
+            <p class="emp-cart-note">Registro del plan anual {{ item.year }} y las asistencias de Talento Humano. Aquí solo se consulta; no se abren actas ni PDF.</p>
+
+            <section class="emp-cart-person">
+              <div class="emp-cart-photo">
+                <img *ngIf="avatarUrl; else cartillaIni" [src]="avatarUrl" [alt]="item.worker.fullName" />
+                <ng-template #cartillaIni><span>{{ inicialesCartilla(item.worker.fullName) }}</span></ng-template>
+                <em [class.is-off]="!dashboard.active">{{ dashboard.active ? 'Activo' : 'Inactivo' }}</em>
+              </div>
+              <div class="emp-cart-grid">
+                <div><span>Colaborador</span><b>{{ item.worker.fullName }}</b></div>
+                <div><span>Cédula</span><b class="mono">{{ item.worker.cedula || '—' }}</b></div>
+                <div><span>Cargo</span><b>{{ item.worker.position || '—' }}</b></div>
+                <div><span>Área</span><b>{{ cartillaArea(item) }}</b></div>
+                <div><span>Ingreso</span><b>{{ cartillaFecha(item.worker.hireDate) }}<small *ngIf="item.worker.contractType"> · {{ item.worker.contractType }}</small></b></div>
+                <div><span>Grupo sanguíneo</span><b class="blood" *ngIf="item.worker.bloodType; else sinSangre">{{ item.worker.bloodType }}</b><ng-template #sinSangre><b>—</b></ng-template></div>
+              </div>
+            </section>
+
+            <section class="emp-cart-kpis">
+              <article>
+                <span>Cursos recibidos</span>
+                <b>{{ item.worker.received || 0 }}</b>
+                <small>Eventos SST {{ item.year }}</small>
+              </article>
+              <article>
+                <span>Horas lectivas</span>
+                <b>{{ cartillaHoras(item) }}</b>
+                <small>Horas en asistencia</small>
+              </article>
+              <article>
+                <span>Plan anual {{ item.year }}</span>
+                <div class="emp-cart-plan">
+                  <b>{{ cartillaPorcentaje(item) }}%</b>
+                  <em [class.is-ok]="!item.worker.pending">{{ item.worker.pending ? 'En curso' : 'Al día' }}</em>
+                </div>
+                <div class="emp-cart-bar"><i [style.width.%]="cartillaPorcentaje(item)"></i></div>
+                <small>{{ item.worker.pending ? 'Con temas pendientes' : 'Audiencia al día' }}</small>
+              </article>
+              <article class="is-dark">
+                <span>Pendientes</span>
+                <b>{{ item.worker.pending || 0 }}</b>
+                <small>Temas de su audiencia</small>
+              </article>
+            </section>
+
+            <div class="emp-cart-table-head">
+              <h3>Registro de cursos y entrenamientos <em *ngIf="item.worker.records?.length">{{ item.worker.records.length }} registros</em></h3>
+              <span>Historial {{ item.year }}</span>
+            </div>
+            <div class="emp-cart-table" *ngIf="item.worker.records?.length; else sinRegistros">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Tema</th>
+                    <th>Modalidad</th>
+                    <th>Facilitador</th>
+                    <th>Carácter</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let fila of item.worker.records">
+                    <td class="mono">{{ cartillaFecha(fila.sessionDate) }}</td>
+                    <td class="tema">{{ fila.topicName }}</td>
+                    <td>{{ cartillaModo(fila) }}<small *ngIf="fila.hours"> · {{ fila.hours }}h</small></td>
+                    <td>{{ fila.facilitator || '—' }}</td>
+                    <td><span class="emp-tag" [ngClass]="cartillaClase(fila)">{{ cartillaTipo(fila) }}</span></td>
+                    <td><span class="emp-ok">Asistió</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ng-template #sinRegistros>
+              <p class="emp-cart-note">Aún no tiene asistencias registradas en {{ item.year }}.</p>
+            </ng-template>
+
+            <div class="emp-cart-table-head">
+              <div>
+                <h3>Temas pendientes</h3>
+                <p>Obligatorios de su audiencia en el plan {{ item.year }}</p>
+              </div>
+              <span class="emp-wait" *ngIf="item.worker.pendingTopics?.length">{{ item.worker.pendingTopics.length }} temas por cumplir</span>
+            </div>
+            <div class="emp-cart-pending" *ngIf="item.worker.pendingTopics?.length; else sinPendientes">
+              <article *ngFor="let tema of item.worker.pendingTopics">
+                <b>{{ tema.topicName }}</b>
+                <small>{{ tema.audienceLabel || 'Audiencia del plan' }}</small>
+              </article>
+            </div>
+            <ng-template #sinPendientes>
+              <p class="emp-cart-note">No le faltan temas obligatorios de su audiencia en {{ item.year }}.</p>
+            </ng-template>
+
+            <footer>
+              <span>Sistema Integrado de Gestión · {{ item.companyName }}</span>
+              <span>SST-EXP-{{ item.year }}-{{ item.worker.cedula || 'SIN-CEDULA' }}</span>
+            </footer>
+          </article>
+        </ng-container>
       </section>
 
       <!-- Cursos -->
@@ -339,75 +614,85 @@
         </div>
       </section>
 
-      <!-- Perfil (bento) -->
       <section *ngIf="activeTab==='perfil'" class="tp-section">
-        <div *ngIf="profile; else profileLoading" class="tp-bento">
-          <div class="tp-card tp-bento-main">
-            <div class="tp-card-head">
-              <h2>Información Personal</h2>
-              <span class="material-symbols-outlined">badge</span>
+        <article class="perf-card perf-talks" *ngIf="charlasPerfil.length">
+          <header>
+            <div>
+              <span class="material-symbols-outlined">video_call</span>
+              <h2>Charlas</h2>
             </div>
-            <div class="tp-card-body tp-data-grid">
-              <div class="tp-data-cell">
-                <span class="tp-data-label">Nombre Completo</span>
-                <span class="tp-data-value">{{ profile.fullName }}</span>
-              </div>
-              <div class="tp-data-cell">
-                <span class="tp-data-label">Cédula</span>
-                <span class="tp-data-value">{{ profile.cedula }}</span>
-              </div>
-              <div class="tp-data-cell">
-                <span class="tp-data-label">Correo Electrónico</span>
-                <span class="tp-data-value">{{ profile.email || '—' }}</span>
-              </div>
-              <div class="tp-data-cell">
-                <span class="tp-data-label">Teléfono</span>
-                <span class="tp-data-value">{{ profile.phone || '—' }}</span>
-              </div>
-              <div class="tp-data-cell">
-                <span class="tp-data-label">Tipo de Sangre</span>
-                <span class="tp-data-value">{{ profile.tipoSangre || '—' }}</span>
-              </div>
+          </header>
+          <div class="perf-talk" *ngFor="let curso of charlasPerfil">
+            <div>
+              <b>{{ curso.titulo }}</b>
+              <span>Fecha de la reunión {{ fechaCharla(curso) }}</span>
             </div>
+            <button type="button" *ngIf="!curso.vencido" (click)="unirmeDesdePerfil(curso.id)">Unirme a la charla</button>
+            <em *ngIf="curso.vencido">La fecha límite ya se cumplió.</em>
           </div>
+        </article>
 
-          <div class="tp-card tp-bento-side">
-            <div class="tp-card-head">
-              <h2>Detalles de Empleo</h2>
-              <span class="material-symbols-outlined">work</span>
-            </div>
-            <div class="tp-card-body tp-data-stack">
-              <div class="tp-data-cell" *ngIf="profile.businesses?.length; else singleBiz">
-                <span class="tp-data-label">Empresas</span>
-                <span class="tp-data-value tp-data-value--accent" *ngFor="let b of profile.businesses">{{ b.name }}</span>
+        <div *ngIf="profile; else profileLoading" class="perf-grid">
+          <article class="perf-card">
+            <header>
+              <div>
+                <span class="material-symbols-outlined">person</span>
+                <h2>Información personal</h2>
               </div>
-              <ng-template #singleBiz>
-                <div class="tp-data-cell">
-                  <span class="tp-data-label">Empresa</span>
-                  <span class="tp-data-value tp-data-value--accent">{{ profile.businessName || '—' }}</span>
-                </div>
+            </header>
+            <div class="perf-fields">
+              <div><span>Nombre completo</span><b>{{ profile.fullName }}</b></div>
+              <div><span>Cédula</span><b>{{ profile.cedula }}</b></div>
+              <div><span>Correo electrónico</span><b>{{ profile.email || '—' }}</b></div>
+              <div><span>Teléfono</span><b>{{ profile.phone || '—' }}</b></div>
+              <div>
+                <span>Tipo de sangre</span>
+                <b class="perf-blood" *ngIf="profile.tipoSangre; else sinSangre">{{ profile.tipoSangre }}</b>
+                <ng-template #sinSangre><b>—</b></ng-template>
+              </div>
+              <div><span>Dirección</span><b>{{ profile.direccion || '—' }}</b></div>
+              <div *ngIf="profile.codigoEmpresa"><span>Código del trabajador</span><b class="mono">{{ profile.codigoEmpresa }}</b></div>
+            </div>
+            <p class="perf-note">Para actualizar sus datos personales comuníquese con Gestión de Talento Humano.</p>
+          </article>
+
+          <article class="perf-card">
+            <header>
+              <div>
+                <span class="material-symbols-outlined">work</span>
+                <h2>Detalles de empleo</h2>
+              </div>
+            </header>
+            <div class="perf-stack">
+              <div *ngIf="profile.businesses?.length; else unaEmpresa">
+                <span>Empresas</span>
+                <p *ngFor="let empresa of profile.businesses; let primero = first">
+                  <b>{{ empresa.name }}</b>
+                  <em *ngIf="primero">Principal</em>
+                </p>
+              </div>
+              <ng-template #unaEmpresa>
+                <div><span>Empresa</span><b>{{ profile.businessName || '—' }}</b></div>
               </ng-template>
-              <div class="tp-data-cell">
-                <span class="tp-data-label">Departamento</span>
-                <span class="tp-data-value">{{ profile.department || '—' }}</span>
+              <div><span>Departamento</span><b>{{ profile.department || '—' }}</b></div>
+              <div><span>Cargo</span><b>{{ profile.position || '—' }}</b></div>
+              <div>
+                <span>Fecha de ingreso</span>
+                <p><b>{{ fechaPerfil(profile.fechaIngreso) }}</b><small *ngIf="fechaIso(profile.fechaIngreso)">{{ fechaIso(profile.fechaIngreso) }}</small></p>
               </div>
-              <div class="tp-data-cell">
-                <span class="tp-data-label">Cargo</span>
-                <span class="tp-data-value">{{ profile.position || '—' }}</span>
+              <div *ngIf="profile.tipoContrato || profile.jornada">
+                <span>Modalidad de trabajo</span>
+                <div class="perf-chips">
+                  <em *ngIf="profile.tipoContrato">{{ profile.tipoContrato }}</em>
+                  <em *ngIf="profile.jornada">{{ profile.jornada }}</em>
+                </div>
               </div>
-              <div class="tp-data-cell">
-                <span class="tp-data-label">Fecha de Ingreso</span>
-                <span class="tp-data-value">{{ profile.fechaIngreso || '—' }}</span>
-              </div>
-              <div class="tp-data-cell">
-                <span class="tp-data-label">Estado</span>
-                <span class="tp-status-chip" [class.is-inactive]="!profile.active">
-                  <span class="tp-status-dot"></span>
-                  {{ profile.status || (profile.active ? 'ACTIVO' : 'INACTIVO') }}
-                </span>
+              <div>
+                <span>Estado del contrato</span>
+                <strong class="perf-state" [class.is-off]="!profile.active">{{ profile.status || (profile.active ? 'ACTIVO' : 'INACTIVO') }}</strong>
               </div>
             </div>
-          </div>
+          </article>
         </div>
         <ng-template #profileLoading>
           <div class="tp-loading">

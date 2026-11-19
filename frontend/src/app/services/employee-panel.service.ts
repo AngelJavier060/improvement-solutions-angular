@@ -32,6 +32,10 @@ export interface EmployeeProfile {
   department: string | null;
   fechaIngreso: string | null;
   tipoSangre: string | null;
+  direccion: string | null;
+  codigoEmpresa: string | null;
+  tipoContrato: string | null;
+  jornada: string | null;
   active: boolean;
   status: string;
   businessName: string | null;
@@ -85,6 +89,43 @@ export interface EmployeePanelCard {
   files?: EmployeePanelFile[];
 }
 
+export interface EmployeeCartilla {
+  companyName: string;
+  ruc: string;
+  legalRepresentative?: string;
+  year: number;
+  worker: {
+    fullName: string;
+    cedula: string;
+    position?: string;
+    department?: string;
+    block?: string;
+    contractorCompany?: string;
+    hireDate?: string;
+    bloodType?: string;
+    contractType?: string;
+    phone?: string;
+    email?: string;
+    iess?: string;
+    received: number;
+    pending: number;
+    hoursTotal: number;
+    records: EmployeeCartillaRecord[];
+    pendingTopics: Array<{ topicName: string; audienceLabel?: string }>;
+  };
+}
+
+export interface EmployeeCartillaRecord {
+  sessionId: number;
+  topicName: string;
+  sessionDate?: string;
+  facilitator?: string;
+  hours?: number;
+  origin?: string;
+  activityType?: string;
+  methodology?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -112,6 +153,10 @@ export class EmployeePanelService {
 
   getMyCards(): Observable<EmployeePanelCard[]> {
     return this.http.get<EmployeePanelCard[]>(`${this.baseUrl}/my-cards`);
+  }
+
+  getMyCartilla(): Observable<EmployeeCartilla[]> {
+    return this.http.get<EmployeeCartilla[]>(`${this.baseUrl}/my-cartilla`);
   }
 
   /** Descarga autenticada (Bearer) de un archivo propio del trabajador */

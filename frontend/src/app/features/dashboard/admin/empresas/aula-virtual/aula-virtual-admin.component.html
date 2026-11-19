@@ -1,0 +1,384 @@
+<div class="aula">
+  <div class="aula-toolbar" *ngIf="vista === 'tablero'">
+    <button type="button" class="aula-back" (click)="volverEmpresa()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+      Parámetros de la empresa
+    </button>
+    <div class="aula-actions">
+      <button type="button" class="aula-solid" (click)="abrirEditor()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+        Nueva capacitación
+      </button>
+    </div>
+  </div>
+
+  <section class="aula-heading" *ngIf="vista === 'tablero'">
+    <div class="aula-badges">
+      <span class="aula-pill">Aula Virtual</span>
+      <span class="aula-id">ID Empresa: #{{ companyId }}</span>
+    </div>
+    <h1>{{ companyName }}</h1>
+    <p>Capacitaciones de esta empresa. El video, la presentación y el banco de preguntas se preparan aquí. El trabajador los ve en su perfil.</p>
+  </section>
+
+  <div class="aula-banner" *ngIf="vista === 'tablero'">
+    <span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+    </span>
+    <p><strong>Aislamiento de contenidos:</strong> Cada empresa tiene su propio aula. Lo que publiques queda guardado y solo lo ve el personal de <strong>{{ companyName }}</strong>.</p>
+  </div>
+  <p class="aula-alert" *ngIf="aviso && vista === 'tablero'">{{ aviso }}</p>
+
+  <ng-container *ngIf="vista === 'tablero'">
+    <section class="aula-stats">
+      <article class="is-blue">
+        <div>
+          <p>Asignaciones</p>
+          <i>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+          </i>
+        </div>
+        <strong>{{ asignados }}</strong>
+        <small>Módulos en curso</small>
+      </article>
+      <article class="is-green">
+        <div>
+          <p>Cumplieron</p>
+          <i>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+          </i>
+        </div>
+        <strong>{{ cumplieron }}</strong>
+        <small *ngIf="asignados">{{ (cumplieron * 100 / asignados) | number:'1.0-0' }}% aprobadas</small>
+        <small *ngIf="!asignados">Sin registros</small>
+      </article>
+      <article class="is-amber">
+        <div>
+          <p>Pendientes o por debajo</p>
+          <i>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+          </i>
+        </div>
+        <strong>{{ pendientes }}</strong>
+        <small>Sin completar</small>
+      </article>
+      <article class="is-purple">
+        <div>
+          <p>Mejor puntaje</p>
+          <i>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+          </i>
+        </div>
+        <strong *ngIf="mejor">{{ mejor.nota }}</strong>
+        <strong *ngIf="!mejor">—</strong>
+        <small *ngIf="mejor">{{ mejor.nombre }} · {{ mejor.curso }}</small>
+        <small *ngIf="!mejor">Sin evaluaciones registradas</small>
+      </article>
+    </section>
+
+    <section class="aula-panel">
+      <div class="aula-list-head">
+        <div class="aula-count">
+          <h2>Capacitaciones</h2>
+          <span>{{ cursosVisibles.length }} cursos</span>
+        </div>
+        <label>
+          Filtrar por área
+          <select [(ngModel)]="filtroArea">
+            <option>Todas</option>
+            <option *ngFor="let area of areas">{{ area }}</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="aula-empty" *ngIf="cursosVisibles.length === 0">
+        <i>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg>
+        </i>
+        <h3>No hay capacitaciones en esta área</h3>
+        <p>Comienza subiendo videos formativos, presentaciones o cuestionarios de evaluación para {{ companyName }}.</p>
+        <button type="button" class="aula-solid" (click)="abrirEditor()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+          Crear primera capacitación
+        </button>
+      </div>
+
+      <div class="aula-layout" *ngIf="cursosVisibles.length">
+        <div class="aula-list">
+          <button type="button" class="aula-course" *ngFor="let curso of cursosVisibles"
+                  [class.is-active]="cursoActivo?.id === curso.id" (click)="elegirCurso(curso)">
+            <div class="aula-course-top">
+              <p>{{ curso.area }}</p>
+              <span>{{ curso.estado }}</span>
+            </div>
+            <h3>{{ curso.titulo }}</h3>
+            <small>{{ curso.audiencia }} · límite {{ curso.limite }}</small>
+          </button>
+          <ng-container *ngIf="cursoActivo as curso">
+            <div class="aula-player-real" *ngIf="curso.tieneVideo && videoUrl">
+              <video [src]="videoUrl" controls controlsList="nodownload" playsinline (loadedmetadata)="volumenMedio($event)"></video>
+              <small>{{ curso.video }}</small>
+            </div>
+            <p class="aula-muted" *ngIf="curso.tieneVideo && !videoUrl">Cargando el video guardado…</p>
+          </ng-container>
+        </div>
+
+        <section class="aula-detail" *ngIf="cursoActivo as curso">
+          <div class="aula-detail-head">
+            <div>
+              <p>{{ curso.area }}</p>
+              <h2>{{ curso.titulo }}</h2>
+            </div>
+            <span>{{ curso.estado }}</span>
+          </div>
+
+          <div class="aula-live-box" *ngIf="curso.sala">
+            <p class="aula-muted">La charla corre en su servidor, charla.improvement-solution.com, con el nombre Improvement Solutions. Se abre en su propia ventana. Ahí puede agregar participantes con el enlace, usar cámara, micrófono, chat, mano alzada, compartir pantalla y poner un video. El video va en calidad media para que el servidor aguante hasta 20 personas.</p>
+            <div class="aula-live-actions">
+              <button type="button" class="aula-meet" (click)="entrarComoPresentador(curso)">Entrar a la charla</button>
+              <button type="button" class="aula-meet is-tab" (click)="copiarEnlace(curso)">{{ enlaceCopiado ? 'Enlace copiado' : 'Copiar enlace para participantes' }}</button>
+            </div>
+          </div>
+
+          <div class="aula-ficha">
+            <h3>Ficha de la capacitación</h3>
+            <div>
+              <span>Audiencia</span>
+              <strong>{{ curso.audiencia }}</strong>
+            </div>
+            <div>
+              <span>Vigencia</span>
+              <strong>Inicio de la capacitación {{ curso.inicio }}</strong>
+              <strong class="is-late">Límite de la evaluación {{ curso.limite }}</strong>
+              <small *ngIf="curso.vencido">Bloqueada. Ponga otra fecha para abrirla.</small>
+              <input type="datetime-local" [(ngModel)]="nuevaFecha" name="nuevaFecha">
+              <button type="button" (click)="guardarFecha()">Guardar nueva fecha</button>
+            </div>
+            <div>
+              <span>Formato</span>
+              <strong>{{ curso.modalidad === 'charla' ? 'Charla virtual' : (curso.modalidad === 'vivo' ? 'Reunión en vivo' : 'Video de hasta 5 minutos') }}</strong>
+              <small *ngIf="curso.video">{{ curso.video }}</small>
+              <small *ngIf="curso.hora">Hora de la reunión: {{ curso.hora }}</small>
+              <small *ngIf="curso.cupo">Cupo: {{ curso.cupo }} personas</small>
+            </div>
+            <div>
+              <span>Presentación</span>
+              <strong>{{ curso.material }}</strong>
+              <button type="button" *ngIf="curso.tienePdf" (click)="abrirPdf(curso)">Abrir PDF</button>
+            </div>
+            <div class="is-wide">
+              <span>Evaluación</span>
+              <strong>{{ curso.preguntas.length }} en el banco · {{ curso.porTrabajador }} por trabajador · mínimo {{ curso.notaMinima }}/100 · {{ curso.minutosEvaluacion || 10 }} min de evaluación</strong>
+            </div>
+          </div>
+
+          <div class="aula-bank">
+            <h3>Banco de preguntas <span>{{ curso.preguntas.length }}</span></h3>
+            <div class="aula-excel">
+              <button type="button" class="aula-outline" (click)="descargarPlantilla()">Descargar plantilla</button>
+              <label class="aula-outline">
+                Importar
+                <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="importarExcel(curso, $event)">
+              </label>
+            </div>
+            <article *ngFor="let pregunta of curso.preguntas; let i = index">
+              <p><b>{{ i + 1 }}</b> {{ pregunta.texto }}</p>
+              <div class="aula-bank-options">
+                <span *ngFor="let opcion of pregunta.opciones; let j = index" [class.is-true]="j === pregunta.correcta">
+                  {{ opcion }}
+                  <em>{{ j === pregunta.correcta ? 'Verdadera' : 'Opción' }}</em>
+                </span>
+              </div>
+            </article>
+          </div>
+
+          <div class="aula-people">
+            <h3 *ngIf="curso.sala">En la charla ({{ enSala(curso).length }})</h3>
+            <p class="aula-muted" *ngIf="curso.sala && !enSala(curso).length">Todavía nadie ha entrado desde su aula. Cuando un trabajador pulse unirse, su nombre aparece aquí.</p>
+            <article *ngFor="let item of enSala(curso)">
+              <i>{{ iniciales(item.nombre) }}</i>
+              <div>
+                <strong>{{ item.nombre }}</strong>
+                <small>{{ item.cargo || 'Sin cargo' }}</small>
+              </div>
+              <em class="is-ok">Entró</em>
+            </article>
+
+            <h3>Quién ha rendido</h3>
+            <p class="aula-muted" *ngIf="!curso.resultados.length">Todavía nadie de esta empresa ha abierto esta capacitación.</p>
+
+            <h4 *ngIf="rendidos(curso).length">Con nota ({{ rendidos(curso).length }})</h4>
+            <article *ngFor="let item of rendidos(curso)">
+              <i>{{ iniciales(item.nombre) }}</i>
+              <div>
+                <strong>{{ item.nombre }}</strong>
+                <small>{{ item.cargo || 'Sin cargo' }} · {{ item.fecha }}</small>
+              </div>
+              <b [class.is-ok]="item.estado === 'Cumplió'" [class.is-bad]="item.estado === 'No alcanzó'">{{ item.nota }}/100</b>
+              <em [class.is-ok]="item.estado === 'Cumplió'" [class.is-bad]="item.estado === 'No alcanzó'">{{ item.estado }}</em>
+            </article>
+
+            <h4 *ngIf="pendientesDe(curso).length">Pendientes ({{ pendientesDe(curso).length }})</h4>
+            <article *ngFor="let item of pendientesDe(curso)">
+              <i>{{ iniciales(item.nombre) }}</i>
+              <div>
+                <strong>{{ item.nombre }}</strong>
+                <small>{{ item.cargo || 'Sin cargo' }}</small>
+              </div>
+              <em class="is-wait">Pendiente</em>
+            </article>
+          </div>
+        </section>
+      </div>
+    </section>
+  </ng-container>
+
+  <form class="aula-editor" *ngIf="vista === 'editor'" (ngSubmit)="publicar()">
+    <div class="aula-editor-head">
+      <div>
+        <span class="aula-pill">Nueva capacitación</span>
+        <h2>{{ form.modalidad === 'charla' ? 'Charla virtual' : (form.modalidad === 'vivo' ? 'Reunión para los trabajadores' : 'Video, material y banco de preguntas') }}</h2>
+        <p>Configura el material y las reglas de esta capacitación. Solo la ve el personal de {{ companyName }}.</p>
+      </div>
+      <button type="button" class="aula-outline" (click)="cerrarEditor()">Cancelar</button>
+    </div>
+
+    <p class="aula-alert" *ngIf="aviso">{{ aviso }}</p>
+
+    <div class="aula-grid">
+      <label>Nombre
+        <input [(ngModel)]="form.titulo" name="titulo" placeholder="Ej. Prevención del acoso laboral" required>
+      </label>
+      <label>Área
+        <select [(ngModel)]="form.area" name="area">
+          <option *ngFor="let area of areas">{{ area }}</option>
+        </select>
+      </label>
+      <label class="is-wide">Formato
+        <select [(ngModel)]="form.modalidad" name="modalidad">
+          <option value="video">Video grabado, máximo 5 minutos</option>
+          <option value="vivo">Reunión en vivo para los trabajadores</option>
+          <option value="charla">Charla virtual para explicar un tema</option>
+        </select>
+      </label>
+      <label>A quién le toca
+        <select [(ngModel)]="form.audiencia" name="audiencia">
+          <option>Todo el personal</option>
+          <option>Un departamento</option>
+          <option>Un cargo</option>
+        </select>
+      </label>
+      <label *ngIf="form.audiencia !== 'Todo el personal'" class="is-wide">
+        {{ form.audiencia === 'Un departamento' ? 'Departamento de esta empresa' : 'Cargo de esta empresa' }}
+        <input [(ngModel)]="form.audienciaDetalle" name="audienciaDetalle" placeholder="Escríbelo igual que en el personal">
+      </label>
+      <label *ngIf="form.modalidad === 'video'">Nota mínima
+        <span class="aula-score-field">
+          <input type="number" [(ngModel)]="form.notaMinima" name="notaMinima" min="1" max="100">
+          <em>/ 100</em>
+        </span>
+      </label>
+      <ng-container *ngIf="form.modalidad === 'vivo' || form.modalidad === 'charla' || form.reunion">
+        <label>Fecha y hora de la reunión
+          <input type="datetime-local" [(ngModel)]="form.hora" name="hora">
+        </label>
+        <label>Referencia de asistentes
+          <input type="number" [(ngModel)]="form.cupo" name="cupo" min="1">
+        </label>
+      </ng-container>
+      <label>Inicio de la capacitación
+        <input type="date" [(ngModel)]="form.inicio" name="inicio">
+      </label>
+      <label>Fecha y hora límite de la evaluación
+        <input type="datetime-local" [(ngModel)]="form.limite" name="limite">
+      </label>
+      <label class="is-half" *ngIf="form.modalidad === 'video'">Intentos
+        <input type="number" [(ngModel)]="form.intentos" name="intentos" min="1" max="5">
+      </label>
+      <label class="is-half" *ngIf="form.modalidad !== 'charla'">Tiempo de la evaluación (minutos)
+        <input type="number" [(ngModel)]="form.minutosEvaluacion" name="minutosEvaluacion" min="1" max="120">
+      </label>
+    </div>
+
+    <p class="aula-banner is-inline" *ngIf="form.modalidad === 'vivo' || form.modalidad === 'charla'">La sala queda abierta para el personal que usted eligió. El número de asistentes es solo una referencia y no cierra el ingreso. La fecha de la reunión les aparece en su perfil para unirse.</p>
+
+    <label class="aula-check" *ngIf="form.modalidad === 'vivo'">
+      <input type="checkbox" [(ngModel)]="form.grabada" name="grabada">
+      Esta reunión también queda grabada y ese archivo será el video de la capacitación
+    </label>
+
+    <div class="aula-uploads">
+      <label class="aula-drop" *ngIf="form.modalidad === 'video' || form.grabada">
+        <i class="fas fa-video"></i>
+        <div>
+          <strong>{{ form.grabada ? 'Subir la grabación de la reunión' : 'Subir video' }}</strong>
+          <span>{{ form.grabada ? 'Queda como el video de este mismo tema. MP4 o WebM.' : 'Máximo 5 minutos. MP4 o WebM.' }}</span>
+          <em *ngIf="form.video"><i class="fas fa-check"></i> {{ form.video }}</em>
+          <em *ngIf="!form.video"><i class="fas fa-cloud-upload-alt"></i> Haz clic y elige el archivo</em>
+        </div>
+        <input type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" (change)="elegirVideo($event)">
+      </label>
+      <label class="aula-drop is-pdf">
+        <i class="fas fa-file-pdf"></i>
+        <div>
+          <strong>Subir PDF</strong>
+          <span>Presentación o guía. Es opcional.</span>
+          <em *ngIf="form.material"><i class="fas fa-check"></i> {{ form.material }}</em>
+          <em *ngIf="!form.material"><i class="fas fa-cloud-upload-alt"></i> Haz clic y elige el PDF</em>
+        </div>
+        <input type="file" accept="application/pdf,.pdf" (change)="elegirPdf($event)">
+      </label>
+    </div>
+
+    <label class="aula-check" *ngIf="form.modalidad === 'video'">
+      <input type="checkbox" [(ngModel)]="form.reunion" name="reunion">
+      El mismo tema también se presenta en vivo
+    </label>
+
+    <div class="aula-questions" *ngIf="form.modalidad !== 'charla'">
+      <div class="aula-list-head">
+        <div>
+          <h3>Banco de preguntas <span>{{ form.preguntas.length }} preguntas</span></h3>
+          <small>Descargue la plantilla, escriba las preguntas y vuelva a cargarla. También puede agregarlas una por una.</small>
+        </div>
+        <div class="aula-excel">
+          <button type="button" class="aula-outline" (click)="descargarPlantilla()">Descargar plantilla</button>
+          <label class="aula-outline">
+            Importar
+            <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="subirExcel($event)">
+          </label>
+        </div>
+        <button type="button" class="aula-outline" (click)="agregarPregunta()"><i class="fas fa-plus"></i> Agregar pregunta</button>
+      </div>
+      <div class="aula-info" *ngIf="form.preguntas.length === 0">
+        <i class="fas fa-info-circle"></i>
+        <p>Sin evaluación. El trabajador verá el video o entrará a la reunión.</p>
+      </div>
+      <label class="aula-count-input" *ngIf="form.preguntas.length > 0">Cuántas le salen a cada trabajador
+        <input type="number" [(ngModel)]="form.porTrabajador" name="porTrabajador" min="1">
+      </label>
+      <article *ngFor="let pregunta of form.preguntas; let i = index">
+        <div class="aula-question-top">
+          <strong>Pregunta {{ i + 1 }}</strong>
+          <button type="button" (click)="quitarPregunta(i)">Quitar</button>
+        </div>
+        <input type="text" [(ngModel)]="pregunta.texto" [name]="'pregunta' + i" placeholder="Escribe la pregunta">
+        <label class="aula-option" *ngFor="let opcion of pregunta.opciones; let j = index; trackBy: indice" [class.is-true]="pregunta.correcta === j">
+          <input type="radio" [name]="'correcta' + i" [checked]="pregunta.correcta === j" (change)="marcarCorrecta(pregunta, j)">
+          <span>Verdadera</span>
+          <input type="text" [(ngModel)]="pregunta.opciones[j]" [name]="'opcion' + i + '-' + j" placeholder="Escribe la opción {{ j + 1 }}">
+          <button type="button" (click)="quitarOpcion(pregunta, j)" [disabled]="pregunta.opciones.length <= 2">Quitar</button>
+        </label>
+        <button type="button" class="aula-outline aula-add-option" (click)="agregarOpcion(pregunta)">Agregar opción</button>
+        <small>La opción marcada como verdadera es la respuesta correcta. Puedes agregar las que el tema necesite.</small>
+      </article>
+    </div>
+
+    <div class="aula-editor-actions">
+      <button type="submit" class="aula-solid" [disabled]="guardando">
+        <i class="fas fa-paper-plane"></i>
+        {{ guardando ? 'Guardando…' : 'Publicar' }}
+      </button>
+    </div>
+  </form>
+</div>

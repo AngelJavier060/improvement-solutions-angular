@@ -11,19 +11,22 @@
           </button>
           <h1 class="mb-0">
             <i class="fas fa-tachometer-alt me-2"></i>
-            <span *ngIf="isSuperAdmin">Panel de Administrador</span>
+            <span *ngIf="isSuperAdmin">Panel Super Administrador</span>
             <span *ngIf="isCompanyAdmin">Administrar: {{ companyName }}</span>
           </h1>
         </div>
-        <div class="col-auto">
-          <div class="d-flex align-items-center">
-            <span class="me-3">
-              <i class="fas fa-user-shield me-2"></i>{{ username }}
+        <div class="col-auto d-flex align-items-center gap-3">
+          <div class="header-person">
+            <img *ngIf="avatarUrl" class="header-avatar" [src]="avatarUrl" alt="Foto de perfil" (error)="avatarUrl = null">
+            <span *ngIf="!avatarUrl" class="header-avatar header-avatar--fallback">{{ iniciales() }}</span>
+            <span class="header-meta">
+              <strong>{{ username }}</strong>
+              <small>{{ userEmail || 'Sin correo' }}</small>
             </span>
-            <button class="btn btn-light btn-sm" (click)="logout()">
-              <i class="fas fa-sign-out-alt me-1"></i> Cerrar sesión
-            </button>
           </div>
+          <button class="btn btn-light btn-sm header-logout" (click)="logout()">
+            <i class="fas fa-sign-out-alt me-1"></i> Cerrar sesión
+          </button>
         </div>
       </div>
     </div>
@@ -52,6 +55,11 @@
           <li>
             <a routerLink="/dashboard/admin/empresas" routerLinkActive="active">
               <i class="fas fa-building"></i> Empresas
+            </a>
+          </li>
+          <li *ngIf="aulaCompanyId as aulaId">
+            <a [routerLink]="['/dashboard/admin/empresas/admin', aulaId, 'aula']" routerLinkActive="active">
+              <i class="fas fa-chalkboard-teacher"></i> Aula Virtual
             </a>
           </li>
           <li>
@@ -83,8 +91,13 @@
             </a>
           </li>
           <li>
-            <a [routerLink]="['/dashboard/admin/empresas/admin', companyId]" routerLinkActive="active">
+            <a [routerLink]="['/dashboard/admin/empresas/admin', companyId]" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
               <i class="fas fa-cogs"></i> Parámetros / catálogos
+            </a>
+          </li>
+          <li>
+            <a [routerLink]="['/dashboard/admin/empresas/admin', companyId, 'aula']" routerLinkActive="active">
+              <i class="fas fa-chalkboard-teacher"></i> Aula Virtual
             </a>
           </li>
           <li>

@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  String? _loginError;
   bool _bioAvailable = false;
   bool _bioEnabled = false;
   bool _bioBusy = false;
@@ -61,7 +62,10 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loginError = null;
+    });
     try {
       await AuthService().login(username: username, password: password);
       if (!mounted) return;
@@ -73,10 +77,13 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacementNamed(context, AuthService().postLoginRoute);
     } catch (e) {
       if (!mounted) return;
+      final message = e.toString().replaceFirst('Exception: ', '');
+      setState(() => _loginError = message);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(message),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 8),
         ),
       );
     } finally {
@@ -335,6 +342,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                   obscureText: true,
                                 ),
 
+                                if (_loginError != null) ...[
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFB42318),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      _loginError!,
+                                      style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.35),
+                                    ),
+                                  ),
+                                ],
+
                                 const SizedBox(height: 24),
 
                                 // Botón de login
@@ -371,7 +394,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 if (kDebugMode) ...[
                                   const SizedBox(height: 10),
                                   Text(
-                                    'Depuración · API: ${AppConfig.baseUrl}',
+                                    AppConfig.usesWebDevProxy
+                                        ? 'Depuración · mismos usuarios de la web'
+                                        : 'Depuración · API: ${AppConfig.baseUrl}',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 10,
@@ -381,7 +406,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    AppConfig.baseUrl.startsWith('https')
+                                    AppConfig.usesWebDevProxy || AppConfig.baseUrl.startsWith('https')
                                         ? 'Mismos usuarios que en la web (producción).'
                                         : 'API en tu PC: aquí no existen los usuarios de producción. Para producción, quita LOCAL_API o usa HTTPS.',
                                     textAlign: TextAlign.center,

@@ -21,6 +21,7 @@ import { DiagnosticoBdComponent } from './diagnostico-bd.component';
 import { ModulosEmpresaComponent } from './modulos-empresa.component';
 import { SuscripcionesEmpresaComponent } from './suscripciones-empresa.component';
 import { EmpleadosEmpresaComponent } from './empleados-empresa.component';
+import { AulaVirtualAdminComponent } from './aula-virtual/aula-virtual-admin.component';
 
 @NgModule({
   declarations: [
@@ -36,7 +37,8 @@ import { EmpleadosEmpresaComponent } from './empleados-empresa.component';
     DiagnosticoBdComponent,
     ModulosEmpresaComponent,
     SuscripcionesEmpresaComponent,
-    EmpleadosEmpresaComponent
+    EmpleadosEmpresaComponent,
+    AulaVirtualAdminComponent
   ],
   imports: [
     CommonModule,

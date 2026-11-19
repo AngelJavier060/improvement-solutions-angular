@@ -134,7 +134,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleMaxUpload(MaxUploadSizeExceededException ex) {
         Map<String, Object> body = new HashMap<>();
         body.put("title", "Archivo demasiado grande");
-        body.put("message", "El archivo excede el límite permitido (20 MB).");
+        body.put("message", "El archivo excede el límite permitido (80 MB).");
         body.put("code", "UPLOAD_TOO_LARGE");
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(body);
     }
@@ -185,7 +185,7 @@ public class GlobalExceptionHandler {
         // Algunos servidores envuelven el exceso de tamaño en MultipartException
         if (msg.toLowerCase().contains("size") || msg.toLowerCase().contains("exceed")) {
             body.put("title", "Archivo demasiado grande");
-            body.put("message", "El archivo excede el límite permitido (20 MB).");
+            body.put("message", "El archivo excede el límite permitido (80 MB).");
             body.put("code", "UPLOAD_TOO_LARGE");
             return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(body);
         }

@@ -26,6 +26,11 @@ class AppConfig {
     return v == '1' || v == 'true' || v == 'yes';
   }
 
+  /// En Chrome de depuración el navegador bloquea la llamada directa.
+  /// El puente local reenvía al mismo servidor de la web.
+  static bool get usesWebDevProxy =>
+      kDebugMode && kIsWeb && _dartDefineBase.trim().isEmpty && !_wantsLocalApi;
+
   static String get baseUrl {
     final override = _dartDefineBase.trim();
     if (override.isNotEmpty) {
@@ -39,6 +44,9 @@ class AppConfig {
         default:
           return 'http://localhost:8081';
       }
+    }
+    if (usesWebDevProxy) {
+      return 'http://localhost:8095';
     }
     return _normalizeBase(_defaultProductionBase);
   }

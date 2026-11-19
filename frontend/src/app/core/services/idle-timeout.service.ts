@@ -24,6 +24,7 @@ export class IdleTimeoutService implements OnDestroy {
   showWarning = false;
   secondsRemaining = 60;
   private countdownInterval: any = null;
+  private paused = false;
 
   constructor(
     private authService: AuthService,
@@ -57,6 +58,7 @@ export class IdleTimeoutService implements OnDestroy {
       this.activitySub = null;
     }
     this.showWarning = false;
+    this.paused = false;
   }
 
   /** Renueva la sesión desde la advertencia */
@@ -66,9 +68,21 @@ export class IdleTimeoutService implements OnDestroy {
   }
 
   private onActivity(): void {
-    if (!this.showWarning) {
-      this.ngZone.runOutsideAngular(() => this.resetTimer());
-    }
+    if (this.paused || this.showWarning) return;
+    this.ngZone.runOutsideAngular(() => this.resetTimer());
+  }
+
+  /** Mientras el trabajador ve el video del aula, el reloj de inactividad no corre. */
+  pause(): void {
+    this.paused = true;
+    this.clearTimers();
+    this.showWarning = false;
+  }
+
+  resume(): void {
+    if (!this.paused) return;
+    this.paused = false;
+    if (this.activitySub) this.ngZone.runOutsideAngular(() => this.resetTimer());
   }
 
   private resetTimer(): void {

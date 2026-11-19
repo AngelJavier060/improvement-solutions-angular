@@ -57,26 +57,8 @@ class AuthService {
         },
         body: jsonEncode(body),
       );
-    } on http.ClientException catch (e) {
-      // En Chrome (Flutter Web) suele ser CORS: producción no permite origin localhost:XXXX
-      final msg = e.message;
-      if (kIsWeb && (msg.contains('Failed to fetch') || msg.contains('XMLHttpRequest'))) {
-        throw Exception(
-          'No se puede iniciar sesión desde Chrome (CORS). '
-          'Usa el emulador Android: flutter run -d emulator-5554. '
-          'Las credenciales no se validaron; la petición ni siquiera llegó al servidor.',
-        );
-      }
-      throw Exception('Sin conexión con el servidor ($msg)');
     } catch (e) {
-      final s = e.toString();
-      if (kIsWeb && s.contains('Failed to fetch')) {
-        throw Exception(
-          'No se puede iniciar sesión desde Chrome (CORS). '
-          'Usa el emulador Android: flutter run -d emulator-5554.',
-        );
-      }
-      rethrow;
+      throw Exception(_connectionFailureMessage(url, e));
     }
 
     if (kDebugMode && response.statusCode != 200) {
@@ -140,6 +122,22 @@ class AuthService {
     }
 
     throw Exception(serverMsg ?? 'Error al autenticar (${response.statusCode})');
+  }
+
+  /// Chrome corta el login si el servidor no responde la prueba previa.
+  /// La contraseña no se envió. En Windows esa prueba no existe.
+  static String _connectionFailureMessage(String url, Object error) {
+    final detail = error.toString();
+    final blockedByBrowser = kIsWeb &&
+        (detail.contains('Failed to fetch') ||
+            detail.contains('XMLHttpRequest') ||
+            detail.contains('ClientException'));
+    if (blockedByBrowser) {
+      return 'El navegador bloqueó el inicio de sesión antes de comprobar la contraseña. '
+          'El servidor en línea no contestó el permiso que Chrome pide. '
+          'La contraseña no se envió. Destino: $url';
+    }
+    return 'Sin conexión con el servidor ($url). $detail';
   }
 
   Future<Map<String, dynamic>> refreshLogin({required String refreshToken}) async {

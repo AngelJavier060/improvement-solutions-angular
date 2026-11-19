@@ -28,6 +28,7 @@
     "bootstrap": "^5.3.0",
     "bootstrap-icons": "^1.11.3",
     "echarts": "^6.0.0",
+    "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",

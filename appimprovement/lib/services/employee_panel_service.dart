@@ -28,6 +28,8 @@ class EmployeePanelService {
 
   Future<List<Map<String, dynamic>>> getMyCards() => _getList('/api/employee-panel/my-cards');
 
+  Future<List<Map<String, dynamic>>> getMyCartilla() => _getList('/api/employee-panel/my-cartilla');
+
   Future<Map<String, dynamic>> _getMap(String path) async {
     final res = await http.get(Uri.parse('${AppConfig.baseUrl}$path'), headers: _headers);
     if (res.statusCode == 200) {

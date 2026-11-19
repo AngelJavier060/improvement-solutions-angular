@@ -1,7 +1,10 @@
 import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
+import { UserAdminService } from './usuarios/user-admin.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-dashboard-admin',
@@ -10,7 +13,10 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class DashboardAdminComponent implements OnInit {
   isRootRoute = true;
-  username: string = 'Javier'; // Valor por defecto
+  username: string = 'Javier';
+  userEmail = '';
+  avatarUrl: string | null = null;
+  private avatarObjectUrl: string | null = null;
   // Estado de la barra lateral (true = visible)
   isSidebarOpen = true;
 
@@ -22,7 +28,9 @@ export class DashboardAdminComponent implements OnInit {
 
   constructor(
     public router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private userAdminService: UserAdminService,
+    private http: HttpClient
   ) { }
 
   ngOnInit(): void {
@@ -52,6 +60,18 @@ export class DashboardAdminComponent implements OnInit {
     const user = this.authService.getCurrentUser();
     if (user) {
       this.username = user.name || user.username || 'Javier';
+      this.userEmail = user.email || '';
+      this.cargarFoto(user.profilePicture);
+      if (user.id) {
+        this.userAdminService.getUserById(user.id).subscribe({
+          next: (fresh) => {
+            this.username = fresh?.name || fresh?.username || this.username;
+            this.userEmail = fresh?.email || this.userEmail;
+            this.cargarFoto(fresh?.profilePicture);
+          },
+          error: () => {}
+        });
+      }
       const roles: string[] = user.roles || [];
       this.isSuperAdmin = roles.includes('ROLE_SUPER_ADMIN');
       this.isCompanyAdmin = roles.includes('ROLE_ADMIN') && !this.isSuperAdmin;
@@ -101,8 +121,42 @@ export class DashboardAdminComponent implements OnInit {
     }
   }
 
+  get aulaCompanyId(): number | null {
+    const match = this.router.url.match(/\/empresas\/admin\/(\d+)/);
+    if (match) return Number(match[1]);
+    return this.isCompanyAdmin ? this.companyId : null;
+  }
+
   logout(): void {
     this.authService.logout();
+  }
+
+  iniciales(): string {
+    const partes = (this.username || '').trim().split(/\s+/).filter(Boolean);
+    if (!partes.length) return 'SA';
+    return partes.slice(0, 2).map(parte => parte.charAt(0).toUpperCase()).join('');
+  }
+
+  private fotoDe(path?: string | null): string | null {
+    if (!path) return null;
+    const limpio = path.replace(/\\/g, '/');
+    const nombre = limpio.includes('/') ? limpio.split('/').pop() : limpio;
+    if (!nombre) return null;
+    return `${environment.apiUrl}/api/files/profiles/${nombre}`;
+  }
+
+  private cargarFoto(path?: string | null): void {
+    const url = this.fotoDe(path);
+    if (!url) return;
+    this.http.get(url, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        if (!blob || blob.size === 0) return;
+        if (this.avatarObjectUrl) URL.revokeObjectURL(this.avatarObjectUrl);
+        this.avatarObjectUrl = URL.createObjectURL(blob);
+        this.avatarUrl = this.avatarObjectUrl;
+      },
+      error: () => {}
+    });
   }
 
   navigateToUsers(event: Event): void {
