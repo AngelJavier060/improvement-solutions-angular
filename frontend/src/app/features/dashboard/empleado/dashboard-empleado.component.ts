@@ -293,7 +293,14 @@ export class DashboardEmpleadoComponent implements OnInit, OnDestroy {
   }
 
   get charlasPerfil(): any[] {
-    return this.aulaCursos.filter(curso => curso.sala && (curso.modalidad === 'vivo' || curso.modalidad === 'charla'));
+    return this.aulaCursos.filter(curso => curso.puedeCharla);
+  }
+
+  charlaAbierta(curso: any): boolean {
+    const texto = this.fechaCharla(curso);
+    if (!texto || texto === 'Por definir') return false;
+    const marca = new Date(texto.replace(' ', 'T'));
+    return !Number.isNaN(marca.getTime()) && Date.now() >= marca.getTime();
   }
 
   fechaCharla(curso: any): string {
@@ -409,7 +416,18 @@ export class DashboardEmpleadoComponent implements OnInit, OnDestroy {
   abrirCharlaEnPestana(): void {
     const curso = this.aulaAbierta;
     if (!curso) return;
-    window.open(`https://charla.improvement-solution.com/ImprovementSolutions${curso.businessId}c${curso.id}`, '_blank', 'noopener');
+    const nombre = (this.profile?.fullName || this.dashboard?.employeeName || 'Trabajador').replace(/"/g, '').trim();
+    const titulo = String(curso.titulo || 'Charla').replace(/"/g, '').trim();
+    const sala = `ImprovementSolutions${curso.businessId}c${curso.id}`;
+    const hash = [
+      `config.subject=${encodeURIComponent(`"${titulo}"`)}`,
+      `userInfo.displayName=${encodeURIComponent(`"${nombre}"`)}`,
+      'config.prejoinPageEnabled=false',
+      'config.requireDisplayName=false',
+      'config.disableDeepLinking=true',
+      `config.toolbarButtons=${encodeURIComponent('["microphone","camera","desktop","chat","raisehand","reactions","tileview","fullscreen","participants-pane","settings","hangup"]')}`
+    ].join('&');
+    window.open(`https://charla.improvement-solution.com/${sala}#${hash}`, '_blank', 'noopener');
   }
 
   volverAlVideo(): void {

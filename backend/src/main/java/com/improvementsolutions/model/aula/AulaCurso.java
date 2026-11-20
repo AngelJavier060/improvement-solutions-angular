@@ -57,6 +57,9 @@ public class AulaCurso {
     @Column(length = 120)
     private String sala;
 
+    @Column(name = "charla_invitados", columnDefinition = "TEXT")
+    private String charlaInvitados;
+
     @Column(name = "video_path")
     private String videoPath;
 

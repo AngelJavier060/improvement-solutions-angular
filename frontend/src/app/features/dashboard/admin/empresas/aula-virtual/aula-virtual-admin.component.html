@@ -178,11 +178,27 @@
             </div>
           </form>
 
-          <div class="aula-live-box" *ngIf="curso.sala">
-            <p class="aula-muted">La charla corre en su servidor, charla.improvement-solution.com, con el nombre Improvement Solutions. Se abre en su propia ventana. Ahí puede agregar participantes con el enlace, usar cámara, micrófono, chat, mano alzada, compartir pantalla y poner un video. El video va en calidad media para que el servidor aguante hasta 20 personas.</p>
+          <div class="aula-live-box">
+            <p class="aula-muted">Cada tema trae su charla virtual. Usted elige qué trabajadores pueden entrar. Entre primero, abra Seguridad y admita solo a los que marcó.</p>
+            <label class="aula-when">Fecha y hora de la reunión
+              <input type="datetime-local" [(ngModel)]="horaCharla" name="horaCharla">
+            </label>
+            <small class="aula-muted" *ngIf="curso.hora">Programada: {{ curso.hora }}</small>
             <div class="aula-live-actions">
               <button type="button" class="aula-meet" (click)="entrarComoPresentador(curso)">Entrar a la charla</button>
-              <button type="button" class="aula-meet is-tab" (click)="copiarEnlace(curso)">{{ enlaceCopiado ? 'Enlace copiado' : 'Copiar enlace para participantes' }}</button>
+            </div>
+            <div class="aula-pick">
+              <div class="aula-pick-actions">
+                <button type="button" (click)="marcarTodosCharla(true)">Todos</button>
+                <button type="button" (click)="marcarQuedados()">Los que no aprobaron</button>
+                <button type="button" (click)="limpiarCharla(true)">Ninguno</button>
+              </div>
+              <p class="aula-muted" *ngIf="!trabajadores.length">No hay trabajadores activos en esta empresa.</p>
+              <label *ngFor="let persona of trabajadores; trackBy: trackTrabajador">
+                <input type="checkbox" [checked]="estaInvitado(persona.id, true)" (change)="alternarInvitado(persona.id, $event, true)">
+                <span>{{ persona.nombre }}<small *ngIf="persona.cargo"> · {{ persona.cargo }}</small></span>
+              </label>
+              <button type="button" class="aula-solid" (click)="guardarListaCharla()">Guardar quién entra</button>
             </div>
           </div>
 
@@ -208,7 +224,8 @@
             </div>
             <div>
               <span>Formato</span>
-              <strong>{{ curso.modalidad === 'charla' ? 'Charla virtual' : (curso.modalidad === 'vivo' ? 'Reunión en vivo' : 'Video de hasta 5 minutos') }}</strong>
+              <strong>{{ curso.modalidad === 'vivo' ? 'Reunión en vivo' : 'Video de hasta 5 minutos' }}</strong>
+              <small>Charla virtual: {{ invitadosCurso.length }} trabajador(es)</small>
               <small>{{ videoReemplazo ? videoReemplazo.name : (curso.video || 'Sin video') }}</small>
               <small *ngIf="curso.hora">Hora de la reunión: {{ curso.hora }}</small>
               <small *ngIf="curso.cupo">Cupo: {{ curso.cupo }} personas</small>
@@ -302,18 +319,13 @@
                 <strong>{{ nombreInforme(item) }}</strong>
                 <em>{{ informeAbierto === item.employeeId ? 'Ocultar' : 'Ver respuestas' }}</em>
               </button>
-              <div *ngIf="informeAbierto === item.employeeId">
-                <p class="aula-muted" *ngIf="!acertadasDe(item).length && !falladasDe(item).length">Este intento no tiene el detalle de las respuestas.</p>
-                <h5 *ngIf="acertadasDe(item).length">Acertadas ({{ acertadasDe(item).length }})</h5>
-                <div class="is-hit" *ngFor="let fila of acertadasDe(item)">
+              <div class="aula-answer-body" *ngIf="informeAbierto === item.employeeId">
+                <p class="aula-muted" *ngIf="!respuestasDe(item).length">Este intento no tiene el detalle de las respuestas.</p>
+                <div class="aula-qa" *ngFor="let fila of respuestasDe(item); let i = index" [class.is-hit]="fila.acerto" [class.is-miss]="!fila.acerto">
+                  <span>{{ i + 1 }}. {{ fila.acerto ? 'Acertó' : 'No acertó' }}</span>
                   <strong>{{ fila.texto }}</strong>
                   <small>Respondió: {{ fila.marcada }}</small>
-                </div>
-                <h5 *ngIf="falladasDe(item).length">No acertadas ({{ falladasDe(item).length }})</h5>
-                <div class="is-miss" *ngFor="let fila of falladasDe(item)">
-                  <strong>{{ fila.texto }}</strong>
-                  <small>Respondió: {{ fila.marcada }}</small>
-                  <small>Respuesta correcta: {{ fila.correcta }}</small>
+                  <small *ngIf="!fila.acerto">Respuesta correcta: {{ fila.correcta }}</small>
                 </div>
               </div>
             </article>
@@ -337,7 +349,7 @@
     <div class="aula-editor-head">
       <div>
         <span class="aula-pill">Nueva capacitación</span>
-        <h2>{{ form.modalidad === 'charla' ? 'Charla virtual' : (form.modalidad === 'vivo' ? 'Reunión para los trabajadores' : 'Video, material y banco de preguntas') }}</h2>
+        <h2>{{ form.modalidad === 'vivo' ? 'Reunión para los trabajadores' : 'Video, material y banco de preguntas' }}</h2>
         <p>Configura el material y las reglas de esta capacitación. Solo la ve el personal de {{ companyName }}.</p>
       </div>
       <button type="button" class="aula-outline" (click)="cerrarEditor()">Cancelar</button>
@@ -361,7 +373,6 @@
         <select [(ngModel)]="form.modalidad" name="modalidad">
           <option value="video">Video grabado, máximo 5 minutos</option>
           <option value="vivo">Reunión en vivo para los trabajadores</option>
-          <option value="charla">Charla virtual para explicar un tema</option>
         </select>
       </label>
       <label>A quién le toca
@@ -375,20 +386,18 @@
         {{ form.audiencia === 'Un departamento' ? 'Departamento de esta empresa' : 'Cargo de esta empresa' }}
         <input [(ngModel)]="form.audienciaDetalle" name="audienciaDetalle" placeholder="Escríbelo igual que en el personal">
       </label>
+      <label>Fecha y hora de la reunión
+        <input type="datetime-local" [(ngModel)]="form.hora" name="hora" required>
+      </label>
       <label *ngIf="form.modalidad === 'video'">Nota mínima
         <span class="aula-score-field">
           <input type="number" [(ngModel)]="form.notaMinima" name="notaMinima" min="1" max="100">
           <em>/ 100</em>
         </span>
       </label>
-      <ng-container *ngIf="form.modalidad === 'vivo' || form.modalidad === 'charla' || form.reunion">
-        <label>Fecha y hora de la reunión
-          <input type="datetime-local" [(ngModel)]="form.hora" name="hora">
-        </label>
-        <label>Referencia de asistentes
-          <input type="number" [(ngModel)]="form.cupo" name="cupo" min="1">
-        </label>
-      </ng-container>
+      <label *ngIf="form.modalidad === 'vivo'">Referencia de asistentes
+        <input type="number" [(ngModel)]="form.cupo" name="cupo" min="1">
+      </label>
       <label>Inicio de la capacitación
         <input type="date" [(ngModel)]="form.inicio" name="inicio">
       </label>
@@ -398,12 +407,12 @@
       <label class="is-half" *ngIf="form.modalidad === 'video'">Intentos
         <input type="number" [(ngModel)]="form.intentos" name="intentos" min="1" max="5">
       </label>
-      <label class="is-half" *ngIf="form.modalidad !== 'charla'">Tiempo de la evaluación (minutos)
+      <label class="is-half">Tiempo de la evaluación (minutos)
         <input type="number" [(ngModel)]="form.minutosEvaluacion" name="minutosEvaluacion" min="1" max="120">
       </label>
     </div>
 
-    <p class="aula-banner is-inline" *ngIf="form.modalidad === 'vivo' || form.modalidad === 'charla'">La sala queda abierta para el personal que usted eligió. El número de asistentes es solo una referencia y no cierra el ingreso. La fecha de la reunión les aparece en su perfil para unirse.</p>
+    <p class="aula-banner is-inline">La charla virtual sale sola en este tema. Marque abajo quién puede conectarse. Si no marca a alguien, esa persona no entra.</p>
 
     <label class="aula-check" *ngIf="form.modalidad === 'vivo'">
       <input type="checkbox" [(ngModel)]="form.grabada" name="grabada">
@@ -433,12 +442,20 @@
       </label>
     </div>
 
-    <label class="aula-check" *ngIf="form.modalidad === 'video'">
-      <input type="checkbox" [(ngModel)]="form.reunion" name="reunion">
-      El mismo tema también se presenta en vivo
-    </label>
+    <div class="aula-pick">
+      <h3>Charla virtual de este tema</h3>
+      <div class="aula-pick-actions">
+        <button type="button" (click)="marcarTodosCharla(false)">Todos</button>
+        <button type="button" (click)="limpiarCharla(false)">Ninguno</button>
+      </div>
+      <p class="aula-muted" *ngIf="!trabajadores.length">No hay trabajadores activos en esta empresa.</p>
+      <label *ngFor="let persona of trabajadores; trackBy: trackTrabajador">
+        <input type="checkbox" [checked]="estaInvitado(persona.id, false)" (change)="alternarInvitado(persona.id, $event, false)">
+        <span>{{ persona.nombre }}<small *ngIf="persona.cargo"> · {{ persona.cargo }}</small></span>
+      </label>
+    </div>
 
-    <div class="aula-questions" *ngIf="form.modalidad !== 'charla'">
+    <div class="aula-questions">
       <div class="aula-list-head">
         <div>
           <h3>Banco de preguntas <span>{{ form.preguntas.length }} preguntas</span></h3>

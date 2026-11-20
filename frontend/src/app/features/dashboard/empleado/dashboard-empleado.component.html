@@ -275,7 +275,8 @@
                 <small class="aula-deadline" *ngIf="curso.limite && curso.limite !== 'Por definir'">Fecha límite {{ curso.limite }}</small>
                 <small *ngIf="curso.modalidad === 'vivo' || curso.modalidad === 'charla'">Fecha de la reunión {{ fechaCharla(curso) }}</small>
               </button>
-              <button type="button" class="aula-join" *ngIf="(curso.modalidad === 'vivo' || curso.modalidad === 'charla') && !curso.vencido" (click)="abrirAula(curso.id); entrarSala()">Unirme a la charla</button>
+              <button type="button" class="aula-join" *ngIf="curso.puedeCharla && !curso.vencido && charlaAbierta(curso)" (click)="abrirAula(curso.id); entrarSala()">Unirme a la charla</button>
+              <small *ngIf="curso.puedeCharla && !curso.vencido && !charlaAbierta(curso)">La charla abre el {{ fechaCharla(curso) }}</small>
               <span *ngIf="curso.modalidad !== 'vivo'" [class.is-ok]="curso.estado === 'Cumplió'" [class.is-wait]="curso.estado !== 'Cumplió'">{{ curso.estado }}</span>
             </div>
           </div>
@@ -303,19 +304,20 @@
                      (ratechange)="fijarVelocidad($event)" (loadedmetadata)="volumenMedio($event)" (canplay)="volumenMedio($event)" (ended)="terminarVideo()"
                      (keydown)="bloquearTeclas($event)"></video>
             </div>
-            <div class="aula-same-live" *ngIf="curso.sala && curso.tieneVideo && !aulaEnSala">
+            <p class="aula-worker-note" *ngIf="curso.puedeCharla && !charlaAbierta(curso)">La charla está programada para {{ fechaCharla(curso) }}. El ingreso se abre a esa hora.</p>
+            <div class="aula-same-live" *ngIf="curso.puedeCharla && charlaAbierta(curso) && curso.tieneVideo && !aulaEnSala">
               <div>
                 <strong>El mismo tema en vivo</strong>
                 <p>Si el instructor está presentando ahora, entras a la reunión. El video grabado sigue aquí. Las preguntas salen solo cuando el video termina.</p>
               </div>
               <button type="button" (click)="entrarSala()">Unirme a la clase</button>
             </div>
-            <div class="aula-meet" *ngIf="curso.sala && curso.tieneVideo && aulaEnSala">
+            <div class="aula-meet" *ngIf="curso.puedeCharla && charlaAbierta(curso) && curso.tieneVideo && aulaEnSala">
               <p class="aula-worker-note">La charla Improvement Solutions se abrió en otra ventana. Ahí tiene cámara, micrófono, chat y mano alzada.</p>
               <button type="button" class="aula-leave" (click)="abrirCharlaEnPestana()">Volver a abrir la charla</button>
               <button type="button" class="aula-leave" (click)="volverAlVideo()">Volver al video</button>
             </div>
-            <div class="aula-meet" *ngIf="(curso.modalidad === 'vivo' || curso.modalidad === 'charla') && !curso.tieneVideo">
+            <div class="aula-meet" *ngIf="curso.puedeCharla && charlaAbierta(curso) && !curso.tieneVideo">
               <div class="aula-meet-lobby" *ngIf="!aulaEnSala">
                 <span class="material-symbols-outlined">video_call</span>
                 <p>{{ curso.modalidad === 'charla' ? 'Charla virtual' : 'Clase en vivo' }}</p>
@@ -628,7 +630,8 @@
               <b>{{ curso.titulo }}</b>
               <span>Fecha de la reunión {{ fechaCharla(curso) }}</span>
             </div>
-            <button type="button" *ngIf="!curso.vencido" (click)="unirmeDesdePerfil(curso.id)">Unirme a la charla</button>
+            <button type="button" *ngIf="!curso.vencido && charlaAbierta(curso)" (click)="unirmeDesdePerfil(curso.id)">Unirme a la charla</button>
+            <em *ngIf="!curso.vencido && !charlaAbierta(curso)">Abre el {{ fechaCharla(curso) }}</em>
             <em *ngIf="curso.vencido">La fecha límite ya se cumplió.</em>
           </div>
         </article>

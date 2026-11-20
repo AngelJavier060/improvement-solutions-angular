@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BusinessService } from '../../../../../services/business.service';
 import { AulaVirtualService } from '../../../../../services/aula-virtual.service';
@@ -18,6 +19,7 @@ interface AulaRespuesta {
   texto: string;
   marcada: string;
   correcta: string;
+  acerto?: boolean;
 }
 
 interface AulaResultado {
@@ -62,6 +64,7 @@ interface AulaCurso {
   resultados: AulaResultado[];
   tieneVideo?: boolean;
   tienePdf?: boolean;
+  charlaInvitados: number[];
 }
 
 @Component({
@@ -95,13 +98,18 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
   pdfReemplazo: File | null = null;
 
   form = this.blankForm();
+  trabajadores: { id: number; nombre: string; cargo: string }[] = [];
+  invitadosForm: number[] = [];
+  invitadosCurso: number[] = [];
+  horaCharla = '';
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private businessService: BusinessService,
     private aulaService: AulaVirtualService,
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient
   ) {}
 
   get esSuper(): boolean {
@@ -118,6 +126,7 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
       error: () => {}
     });
     this.cargar();
+    this.cargarTrabajadores();
     this.reloj = setInterval(() => this.refrescar(), 15000);
   }
 
@@ -377,8 +386,11 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
       this.aviso = 'Escribe el nombre del instructor.';
       return;
     }
-    const charla = this.form.modalidad === 'charla';
-    const enVivo = this.form.modalidad === 'vivo' || charla;
+    const enVivo = this.form.modalidad === 'vivo';
+    if (!this.form.hora) {
+      this.aviso = 'Indica la fecha y la hora de la reunión.';
+      return;
+    }
     if (this.form.modalidad === 'video' && !this.form.video.trim()) {
       this.aviso = 'Sube el video de la capacitación.';
       return;
@@ -387,22 +399,17 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
       this.aviso = 'Sube la grabación para que quede como video de esta capacitación.';
       return;
     }
-    const conReunion = enVivo || this.form.reunion;
-    if (conReunion && !this.form.hora) {
-      this.aviso = 'Indica la fecha y la hora de la reunión.';
-      return;
-    }
     if (this.form.audiencia !== 'Todo el personal' && !this.form.audienciaDetalle.trim()) {
       this.aviso = 'Escribe el departamento o el cargo, igual que está en el personal de esta empresa.';
       return;
     }
     const cupo = Number(this.form.cupo) > 0 ? Number(this.form.cupo) : null;
-    if (!charla && this.form.preguntas.some(pregunta => !pregunta.texto.trim())) {
+    if (this.form.preguntas.some(pregunta => !pregunta.texto.trim())) {
       this.aviso = 'Hay una pregunta vacía. Complétala o quítala. El banco puede quedar en cero.';
       return;
     }
     const porTrabajador = Math.max(1, Number(this.form.porTrabajador) || 5);
-    const preguntas = charla ? [] : this.form.preguntas.map(pregunta => {
+    const preguntas = this.form.preguntas.map(pregunta => {
       const marcadas = pregunta.opciones
         .map((opcion, indice) => ({ texto: opcion.trim(), indice }))
         .filter(opcion => opcion.texto);
@@ -420,9 +427,10 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
       audiencia: this.form.audiencia || 'Todo el personal',
       audienciaDetalle: this.form.audienciaDetalle.trim(),
       enVivo,
-      modalidad: this.form.modalidad,
-      reunion: this.form.modalidad === 'video' && this.form.reunion,
-      hora: conReunion ? this.form.hora : '',
+      modalidad: enVivo ? 'vivo' : 'video',
+      reunion: false,
+      charlaInvitados: this.invitadosForm,
+      hora: this.form.hora,
       cupo,
       inicio: this.form.inicio,
       horaLimite: this.form.limite,
@@ -485,7 +493,8 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
         falladas: item.falladas || []
       })),
       tieneVideo: !!fila.tieneVideo,
-      tienePdf: !!fila.tienePdf
+      tienePdf: !!fila.tienePdf,
+      charlaInvitados: Array.isArray(fila.charlaInvitados) ? fila.charlaInvitados.map((id: unknown) => Number(id)) : []
     };
   }
 
@@ -589,6 +598,12 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
     return completo || item.nombre;
   }
 
+  respuestasDe(item: AulaResultado): AulaRespuesta[] {
+    const buenas = (item.acertadas || []).map(fila => ({ ...fila, acerto: true }));
+    const malas = (item.falladas || []).map(fila => ({ ...fila, acerto: false }));
+    return [...buenas, ...malas];
+  }
+
   acertadasDe(item: AulaResultado): AulaRespuesta[] {
     return item.acertadas || [];
   }
@@ -629,6 +644,8 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
     this.bancoAbierto = false;
     this.nuevaFecha = curso.limite && curso.limite.includes(' ') ? curso.limite.replace(' ', 'T') : '';
     this.instructorNombre = curso.instructor || '';
+    this.invitadosCurso = [...(curso.charlaInvitados || [])];
+    this.horaCharla = this.aLocal(curso.hora);
     this.videoReemplazo = null;
     this.pdfReemplazo = null;
     this.editando = false;
@@ -672,8 +689,83 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
     return (nombre || '').split(/\s+/).filter(Boolean).slice(0, 2).map(parte => parte.charAt(0).toUpperCase()).join('');
   }
 
+  cargarTrabajadores(): void {
+    this.http.get<any[]>(`/api/businesses/${this.companyId}/employees`).subscribe({
+      next: (lista) => {
+        this.trabajadores = (lista || [])
+          .filter(persona => persona?.id && persona.active !== false && persona.status !== 'INACTIVO')
+          .map(persona => ({
+            id: Number(persona.id),
+            nombre: `${persona.apellidos || ''} ${persona.nombres || persona.name || ''}`.trim() || persona.cedula,
+            cargo: typeof persona.position === 'string' ? persona.position : (persona.position?.name || '')
+          }))
+          .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+      },
+      error: () => { this.trabajadores = []; }
+    });
+  }
+
+  trackTrabajador(_indice: number, persona: { id: number }): number {
+    return persona.id;
+  }
+
+  estaInvitado(id: number, enCurso: boolean): boolean {
+    return (enCurso ? this.invitadosCurso : this.invitadosForm).includes(id);
+  }
+
+  alternarInvitado(id: number, event: Event, enCurso: boolean): void {
+    const marcado = (event.target as HTMLInputElement).checked;
+    const lista = enCurso ? this.invitadosCurso : this.invitadosForm;
+    if (marcado && !lista.includes(id)) lista.push(id);
+    if (!marcado) {
+      const siguiente = lista.filter(item => item !== id);
+      if (enCurso) this.invitadosCurso = siguiente;
+      else this.invitadosForm = siguiente;
+    }
+  }
+
+  marcarTodosCharla(enCurso: boolean): void {
+    const ids = this.trabajadores.map(persona => persona.id);
+    if (enCurso) this.invitadosCurso = ids;
+    else this.invitadosForm = ids;
+  }
+
+  limpiarCharla(enCurso: boolean): void {
+    if (enCurso) this.invitadosCurso = [];
+    else this.invitadosForm = [];
+  }
+
+  marcarQuedados(): void {
+    const curso = this.cursoActivo;
+    if (!curso) return;
+    this.invitadosCurso = curso.resultados
+      .filter(item => item.employeeId && item.estado !== 'Cumplió')
+      .map(item => Number(item.employeeId));
+  }
+
+  guardarListaCharla(): void {
+    const curso = this.cursoActivo;
+    if (!curso) return;
+    if (!this.horaCharla) {
+      this.aviso = 'Indica la fecha y la hora de la reunión.';
+      return;
+    }
+    this.aulaService.guardarCharla(this.companyId, curso.id, this.invitadosCurso, this.horaCharla).subscribe({
+      next: (fila) => {
+        this.aplicarCurso(fila);
+        this.aviso = 'La charla quedó programada. Quien no está marcado no entra, y el trabajador entra a partir de esa hora.';
+      },
+      error: (err) => { this.aviso = err?.error?.message || 'No se pudo guardar la charla.'; }
+    });
+  }
+
+  private aLocal(valor?: string): string {
+    if (!valor || !valor.includes(' ')) return '';
+    return valor.replace(' ', 'T').slice(0, 16);
+  }
+
   entrarComoPresentador(curso: AulaCurso): void {
-    window.open(this.enlaceCharla(curso), '_blank', 'noopener');
+    window.open(this.enlaceCharla(curso, this.nombrePropio()), '_blank', 'noopener');
   }
 
   copiarEnlace(curso: AulaCurso): void {
@@ -681,11 +773,18 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
     navigator.clipboard.writeText(enlace).then(() => { this.enlaceCopiado = true; });
   }
 
+  private nombrePropio(): string {
+    const user = this.authService.getCurrentUser();
+    return String(user?.name || user?.username || 'Supervisor');
+  }
+
   private aplicarCurso(fila: any): void {
     const actualizado = this.mapear(fila);
     this.cursos = this.cursos.map(item => item.id === actualizado.id ? actualizado : item);
     this.cursoActivo = actualizado;
     this.instructorNombre = actualizado.instructor || '';
+    this.invitadosCurso = [...(actualizado.charlaInvitados || [])];
+    this.horaCharla = this.aLocal(actualizado.hora);
     if (this.videoReemplazo || !actualizado.tieneVideo) this.recargarVideo(actualizado);
   }
 
@@ -706,8 +805,19 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
     });
   }
 
-  private enlaceCharla(curso: AulaCurso): string {
-    return `https://charla.improvement-solution.com/ImprovementSolutions${this.companyId}c${curso.id}`;
+  private enlaceCharla(curso: AulaCurso, nombre = ''): string {
+    const sala = `ImprovementSolutions${this.companyId}c${curso.id}`;
+    const titulo = (curso.titulo || 'Charla').replace(/"/g, '').trim();
+    const partes = [
+      `config.subject=${encodeURIComponent(`"${titulo}"`)}`,
+      'config.prejoinPageEnabled=false',
+      'config.requireDisplayName=false',
+      'config.disableDeepLinking=true',
+      `config.toolbarButtons=${encodeURIComponent('["microphone","camera","desktop","sharedvideo","select-background","chat","raisehand","reactions","tileview","fullscreen","participants-pane","invite","security","recording","settings","hangup"]')}`
+    ];
+    const persona = nombre.replace(/"/g, '').trim();
+    if (persona) partes.push(`userInfo.displayName=${encodeURIComponent(`"${persona}"`)}`);
+    return `https://charla.improvement-solution.com/${sala}#${partes.join('&')}`;
   }
 
   preguntasDe(curso: AulaCurso, persona: string): string[] {
@@ -755,7 +865,7 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
       limite: '',
       video: '',
       material: '',
-      modalidad: 'video' as 'video' | 'vivo' | 'charla',
+      modalidad: 'video' as 'video' | 'vivo',
       reunion: false,
       grabada: false,
       hora: '',

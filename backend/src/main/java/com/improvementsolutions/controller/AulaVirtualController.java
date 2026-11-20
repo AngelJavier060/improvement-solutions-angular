@@ -80,6 +80,18 @@ public class AulaVirtualController {
         return aulaService.cambiarInstructor(businessId, cursoId, body == null ? null : body.get("instructor"), auth);
     }
 
+    @PutMapping("/business/{businessId}/{cursoId}/charla")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    public Map<String, Object> charla(@PathVariable Long businessId,
+                                      @PathVariable Long cursoId,
+                                      @RequestBody Map<String, Object> body,
+                                      Authentication auth) {
+        return aulaService.guardarCharla(businessId, cursoId,
+                body == null ? null : body.get("employeeIds"),
+                body == null || body.get("hora") == null ? null : String.valueOf(body.get("hora")),
+                auth);
+    }
+
     @PatchMapping("/business/{businessId}/{cursoId}/limite")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     public Map<String, Object> cambiarLimite(@PathVariable Long businessId,

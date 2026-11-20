@@ -60,7 +60,6 @@ public class AulaVirtualService {
         if (instructor.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escribe el nombre del instructor.");
         boolean charla = "charla".equals(text(body, "modalidad"));
         boolean enVivo = charla || body.path("enVivo").asBoolean(false);
-        boolean reunion = enVivo || body.path("reunion").asBoolean(false);
         String audiencia = text(body, "audiencia");
         if (audiencia.isBlank()) audiencia = "Todo el personal";
         String detalle = text(body, "audienciaDetalle");
@@ -72,13 +71,12 @@ public class AulaVirtualService {
         if (!enVivo && (video == null || video.isEmpty())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sube el video de la capacitación.");
         }
+        LocalDateTime hora = dateTime(text(body, "hora"));
+        if (hora == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Indica la fecha y la hora de la reunión.");
         Integer cupo = null;
-        LocalDateTime hora = null;
-        if (reunion) {
+        if (enVivo) {
             int pedido = body.path("cupo").asInt(0);
             cupo = pedido > 0 ? pedido : null;
-            hora = dateTime(text(body, "hora"));
-            if (hora == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Indica la fecha y la hora de la reunión.");
         }
 
         AulaCurso curso = new AulaCurso();
@@ -93,10 +91,11 @@ public class AulaVirtualService {
         if (horaLimite == null) horaLimite = dateTime(text(body, "limite"));
         curso.setHoraLimite(horaLimite);
         curso.setFechaLimite(horaLimite != null ? horaLimite.toLocalDate() : date(text(body, "limite")));
-        curso.setHoraReunion(reunion ? hora : null);
-        curso.setCupo(reunion ? cupo : null);
+        curso.setHoraReunion(hora);
+        curso.setCupo(enVivo ? cupo : null);
         curso.setEnVivo(enVivo);
-        curso.setTipo(charla ? "charla" : (enVivo ? "vivo" : "video"));
+        curso.setTipo(enVivo ? "vivo" : "video");
+        curso.setCharlaInvitados(jsonInvitados(businessId, body.get("charlaInvitados")));
         curso.setNotaMinima(body.path("notaMinima").asInt(80));
         curso.setIntentos(Math.max(1, body.path("intentos").asInt(2)));
         curso.setMinutosEvaluacion(Math.max(1, body.path("minutosEvaluacion").asInt(10)));
@@ -104,9 +103,7 @@ public class AulaVirtualService {
         curso.setEstado("PUBLICADO");
         curso.setCreatedAt(LocalDateTime.now());
         curso = cursoRepository.save(curso);
-        if (reunion) {
-            curso.setSala("ImprovementSolutions" + businessId + "c" + curso.getId());
-        }
+        curso.setSala("ImprovementSolutions" + businessId + "c" + curso.getId());
         if (video != null && !video.isEmpty()) {
             curso.setVideoNombre(video.getOriginalFilename());
             curso.setVideoPath(guardar(businessId, video, "video"));
@@ -323,8 +320,15 @@ public class AulaVirtualService {
         BusinessEmployee empleado = empleadoDelCurso(cursoId, auth);
         AulaCurso curso = cursoRepository.findById(cursoId).orElseThrow();
         exigirVigente(curso);
+        if (!invitados(curso).contains(empleado.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "El administrador no lo autorizó para esta charla.");
+        }
+        if (curso.getHoraReunion() == null || LocalDateTime.now().isBefore(curso.getHoraReunion())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La charla está programada. Todavía no es la hora.");
+        }
         if (curso.getSala() == null || curso.getSala().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Esta capacitación no tiene reunión en vivo.");
+            curso.setSala("ImprovementSolutions" + curso.getBusinessId() + "c" + curso.getId());
+            cursoRepository.save(curso);
         }
         AulaResultado propio = resultadoRepository.findByCursoIdAndEmployeeId(cursoId, empleado.getId()).orElse(null);
         if (propio != null && Boolean.TRUE.equals(propio.getIngresoSala())) return;
@@ -421,6 +425,9 @@ public class AulaVirtualService {
             row.put("videoVisto", Boolean.TRUE.equals(resultado.getVideoVisto()));
         });
         if (!row.containsKey("estado")) row.put("estado", "Pendiente");
+        boolean autorizado = invitados(curso).contains(empleado.getId());
+        row.put("puedeCharla", autorizado);
+        if (!autorizado) row.put("sala", null);
         return row;
     }
 
@@ -443,9 +450,8 @@ public class AulaVirtualService {
         row.put("cupo", curso.getCupo());
         row.put("modalidad", curso.getTipo() != null ? curso.getTipo() : (Boolean.TRUE.equals(curso.getEnVivo()) ? "vivo" : "video"));
         row.put("enVivo", Boolean.TRUE.equals(curso.getEnVivo()) || "charla".equals(curso.getTipo()));
-        row.put("sala", curso.getSala() == null || curso.getSala().isBlank()
-                ? null
-                : "ImprovementSolutions" + curso.getBusinessId() + "c" + curso.getId());
+        row.put("sala", "ImprovementSolutions" + curso.getBusinessId() + "c" + curso.getId());
+        row.put("charlaInvitados", new ArrayList<>(invitados(curso)));
         row.put("video", curso.getVideoNombre());
         row.put("tieneVideo", curso.getVideoPath() != null);
         row.put("material", curso.getMaterialNombre() == null ? "Sin presentación" : curso.getMaterialNombre());
@@ -615,6 +621,50 @@ public class AulaVirtualService {
         resultado.setIngresoSala(false);
         resultado.setIntentosUsados(0);
         return resultadoRepository.save(resultado);
+    }
+
+    @Transactional
+    public Map<String, Object> guardarCharla(Long businessId, Long cursoId, Object employeeIds, String hora, Authentication auth) {
+        assertGestiona(auth, businessId);
+        AulaCurso curso = cursoDeEmpresa(businessId, cursoId);
+        LocalDateTime cuando = dateTime(hora == null ? "" : hora.replace(' ', 'T'));
+        if (cuando == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Indica la fecha y la hora de la reunión.");
+        curso.setHoraReunion(cuando);
+        curso.setCharlaInvitados(jsonInvitados(businessId, objectMapper.valueToTree(employeeIds)));
+        if (curso.getSala() == null || curso.getSala().isBlank()) {
+            curso.setSala("ImprovementSolutions" + businessId + "c" + curso.getId());
+        }
+        cursoRepository.save(curso);
+        return detalleAdmin(curso);
+    }
+
+    private String jsonInvitados(Long businessId, JsonNode nodo) {
+        Set<Long> validos = new HashSet<>();
+        for (BusinessEmployee empleado : employeeRepository.findByBusinessId(businessId)) {
+            if (empleado.getId() != null) validos.add(empleado.getId());
+        }
+        List<Long> ids = new ArrayList<>();
+        if (nodo != null && nodo.isArray()) {
+            nodo.forEach(item -> {
+                if (item.isNumber() && validos.contains(item.asLong())) ids.add(item.asLong());
+            });
+        }
+        try {
+            return objectMapper.writeValueAsString(ids);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se pudo guardar quién entra a la charla.");
+        }
+    }
+
+    private Set<Long> invitados(AulaCurso curso) {
+        Set<Long> ids = new HashSet<>();
+        if (curso.getCharlaInvitados() == null || curso.getCharlaInvitados().isBlank()) return ids;
+        try {
+            JsonNode nodo = objectMapper.readTree(curso.getCharlaInvitados());
+            if (nodo.isArray()) nodo.forEach(item -> { if (item.isNumber()) ids.add(item.asLong()); });
+        } catch (Exception ignored) {
+        }
+        return ids;
     }
 
     private void validarAudiencia(Long businessId, String audiencia, String detalle) {

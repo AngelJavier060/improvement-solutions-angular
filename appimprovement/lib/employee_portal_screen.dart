@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -23,7 +25,7 @@ class _NavTab {
   const _NavTab(this.label, this.detalle, this.icon, this.tint, this.fondo);
 }
 
-class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
+class _EmployeePortalScreenState extends State<EmployeePortalScreen> with WidgetsBindingObserver {
   static const _bg = Color(0xFFF8FAFC);
   static const _ink = Color(0xFF0F172A);
   static const _muted = Color(0xFF64748B);
@@ -48,6 +50,10 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
   List<Map<String, dynamic>> _courses = const [];
   List<Map<String, dynamic>> _cards = const [];
   int? _unirseCursoId;
+  Timer? _cierre;
+  DateTime _ultimoMovimiento = DateTime.now();
+  bool _viendoVideo = false;
+  static const _cierreTras = Duration(minutes: 5);
 
   static const _tabs = <_NavTab>[
     _NavTab('Resumen', 'Indicadores y alertas', Icons.grid_view_rounded, Color(0xFF2563EB), Color(0xFFEFF6FF)),
@@ -62,7 +68,47 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _programarCierre();
     _bootstrap();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _cierre?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _revisarCierre();
+  }
+
+  void _programarCierre() {
+    _cierre?.cancel();
+    if (_viendoVideo) return;
+    _ultimoMovimiento = DateTime.now();
+    _cierre = Timer(_cierreTras, _revisarCierre);
+  }
+
+  void _revisarCierre() {
+    if (!mounted || _viendoVideo) return;
+    if (DateTime.now().difference(_ultimoMovimiento) >= _cierreTras) {
+      _logout();
+      return;
+    }
+    _cierre?.cancel();
+    _cierre = Timer(_cierreTras - DateTime.now().difference(_ultimoMovimiento), _revisarCierre);
+  }
+
+  void _alVerVideo(bool viendo) {
+    _viendoVideo = viendo;
+    if (viendo) {
+      _cierre?.cancel();
+    } else {
+      _programarCierre();
+    }
   }
 
   Future<void> _bootstrap() async {
@@ -175,7 +221,12 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
       data: Theme.of(context).copyWith(
         textTheme: GoogleFonts.plusJakartaSansTextTheme(Theme.of(context).textTheme),
       ),
-      child: Scaffold(
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) {
+          if (!_viendoVideo) _programarCierre();
+        },
+        child: Scaffold(
         backgroundColor: _bg,
         body: SafeArea(
           child: Align(
@@ -197,6 +248,7 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
               ),
             ),
           ),
+        ),
         ),
       ),
     );
@@ -570,6 +622,8 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
           unirseCursoId: _unirseCursoId,
           onUnirseConsumido: () => _unirseCursoId = null,
           onVerCursos: () => _openTab(3),
+          participante: _displayName,
+          onViendo: _alVerVideo,
         );
       case 6:
         return CartillaPanel(avatarUrl: _avatarUrl, activo: _isActive);

@@ -38,6 +38,10 @@ export class AulaVirtualService {
     return this.http.patch(`/api/aula/business/${businessId}/${cursoId}/instructor`, { instructor });
   }
 
+  guardarCharla(businessId: number, cursoId: number, employeeIds: number[], hora: string): Observable<any> {
+    return this.http.put(`/api/aula/business/${businessId}/${cursoId}/charla`, { employeeIds, hora });
+  }
+
   cambiarLimite(businessId: number, cursoId: number, horaLimite: string): Observable<any> {
     return this.http.patch(`/api/aula/business/${businessId}/${cursoId}/limite`, { horaLimite });
   }

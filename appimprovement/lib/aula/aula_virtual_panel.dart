@@ -32,11 +32,7 @@ class _CharlasDelPerfilState extends State<CharlasDelPerfil> {
       final cursos = await AulaVirtualService().misCursos();
       if (!mounted) return;
       setState(() {
-        _charlas = cursos.where((curso) {
-          final sala = (curso['sala'] ?? '').toString();
-          final modo = (curso['modalidad'] ?? '').toString();
-          return sala.isNotEmpty && (modo == 'vivo' || modo == 'charla');
-        }).toList();
+        _charlas = cursos.where((curso) => curso['puedeCharla'] == true).toList();
       });
     } catch (_) {}
   }
@@ -72,11 +68,13 @@ class _CharlasDelPerfilState extends State<CharlasDelPerfil> {
                       ],
                     ),
                   ),
-                  if (!vencido)
+                  if (!vencido && charlaYa(curso))
                     TextButton(
                       onPressed: () => widget.onUnirme((curso['id'] as num).toInt()),
                       child: const Text('Unirme a la charla'),
                     )
+                  else if (!vencido)
+                    Text('Abre el ${fechaCharla(curso)}', style: _estilo(size: 12, color: const Color(0xFF64748B)))
                   else
                     Text('La fecha límite ya se cumplió.', style: _estilo(size: 12, color: const Color(0xFFB42318))),
                 ],
@@ -93,8 +91,10 @@ class AulaVirtualPanel extends StatefulWidget {
   final int? unirseCursoId;
   final VoidCallback? onUnirseConsumido;
   final VoidCallback? onVerCursos;
+  final String participante;
+  final ValueChanged<bool>? onViendo;
 
-  const AulaVirtualPanel({super.key, this.unirseCursoId, this.onUnirseConsumido, this.onVerCursos});
+  const AulaVirtualPanel({super.key, this.unirseCursoId, this.onUnirseConsumido, this.onVerCursos, this.participante = '', this.onViendo});
 
   @override
   State<AulaVirtualPanel> createState() => _AulaVirtualPanelState();
@@ -122,6 +122,7 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
   bool _silencio = false;
   bool _verControles = true;
   bool _enGrande = false;
+  bool _reproduciendo = false;
   Timer? _ocultarControles;
   String _filtro = 'todos';
   final _busca = TextEditingController();
@@ -136,6 +137,7 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
   void dispose() {
     _reloj?.cancel();
     _ocultarControles?.cancel();
+    if (_reproduciendo) widget.onViendo?.call(false);
     _video?.dispose();
     _busca.dispose();
     SystemChrome.setPreferredOrientations(const [DeviceOrientation.portraitUp]);
@@ -244,6 +246,11 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
     if (!_terminado && duracion > Duration.zero && posicion >= duracion - const Duration(milliseconds: 350)) {
       _terminarVideo();
     }
+    final sigue = video.value.isPlaying;
+    if (sigue != _reproduciendo) {
+      _reproduciendo = sigue;
+      widget.onViendo?.call(sigue);
+    }
   }
 
   Future<void> _terminarVideo() async {
@@ -293,7 +300,18 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
     if (curso == null) return;
     final businessId = (curso['businessId'] as num).toInt();
     final cursoId = (curso['id'] as num).toInt();
-    final url = Uri.parse('https://charla.improvement-solution.com/ImprovementSolutions${businessId}c$cursoId');
+    final titulo = (curso['titulo'] ?? 'Charla').toString().replaceAll('"', '').trim();
+    final nombre = widget.participante.replaceAll('"', '').trim();
+    final persona = nombre.isEmpty ? 'Trabajador' : nombre;
+    final hash = [
+      'config.subject=${Uri.encodeComponent('"$titulo"')}',
+      'userInfo.displayName=${Uri.encodeComponent('"$persona"')}',
+      'config.prejoinPageEnabled=false',
+      'config.requireDisplayName=false',
+      'config.disableDeepLinking=true',
+      'config.toolbarButtons=${Uri.encodeComponent('["microphone","camera","desktop","chat","raisehand","reactions","tileview","fullscreen","participants-pane","settings","hangup"]')}',
+    ].join('&');
+    final url = Uri.parse('https://charla.improvement-solution.com/ImprovementSolutions${businessId}c$cursoId#$hash');
     setState(() => _enSala = true);
     await launchUrl(url, mode: LaunchMode.externalApplication);
     try {
@@ -614,7 +632,7 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
                         ),
                       ],
                     ),
-                  if (vivo) ...[
+                  if (vivo || curso['puedeCharla'] == true) ...[
                     const SizedBox(height: 4),
                     Text('Fecha de la reunión ${fechaCharla(curso)}', style: _estilo(size: 12, color: const Color(0xFF64748B))),
                   ],
@@ -643,7 +661,7 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
                       ),
                       if (vencido)
                         Text('Bloqueada', style: _estilo(size: 12, weight: FontWeight.w800, color: const Color(0xFFB42318)))
-                      else if (vivo)
+                      else if (curso['puedeCharla'] == true && charlaYa(curso))
                         _botonTarjeta('Unirme a la charla', () => _abrir((curso['id'] as num).toInt(), entrar: true), oscuro: false)
                       else if (cumplio && widget.onVerCursos != null)
                         _botonTarjeta('Ver en Cursos', widget.onVerCursos!, oscuro: true)
@@ -700,7 +718,6 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
   Widget _detalle(Map<String, dynamic> curso) {
     final vencido = curso['vencido'] == true;
     final tieneVideo = curso['tieneVideo'] == true;
-    final vivo = curso['modalidad'] == 'vivo' || curso['modalidad'] == 'charla';
     final limite = (curso['limite'] ?? '').toString();
     final area = (curso['area'] ?? '').toString();
     final estado = (curso['estado'] ?? 'Pendiente').toString();
@@ -765,14 +782,19 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
             const SizedBox(height: 12),
             _progreso(),
           ],
-          if (vivo && tieneVideo && !_enSala)
+          if (curso['puedeCharla'] == true && !charlaYa(curso))
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text('La charla está programada para ${fechaCharla(curso)}. El ingreso se abre a esa hora.', style: _estilo(weight: FontWeight.w700)),
+            ),
+          if (curso['puedeCharla'] == true && charlaYa(curso) && tieneVideo && !_enSala)
             _avisoCaja(
               'El mismo tema en vivo',
               'Si el instructor está presentando ahora, entras a la reunión. El video grabado sigue aquí. Las preguntas salen solo cuando el video termina.',
               'Unirme a la clase',
               _entrarSala,
             ),
-          if (vivo && tieneVideo && _enSala)
+          if (curso['puedeCharla'] == true && charlaYa(curso) && tieneVideo && _enSala)
             _avisoCaja(
               'Charla abierta',
               'La charla Improvement Solutions se abrió en otra ventana. Ahí tiene cámara, micrófono, chat y mano alzada.',
@@ -787,14 +809,14 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
                 }
               },
             ),
-          if (vivo && !tieneVideo && !_enSala)
+          if (curso['puedeCharla'] == true && charlaYa(curso) && !tieneVideo && !_enSala)
             _avisoCaja(
               curso['modalidad'] == 'charla' ? 'Charla virtual' : 'Clase en vivo',
               'Fecha de la reunión ${fechaCharla(curso)}${_textoInstructor(curso)}',
               'Unirme a la charla',
               _entrarSala,
             ),
-          if (vivo && !tieneVideo && _enSala)
+          if (curso['puedeCharla'] == true && charlaYa(curso) && !tieneVideo && _enSala)
             _avisoCaja(
               'Charla abierta',
               'La charla se abrió en otra ventana. Cuando termine, pulse salir para las preguntas, si las hay.',
@@ -1493,6 +1515,14 @@ class _VideoGrandeState extends State<_VideoGrande> {
       ),
     );
   }
+}
+
+bool charlaYa(Map<String, dynamic> curso) {
+  final texto = fechaCharla(curso);
+  if (texto == 'Por definir') return false;
+  final marca = DateTime.tryParse(texto.replaceFirst(' ', 'T'));
+  if (marca == null) return false;
+  return !DateTime.now().isBefore(marca);
 }
 
 String fechaCharla(Map<String, dynamic> curso) {
