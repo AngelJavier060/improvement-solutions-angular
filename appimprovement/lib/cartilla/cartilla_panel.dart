@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../aula/aula_media.dart';
 import '../services/employee_panel_service.dart';
 
 class CartillaPanel extends StatefulWidget {
@@ -69,13 +68,24 @@ class _CartillaPanelState extends State<CartillaPanel> {
     final porcentaje = _porcentaje(worker);
     final anio = item['year'] ?? DateTime.now().year;
 
+    final nombre = (worker['fullName'] ?? '—').toString();
+    final cargo = (worker['position'] ?? '—').toString();
+    final area = (worker['department'] ?? '').toString().trim().isEmpty ? _area(worker) : worker['department'].toString();
+    final sangre = (worker['bloodType'] ?? '—').toString();
+    final pendientesN = (worker['pending'] as num?)?.toInt() ?? pendientes.length;
+    final recibidos = worker['received'] ?? 0;
+
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
-        if (_aviso.isNotEmpty) Text(_aviso, style: _estilo(size: 13, color: const Color(0xFFB42318))),
-        if (_cartillas.length > 1)
+        if (_aviso.isNotEmpty) ...[
+          Text(_aviso, style: _estilo(size: 13, color: const Color(0xFFB42318))),
+          const SizedBox(height: 10),
+        ],
+        if (_cartillas.length > 1) ...[
           Wrap(
             spacing: 8,
+            runSpacing: 8,
             children: List.generate(_cartillas.length, (i) {
               final activa = i == _indice;
               return ChoiceChip(
@@ -85,111 +95,252 @@ class _CartillaPanelState extends State<CartillaPanel> {
               );
             }),
           ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
-          ),
+          const SizedBox(height: 10),
+        ],
+        _tarjeta(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    backgroundColor: const Color(0xFF1D4ED8),
-                    child: Text(_siglas((item['companyName'] ?? '').toString()), style: _estilo(size: 12, weight: FontWeight.w800, color: Colors.white)),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        backgroundImage: widget.avatarUrl == null ? null : NetworkImage(widget.avatarUrl!),
+                        child: widget.avatarUrl == null
+                            ? Text(_iniciales(nombre), style: _estilo(weight: FontWeight.w800))
+                            : null,
+                      ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: widget.activo ? const Color(0xFF10B981) : const Color(0xFF94A3B8),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text((item['companyName'] ?? '').toString(), style: _estilo(size: 16, weight: FontWeight.w800)),
-                        Text('SIG · SST  Departamento de Seguridad, Salud y Ambiente en el Trabajo', style: _estilo(size: 12, color: const Color(0xFF64748B))),
+                        Row(
+                          children: [
+                            Text('COLABORADOR', style: _estilo(size: 10, weight: FontWeight.w800, color: const Color(0xFF64748B))),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: widget.activo ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: widget.activo ? const Color(0xFFA7F3D0) : const Color(0xFFE2E8F0)),
+                              ),
+                              child: Text(
+                                widget.activo ? 'Activo' : 'Inactivo',
+                                style: _estilo(size: 11, weight: FontWeight.w700, color: widget.activo ? const Color(0xFF047857) : const Color(0xFF64748B)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(nombre.toUpperCase(), maxLines: 2, overflow: TextOverflow.ellipsis, style: _estilo(size: 14, weight: FontWeight.w800)),
+                        Text(cargo, maxLines: 1, overflow: TextOverflow.ellipsis, style: _estilo(size: 12, weight: FontWeight.w700, color: const Color(0xFF1D4ED8))),
+                        Text(area, maxLines: 1, overflow: TextOverflow.ellipsis, style: _estilo(size: 11, weight: FontWeight.w600, color: const Color(0xFF64748B))),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text('Año $anio  ·  Expediente individual  ·  Solo consulta', style: _estilo(size: 12, weight: FontWeight.w700, color: const Color(0xFF1D4ED8))),
-              TextButton(onPressed: imprimirPagina, child: const Text('Imprimir')),
-              Text(
-                'Cartilla individual de capacitaciones, entrenamiento y competencias SST',
-                style: _estilo(size: 16, weight: FontWeight.w800),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Registro del plan anual $anio y las asistencias de Talento Humano. Aquí solo se consulta; no se abren actas ni PDF.',
-                style: _estilo(size: 12, color: const Color(0xFF64748B)),
-              ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const SizedBox(height: 10),
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: const Color(0xFFF1F5F9),
-                    backgroundImage: widget.avatarUrl == null ? null : NetworkImage(widget.avatarUrl!),
-                    child: widget.avatarUrl == null
-                        ? Text(_iniciales((worker['fullName'] ?? '').toString()), style: _estilo(weight: FontWeight.w800))
-                        : null,
-                  ),
+                  Expanded(child: _mini('GRUPO SANGUÍNEO', sangre)),
                   const SizedBox(width: 8),
-                  Text(widget.activo ? 'Activo' : 'Inactivo', style: _estilo(size: 12, weight: FontWeight.w800, color: widget.activo ? const Color(0xFF059669) : const Color(0xFF64748B))),
+                  Expanded(child: _mini('FECHA INGRESO', _fechaLarga(worker['hireDate']?.toString()))),
                 ],
               ),
-              const SizedBox(height: 10),
-              _dato('Colaborador', (worker['fullName'] ?? '—').toString()),
-              _dato('Cédula', (worker['cedula'] ?? '—').toString()),
-              _dato('Cargo', (worker['position'] ?? '—').toString()),
-              _dato('Área', _area(worker)),
-              _dato('Ingreso', '${_fecha(worker['hireDate']?.toString())}${_contrato(worker)}'),
-              _dato('Grupo sanguíneo', (worker['bloodType'] ?? '—').toString()),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _kpi('Cursos recibidos', '${worker['received'] ?? 0}', 'Eventos SST $anio'),
-                  _kpi('Horas lectivas', '${_horas(worker, records)}', 'Horas en asistencia'),
-                  _kpi('Plan anual $anio', '$porcentaje%', (worker['pending'] ?? 0) == 0 ? 'Audiencia al día' : 'Con temas pendientes'),
-                  _kpi('Pendientes', '${worker['pending'] ?? 0}', 'Temas de su audiencia'),
-                ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1E3A8A), Color(0xFF0F172A)],
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.verified_user_outlined, size: 16, color: Color(0xFF93C5FD)),
               ),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(99),
-                child: LinearProgressIndicator(
-                  value: porcentaje / 100,
-                  minHeight: 8,
-                  backgroundColor: const Color(0xFFE2E8F0),
-                  color: const Color(0xFF1D4ED8),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Cartilla individual de capacitaciones, entrenamiento y competencias SST',
+                      style: _estilo(size: 12, weight: FontWeight.w800, color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Registro del plan anual $anio y las asistencias de Talento Humano. Aquí solo se consulta; no se abren actas ni PDF.',
+                      style: _estilo(size: 11, color: const Color(0xFFCBD5E1)),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Text('Registro de cursos y entrenamientos', style: _estilo(size: 15, weight: FontWeight.w800)),
-              Text('${records.length} registros · Historial $anio', style: _estilo(size: 12, color: const Color(0xFF64748B))),
-              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 1.35,
+          children: [
+            _metrica('CURSOS RECIBIDOS', '$recibidos', 'Eventos SST $anio', Icons.school_outlined, const Color(0xFF2563EB), const Color(0xFFEFF6FF)),
+            _metrica('HORAS LECTIVAS', '${_horas(worker, records)}', 'Horas en asistencia', Icons.schedule, const Color(0xFF4F46E5), const Color(0xFFEEF2FF)),
+            _metrica('PLAN ANUAL $anio', '$porcentaje%', 'Audiencia al día', Icons.pie_chart_outline, const Color(0xFF059669), const Color(0xFFECFDF5), avance: porcentaje / 100),
+            _metrica('PENDIENTES', '$pendientesN', 'Temas de su audiencia', Icons.check_circle_outline, const Color(0xFF059669), const Color(0xFFECFDF5), valorVerde: pendientesN == 0),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _tarjeta(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Registro de cursos y entrenamientos', style: _estilo(size: 14, weight: FontWeight.w800)),
+                        Text('${records.length} registros · Historial $anio', style: _estilo(size: 11, weight: FontWeight.w600, color: const Color(0xFF475569))),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(999)),
+                    child: Text('$anio', style: _estilo(size: 11, weight: FontWeight.w700, color: const Color(0xFF475569))),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               if (records.isEmpty)
-                Text('Aún no tiene asistencias registradas en $anio.', style: _estilo(size: 13, color: const Color(0xFF64748B)))
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0), style: BorderStyle.solid),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: const Icon(Icons.event_busy_outlined, size: 20, color: Color(0xFF94A3B8)),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Aún no tiene asistencias registradas en $anio.', textAlign: TextAlign.center, style: _estilo(size: 12, weight: FontWeight.w700, color: const Color(0xFF334155))),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Las firmas y asistencias validadas por el capacitador se sincronizan automáticamente.',
+                        textAlign: TextAlign.center,
+                        style: _estilo(size: 11, color: const Color(0xFF475569)),
+                      ),
+                    ],
+                  ),
+                )
               else
                 ...records.map(_fila),
-              const SizedBox(height: 16),
-              Text('Temas pendientes', style: _estilo(size: 15, weight: FontWeight.w800)),
-              Text('Obligatorios de su audiencia en el plan $anio', style: _estilo(size: 12, color: const Color(0xFF64748B))),
-              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _tarjeta(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Temas pendientes', style: _estilo(size: 14, weight: FontWeight.w800)),
+              Text('Obligatorios de su audiencia en el plan $anio', style: _estilo(size: 11, weight: FontWeight.w600, color: const Color(0xFF475569))),
+              const SizedBox(height: 12),
               if (pendientes.isEmpty)
-                Text('No tiene temas pendientes en su audiencia.', style: _estilo(size: 13, color: const Color(0xFF059669)))
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFA7F3D0)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: const BoxDecoration(color: Color(0xFFD1FAE5), shape: BoxShape.circle),
+                        child: const Icon(Icons.check, size: 16, color: Color(0xFF047857)),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('No tiene temas pendientes en su audiencia.', style: _estilo(size: 12, weight: FontWeight.w800, color: const Color(0xFF064E3B))),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Cumple satisfactoriamente con la programación actual establecida por el área de Talento Humano.',
+                              style: _estilo(size: 11, weight: FontWeight.w600, color: const Color(0xFF047857)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
               else
                 ...pendientes.map((tema) {
                   return Container(
                     width: double.infinity,
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFED7AA)),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -203,6 +354,81 @@ class _CartillaPanelState extends State<CartillaPanel> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _tarjeta({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [BoxShadow(color: Color(0x0A0F172A), blurRadius: 10, offset: Offset(0, 2))],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _mini(String etiqueta, String valor) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(etiqueta, style: _estilo(size: 10, weight: FontWeight.w800, color: const Color(0xFF94A3B8))),
+          const SizedBox(height: 2),
+          Text(valor, style: _estilo(size: 12, weight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+
+  Widget _metrica(String titulo, String valor, String nota, IconData icono, Color tinta, Color fondo, {double? avance, bool valorVerde = false}) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(titulo, style: _estilo(size: 11, weight: FontWeight.w800, color: const Color(0xFF64748B)))),
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(8)),
+                child: Icon(icono, size: 16, color: tinta),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Text(valor, style: _estilo(size: 24, weight: FontWeight.w800, color: valorVerde ? const Color(0xFF059669) : const Color(0xFF0F172A))),
+          if (avance != null) ...[
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                value: avance.clamp(0, 1),
+                minHeight: 6,
+                backgroundColor: const Color(0xFFF1F5F9),
+                color: const Color(0xFF10B981),
+              ),
+            ),
+          ],
+          Text(nota, style: _estilo(size: 11, weight: FontWeight.w600, color: const Color(0xFF64748B))),
+        ],
+      ),
     );
   }
 
@@ -232,37 +458,6 @@ class _CartillaPanelState extends State<CartillaPanel> {
     );
   }
 
-  Widget _dato(String etiqueta, String valor) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(etiqueta, style: _estilo(size: 11, weight: FontWeight.w700, color: const Color(0xFF64748B))),
-          Text(valor, style: _estilo(weight: FontWeight.w700)),
-        ],
-      ),
-    );
-  }
-
-  Widget _kpi(String titulo, String valor, String nota) {
-    return Container(
-      width: 150,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(titulo, style: _estilo(size: 11, color: const Color(0xFF64748B))),
-          Text(valor, style: _estilo(size: 22, weight: FontWeight.w800)),
-          Text(nota, style: _estilo(size: 11, color: const Color(0xFF64748B))),
-        ],
-      ),
-    );
-  }
 }
 
 int _porcentaje(Map<String, dynamic> worker) {
@@ -285,11 +480,6 @@ String _area(Map<String, dynamic> worker) {
       .where((valor) => valor.isNotEmpty)
       .toList();
   return partes.isEmpty ? '—' : partes.join(' · ');
-}
-
-String _contrato(Map<String, dynamic> worker) {
-  final tipo = (worker['contractType'] ?? '').toString().trim();
-  return tipo.isEmpty ? '' : ' · $tipo';
 }
 
 String _fecha(String? valor) {
@@ -321,10 +511,13 @@ String _modo(Map<String, dynamic> fila) {
   return 'Presencial';
 }
 
-String _siglas(String nombre) {
-  final limpio = nombre.replaceAll(RegExp(r'[^A-Za-zÁÉÍÓÚÑáéíóúñ]'), '');
-  final base = limpio.length >= 3 ? limpio.substring(0, 3) : limpio;
-  return (base.isEmpty ? 'SST' : base).toUpperCase();
+String _fechaLarga(String? valor) {
+  if (valor == null || !RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(valor)) return valor == null || valor.isEmpty ? '—' : valor;
+  const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  final partes = valor.substring(0, 10).split('-');
+  final mes = int.tryParse(partes[1]) ?? 1;
+  final dia = int.tryParse(partes[2]) ?? 1;
+  return '$dia ${meses[mes - 1]} ${partes[0]}';
 }
 
 String _iniciales(String nombre) {

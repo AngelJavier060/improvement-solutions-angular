@@ -56,6 +56,8 @@ public class AulaVirtualService {
         JsonNode body = read(json);
         String titulo = text(body, "titulo");
         if (titulo.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escribe el nombre de la capacitación.");
+        String instructor = text(body, "instructor");
+        if (instructor.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escribe el nombre del instructor.");
         boolean charla = "charla".equals(text(body, "modalidad"));
         boolean enVivo = charla || body.path("enVivo").asBoolean(false);
         boolean reunion = enVivo || body.path("reunion").asBoolean(false);
@@ -82,6 +84,7 @@ public class AulaVirtualService {
         AulaCurso curso = new AulaCurso();
         curso.setBusinessId(businessId);
         curso.setTitulo(titulo);
+        curso.setInstructor(instructor);
         curso.setArea(text(body, "area").isBlank() ? "Seguridad" : text(body, "area"));
         curso.setAudiencia(audiencia);
         curso.setAudienciaDetalle(detalle.isBlank() ? null : detalle);
@@ -129,6 +132,20 @@ public class AulaVirtualService {
         }
         curso.setHoraLimite(hora);
         curso.setFechaLimite(hora.toLocalDate());
+        cursoRepository.save(curso);
+        return detalleAdmin(curso);
+    }
+
+    @Transactional
+    public Map<String, Object> cambiarInstructor(Long businessId, Long cursoId, String instructor, Authentication auth) {
+        assertGestiona(auth, businessId);
+        AulaCurso curso = cursoDeEmpresa(businessId, cursoId);
+        String nombre = instructor == null ? "" : instructor.trim();
+        if (nombre.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escribe el nombre del instructor.");
+        }
+        if (nombre.length() > 120) nombre = nombre.substring(0, 120);
+        curso.setInstructor(nombre);
         cursoRepository.save(curso);
         return detalleAdmin(curso);
     }
@@ -329,6 +346,7 @@ public class AulaVirtualService {
         row.put("id", curso.getId());
         row.put("businessId", curso.getBusinessId());
         row.put("titulo", curso.getTitulo());
+        row.put("instructor", curso.getInstructor() == null ? "" : curso.getInstructor());
         row.put("area", curso.getArea());
         row.put("audiencia", curso.getAudiencia());
         row.put("audienciaDetalle", curso.getAudienciaDetalle());

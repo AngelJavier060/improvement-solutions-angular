@@ -22,6 +22,9 @@ public class AulaCurso {
     @Column(nullable = false, length = 180)
     private String titulo;
 
+    @Column(length = 120)
+    private String instructor;
+
     @Column(nullable = false, length = 80)
     private String area;
 

@@ -16,9 +16,11 @@ class EmployeePortalScreen extends StatefulWidget {
 
 class _NavTab {
   final String label;
+  final String detalle;
   final IconData icon;
   final Color tint;
-  const _NavTab(this.label, this.icon, this.tint);
+  final Color fondo;
+  const _NavTab(this.label, this.detalle, this.icon, this.tint, this.fondo);
 }
 
 class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
@@ -36,7 +38,7 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
 
   final _panel = EmployeePanelService();
 
-  int _tabIndex = 0;
+  int? _tabIndex;
   bool _loading = true;
   String? _error;
 
@@ -48,13 +50,13 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
   int? _unirseCursoId;
 
   static const _tabs = <_NavTab>[
-    _NavTab('Resumen', Icons.grid_view_rounded, _blue),
-    _NavTab('Mi Perfil', Icons.person_outline, Color(0xFF475569)),
-    _NavTab('Documentos', Icons.description_outlined, _blue),
-    _NavTab('Cursos', Icons.school_outlined, Color(0xFF4F46E5)),
-    _NavTab('Tarjetas', Icons.credit_card_outlined, Color(0xFFF59E0B)),
-    _NavTab('Aula Virtual', Icons.desktop_windows_outlined, Color(0xFF7C3AED)),
-    _NavTab('Cartilla', Icons.assignment_outlined, Color(0xFF0F766E)),
+    _NavTab('Resumen', 'Indicadores y alertas', Icons.grid_view_rounded, Color(0xFF2563EB), Color(0xFFEFF6FF)),
+    _NavTab('Mi Perfil', 'Datos personales', Icons.person_outline, Color(0xFF4F46E5), Color(0xFFEEF2FF)),
+    _NavTab('Documentos', 'Legajo digital', Icons.description_outlined, Color(0xFF2563EB), Color(0xFFEFF6FF)),
+    _NavTab('Cursos', 'Capacitaciones', Icons.school_outlined, Color(0xFF9333EA), Color(0xFFFAF5FF)),
+    _NavTab('Tarjetas', 'Credenciales y accesos', Icons.credit_card_outlined, Color(0xFFD97706), Color(0xFFFFFBEB)),
+    _NavTab('Aula Virtual', 'Plataforma y videos', Icons.desktop_windows_outlined, Color(0xFF4F46E5), Color(0xFFEEF2FF)),
+    _NavTab('Cartilla', 'Servicios y salud', Icons.assignment_outlined, Color(0xFF0F766E), Color(0xFFF0FDFA)),
   ];
 
   @override
@@ -187,11 +189,10 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
                     const Expanded(child: Center(child: CircularProgressIndicator(color: _blue)))
                   else if (_error != null)
                     Expanded(child: _buildError())
-                  else ...[
-                    _buildProfileHeader(),
-                    _buildTabs(),
+                  else if (_tabIndex == null)
+                    Expanded(child: _buildHub())
+                  else
                     Expanded(child: _buildTabBody()),
-                  ],
                 ],
               ),
             ),
@@ -210,13 +211,28 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
       ),
       child: Row(
         children: [
-          _roundButton(Icons.arrow_back, 'Cerrar sesión', _logout),
+          _roundButton(
+            Icons.arrow_back,
+            _tabIndex == null ? 'Cerrar sesión' : 'Volver',
+            _tabIndex == null ? _logout : () => setState(() => _tabIndex = null),
+          ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              'Perfil del Empleado',
-              style: _font(size: 17, weight: FontWeight.w800, spacing: -0.2),
-            ),
+            child: _tabIndex == 5 || _tabIndex == 6
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(_tabIndex == 5 ? 'Aula Virtual' : 'Cartilla SST', style: _font(size: 17, weight: FontWeight.w800, spacing: -0.2, height: 1.1)),
+                      Text(
+                        _tabIndex == 5 ? 'Portal del Colaborador' : 'Expediente individual digital',
+                        style: _font(size: 11, weight: FontWeight.w600, color: _muted, height: 1.1),
+                      ),
+                    ],
+                  )
+                : Text(
+                    _tabIndex == null ? 'Perfil del Empleado' : _tabs[_tabIndex!].label,
+                    style: _font(size: 17, weight: FontWeight.w800, spacing: -0.2),
+                  ),
           ),
           _roundButton(Icons.notifications_none, 'Notificaciones', _showAlerts),
           PopupMenuButton<String>(
@@ -417,81 +433,111 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
     );
   }
 
-  Widget _buildTabs() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
-        boxShadow: [BoxShadow(color: Color(0x0A0F172A), blurRadius: 8, offset: Offset(0, 2))],
-      ),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: _tabs.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 0.78,
-        ),
-        itemBuilder: (context, index) {
-          final tab = _tabs[index];
-          final selected = _tabIndex == index;
-          return Material(
-            color: selected ? _blue : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => _openTab(index),
-              child: Container(
+  Widget _buildHub() {
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 28),
+      children: [
+        _buildProfileHeader(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+          child: Row(
+            children: [
+              Text('MÓDULOS DE ACCESO', style: _font(size: 11, weight: FontWeight.w800, color: const Color(0xFF94A3B8), spacing: 0.6)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: selected ? _blue : const Color(0xFFE2E8F0)),
-                  boxShadow: selected
-                      ? const [BoxShadow(color: Color(0x402563EB), blurRadius: 10, offset: Offset(0, 4))]
-                      : null,
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Text('7 disponibles', style: _font(size: 11, weight: FontWeight.w700, color: _muted)),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 6,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 14,
+              crossAxisSpacing: 14,
+              childAspectRatio: 1.15,
+            ),
+            itemBuilder: (context, index) => _modulo(index),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+          child: _modulo(6, ancho: true),
+        ),
+      ],
+    );
+  }
+
+  Widget _modulo(int index, {bool ancho = false}) {
+    final tab = _tabs[index];
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => _openTab(index),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: _soft,
+          ),
+          child: ancho
+              ? Row(
                   children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: selected ? Colors.white.withValues(alpha: 0.2) : Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: selected ? null : Border.all(color: const Color(0xFFF1F5F9)),
-                      ),
-                      child: Icon(tab.icon, size: 18, color: selected ? Colors.white : tab.tint),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      tab.label,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      style: _font(
-                        size: 10.5,
-                        weight: FontWeight.w700,
-                        color: selected ? Colors.white : const Color(0xFF334155),
-                        height: 1.1,
-                      ),
-                    ),
+                    _iconoModulo(tab),
+                    const SizedBox(width: 14),
+                    Expanded(child: _textoModulo(tab)),
+                    const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _iconoModulo(tab),
+                    const Spacer(),
+                    _textoModulo(tab),
                   ],
                 ),
-              ),
-            ),
-          );
-        },
+        ),
       ),
     );
   }
 
+  Widget _iconoModulo(_NavTab tab) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(color: tab.fondo, borderRadius: BorderRadius.circular(14)),
+      child: Icon(tab.icon, color: tab.tint, size: 26),
+    );
+  }
+
+  Widget _textoModulo(_NavTab tab) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(tab.label, style: _font(size: 14, weight: FontWeight.w800)),
+        const SizedBox(height: 2),
+        Text(tab.detalle, style: _font(size: 11, weight: FontWeight.w600, color: const Color(0xFF94A3B8))),
+      ],
+    );
+  }
+
   Widget _buildTabBody() {
-    switch (_tabIndex) {
+    switch (_tabIndex ?? 0) {
       case 0:
         return _buildResumen();
       case 2:
@@ -523,6 +569,7 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
         return AulaVirtualPanel(
           unirseCursoId: _unirseCursoId,
           onUnirseConsumido: () => _unirseCursoId = null,
+          onVerCursos: () => _openTab(3),
         );
       case 6:
         return CartillaPanel(avatarUrl: _avatarUrl, activo: _isActive);
@@ -755,8 +802,10 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
         : (profile['businessName'] ?? '—').toString();
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
       children: [
+        _buildFotoPerfil(),
+        const SizedBox(height: 16),
         CharlasDelPerfil(
           onUnirme: (cursoId) {
             setState(() {
@@ -813,30 +862,144 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
     );
   }
 
+  Widget _buildFotoPerfil() {
+    final activo = _isActive;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: _soft,
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            width: 112,
+            height: 108,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.topCenter,
+              children: [
+                Container(
+                  width: 96,
+                  height: 96,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    border: Border.all(color: const Color(0x4D3B82F6), width: 2),
+                    boxShadow: const [BoxShadow(color: Color(0x140F172A), blurRadius: 12, offset: Offset(0, 4))],
+                  ),
+                  child: ClipOval(
+                    child: _avatarUrl != null
+                        ? Image.network(
+                            _avatarUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const ColoredBox(
+                              color: Color(0xFFF1F5F9),
+                              child: Icon(Icons.person, size: 52, color: Color(0xFF94A3B8)),
+                            ),
+                          )
+                        : const ColoredBox(
+                            color: Color(0xFFF1F5F9),
+                            child: Icon(Icons.person, size: 52, color: Color(0xFF94A3B8)),
+                          ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: activo ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: activo ? const Color(0xFF6EE7B7) : const Color(0xFFCBD5E1)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: activo ? const Color(0xFF10B981) : const Color(0xFF64748B),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          activo ? 'ACTIVO' : 'INACTIVO',
+                          style: _font(
+                            size: 11,
+                            weight: FontWeight.w800,
+                            color: activo ? const Color(0xFF047857) : const Color(0xFF475569),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _displayName,
+            textAlign: TextAlign.center,
+            style: _font(size: 18, weight: FontWeight.w800, height: 1.25),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            _position,
+            textAlign: TextAlign.center,
+            style: _font(size: 14, weight: FontWeight.w700, color: _blue),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _sectionCard({
     required IconData icon,
     required String title,
     required Widget child,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: _soft,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, color: _blue, size: 20),
-              const SizedBox(width: 8),
-              Text(title, style: _font(size: 16, weight: FontWeight.w800)),
-            ],
+          Container(
+            padding: const EdgeInsets.only(bottom: 10),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: _blue, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Text(title, style: _font(size: 16, weight: FontWeight.w800)),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           child,
         ],
       ),
@@ -846,20 +1009,29 @@ class _EmployeePortalScreenState extends State<EmployeePortalScreen> {
   Widget _dataCell(String label, String value, {bool accent = false}) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _bg,
-        borderRadius: BorderRadius.circular(12),
+        color: accent ? const Color(0x99EFF6FF) : const Color(0xCCF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent ? const Color(0xFFDBEAFE) : const Color(0xFFF1F5F9)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: _font(size: 10, weight: FontWeight.w800, color: _muted, spacing: 0.4)),
-          const SizedBox(height: 4),
+          Text(
+            label,
+            style: _font(
+              size: 11,
+              weight: FontWeight.w700,
+              color: accent ? const Color(0xCC1D4ED8) : const Color(0xFF64748B),
+              spacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: 2),
           Text(
             value,
-            style: _font(size: 14, weight: accent ? FontWeight.w800 : FontWeight.w600, color: accent ? _blue : _ink),
+            style: _font(size: 14, weight: accent ? FontWeight.w800 : FontWeight.w600, color: accent ? const Color(0xFF1D4ED8) : _ink),
           ),
         ],
       ),

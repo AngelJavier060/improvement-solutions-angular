@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS aula_curso (
     id BIGSERIAL PRIMARY KEY,
     business_id BIGINT NOT NULL,
     titulo VARCHAR(180) NOT NULL,
+    instructor VARCHAR(120),
     area VARCHAR(80) NOT NULL,
     audiencia VARCHAR(40) NOT NULL,
     audiencia_detalle VARCHAR(160),

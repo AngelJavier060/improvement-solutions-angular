@@ -305,6 +305,24 @@ h2, h3, p { margin: 0; }
 .aula-ficha input { width: 100%; margin-top: 8px; border: 1px solid #fecaca; border-radius: 8px; padding: 6px 8px; color: #b91c1c; font-weight: 700; }
 .aula-ficha button { margin-top: 6px; border: 0; background: transparent; color: #2563eb; font-weight: 800; font-size: 12px; padding: 0; }
 .aula-ficha .is-wide { grid-column: 1 / -1; }
+.aula-bank-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.aula-bank-toggle h3 { margin: 0; }
+.aula-bank-toggle em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 800;
+  color: #1d4ed8;
+}
 .aula-bank h3 span {
   display: inline-block;
   margin-left: 8px;

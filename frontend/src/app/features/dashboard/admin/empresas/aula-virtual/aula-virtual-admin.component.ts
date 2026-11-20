@@ -25,6 +25,7 @@ interface AulaResultado {
 interface AulaCurso {
   id: number;
   titulo: string;
+  instructor: string;
   area: AulaArea;
   audiencia: string;
   inicio: string;
@@ -62,6 +63,8 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
   cursoActivo: AulaCurso | null = null;
   aviso = '';
   nuevaFecha = '';
+  instructorNombre = '';
+  bancoAbierto = false;
   enlaceCopiado = false;
   private reloj: ReturnType<typeof setInterval> | null = null;
   guardando = false;
@@ -336,8 +339,13 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
 
   publicar(): void {
     const titulo = this.form.titulo.trim();
+    const instructor = this.form.instructor.trim();
     if (!titulo) {
       this.aviso = 'Escribe el nombre de la capacitación.';
+      return;
+    }
+    if (!instructor) {
+      this.aviso = 'Escribe el nombre del instructor.';
       return;
     }
     const charla = this.form.modalidad === 'charla';
@@ -378,6 +386,7 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
     });
     const datos = {
       titulo,
+      instructor,
       area: this.form.area,
       audiencia: this.form.audiencia || 'Todo el personal',
       audienciaDetalle: this.form.audienciaDetalle.trim(),
@@ -418,6 +427,7 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
     return {
       id: fila.id,
       titulo: fila.titulo,
+      instructor: fila.instructor || '',
       area: fila.area,
       audiencia,
       inicio: fila.inicio || 'Por definir',
@@ -440,6 +450,25 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
       tieneVideo: !!fila.tieneVideo,
       tienePdf: !!fila.tienePdf
     };
+  }
+
+  guardarInstructor(): void {
+    const curso = this.cursoActivo;
+    const nombre = this.instructorNombre.trim();
+    if (!curso || !nombre) {
+      this.aviso = 'Escribe el nombre del instructor.';
+      return;
+    }
+    this.aulaService.guardarInstructor(this.companyId, curso.id, nombre).subscribe({
+      next: (fila) => {
+        const actualizado = this.mapear(fila);
+        this.cursos = this.cursos.map(item => item.id === actualizado.id ? actualizado : item);
+        this.cursoActivo = actualizado;
+        this.instructorNombre = actualizado.instructor;
+        this.aviso = 'El instructor quedó guardado. La app del trabajador lo muestra en el video.';
+      },
+      error: (err) => { this.aviso = err?.error?.message || 'No se pudo guardar el instructor.'; }
+    });
   }
 
   guardarFecha(): void {
@@ -465,9 +494,15 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
     if (video) video.volume = 0.5;
   }
 
+  alternarBanco(): void {
+    this.bancoAbierto = !this.bancoAbierto;
+  }
+
   elegirCurso(curso: AulaCurso): void {
     this.cursoActivo = curso;
+    this.bancoAbierto = false;
     this.nuevaFecha = curso.limite && curso.limite.includes(' ') ? curso.limite.replace(' ', 'T') : '';
+    this.instructorNombre = curso.instructor || '';
     this.enlaceCopiado = false;
     if (this.videoObjectUrl) {
       URL.revokeObjectURL(this.videoObjectUrl);
@@ -544,6 +579,7 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
   private blankForm() {
     return {
       titulo: '',
+      instructor: '',
       area: 'Seguridad' as AulaArea,
       audiencia: 'Todo el personal',
       audienciaDetalle: '',

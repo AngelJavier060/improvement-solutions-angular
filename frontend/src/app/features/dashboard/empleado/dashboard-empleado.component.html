@@ -286,6 +286,7 @@
             <div>
               <p class="aula-worker-area">{{ curso.area }}</p>
               <h2>{{ curso.titulo }}</h2>
+              <p *ngIf="curso.instructor">Instructor: {{ curso.instructor }}</p>
             </div>
             <button type="button" class="aula-worker-back" (click)="cerrarAula()">Volver</button>
           </div>

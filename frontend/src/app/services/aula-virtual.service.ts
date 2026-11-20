@@ -18,6 +18,10 @@ export class AulaVirtualService {
     return this.http.post(`/api/aula/business/${businessId}`, form);
   }
 
+  guardarInstructor(businessId: number, cursoId: number, instructor: string): Observable<any> {
+    return this.http.patch(`/api/aula/business/${businessId}/${cursoId}/instructor`, { instructor });
+  }
+
   cambiarLimite(businessId: number, cursoId: number, horaLimite: string): Observable<any> {
     return this.http.patch(`/api/aula/business/${businessId}/${cursoId}/limite`, { horaLimite });
   }

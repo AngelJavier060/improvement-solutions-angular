@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
@@ -91,8 +92,9 @@ class _CharlasDelPerfilState extends State<CharlasDelPerfil> {
 class AulaVirtualPanel extends StatefulWidget {
   final int? unirseCursoId;
   final VoidCallback? onUnirseConsumido;
+  final VoidCallback? onVerCursos;
 
-  const AulaVirtualPanel({super.key, this.unirseCursoId, this.onUnirseConsumido});
+  const AulaVirtualPanel({super.key, this.unirseCursoId, this.onUnirseConsumido, this.onVerCursos});
 
   @override
   State<AulaVirtualPanel> createState() => _AulaVirtualPanelState();
@@ -117,6 +119,12 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
   VideoPlayerController? _video;
   Duration _visto = Duration.zero;
   bool _ajustando = false;
+  bool _silencio = false;
+  bool _verControles = true;
+  bool _enGrande = false;
+  Timer? _ocultarControles;
+  String _filtro = 'todos';
+  final _busca = TextEditingController();
 
   @override
   void initState() {
@@ -127,7 +135,11 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
   @override
   void dispose() {
     _reloj?.cancel();
+    _ocultarControles?.cancel();
     _video?.dispose();
+    _busca.dispose();
+    SystemChrome.setPreferredOrientations(const [DeviceOrientation.portraitUp]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
@@ -389,71 +401,296 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
     return _detalle(curso);
   }
 
+  int _cuantos(String filtro) {
+    return _cursos.where((curso) => _pasaFiltro(curso, filtro)).length;
+  }
+
+  bool _pasaFiltro(Map<String, dynamic> curso, String filtro) {
+    final estado = (curso['estado'] ?? 'Pendiente').toString();
+    if (filtro == 'pendiente') return estado == 'Pendiente';
+    if (filtro == 'no') return estado == 'No alcanzó';
+    if (filtro == 'ok') return estado == 'Cumplió';
+    return true;
+  }
+
+  List<Map<String, dynamic>> get _visibles {
+    final texto = _busca.text.trim().toLowerCase();
+    return _cursos.where((curso) {
+      if (!_pasaFiltro(curso, _filtro)) return false;
+      if (texto.isEmpty) return true;
+      final titulo = (curso['titulo'] ?? '').toString().toLowerCase();
+      final area = (curso['area'] ?? '').toString().toLowerCase();
+      return titulo.contains(texto) || area.contains(texto);
+    }).toList();
+  }
+
   Widget _lista() {
+    final cursos = _visibles;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
-        Text('Estas son tus capacitaciones. Los certificados siguen en Cursos.', style: _estilo(size: 13, color: const Color(0xFF64748B))),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFDBEAFE)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.info_outline, size: 16, color: Color(0xFF2563EB)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Estas son tus capacitaciones. Los certificados emitidos siguen estando disponibles en el módulo Cursos.',
+                  style: _estilo(size: 12, color: const Color(0xFF475569)),
+                ),
+              ),
+            ],
+          ),
+        ),
         if (_aviso.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text(_aviso, style: _estilo(size: 13, color: const Color(0xFFB42318))),
         ],
         const SizedBox(height: 12),
+        TextField(
+          controller: _busca,
+          onChanged: (_) => setState(() {}),
+          style: _estilo(size: 13),
+          decoration: InputDecoration(
+            hintText: 'Buscar tema, área o curso...',
+            hintStyle: _estilo(size: 13, color: const Color(0xFF94A3B8)),
+            prefixIcon: const Icon(Icons.search, size: 18, color: Color(0xFF94A3B8)),
+            filled: true,
+            fillColor: Colors.white,
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.4)),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _filtroChip('todos', 'Todos', _cursos.length, const Color(0xFF0F172A), Colors.white),
+              _filtroChip('pendiente', 'Pendientes', _cuantos('pendiente'), const Color(0xFFFEF3C7), const Color(0xFFB45309)),
+              _filtroChip('no', 'No alcanzó', _cuantos('no'), const Color(0xFFFEE2E2), const Color(0xFFB42318)),
+              _filtroChip('ok', 'Completados', _cuantos('ok'), const Color(0xFFD1FAE5), const Color(0xFF047857)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
         if (_cursos.isEmpty)
           Text('Todavía no tienes capacitaciones en el aula.', style: _estilo(size: 14, color: const Color(0xFF64748B)))
+        else if (cursos.isEmpty)
+          Text('Ninguna capacitación coincide con la búsqueda.', style: _estilo(size: 14, color: const Color(0xFF64748B)))
         else
-          ..._cursos.map(_tarjeta),
+          ...cursos.map(_tarjeta),
       ],
+    );
+  }
+
+  Widget _filtroChip(String id, String etiqueta, int total, Color fondoConteo, Color tintaConteo) {
+    final activo = _filtro == id;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: activo ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: () => setState(() => _filtro = id),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: activo ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              children: [
+                Text(etiqueta, style: _estilo(size: 12, weight: FontWeight.w700, color: activo ? Colors.white : const Color(0xFF475569))),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: activo ? Colors.white24 : fondoConteo,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text('$total', style: _estilo(size: 10, weight: FontWeight.w800, color: activo ? Colors.white : tintaConteo)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   Widget _tarjeta(Map<String, dynamic> curso) {
     final vivo = curso['modalidad'] == 'vivo' || curso['modalidad'] == 'charla';
     final vencido = curso['vencido'] == true;
-    final cumplio = curso['estado'] == 'Cumplió';
+    final estado = (curso['estado'] ?? 'Pendiente').toString();
+    final cumplio = estado == 'Cumplió';
+    final noAlcanzo = estado == 'No alcanzó';
+    final area = (curso['area'] ?? '').toString();
+    final limite = (curso['limite'] ?? '').toString();
+    final duracion = (curso['duracion'] ?? '').toString();
+    final barra = cumplio
+        ? const Color(0xFF10B981)
+        : noAlcanzo
+            ? const Color(0xFFEF4444)
+            : const Color(0xFFF59E0B);
+    final borde = vencido || noAlcanzo
+        ? const Color(0xFFFECACA)
+        : cumplio
+            ? const Color(0xFFD1FAE5)
+            : const Color(0xFFFDE68A);
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borde),
+        boxShadow: const [BoxShadow(color: Color(0x0A0F172A), blurRadius: 10, offset: Offset(0, 3))],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: () => _abrir((curso['id'] as num).toInt()),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text((curso['area'] ?? '').toString(), style: _estilo(size: 12, color: const Color(0xFF64748B))),
-                Text((curso['titulo'] ?? '').toString(), style: _estilo(size: 16, weight: FontWeight.w800)),
-                if ((curso['limite'] ?? '').toString().isNotEmpty && curso['limite'] != 'Por definir')
-                  Text('Fecha límite ${curso['limite']}', style: _estilo(size: 12, color: const Color(0xFFB42318))),
-                if (vivo) Text('Fecha de la reunión ${fechaCharla(curso)}', style: _estilo(size: 12, color: const Color(0xFF64748B))),
-              ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(height: 4, color: barra),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (area.isNotEmpty)
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFFDBEAFE)),
+                            ),
+                            child: Text(
+                              area.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: _estilo(size: 11, weight: FontWeight.w700, color: const Color(0xFF1D4ED8)),
+                            ),
+                          ),
+                        ),
+                      const Spacer(),
+                      _estadoPastilla(estado, vencido),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () => _abrir((curso['id'] as num).toInt()),
+                    child: Text((curso['titulo'] ?? '').toString(), style: _estilo(size: 16, weight: FontWeight.w800)),
+                  ),
+                  const SizedBox(height: 8),
+                  if (limite.isNotEmpty && limite != 'Por definir')
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today_outlined, size: 14, color: vencido ? const Color(0xFFB42318) : const Color(0xFFB45309)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Fecha límite: $limite',
+                            style: _estilo(size: 12, weight: FontWeight.w600, color: vencido ? const Color(0xFFB42318) : const Color(0xFFB45309)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (vivo) ...[
+                    const SizedBox(height: 4),
+                    Text('Fecha de la reunión ${fechaCharla(curso)}', style: _estilo(size: 12, color: const Color(0xFF64748B))),
+                  ],
+                  if (duracion.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(duracion, style: _estilo(size: 12, color: const Color(0xFF64748B))),
+                  ],
+                  if (cumplio && curso['nota'] != null) ...[
+                    const SizedBox(height: 6),
+                    Text('Aprobado con ${curso['nota']} de 100.', style: _estilo(size: 12, color: const Color(0xFF047857))),
+                  ],
+                  const SizedBox(height: 10),
+                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          vivo
+                              ? (curso['modalidad'] == 'charla' ? 'Charla virtual' : 'Reunión en vivo')
+                              : cumplio
+                                  ? 'El certificado está en Cursos'
+                                  : 'Video',
+                          style: _estilo(size: 11, weight: FontWeight.w600, color: const Color(0xFF94A3B8)),
+                        ),
+                      ),
+                      if (vencido)
+                        Text('Bloqueada', style: _estilo(size: 12, weight: FontWeight.w800, color: const Color(0xFFB42318)))
+                      else if (vivo)
+                        _botonTarjeta('Unirme a la charla', () => _abrir((curso['id'] as num).toInt(), entrar: true), oscuro: false)
+                      else if (cumplio && widget.onVerCursos != null)
+                        _botonTarjeta('Ver en Cursos', widget.onVerCursos!, oscuro: true)
+                      else
+                        _botonTarjeta(cumplio ? 'Abrir' : 'Iniciar capacitación', () => _abrir((curso['id'] as num).toInt()), oscuro: cumplio),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              if (vivo && !vencido)
-                FilledButton(
-                  onPressed: () => _abrir((curso['id'] as num).toInt(), entrar: true),
-                  style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1D4ED8)),
-                  child: const Text('Unirme a la charla'),
-                ),
-              const Spacer(),
-              if (!vivo)
-                Text(
-                  (curso['estado'] ?? 'Pendiente').toString(),
-                  style: _estilo(size: 12, weight: FontWeight.w800, color: cumplio ? const Color(0xFF059669) : const Color(0xFFD97706)),
-                ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _estadoPastilla(String estado, bool vencido) {
+    final color = estado == 'Cumplió'
+        ? const Color(0xFF047857)
+        : estado == 'No alcanzó'
+            ? const Color(0xFFB42318)
+            : const Color(0xFFB45309);
+    final fondo = estado == 'Cumplió'
+        ? const Color(0xFFECFDF5)
+        : estado == 'No alcanzó'
+            ? const Color(0xFFFEF2F2)
+            : const Color(0xFFFFFBEB);
+    final borde = estado == 'Cumplió'
+        ? const Color(0xFFA7F3D0)
+        : estado == 'No alcanzó'
+            ? const Color(0xFFFECACA)
+            : const Color(0xFFFDE68A);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(999), border: Border.all(color: borde)),
+      child: Text(vencido && estado == 'Pendiente' ? 'Vencida' : estado, style: _estilo(size: 11, weight: FontWeight.w800, color: color)),
+    );
+  }
+
+  Widget _botonTarjeta(String texto, VoidCallback onTap, {required bool oscuro}) {
+    return FilledButton(
+      onPressed: onTap,
+      style: FilledButton.styleFrom(
+        backgroundColor: oscuro ? const Color(0xFF0F172A) : const Color(0xFF2563EB),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: Text(texto, style: _estilo(size: 12, weight: FontWeight.w700, color: Colors.white)),
     );
   }
 
@@ -462,33 +699,69 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
     final tieneVideo = curso['tieneVideo'] == true;
     final vivo = curso['modalidad'] == 'vivo' || curso['modalidad'] == 'charla';
     final limite = (curso['limite'] ?? '').toString();
+    final area = (curso['area'] ?? '').toString();
+    final estado = (curso['estado'] ?? 'Pendiente').toString();
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
-        Row(
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => setState(() => _abierto = null),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF475569), padding: EdgeInsets.zero),
+            icon: const Icon(Icons.chevron_left, size: 22),
+            label: Text('Capacitaciones', style: _estilo(size: 13, weight: FontWeight.w700, color: const Color(0xFF475569))),
+          ),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text((curso['area'] ?? '').toString(), style: _estilo(size: 12, color: const Color(0xFF64748B))),
-                  Text((curso['titulo'] ?? '').toString(), style: _estilo(size: 18, weight: FontWeight.w800)),
-                ],
+            if (area.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: const Color(0xFFDBEAFE)),
+                ),
+                child: Text(area.toUpperCase(), style: _estilo(size: 11, weight: FontWeight.w700, color: const Color(0xFF1D4ED8))),
               ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(6)),
+              child: Text(estado, style: _estilo(size: 12, weight: FontWeight.w600, color: const Color(0xFF64748B))),
             ),
-            TextButton(onPressed: () => setState(() => _abierto = null), child: const Text('Volver')),
           ],
         ),
-        if (_aviso.isNotEmpty) Text(_aviso, style: _estilo(size: 13, color: const Color(0xFFB42318))),
-        if (limite.isNotEmpty && limite != 'Por definir')
-          Text('Fecha límite de la evaluación $limite', style: _estilo(size: 13, weight: FontWeight.w700, color: const Color(0xFFB42318))),
+        const SizedBox(height: 10),
+        Text((curso['titulo'] ?? '').toString(), style: _estilo(size: 20, weight: FontWeight.w800)),
+        if (_aviso.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(_aviso, style: _estilo(size: 13, color: const Color(0xFFB42318))),
+        ],
+        if (limite.isNotEmpty && limite != 'Por definir') ...[
+          const SizedBox(height: 12),
+          _fechaLimite(limite, vencido),
+        ],
         if (vencido)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text('La fecha límite ya se cumplió. Esta capacitación está bloqueada.', style: _estilo(weight: FontWeight.w700)),
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              'La fecha límite ya se cumplió. Esta capacitación está bloqueada.',
+              style: _estilo(weight: FontWeight.w700, color: const Color(0xFFB42318)),
+            ),
           ),
         if (!vencido) ...[
-          if (tieneVideo && !_enSala) _reproductor(),
+          if (tieneVideo && !_enSala) ...[
+            const SizedBox(height: 14),
+            _reproductor(),
+            const SizedBox(height: 8),
+            _instructor(curso),
+            const SizedBox(height: 12),
+            _progreso(),
+          ],
           if (vivo && tieneVideo && !_enSala)
             _avisoCaja(
               'El mismo tema en vivo',
@@ -514,7 +787,7 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
           if (vivo && !tieneVideo && !_enSala)
             _avisoCaja(
               curso['modalidad'] == 'charla' ? 'Charla virtual' : 'Clase en vivo',
-              'Fecha de la reunión ${fechaCharla(curso)}',
+              'Fecha de la reunión ${fechaCharla(curso)}${_textoInstructor(curso)}',
               'Unirme a la charla',
               _entrarSala,
             ),
@@ -527,93 +800,470 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
               secundario: 'Salir de la clase',
               onSecundario: _salirSala,
             ),
-          _material(curso),
+          if (curso['tienePdf'] == true) ...[
+            const SizedBox(height: 16),
+            _material(curso),
+          ],
+          const SizedBox(height: 16),
+          _evaluacion(curso),
           if (_terminado && _preguntas.isEmpty && _veredicto == null)
-            Text('Terminaste. Esta capacitación no tiene evaluación.', style: _estilo(size: 13, color: const Color(0xFF64748B))),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text('Terminaste. Esta capacitación no tiene evaluación.', style: _estilo(size: 13, color: const Color(0xFF64748B))),
+            ),
           if (curso['estado'] == 'Cumplió' && _nota == null && _veredicto == null)
-            Text('Ya cumpliste esta capacitación con ${curso['nota'] ?? '—'} puntos.', style: _estilo(weight: FontWeight.w700, color: const Color(0xFF059669))),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                'Ya cumpliste esta capacitación con ${curso['nota'] ?? '—'} puntos.',
+                style: _estilo(weight: FontWeight.w700, color: const Color(0xFF059669)),
+              ),
+            ),
           if (_veredicto == 'aprobado')
-            Text('Aprobado. Tu nota es $_nota de 100. El mínimo era ${curso['notaMinima']}.', style: _estilo(weight: FontWeight.w800, color: const Color(0xFF059669))),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                'Aprobado. Tu nota es $_nota de 100. El mínimo era ${curso['notaMinima']}.',
+                style: _estilo(weight: FontWeight.w800, color: const Color(0xFF059669)),
+              ),
+            ),
           if (_veredicto == 'reintentar') ...[
-            Text('No aprobaste. Tu nota es $_nota de 100. Vuelve a revisar el video y responde otra vez.', style: _estilo(weight: FontWeight.w700, color: const Color(0xFFD97706))),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                'No aprobaste. Tu nota es $_nota de 100. Vuelve a revisar el video y responde otra vez.',
+                style: _estilo(weight: FontWeight.w700, color: const Color(0xFFD97706)),
+              ),
+            ),
             TextButton(onPressed: _repetir, child: const Text('Volver a ver el video')),
           ],
           if (_veredicto == 'reprobado')
-            Text('Reprobado. Tu nota es $_nota de 100. Póngase en contacto con su tutor.', style: _estilo(weight: FontWeight.w800, color: const Color(0xFFB42318))),
-          if (_terminado && _preguntas.isNotEmpty && _veredicto == null) _examen(curso),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                'Reprobado. Tu nota es $_nota de 100. Póngase en contacto con su tutor.',
+                style: _estilo(weight: FontWeight.w800, color: const Color(0xFFB42318)),
+              ),
+            ),
+          if (_terminado && _preguntas.isNotEmpty && _veredicto == null) ...[
+            const SizedBox(height: 14),
+            _examen(curso),
+          ],
         ],
       ],
     );
   }
 
-  Widget _reproductor() {
-    final video = _video;
-    if (!_videoListo || video == null || !video.value.isInitialized) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: CircularProgressIndicator(color: Color(0xFF1D4ED8))),
-      );
-    }
-    final relacion = video.value.aspectRatio == 0 ? 16 / 9 : video.value.aspectRatio;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
+  Widget _fechaLimite(String limite, bool vencido) {
+    final fondo = vencido ? const Color(0xFFFEF2F2) : const Color(0xFFFFFBEB);
+    final borde = vencido ? const Color(0xFFFECACA) : const Color(0xFFFDE68A);
+    final tinta = vencido ? const Color(0xFFB42318) : const Color(0xFF92400E);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: fondo,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borde),
+      ),
+      child: Row(
         children: [
-          SizedBox(
-            height: 380,
-            width: double.infinity,
-            child: Center(
-              child: SizedBox(
-                height: 380,
-                width: 380 * relacion,
-                child: VideoPlayer(video),
-              ),
-            ),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: vencido ? const Color(0xFFFEE2E2) : const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(10)),
+            child: Icon(Icons.schedule, size: 18, color: tinta),
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: () {
-                  if (video.value.isPlaying) {
-                    video.pause();
-                  } else {
-                    video.play();
-                  }
-                  setState(() {});
-                },
-                icon: Icon(video.value.isPlaying ? Icons.pause_circle : Icons.play_circle, color: const Color(0xFF1D4ED8), size: 36),
-              ),
-              Text(_tiempo(video.value.position), style: _estilo(size: 12, color: const Color(0xFF64748B))),
-            ],
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Fecha límite de la evaluación', style: _estilo(size: 12, weight: FontWeight.w800, color: tinta)),
+                Text(limite, style: _estilo(size: 13, weight: FontWeight.w600, color: tinta)),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _material(Map<String, dynamic> curso) {
+  String _textoInstructor(Map<String, dynamic> curso) {
+    final nombre = (curso['instructor'] ?? '').toString().trim();
+    return nombre.isEmpty ? '' : '. Instructor: $nombre';
+  }
+
+  Widget _instructor(Map<String, dynamic> curso) {
+    final nombre = (curso['instructor'] ?? '').toString().trim();
+    if (nombre.isEmpty) return const SizedBox.shrink();
+    return Row(
+      children: [
+        const Icon(Icons.person_outline, size: 16, color: Color(0xFF94A3B8)),
+        const SizedBox(width: 6),
+        Text('Instructor: ', style: _estilo(size: 12, color: const Color(0xFF64748B))),
+        Flexible(child: Text(nombre, style: _estilo(size: 12, weight: FontWeight.w700, color: const Color(0xFF334155)))),
+      ],
+    );
+  }
+
+  Widget _progreso() {
+    final video = _video;
+    if (video == null) return const SizedBox.shrink();
+    return ValueListenableBuilder<VideoPlayerValue>(
+      valueListenable: video,
+      builder: (context, value, _) {
+        final total = value.duration.inMilliseconds;
+        final visto = value.position.inMilliseconds.clamp(0, total == 0 ? 0 : total);
+        final avance = total == 0 ? 0.0 : visto / total;
+        final porcentaje = (avance * 100).round();
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('Progreso de la sesión', style: _estilo(size: 12, weight: FontWeight.w700, color: const Color(0xFF334155))),
+                  const Spacer(),
+                  Text('$porcentaje% completado', style: _estilo(size: 12, weight: FontWeight.w700, color: const Color(0xFF2563EB))),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: avance,
+                  minHeight: 8,
+                  backgroundColor: const Color(0xFFF1F5F9),
+                  color: const Color(0xFF2563EB),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Las preguntas se habilitan cuando termina el video.',
+                style: _estilo(size: 11, color: const Color(0xFF94A3B8)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _evaluacion(Map<String, dynamic> curso) {
+    final minutos = (curso['minutosEvaluacion'] as num?)?.toInt() ?? 10;
+    final minimo = curso['notaMinima'] ?? 80;
+    final cantidad = (curso['porTrabajador'] as num?)?.toInt();
+    final abierta = _terminado && _preguntas.isNotEmpty && _veredicto == null;
+    final esperaVideo = curso['tieneVideo'] == true;
+    final detalle = cantidad == null || cantidad < 1
+        ? 'Nota mínima $minimo%'
+        : '$cantidad preguntas • Nota mínima $minimo%';
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-      child: Row(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.description_outlined, color: Color(0xFF1D4ED8)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Presentación', style: _estilo(weight: FontWeight.w800)),
-                Text((curso['material'] ?? 'Sin presentación').toString(), style: _estilo(size: 12, color: const Color(0xFF64748B))),
-              ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.schedule, size: 16, color: Color(0xFFFBBF24)),
+                        const SizedBox(width: 6),
+                        Text('Paso requerido', style: _estilo(size: 12, weight: FontWeight.w700, color: const Color(0xFFFBBF24))),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text('Evaluación de conocimiento', style: _estilo(size: 14, weight: FontWeight.w800, color: Colors.white)),
+                    const SizedBox(height: 2),
+                    Text(detalle, style: _estilo(size: 12, color: const Color(0xFFCBD5E1))),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: const Color(0x1AFFFFFF), borderRadius: BorderRadius.circular(8)),
+                child: Text(abierta ? _relojLabel : '$minutos min', style: _estilo(size: 12, weight: FontWeight.w700, color: const Color(0xFFCBD5E1))),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: null,
+              style: FilledButton.styleFrom(
+                backgroundColor: abierta ? const Color(0xFF1D4ED8) : const Color(0xFF334155),
+                disabledBackgroundColor: abierta ? const Color(0xFF1D4ED8) : const Color(0xFF334155),
+                disabledForegroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(
+                abierta
+                    ? 'Responda las preguntas de abajo'
+                    : esperaVideo
+                        ? 'Se habilita al terminar el video'
+                        : 'Se habilita al salir de la charla',
+                style: _estilo(size: 14, weight: FontWeight.w700, color: Colors.white),
+              ),
             ),
           ),
-          if (curso['tienePdf'] == true) TextButton(onPressed: _abrirPdf, child: const Text('Abrir PDF')),
         ],
       ),
+    );
+  }
+
+  void _programarOcultar() {
+    _ocultarControles?.cancel();
+    final video = _video;
+    if (video == null || !video.value.isPlaying) return;
+    _ocultarControles = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted && (_video?.value.isPlaying ?? false)) {
+        setState(() => _verControles = false);
+      }
+    });
+  }
+
+  void _tocarVideo() {
+    final video = _video;
+    if (video == null) return;
+    if (!_verControles) {
+      setState(() => _verControles = true);
+      _programarOcultar();
+      return;
+    }
+    if (video.value.isPlaying) {
+      video.pause();
+      _ocultarControles?.cancel();
+      setState(() => _verControles = true);
+    } else {
+      video.play();
+      setState(() => _verControles = true);
+      _programarOcultar();
+    }
+  }
+
+  Future<void> _abrirGrande() async {
+    final video = _video;
+    if (video == null || !mounted) return;
+    setState(() => _enGrande = true);
+    await SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _VideoGrande(
+          video: video,
+          silencio: _silencio,
+          onSilencio: (silencio) async {
+            _silencio = silencio;
+            await video.setVolume(silencio ? 0 : 0.5);
+          },
+        ),
+      ),
+    );
+    await SystemChrome.setPreferredOrientations(const [DeviceOrientation.portraitUp]);
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    if (mounted) {
+      setState(() => _enGrande = false);
+      _programarOcultar();
+    }
+  }
+
+  Widget _reproductor() {
+    final video = _video;
+    if (!_videoListo || video == null || !video.value.isInitialized || _enGrande) {
+      return Container(
+        height: 190,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(16)),
+        child: _enGrande
+            ? Text('Pantalla completa', style: _estilo(size: 13, color: Colors.white))
+            : const CircularProgressIndicator(color: Colors.white),
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final relacion = video.value.aspectRatio == 0 ? 16 / 9 : video.value.aspectRatio;
+        final alto = (constraints.maxWidth / relacion).clamp(150.0, 210.0);
+        return ValueListenableBuilder<VideoPlayerValue>(
+          valueListenable: video,
+          builder: (context, value, _) {
+            final total = value.duration.inMilliseconds;
+            final visto = value.position.inMilliseconds.clamp(0, total == 0 ? 0 : total);
+            final avance = total == 0 ? 0.0 : visto / total;
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: GestureDetector(
+                onTap: _tocarVideo,
+                child: SizedBox(
+                  height: alto,
+                  width: double.infinity,
+                  child: ColoredBox(
+                    color: const Color(0xFF0F172A),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Center(
+                          child: SizedBox(
+                            height: alto,
+                            width: alto * relacion,
+                            child: VideoPlayer(video),
+                          ),
+                        ),
+                        if (_verControles) ...[
+                          Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.55)],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Material(
+                            color: const Color(0xE62563EB),
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: _tocarVideo,
+                              child: SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 28),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            left: 10,
+                            right: 4,
+                            bottom: 2,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(999),
+                                    child: LinearProgressIndicator(
+                                      value: avance,
+                                      minHeight: 3,
+                                      backgroundColor: Colors.white24,
+                                      color: const Color(0xFF3B82F6),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${_tiempo(value.position)} / ${_tiempo(value.duration)}',
+                                  style: _estilo(size: 10, weight: FontWeight.w700, color: Colors.white),
+                                ),
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                  onPressed: () async {
+                                    _silencio = !_silencio;
+                                    await video.setVolume(_silencio ? 0 : 0.5);
+                                    if (mounted) setState(() {});
+                                  },
+                                  icon: Icon(_silencio ? Icons.volume_off : Icons.volume_up, color: Colors.white, size: 18),
+                                  tooltip: 'Volumen',
+                                ),
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                  onPressed: _abrirGrande,
+                                  icon: const Icon(Icons.screen_rotation, color: Colors.white, size: 18),
+                                  tooltip: 'Pantalla grande',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _material(Map<String, dynamic> curso) {
+    final nombre = (curso['material'] ?? 'Presentación del módulo').toString();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('MATERIAL DE APOYO', style: _estilo(size: 11, weight: FontWeight.w800, color: const Color(0xFF94A3B8))),
+        const SizedBox(height: 8),
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: _abrirPdf,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFDBEAFE)),
+                    ),
+                    child: const Icon(Icons.description_outlined, color: Color(0xFF2563EB), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(nombre, style: _estilo(size: 14, weight: FontWeight.w700)),
+                        Text('Presentación • PDF', style: _estilo(size: 12, color: const Color(0xFF94A3B8))),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.download_outlined, color: Color(0xFF94A3B8)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -706,6 +1356,139 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
     final minutos = valor.inMinutes;
     final segundos = valor.inSeconds % 60;
     return '$minutos:${segundos.toString().padLeft(2, '0')}';
+  }
+}
+
+class _VideoGrande extends StatefulWidget {
+  final VideoPlayerController video;
+  final bool silencio;
+  final Future<void> Function(bool silencio) onSilencio;
+
+  const _VideoGrande({required this.video, required this.silencio, required this.onSilencio});
+
+  @override
+  State<_VideoGrande> createState() => _VideoGrandeState();
+}
+
+class _VideoGrandeState extends State<_VideoGrande> {
+  late bool _silencio = widget.silencio;
+  bool _ver = true;
+  Timer? _ocultar;
+
+  @override
+  void initState() {
+    super.initState();
+    _programar();
+  }
+
+  @override
+  void dispose() {
+    _ocultar?.cancel();
+    super.dispose();
+  }
+
+  void _programar() {
+    _ocultar?.cancel();
+    if (!widget.video.value.isPlaying) return;
+    _ocultar = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted && widget.video.value.isPlaying) setState(() => _ver = false);
+    });
+  }
+
+  void _tocar() {
+    final video = widget.video;
+    if (!_ver) {
+      setState(() => _ver = true);
+      _programar();
+      return;
+    }
+    if (video.value.isPlaying) {
+      video.pause();
+      _ocultar?.cancel();
+      setState(() => _ver = true);
+    } else {
+      video.play();
+      setState(() => _ver = true);
+      _programar();
+    }
+  }
+
+  String _reloj(Duration valor) {
+    final minutos = valor.inMinutes;
+    final segundos = valor.inSeconds % 60;
+    return '$minutos:${segundos.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final video = widget.video;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: GestureDetector(
+        onTap: _tocar,
+        child: ValueListenableBuilder<VideoPlayerValue>(
+          valueListenable: video,
+          builder: (context, value, _) {
+            final relacion = value.aspectRatio == 0 ? 16 / 9 : value.aspectRatio;
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Center(child: AspectRatio(aspectRatio: relacion, child: VideoPlayer(video))),
+                if (_ver) ...[
+                  Material(
+                    color: const Color(0xE62563EB),
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: _tocar,
+                      child: SizedBox(
+                        width: 64,
+                        height: 64,
+                        child: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 36),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: SafeArea(
+                      child: IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 16,
+                    right: 8,
+                    bottom: 8,
+                    child: SafeArea(
+                      child: Row(
+                        children: [
+                          Text(
+                            '${_reloj(value.position)} / ${_reloj(value.duration)}',
+                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            onPressed: () async {
+                              final siguiente = !_silencio;
+                              setState(() => _silencio = siguiente);
+                              await widget.onSilencio(siguiente);
+                            },
+                            icon: Icon(_silencio ? Icons.volume_off : Icons.volume_up, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+      ),
+    );
   }
 }
 

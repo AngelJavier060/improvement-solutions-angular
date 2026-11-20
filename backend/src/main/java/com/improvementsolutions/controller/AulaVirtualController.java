@@ -40,6 +40,15 @@ public class AulaVirtualController {
         return aulaService.crear(businessId, datos, video, pdf, auth);
     }
 
+    @PatchMapping("/business/{businessId}/{cursoId}/instructor")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    public Map<String, Object> cambiarInstructor(@PathVariable Long businessId,
+                                                 @PathVariable Long cursoId,
+                                                 @RequestBody Map<String, String> body,
+                                                 Authentication auth) {
+        return aulaService.cambiarInstructor(businessId, cursoId, body == null ? null : body.get("instructor"), auth);
+    }
+
     @PatchMapping("/business/{businessId}/{cursoId}/limite")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     public Map<String, Object> cambiarLimite(@PathVariable Long businessId,
