@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BusinessService } from '../../../../../services/business.service';
 import { AulaVirtualService } from '../../../../../services/aula-virtual.service';
+import { AuthService } from '../../../../../core/services/auth.service';
 import { Workbook } from 'exceljs';
 
 type AulaArea = 'Talento Humano' | 'Seguridad' | 'Salud ocupacional' | 'Medio ambiente' | 'Calidad';
@@ -13,13 +14,27 @@ interface AulaPregunta {
   correcta: number;
 }
 
+interface AulaRespuesta {
+  texto: string;
+  marcada: string;
+  correcta: string;
+}
+
 interface AulaResultado {
+  employeeId?: number;
   nombre: string;
+  apellidos?: string;
+  nombres?: string;
+  cedula?: string;
   cargo: string;
   nota: number | null;
   enSala?: boolean;
   estado: 'Cumplió' | 'No alcanzó' | 'Pendiente';
+  aprobado?: boolean;
   fecha: string;
+  hora?: string;
+  acertadas?: AulaRespuesta[];
+  falladas?: AulaRespuesta[];
 }
 
 interface AulaCurso {
@@ -64,6 +79,9 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
   aviso = '';
   nuevaFecha = '';
   instructorNombre = '';
+  editando = false;
+  informeAbierto: number | null = null;
+  edicion = this.blankEdicion();
   bancoAbierto = false;
   enlaceCopiado = false;
   private reloj: ReturnType<typeof setInterval> | null = null;
@@ -73,6 +91,8 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
   cursos: AulaCurso[] = [];
   private videoArchivo: File | null = null;
   private pdfArchivo: File | null = null;
+  videoReemplazo: File | null = null;
+  pdfReemplazo: File | null = null;
 
   form = this.blankForm();
 
@@ -80,8 +100,13 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private businessService: BusinessService,
-    private aulaService: AulaVirtualService
+    private aulaService: AulaVirtualService,
+    private authService: AuthService
   ) {}
+
+  get esSuper(): boolean {
+    return this.authService.hasRole('ROLE_SUPER_ADMIN');
+  }
 
   ngOnInit(): void {
     this.companyId = Number(this.route.snapshot.paramMap.get('id')) || 0;
@@ -120,7 +145,11 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
         this.cursos = (filas || []).map(fila => this.mapear(fila));
         if (!activo) return;
         const curso = this.cursos.find(item => item.id === activo);
-        if (curso) this.cursoActivo = curso;
+        if (!curso) return;
+        const escrito = this.instructorNombre;
+        const previo = this.cursoActivo?.instructor || '';
+        this.cursoActivo = curso;
+        if (!escrito || escrito === previo) this.instructorNombre = curso.instructor || '';
       }
     });
   }
@@ -446,29 +475,126 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
       minutosEvaluacion: fila.minutosEvaluacion || 10,
       porTrabajador: fila.porTrabajador,
       preguntas: fila.preguntas || [],
-      resultados: fila.resultados || [],
+      resultados: (fila.resultados || []).map((item: any) => ({
+        ...item,
+        cedula: item.cedula || '',
+        apellidos: item.apellidos || '',
+        nombres: item.nombres || '',
+        hora: item.hora || '—',
+        acertadas: item.acertadas || [],
+        falladas: item.falladas || []
+      })),
       tieneVideo: !!fila.tieneVideo,
       tienePdf: !!fila.tienePdf
     };
   }
 
+  elegirVideoCurso(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.videoReemplazo = input.files?.[0] || null;
+  }
+
+  elegirPdfCurso(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+    if (file && !file.name.toLowerCase().endsWith('.pdf')) {
+      this.aviso = 'La presentación debe ser un PDF.';
+      input.value = '';
+      this.pdfReemplazo = null;
+      return;
+    }
+    this.pdfReemplazo = file;
+  }
+
   guardarInstructor(): void {
     const curso = this.cursoActivo;
-    const nombre = this.instructorNombre.trim();
+    const nombre = (this.instructorNombre || curso?.instructor || '').trim();
     if (!curso || !nombre) {
       this.aviso = 'Escribe el nombre del instructor.';
       return;
     }
-    this.aulaService.guardarInstructor(this.companyId, curso.id, nombre).subscribe({
+    this.instructorNombre = nombre;
+    this.aulaService.actualizarContenido(this.companyId, curso.id, nombre, this.videoReemplazo, this.pdfReemplazo).subscribe({
       next: (fila) => {
-        const actualizado = this.mapear(fila);
-        this.cursos = this.cursos.map(item => item.id === actualizado.id ? actualizado : item);
-        this.cursoActivo = actualizado;
-        this.instructorNombre = actualizado.instructor;
-        this.aviso = 'El instructor quedó guardado. La app del trabajador lo muestra en el video.';
+        this.aplicarCurso(fila);
+        const cambioArchivo = !!this.videoReemplazo || !!this.pdfReemplazo;
+        this.videoReemplazo = null;
+        this.pdfReemplazo = null;
+        this.aviso = cambioArchivo
+          ? 'Quedó guardado. Lo que no cambió sigue igual.'
+          : 'El instructor quedó guardado. La app del trabajador lo muestra en el video.';
       },
-      error: (err) => { this.aviso = err?.error?.message || 'No se pudo guardar el instructor.'; }
+      error: (err) => { this.aviso = err?.error?.message || 'No se pudo guardar.'; }
     });
+  }
+
+  cerrarEdicion(): void {
+    this.editando = false;
+  }
+
+  abrirEdicion(): void {
+    const curso = this.cursoActivo;
+    if (!curso || !this.esSuper) return;
+    this.editando = true;
+    this.edicion = {
+      titulo: curso.titulo,
+      instructor: curso.instructor || '',
+      area: curso.area,
+      limite: /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(curso.limite || '') ? curso.limite.replace(' ', 'T') : '',
+      notaMinima: curso.notaMinima || 80,
+      intentos: curso.intentos || 1,
+      minutosEvaluacion: curso.minutosEvaluacion || 10,
+      porTrabajador: curso.porTrabajador || 1
+    };
+  }
+
+  guardarEdicion(): void {
+    const curso = this.cursoActivo;
+    if (!curso || !this.esSuper) return;
+    const titulo = this.edicion.titulo.trim();
+    const instructor = this.edicion.instructor.trim();
+    if (!titulo || !instructor) {
+      this.aviso = 'Escribe el nombre de la capacitación y el del instructor.';
+      return;
+    }
+    const video = this.videoReemplazo;
+    const pdf = this.pdfReemplazo;
+    this.aulaService.editar(this.companyId, curso.id, {
+      titulo,
+      instructor,
+      area: this.edicion.area,
+      horaLimite: this.edicion.limite,
+      notaMinima: Number(this.edicion.notaMinima) || 80,
+      intentos: Number(this.edicion.intentos) || 1,
+      minutosEvaluacion: Number(this.edicion.minutosEvaluacion) || 10,
+      porTrabajador: Number(this.edicion.porTrabajador) || 1
+    }, video, pdf).subscribe({
+      next: (fila) => {
+        this.aplicarCurso(fila);
+        this.videoReemplazo = null;
+        this.pdfReemplazo = null;
+        this.editando = false;
+        this.aviso = 'Los cambios quedaron guardados. Lo que no cambió sigue igual.';
+      },
+      error: (err) => { this.aviso = err?.error?.message || 'No se pudo guardar la edición.'; }
+    });
+  }
+
+  alternarInforme(id: number): void {
+    this.informeAbierto = this.informeAbierto === id ? null : id;
+  }
+
+  nombreInforme(item: AulaResultado): string {
+    const completo = `${item.apellidos || ''} ${item.nombres || ''}`.trim();
+    return completo || item.nombre;
+  }
+
+  acertadasDe(item: AulaResultado): AulaRespuesta[] {
+    return item.acertadas || [];
+  }
+
+  falladasDe(item: AulaResultado): AulaRespuesta[] {
+    return item.falladas || [];
   }
 
   guardarFecha(): void {
@@ -503,6 +629,10 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
     this.bancoAbierto = false;
     this.nuevaFecha = curso.limite && curso.limite.includes(' ') ? curso.limite.replace(' ', 'T') : '';
     this.instructorNombre = curso.instructor || '';
+    this.videoReemplazo = null;
+    this.pdfReemplazo = null;
+    this.editando = false;
+    this.informeAbierto = null;
     this.enlaceCopiado = false;
     if (this.videoObjectUrl) {
       URL.revokeObjectURL(this.videoObjectUrl);
@@ -551,6 +681,31 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
     navigator.clipboard.writeText(enlace).then(() => { this.enlaceCopiado = true; });
   }
 
+  private aplicarCurso(fila: any): void {
+    const actualizado = this.mapear(fila);
+    this.cursos = this.cursos.map(item => item.id === actualizado.id ? actualizado : item);
+    this.cursoActivo = actualizado;
+    this.instructorNombre = actualizado.instructor || '';
+    if (this.videoReemplazo || !actualizado.tieneVideo) this.recargarVideo(actualizado);
+  }
+
+  private recargarVideo(curso: AulaCurso): void {
+    if (this.videoObjectUrl) {
+      URL.revokeObjectURL(this.videoObjectUrl);
+      this.videoObjectUrl = null;
+    }
+    this.videoUrl = null;
+    if (!curso.tieneVideo) return;
+    this.aulaService.video(this.companyId, curso.id).subscribe({
+      next: (blob) => {
+        if (this.cursoActivo?.id !== curso.id) return;
+        this.videoObjectUrl = URL.createObjectURL(blob);
+        this.videoUrl = this.videoObjectUrl;
+      },
+      error: () => { this.videoUrl = null; }
+    });
+  }
+
   private enlaceCharla(curso: AulaCurso): string {
     return `https://charla.improvement-solution.com/ImprovementSolutions${this.companyId}c${curso.id}`;
   }
@@ -574,6 +729,19 @@ export class AulaVirtualAdminComponent implements OnInit, OnDestroy {
       copia[j] = actual;
     }
     return copia.slice(0, Math.min(cantidad, copia.length));
+  }
+
+  private blankEdicion() {
+    return {
+      titulo: '',
+      instructor: '',
+      area: 'Seguridad' as AulaArea,
+      limite: '',
+      notaMinima: 80,
+      intentos: 2,
+      minutosEvaluacion: 10,
+      porTrabajador: 5
+    };
   }
 
   private blankForm() {

@@ -346,7 +346,10 @@ class _AulaVirtualPanelState extends State<AulaVirtualPanel> {
     final curso = _abierto;
     if (curso == null || _veredicto != null || _enviando) return;
     _reloj?.cancel();
-    setState(() => _enviando = true);
+    setState(() {
+      _enviando = true;
+      _aviso = '';
+    });
     try {
       final res = await _api.responder((curso['id'] as num).toInt(), _respuestas);
       if (!mounted) return;

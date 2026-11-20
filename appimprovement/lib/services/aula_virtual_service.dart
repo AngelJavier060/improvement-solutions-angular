@@ -44,7 +44,8 @@ class AulaVirtualService {
   }
 
   Future<Map<String, dynamic>> responder(int cursoId, List<int?> respuestas) {
-    return _postMap('/api/aula/my/$cursoId/evaluacion', {'respuestas': respuestas});
+    final marcas = respuestas.map((marca) => marca ?? -1).toList();
+    return _postMap('/api/aula/my/$cursoId/evaluacion', {'respuestas': marcas}, reintentar: true);
   }
 
   Future<List<Map<String, dynamic>>> _list(String path) async {
@@ -59,8 +60,12 @@ class AulaVirtualService {
     throw Exception(_message(res));
   }
 
-  Future<Map<String, dynamic>> _postMap(String path, Map<String, dynamic> body) async {
-    final res = await _send(path, body);
+  Future<Map<String, dynamic>> _postMap(String path, Map<String, dynamic> body, {bool reintentar = false}) async {
+    var res = await _send(path, body);
+    if (reintentar && (res.statusCode == 502 || res.statusCode == 503 || res.statusCode == 504)) {
+      await Future<void>.delayed(const Duration(seconds: 2));
+      res = await _send(path, body);
+    }
     if (res.statusCode >= 200 && res.statusCode < 300) {
       if (res.body.isEmpty) return {};
       final decoded = jsonDecode(res.body);
@@ -105,6 +110,9 @@ class AulaVirtualService {
       if (body is Map && body['message'] != null) return body['message'].toString();
     } catch (_) {}
     if (res.statusCode == 401) return 'Sesión expirada. Vuelve a iniciar sesión';
+    if (res.statusCode == 502 || res.statusCode == 503 || res.statusCode == 504) {
+      return 'El servidor no alcanzó a guardar las respuestas. Pulse enviar otra vez.';
+    }
     return 'No se pudo completar la solicitud (${res.statusCode})';
   }
 }

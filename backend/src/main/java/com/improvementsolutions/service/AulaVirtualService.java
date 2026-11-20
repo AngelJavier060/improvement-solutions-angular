@@ -137,6 +137,65 @@ public class AulaVirtualService {
     }
 
     @Transactional
+    public Map<String, Object> editar(Long businessId, Long cursoId, String json, MultipartFile video, MultipartFile pdf, Authentication auth) {
+        Map<String, Object> body;
+        try {
+            body = objectMapper.readValue(json == null || json.isBlank() ? "{}" : json, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Los datos de la capacitación no se pudieron leer.");
+        }
+        return editar(businessId, cursoId, body, video, pdf, auth);
+    }
+
+    @Transactional
+    public Map<String, Object> actualizarContenido(Long businessId, Long cursoId, String instructor, MultipartFile video, MultipartFile pdf, Authentication auth) {
+        assertGestiona(auth, businessId);
+        AulaCurso curso = cursoDeEmpresa(businessId, cursoId);
+        if (instructor != null && !instructor.isBlank()) {
+            String nombre = instructor.trim();
+            curso.setInstructor(nombre.length() > 120 ? nombre.substring(0, 120) : nombre);
+        }
+        aplicarArchivos(businessId, curso, video, pdf);
+        cursoRepository.save(curso);
+        return detalleAdmin(curso);
+    }
+
+    public Map<String, Object> editar(Long businessId, Long cursoId, Map<String, Object> body, Authentication auth) {
+        return editar(businessId, cursoId, body, null, null, auth);
+    }
+
+    @Transactional
+    public Map<String, Object> editar(Long businessId, Long cursoId, Map<String, Object> body, MultipartFile video, MultipartFile pdf, Authentication auth) {
+        if (auth == null || !tiene(usuario(auth), "ROLE_SUPER_ADMIN")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el super administrador puede editar la capacitación.");
+        }
+        AulaCurso curso = cursoDeEmpresa(businessId, cursoId);
+        Map<String, Object> datos = body == null ? Map.of() : body;
+        String titulo = texto(datos.get("titulo"));
+        String instructor = texto(datos.get("instructor"));
+        if (titulo.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escribe el nombre de la capacitación.");
+        if (instructor.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Escribe el nombre del instructor.");
+        curso.setTitulo(titulo.length() > 180 ? titulo.substring(0, 180) : titulo);
+        curso.setInstructor(instructor.length() > 120 ? instructor.substring(0, 120) : instructor);
+        String area = texto(datos.get("area"));
+        if (!area.isBlank()) curso.setArea(area.length() > 80 ? area.substring(0, 80) : area);
+        String limite = texto(datos.get("horaLimite"));
+        if (!limite.isBlank()) {
+            LocalDateTime hora = dateTime(limite.replace(' ', 'T'));
+            if (hora == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fecha límite no es válida.");
+            curso.setHoraLimite(hora);
+            curso.setFechaLimite(hora.toLocalDate());
+        }
+        curso.setNotaMinima(Math.max(1, numero(datos.get("notaMinima"), curso.getNotaMinima() == null ? 80 : curso.getNotaMinima())));
+        curso.setIntentos(Math.max(1, numero(datos.get("intentos"), curso.getIntentos() == null ? 1 : curso.getIntentos())));
+        curso.setMinutosEvaluacion(Math.max(1, numero(datos.get("minutosEvaluacion"), curso.getMinutosEvaluacion() == null ? 10 : curso.getMinutosEvaluacion())));
+        curso.setPorTrabajador(Math.max(1, numero(datos.get("porTrabajador"), curso.getPorTrabajador() == null ? 1 : curso.getPorTrabajador())));
+        aplicarArchivos(businessId, curso, video, pdf);
+        cursoRepository.save(curso);
+        return detalleAdmin(curso);
+    }
+
+    @Transactional
     public Map<String, Object> cambiarInstructor(Long businessId, Long cursoId, String instructor, Authentication auth) {
         assertGestiona(auth, businessId);
         AulaCurso curso = cursoDeEmpresa(businessId, cursoId);
@@ -218,9 +277,13 @@ public class AulaVirtualService {
         if (resultado.getPreguntasJson() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Esta capacitación no tiene evaluación asignada.");
         }
+        int permitidos = curso.getIntentos() == null || curso.getIntentos() < 1 ? 1 : curso.getIntentos();
         int usados = resultado.getIntentosUsados() == null ? 0 : resultado.getIntentosUsados();
-        if (usados >= curso.getIntentos()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ya usó todos los intentos.");
+        if ("CUMPLIO".equals(resultado.getEstado()) && resultado.getNota() != null) {
+            return salidaEvaluacion(resultado, curso, permitidos);
+        }
+        if (usados >= permitidos && resultado.getNota() != null) {
+            return salidaEvaluacion(resultado, curso, permitidos);
         }
         List<JsonNode> preguntas = readList(resultado.getPreguntasJson());
         int buenas = 0;
@@ -229,18 +292,28 @@ public class AulaVirtualService {
             if (marcada == preguntas.get(i).path("correcta").asInt(-2)) buenas++;
         }
         int nota = preguntas.isEmpty() ? 0 : Math.round(buenas * 100f / preguntas.size());
+        int minimo = curso.getNotaMinima() == null ? 80 : curso.getNotaMinima();
+        if (resultado.getIngresoSala() == null) resultado.setIngresoSala(false);
+        if (resultado.getVideoVisto() == null) resultado.setVideoVisto(false);
         resultado.setNota(nota);
         resultado.setIntentosUsados(usados + 1);
-        resultado.setEstado(nota >= curso.getNotaMinima() ? "CUMPLIO" : "NO_ALCANZO");
+        resultado.setEstado(nota >= minimo ? "CUMPLIO" : "NO_ALCANZO");
         resultado.setFecha(LocalDateTime.now());
-        resultado.setRespuestasJson(String.valueOf(selecciones));
+        try {
+            resultado.setRespuestasJson(objectMapper.writeValueAsString(selecciones == null ? List.of() : selecciones));
+        } catch (Exception e) {
+            resultado.setRespuestasJson("[]");
+        }
         resultadoRepository.save(resultado);
-        int permitidos = curso.getIntentos() == null ? 1 : curso.getIntentos();
+        return salidaEvaluacion(resultado, curso, permitidos);
+    }
+
+    private Map<String, Object> salidaEvaluacion(AulaResultado resultado, AulaCurso curso, int permitidos) {
         Map<String, Object> out = new LinkedHashMap<>();
-        out.put("nota", nota);
+        out.put("nota", resultado.getNota() == null ? 0 : resultado.getNota());
         out.put("estado", resultado.getEstado());
-        out.put("minimo", curso.getNotaMinima());
-        out.put("intentosUsados", resultado.getIntentosUsados());
+        out.put("minimo", curso.getNotaMinima() == null ? 80 : curso.getNotaMinima());
+        out.put("intentosUsados", resultado.getIntentosUsados() == null ? 0 : resultado.getIntentosUsados());
         out.put("intentos", permitidos);
         return out;
     }
@@ -312,12 +385,22 @@ public class AulaVirtualService {
             employeeRepository.findById(resultado.getEmployeeId()).ifPresent(empleado -> {
                 if (empleado.getBusiness() == null || !curso.getBusinessId().equals(empleado.getBusiness().getId())) return;
                 Map<String, Object> persona = new LinkedHashMap<>();
+                LocalDateTime cuando = resultado.getFecha();
+                persona.put("employeeId", empleado.getId());
                 persona.put("nombre", empleado.getFullName());
+                persona.put("apellidos", empleado.getApellidos() == null ? "" : empleado.getApellidos());
+                persona.put("nombres", empleado.getNombres() == null ? "" : empleado.getNombres());
+                persona.put("cedula", empleado.getCedula() == null ? "" : empleado.getCedula());
                 persona.put("cargo", empleado.getPosition());
                 persona.put("nota", resultado.getNota());
                 persona.put("enSala", Boolean.TRUE.equals(resultado.getIngresoSala()));
                 persona.put("estado", estadoVisible(resultado.getEstado()));
-                persona.put("fecha", resultado.getFecha() == null ? "—" : resultado.getFecha().toLocalDate().toString());
+                persona.put("aprobado", "CUMPLIO".equals(resultado.getEstado()));
+                persona.put("fecha", cuando == null ? "—" : cuando.toLocalDate().toString());
+                persona.put("hora", cuando == null ? "—" : String.format("%02d:%02d", cuando.getHour(), cuando.getMinute()));
+                Map<String, List<Map<String, Object>>> detalle = detalleRespuestas(resultado);
+                persona.put("acertadas", detalle.get("acertadas"));
+                persona.put("falladas", detalle.get("falladas"));
                 resultados.add(persona);
             });
         }
@@ -351,8 +434,9 @@ public class AulaVirtualService {
         row.put("audiencia", curso.getAudiencia());
         row.put("audienciaDetalle", curso.getAudienciaDetalle());
         row.put("inicio", curso.getFechaInicio() == null ? (curso.getHoraReunion() == null ? "Por definir" : curso.getHoraReunion().toString()) : curso.getFechaInicio().toString());
-        row.put("limite", curso.getHoraLimite() != null
-                ? curso.getHoraLimite().toString().replace('T', ' ').substring(0, 16)
+        String horaTexto = curso.getHoraLimite() == null ? "" : curso.getHoraLimite().toString().replace('T', ' ');
+        row.put("limite", !horaTexto.isBlank()
+                ? (horaTexto.length() >= 16 ? horaTexto.substring(0, 16) : horaTexto)
                 : (curso.getFechaLimite() == null ? "Por definir" : curso.getFechaLimite().toString()));
         row.put("vencido", vencido(curso));
         row.put("hora", curso.getHoraReunion());
@@ -454,6 +538,44 @@ public class AulaVirtualService {
         }
     }
 
+    private Map<String, List<Map<String, Object>>> detalleRespuestas(AulaResultado resultado) {
+        List<Map<String, Object>> acertadas = new ArrayList<>();
+        List<Map<String, Object>> falladas = new ArrayList<>();
+        List<JsonNode> preguntas = readList(resultado.getPreguntasJson());
+        List<JsonNode> marcas = readList(resultado.getRespuestasJson());
+        for (int i = 0; i < preguntas.size(); i++) {
+            JsonNode pregunta = preguntas.get(i);
+            List<String> opciones = new ArrayList<>();
+            pregunta.path("opciones").forEach(opcion -> opciones.add(opcion.asText()));
+            int correcta = pregunta.path("correcta").asInt(-2);
+            int marcada = i < marcas.size() && marcas.get(i).isNumber() ? marcas.get(i).asInt(-1) : -1;
+            Map<String, Object> fila = new LinkedHashMap<>();
+            fila.put("texto", pregunta.path("texto").asText());
+            fila.put("marcada", marcada >= 0 && marcada < opciones.size() ? opciones.get(marcada) : "Sin respuesta");
+            fila.put("correcta", correcta >= 0 && correcta < opciones.size() ? opciones.get(correcta) : "—");
+            if (marcada == correcta && correcta >= 0) acertadas.add(fila);
+            else falladas.add(fila);
+        }
+        Map<String, List<Map<String, Object>>> out = new LinkedHashMap<>();
+        out.put("acertadas", acertadas);
+        out.put("falladas", falladas);
+        return out;
+    }
+
+    private String texto(Object valor) {
+        return valor == null ? "" : valor.toString().trim();
+    }
+
+    private int numero(Object valor, int defecto) {
+        if (valor instanceof Number number) return number.intValue();
+        if (valor == null) return defecto;
+        try {
+            return Integer.parseInt(valor.toString().trim());
+        } catch (NumberFormatException e) {
+            return defecto;
+        }
+    }
+
     private List<Map<String, Object>> preguntasSinRespuesta(String json) {
         List<Map<String, Object>> out = new ArrayList<>();
         for (JsonNode nodo : readList(json)) {
@@ -490,6 +612,7 @@ public class AulaVirtualService {
         resultado.setEmployeeId(empleado.getId());
         resultado.setEstado("PENDIENTE");
         resultado.setVideoVisto(false);
+        resultado.setIngresoSala(false);
         resultado.setIntentosUsados(0);
         return resultadoRepository.save(resultado);
     }
@@ -571,6 +694,19 @@ public class AulaVirtualService {
 
     private boolean tiene(User user, String rol) {
         return user.getRoles() != null && user.getRoles().stream().anyMatch(r -> rol.equals(r.getName()));
+    }
+
+    private void aplicarArchivos(Long businessId, AulaCurso curso, MultipartFile video, MultipartFile pdf) {
+        if (video != null && !video.isEmpty()) {
+            curso.setVideoNombre(video.getOriginalFilename());
+            curso.setVideoPath(guardar(businessId, video, "video"));
+        }
+        if (pdf != null && !pdf.isEmpty()) {
+            String nombre = pdf.getOriginalFilename() == null ? "" : pdf.getOriginalFilename().toLowerCase();
+            if (!nombre.endsWith(".pdf")) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La presentación debe ser un PDF.");
+            curso.setMaterialNombre(pdf.getOriginalFilename());
+            curso.setMaterialPath(guardar(businessId, pdf, "pdf"));
+        }
     }
 
     private String guardar(Long businessId, MultipartFile file, String tipo) {

@@ -40,6 +40,37 @@ public class AulaVirtualController {
         return aulaService.crear(businessId, datos, video, pdf, auth);
     }
 
+    @PatchMapping(value = "/business/{businessId}/{cursoId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public Map<String, Object> editar(@PathVariable Long businessId,
+                                      @PathVariable Long cursoId,
+                                      @RequestBody Map<String, Object> body,
+                                      Authentication auth) {
+        return aulaService.editar(businessId, cursoId, body, null, null, auth);
+    }
+
+    @PatchMapping(value = "/business/{businessId}/{cursoId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public Map<String, Object> editarConArchivos(@PathVariable Long businessId,
+                                                 @PathVariable Long cursoId,
+                                                 @RequestPart("datos") String datos,
+                                                 @RequestPart(value = "video", required = false) MultipartFile video,
+                                                 @RequestPart(value = "pdf", required = false) MultipartFile pdf,
+                                                 Authentication auth) {
+        return aulaService.editar(businessId, cursoId, datos, video, pdf, auth);
+    }
+
+    @PatchMapping(value = "/business/{businessId}/{cursoId}/contenido", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    public Map<String, Object> contenido(@PathVariable Long businessId,
+                                         @PathVariable Long cursoId,
+                                         @RequestParam(value = "instructor", required = false) String instructor,
+                                         @RequestPart(value = "video", required = false) MultipartFile video,
+                                         @RequestPart(value = "pdf", required = false) MultipartFile pdf,
+                                         Authentication auth) {
+        return aulaService.actualizarContenido(businessId, cursoId, instructor, video, pdf, auth);
+    }
+
     @PatchMapping("/business/{businessId}/{cursoId}/instructor")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     public Map<String, Object> cambiarInstructor(@PathVariable Long businessId,
@@ -113,8 +144,13 @@ public class AulaVirtualController {
 
     @PostMapping("/my/{cursoId}/evaluacion")
     @PreAuthorize("hasRole('EMPLOYEE')")
-    public Map<String, Object> responder(@PathVariable Long cursoId, @RequestBody Map<String, List<Integer>> body, Authentication auth) {
-        return aulaService.responder(cursoId, body == null ? List.of() : body.get("respuestas"), auth);
+    public Map<String, Object> responder(@PathVariable Long cursoId, @RequestBody(required = false) com.fasterxml.jackson.databind.JsonNode body, Authentication auth) {
+        java.util.List<Integer> respuestas = new java.util.ArrayList<>();
+        com.fasterxml.jackson.databind.JsonNode nodo = body == null ? null : body.get("respuestas");
+        if (nodo != null && nodo.isArray()) {
+            nodo.forEach(item -> respuestas.add(item != null && item.isNumber() ? item.asInt() : -1));
+        }
+        return aulaService.responder(cursoId, respuestas, auth);
     }
 
     private ResponseEntity<Resource> archivo(String path, String nombre, boolean video) {

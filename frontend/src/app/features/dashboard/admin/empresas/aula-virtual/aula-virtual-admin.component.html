@@ -130,7 +130,53 @@
               <h2>{{ curso.titulo }}</h2>
             </div>
             <span>{{ curso.estado }}</span>
+            <button type="button" class="aula-edit" *ngIf="esSuper" (click)="abrirEdicion()">Editar</button>
           </div>
+
+          <form class="aula-edit-box" *ngIf="esSuper && editando" (ngSubmit)="guardarEdicion()">
+            <h3>Editar capacitación</h3>
+            <p>Solo el super administrador puede guardar estos cambios.</p>
+            <div class="aula-grid">
+              <label>Nombre
+                <input [(ngModel)]="edicion.titulo" name="editTitulo" required>
+              </label>
+              <label>Instructor
+                <input [(ngModel)]="edicion.instructor" name="editInstructor" required>
+              </label>
+              <label>Área
+                <select [(ngModel)]="edicion.area" name="editArea">
+                  <option *ngFor="let area of areas">{{ area }}</option>
+                </select>
+              </label>
+              <label>Fecha límite de la evaluación
+                <input type="datetime-local" [(ngModel)]="edicion.limite" name="editLimite">
+              </label>
+              <label>Nota mínima
+                <input type="number" [(ngModel)]="edicion.notaMinima" name="editMinimo" min="1" max="100">
+              </label>
+              <label>Intentos
+                <input type="number" [(ngModel)]="edicion.intentos" name="editIntentos" min="1">
+              </label>
+              <label>Minutos de la evaluación
+                <input type="number" [(ngModel)]="edicion.minutosEvaluacion" name="editMinutos" min="1">
+              </label>
+              <label>Preguntas por trabajador
+                <input type="number" [(ngModel)]="edicion.porTrabajador" name="editPorTrabajador" min="1">
+              </label>
+              <label>Video
+                <input type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" (change)="elegirVideoCurso($event)">
+                <small>{{ videoReemplazo ? videoReemplazo.name : (curso.video || 'Sin video') }}. Si no elige otro, se queda el actual.</small>
+              </label>
+              <label>Presentación PDF
+                <input type="file" accept="application/pdf,.pdf" (change)="elegirPdfCurso($event)">
+                <small>{{ pdfReemplazo ? pdfReemplazo.name : (curso.material || 'Sin presentación') }}. Si no elige otro, se queda el actual.</small>
+              </label>
+            </div>
+            <div class="aula-edit-actions">
+              <button type="submit" class="aula-solid">Guardar cambios</button>
+              <button type="button" class="aula-outline" (click)="cerrarEdicion()">Cancelar</button>
+            </div>
+          </form>
 
           <div class="aula-live-box" *ngIf="curso.sala">
             <p class="aula-muted">La charla corre en su servidor, charla.improvement-solution.com, con el nombre Improvement Solutions. Se abre en su propia ventana. Ahí puede agregar participantes con el enlace, usar cámara, micrófono, chat, mano alzada, compartir pantalla y poner un video. El video va en calidad media para que el servidor aguante hasta 20 personas.</p>
@@ -144,9 +190,9 @@
             <h3>Ficha de la capacitación</h3>
             <div>
               <span>Instructor</span>
-              <strong>{{ curso.instructor || 'Sin instructor' }}</strong>
-              <input [(ngModel)]="instructorNombre" name="instructorNombre" placeholder="Nombre del instructor">
-              <button type="button" (click)="guardarInstructor()">Guardar instructor</button>
+              <input class="is-name" [(ngModel)]="instructorNombre" name="instructorNombre" placeholder="Nombre del instructor">
+              <small>Si no cambia el video o el PDF, se queda el que ya está.</small>
+              <button type="button" (click)="guardarInstructor()">Guardar</button>
             </div>
             <div>
               <span>Audiencia</span>
@@ -163,14 +209,20 @@
             <div>
               <span>Formato</span>
               <strong>{{ curso.modalidad === 'charla' ? 'Charla virtual' : (curso.modalidad === 'vivo' ? 'Reunión en vivo' : 'Video de hasta 5 minutos') }}</strong>
-              <small *ngIf="curso.video">{{ curso.video }}</small>
+              <small>{{ videoReemplazo ? videoReemplazo.name : (curso.video || 'Sin video') }}</small>
               <small *ngIf="curso.hora">Hora de la reunión: {{ curso.hora }}</small>
               <small *ngIf="curso.cupo">Cupo: {{ curso.cupo }} personas</small>
+              <label class="aula-file">Cambiar video
+                <input type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" (change)="elegirVideoCurso($event)">
+              </label>
             </div>
             <div>
               <span>Presentación</span>
-              <strong>{{ curso.material }}</strong>
+              <strong>{{ pdfReemplazo ? pdfReemplazo.name : curso.material }}</strong>
               <button type="button" *ngIf="curso.tienePdf" (click)="abrirPdf(curso)">Abrir PDF</button>
+              <label class="aula-file">Cambiar PDF
+                <input type="file" accept="application/pdf,.pdf" (change)="elegirPdfCurso($event)">
+              </label>
             </div>
             <div class="is-wide">
               <span>Evaluación</span>
@@ -215,18 +267,55 @@
               <em class="is-ok">Entró</em>
             </article>
 
-            <h3>Quién ha rendido</h3>
-            <p class="aula-muted" *ngIf="!curso.resultados.length">Todavía nadie de esta empresa ha abierto esta capacitación.</p>
+            <h3>Informe de la evaluación</h3>
+            <p class="aula-muted" *ngIf="!rendidos(curso).length">Todavía nadie ha enviado la evaluación.</p>
+            <div class="aula-report" *ngIf="rendidos(curso).length">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Apellidos y nombres</th>
+                    <th>Cédula</th>
+                    <th>Cargo</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Nota</th>
+                    <th>Resultado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of rendidos(curso)">
+                    <td>{{ nombreInforme(item) }}</td>
+                    <td>{{ item.cedula || '—' }}</td>
+                    <td>{{ item.cargo || '—' }}</td>
+                    <td>{{ item.fecha }}</td>
+                    <td>{{ item.hora || '—' }}</td>
+                    <td>{{ item.nota }}/100</td>
+                    <td [class.is-ok]="item.estado === 'Cumplió'" [class.is-bad]="item.estado !== 'Cumplió'">{{ item.estado === 'Cumplió' ? 'Aprobado' : 'No aprobado' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-            <h4 *ngIf="rendidos(curso).length">Con nota ({{ rendidos(curso).length }})</h4>
-            <article *ngFor="let item of rendidos(curso)">
-              <i>{{ iniciales(item.nombre) }}</i>
-              <div>
-                <strong>{{ item.nombre }}</strong>
-                <small>{{ item.cargo || 'Sin cargo' }} · {{ item.fecha }}</small>
+            <h4 *ngIf="rendidos(curso).length">Respuestas de cada trabajador</h4>
+            <article class="aula-answer" *ngFor="let item of rendidos(curso)">
+              <button type="button" class="aula-answer-toggle" (click)="alternarInforme(item.employeeId || 0)">
+                <strong>{{ nombreInforme(item) }}</strong>
+                <em>{{ informeAbierto === item.employeeId ? 'Ocultar' : 'Ver respuestas' }}</em>
+              </button>
+              <div *ngIf="informeAbierto === item.employeeId">
+                <p class="aula-muted" *ngIf="!acertadasDe(item).length && !falladasDe(item).length">Este intento no tiene el detalle de las respuestas.</p>
+                <h5 *ngIf="acertadasDe(item).length">Acertadas ({{ acertadasDe(item).length }})</h5>
+                <div class="is-hit" *ngFor="let fila of acertadasDe(item)">
+                  <strong>{{ fila.texto }}</strong>
+                  <small>Respondió: {{ fila.marcada }}</small>
+                </div>
+                <h5 *ngIf="falladasDe(item).length">No acertadas ({{ falladasDe(item).length }})</h5>
+                <div class="is-miss" *ngFor="let fila of falladasDe(item)">
+                  <strong>{{ fila.texto }}</strong>
+                  <small>Respondió: {{ fila.marcada }}</small>
+                  <small>Respuesta correcta: {{ fila.correcta }}</small>
+                </div>
               </div>
-              <b [class.is-ok]="item.estado === 'Cumplió'" [class.is-bad]="item.estado === 'No alcanzó'">{{ item.nota }}/100</b>
-              <em [class.is-ok]="item.estado === 'Cumplió'" [class.is-bad]="item.estado === 'No alcanzó'">{{ item.estado }}</em>
             </article>
 
             <h4 *ngIf="pendientesDe(curso).length">Pendientes ({{ pendientesDe(curso).length }})</h4>

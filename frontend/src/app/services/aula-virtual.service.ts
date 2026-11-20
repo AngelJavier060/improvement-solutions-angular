@@ -18,6 +18,22 @@ export class AulaVirtualService {
     return this.http.post(`/api/aula/business/${businessId}`, form);
   }
 
+  editar(businessId: number, cursoId: number, datos: unknown, video?: File | null, pdf?: File | null): Observable<any> {
+    const form = new FormData();
+    form.append('datos', JSON.stringify(datos));
+    if (video) form.append('video', video);
+    if (pdf) form.append('pdf', pdf);
+    return this.http.patch(`/api/aula/business/${businessId}/${cursoId}`, form);
+  }
+
+  actualizarContenido(businessId: number, cursoId: number, instructor: string, video?: File | null, pdf?: File | null): Observable<any> {
+    const form = new FormData();
+    form.append('instructor', instructor);
+    if (video) form.append('video', video);
+    if (pdf) form.append('pdf', pdf);
+    return this.http.patch(`/api/aula/business/${businessId}/${cursoId}/contenido`, form);
+  }
+
   guardarInstructor(businessId: number, cursoId: number, instructor: string): Observable<any> {
     return this.http.patch(`/api/aula/business/${businessId}/${cursoId}/instructor`, { instructor });
   }
