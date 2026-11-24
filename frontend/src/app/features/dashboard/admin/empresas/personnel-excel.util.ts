@@ -210,6 +210,61 @@ export function normalizeHeader(value: string): string {
     .trim();
 }
 
+const CATALOG_ALIASES: Record<string, string> = {
+  administrativo: 'administracion',
+  administrativa: 'administracion',
+  basica: 'primaria',
+  'educacion basica': 'primaria',
+  'basica elemental': 'primaria',
+  'union libre': 'union de hecho',
+  'soltera union libre': 'union de hecho',
+  casada: 'casado',
+  soltera: 'soltero',
+  divorciada: 'divorciado',
+  viuda: 'viudo',
+  mestiza: 'mestizo'
+};
+
+export function catalogMatchKeys(value: string): string[] {
+  const normalized = normalizeHeader(value);
+  if (!normalized) return [];
+  const keys = new Set<string>();
+  const add = (item: string) => {
+    const key = normalizeHeader(item);
+    if (key) keys.add(key);
+  };
+  add(normalized);
+  add(normalized.replace(/\s+a$/g, ''));
+  add(normalized.replace(/[x\s]/g, ''));
+  if (normalized.endsWith('a') && normalized.length > 4) add(normalized.slice(0, -1) + 'o');
+  if (CATALOG_ALIASES[normalized]) add(CATALOG_ALIASES[normalized]);
+  const withoutSlashA = normalized.replace(/\s+a$/g, '');
+  if (CATALOG_ALIASES[withoutSlashA]) add(CATALOG_ALIASES[withoutSlashA]);
+  return Array.from(keys);
+}
+
+export function catalogsMatch(wanted: string, candidate: string): boolean {
+  const wantedKeys = new Set(catalogMatchKeys(wanted));
+  const candidateKeys = new Set(catalogMatchKeys(candidate));
+  for (const key of wantedKeys) {
+    if (candidateKeys.has(key)) return true;
+  }
+  const left = normalizeHeader(wanted);
+  const right = normalizeHeader(candidate);
+  let shared = 0;
+  while (shared < left.length && shared < right.length && left[shared] === right[shared]) shared++;
+  return shared >= 8 && left.length >= 8 && right.length >= 8;
+}
+
+export function normalizeBloodType(value: string): string | null {
+  const options = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  let text = String(value || '').toUpperCase().replace(/\s+/g, '');
+  text = text.replace(/POSITIVO/g, '+').replace(/NEGATIVO/g, '-');
+  text = text.replace(/POS/g, '+').replace(/NEG/g, '-');
+  text = text.replace(/RH/g, '');
+  return options.find(option => option === text) || null;
+}
+
 function columnName(index: number): string {
   let n = index + 1;
   let name = '';

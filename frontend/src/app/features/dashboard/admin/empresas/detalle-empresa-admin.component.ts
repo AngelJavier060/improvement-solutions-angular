@@ -29,7 +29,7 @@ import { User } from './user-modal/user-modal.component';
 import { EmployeeService } from '../../usuario/talento-humano/services/employee.service';
 import { ConfigurationService } from '../../usuario/talento-humano/services/configuration.service';
 import { CreateEmployeeRequest, EmployeeResponse, UpdateEmployeeRequest } from '../../usuario/talento-humano/models/employee.model';
-import { buildPersonnelTemplate, normalizeHeader, parsePersonnelWorkbook } from './personnel-excel.util';
+import { buildPersonnelTemplate, catalogsMatch, normalizeBloodType, normalizeHeader, parsePersonnelWorkbook } from './personnel-excel.util';
 import { InventoryCategoryService, InventoryCategory } from '../../../../services/inventory-category.service';
 import { InventorySupplierService, InventorySupplier } from '../../../../services/inventory-supplier.service';
 import { BusinessContextService } from '../../../../core/services/business-context.service';
@@ -95,7 +95,20 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   editEmployeeExitDate = '';
   savingEmployeeExit = false;
   personnelExcelBusy = false;
-  private personnelLookups: { genders: any[]; civil: any[]; etnias: any[]; degrees: any[] } | null = null;
+  private personnelLookups: {
+    genders: any[];
+    civil: any[];
+    etnias: any[];
+    degrees: any[];
+    departments: any[];
+    positions: any[];
+    typeContracts: any[];
+    workSchedules: any[];
+    workShifts: any[];
+    contractorCompanies: any[];
+    contractorBlocks: any[];
+    iess: any[];
+  } | null = null;
   personnelExcelMsg: string | null = null;
   personnelExcelErr: string | null = null;
 
@@ -1412,27 +1425,39 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       await this.ensurePersonnelLookups();
       const rows = await parsePersonnelWorkbook(file);
       if (!rows.length) {
-        this.personnelExcelErr = 'El archivo no tiene filas de personal.';
+        this.personnelExcelErr = 'El archivo no tiene filas de personal. Use la plantilla: la primera fila debe traer Cedula, Apellidos, Nombres y el resto de columnas.';
+        return;
+      }
+      if (!rows.some(row => this.cell(row, 'cedula'))) {
+        const columnas = Object.keys(rows[0] || {}).filter(Boolean).slice(0, 12).join(', ');
+        this.personnelExcelErr = `No coincide la columna Cedula. Columnas leídas: ${columnas || 'ninguna'}. Descargue la plantilla y no cambie los nombres de la primera fila.`;
         return;
       }
       const summary = await this.applyPersonnelRows(rows);
-      this.personnelExcelMsg = `Empresa ${this.empresa.name}: ${summary.created} nuevo(s), ${summary.updated} actualizado(s), ${summary.skipped} sin cambios.`;
-      if (summary.errors.length) {
-        this.personnelExcelErr = summary.errors.slice(0, 6).join(' ');
+      this.personnelExcelMsg = `Empresa ${this.empresa.name}: ${summary.created} nuevo(s), ${summary.updated} actualizado(s), ${summary.skipped} sin cambios. Los campos vacíos no impiden la subida.`;
+      const notices = [...summary.warnings, ...summary.errors];
+      if (notices.length) {
+        this.personnelExcelErr = `Resumen para corregir y volver a subir. El trabajador se guarda; el dato que no está en la configuración de la empresa no se guarda.\n${notices.join('\n')}`;
       }
       this.loadCompanyEmployees();
     } catch (err: any) {
-      this.personnelExcelErr = err?.message || 'No se pudo leer el Excel.';
+      this.personnelExcelErr = err?.error?.message || err?.message || 'No se pudo leer el Excel.';
     } finally {
       this.personnelExcelBusy = false;
     }
   }
 
-  private async applyPersonnelRows(rows: Array<Record<string, string>>): Promise<{ created: number; updated: number; skipped: number; errors: string[] }> {
+  private async applyPersonnelRows(rows: Array<Record<string, string>>): Promise<{ created: number; updated: number; skipped: number; errors: string[]; warnings: string[] }> {
     let created = 0;
     let updated = 0;
     let skipped = 0;
     const errors: string[] = [];
+    const issues = new Map<string, { text: string; rows: number }>();
+    const note = (key: string, text: string) => {
+      const current = issues.get(key);
+      if (current) current.rows += 1;
+      else issues.set(key, { text, rows: 1 });
+    };
     const byCedula = new Map<string, EmployeeResponse>();
     (this.companyEmployees || []).forEach(emp => {
       const key = this.normalizeCedula(emp?.cedula);
@@ -1444,11 +1469,11 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       const line = index + 2;
       const cedula = this.normalizeCedula(this.cell(row, 'cedula'));
       if (!cedula) {
-        errors.push(`Fila ${line}: falta la cédula.`);
+        errors.push(`Fila ${line}: no es un trabajador (no tiene cédula). No se subió.`);
         continue;
       }
       const existing = byCedula.get(cedula);
-      const mapped = this.mapPersonnelFields(row, line, errors);
+      const mapped = this.mapPersonnelFields(row, note);
       if (!mapped) continue;
       try {
         if (existing?.id) {
@@ -1464,11 +1489,6 @@ export class DetalleEmpresaAdminComponent implements OnInit {
           byCedula.set(cedula, { ...existing, ...saved });
           updated++;
         } else {
-          const missing = this.missingCreateFields(row);
-          if (missing.length) {
-            errors.push(`Fila ${line}: para un trabajador nuevo faltan ${missing.join(', ')}.`);
-            continue;
-          }
           const payload = this.buildPersonnelCreate(row, cedula, mapped);
           const saved = await firstValueFrom(this.employeeService.createEmployee(payload));
           if (saved) byCedula.set(cedula, saved);
@@ -1478,27 +1498,60 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         errors.push(`Fila ${line} (${cedula}): ${err?.error?.message || err?.message || 'no se pudo guardar'}.`);
       }
     }
-    return { created, updated, skipped, errors };
+    const warnings = Array.from(issues.values()).map(item => `${item.text} (${item.rows} fila${item.rows === 1 ? '' : 's'}).`);
+    return { created, updated, skipped, errors, warnings };
   }
 
   private async ensurePersonnelLookups(): Promise<void> {
     if (this.personnelLookups) return;
-    const all = await firstValueFrom(this.configurationService.getAllConfigurations());
+    const businessId = Number(this.empresaId);
+    if (!businessId) {
+      throw new Error('No se pudo identificar la empresa para comparar el Excel.');
+    }
+    let all: any = {};
+    try {
+      all = await firstValueFrom(this.configurationService.getAllConfigurations(businessId));
+    } catch {
+      const [genders, civilStatuses, etnias, degrees, positions, departments, typeContracts, workSchedules, workShifts] = await Promise.all([
+        firstValueFrom(this.configurationService.getGenders()).catch(() => []),
+        firstValueFrom(this.configurationService.getCivilStatuses()).catch(() => []),
+        firstValueFrom(this.configurationService.getEtnias()).catch(() => []),
+        firstValueFrom(this.configurationService.getDegrees()).catch(() => []),
+        firstValueFrom(this.configurationService.getPositionsByCompany(businessId)).catch(() => []),
+        firstValueFrom(this.configurationService.getDepartmentsByCompany(businessId)).catch(() => []),
+        firstValueFrom(this.configurationService.getTypeContractsByCompany(businessId)).catch(() => []),
+        firstValueFrom(this.configurationService.getWorkSchedulesByCompany(businessId)).catch(() => []),
+        firstValueFrom(this.configurationService.getWorkShiftsByCompany(businessId)).catch(() => [])
+      ]);
+      all = { genders, civilStatuses, etnias, degrees, positions, departments, typeContracts, workSchedules, workShifts };
+    }
+    let iess: any[] = [];
+    try {
+      iess = await firstValueFrom(this.configurationService.getIessCodesByBusiness(businessId));
+    } catch {
+      iess = [];
+    }
     this.personnelLookups = {
       genders: all?.genders || [],
       civil: all?.civilStatuses || [],
       etnias: all?.etnias || [],
-      degrees: all?.degrees || []
+      degrees: all?.degrees || [],
+      departments: all?.departments || [],
+      positions: all?.positions || [],
+      typeContracts: all?.typeContracts || [],
+      workSchedules: all?.workSchedules || [],
+      workShifts: all?.workShifts || [],
+      contractorCompanies: all?.contractorCompanies || [],
+      contractorBlocks: all?.contractorBlocks || [],
+      iess
     };
   }
 
-  private mapPersonnelFields(row: Record<string, string>, line: number, errors: string[]): Record<string, any> | null {
+  private mapPersonnelFields(
+    row: Record<string, string>,
+    note: (key: string, message: string) => void
+  ): Record<string, any> {
     const out: Record<string, any> = {};
-    let failed = false;
-    const reject = (message: string) => {
-      failed = true;
-      errors.push(`Fila ${line}: ${message} No se guardó esta fila.`);
-    };
     const text = (header: string, key: string) => {
       const value = this.cell(row, header);
       if (value) out[key] = value;
@@ -1528,21 +1581,20 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     const salary = this.cell(row, 'salario');
     if (salary) {
       const amount = Number(salary.replace(/\s/g, '').replace(',', '.'));
-      if (Number.isNaN(amount)) reject(`el salario "${salary}" no es un número.`);
+      if (Number.isNaN(amount)) note(`salario:${normalizeHeader(salary)}`, `Salario "${salary}" no es un número. Ese dato no se guardó`);
       else out['salario'] = amount;
     }
     const blood = this.cell(row, 'tipo de sangre') || this.cell(row, 'tipo sangre');
     if (blood) {
-      const options = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-      const match = options.find(option => option.toLowerCase() === blood.toLowerCase());
-      if (!match) reject(`el tipo de sangre "${blood}" no está en la lista (A+, A-, B+, B-, AB+, AB-, O+, O-).`);
+      const match = normalizeBloodType(blood);
+      if (!match) note(`sangre:${normalizeHeader(blood)}`, `Tipo de sangre "${blood}" no está en la lista (O+, A+, A-, B+, B-, AB+, AB-, O-). Ese dato no se guardó`);
       else out['tipoSangre'] = match;
     }
     const disability = this.cell(row, 'discapacidad');
     if (disability) {
       const options = ['No', 'Física', 'Visual', 'Auditiva', 'Intelectual', 'Psicosocial', 'Múltiple'];
-      const match = options.find(option => normalizeHeader(option) === normalizeHeader(disability));
-      if (!match) reject(`la discapacidad "${disability}" no está en la lista.`);
+      const match = options.find(option => catalogsMatch(disability, option));
+      if (!match) note(`discapacidad:${normalizeHeader(disability)}`, `Discapacidad "${disability}" no está en la lista. Ese dato no se guardó`);
       else out['discapacidad'] = match;
     }
     const status = this.cell(row, 'estado');
@@ -1555,48 +1607,47 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         out['active'] = false;
         out['status'] = 'INACTIVO';
       } else {
-        reject(`el estado "${status}" debe ser Activo o Inactivo.`);
+        note('estado', 'La columna Estado no dice Activo o Inactivo. El trabajador se guarda como Activo y ese dato no se usa');
       }
     }
-    const catalogs: Array<[string, string, any[] | undefined, any[]]> = [
-      ['departamento', 'departmentId', this.empresa?.departments, this.departamentos],
-      ['cargo', 'positionId', this.empresa?.positions, this.cargos],
-      ['tipo de contrato', 'typeContractId', this.empresa?.type_contracts, this.tiposContratos],
-      ['empresa contratista', 'contractorCompanyId', this.empresa?.contractor_companies, this.contractorCompanies],
-      ['bloque contratista', 'contractorBlockId', this.empresa?.contractor_blocks, this.contractorBlocks],
-      ['jornada de trabajo', 'workScheduleId', this.empresa?.work_schedules, this.workSchedules],
-      ['horario de trabajo', 'workShiftId', this.empresa?.work_shifts, this.workShifts],
-      ['genero', 'genderId', [], this.personnelLookups?.genders || []],
-      ['estado civil', 'civilStatusId', [], this.personnelLookups?.civil || []],
-      ['etnia', 'etniaId', [], this.personnelLookups?.etnias || []],
-      ['nivel de educacion', 'degreeId', [], this.personnelLookups?.degrees || []]
+    const lookups = this.personnelLookups;
+    const catalogs: Array<[string, string, any[], boolean]> = [
+      ['departamento', 'departmentId', this.companyOnly(this.empresa?.departments, lookups?.departments), true],
+      ['cargo', 'positionId', this.companyOnly(this.empresa?.positions, lookups?.positions), true],
+      ['tipo de contrato', 'typeContractId', this.companyOnly(this.empresa?.type_contracts, lookups?.typeContracts), true],
+      ['empresa contratista', 'contractorCompanyId', this.companyOnly(this.empresa?.contractor_companies, lookups?.contractorCompanies), true],
+      ['bloque contratista', 'contractorBlockId', this.companyOnly(this.empresa?.contractor_blocks, lookups?.contractorBlocks), true],
+      ['jornada de trabajo', 'workScheduleId', this.companyOnly(this.empresa?.work_schedules, lookups?.workSchedules), true],
+      ['horario de trabajo', 'workShiftId', this.companyOnly(this.empresa?.work_shifts, lookups?.workShifts), true],
+      ['genero', 'genderId', lookups?.genders || [], false],
+      ['estado civil', 'civilStatusId', lookups?.civil || [], false],
+      ['etnia', 'etniaId', lookups?.etnias || [], false],
+      ['nivel de educacion', 'degreeId', lookups?.degrees || [], false]
     ];
-    catalogs.forEach(([header, key, assigned, catalog]) => {
+    catalogs.forEach(([header, key, catalog, companyScoped]) => {
       const value = this.cell(row, header);
       if (!value) return;
-      const id = this.resolveCatalogId(value, assigned, catalog);
-      if (!id) {
-        reject(`"${value}" no se puede elegir en ${header}. Use un valor que ya exista en las listas.`);
+      const found = this.resolveCatalogItem(value, catalog);
+      const id = Number(found?.id);
+      if (!found || isNaN(id)) {
+        const where = companyScoped ? 'la configuración de esta empresa' : 'las listas del sistema';
+        const options = this.catalogOptionNames(catalog);
+        note(`${header}:${normalizeHeader(value)}`, `${this.catalogLabel(header)} "${value}" no está en ${where}${options}. Ese dato no se guardó`);
       } else {
         out[key] = id;
-        if (key === 'degreeId') {
-          const degree = (catalog || []).find((item: any) => Number(item?.id) === id);
-          if (degree?.name) out['nivelEducacion'] = degree.name;
-        }
+        if (key === 'degreeId' && found?.name) out['nivelEducacion'] = found.name;
       }
     });
     const iess = this.cell(row, 'codigo iess');
     if (iess) {
-      const pool = [...(this.empresa?.ieses || []), ...(this.iessList || [])];
-      const found = pool.find((item: any) => {
-        const code = normalizeHeader(item?.code || item?.codigo || '');
-        const label = normalizeHeader(`${item?.code || item?.codigo || ''} ${item?.description || item?.name || ''}`);
-        return code === normalizeHeader(iess) || label === normalizeHeader(iess);
-      });
-      if (!found) reject(`el código IESS "${iess}" no está configurado para esta empresa.`);
-      else out['codigoIess'] = found.code || found.codigo || found.name;
+      const pool = this.companyOnly(this.empresa?.ieses, lookups?.iess);
+      const found = pool.find((item: any) => catalogsMatch(iess, item?.code || item?.codigo || ''));
+      if (!found) {
+        const options = this.catalogOptionNames(pool, ['code', 'codigo']);
+        note(`iess:${normalizeHeader(iess)}`, `Código IESS "${iess}" no está en la configuración de esta empresa${options}. Ese dato no se guardó`);
+      } else out['codigoIess'] = found.code || found.codigo || found.name;
     }
-    return failed ? null : out;
+    return out;
   }
 
   private buildPersonnelCreate(row: Record<string, string>, cedula: string, mapped: Record<string, any>): CreateEmployeeRequest {
@@ -1621,25 +1672,6 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     return payload;
   }
 
-  private missingCreateFields(row: Record<string, string>): string[] {
-    const required: Array<[string, string]> = [
-      ['apellidos', 'apellidos'],
-      ['nombres', 'nombres'],
-      ['email', 'email'],
-      ['telefono', 'teléfono'],
-      ['fecha nacimiento', 'fecha de nacimiento'],
-      ['direccion', 'dirección'],
-      ['nombre contacto', 'nombre de contacto'],
-      ['parentesco', 'parentesco'],
-      ['telefono contacto', 'teléfono de contacto']
-    ];
-    const missing = required.filter(([header]) => !this.cell(row, header)).map(([, label]) => label);
-    if (missing.includes('dirección') && this.cell(row, 'direccion domiciliaria')) {
-      return missing.filter(label => label !== 'dirección');
-    }
-    return missing;
-  }
-
   private cell(row: Record<string, string>, header: string): string {
     return (row[normalizeHeader(header)] || '').trim();
   }
@@ -1648,20 +1680,51 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     return String(value || '').replace(/\D/g, '');
   }
 
-  private resolveCatalogId(name: string, assigned: any[] | undefined, catalog: any[]): number | null {
-    const wanted = normalizeHeader(name);
-    if (!wanted) return null;
-    const assignedList = Array.isArray(assigned) ? assigned : [];
-    const pool = assignedList.length ? assignedList : (catalog || []);
-    const found = pool.find((item: any) => {
-      const parts = [item?.name, item?.nombre, item?.title, item?.description, item?.code]
-        .filter((value: any) => value != null && String(value).trim())
-        .map((value: any) => normalizeHeader(String(value)));
-      const combo = normalizeHeader(`${item?.name || ''} ${item?.description || ''}`);
-      return parts.includes(wanted) || combo === wanted;
+  private companyOnly(assigned: any[] | undefined, fromCompany: any[] | undefined): any[] {
+    const company = [...(Array.isArray(assigned) ? assigned : []), ...(Array.isArray(fromCompany) ? fromCompany : [])];
+    const seen = new Set<number>();
+    return company.filter(item => {
+      const id = Number(item?.id);
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
     });
-    const id = Number(found?.id);
-    return found && !isNaN(id) ? id : null;
+  }
+
+  private catalogOptionNames(catalog: any[], fields: string[] = ['name', 'nombre', 'code', 'codigo']): string {
+    const names = (catalog || []).map(item => {
+      const value = fields.map(field => item?.[field]).find(part => part != null && String(part).trim());
+      return value ? String(value).trim() : '';
+    }).filter(Boolean);
+    const unique = Array.from(new Set(names));
+    if (!unique.length) return ' (en la empresa no hay ninguno configurado)';
+    return ` (configurado: ${unique.slice(0, 8).join(', ')})`;
+  }
+
+  private catalogLabel(header: string): string {
+    const labels: Record<string, string> = {
+      departamento: 'Departamento',
+      cargo: 'Cargo',
+      'tipo de contrato': 'Tipo de contrato',
+      'empresa contratista': 'Empresa contratista',
+      'bloque contratista': 'Bloque contratista',
+      'jornada de trabajo': 'Jornada',
+      'horario de trabajo': 'Horario',
+      genero: 'Género',
+      'estado civil': 'Estado civil',
+      etnia: 'Etnia',
+      'nivel de educacion': 'Nivel de educación'
+    };
+    return labels[header] || header;
+  }
+
+  private resolveCatalogItem(name: string, catalog: any[]): any | null {
+    const pool = Array.isArray(catalog) ? catalog : [];
+    return pool.find((item: any) => {
+      const parts = [item?.name, item?.nombre, item?.title, item?.code, item?.codigo]
+        .filter((value: any) => value != null && String(value).trim());
+      return parts.some((value: any) => catalogsMatch(name, String(value)));
+    }) || null;
   }
 
   goToUsersAdmin(): void {

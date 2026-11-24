@@ -116,6 +116,27 @@ public class ConfigurationController {
         }
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<Map<String, Object>> getAllConfigurations() {
+        try {
+            Map<String, Object> configurations = new HashMap<>();
+            configurations.put("genders", genderRepository.findAll());
+            configurations.put("civilStatuses", civilStatusRepository.findAll());
+            configurations.put("etnias", etniaRepository.findAll());
+            configurations.put("degrees", degreeRepository.findAll());
+            configurations.put("positions", List.of());
+            configurations.put("departments", List.of());
+            configurations.put("typeContracts", List.of());
+            configurations.put("workSchedules", List.of());
+            configurations.put("workShifts", List.of());
+            return ResponseEntity.ok(configurations);
+        } catch (Exception e) {
+            Map<String, Object> body = new HashMap<>();
+            body.put("message", "No se pudieron cargar las listas de género, estado civil, etnia y nivel de educación.");
+            return ResponseEntity.internalServerError().body(body);
+        }
+    }
+
     // Endpoint para obtener todas las configuraciones de una vez para el formulario de empleados
     @GetMapping("/all/{businessId}")
     public ResponseEntity<Map<String, Object>> getAllConfigurations(@PathVariable Long businessId) {

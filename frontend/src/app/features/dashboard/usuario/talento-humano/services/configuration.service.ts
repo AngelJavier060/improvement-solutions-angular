@@ -75,8 +75,9 @@ export class ConfigurationService {
   }
 
   // Obtener todas las configuraciones en una sola llamada
-  getAllConfigurations(): Observable<AllConfigurations> {
-    return this.http.get<AllConfigurations>(`${this.apiUrl}/all`);
+  getAllConfigurations(businessId?: number): Observable<AllConfigurations> {
+    const url = businessId ? `${this.apiUrl}/all/${businessId}` : `${this.apiUrl}/all`;
+    return this.http.get<AllConfigurations>(url);
   }
 
   // Obtener géneros

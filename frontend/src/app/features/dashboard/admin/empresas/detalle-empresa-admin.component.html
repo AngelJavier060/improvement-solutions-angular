@@ -2532,8 +2532,8 @@
             Mostrando {{ filteredCompanyEmployees().length }} empleado{{ filteredCompanyEmployees().length === 1 ? '' : 's' }}
             <span *ngIf="isSuperAdmin" class="ms-2">· Los inactivos muestran fecha de desvinculación; solo Superadmin puede corregirla.</span>
           </div>
-          <div class="alert alert-success py-2 px-3 mx-3 mt-2 mb-0 small" *ngIf="personnelExcelMsg">{{ personnelExcelMsg }}</div>
-          <div class="alert alert-warning py-2 px-3 mx-3 mt-2 mb-0 small" *ngIf="personnelExcelErr">{{ personnelExcelErr }}</div>
+          <div class="alert alert-success py-2 px-3 mx-3 mt-2 mb-0 small" style="white-space: pre-line" *ngIf="personnelExcelMsg">{{ personnelExcelMsg }}</div>
+          <div class="alert alert-warning py-2 px-3 mx-3 mt-2 mb-0 small personnel-excel-err" style="white-space: pre-line" *ngIf="personnelExcelErr">{{ personnelExcelErr }}</div>
           <div class="alert alert-success py-2 px-3 mx-3 mt-2 mb-0 small" *ngIf="employeesExitMsg">{{ employeesExitMsg }}</div>
           <div class="alert alert-danger py-2 px-3 mx-3 mt-2 mb-0 small" *ngIf="employeesExitErr">{{ employeesExitErr }}</div>
 

@@ -440,6 +440,16 @@ public class BusinessEmployeeService {
         return t.isEmpty() ? null : t.toLowerCase();
     }
 
+    private static String emptyToBlank(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private static String personName(String apellidos, String nombres, String cedula) {
+        String full = (emptyToBlank(apellidos) + " " + emptyToBlank(nombres)).trim();
+        if (!full.isEmpty()) return full;
+        return cedula == null ? "" : cedula.trim();
+    }
+
     /**
      * Filtro de nombres/apellidos para listados paginados.
      * Si el cliente envía el mismo término en ambos (p. ej. autocompletado de conductor en gerencias de viaje),
@@ -588,9 +598,9 @@ public class BusinessEmployeeService {
         } else {
             employee = new Employee();
             employee.setCedula(createDto.getCedula());
-            employee.setName(createDto.getNombres() + " " + createDto.getApellidos());
-            employee.setNombres(createDto.getNombres());
-            employee.setApellidos(createDto.getApellidos());
+            employee.setNombres(emptyToBlank(createDto.getNombres()));
+            employee.setApellidos(emptyToBlank(createDto.getApellidos()));
+            employee.setName(personName(createDto.getApellidos(), createDto.getNombres(), createDto.getCedula()));
             employee.setStatus("ACTIVO");
             employee.setActive(Boolean.TRUE);
             employee.setCreatedAt(LocalDateTime.now());
@@ -1048,10 +1058,9 @@ public class BusinessEmployeeService {
     private BusinessEmployee convertCreateDtoToEntity(CreateBusinessEmployeeDto createDto) {
         BusinessEmployee employee = new BusinessEmployee();
         employee.setCedula(createDto.getCedula());
-        employee.setApellidos(createDto.getApellidos());
-        employee.setNombres(createDto.getNombres());
-        // Nombre completo
-        employee.setName(createDto.getNombres() + " " + createDto.getApellidos());
+        employee.setApellidos(emptyToBlank(createDto.getApellidos()));
+        employee.setNombres(emptyToBlank(createDto.getNombres()));
+        employee.setName(personName(createDto.getApellidos(), createDto.getNombres(), createDto.getCedula()));
         employee.setPhone(createDto.getPhone());
         employee.setEmail(createDto.getEmail());
         employee.setDateBirth(createDto.getDateBirth());
