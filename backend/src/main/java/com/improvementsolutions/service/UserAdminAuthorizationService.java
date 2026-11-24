@@ -26,7 +26,8 @@ import java.util.stream.Collectors;
  *
  * - Superadministrador: privilegios intactos; no se crea/edita/elimina ROLE_SUPER_ADMIN aquí.
  * - Admin de empresa: solo gestiona usuarios de su(s) empresa(s); solo puede asignar ROLE_USER.
- * - Trabajador (ROLE_EMPLOYEE): editable en datos básicos; no se cambia su rol desde esta API.
+ * - Trabajador (ROLE_EMPLOYEE): se puede promover a Supervisor, Gestor operativo o Administrador de empresa.
+ *   El administrador de empresa solo puede asignar Supervisor o Gestor.
  */
 @Service
 @RequiredArgsConstructor
@@ -210,6 +211,8 @@ public class UserAdminAuthorizationService {
      * Valida cambios de rol en update.
      * - Company admin: solo USER o MANAGER.
      * - Super: USER, MANAGER o ADMIN; nunca SUPER_ADMIN / EMPLOYEE.
+     * - Una cuenta de Trabajador de la nómina sí puede promoverse a esos roles.
+     *   Si no se envían roleIds, el rol de trabajador se mantiene.
      */
     @Transactional(readOnly = true)
     public void assertRoleChangeAllowed(Authentication authentication, User target, Set<Long> requestedRoleIds) {
@@ -218,9 +221,6 @@ public class UserAdminAuthorizationService {
         }
         if (hasRole(target, ROLE_SUPER_ADMIN)) {
             throw forbidden("No se pueden cambiar roles de un Superadministrador");
-        }
-        if (hasRole(target, ROLE_EMPLOYEE)) {
-            throw forbidden("No se puede cambiar el rol de una cuenta de Trabajador desde esta API");
         }
 
         Set<Role> requested = resolveRolesByIds(requestedRoleIds);

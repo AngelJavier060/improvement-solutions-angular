@@ -208,12 +208,8 @@ public class UserAdminController {
             authz.assertCanMutateUser(authentication, target);
             authz.assertRoleChangeAllowed(authentication, target, userUpdateDto.getRoleIds());
 
-            // Trabajador: no permitir cambio de roles aunque el cliente envíe roleIds
-            if (UserAdminAuthorizationService.hasRole(target, UserAdminAuthorizationService.ROLE_EMPLOYEE)) {
-                userUpdateDto.setRoleIds(null);
-            }
-
-            // Roles ya validados en assertRoleChangeAllowed (Admin empresa: Supervisor o Gestor)
+            // Si no vienen roleIds, el rol actual se conserva (incluye cuentas de trabajador).
+            // Si vienen, ya fueron validados: un trabajador de la nómina pasa a Supervisor, Gestor o Admin.
 
             User updatedUser = userService.updateAdmin(id, userUpdateDto);
             return ResponseEntity.ok(convertToDto(updatedUser));
