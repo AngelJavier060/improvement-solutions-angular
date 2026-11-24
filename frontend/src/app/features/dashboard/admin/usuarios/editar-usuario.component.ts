@@ -53,6 +53,7 @@ export class EditarUsuarioComponent implements OnInit {
 
   /** Cuenta objetivo protegida (no se cambia tipología/roles) */
   isEmployeeAccount = false;
+  private assigningPayroll = false;
   isTargetSuperAdmin = false;
   /** Roles originales al cargar (para no perder EMPLOYEE / SUPER_ADMIN) */
   originalRoleNames: string[] = [];
@@ -335,8 +336,14 @@ export class EditarUsuarioComponent implements OnInit {
 
   onSubmit(): void {
     if (this.userForm.invalid) {
-      this.markFormGroupTouched(this.userForm);
-      return;
+      this.normalizeIdentityFields();
+      this.checkUsernameDuplicate();
+      this.checkEmailDuplicate();
+      this.checkPhoneDuplicate();
+      if (this.userForm.invalid) {
+        this.markFormGroupTouched(this.userForm);
+        return;
+      }
     }
 
     // Seguridad Fase A: admin empresa no puede enviar ROLE_ADMIN
@@ -402,34 +409,34 @@ export class EditarUsuarioComponent implements OnInit {
         }
       }
     } else {
-      // Caso de creación de usuario
-      this.userService.createUser(userData).subscribe({
-        next: (createdUser) => {          // Si hay un archivo para subir en modo creación
-          if (this.fileToUpload && createdUser && createdUser.id) {
-            this.userService.uploadProfilePicture(createdUser.id, this.fileToUpload).subscribe({              next: (uploadResponse: any) => {
-              // Actualizar el usuario con la ruta de la imagen
-              console.log('Respuesta de subida de imagen:', uploadResponse);
-              let profilePicturePath;
-              if (uploadResponse && uploadResponse.data) {
-                profilePicturePath = uploadResponse.data;
-              } else if (uploadResponse && typeof uploadResponse === 'string') {
-                profilePicturePath = uploadResponse;
-              }
-              console.log('Ruta de imagen guardada (creación):', profilePicturePath);
-              
-              const updateData = { profilePicture: profilePicturePath };
-              this.userService.updateUser(createdUser.id, updateData).subscribe({
-                next: () => this.finalizeAfterAssociation(createdUser.id),
-                error: () => this.finalizeAfterAssociation(createdUser.id) // Continuar aunque falle la actualización
-              });
-            },
-            error: (error: any) => {
-              console.error('Error al subir imagen de perfil', error);
-              this.finalizeAfterAssociation(createdUser.id); // Continuar aunque la imagen falle
-            }
-          });
+      const payroll = this.payrollAccount();
+      this.assigningPayroll = !!payroll?.id;
+      const save$ = payroll?.id
+        ? this.userService.updateUser(payroll.id, userData)
+        : this.userService.createUser(userData);
+      save$.subscribe({
+        next: (savedUser) => {
+          const savedId = payroll?.id || savedUser?.id;
+          if (this.fileToUpload && savedId) {
+            this.userService.uploadProfilePicture(savedId, this.fileToUpload).subscribe({
+              next: (uploadResponse: any) => {
+                let profilePicturePath;
+                if (uploadResponse && uploadResponse.data) {
+                  profilePicturePath = uploadResponse.data;
+                } else if (uploadResponse && typeof uploadResponse === 'string') {
+                  profilePicturePath = uploadResponse;
+                }
+                this.userService.updateUser(savedId, { profilePicture: profilePicturePath }).subscribe({
+                  next: () => this.finalizeAfterAssociation(savedId),
+                  error: () => this.finalizeAfterAssociation(savedId)
+                });
+              },
+              error: () => this.finalizeAfterAssociation(savedId)
+            });
+          } else if (savedId) {
+            this.finalizeAfterAssociation(savedId);
           } else {
-            this.finalizeAfterAssociation(createdUser.id);
+            this.handleSaveSuccess();
           }
         },
         error: (error) => this.handleSaveError(error)
@@ -471,12 +478,19 @@ export class EditarUsuarioComponent implements OnInit {
     return (this.allUsers || []).some(u => {
       if (!u) return false;
       if (currentId && u.id === currentId) return false;
+      if (resolveUserKind(u.roles) === 'trabajador') return false;
       const f = (u as any)[field];
-      return typeof f === 'string' && f.toLowerCase() === v;
+      if (field === 'phone') {
+        const left = this.phoneDigits(value);
+        const right = this.phoneDigits(f);
+        return left.length >= 7 && right.length >= 7 && (left.endsWith(right) || right.endsWith(left));
+      }
+      return typeof f === 'string' && f.trim().toLowerCase() === v;
     });
   }
 
   checkUsernameDuplicate(): void {
+    this.normalizeIdentityFields();
     const ctrl = this.userForm.get('username');
     if (!ctrl) return;
     const duplicate = this.isDuplicate('username', ctrl.value);
@@ -487,6 +501,7 @@ export class EditarUsuarioComponent implements OnInit {
   }
 
   checkEmailDuplicate(): void {
+    this.normalizeIdentityFields();
     const ctrl = this.userForm.get('email');
     if (!ctrl) return;
     const duplicate = this.isDuplicate('email', ctrl.value);
@@ -497,6 +512,7 @@ export class EditarUsuarioComponent implements OnInit {
   }
 
   checkPhoneDuplicate(): void {
+    this.normalizeIdentityFields();
     const ctrl = this.userForm.get('phone');
     if (!ctrl) return;
     const duplicate = this.isDuplicate('phone', ctrl.value);
@@ -504,6 +520,47 @@ export class EditarUsuarioComponent implements OnInit {
     if (duplicate) { errors['duplicate'] = true; }
     else { if ('duplicate' in errors) delete errors['duplicate']; }
     ctrl.setErrors(Object.keys(errors).length ? errors : null);
+  }
+
+  private normalizeIdentityFields(): void {
+    const username = this.userForm.get('username');
+    const email = this.userForm.get('email');
+    const phone = this.userForm.get('phone');
+    const cleanUser = this.cleanText(username?.value).replace(/[^\w.\-]/g, '');
+    const cleanEmail = this.cleanText(email?.value);
+    if (username && username.value !== cleanUser) username.setValue(cleanUser, { emitEvent: false });
+    if (email && email.value !== cleanEmail) email.setValue(cleanEmail, { emitEvent: false });
+    if (phone) {
+      const cleanPhone = this.cleanText(phone.value);
+      if (phone.value !== cleanPhone) phone.setValue(cleanPhone, { emitEvent: false });
+    }
+  }
+
+  private cleanText(value: unknown): string {
+    return String(value || '')
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .trim();
+  }
+
+  private phoneDigits(value: unknown): string {
+    return String(value || '').replace(/\D/g, '');
+  }
+
+  /** Cuenta de un trabajador de la nómina. Asignarle Supervisor, Gestor o Administrador no es un duplicado. */
+  private payrollAccount(): User | null {
+    const raw = this.userForm.getRawValue();
+    const email = this.cleanText(raw.email).toLowerCase();
+    const username = this.cleanText(raw.username).toLowerCase();
+    const phone = this.phoneDigits(raw.phone);
+    const found = (this.allUsers || []).find(user => {
+      if (!user || resolveUserKind(user.roles) !== 'trabajador') return false;
+      const sameEmail = email && this.cleanText(user.email).toLowerCase() === email;
+      const sameUser = username && this.cleanText(user.username).toLowerCase() === username;
+      const userPhone = this.phoneDigits(user.phone);
+      const samePhone = phone.length >= 7 && userPhone.length >= 7 && (userPhone.endsWith(phone) || phone.endsWith(userPhone));
+      return sameEmail || sameUser || samePhone;
+    });
+    return found || null;
   }
   private finalizeAfterAssociation(userId: number): void {
     const raw = this.userForm.getRawValue();
@@ -587,7 +644,11 @@ export class EditarUsuarioComponent implements OnInit {
   }
   handleSaveSuccess(): void {
     this.isSubmitting = false;
-    const mensaje = this.isEditMode ? 'Usuario actualizado exitosamente' : 'Usuario creado exitosamente';
+    const mensaje = this.isEditMode
+      ? 'Usuario actualizado exitosamente'
+      : (this.assigningPayroll
+        ? 'El trabajador ya estaba en la nómina. Se le asignó el rol elegido.'
+        : 'Usuario creado exitosamente');
     this.notificationService.success(mensaje);
     this.router.navigate(['/dashboard/admin/usuarios']);
   }

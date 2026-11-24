@@ -1249,6 +1249,15 @@ export class GestionEmpleadosComponent implements OnInit {
     return (this.businessShortUpper || '').trim();
   }
 
+  /** Tamaño del nombre en la credencial según cuántos caracteres tiene la empresa. */
+  companyNameSizeClass(): string {
+    const n = this.getBusinessShortUpper().length;
+    if (n > 52) return 'ensign-xs';
+    if (n > 34) return 'ensign-sm';
+    if (n > 20) return 'ensign-md';
+    return 'ensign-lg';
+  }
+
   getEmployeeCode(emp: EmployeeResponse | null): string {
     if (!emp) return '';
     return emp.codigoTrabajador || emp.cedula || String(emp.id || '');

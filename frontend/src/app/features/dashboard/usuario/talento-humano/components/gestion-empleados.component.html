@@ -672,12 +672,14 @@
             </div>
 
             <div class="flex-spacer"></div>
-            <div class="ensign">
-              <span>{{ getBusinessShortUpper() || 'EMPRESA' }}</span>
-            </div>
-            <div class="site-link">www.improvement-solution.com/en-US/</div>
-            <div class="qr-box" *ngIf="selectedEmployee">
-              <img [src]="getEmployeeQrUrl(selectedEmployee)" alt="QR" />
+            <div class="credential-footer">
+              <div class="ensign" [ngClass]="companyNameSizeClass()">
+                <span>{{ getBusinessShortUpper() || 'EMPRESA' }}</span>
+              </div>
+              <div class="site-link">www.improvement-solution.com/en-US/</div>
+              <div class="qr-box" *ngIf="selectedEmployee">
+                <img [src]="getEmployeeQrUrl(selectedEmployee)" alt="QR" />
+              </div>
             </div>
           </div>
         </div>
