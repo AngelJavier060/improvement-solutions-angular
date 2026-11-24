@@ -28,6 +28,10 @@ const routes: Routes = [
         loadChildren: () => import('./etnias/etnias.module').then(m => m.EtniasModule)
       },
       {
+        path: 'tipo-sangre',
+        loadChildren: () => import('./tipo-sangre/tipo-sangre.module').then(m => m.TipoSangreModule)
+      },
+      {
         path: 'tipo-documento',
         loadChildren: () => import('./tipo-documento/tipo-documento.module').then(m => m.TipoDocumentoModule)
       },

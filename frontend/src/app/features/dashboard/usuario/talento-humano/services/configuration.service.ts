@@ -139,4 +139,8 @@ export class ConfigurationService {
   getWorkShiftsByCompany(businessId: number): Observable<WorkShift[]> {
     return this.http.get<WorkShift[]>(`${this.apiUrl}/work-shifts/${businessId}`);
   }
+
+  getBloodTypesByCompany(businessId: number): Observable<Array<{ id: number; name: string }>> {
+    return this.http.get<Array<{ id: number; name: string }>>(`${this.apiUrl}/blood-types/${businessId}`);
+  }
 }

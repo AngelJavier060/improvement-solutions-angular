@@ -334,6 +334,12 @@ public class BusinessController {
         response.put("cards", business.getCards().stream().map(cardDto).collect(Collectors.toList()));
         response.put("workSchedules", business.getWorkSchedules().stream().map(wsDto).collect(Collectors.toList()));
         response.put("workShifts", business.getWorkShifts().stream().map(wshDto).collect(Collectors.toList()));
+        response.put("bloodTypes", business.getBloodTypes().stream().map(item -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", item.getId());
+            m.put("name", item.getName());
+            return m;
+        }).collect(Collectors.toList()));
         response.put("ieses", business.getIessItems().stream().map(iessDto).collect(Collectors.toList()));
         
         // Mantenimiento: Tipos de Vehículo y Estados de Unidad
@@ -1354,6 +1360,28 @@ public class BusinessController {
         businessService.removeWorkScheduleFromBusiness(businessId, workScheduleId);
         Map<String, String> response = new HashMap<>();
         response.put("message", "Jornada de trabajo eliminada exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{businessId}/blood-types/{bloodTypeId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> addBloodTypeToBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long bloodTypeId) {
+        businessService.addBloodTypeToBusiness(businessId, bloodTypeId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Tipo de sangre agregado exitosamente");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{businessId}/blood-types/{bloodTypeId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> removeBloodTypeFromBusiness(
+            @PathVariable Long businessId,
+            @PathVariable Long bloodTypeId) {
+        businessService.removeBloodTypeFromBusiness(businessId, bloodTypeId);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Tipo de sangre quitado de la empresa");
         return ResponseEntity.ok(response);
     }
 

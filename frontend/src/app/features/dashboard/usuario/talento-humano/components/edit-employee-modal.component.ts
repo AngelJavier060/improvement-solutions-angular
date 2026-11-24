@@ -39,6 +39,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
   workSchedules: WorkSchedule[] = [];
   workShifts: WorkShift[] = [];
   degrees: Degree[] = [];
+  bloodTypes: Array<{ id: number; name: string }> = [];
   iessCodes: IessCode[] = [];
 
   // Tabs
@@ -559,7 +560,8 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       degrees: this.configurationService.getDegrees(),
       iessCodes: this.configurationService.getIessCodesByBusiness(this.businessId),
       workSchedules: this.configurationService.getWorkSchedulesByCompany(this.businessId),
-      workShifts: this.configurationService.getWorkShiftsByCompany(this.businessId)
+      workShifts: this.configurationService.getWorkShiftsByCompany(this.businessId),
+      bloodTypes: this.configurationService.getBloodTypesByCompany(this.businessId)
     }).subscribe({
       next: (res) => {
         this.genders = res.genders || [];
@@ -571,6 +573,11 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
         this.degrees = res.degrees || [];
         this.workSchedules = res.workSchedules || [];
         this.workShifts = res.workShifts || [];
+        this.bloodTypes = res.bloodTypes || [];
+        const currentBlood = (this as any).employee?.tipoSangre;
+        if (currentBlood && !this.bloodTypes.some(item => item.name === currentBlood)) {
+          this.bloodTypes = [{ id: 0, name: currentBlood }, ...this.bloodTypes];
+        }
         this.iessCodes = (res.iessCodes || []).map((it: any) => ({
           ...it,
           code: String(it.code || it.codigoSectorial || it.codigo || it.codigo_iess || it.codigoIess || it.id || '')

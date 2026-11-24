@@ -288,6 +288,14 @@ export class BusinessService {
     return this.http.post<any>(`${this.apiUrl}/${businessId}/work-shifts/${workShiftId}`, {});
   }
 
+  addBloodTypeToBusiness(businessId: number, bloodTypeId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${businessId}/blood-types/${bloodTypeId}`, {});
+  }
+
+  removeBloodTypeFromBusiness(businessId: number, bloodTypeId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/${businessId}/blood-types/${bloodTypeId}`);
+  }
+
   removeWorkShiftFromBusiness(businessId: number, workShiftId: number): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/${businessId}/work-shifts/${workShiftId}`);
   }

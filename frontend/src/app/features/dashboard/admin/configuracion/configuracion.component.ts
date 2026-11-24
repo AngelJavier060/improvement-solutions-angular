@@ -265,6 +265,7 @@ export class ConfiguracionComponent implements OnInit, OnDestroy {
         { nombre: 'Estado Civil', descripcion: 'Gestionar los diferentes estados civiles', ruta: 'estado-civil', icono: 'fas fa-ring', proximamente: false },
         { nombre: 'Tipo de Residencia', descripcion: 'Gestionar los tipos de residencia', ruta: 'tipo-residencia', icono: 'fas fa-home', proximamente: false },
         { nombre: 'Etnias', descripcion: 'Gestionar los grupos étnicos', ruta: 'etnias', icono: 'fas fa-users', proximamente: false },
+        { nombre: 'Tipo de sangre', descripcion: 'Catálogo general. Cada empresa elige cuáles usar al ingresar personal.', ruta: 'tipo-sangre', icono: 'fas fa-tint', proximamente: false },
         { nombre: 'Departamentos', descripcion: 'Gestionar los departamentos de la empresa', ruta: 'departamentos', icono: 'fas fa-building', proximamente: false },
         { nombre: 'Cargos', descripcion: 'Gestionar los cargos disponibles en la empresa', ruta: 'cargos', icono: 'fas fa-briefcase', proximamente: false },
         { nombre: 'Jornadas de Trabajo', descripcion: 'Gestionar las jornadas de trabajo del personal', ruta: 'jornadas-trabajo', icono: 'fas fa-calendar-alt', proximamente: false },

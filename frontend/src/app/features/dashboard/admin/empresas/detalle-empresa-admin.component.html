@@ -355,6 +355,52 @@
       </div>
     </div>
 
+    <!-- Tipo de sangre -->
+    <div class="col-lg-6 col-xl-3">
+      <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.blood_types?.length > 0}">
+        <div class="card-header bg-gradient py-3 px-3" style="background: linear-gradient(90deg, #ffd6d6 0%, #ffb3b3 100%);">
+          <div class="d-flex align-items-center h-100">
+            <div class="me-3">
+              <div class="bg-white bg-opacity-20 rounded-circle p-2" style="width: 32px; height: 32px;">
+                <i class="fas fa-tint text-dark" style="font-size: 14px;"></i>
+              </div>
+            </div>
+            <div>
+              <h6 class="text-dark mb-0 fw-bold" style="font-size: 18px; color: #212529 !important;">Tipo de sangre</h6>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          <div class="mb-2">
+            <i class="fas fa-tint me-1" style="font-size: 12px; color: #c0392b;"></i>
+            <span class="small fw-bold text-dark">Tipo de sangre</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button class="btn btn-sm w-100" style="background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%); color: white;" (click)="openAsignBloodTypeModal()">
+              <i class="fas fa-plus me-1"></i>Agregar
+            </button>
+          </div>
+          <div *ngIf="empresa.blood_types?.length > 0" class="expanded-content">
+            <div class="mb-1" *ngFor="let item of empresa.blood_types">
+              <div class="d-flex align-items-center justify-content-between p-1 bg-light rounded">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fas fa-tint me-2" style="font-size: 10px; color: #c0392b;"></i>
+                  <span class="small fw-semibold text-dark" style="font-size: 11px;">{{ item.name || ('#' + item.id) }}</span>
+                </div>
+                <button class="btn btn-outline-danger btn-sm p-1" title="Quitar de la empresa" (click)="removeBloodType(item.id)" style="font-size: 8px;">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!empresa.blood_types?.length" class="text-center py-2">
+            <i class="fas fa-tint fa-lg text-muted opacity-50"></i>
+            <p class="text-muted small mb-0" style="font-size: 10px;">Sin tipos de sangre</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 2d. Sección Jornadas de Trabajo -->
     <div class="col-lg-6 col-xl-3">
       <div class="card shadow-sm border-0 h-100" [ngClass]="{'expanded': empresa.work_schedules?.length > 0}">
@@ -2533,6 +2579,15 @@
             <span *ngIf="isSuperAdmin" class="ms-2">· Los inactivos muestran fecha de desvinculación; solo Superadmin puede corregirla.</span>
           </div>
           <div class="alert alert-success py-2 px-3 mx-3 mt-2 mb-0 small" style="white-space: pre-line" *ngIf="personnelExcelMsg">{{ personnelExcelMsg }}</div>
+          <div class="mx-3 mt-2" *ngIf="personnelExcelBusy">
+            <div class="d-flex justify-content-between small text-muted mb-1">
+              <span>Subiendo personal</span>
+              <span>{{ personnelExcelDone }} de {{ personnelExcelTotal }}</span>
+            </div>
+            <div class="progress" style="height: 10px;">
+              <div class="progress-bar bg-success" [style.width.%]="personnelExcelPercent"></div>
+            </div>
+          </div>
           <div class="alert alert-warning py-2 px-3 mx-3 mt-2 mb-0 small personnel-excel-err" style="white-space: pre-line" *ngIf="personnelExcelErr">{{ personnelExcelErr }}</div>
           <div class="alert alert-success py-2 px-3 mx-3 mt-2 mb-0 small" *ngIf="employeesExitMsg">{{ employeesExitMsg }}</div>
           <div class="alert alert-danger py-2 px-3 mx-3 mt-2 mb-0 small" *ngIf="employeesExitErr">{{ employeesExitErr }}</div>
@@ -3321,6 +3376,29 @@
   </div>
 </div>
 
+
+<!-- Modal para asignar tipo de sangre -->
+<div *ngIf="showAsignBloodTypeModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 text-white" style="background: #c0392b;">
+        <h5 class="modal-title mb-0">Agregar tipo de sangre</h5>
+        <button type="button" class="btn-close btn-close-white" (click)="showAsignBloodTypeModal = false"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-muted">Solo aparecen los tipos creados en Configuración, Recursos Humanos. El personal que ya tiene un tipo guardado no cambia.</p>
+        <select class="form-select" [(ngModel)]="selectedBloodTypes" multiple size="6">
+          <option *ngFor="let item of getAvailableBloodTypes()" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <div *ngIf="!getAvailableBloodTypes().length" class="small text-muted mt-2">No hay tipos nuevos. Créelos en Configuración → Tipo de sangre.</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="showAsignBloodTypeModal = false">Cancelar</button>
+        <button type="button" class="btn text-white" style="background: #c0392b;" (click)="asignBloodType()" [disabled]="!selectedBloodTypes.length">Agregar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Modal para asignar Jornadas de Trabajo -->
 <div *ngIf="showAsignWorkScheduleModal" class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6);">

@@ -1,0 +1,58 @@
+<div class="etnias-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Tipo de sangre</h2>
+      <p>Catálogo general. Cada empresa elige después cuáles usa en Talento Humano.</p>
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" routerLink="/dashboard/admin/configuracion">
+        <i class="fas fa-arrow-left"></i> Volver a Configuración
+      </button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 16px;">
+    <div class="card-body" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: end;">
+      <label style="display: flex; flex-direction: column; gap: 4px;">
+        Nombre
+        <input [(ngModel)]="name" placeholder="O+" />
+      </label>
+      <label style="display: flex; flex-direction: column; gap: 4px; min-width: 220px;">
+        Descripción
+        <input [(ngModel)]="description" placeholder="Opcional" />
+      </label>
+      <button class="btn-primary" type="button" (click)="save()">{{ editingId ? 'Guardar' : 'Agregar' }}</button>
+      <button *ngIf="editingId" class="btn-secondary" type="button" (click)="cancel()">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div *ngIf="error" class="alert alert-warning">{{ error }}</div>
+    <div *ngIf="loading" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Cargando tipos de sangre...</span>
+    </div>
+    <table *ngIf="!loading" class="table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of items">
+          <td>{{ item.name }}</td>
+          <td>{{ item.description || '—' }}</td>
+          <td>
+            <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="edit(item)">Editar</button>
+            <button type="button" class="btn btn-sm btn-outline-danger" (click)="remove(item)">Eliminar</button>
+          </td>
+        </tr>
+        <tr *ngIf="!items.length">
+          <td colspan="3">No hay tipos de sangre en el catálogo.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

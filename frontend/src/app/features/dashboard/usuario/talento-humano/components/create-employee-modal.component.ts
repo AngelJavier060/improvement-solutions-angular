@@ -36,6 +36,7 @@ export class CreateEmployeeModalComponent implements OnInit {
   workSchedules: WorkSchedule[] = [];
   workShifts: WorkShift[] = [];
   degrees: Degree[] = [];
+  bloodTypes: Array<{ id: number; name: string }> = [];
   iessCode: string = '';
   iessCodes: IessCode[] = []; // Nueva propiedad para almacenar todos los códigos IESS
   businessRuc: string = ''; // Guardar el RUC de la empresa
@@ -243,7 +244,8 @@ export class CreateEmployeeModalComponent implements OnInit {
         degreesResponse,
         iessCodesResponse,
         workSchedulesResponse,
-        workShiftsResponse
+        workShiftsResponse,
+        bloodTypesResponse
       ] = await Promise.all([
         this.configurationService.getGenders().toPromise(),
         this.configurationService.getCivilStatuses().toPromise(),
@@ -254,7 +256,8 @@ export class CreateEmployeeModalComponent implements OnInit {
         this.configurationService.getDegrees().toPromise(),
         this.configurationService.getIessCodesByBusiness(this.businessId).toPromise(),
         this.configurationService.getWorkSchedulesByCompany(this.businessId).toPromise(),
-        this.configurationService.getWorkShiftsByCompany(this.businessId).toPromise()
+        this.configurationService.getWorkShiftsByCompany(this.businessId).toPromise(),
+        this.configurationService.getBloodTypesByCompany(this.businessId).toPromise()
       ]);
 
       this.genders = gendersResponse || [];
@@ -266,6 +269,7 @@ export class CreateEmployeeModalComponent implements OnInit {
       this.degrees = degreesResponse || [];
       this.workSchedules = workSchedulesResponse || [];
       this.workShifts = workShiftsResponse || [];
+      this.bloodTypes = bloodTypesResponse || [];
       
       // Cargar empresas contratistas configuradas para esta empresa
       await this.loadContractorCompanies();

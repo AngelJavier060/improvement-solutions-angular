@@ -19,6 +19,7 @@ import { CourseCertificationService } from '../../../../services/course-certific
 import { CardService } from '../../../../services/card.service';
 import { WorkScheduleService } from '../../../../services/work-schedule.service';
 import { WorkShiftService } from '../../../../services/work-shift.service';
+import { BloodTypeService } from '../../../../services/blood-type.service';
 import { WorkSchedule } from '../../../../models/work-schedule.model';
 import { WorkShift } from '../../../../models/work-shift.model';
 import { environment } from '../../../../../environments/environment';
@@ -108,7 +109,12 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     contractorCompanies: any[];
     contractorBlocks: any[];
     iess: any[];
+    bloodTypes: any[];
   } | null = null;
+  get personnelExcelPercent(): number {
+    if (!this.personnelExcelTotal) return 0;
+    return Math.round((this.personnelExcelDone / this.personnelExcelTotal) * 100);
+  }
   personnelExcelMsg: string | null = null;
   personnelExcelErr: string | null = null;
 
@@ -139,6 +145,11 @@ export class DetalleEmpresaAdminComponent implements OnInit {
   showAsignCourseCertModal = false;
   showAsignCardModal = false;
   showAsignWorkScheduleModal = false;
+  showAsignBloodTypeModal = false;
+  selectedBloodTypes: number[] = [];
+  bloodTypes: any[] = [];
+  personnelExcelDone = 0;
+  personnelExcelTotal = 0;
   showAsignWorkShiftModal = false;
 
   // Catálogos globales de jornadas y horarios
@@ -520,6 +531,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     private cardService: CardService,
     private workScheduleService: WorkScheduleService,
     private workShiftService: WorkShiftService,
+    private bloodTypeService: BloodTypeService,
     private employeeService: EmployeeService,
     private inventoryCategoryService: InventoryCategoryService,
     private inventorySupplierService: InventorySupplierService,
@@ -1419,6 +1431,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       return;
     }
     this.personnelExcelBusy = true;
+    this.personnelExcelDone = 0;
+    this.personnelExcelTotal = 0;
     this.personnelExcelMsg = null;
     this.personnelExcelErr = null;
     try {
@@ -1434,11 +1448,13 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         return;
       }
       const summary = await this.applyPersonnelRows(rows);
-      this.personnelExcelMsg = `Empresa ${this.empresa.name}: ${summary.created} nuevo(s), ${summary.updated} actualizado(s), ${summary.skipped} sin cambios. Los campos vacíos no impiden la subida.`;
       const notices = [...summary.warnings, ...summary.errors];
-      if (notices.length) {
-        this.personnelExcelErr = `Resumen para corregir y volver a subir. El trabajador se guarda; el dato que no está en la configuración de la empresa no se guarda.\n${notices.join('\n')}`;
+      if (summary.blocked) {
+        this.personnelExcelMsg = null;
+        this.personnelExcelErr = `No se subió el archivo. Corrija estas inconsistencias y vuelva a subirlo. No se escribió nada en la base de datos.\n${notices.join('\n')}`;
+        return;
       }
+      this.personnelExcelMsg = `Subida satisfactoria. Empresa ${this.empresa.name}: ${summary.created} nuevo(s), ${summary.updated} actualizado(s), ${summary.skipped} sin cambios.`;
       this.loadCompanyEmployees();
     } catch (err: any) {
       this.personnelExcelErr = err?.error?.message || err?.message || 'No se pudo leer el Excel.';
@@ -1447,7 +1463,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     }
   }
 
-  private async applyPersonnelRows(rows: Array<Record<string, string>>): Promise<{ created: number; updated: number; skipped: number; errors: string[]; warnings: string[] }> {
+  private async applyPersonnelRows(rows: Array<Record<string, string>>): Promise<{ created: number; updated: number; skipped: number; errors: string[]; warnings: string[]; blocked: boolean }> {
     let created = 0;
     let updated = 0;
     let skipped = 0;
@@ -1463,43 +1479,63 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       const key = this.normalizeCedula(emp?.cedula);
       if (key) byCedula.set(key, emp);
     });
+    const ready: Array<{ row: Record<string, string>; line: number; cedula: string; existing?: EmployeeResponse; mapped: Record<string, any> }> = [];
+    const seen = new Set<string>();
 
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index];
       const line = index + 2;
       const cedula = this.normalizeCedula(this.cell(row, 'cedula'));
       if (!cedula) {
-        errors.push(`Fila ${line}: no es un trabajador (no tiene cédula). No se subió.`);
+        errors.push(`Fila ${line}: no tiene cédula. Quite esa fila o complete la cédula.`);
         continue;
       }
-      const existing = byCedula.get(cedula);
-      const mapped = this.mapPersonnelFields(row, note);
-      if (!mapped) continue;
+      if (seen.has(cedula)) {
+        errors.push(`Fila ${line}: la cédula ${cedula} está repetida en el archivo.`);
+        continue;
+      }
+      seen.add(cedula);
+      ready.push({ row, line, cedula, existing: byCedula.get(cedula), mapped: this.mapPersonnelFields(row, note) });
+    }
+
+    const warnings = Array.from(issues.values()).map(item => `${item.text} (${item.rows} fila${item.rows === 1 ? '' : 's'}).`);
+    if (errors.length || warnings.length) {
+      this.personnelExcelDone = 0;
+      this.personnelExcelTotal = 0;
+      return { created: 0, updated: 0, skipped: 0, errors, warnings, blocked: true };
+    }
+
+    this.personnelExcelTotal = ready.length;
+    this.personnelExcelDone = 0;
+    for (let index = 0; index < ready.length; index++) {
+      const item = ready[index];
       try {
-        if (existing?.id) {
-          const payload: UpdateEmployeeRequest = { cedula: existing.cedula, ...mapped };
-          if (mapped['codigoTrabajador']) payload.codigoEmpresa = mapped['codigoTrabajador'];
+        if (item.existing?.id) {
+          const payload: UpdateEmployeeRequest = { cedula: item.existing.cedula, ...item.mapped };
+          if (item.mapped['codigoTrabajador']) payload.codigoEmpresa = item.mapped['codigoTrabajador'];
           delete (payload as any).codigoTrabajador;
           const keys = Object.keys(payload).filter(key => key !== 'cedula');
           if (!keys.length) {
             skipped++;
-            continue;
+          } else {
+            const saved = await firstValueFrom(this.employeeService.updateEmployee(item.existing.id, payload));
+            byCedula.set(item.cedula, { ...item.existing, ...saved });
+            updated++;
           }
-          const saved = await firstValueFrom(this.employeeService.updateEmployee(existing.id, payload));
-          byCedula.set(cedula, { ...existing, ...saved });
-          updated++;
         } else {
-          const payload = this.buildPersonnelCreate(row, cedula, mapped);
+          const payload = this.buildPersonnelCreate(item.row, item.cedula, item.mapped);
           const saved = await firstValueFrom(this.employeeService.createEmployee(payload));
-          if (saved) byCedula.set(cedula, saved);
+          if (saved) byCedula.set(item.cedula, saved);
           created++;
         }
       } catch (err: any) {
-        errors.push(`Fila ${line} (${cedula}): ${err?.error?.message || err?.message || 'no se pudo guardar'}.`);
+        errors.push(`Fila ${item.line} (${item.cedula}): ${err?.error?.message || err?.message || 'no se pudo guardar'}.`);
+        this.personnelExcelDone = ready.length;
+        return { created, updated, skipped, errors, warnings, blocked: false };
       }
+      this.personnelExcelDone = index + 1;
     }
-    const warnings = Array.from(issues.values()).map(item => `${item.text} (${item.rows} fila${item.rows === 1 ? '' : 's'}).`);
-    return { created, updated, skipped, errors, warnings };
+    return { created, updated, skipped, errors, warnings, blocked: false };
   }
 
   private async ensurePersonnelLookups(): Promise<void> {
@@ -1531,6 +1567,13 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     } catch {
       iess = [];
     }
+    if (!all?.bloodTypes) {
+      try {
+        all.bloodTypes = await firstValueFrom(this.configurationService.getBloodTypesByCompany(businessId));
+      } catch {
+        all.bloodTypes = [];
+      }
+    }
     this.personnelLookups = {
       genders: all?.genders || [],
       civil: all?.civilStatuses || [],
@@ -1543,7 +1586,8 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       workShifts: all?.workShifts || [],
       contractorCompanies: all?.contractorCompanies || [],
       contractorBlocks: all?.contractorBlocks || [],
-      iess
+      iess,
+      bloodTypes: all?.bloodTypes || []
     };
   }
 
@@ -1581,20 +1625,24 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     const salary = this.cell(row, 'salario');
     if (salary) {
       const amount = Number(salary.replace(/\s/g, '').replace(',', '.'));
-      if (Number.isNaN(amount)) note(`salario:${normalizeHeader(salary)}`, `Salario "${salary}" no es un número. Ese dato no se guardó`);
+      if (Number.isNaN(amount)) note(`salario:${normalizeHeader(salary)}`, `Salario "${salary}" no es un número. Corrija esa celda`);
       else out['salario'] = amount;
     }
     const blood = this.cell(row, 'tipo de sangre') || this.cell(row, 'tipo sangre');
     if (blood) {
-      const match = normalizeBloodType(blood);
-      if (!match) note(`sangre:${normalizeHeader(blood)}`, `Tipo de sangre "${blood}" no está en la lista (O+, A+, A-, B+, B-, AB+, AB-, O-). Ese dato no se guardó`);
-      else out['tipoSangre'] = match;
+      const canonical = normalizeBloodType(blood) || blood;
+      const pool = this.companyOnly(this.empresa?.blood_types, this.personnelLookups?.bloodTypes);
+      const found = pool.find((item: any) => catalogsMatch(canonical, item?.name || '') || catalogsMatch(blood, item?.name || ''));
+      if (!found) {
+        const options = this.catalogOptionNames(pool, ['name']);
+        note(`sangre:${normalizeHeader(blood)}`, `Tipo de sangre "${blood}" no está en la configuración de esta empresa${options}. Agréguelo en Talento Humano o corrija el Excel`);
+      } else out['tipoSangre'] = found.name;
     }
     const disability = this.cell(row, 'discapacidad');
     if (disability) {
       const options = ['No', 'Física', 'Visual', 'Auditiva', 'Intelectual', 'Psicosocial', 'Múltiple'];
       const match = options.find(option => catalogsMatch(disability, option));
-      if (!match) note(`discapacidad:${normalizeHeader(disability)}`, `Discapacidad "${disability}" no está en la lista. Ese dato no se guardó`);
+      if (!match) note(`discapacidad:${normalizeHeader(disability)}`, `Discapacidad "${disability}" no está en la lista. Corrija esa celda`);
       else out['discapacidad'] = match;
     }
     const status = this.cell(row, 'estado');
@@ -1607,7 +1655,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         out['active'] = false;
         out['status'] = 'INACTIVO';
       } else {
-        note('estado', 'La columna Estado no dice Activo o Inactivo. El trabajador se guarda como Activo y ese dato no se usa');
+        note('estado', 'La columna Estado debe decir Activo o Inactivo. Corrija esa columna antes de subir');
       }
     }
     const lookups = this.personnelLookups;
@@ -1632,7 +1680,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       if (!found || isNaN(id)) {
         const where = companyScoped ? 'la configuración de esta empresa' : 'las listas del sistema';
         const options = this.catalogOptionNames(catalog);
-        note(`${header}:${normalizeHeader(value)}`, `${this.catalogLabel(header)} "${value}" no está en ${where}${options}. Ese dato no se guardó`);
+        note(`${header}:${normalizeHeader(value)}`, `${this.catalogLabel(header)} "${value}" no está en ${where}${options}. Corrija el Excel o agréguelo en la configuración de la empresa`);
       } else {
         out[key] = id;
         if (key === 'degreeId' && found?.name) out['nivelEducacion'] = found.name;
@@ -1644,7 +1692,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       const found = pool.find((item: any) => catalogsMatch(iess, item?.code || item?.codigo || ''));
       if (!found) {
         const options = this.catalogOptionNames(pool, ['code', 'codigo']);
-        note(`iess:${normalizeHeader(iess)}`, `Código IESS "${iess}" no está en la configuración de esta empresa${options}. Ese dato no se guardó`);
+        note(`iess:${normalizeHeader(iess)}`, `Código IESS "${iess}" no está en la configuración de esta empresa${options}. Corrija el Excel o agréguelo en la empresa`);
       } else out['codigoIess'] = found.code || found.codigo || found.name;
     }
     return out;
@@ -1766,6 +1814,57 @@ export class DetalleEmpresaAdminComponent implements OnInit {
       next: (data) => { this.workSchedules = data || []; },
       error: () => { this.workSchedules = []; }
     });
+  }
+
+  loadBloodTypes(): void {
+    this.bloodTypeService.getAll().subscribe({
+      next: (data) => { this.bloodTypes = data || []; },
+      error: () => { this.bloodTypes = []; }
+    });
+  }
+
+  openAsignBloodTypeModal(): void {
+    this.selectedBloodTypes = [];
+    this.showAsignBloodTypeModal = true;
+    this.loadBloodTypes();
+  }
+
+  asignBloodType(): void {
+    if (!this.selectedBloodTypes.length || !this.empresa?.id) return;
+    const assigned = new Set<number>((this.empresa.blood_types || []).map((item: any) => Number(item?.id)));
+    const pending = this.selectedBloodTypes.map(id => Number(id)).filter(id => id && !assigned.has(id));
+    Promise.all(pending.map(id => this.businessService.addBloodTypeToBusiness(this.empresa.id, id).toPromise()))
+      .then(() => {
+        pending.forEach(id => {
+          const item = this.bloodTypes.find(type => Number(type.id) === id);
+          if (item) {
+            if (!this.empresa.blood_types) this.empresa.blood_types = [];
+            this.empresa.blood_types.push({ id: item.id, name: item.name });
+          }
+        });
+        this.selectedBloodTypes = [];
+        this.showAsignBloodTypeModal = false;
+        this.personnelLookups = null;
+        this.loadData();
+      })
+      .catch(() => alert('No se pudo agregar el tipo de sangre a la empresa.'));
+  }
+
+  removeBloodType(id: number): void {
+    if (!this.empresa?.id) return;
+    if (!confirm('¿Quitar este tipo de sangre de la empresa? El personal que ya lo tiene guardado no se modifica.')) return;
+    this.businessService.removeBloodTypeFromBusiness(this.empresa.id, Number(id)).subscribe({
+      next: () => {
+        this.empresa.blood_types = (this.empresa.blood_types || []).filter((item: any) => Number(item.id) !== Number(id));
+        this.personnelLookups = null;
+      },
+      error: () => alert('No se pudo quitar el tipo de sangre.')
+    });
+  }
+
+  getAvailableBloodTypes(): any[] {
+    const assigned = new Set<number>((this.empresa?.blood_types || []).map((item: any) => Number(item?.id)));
+    return (this.bloodTypes || []).filter(item => !assigned.has(Number(item.id)));
   }
 
   loadWorkShifts(): void {
@@ -2605,6 +2704,10 @@ export class DetalleEmpresaAdminComponent implements OnInit {
         }
         if (!this.empresa.work_schedules) this.empresa.work_schedules = [];
         if (!this.empresa.work_shifts) this.empresa.work_shifts = [];
+        if (!this.empresa.blood_types && (this.empresa as any).bloodTypes) {
+          this.empresa.blood_types = (this.empresa as any).bloodTypes;
+        }
+        if (!this.empresa.blood_types) this.empresa.blood_types = [];
 
         // Normalizar nombre de propiedad de IESS desde backend
         if (!this.empresa.ieses && (this.empresa as any).iessItems) {
@@ -2842,6 +2945,7 @@ export class DetalleEmpresaAdminComponent implements OnInit {
     this.loadCourseCertifications();
     this.loadCards();
     this.loadWorkSchedules();
+    this.loadBloodTypes();
     this.loadWorkShifts();
   }
 

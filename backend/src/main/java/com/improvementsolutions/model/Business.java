@@ -17,8 +17,8 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems", "eppFamilies", "eppSections", "inventorySupplierGlobals", "inventoryEntryTypes", "inventoryOutputTypes", "inventoryAcontecimientoTypes", "inventoryEstadoEpis"})
-@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems", "eppFamilies", "eppSections", "inventorySupplierGlobals", "inventoryEntryTypes", "inventoryOutputTypes", "inventoryAcontecimientoTypes", "inventoryEstadoEpis"})
+@EqualsAndHashCode(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "bloodTypes", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems", "eppFamilies", "eppSections", "inventorySupplierGlobals", "inventoryEntryTypes", "inventoryOutputTypes", "inventoryAcontecimientoTypes", "inventoryEstadoEpis"})
+@ToString(exclude = {"users", "employees", "positions", "typeContracts", "typeDocuments", "departments", "iessItems", "businessObligationMatrices", "contractorCompanies", "contractorBlocks", "courseCertifications", "cards", "workSchedules", "workShifts", "bloodTypes", "tipoVehiculos", "estadoUnidades", "marcaVehiculos", "claseVehiculos", "entidadRemitentes", "tipoCombustibles", "colorVehiculos", "transmisiones", "propietarioVehiculos", "unidadMedidas", "ubicacionRutas", "paisOrigenes", "numeroEjes", "configuracionEjes", "distanciaRecorrers", "tipoVias", "condicionClimaticas", "horarioCirculaciones", "estadoCarreteras", "tipoCargas", "horaConducciones", "horaDescansos", "medioComunicaciones", "transportaPasajeros", "metodologiaRiesgos", "posiblesRiesgosVia", "otrosPeligrosViajeCatalogo", "medidasControlTomadasViajeCatalogo", "iso9001CatalogItems", "eppFamilies", "eppSections", "inventorySupplierGlobals", "inventoryEntryTypes", "inventoryOutputTypes", "inventoryAcontecimientoTypes", "inventoryEstadoEpis"})
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Business {
     @Id
@@ -163,6 +163,15 @@ public class Business {
     )
     @JsonIgnore
     private Set<WorkShift> workShifts = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "business_blood_type",
+        joinColumns = @JoinColumn(name = "business_id"),
+        inverseJoinColumns = @JoinColumn(name = "blood_type_id")
+    )
+    @JsonIgnore
+    private Set<BloodType> bloodTypes = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -663,6 +672,14 @@ public class Business {
     }
 
     // Métodos para horarios de trabajo
+    public void addBloodType(BloodType bloodType) {
+        bloodTypes.add(bloodType);
+    }
+
+    public void removeBloodType(BloodType bloodType) {
+        bloodTypes.remove(bloodType);
+    }
+
     public void addWorkShift(WorkShift wsh) {
         workShifts.add(wsh);
     }

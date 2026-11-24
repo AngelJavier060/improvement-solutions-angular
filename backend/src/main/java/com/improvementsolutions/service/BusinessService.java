@@ -921,6 +921,26 @@ public class BusinessService {
         businessRepository.save(business);
     }
 
+    @Transactional
+    public Business addBloodTypeToBusiness(Long businessId, Long bloodTypeId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        BloodType bloodType = new BloodType();
+        bloodType.setId(bloodTypeId);
+        business.getBloodTypes().add(bloodType);
+        business.setUpdatedAt(LocalDateTime.now());
+        return businessRepository.save(business);
+    }
+
+    @Transactional
+    public void removeBloodTypeFromBusiness(Long businessId, Long bloodTypeId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+        business.getBloodTypes().removeIf(item -> item.getId().equals(bloodTypeId));
+        business.setUpdatedAt(LocalDateTime.now());
+        businessRepository.save(business);
+    }
+
     // === MÉTODOS PARA HORARIOS DE TRABAJO ===
     @Transactional
     public Business addWorkShiftToBusiness(Long businessId, Long workShiftId) {

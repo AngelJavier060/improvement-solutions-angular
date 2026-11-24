@@ -27,6 +27,7 @@ public class ConfigurationController {
     private final IessRepository iessRepository;
     private final WorkScheduleRepository workScheduleRepository;
     private final WorkShiftRepository workShiftRepository;
+    private final BloodTypeRepository bloodTypeRepository;
 
     @GetMapping("/genders")
     public ResponseEntity<List<Gender>> getAllGenders() {
@@ -107,6 +108,15 @@ public class ConfigurationController {
         }
     }
 
+    @GetMapping("/blood-types/{businessId}")
+    public ResponseEntity<List<BloodType>> getBloodTypesByCompany(@PathVariable Long businessId) {
+        try {
+            return ResponseEntity.ok(bloodTypeRepository.findByBusinessId(businessId));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @GetMapping("/work-shifts/{businessId}")
     public ResponseEntity<List<WorkShift>> getWorkShiftsByCompany(@PathVariable Long businessId) {
         try {
@@ -152,6 +162,7 @@ public class ConfigurationController {
             configurations.put("typeContracts", typeContractRepository.findByBusinessId(businessId));
             configurations.put("workSchedules", workScheduleRepository.findByBusinessId(businessId));
             configurations.put("workShifts", workShiftRepository.findByBusinessId(businessId));
+            configurations.put("bloodTypes", bloodTypeRepository.findByBusinessId(businessId));
             
             return ResponseEntity.ok(configurations);
         } catch (Exception e) {
