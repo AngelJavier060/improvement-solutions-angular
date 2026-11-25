@@ -21,6 +21,12 @@ public interface OvertimeRequestRepository extends JpaRepository<OvertimeRequest
     List<OvertimeRequest> findByBusinessIdAndPeriod(@Param("businessId") Long businessId,
                                                      @Param("period") String period);
 
+    @Query("SELECT DISTINCT r FROM OvertimeRequest r " +
+           "LEFT JOIN FETCH r.activities " +
+           "WHERE r.business.id = :businessId AND r.employee.id = :employeeId")
+    List<OvertimeRequest> findByBusinessAndEmployeeWithActivities(@Param("businessId") Long businessId,
+                                                                   @Param("employeeId") Long employeeId);
+
     @Query("SELECT r FROM OvertimeRequest r WHERE r.business.id = :businessId " +
            "AND r.employee.id = :employeeId ORDER BY r.createdAt DESC")
     List<OvertimeRequest> findByBusinessIdAndEmployeeId(@Param("businessId") Long businessId,

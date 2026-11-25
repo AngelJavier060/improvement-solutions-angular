@@ -43,6 +43,10 @@ public class OvertimeRequest {
     @Column(name = "recognition_type", length = 100)
     private String recognitionType;
 
+    /** DIA = rango de días extra. HORA = horas extra. Null = solicitudes anteriores. */
+    @Column(name = "entry_kind", length = 10)
+    private String entryKind;
+
     @Column(name = "status", nullable = false, length = 50)
     private String status = "PENDIENTE";
 

@@ -77,7 +77,7 @@
   <div class="he-page-header">
     <div class="he-page-header-left">
       <h1 class="he-page-title">Reporte de Días &amp; Horas Extras</h1>
-      <p class="he-page-sub">Seguimiento detallado de jornadas adicionales — {{ displayBusinessName }}</p>
+      <p class="he-page-sub">Una sola solicitud para días extras o horas extras. El jefe la aprueba para el pago. {{ displayBusinessName }}</p>
     </div>
     <div class="he-page-actions">
       <button class="he-btn-secondary" (click)="loadRequests()">
@@ -172,7 +172,7 @@
     <!-- Empty state -->
     <div class="he-empty" *ngIf="!loading && filteredRequests.length === 0">
       <span class="material-symbols-outlined">schedule</span>
-      <p>No hay solicitudes de horas extras en este período</p>
+      <p>No hay solicitudes de días ni horas extras en este período</p>
       <button class="he-btn-primary" *ngIf="canRequestOvertime" (click)="openForm()">
         <span class="material-symbols-outlined">add_circle</span> Registrar primera solicitud
       </button>
@@ -194,7 +194,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let req of filteredRequests; trackBy: trackById" class="he-row">
-            <td class="he-cell-period">{{ periodLabel(req.reportPeriod) }}</td>
+            <td class="he-cell-period">{{ registrationMonthLabel(req) }}</td>
             <td>
               <div class="he-emp-cell">
                 <div class="he-emp-avatar">{{ (req.employeeName || 'X').charAt(0).toUpperCase() }}</div>
@@ -216,11 +216,15 @@
               </div>
             </td>
             <td class="text-center">
+              <span class="he-badge-days" *ngIf="req.entryKind==='DIA'">Días extras</span>
+              <span class="he-badge-hours" *ngIf="req.entryKind==='HORA'">Horas extras</span>
               <span class="he-badge-days" *ngIf="req.totalDays">{{ req.totalDays }} día{{ req.totalDays !== 1 ? 's' : '' }}</span>
-              <span *ngIf="!req.totalDays" class="he-cell-muted">0</span>
+              <span *ngIf="!req.totalDays && req.entryKind!=='HORA'" class="he-cell-muted">0</span>
+              <span *ngIf="req.entryKind==='HORA'" class="he-cell-muted">—</span>
             </td>
             <td class="text-center">
-              <span class="he-badge-hours">{{ req.totalHours | number:'1.1-1' }} hrs</span>
+              <span class="he-badge-hours" *ngIf="req.entryKind!=='DIA'">{{ req.totalHours | number:'1.1-1' }} hrs</span>
+              <span *ngIf="req.entryKind==='DIA'" class="he-cell-muted">—</span>
             </td>
             <td>
               <span class="he-status-badge" [ngClass]="statusClass(req.status || '')">
@@ -286,7 +290,7 @@
           <span class="material-symbols-outlined">more_time</span>
           Control de Días &amp; Horas Extras
         </h2>
-        <p class="he-modal-sub">Registro oficial de jornada suplementaria — {{ displayBusinessName }}</p>
+        <p class="he-modal-sub">El jefe debe aprobar esta solicitud para el pago — {{ displayBusinessName }}</p>
       </div>
       <button class="he-modal-close" (click)="cancelForm()">
         <span class="material-symbols-outlined">close</span>
@@ -353,7 +357,7 @@
         <div class="he-form-grid">
           <div class="he-field">
             <label>Período de Reporte</label>
-            <input type="month" [(ngModel)]="formDraft.reportPeriod" />
+            <input type="month" [ngModel]="formDraft.reportPeriod" [readOnly]="true" />
           </div>
           <div class="he-field">
             <label>Jefe Inmediato</label>
@@ -379,7 +383,38 @@
           </div>
         </div>
 
+        <div class="he-kind-switch">
+          <button type="button" class="he-kind-btn" [class.active]="formDraft.entryKind==='DIA'" (click)="setEntryKind('DIA')">
+            <span class="material-symbols-outlined">event_available</span> Días extras
+          </button>
+          <button type="button" class="he-kind-btn" [class.active]="formDraft.entryKind==='HORA'" (click)="setEntryKind('HORA')">
+            <span class="material-symbols-outlined">schedule</span> Horas extras
+          </button>
+        </div>
+
+        <ng-container *ngIf="formDraft.entryKind==='DIA'">
+          <div class="he-section-title">
+            <span class="material-symbols-outlined">date_range</span> Rango de días extras
+          </div>
+          <div class="he-form-grid">
+            <div class="he-field">
+              <label>Desde</label>
+              <input type="date" [(ngModel)]="dayFrom" (ngModelChange)="syncReportPeriod()" />
+            </div>
+            <div class="he-field">
+              <label>Hasta</label>
+              <input type="date" [(ngModel)]="dayTo" />
+            </div>
+            <div class="he-field" style="grid-column: 1 / -1">
+              <label>Motivo</label>
+              <input type="text" [(ngModel)]="dayDescription" placeholder="Por qué se trabajaron estos días" />
+            </div>
+          </div>
+          <p class="he-kind-help">Se marca cada día del rango como día extra en la planilla. La solicitud queda pendiente hasta que el jefe la apruebe para el pago.</p>
+        </ng-container>
+
         <!-- ── Sección 2: Tabla de actividades ───────────────────────── -->
+        <ng-container *ngIf="formDraft.entryKind==='HORA'">
         <div class="he-section-title" style="margin-top:1.5rem">
           <span class="material-symbols-outlined">calendar_month</span> Registro de Actividades y Horas
         </div>
@@ -402,7 +437,7 @@
                 <td class="text-center he-cell-muted">{{ i + 1 }}</td>
                 <td>
                   <input type="date" [(ngModel)]="act.activityDate"
-                         (ngModelChange)="onActivityDateChange(i, $event)" />
+                         (ngModelChange)="onActivityDateChange(i, $event); syncReportPeriod()" />
                 </td>
                 <td>
                   <div class="he-time-range">
@@ -435,6 +470,8 @@
             Total: <strong>{{ formTotalHours | number:'1.1-1' }} horas</strong>
           </span>
         </div>
+        <p class="he-kind-help">Esas horas se escriben en la planilla sin convertir el día en un día extra completo. Quedan pendientes de aprobación del jefe para el pago.</p>
+        </ng-container>
 
         <!-- ── Declaración ───────────────────────────────────────────── -->
         <div class="he-declaration">

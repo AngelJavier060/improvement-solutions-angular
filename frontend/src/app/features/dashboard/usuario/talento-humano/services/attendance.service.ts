@@ -16,7 +16,7 @@ export interface DayTypeInfo {
 export const DAY_TYPES: Record<DayType, DayTypeInfo> = {
   T:  { label: 'Trabajo',     cls: 'day-T',  dotColor: '#2563eb' },
   D:  { label: 'Descanso',    cls: 'day-D',  dotColor: '#64748b' },
-  EX: { label: 'Extra',       cls: 'day-EX', dotColor: '#ea580c' },
+  EX: { label: 'Día extra',  cls: 'day-EX', dotColor: '#ea580c' },
   V:  { label: 'Anuales',     cls: 'day-V',  dotColor: '#0f766e' },
   P:  { label: 'Permiso',     cls: 'day-P',  dotColor: '#ca8a04' },
   E:  { label: 'Enfermedad',  cls: 'day-E',  dotColor: '#db2777' },
@@ -140,6 +140,7 @@ export interface OvertimeRequest {
   department?: string;
   area?: string;
   recognitionType?: string;
+  entryKind?: 'DIA' | 'HORA' | null;
   status?: string;
   signedPdfPath?: string;
   notes?: string;

@@ -136,6 +136,7 @@ public class OvertimeRequestController {
         m.put("department",      r.getDepartment());
         m.put("area",            r.getArea());
         m.put("recognitionType", r.getRecognitionType());
+        m.put("entryKind",       r.getEntryKind());
         m.put("status",          r.getStatus());
         m.put("signedPdfPath",   r.getSignedPdfPath());
         m.put("notes",           r.getNotes());
@@ -143,7 +144,9 @@ public class OvertimeRequestController {
         m.put("approvedAt",      r.getApprovedAt() != null ? r.getApprovedAt().toString() : null);
 
         double totalHours = 0;
+        java.util.Set<String> uniqueDays = new java.util.LinkedHashSet<>();
         List<Map<String, Object>> acts = new ArrayList<>();
+        boolean countHours = r.getEntryKind() == null || "HORA".equalsIgnoreCase(r.getEntryKind());
         for (OvertimeActivity a : r.getActivities()) {
             Map<String, Object> am = new LinkedHashMap<>();
             am.put("id",           a.getId());
@@ -154,11 +157,13 @@ public class OvertimeRequestController {
             am.put("description",  a.getDescription());
             am.put("supportDoc",   a.getSupportDoc());
             acts.add(am);
-            totalHours += a.getHoursTotal();
+            if (a.getActivityDate() != null) uniqueDays.add(a.getActivityDate().toString());
+            if (countHours) totalHours += a.getHoursTotal();
         }
+        int totalDays = "HORA".equalsIgnoreCase(r.getEntryKind()) ? 0 : ("DIA".equalsIgnoreCase(r.getEntryKind()) ? uniqueDays.size() : acts.size());
         m.put("activities",  acts);
         m.put("totalHours",  Math.round(totalHours * 10.0) / 10.0);
-        m.put("totalDays",   acts.size());
+        m.put("totalDays",   totalDays);
         return m;
     }
 }

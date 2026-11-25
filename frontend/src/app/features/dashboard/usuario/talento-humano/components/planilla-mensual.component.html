@@ -291,43 +291,11 @@
                 <div class="pm-emp-cargo">{{ row.position || 'Sin cargo' }}</div>
               </td>
               <td class="pm-td-day"
+                  [class.pm-td-day--selected]="isEditing(row.employeeId, i)"
                   *ngFor="let entry of row.days; let i = index; trackBy: trackByDay"
                   style="position:relative;">
-                <!-- Picker -->
-                <div class="pm-picker"
-                     *ngIf="isEditing(row.employeeId, i)"
-                     (click)="$event.stopPropagation()"
-                     role="dialog"
-                     aria-label="Registro manual del día">
-                  <!-- Solo T y D desde planilla; resto desde formularios -->
-                  <button *ngFor="let k of editableDayTypeKeys"
-                          type="button"
-                          class="pm-picker-btn {{ dayTypes[k].cls }}"
-                          [title]="k === 'T' ? (dayTypes[k].label + ' — tecla T') : (dayTypes[k].label + ' — tecla D')"
-                          (click)="saveDay(row, i, k)">
-                    {{ k }}
-                  </button>
-                  <!-- Borrar registro -->
-                  <button type="button"
-                          class="pm-picker-btn pm-picker-btn--clear"
-                          title="Borrar día — Supr o Retroceso"
-                          [disabled]="clearingDay"
-                          (click)="clearDay(row, i)">
-                    <span class="material-symbols-outlined">delete</span>
-                  </button>
-                  <!-- Cerrar picker -->
-                  <button type="button"
-                          class="pm-picker-btn pm-picker-btn--close"
-                          title="Cerrar — Esc"
-                          (click)="cancelEdit(); $event.stopPropagation()">
-                    <span class="material-symbols-outlined">close</span>
-                  </button>
-                  <div class="pm-picker-hint">
-                    <kbd>T</kbd>/<kbd>D</kbd> guardar · <kbd>←</kbd><kbd>→</kbd> o <kbd>P</kbd> día · <kbd>Tab</kbd> · <kbd>Supr</kbd> · <kbd>Esc</kbd>
-                  </div>
-                </div>
-                <!-- Celda -->
                 <div class="pm-day-cell {{ getDayClass(entry.dayType) }}"
+                     [class.pm-day-selected]="isEditing(row.employeeId, i)"
                      [class.pm-day-after-exit]="entry.afterExit"
                      [class.pm-day-accident]="isAccidentDay(row, i)"
                      [title]="(isAccidentDay(row, i) ? 'ACCIDENTE — Clic para ver detalle ' : '') + (entry.holiday ? (entry.holidayName + ' — ') : '') + (entry.dayType ? ((dayTypes[entry.dayType] ? dayTypes[entry.dayType].label : entry.dayType) || entry.dayType) : '') + (entry.notes ? (' — ' + entry.notes) : '')"
@@ -336,9 +304,10 @@
                   <span class="pm-hday-dot" *ngIf="entry.holiday" [title]="entry.holidayName"></span>
                   <span class="pm-accident-dot" *ngIf="isAccidentDay(row, i)" title="Accidente de seguridad"></span>
                   <button class="pm-exicon material-symbols-outlined"
-                          *ngIf="entry.dayType==='EX' && entry.notes?.startsWith('HE:')"
+                          *ngIf="entry.dayType==='EX' && (entry.notes?.startsWith('HE:') || entry.notes?.startsWith('DE:'))"
                           (click)="toggleNotePopover(row.employeeId, i, $event)"
                           [title]="entry.notes">info</button>
+                  <span class="pm-ot-hrs" *ngIf="hoursOnCell(row.employeeId, entry.date) > 0">{{ hoursOnCell(row.employeeId, entry.date) }}h</span>
                   <button class="pm-vicon material-symbols-outlined"
                           *ngIf="entry.dayType==='V'"
                           (click)="toggleNotePopover(row.employeeId, i, $event)"
@@ -348,7 +317,7 @@
                 <div class="pm-note-pop" *ngIf="isNoteOpen(row.employeeId, i)" (click)="$event.stopPropagation()">
                   <div class="pm-note-pop-hd" [ngClass]="{'pm-note-pop-hd--vac': entry.dayType==='V'}">
                     <span class="material-symbols-outlined">{{ entry.dayType==='V' ? 'umbrella' : 'more_time' }}</span>
-                    {{ entry.dayType==='V' ? 'Vacaciones anuales' : 'Motivo de hora extra' }}
+                    {{ entry.dayType==='V' ? 'Vacaciones anuales' : (entry.notes?.startsWith('DE:') ? 'Día extra' : 'Horas extra') }}
                     <button type="button" class="pm-note-close" (click)="closeNotePopover(); $event.stopPropagation()" title="Cerrar">✕</button>
                   </div>
                   <div class="pm-note-pop-txt">{{ entry.notes }}</div>

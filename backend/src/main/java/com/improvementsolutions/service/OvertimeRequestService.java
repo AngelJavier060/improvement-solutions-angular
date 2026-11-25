@@ -22,16 +22,40 @@ public class OvertimeRequestService {
     private final OvertimeRequestRepository requestRepo;
     private final BusinessRepository businessRepo;
     private final BusinessEmployeeRepository employeeRepo;
+    private final EmployeeOvertimeRepository overtimeRepo;
     private final AttendanceService attendanceService;
 
     @Value("${app.storage.location:uploads}")
     private String storageRoot;
 
+    @Transactional
     public List<OvertimeRequest> getByBusiness(Long businessId, String period) {
-        if (period != null && !period.isBlank()) {
-            return requestRepo.findByBusinessIdAndPeriod(businessId, period);
+        List<OvertimeRequest> all = requestRepo.findByBusinessId(businessId);
+        for (OvertimeRequest r : all) {
+            String effective = effectivePeriod(r);
+            if (effective != null && !effective.equals(r.getReportPeriod())) {
+                r.setReportPeriod(effective);
+                requestRepo.save(r);
+            }
         }
-        return requestRepo.findByBusinessId(businessId);
+        if (period != null && !period.isBlank()) {
+            return all.stream()
+                    .filter(r -> period.equals(r.getReportPeriod()))
+                    .toList();
+        }
+        return all;
+    }
+
+    private String effectivePeriod(OvertimeRequest r) {
+        if (r.getActivities() == null || r.getActivities().isEmpty()) {
+            return r.getReportPeriod();
+        }
+        return r.getActivities().stream()
+                .map(OvertimeActivity::getActivityDate)
+                .filter(java.util.Objects::nonNull)
+                .min(LocalDate::compareTo)
+                .map(d -> String.format("%04d-%02d", d.getYear(), d.getMonthValue()))
+                .orElse(r.getReportPeriod());
     }
 
     public Optional<OvertimeRequest> getById(Long businessId, Long id) {
@@ -56,11 +80,14 @@ public class OvertimeRequestService {
         req.setRecognitionType((String) body.getOrDefault("recognitionType", "Pago en Nómina"));
         req.setNotes((String) body.getOrDefault("notes", ""));
         req.setStatus("PENDIENTE");
+        String kind = String.valueOf(body.getOrDefault("entryKind", "")).trim().toUpperCase();
+        if ("DIA".equals(kind) || "HORA".equals(kind)) {
+            req.setEntryKind(kind);
+        }
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> activities = (List<Map<String, Object>>) body.get("activities");
         if (activities != null) {
-            // Validación: no permitir registrar día extra u horas extra en jornada normal (T)
             Set<LocalDate> datesToValidate = new HashSet<>();
             Map<LocalDate, List<String>> descByDate = new HashMap<>();
             for (Map<String, Object> a : activities) {
@@ -78,34 +105,117 @@ public class OvertimeRequestService {
                 if (startStr != null && !startStr.isBlank()) act.setStartTime(LocalTime.parse(startStr));
                 String endStr = (String) a.get("endTime");
                 if (endStr != null && !endStr.isBlank()) act.setEndTime(LocalTime.parse(endStr));
+                if ("DIA".equals(req.getEntryKind())) {
+                    if (act.getStartTime() == null) act.setStartTime(LocalTime.MIDNIGHT);
+                    if (act.getEndTime() == null) act.setEndTime(LocalTime.MIDNIGHT);
+                }
                 act.setDescription((String) a.getOrDefault("description", ""));
                 act.setSupportDoc((String) a.getOrDefault("supportDoc", ""));
                 req.getActivities().add(act);
             }
 
-            // Ejecutar validación contra jornada
-            for (LocalDate d : datesToValidate) {
-                String type = attendanceService.computeDayType(businessId, employeeId, d);
-                if ("T".equalsIgnoreCase(type)) {
-                    throw new IllegalArgumentException("No es posible registrar horas/días extra el " + d + ": es un día de jornada laboral normal.");
+            if ("DIA".equals(req.getEntryKind())) {
+                List<LocalDate> repeated = repeatedExtraDays(businessId, employeeId, datesToValidate);
+                if (!repeated.isEmpty()) {
+                    String listed = repeated.stream()
+                            .sorted()
+                            .map(d -> String.format("%02d/%02d/%04d", d.getDayOfMonth(), d.getMonthValue(), d.getYear()))
+                            .reduce((a, b) -> a + ", " + b)
+                            .orElse("");
+                    throw new IllegalArgumentException("Este trabajador ya tiene registrados estos días extras: " + listed + ". No se puede repetir.");
+                }
+                for (LocalDate d : datesToValidate) {
+                    String type = attendanceService.computeDayType(businessId, employeeId, d);
+                    if ("T".equalsIgnoreCase(type)) {
+                        throw new IllegalArgumentException("No es posible registrar un día extra el " + d + ": es un día de jornada laboral normal.");
+                    }
                 }
             }
-
-            // Reflejar automáticamente en planilla: marcar EX y guardar motivo/descripcion
-            for (Map.Entry<LocalDate, List<String>> e : descByDate.entrySet()) {
-                LocalDate d = e.getKey();
-                String joined = e.getValue().stream()
-                        .filter(s -> s != null && !s.isBlank())
-                        .distinct()
-                        .reduce((a, b) -> a + "; " + b)
-                        .orElse("Registro de horas/días extra");
-                String notes = ("HE: " + joined);
-                if (notes.length() > 500) notes = notes.substring(0, 497) + "...";
-                attendanceService.saveWorkDay(businessId, employeeId, d, "EX", notes);
+            if (req.getEntryKind() == null) {
+                for (LocalDate d : datesToValidate) {
+                    String type = attendanceService.computeDayType(businessId, employeeId, d);
+                    if ("T".equalsIgnoreCase(type)) {
+                        throw new IllegalArgumentException("No es posible registrar horas/días extra el " + d + ": es un día de jornada laboral normal.");
+                    }
+                }
             }
         }
 
-        return requestRepo.save(req);
+        String fromDates = effectivePeriod(req);
+        if (fromDates != null && !fromDates.isBlank()) {
+            req.setReportPeriod(fromDates);
+        }
+
+        OvertimeRequest saved = requestRepo.save(req);
+        applyToPlanilla(businessId, employee, saved);
+        return saved;
+    }
+
+    private List<LocalDate> repeatedExtraDays(Long businessId, Long employeeId, Set<LocalDate> incoming) {
+        List<LocalDate> repeated = new ArrayList<>();
+        List<OvertimeRequest> existing = requestRepo.findByBusinessAndEmployeeWithActivities(businessId, employeeId);
+        Set<LocalDate> taken = new HashSet<>();
+        for (OvertimeRequest prev : existing) {
+            if (prev.getEntryKind() != null && !"DIA".equalsIgnoreCase(prev.getEntryKind())) continue;
+            if (prev.getActivities() == null) continue;
+            for (OvertimeActivity act : prev.getActivities()) {
+                if (act.getActivityDate() != null) taken.add(act.getActivityDate());
+            }
+        }
+        for (LocalDate d : incoming) {
+            if (taken.contains(d)) repeated.add(d);
+        }
+        return repeated;
+    }
+
+    private void applyToPlanilla(Long businessId, BusinessEmployee employee, OvertimeRequest saved) {
+        if (saved.getActivities() == null || saved.getActivities().isEmpty()) return;
+        String kind = saved.getEntryKind();
+        if ("HORA".equals(kind)) {
+            for (OvertimeActivity act : saved.getActivities()) {
+                if (act.getActivityDate() == null || act.getStartTime() == null || act.getEndTime() == null) continue;
+                EmployeeOvertime ot = new EmployeeOvertime();
+                ot.setBusiness(saved.getBusiness());
+                ot.setEmployee(employee);
+                ot.setOvertimeDate(act.getActivityDate());
+                ot.setStartTime(act.getStartTime());
+                ot.setEndTime(act.getEndTime());
+                String reason = act.getDescription() == null || act.getDescription().isBlank()
+                        ? "Hora extra" : act.getDescription().trim();
+                if (reason.length() > 500) reason = reason.substring(0, 500);
+                ot.setReason(reason);
+                ot.setNotes("REQ:" + saved.getId());
+                overtimeRepo.save(ot);
+            }
+            return;
+        }
+        if ("DIA".equals(kind)) {
+            Set<LocalDate> seen = new HashSet<>();
+            for (OvertimeActivity act : saved.getActivities()) {
+                if (act.getActivityDate() == null || !seen.add(act.getActivityDate())) continue;
+                String desc = act.getDescription() == null ? "" : act.getDescription().trim();
+                String notes = "DE:" + saved.getId() + (desc.isBlank() ? "" : " " + desc);
+                if (notes.length() > 500) notes = notes.substring(0, 497) + "...";
+                attendanceService.saveWorkDay(businessId, employee.getId(), act.getActivityDate(), "EX", notes);
+            }
+            return;
+        }
+        Map<LocalDate, List<String>> descByDate = new HashMap<>();
+        for (OvertimeActivity act : saved.getActivities()) {
+            if (act.getActivityDate() == null) continue;
+            descByDate.computeIfAbsent(act.getActivityDate(), k -> new ArrayList<>())
+                    .add(act.getDescription() == null ? "" : act.getDescription().trim());
+        }
+        for (Map.Entry<LocalDate, List<String>> e : descByDate.entrySet()) {
+            String joined = e.getValue().stream()
+                    .filter(s -> s != null && !s.isBlank())
+                    .distinct()
+                    .reduce((a, b) -> a + "; " + b)
+                    .orElse("Registro de horas/días extra");
+            String notes = "HE: " + joined;
+            if (notes.length() > 500) notes = notes.substring(0, 497) + "...";
+            attendanceService.saveWorkDay(businessId, employee.getId(), e.getKey(), "EX", notes);
+        }
     }
 
     @Transactional
@@ -142,6 +252,33 @@ public class OvertimeRequestService {
         OvertimeRequest req = requestRepo.findById(requestId)
                 .filter(r -> r.getBusiness().getId().equals(businessId))
                 .orElseThrow(() -> new NoSuchElementException("Request not found"));
+        String kind = req.getEntryKind();
+        Long employeeId = req.getEmployee().getId();
+        if (req.getActivities() != null) {
+            if ("DIA".equals(kind)) {
+                String prefix = "DE:" + req.getId();
+                for (OvertimeActivity act : req.getActivities()) {
+                    if (act.getActivityDate() == null) continue;
+                    attendanceService.deleteWorkDayIfNotePrefix(businessId, employeeId, act.getActivityDate(), prefix);
+                }
+            } else if ("HORA".equals(kind)) {
+                LocalDate min = null;
+                LocalDate max = null;
+                for (OvertimeActivity act : req.getActivities()) {
+                    if (act.getActivityDate() == null) continue;
+                    if (min == null || act.getActivityDate().isBefore(min)) min = act.getActivityDate();
+                    if (max == null || act.getActivityDate().isAfter(max)) max = act.getActivityDate();
+                }
+                if (min != null && max != null) {
+                    String mark = "REQ:" + req.getId();
+                    for (EmployeeOvertime ot : overtimeRepo.findByEmployee_IdAndOvertimeDateBetweenOrderByOvertimeDateAsc(employeeId, min, max)) {
+                        if (ot.getNotes() != null && ot.getNotes().startsWith(mark)) {
+                            overtimeRepo.delete(ot);
+                        }
+                    }
+                }
+            }
+        }
         requestRepo.delete(req);
     }
 }

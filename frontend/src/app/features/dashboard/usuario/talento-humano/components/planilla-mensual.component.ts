@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   AttendanceService,
@@ -48,7 +48,7 @@ export interface AttendanceDetailRow {
   templateUrl: './planilla-mensual.component.html',
   styleUrls: ['./planilla-mensual.component.scss']
 })
-export class PlanillaMensualComponent implements OnInit {
+export class PlanillaMensualComponent implements OnInit, OnDestroy {
 
   businessId: number | null = null;
   businessRuc: string | null = null;
@@ -154,6 +154,8 @@ export class PlanillaMensualComponent implements OnInit {
   attendanceDetailTotals = { scheduledHours: 0, hhtt: 0, lostDays: 0 };
   /** Horas extra del mes por empleado (tabla employee_overtime) */
   private overtimeHoursByEmployee = new Map<number, number>();
+  /** Horas extra del mes por empleado y fecha, para mostrarlas en la celda */
+  private overtimeHoursByDay = new Map<string, number>();
   readonly attendanceDetailStandardHrs = 8;
   readonly defaultDailyHours = 8;
 
@@ -169,6 +171,7 @@ export class PlanillaMensualComponent implements OnInit {
   );
 
   editingCell: { empId: number; dayIdx: number } | null = null;
+  private selectionTimer: ReturnType<typeof setTimeout> | null = null;
   notePopover: { empId: number; dayIdx: number } | null = null;
   permPopover: { empId: number; dayIdx: number; loading: boolean; error: string | null; data: PermissionRecord | null } | null = null;
 
@@ -400,6 +403,28 @@ export class PlanillaMensualComponent implements OnInit {
     this.loadClosures();
     this.loadHolidays();
     this.loadSafetyIncidents();
+    this.loadOvertimeMarks();
+  }
+
+  private loadOvertimeMarks(): void {
+    if (!this.businessId) return;
+    this.attendanceService.getOvertime(this.businessId, this.year, this.month).subscribe({
+      next: (list) => {
+        this.overtimeHoursByDay.clear();
+        for (const o of list) {
+          if (o.employeeId == null || !o.overtimeDate) continue;
+          const key = `${o.employeeId}|${o.overtimeDate}`;
+          const prev = this.overtimeHoursByDay.get(key) || 0;
+          this.overtimeHoursByDay.set(key, prev + (Number(o.hoursTotal) || 0));
+        }
+      },
+      error: () => this.overtimeHoursByDay.clear()
+    });
+  }
+
+  hoursOnCell(employeeId: number, date: string): number {
+    const hours = this.overtimeHoursByDay.get(`${employeeId}|${date}`) || 0;
+    return Math.round(hours * 10) / 10;
   }
 
   onShowOnlySavedChange(): void {
@@ -871,28 +896,39 @@ export class PlanillaMensualComponent implements OnInit {
     });
   }
 
-  saveDay(row: EmployeeSheetRow, dayIdx: number, newType: DayType): void {
+  saveDay(row: EmployeeSheetRow, dayIdx: number, newType: DayType, advance = false): void {
     if (!this.businessId) return;
+    const entry = row.days[dayIdx];
+    if (!entry || entry.afterExit || this.isLocked(row, dayIdx)) return;
+    const oldType = entry.dayType;
+    if (oldType !== newType) {
+      if (oldType && (row.totals as any)[oldType] > 0) {
+        (row.totals as any)[oldType]--;
+      }
+      entry.dayType = newType;
+      (row.totals as any)[newType] = ((row.totals as any)[newType] ?? 0) + 1;
+      if (this.selectedRow?.employeeId === row.employeeId) {
+        this.selectedRow = { ...row };
+      }
+    }
+    if (advance) {
+      this.movePickerToAdjacentDay(1);
+    } else {
+      this.editingCell = null;
+    }
     const date = this.monthDates[dayIdx];
     this.attendanceService.saveWorkDay(this.businessId, row.employeeId, date, newType).subscribe({
-      next: () => {
-        const entry = row.days[dayIdx];
-        if (entry) {
-          const oldType = entry.dayType;
-          entry.dayType = newType;
-          // Actualizar totales localmente (oldType puede ser null si era un día vacío)
-          if (oldType && (row.totals as any)[oldType] > 0) {
-            (row.totals as any)[oldType]--;
+      error: () => {
+        if (entry.dayType === newType) {
+          if ((row.totals as any)[newType] > 0) {
+            (row.totals as any)[newType]--;
           }
-          (row.totals as any)[newType] = ((row.totals as any)[newType] ?? 0) + 1;
-          // Actualizar detalle si está abierto
-          if (this.selectedRow?.employeeId === row.employeeId) {
-            this.selectedRow = { ...row };
+          entry.dayType = oldType;
+          if (oldType) {
+            (row.totals as any)[oldType] = ((row.totals as any)[oldType] ?? 0) + 1;
           }
         }
-        // Mantener picker abierto para edición continua; el usuario cierra con Escape o X
-      },
-      error: err => console.error('Error guardando día:', err)
+      }
     });
   }
 
@@ -978,14 +1014,20 @@ export class PlanillaMensualComponent implements OnInit {
     const dayIdx = this.editingCell.dayIdx;
     const key = event.key;
 
+    if (key === ' ' || key === 'Spacebar') {
+      event.preventDefault();
+      return;
+    }
     if (key === 't' || key === 'T') {
       event.preventDefault();
-      this.saveDay(row, dayIdx, 'T');
+      this.saveDay(row, dayIdx, 'T', true);
+      this.keepSelectionAlive();
       return;
     }
     if (key === 'd' || key === 'D') {
       event.preventDefault();
-      this.saveDay(row, dayIdx, 'D');
+      this.saveDay(row, dayIdx, 'D', true);
+      this.keepSelectionAlive();
       return;
     }
     if (key === 'Escape') {
@@ -998,26 +1040,25 @@ export class PlanillaMensualComponent implements OnInit {
       if (!this.clearingDay) {
         this.clearDay(row, dayIdx, { keepPickerOpen: true });
       }
+      this.keepSelectionAlive();
       return;
     }
     if (key === 'ArrowLeft') {
       event.preventDefault();
       this.movePickerToAdjacentDay(-1);
+      this.keepSelectionAlive();
       return;
     }
-    if (key === 'ArrowRight') {
+    if (key === 'ArrowRight' || key === 'p' || key === 'P') {
       event.preventDefault();
       this.movePickerToAdjacentDay(1);
+      this.keepSelectionAlive();
       return;
     }
     if (key === 'Tab') {
       event.preventDefault();
       this.movePickerToAdjacentDay(event.shiftKey ? -1 : 1);
-      return;
-    }
-    if (key === 'p' || key === 'P') {
-      event.preventDefault();
-      this.movePickerToAdjacentDay(1);
+      this.keepSelectionAlive();
       return;
     }
   }
@@ -1061,13 +1102,58 @@ export class PlanillaMensualComponent implements OnInit {
     this.permPopover = null;
     this.accidentPopover = null;
     this.editingCell = { empId, dayIdx };
+    this.keepSelectionAlive();
   }
 
   isEditing(empId: number, dayIdx: number): boolean {
     return this.editingCell?.empId === empId && this.editingCell?.dayIdx === dayIdx;
   }
 
-  cancelEdit(): void { this.editingCell = null; }
+  cancelEdit(): void {
+    this.editingCell = null;
+    this.clearSelectionTimer();
+  }
+
+  private keepSelectionAlive(): void {
+    this.clearSelectionTimer();
+    if (!this.editingCell) return;
+    this.selectionTimer = setTimeout(() => this.cancelEdit(), 2500);
+  }
+
+  private clearSelectionTimer(): void {
+    if (this.selectionTimer) {
+      clearTimeout(this.selectionTimer);
+      this.selectionTimer = null;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.clearSelectionTimer();
+  }
+
+  isLastSheetRow(row: EmployeeSheetRow): boolean {
+    const list = this.filteredSheet;
+    return list.length > 0 && list[list.length - 1].employeeId === row.employeeId;
+  }
+
+  pickerShortcut(key: DayType): string {
+    if (key === 'T') return 'T';
+    if (key === 'D') return 'D';
+    if (key === 'EX') return 'E';
+    return '';
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClickClosePicker(event: MouseEvent): void {
+    if (!this.editingCell) return;
+    const target = event.target as HTMLElement | null;
+    if (!target) {
+      this.cancelEdit();
+      return;
+    }
+    if (target.closest('.pm-picker') || target.closest('.pm-day-cell')) return;
+    this.cancelEdit();
+  }
 
   isLocked(row: EmployeeSheetRow, dayIdx: number): boolean {
     const entry = row.days[dayIdx];
@@ -1077,7 +1163,10 @@ export class PlanillaMensualComponent implements OnInit {
     if (this.isAccidentDay(row, dayIdx)) return true;
     // Bloquear días de Vacaciones (V) y Horas Extra con motivo HE
     if (entry.dayType === 'V') return true;
-    if (entry.dayType === 'EX' && typeof entry.notes === 'string' && entry.notes.trim().toUpperCase().startsWith('HE:')) return true;
+    if (entry.dayType === 'EX' && typeof entry.notes === 'string') {
+      const note = entry.notes.trim().toUpperCase();
+      if (note.startsWith('HE:') || note.startsWith('DE:')) return true;
+    }
     // Bloquear Permiso marcado automáticamente tras aprobación (nota PERM:{id})
     return entry.dayType === 'P' && typeof entry.notes === 'string' && entry.notes.trim().toUpperCase().startsWith('PERM:');
   }

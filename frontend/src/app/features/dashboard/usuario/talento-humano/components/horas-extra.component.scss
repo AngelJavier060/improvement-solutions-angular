@@ -356,6 +356,37 @@ $white:     #ffffff;
   .material-symbols-outlined { font-size: 1.1rem; color: $primary; }
 }
 
+.he-kind-switch {
+  display: flex;
+  gap: .75rem;
+  margin: 0 0 1.25rem;
+}
+.he-kind-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  border: 1px solid $slate-200;
+  background: #fff;
+  color: $slate-800;
+  border-radius: 10px;
+  padding: .7rem .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  .material-symbols-outlined { font-size: 1.15rem; }
+  &.active {
+    background: #fff7ed;
+    border-color: $accent;
+    color: $accent;
+  }
+}
+.he-kind-help {
+  margin: .75rem 0 0;
+  font-size: .8rem;
+  color: #64748b;
+}
+
 // ── Employee selector ─────────────────────────────────────────────────────────
 .he-emp-selector { margin-bottom: 1rem; }
 .he-search-emp input { background: $slate-50; }

@@ -670,10 +670,13 @@ public class AttendanceService {
         if (existing.isPresent()) {
             EmployeeWorkDay cur = existing.get();
             String curNotes = cur.getNotes() != null ? cur.getNotes().trim() : null;
-            if ("EX".equalsIgnoreCase(cur.getDayType()) && curNotes != null && curNotes.toUpperCase().startsWith("HE:")) {
-                boolean incomingIsHeEx = "EX".equalsIgnoreCase(dayType) && (notes != null && notes.trim().toUpperCase().startsWith("HE:"));
-                if (!incomingIsHeEx) {
-                    throw new IllegalStateException("El día " + date + " está bloqueado por registro de horas extra y no puede modificarse manualmente.");
+            if ("EX".equalsIgnoreCase(cur.getDayType()) && curNotes != null
+                    && (curNotes.toUpperCase().startsWith("HE:") || curNotes.toUpperCase().startsWith("DE:"))) {
+                boolean incomingIsSame = "EX".equalsIgnoreCase(dayType)
+                        && notes != null
+                        && notes.trim().toUpperCase().startsWith(curNotes.substring(0, 3).toUpperCase());
+                if (!incomingIsSame) {
+                    throw new IllegalStateException("El día " + date + " está bloqueado por una solicitud de días u horas extra y no puede modificarse manualmente.");
                 }
             }
         }
@@ -699,8 +702,9 @@ public class AttendanceService {
         if (existing.isPresent()) {
             EmployeeWorkDay wd = existing.get();
             String curNotes = wd.getNotes() != null ? wd.getNotes().trim() : null;
-            if ("EX".equalsIgnoreCase(wd.getDayType()) && curNotes != null && curNotes.toUpperCase().startsWith("HE:")) {
-                throw new IllegalStateException("El día " + date + " está bloqueado por registro de horas extra y no puede eliminarse manualmente.");
+            if ("EX".equalsIgnoreCase(wd.getDayType()) && curNotes != null
+                    && (curNotes.toUpperCase().startsWith("HE:") || curNotes.toUpperCase().startsWith("DE:"))) {
+                throw new IllegalStateException("El día " + date + " está bloqueado por una solicitud de días u horas extra y no puede eliminarse manualmente.");
             }
             if ("V".equalsIgnoreCase(wd.getDayType())) {
                 throw new IllegalStateException("Los días de vacaciones no pueden eliminarse directamente desde la planilla.");
@@ -708,6 +712,24 @@ public class AttendanceService {
             if ("P".equalsIgnoreCase(wd.getDayType()) && curNotes != null && curNotes.toUpperCase().startsWith("PERM:")) {
                 throw new IllegalStateException("Los días de permiso aprobado no pueden eliminarse directamente desde la planilla.");
             }
+            workDayRepository.delete(wd);
+        }
+    }
+
+    /**
+     * Quita un día de planilla solo si la nota empieza por el prefijo indicado
+     * (por ejemplo DE:12 de una solicitud de días extra).
+     */
+    @Transactional
+    public void deleteWorkDayIfNotePrefix(Long businessId, Long employeeId, LocalDate date, String prefix) {
+        if (prefix == null || prefix.isBlank()) return;
+        requireBusiness(businessId);
+        requireEmployee(businessId, employeeId);
+        Optional<EmployeeWorkDay> existing = workDayRepository.findByEmployee_IdAndWorkDate(employeeId, date);
+        if (existing.isEmpty()) return;
+        EmployeeWorkDay wd = existing.get();
+        String curNotes = wd.getNotes() != null ? wd.getNotes().trim() : "";
+        if (curNotes.startsWith(prefix)) {
             workDayRepository.delete(wd);
         }
     }
@@ -739,10 +761,14 @@ public class AttendanceService {
             if (existing.isPresent()) {
                 EmployeeWorkDay cur = existing.get();
                 String curNotes = cur.getNotes() != null ? cur.getNotes().trim() : null;
-                if ("EX".equalsIgnoreCase(cur.getDayType()) && curNotes != null && curNotes.toUpperCase().startsWith("HE:")) {
-                    boolean incomingIsHeEx = "EX".equalsIgnoreCase(type) && (notes != null && notes.trim().toUpperCase().startsWith("HE:"));
-                    if (!incomingIsHeEx) {
-                        throw new IllegalStateException("El día " + date + " está bloqueado por registro de horas extra y no puede modificarse manualmente.");
+                if ("EX".equalsIgnoreCase(cur.getDayType()) && curNotes != null
+                        && (curNotes.toUpperCase().startsWith("HE:") || curNotes.toUpperCase().startsWith("DE:"))) {
+                    String prefix = curNotes.substring(0, 3);
+                    boolean incomingSame = "EX".equalsIgnoreCase(type)
+                            && notes != null
+                            && notes.trim().toUpperCase().startsWith(prefix.toUpperCase());
+                    if (!incomingSame) {
+                        throw new IllegalStateException("El día " + date + " está bloqueado por una solicitud de días u horas extra y no puede modificarse manualmente.");
                     }
                 }
             }

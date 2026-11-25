@@ -62,8 +62,13 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
     department: '',
     area: '',
     recognitionType: 'Pago en Nómina',
-    notes: ''
+    notes: '',
+    entryKind: 'DIA' as 'DIA' | 'HORA'
   };
+
+  dayFrom = '';
+  dayTo = '';
+  dayDescription = '';
 
   activities: OvertimeActivity[] = [];
   activityConflictWarning: string | null = null;
@@ -246,8 +251,12 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
       department: '',
       area: '',
       recognitionType: 'Pago en Nómina',
-      notes: ''
+      notes: '',
+      entryKind: 'DIA'
     };
+    this.dayFrom = '';
+    this.dayTo = '';
+    this.dayDescription = '';
     this.activities = [this.emptyActivity()];
   }
 
@@ -267,6 +276,27 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
     if (this._lastActivityDate) {
       this.onActivityDateChange(0, this._lastActivityDate);
     }
+  }
+
+  setEntryKind(kind: 'DIA' | 'HORA'): void {
+    this.formDraft.entryKind = kind;
+    this.error = null;
+  }
+
+  private eachDate(from: string, to: string): string[] {
+    const start = new Date(from + 'T00:00:00');
+    const end = new Date(to + 'T00:00:00');
+    const out: string[] = [];
+    const cursor = new Date(start);
+    while (cursor.getTime() <= end.getTime()) {
+      const y = cursor.getFullYear();
+      const m = String(cursor.getMonth() + 1).padStart(2, '0');
+      const d = String(cursor.getDate()).padStart(2, '0');
+      out.push(`${y}-${m}-${d}`);
+      cursor.setDate(cursor.getDate() + 1);
+      if (out.length > 62) break;
+    }
+    return out;
   }
 
   private emptyActivity(): OvertimeActivity {
@@ -308,40 +338,85 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
       this.error = 'Seleccione un empleado.';
       return;
     }
-    const validActivities = this.activities.filter(a => a.activityDate && a.startTime && a.endTime && a.description);
-    if (!validActivities.length) {
-      this.error = 'Agregue al menos una actividad con fecha, hora y descripción.';
-      return;
+    let validActivities: OvertimeActivity[] = [];
+    if (this.formDraft.entryKind === 'DIA') {
+      if (!this.dayFrom || !this.dayTo) {
+        this.error = 'Indique desde qué fecha hasta qué fecha son los días extras.';
+        return;
+      }
+      if (this.dayTo < this.dayFrom) {
+        this.error = 'La fecha final no puede ser anterior a la inicial.';
+        return;
+      }
+      const desc = (this.dayDescription || '').trim();
+      if (!desc) {
+        this.error = 'Escriba el motivo de los días extras.';
+        return;
+      }
+      const dates = this.eachDate(this.dayFrom, this.dayTo);
+      if (!dates.length || dates.length > 62) {
+        this.error = 'El rango de días extras no puede pasar de 62 días.';
+        return;
+      }
+      validActivities = dates.map(d => ({
+        activityDate: d,
+        startTime: '00:00',
+        endTime: '00:00',
+        description: desc,
+        supportDoc: ''
+      }));
+      const repeated = await this.repeatedExtraDays(this.selectedEmployee.id, dates);
+      if (repeated.length) {
+        this.error = `Este trabajador ya tiene registrados estos días extras: ${repeated.join(', ')}. No se puede repetir.`;
+        return;
+      }
+    } else {
+      validActivities = this.activities.filter(a => a.activityDate && a.startTime && a.endTime && a.description);
+      if (!validActivities.length) {
+        this.error = 'Agregue al menos una hora extra con fecha, horario y descripción.';
+        return;
+      }
     }
 
-    // Validación previa en cliente: no permitir registrar en día de jornada normal (T)
-    try {
-      const dates = Array.from(new Set(validActivities.map(a => a.activityDate)));
-      for (const d of dates) {
-        const resp = await firstValueFrom(this.attendanceService.getEmployeeDayType(this.businessId, this.selectedEmployee.id, d));
-        if ((resp.dayType || '').toUpperCase() === 'T') {
-          this.error = `No es posible registrar horas/días extra el ${d}: es un día de jornada laboral normal.`;
-          return;
+    if (this.formDraft.entryKind === 'DIA') {
+      try {
+        const dates = Array.from(new Set(validActivities.map(a => a.activityDate)));
+        for (const d of dates) {
+          const resp = await firstValueFrom(this.attendanceService.getEmployeeDayType(this.businessId, this.selectedEmployee.id, d));
+          if ((resp.dayType || '').toUpperCase() === 'T') {
+            this.error = `No es posible registrar un día extra el ${d}: es un día de jornada laboral normal.`;
+            return;
+          }
         }
+      } catch {
+        // Si falla la validación previa, el servidor aplica la definitiva
       }
-    } catch {
-      // Si falla la validación previa, continuar y que el backend aplique la validación definitiva
     }
     this.saving = true;
     this.error = null;
+    const firstDate = validActivities
+      .map(a => a.activityDate)
+      .filter(d => !!d)
+      .sort()[0];
+    if (firstDate) {
+      this.formDraft.reportPeriod = firstDate.slice(0, 7);
+      this.filterPeriod = this.formDraft.reportPeriod;
+    }
     const dto: OvertimeRequest = { ...this.formDraft, activities: validActivities };
     this.attendanceService.createOvertimeRequest(this.businessId, this.selectedEmployee.id, dto).subscribe({
       next: created => {
         this.saving = false;
         this.showForm = false;
-        this.successMsg = 'Solicitud registrada correctamente.';
-        setTimeout(() => this.successMsg = null, 4000);
+        this.successMsg = this.formDraft.entryKind === 'DIA'
+          ? 'Días extras registrados. Quedan pendientes de aprobación del jefe para el pago. La planilla ya los muestra.'
+          : 'Horas extras registradas. Quedan pendientes de aprobación del jefe para el pago. La planilla ya las muestra.';
+        setTimeout(() => this.successMsg = null, 5000);
         this.loadRequests();
         this.generatePdf(created);
       },
       error: err => {
         this.saving = false;
-        this.error = err?.error?.error || 'Error al guardar. Intente nuevamente.';
+        this.error = err?.error?.error || err?.error?.message || 'Error al guardar. Intente nuevamente.';
       }
     });
   }
@@ -421,7 +496,7 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(...DARK);
-    doc.text('REPORTE DE DÍAS & HORAS EXTRAS', m + col1W + col2W / 2, y + hdrH / 2 - 2, { align: 'center', baseline: 'middle' });
+    doc.text(req.entryKind === 'DIA' ? 'REPORTE DE DÍAS EXTRAS' : 'REPORTE DE HORAS EXTRAS', m + col1W + col2W / 2, y + hdrH / 2 - 2, { align: 'center', baseline: 'middle' });
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(...GRAY_TXT);
@@ -433,9 +508,9 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
     const metaH  = hdrH / 4;
     const meta   = [
       ['Código',    'RH-FOR-042'],
-      ['Fecha Rev.', new Date().toLocaleDateString('es-EC')],
+      ['Fecha Rev.', this.revisionDateLabel()],
       ['Versión',   '01'],
-      ['Período',   this.periodLabel(req.reportPeriod)],
+      ['Período',   this.registrationMonthLabel(req)],
     ];
     meta.forEach(([label, val], i) => {
       const my = y + i * metaH;
@@ -447,6 +522,7 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
       doc.setTextColor(...GRAY_TXT);
       doc.text(label.toUpperCase(), metaX + 1.5, my + metaH / 2 + 0.5, { baseline: 'middle' });
       doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6);
       doc.setTextColor(...DARK);
       doc.text(val, metaX + col3W / 2 + 1.5, my + metaH / 2 + 0.5, { baseline: 'middle' });
     });
@@ -500,14 +576,13 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
     autoTable(doc, {
       startY: y,
       margin: { left: m, right: m },
-      head: [['N°', 'Fecha', 'Hora (Desde/Hasta)', 'Actividades (Especificación Detallada)', 'Sustento Verificable', 'Firma Jefe']],
+      head: [['N°', 'Fecha', 'Hora (Desde/Hasta)', 'Actividades (Especificación Detallada)', 'Observaciones']],
       body: actRows.map((a, idx) => [
         String(idx + 1),
         a.activityDate || '',
-        a.startTime && a.endTime ? `${a.startTime} - ${a.endTime}` : '',
+        a.startTime && a.endTime && req.entryKind !== 'DIA' ? `${a.startTime} - ${a.endTime}` : (req.entryKind === 'DIA' && a.activityDate ? 'Día extra' : ''),
         a.description || '',
-        a.supportDoc || '',
-        ''
+        idx === 0 ? (req.notes || '') : ''
       ]),
       headStyles: {
         fillColor: [248, 250, 252], textColor: DARK,
@@ -525,8 +600,7 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
         1: { cellWidth: 22,   halign: 'center' },
         2: { cellWidth: 26,   halign: 'center' },
         3: { cellWidth: 'auto' },
-        4: { cellWidth: 28 },
-        5: { cellWidth: 25,   fillColor: GRAY_BG }
+        4: { cellWidth: 40 }
       },
       tableLineColor: BORDER,
       tableLineWidth: 0.25,
@@ -603,7 +677,7 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
     // 3 columnas internas
     const thCols = [
       { title: 'VALIDACIÓN DE DOCUMENTOS', content: '[ ] Evidencia adjunta\n[ ] Reloj Marcador' },
-      { title: 'FECHA DE RECEPCIÓN',        content: '___/___/______' },
+      { title: 'FECHA DE RECEPCIÓN',        content: this.receptionDate(req) },
       { title: 'APROBACIÓN FINAL TTHH',     content: '(Sello y Firma)' },
     ];
     const thColW = usable / 3;
@@ -632,11 +706,23 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
     doc.setFontSize(6);
     doc.setTextColor(...GRAY_TXT);
     doc.setFont('helvetica', 'normal');
-    doc.text(`${this.displayBusinessName} — Horas Extras ${this.periodLabel(req.reportPeriod)}`, m, fY);
+    doc.text(`${this.displayBusinessName} — Horas Extras ${this.registrationMonthLabel(req)}`, m, fY);
     doc.text(`Generado el ${new Date().toLocaleDateString('es-EC')} | RH-FOR-042`, pageW - m, fY, { align: 'right' });
 
     const fileName = `HorasExtras_${(req.employeeName || 'empleado').replace(/\s+/g,'_')}_${req.reportPeriod}.pdf`;
     doc.save(fileName);
+  }
+
+  /** Primer día registrado en la solicitud, como dd/MM/yyyy. */
+  private receptionDate(req: OvertimeRequest): string {
+    const dates = (req.activities || [])
+      .map(a => (a.activityDate || '').trim())
+      .filter(d => /^\d{4}-\d{2}-\d{2}/.test(d))
+      .sort();
+    const iso = dates[0] || (req.createdAt || '').slice(0, 10);
+    const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return '___/___/______';
+    return `${match[3]}/${match[2]}/${match[1]}`;
   }
 
   downloadPdf(req: OvertimeRequest): void {
@@ -704,6 +790,61 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
   // ── Utilidades ─────────────────────────────────────────────────────────
   getFullName(e: EmployeeResponse): string {
     return ((e.nombres || '') + ' ' + (e.apellidos || '')).trim() || e.name || '—';
+  }
+
+  private async repeatedExtraDays(employeeId: number, dates: string[]): Promise<string[]> {
+    if (!this.businessId) return [];
+    let all: OvertimeRequest[] = [];
+    try {
+      all = await firstValueFrom(this.attendanceService.getOvertimeRequests(this.businessId));
+    } catch {
+      return [];
+    }
+    const taken = new Set<string>();
+    for (const req of all || []) {
+      if (req.employeeId !== employeeId) continue;
+      if (req.entryKind && req.entryKind !== 'DIA') continue;
+      for (const act of req.activities || []) {
+        const day = (act.activityDate || '').slice(0, 10);
+        if (day) taken.add(day);
+      }
+    }
+    return dates
+      .filter(d => taken.has(d))
+      .map(d => {
+        const p = d.split('-');
+        return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
+      });
+  }
+
+  syncReportPeriod(): void {
+    const fromDays = this.formDraft.entryKind === 'DIA' ? this.dayFrom : '';
+    const fromHours = (this.activities || [])
+      .map(a => a.activityDate)
+      .filter(d => !!d)
+      .sort()[0] || '';
+    const iso = (fromDays || fromHours).slice(0, 7);
+    if (/^\d{4}-\d{2}$/.test(iso)) {
+      this.formDraft.reportPeriod = iso;
+    }
+  }
+
+  /** Mes del registro, por ejemplo Enero 2026. */
+  registrationMonthLabel(req: OvertimeRequest): string {
+    const dates = (req.activities || [])
+      .map(a => (a.activityDate || '').trim().slice(0, 10))
+      .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
+      .sort();
+    if (dates.length) return this.periodLabel(dates[0].slice(0, 7));
+    return this.periodLabel(req.reportPeriod);
+  }
+
+  /** Fecha de revisión fija. A los dos años pasa al año vigente, mismo día y mes. */
+  private revisionDateLabel(): string {
+    const now = new Date();
+    const switchOn = new Date(2028, 0, 2);
+    const year = now.getTime() >= switchOn.getTime() ? now.getFullYear() : 2026;
+    return `02/01/${year}`;
   }
 
   periodLabel(period: string): string {
