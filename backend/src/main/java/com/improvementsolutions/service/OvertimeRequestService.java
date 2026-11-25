@@ -125,9 +125,12 @@ public class OvertimeRequestService {
                     throw new IllegalArgumentException("Este trabajador ya tiene registrados estos días extras: " + listed + ". No se puede repetir.");
                 }
                 for (LocalDate d : datesToValidate) {
-                    String type = attendanceService.computeDayType(businessId, employeeId, d);
-                    if ("T".equalsIgnoreCase(type)) {
-                        throw new IllegalArgumentException("No es posible registrar un día extra el " + d + ": es un día de jornada laboral normal.");
+                    String type = attendanceService.displayedDayType(businessId, employeeId, d);
+                    if (type == null) continue;
+                    if ("V".equals(type) || "P".equals(type) || "E".equals(type) || "A".equals(type)) {
+                        throw new IllegalArgumentException("No es posible registrar un día extra el "
+                                + String.format("%02d/%02d/%04d", d.getDayOfMonth(), d.getMonthValue(), d.getYear())
+                                + ": ese día ya tiene vacaciones, permiso, enfermedad o accidente.");
                     }
                 }
             }

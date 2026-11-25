@@ -378,20 +378,6 @@ export class HorasExtraComponent implements OnInit, OnDestroy {
       }
     }
 
-    if (this.formDraft.entryKind === 'DIA') {
-      try {
-        const dates = Array.from(new Set(validActivities.map(a => a.activityDate)));
-        for (const d of dates) {
-          const resp = await firstValueFrom(this.attendanceService.getEmployeeDayType(this.businessId, this.selectedEmployee.id, d));
-          if ((resp.dayType || '').toUpperCase() === 'T') {
-            this.error = `No es posible registrar un día extra el ${d}: es un día de jornada laboral normal.`;
-            return;
-          }
-        }
-      } catch {
-        // Si falla la validación previa, el servidor aplica la definitiva
-      }
-    }
     this.saving = true;
     this.error = null;
     const firstDate = validActivities

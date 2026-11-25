@@ -500,6 +500,22 @@ public class AttendanceService {
         return getAutoDayType(emp, date, null);
     }
 
+    /** Tipo que ve la planilla: el guardado a mano, o el de la jornada si no hay marca. */
+    @Transactional(readOnly = true)
+    public String displayedDayType(Long businessId, Long employeeId, LocalDate date) {
+        requireBusiness(businessId);
+        requireEmployee(businessId, employeeId);
+        Optional<EmployeeWorkDay> saved = workDayRepository.findByEmployee_IdAndWorkDate(employeeId, date);
+        if (saved.isPresent()) {
+            String marked = saved.get().getDayType();
+            if (marked != null && !marked.isBlank()) {
+                return marked.trim().toUpperCase();
+            }
+        }
+        String auto = computeDayType(businessId, employeeId, date);
+        return auto == null ? null : auto.trim().toUpperCase();
+    }
+
     /**
      * Genera (o devuelve) la planilla mensual de una empresa.
      * Para cada empleado activo, devuelve un registro por día del mes.
