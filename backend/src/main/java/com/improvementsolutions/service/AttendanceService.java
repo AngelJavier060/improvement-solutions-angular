@@ -41,13 +41,13 @@ public class AttendanceService {
 
     // ─────────────────── helpers ───────────────────
 
-    /** Fecha fin de relación: columna fecha_salida o última baja en movimientos. */
+    /** Fecha fin de relación: fecha de salida, aunque siga marcado activo, o la última baja. */
     private LocalDate resolveEmploymentEndDate(BusinessEmployee emp, Map<Long, LocalDate> movementExitByEmployeeId) {
-        if (Boolean.TRUE.equals(emp.getActive())) {
-            return null;
-        }
         if (emp.getFechaSalida() != null) {
             return emp.getFechaSalida();
+        }
+        if (Boolean.TRUE.equals(emp.getActive())) {
+            return null;
         }
         if (movementExitByEmployeeId != null) {
             return movementExitByEmployeeId.get(emp.getId());
@@ -56,11 +56,11 @@ public class AttendanceService {
     }
 
     private LocalDate resolveEmploymentEndDateForWrite(BusinessEmployee emp) {
-        if (Boolean.TRUE.equals(emp.getActive())) {
-            return null;
-        }
         if (emp.getFechaSalida() != null) {
             return emp.getFechaSalida();
+        }
+        if (Boolean.TRUE.equals(emp.getActive())) {
+            return null;
         }
         return employeeMovementRepository
                 .findLatestDeactivationEffectiveDate(emp.getId(), MovementType.DEACTIVATION)
@@ -76,20 +76,17 @@ public class AttendanceService {
     }
 
     /**
-     * Incluye empleados activos y, si están inactivos, quienes deben verse en este mes
-     * (mes que empieza en o antes de la fecha de salida, o con días guardados en el mes si no hay fecha).
+     * La planilla del mes solo incluye a quien ya ingresó y aún no había salido.
+     * Fecha de ingreso en o antes del fin de mes, y salida vacía o dentro/después del mes.
      */
-    private boolean shouldIncludeEmployeeInMonthlySheet(BusinessEmployee e, LocalDate monthStart,
-                                                        Set<Long> employeeIdsWithSavedDaysInMonth,
+    private boolean shouldIncludeEmployeeInMonthlySheet(BusinessEmployee e, LocalDate monthStart, LocalDate monthEnd,
                                                         Map<Long, LocalDate> movementExitByEmployeeId) {
-        if (Boolean.TRUE.equals(e.getActive())) {
-            return true;
+        LocalDate ingreso = e.getFechaIngreso();
+        if (ingreso == null || ingreso.isAfter(monthEnd)) {
+            return false;
         }
         LocalDate exit = resolveEmploymentEndDate(e, movementExitByEmployeeId);
-        if (exit != null) {
-            return !monthStart.isAfter(exit);
-        }
-        return employeeIdsWithSavedDaysInMonth.contains(e.getId());
+        return exit == null || !exit.isBefore(monthStart);
     }
 
     private Map<Long, LocalDate> loadMovementExitDates(Collection<Long> inactiveIdsWithoutFechaSalida) {
@@ -552,10 +549,6 @@ public class AttendanceService {
         List<EmployeeWorkDay> savedDays = workDayRepository
                 .findByBusiness_IdAndWorkDateBetweenOrderByEmployeeIdAscWorkDateAsc(businessId, from, to);
 
-        Set<Long> employeeIdsWithSavedDaysInMonth = savedDays.stream()
-                .map(wd -> wd.getEmployee().getId())
-                .collect(Collectors.toSet());
-
         List<BusinessEmployee> allEmployees = employeeRepository.findWithRelationsByBusinessId(businessId);
         List<Long> inactiveNeedingMovementExit = allEmployees.stream()
                 .filter(e -> !Boolean.TRUE.equals(e.getActive()))
@@ -565,7 +558,7 @@ public class AttendanceService {
         Map<Long, LocalDate> movementExitByEmployeeId = loadMovementExitDates(inactiveNeedingMovementExit);
 
         List<BusinessEmployee> employees = allEmployees.stream()
-                .filter(e -> shouldIncludeEmployeeInMonthlySheet(e, from, employeeIdsWithSavedDaysInMonth, movementExitByEmployeeId))
+                .filter(e -> shouldIncludeEmployeeInMonthlySheet(e, from, to, movementExitByEmployeeId))
                 .sorted(Comparator.comparing(BusinessEmployee::getFullName, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .collect(Collectors.toList());
 
@@ -589,6 +582,7 @@ public class AttendanceService {
             row.put("cedula",       emp.getCedula());
             row.put("active",       emp.getActive());
             row.put("fechaSalida",  employmentEnd != null ? employmentEnd.toString() : null);
+            row.put("fechaIngreso", emp.getFechaIngreso() != null ? emp.getFechaIngreso().toString() : null);
             row.put("departmentId", emp.getDepartment() != null ? emp.getDepartment().getId() : null);
             row.put("departmentName", emp.getDepartment() != null ? emp.getDepartment().getName() : "Sin departamento");
             row.put("codigoEmpresa", emp.getCodigoEmpresa());
@@ -621,11 +615,13 @@ public class AttendanceService {
                 String notes = notesMap.get(key);
                 boolean isOvertimeSaved = (savedType != null && "EX".equalsIgnoreCase(savedType))
                         || (notes != null && notes.trim().toUpperCase().startsWith("HE:"));
+                LocalDate ingreso = emp.getFechaIngreso();
+                boolean beforeIngreso = ingreso != null && date.isBefore(ingreso);
                 boolean afterExit = employmentEnd != null && date.isAfter(employmentEnd);
                 // Si hay registro guardado, usarlo. Si no hay y includeAuto=true, calcular; si includeAuto=false, dejar null.
                 String type;
-                if (afterExit) {
-                    // Posterior a la salida: no proyección ni conteo en indicadores (solo histórico hasta fecha de salida)
+                if (afterExit || beforeIngreso) {
+                    // Antes del ingreso o después de la salida no se cuenta en la planilla del mes
                     type = null;
                 } else if (hasSaved) {
                     type = savedType;
@@ -642,9 +638,12 @@ public class AttendanceService {
                 dayInfo.put("date", date.toString());
                 dayInfo.put("dayType", type); // null = sin asignación (antes de startDate)
                 // Tras salida no mostrar como "guardado" en UI (evita confusión con filas huérfanas; purga en BD al fijar salida)
-                dayInfo.put("saved", afterExit ? false : hasSaved);
+                dayInfo.put("saved", (afterExit || beforeIngreso) ? false : hasSaved);
                 if (afterExit) {
                     dayInfo.put("afterExit", true);
+                }
+                if (beforeIngreso) {
+                    dayInfo.put("beforeIngreso", true);
                 }
                 if (notes != null && !afterExit) dayInfo.put("notes", notes);
                 if (holidayMap.containsKey(date) && !afterExit) {
@@ -653,12 +652,12 @@ public class AttendanceService {
                 }
 
                 days.add(dayInfo);
-                if (!afterExit && type != null) {
+                if (!afterExit && !beforeIngreso && type != null) {
                     totals.merge(type, 1, Integer::sum);
                 }
                 // Acumular solo días guardados para HHTT preciso
-                if (!afterExit && hasSaved && "T".equalsIgnoreCase(savedType))  savedT++;
-                if (!afterExit && hasSaved && "EX".equalsIgnoreCase(savedType)) savedEX++;
+                if (!afterExit && !beforeIngreso && hasSaved && "T".equalsIgnoreCase(savedType))  savedT++;
+                if (!afterExit && !beforeIngreso && hasSaved && "EX".equalsIgnoreCase(savedType)) savedEX++;
             }
 
             row.put("days",    days);

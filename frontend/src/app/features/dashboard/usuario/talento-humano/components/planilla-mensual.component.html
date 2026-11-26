@@ -296,7 +296,7 @@
                   style="position:relative;">
                 <div class="pm-day-cell {{ getDayClass(entry.dayType) }}"
                      [class.pm-day-selected]="isEditing(row.employeeId, i)"
-                     [class.pm-day-after-exit]="entry.afterExit"
+                     [class.pm-day-after-exit]="entry.afterExit || entry.beforeIngreso"
                      [class.pm-day-accident]="isAccidentDay(row, i)"
                      [title]="(isAccidentDay(row, i) ? 'ACCIDENTE — Clic para ver detalle ' : '') + (entry.holiday ? (entry.holidayName + ' — ') : '') + (entry.dayType ? ((dayTypes[entry.dayType] ? dayTypes[entry.dayType].label : entry.dayType) || entry.dayType) : '') + (entry.notes ? (' — ' + entry.notes) : '')"
                      (click)="startEdit(row.employeeId, i, $event)">

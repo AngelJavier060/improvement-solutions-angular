@@ -32,6 +32,8 @@ export interface WorkDayEntry {
   holidayName?: string;
   /** Posterior a fecha de salida del colaborador: solo lectura */
   afterExit?: boolean;
+  /** Anterior a la fecha de ingreso: solo lectura */
+  beforeIngreso?: boolean;
 }
 
 export interface DayTotals {

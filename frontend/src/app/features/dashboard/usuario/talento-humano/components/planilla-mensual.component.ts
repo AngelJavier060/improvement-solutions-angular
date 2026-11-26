@@ -899,7 +899,7 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
   saveDay(row: EmployeeSheetRow, dayIdx: number, newType: DayType, advance = false): void {
     if (!this.businessId) return;
     const entry = row.days[dayIdx];
-    if (!entry || entry.afterExit || this.isLocked(row, dayIdx)) return;
+    if (!entry || entry.afterExit || entry.beforeIngreso || this.isLocked(row, dayIdx)) return;
     const oldType = entry.dayType;
     if (oldType !== newType) {
       if (oldType && (row.totals as any)[oldType] > 0) {
@@ -981,7 +981,7 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
     const step = delta > 0 ? 1 : -1;
     while (idx >= 0 && idx <= max) {
       const entry = row.days[idx];
-      if (entry?.afterExit) {
+      if (entry?.afterExit || entry?.beforeIngreso) {
         idx += step;
         continue;
       }
@@ -1080,7 +1080,7 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
     }
     const row = this.filteredSheet.find(r => r.employeeId === empId) || this.sheet.find(r => r.employeeId === empId);
     const entryPre = row?.days[dayIdx];
-    if (entryPre?.afterExit) {
+    if (entryPre?.afterExit || entryPre?.beforeIngreso) {
       return;
     }
     if (row && this.isLocked(row, dayIdx)) {
@@ -1158,7 +1158,7 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
   isLocked(row: EmployeeSheetRow, dayIdx: number): boolean {
     const entry = row.days[dayIdx];
     if (!entry) return false;
-    if (entry.afterExit) return true;
+    if (entry.afterExit || entry.beforeIngreso) return true;
     // Bloquear días de accidente de seguridad
     if (this.isAccidentDay(row, dayIdx)) return true;
     // Bloquear días de Vacaciones (V) y Horas Extra con motivo HE
