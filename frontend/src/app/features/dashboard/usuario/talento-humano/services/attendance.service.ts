@@ -46,6 +46,8 @@ export interface EmployeeSheetRow {
   position: string;
   cedula: string;
   active?: boolean;
+  /** Fecha de ingreso (yyyy-MM-dd) */
+  fechaIngreso?: string | null;
   /** Fecha fin de relación (yyyy-MM-dd), si aplica */
   fechaSalida?: string | null;
   codigoEmpresa?: string;

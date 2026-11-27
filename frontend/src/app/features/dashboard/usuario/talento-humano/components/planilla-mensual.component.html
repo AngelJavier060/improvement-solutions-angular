@@ -289,6 +289,7 @@
                   <span class="pm-badge-inactive" *ngIf="row.active === false" title="Colaborador inactivo (histórico)">Inactivo</span>
                 </div>
                 <div class="pm-emp-cargo">{{ row.position || 'Sin cargo' }}</div>
+                <div class="pm-emp-cargo" *ngIf="row.fechaIngreso">Ingreso {{ formatSheetDate(row.fechaIngreso) }}</div>
               </td>
               <td class="pm-td-day"
                   [class.pm-td-day--selected]="isEditing(row.employeeId, i)"
@@ -298,7 +299,7 @@
                      [class.pm-day-selected]="isEditing(row.employeeId, i)"
                      [class.pm-day-after-exit]="entry.afterExit || entry.beforeIngreso"
                      [class.pm-day-accident]="isAccidentDay(row, i)"
-                     [title]="(isAccidentDay(row, i) ? 'ACCIDENTE — Clic para ver detalle ' : '') + (entry.holiday ? (entry.holidayName + ' — ') : '') + (entry.dayType ? ((dayTypes[entry.dayType] ? dayTypes[entry.dayType].label : entry.dayType) || entry.dayType) : '') + (entry.notes ? (' — ' + entry.notes) : '')"
+                     [title]="dayLockHint(entry, row) || ((isAccidentDay(row, i) ? 'ACCIDENTE — Clic para ver detalle ' : '') + (entry.holiday ? (entry.holidayName + ' — ') : '') + (entry.dayType ? ((dayTypes[entry.dayType] ? dayTypes[entry.dayType].label : entry.dayType) || entry.dayType) : '') + (entry.notes ? (' — ' + entry.notes) : ''))"
                      (click)="startEdit(row.employeeId, i, $event)">
                   {{ entry.dayType || '' }}
                   <span class="pm-hday-dot" *ngIf="entry.holiday" [title]="entry.holidayName"></span>

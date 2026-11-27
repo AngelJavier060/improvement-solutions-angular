@@ -1155,6 +1155,29 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
     this.cancelEdit();
   }
 
+  dayLockHint(entry: { afterExit?: boolean; beforeIngreso?: boolean; date?: string } | null | undefined, row: EmployeeSheetRow): string {
+    if (!entry) return '';
+    if (entry.beforeIngreso) {
+      const ingreso = this.formatSheetDate(row.fechaIngreso);
+      return ingreso
+        ? `Antes del ingreso (${ingreso}). Este día no se edita.`
+        : 'Antes del ingreso. Este día no se edita.';
+    }
+    if (entry.afterExit) {
+      const salida = this.formatSheetDate(row.fechaSalida);
+      return salida
+        ? `Después de la salida (${salida}). Este día no se edita.`
+        : 'Después de la salida. Este día no se edita.';
+    }
+    return '';
+  }
+
+  formatSheetDate(iso: string | null | undefined): string {
+    if (!iso) return '';
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+  }
+
   isLocked(row: EmployeeSheetRow, dayIdx: number): boolean {
     const entry = row.days[dayIdx];
     if (!entry) return false;

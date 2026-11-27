@@ -41,13 +41,16 @@ public class AttendanceService {
 
     // ─────────────────── helpers ───────────────────
 
-    /** Fecha fin de relación: fecha de salida, aunque siga marcado activo, o la última baja. */
+    /**
+     * Fin de relación solo si ya está inactivo.
+     * Quien sigue activo se marca hasta el último día del mes, aunque la ficha tenga fecha de salida.
+     */
     private LocalDate resolveEmploymentEndDate(BusinessEmployee emp, Map<Long, LocalDate> movementExitByEmployeeId) {
-        if (emp.getFechaSalida() != null) {
-            return emp.getFechaSalida();
-        }
         if (Boolean.TRUE.equals(emp.getActive())) {
             return null;
+        }
+        if (emp.getFechaSalida() != null) {
+            return emp.getFechaSalida();
         }
         if (movementExitByEmployeeId != null) {
             return movementExitByEmployeeId.get(emp.getId());
@@ -56,11 +59,11 @@ public class AttendanceService {
     }
 
     private LocalDate resolveEmploymentEndDateForWrite(BusinessEmployee emp) {
-        if (emp.getFechaSalida() != null) {
-            return emp.getFechaSalida();
-        }
         if (Boolean.TRUE.equals(emp.getActive())) {
             return null;
+        }
+        if (emp.getFechaSalida() != null) {
+            return emp.getFechaSalida();
         }
         return employeeMovementRepository
                 .findLatestDeactivationEffectiveDate(emp.getId(), MovementType.DEACTIVATION)
@@ -581,6 +584,7 @@ public class AttendanceService {
             row.put("position",     emp.getPosition());
             row.put("cedula",       emp.getCedula());
             row.put("active",       emp.getActive());
+            row.put("fechaIngreso", emp.getFechaIngreso() != null ? emp.getFechaIngreso().toString() : null);
             row.put("fechaSalida",  employmentEnd != null ? employmentEnd.toString() : null);
             row.put("fechaIngreso", emp.getFechaIngreso() != null ? emp.getFechaIngreso().toString() : null);
             row.put("departmentId", emp.getDepartment() != null ? emp.getDepartment().getId() : null);
