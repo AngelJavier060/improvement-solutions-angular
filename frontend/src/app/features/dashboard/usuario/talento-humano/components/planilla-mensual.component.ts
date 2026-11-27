@@ -902,7 +902,7 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
   saveDay(row: EmployeeSheetRow, dayIdx: number, newType: DayType, advance = false): void {
     if (!this.businessId) return;
     const entry = row.days[dayIdx];
-    if (!entry || entry.afterExit || entry.beforeIngreso || this.isLocked(row, dayIdx)) return;
+    if (!entry || entry.afterExit || this.dayBeforeHireLocked(entry, row) || this.isLocked(row, dayIdx)) return;
     const oldType = entry.dayType;
     if (oldType !== newType) {
       if (oldType && (row.totals as any)[oldType] > 0) {
@@ -984,7 +984,7 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
     const step = delta > 0 ? 1 : -1;
     while (idx >= 0 && idx <= max) {
       const entry = row.days[idx];
-      if (entry?.afterExit || entry?.beforeIngreso) {
+      if (entry?.afterExit || this.dayBeforeHireLocked(entry, row)) {
         idx += step;
         continue;
       }
@@ -1083,7 +1083,7 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
     }
     const row = this.filteredSheet.find(r => r.employeeId === empId) || this.sheet.find(r => r.employeeId === empId);
     const entryPre = row?.days[dayIdx];
-    if (entryPre?.afterExit || entryPre?.beforeIngreso) {
+    if (entryPre?.afterExit || (row && this.dayBeforeHireLocked(entryPre, row))) {
       return;
     }
     if (row && this.isLocked(row, dayIdx)) {
@@ -1158,13 +1158,22 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
     this.cancelEdit();
   }
 
+  /** Bloqueado solo si es anterior al ingreso y el inicio de jornada no lo abrió. */
+  dayBeforeHireLocked(entry: { beforeIngreso?: boolean; date?: string } | null | undefined, row: EmployeeSheetRow): boolean {
+    if (!entry?.beforeIngreso) return false;
+    const start = (row.workScheduleStartDate || '').slice(0, 10);
+    const date = (entry.date || '').slice(0, 10);
+    if (start && date && date >= start) return false;
+    return true;
+  }
+
   dayLockHint(entry: { afterExit?: boolean; beforeIngreso?: boolean; date?: string } | null | undefined, row: EmployeeSheetRow): string {
     if (!entry) return '';
-    if (entry.beforeIngreso) {
+    if (this.dayBeforeHireLocked(entry, row)) {
       const ingreso = this.formatSheetDate(row.fechaIngreso);
       return ingreso
-        ? `Antes del ingreso (${ingreso}). Cambia la fecha de ingreso en esta fila para poder editarlo.`
-        : 'Antes del ingreso. Cambia la fecha de ingreso en esta fila para poder editarlo.';
+        ? `Antes del ingreso (${ingreso}). Pon el inicio de jornada en esta fecha o antes para poder editarlo.`
+        : 'Antes del ingreso. Ajusta el inicio de jornada para poder editarlo.';
     }
     if (entry.afterExit) {
       const salida = this.formatSheetDate(row.fechaSalida);
@@ -1214,7 +1223,7 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
   isLocked(row: EmployeeSheetRow, dayIdx: number): boolean {
     const entry = row.days[dayIdx];
     if (!entry) return false;
-    if (entry.afterExit || entry.beforeIngreso) return true;
+    if (entry.afterExit || this.dayBeforeHireLocked(entry, row)) return true;
     // Bloquear días de accidente de seguridad
     if (this.isAccidentDay(row, dayIdx)) return true;
     // Bloquear días de Vacaciones (V) y Horas Extra con motivo HE

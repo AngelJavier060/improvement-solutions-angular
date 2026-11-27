@@ -619,7 +619,10 @@ public class AttendanceService {
                 boolean isOvertimeSaved = (savedType != null && "EX".equalsIgnoreCase(savedType))
                         || (notes != null && notes.trim().toUpperCase().startsWith("HE:"));
                 LocalDate ingreso = emp.getFechaIngreso();
-                boolean beforeIngreso = ingreso != null && date.isBefore(ingreso);
+                boolean beforeHire = ingreso != null && date.isBefore(ingreso);
+                // Inicio de jornada abre el día aunque la ficha tenga un ingreso posterior.
+                boolean openedBySchedule = schedStart != null && !date.isBefore(schedStart);
+                boolean beforeIngreso = beforeHire && !openedBySchedule;
                 boolean afterExit = employmentEnd != null && date.isAfter(employmentEnd);
                 // Si hay registro guardado, usarlo. Si no hay y includeAuto=true, calcular; si includeAuto=false, dejar null.
                 String type;
@@ -756,6 +759,9 @@ public class AttendanceService {
         requireBusiness(businessId);
         BusinessEmployee emp = requireEmployee(businessId, employeeId);
         emp.setWorkScheduleStartDate(startDate);
+        if (startDate != null) {
+            emp.setFechaIngreso(startDate);
+        }
         employeeRepository.save(emp);
     }
 

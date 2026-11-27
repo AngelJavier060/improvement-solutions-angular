@@ -305,7 +305,7 @@
                   style="position:relative;">
                 <div class="pm-day-cell {{ getDayClass(entry.dayType) }}"
                      [class.pm-day-selected]="isEditing(row.employeeId, i)"
-                     [class.pm-day-after-exit]="entry.afterExit || entry.beforeIngreso"
+                     [class.pm-day-after-exit]="entry.afterExit || dayBeforeHireLocked(entry, row)"
                      [class.pm-day-accident]="isAccidentDay(row, i)"
                      [title]="dayLockHint(entry, row) || ((isAccidentDay(row, i) ? 'ACCIDENTE — Clic para ver detalle ' : '') + (entry.holiday ? (entry.holidayName + ' — ') : '') + (entry.dayType ? ((dayTypes[entry.dayType] ? dayTypes[entry.dayType].label : entry.dayType) || entry.dayType) : '') + (entry.notes ? (' — ' + entry.notes) : ''))"
                      (click)="startEdit(row.employeeId, i, $event)">
@@ -448,9 +448,7 @@
             <label>INICIO DE JORNADA (DIRECTO)</label>
             <input type="date" [(ngModel)]="scheduleStartDraft" />
             <div class="pm-field-hint pm-field-hint--block">
-              Primera fecha desde la que aplican las reglas de la jornada en la planilla: los días <strong>anteriores</strong> quedan en blanco
-              (salvo lo ya guardado). Debe alinearse con el <strong>inicio de vigencia</strong> del periodo en el historial o actualícelo al registrar una nueva jornada.
-              Con <strong>No establecido</strong> no hay sugerencia automática de T/D: el registro es manual desde esa fecha.
+              Primera fecha desde la que se puede marcar la planilla. Si el ingreso de la ficha es posterior, los días desde este inicio igual se desbloquean. Los días anteriores quedan en blanco, salvo lo ya guardado.
             </div>
           </div>
           <div class="pm-field-actions">

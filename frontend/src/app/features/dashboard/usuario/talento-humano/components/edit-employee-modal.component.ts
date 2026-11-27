@@ -87,6 +87,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       },
       error: (err) => {
         console.error('Error al cargar detalles completos del empleado:', err);
+        this.employeeLoaded = true;
       }
     });
   }
@@ -132,7 +133,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       codigoIess: [''],
       contact_kinship: [''],
       contact_name: [''],
-      contact_phone: ['', [Validators.pattern(/^[\+]?[\d\s\-\(\)]{7,20}$/)]],
+      contact_phone: ['', [Validators.pattern(/^[\+]?[\d\s\-\(\)\.]{6,25}$/)]],
       status: [true],
       codigo_trabajador: [{ value: '', disabled: true }],
       salario: [''],
@@ -306,7 +307,13 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
       // Flexible mapping for contact and address fields
       const contactNameVal = ((this as any).employee.contact_name || (this as any).employee.contactName || '').trim();
       const contactKinshipVal = ((this as any).employee.contact_kinship || (this as any).employee.contactKinship || '').trim();
-      const contactPhoneVal = ((this as any).employee.contact_phone || (this as any).employee.contactPhone || '').trim();
+      const contactPhoneVal = (
+        (this as any).employee.contact_phone ||
+        (this as any).employee.contactPhone ||
+        (this as any).employee.telefonoContacto ||
+        (this as any).employee.telefono_contacto ||
+        ''
+      ).toString().trim();
       // address: usar cualquier fuente disponible, nunca dejar null
       const addressVal = (
         (this as any).employee.address ||
@@ -320,7 +327,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
         nombres: nombres,
         apellidos: apellidos,
         name: fullName,
-        phone: (this.employee.phone || '').trim(),
+        phone: ((this.employee.phone || (this as any).employee.telefono || (this as any).employee.celular || '') as string).toString().trim(),
         email: (this.employee.email || '').trim(),
         birthdate: birthdate,
         address: addressVal,
@@ -328,7 +335,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
         lugarNacimientoProvincia: (this as any).employee.lugarNacimientoProvincia || '',
         lugarNacimientoCiudad: (this as any).employee.lugarNacimientoCiudad || '',
         lugarNacimientoParroquia: (this as any).employee.lugarNacimientoParroquia || '',
-        fechaIngreso: (this as any).employee.fechaIngreso || '',
+        fechaIngreso: this.onlyDate((this as any).employee.fechaIngreso || (this as any).employee.fecha_ingreso),
         tipoSangre: (this as any).employee.tipoSangre || '',
         discapacidad: (this as any).employee.discapacidad || '',
         codigoIess: ((this as any).employee.codigoIess || (this as any).employee.codigo_iess || '').toString(),
@@ -500,6 +507,44 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     this.onClose.emit();
   }
 
+  private onlyDate(value: unknown): string {
+    if (value === null || value === undefined || value === '') return '';
+    return String(value).split('T')[0].split(' ')[0];
+  }
+
+  /** Campo inválido: se subraya aunque todavía no se haya tocado. */
+  isFieldMissing(fieldName: string): boolean {
+    const field = this.employeeForm.get(fieldName);
+    return !!(this.employeeLoaded && field && field.enabled && field.invalid);
+  }
+
+  getInvalidFields(): { key: string; label: string }[] {
+    const labels: Record<string, string> = {
+      name: 'Nombre Completo',
+      phone: 'Teléfono',
+      email: 'Email',
+      birthdate: 'Fecha de Nacimiento',
+      address: 'Dirección',
+      contact_name: 'Nombre del Contacto',
+      contact_kinship: 'Parentesco',
+      contact_phone: 'Teléfono del Contacto',
+      cedula: 'Cédula',
+    };
+    return Object.keys(this.employeeForm.controls)
+      .filter(k => {
+        const ctrl = this.employeeForm.get(k);
+        return ctrl && ctrl.enabled && ctrl.invalid;
+      })
+      .map(k => ({ key: k, label: labels[k] || k }));
+  }
+
+  focusMissingField(fieldName: string): void {
+    const el = document.getElementById(fieldName);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (el instanceof HTMLElement) el.focus();
+  }
+
   private markFormGroupTouched(): void {
     Object.keys(this.employeeForm.controls).forEach(key => {
       const control = this.employeeForm.get(key);
@@ -507,28 +552,13 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
     });
   }
 
-  /** Devuelve los nombres legibles de los controles que están inválidos (para mostrar al usuario) */
   getInvalidFieldLabels(): string {
-    const labels: Record<string, string> = {
-      name: 'Nombre Completo',
-      phone: 'Teléfono',
-      email: 'Email',
-      birthdate: 'Fecha de Nacimiento',
-      address: 'Dirección',
-      contact_phone: 'Teléfono de Contacto',
-    };
-    return Object.keys(this.employeeForm.controls)
-      .filter(k => {
-        const ctrl = this.employeeForm.get(k);
-        return ctrl && ctrl.enabled && ctrl.invalid;
-      })
-      .map(k => labels[k] || k)
-      .join(', ');
+    return this.getInvalidFields().map(f => f.label).join(', ');
   }
 
   getFieldError(fieldName: string): string {
     const field = this.employeeForm.get(fieldName);
-    if (field?.errors && field?.touched) {
+    if (field?.errors && (field.touched || this.isFieldMissing(fieldName))) {
       if (field.errors['required']) return `${fieldName} es requerido`;
       if (field.errors['email']) return 'Email inválido';
         if (field.errors['pattern']) {
@@ -543,7 +573,7 @@ export class EditEmployeeModalComponent implements OnInit, OnChanges {
 
   isFieldInvalid(fieldName: string): boolean {
     const field = this.employeeForm.get(fieldName);
-    return !!(field?.invalid && field?.touched);
+    return !!((field?.invalid && field?.touched) || this.isFieldMissing(fieldName));
   }
 
   private loadConfigurations(): void {
