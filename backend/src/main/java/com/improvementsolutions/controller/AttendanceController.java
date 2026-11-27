@@ -223,6 +223,28 @@ public class AttendanceController {
         }
     }
 
+    @PutMapping("/employees/{employeeId}/fecha-ingreso")
+    public ResponseEntity<?> setFechaIngreso(
+            @PathVariable Long businessId,
+            @PathVariable Long employeeId,
+            @RequestBody Map<String, String> body) {
+        try {
+            String raw = body.get("fechaIngreso");
+            if (raw == null || raw.isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Indica la fecha de ingreso."));
+            }
+            LocalDate date = LocalDate.parse(raw.trim());
+            attendanceService.setFechaIngreso(businessId, employeeId, date);
+            return ResponseEntity.ok(Map.of("employeeId", employeeId, "fechaIngreso", date.toString()));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PutMapping("/employees/{employeeId}/work-schedule-start")
     public ResponseEntity<?> setWorkScheduleStartDate(
             @PathVariable Long businessId,

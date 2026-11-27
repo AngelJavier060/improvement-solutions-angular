@@ -586,7 +586,6 @@ public class AttendanceService {
             row.put("active",       emp.getActive());
             row.put("fechaIngreso", emp.getFechaIngreso() != null ? emp.getFechaIngreso().toString() : null);
             row.put("fechaSalida",  employmentEnd != null ? employmentEnd.toString() : null);
-            row.put("fechaIngreso", emp.getFechaIngreso() != null ? emp.getFechaIngreso().toString() : null);
             row.put("departmentId", emp.getDepartment() != null ? emp.getDepartment().getId() : null);
             row.put("departmentName", emp.getDepartment() != null ? emp.getDepartment().getName() : "Sin departamento");
             row.put("codigoEmpresa", emp.getCodigoEmpresa());
@@ -625,7 +624,6 @@ public class AttendanceService {
                 // Si hay registro guardado, usarlo. Si no hay y includeAuto=true, calcular; si includeAuto=false, dejar null.
                 String type;
                 if (afterExit || beforeIngreso) {
-                    // Antes del ingreso o después de la salida no se cuenta en la planilla del mes
                     type = null;
                 } else if (hasSaved) {
                     type = savedType;
@@ -758,6 +756,22 @@ public class AttendanceService {
         requireBusiness(businessId);
         BusinessEmployee emp = requireEmployee(businessId, employeeId);
         emp.setWorkScheduleStartDate(startDate);
+        employeeRepository.save(emp);
+    }
+
+    /** Cambia la fecha de ingreso desde la planilla. Los días anteriores quedan bloqueados. */
+    @Transactional
+    public void setFechaIngreso(Long businessId, Long employeeId, LocalDate fechaIngreso) {
+        requireBusiness(businessId);
+        BusinessEmployee emp = requireEmployee(businessId, employeeId);
+        if (fechaIngreso == null) {
+            throw new IllegalArgumentException("La fecha de ingreso es obligatoria.");
+        }
+        LocalDate salida = emp.getFechaSalida();
+        if (salida != null && fechaIngreso.isAfter(salida)) {
+            throw new IllegalArgumentException("La fecha de ingreso no puede ser posterior a la salida.");
+        }
+        emp.setFechaIngreso(fechaIngreso);
         employeeRepository.save(emp);
     }
 

@@ -289,7 +289,15 @@
                   <span class="pm-badge-inactive" *ngIf="row.active === false" title="Colaborador inactivo (histórico)">Inactivo</span>
                 </div>
                 <div class="pm-emp-cargo">{{ row.position || 'Sin cargo' }}</div>
-                <div class="pm-emp-cargo" *ngIf="row.fechaIngreso">Ingreso {{ formatSheetDate(row.fechaIngreso) }}</div>
+                <label class="pm-ingreso-edit" (click)="$event.stopPropagation()"
+                       title="Los días anteriores a esta fecha quedan bloqueados. Cámbiala aquí para poder marcarlos.">
+                  <span>Ingreso</span>
+                  <input type="date"
+                         [value]="ingresoInputValue(row)"
+                         (change)="saveFechaIngreso(row, $event)"
+                         [disabled]="savingIngresoId === row.employeeId" />
+                </label>
+                <div class="pm-form-error" *ngIf="ingresoErrorId === row.employeeId">{{ ingresoError }}</div>
               </td>
               <td class="pm-td-day"
                   [class.pm-td-day--selected]="isEditing(row.employeeId, i)"

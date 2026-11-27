@@ -319,6 +319,10 @@ export class AttendanceService {
     return this.http.post(`${this.apiUrl(businessId)}/sheet/${employeeId}/batch`, days);
   }
 
+  setFechaIngreso(businessId: number, employeeId: number, fechaIngreso: string): Observable<any> {
+    return this.http.put(`${this.apiUrl(businessId)}/employees/${employeeId}/fecha-ingreso`, { fechaIngreso });
+  }
+
   setWorkScheduleStartDate(businessId: number, employeeId: number, startDate: string | null): Observable<any> {
     return this.http.put(`${this.apiUrl(businessId)}/employees/${employeeId}/work-schedule-start`, { startDate });
   }
