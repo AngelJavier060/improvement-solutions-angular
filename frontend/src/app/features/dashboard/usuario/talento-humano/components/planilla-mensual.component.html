@@ -286,7 +286,7 @@
               <td class="pm-td-name">
                 <div class="pm-emp-name">
                   {{ row.fullName | uppercase }}
-                  <span class="pm-badge-inactive" *ngIf="row.active === false" title="Colaborador inactivo (histórico)">Inactivo</span>
+                  <span class="pm-badge-inactive" *ngIf="showInactiveOnSheet(row)" title="Colaborador inactivo (histórico)">Inactivo</span>
                 </div>
                 <div class="pm-emp-cargo">{{ row.position || 'Sin cargo' }}</div>
               </td>

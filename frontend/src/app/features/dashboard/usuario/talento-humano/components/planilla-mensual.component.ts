@@ -1181,6 +1181,17 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
     return '';
   }
 
+  /** La etiqueta Inactivo solo si la salida cae en el mes que se está viendo. */
+  showInactiveOnSheet(row: EmployeeSheetRow): boolean {
+    if (row.active !== false) return false;
+    const exit = (row.fechaSalida || '').slice(0, 10);
+    if (!exit) return false;
+    const start = `${this.year}-${String(this.month).padStart(2, '0')}-01`;
+    const endDay = new Date(this.year, this.month, 0).getDate();
+    const end = `${this.year}-${String(this.month).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`;
+    return exit >= start && exit <= end;
+  }
+
   formatSheetDate(iso: string | null | undefined): string {
     if (!iso) return '';
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);

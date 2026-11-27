@@ -79,8 +79,9 @@ public class AttendanceService {
     }
 
     /**
-     * La planilla del mes solo incluye a quien ya ingresó y aún no había salido.
-     * Fecha de ingreso en o antes del fin de mes, y salida vacía o dentro/después del mes.
+     * La planilla del mes solo incluye a quien ya ingresó y seguía vinculado ese mes.
+     * El mes de la desvinculación y los posteriores no lo muestran.
+     * Los meses anteriores a la salida sí, porque todavía estaba en la empresa.
      */
     private boolean shouldIncludeEmployeeInMonthlySheet(BusinessEmployee e, LocalDate monthStart, LocalDate monthEnd,
                                                         Map<Long, LocalDate> movementExitByEmployeeId) {
@@ -88,8 +89,11 @@ public class AttendanceService {
         if (ingreso == null || ingreso.isAfter(monthEnd)) {
             return false;
         }
+        if (Boolean.TRUE.equals(e.getActive())) {
+            return true;
+        }
         LocalDate exit = resolveEmploymentEndDate(e, movementExitByEmployeeId);
-        return exit == null || !exit.isBefore(monthStart);
+        return exit != null && exit.isAfter(monthEnd);
     }
 
     private Map<Long, LocalDate> loadMovementExitDates(Collection<Long> inactiveIdsWithoutFechaSalida) {
@@ -1305,8 +1309,7 @@ public class AttendanceService {
                 if (e == null) {
                     continue;
                 }
-                LocalDate end = resolveEmploymentEndDate(e, movementExitByEmployeeId);
-                if (end != null && wd.getWorkDate().isAfter(end)) {
+                if (!shouldIncludeEmployeeInMonthlySheet(e, from, to, movementExitByEmployeeId)) {
                     continue;
                 }
                 String dt = wd.getDayType();
