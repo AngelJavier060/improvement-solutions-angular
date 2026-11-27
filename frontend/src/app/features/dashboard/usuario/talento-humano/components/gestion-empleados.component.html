@@ -1,93 +1,53 @@
 <div class="gestion-empleados-container th-modern">
-  <!-- Header -->
-  <div class="page-header">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <div>
-        <nav class="text-muted small mb-1">
-          <a [routerLink]="['/usuario', businessRuc || '', 'welcome']"
-             class="text-decoration-none text-muted"><i class="fas fa-home me-1"></i> Home</a>
-          <span class="mx-1">/</span>
-          <span class="text-muted">Talento Humano</span>
-          <span class="mx-1">/</span>
-          <span class="fw-semibold text-dark">Gestión de Empleados</span>
-        </nav>
-        <h2 class="page-title d-flex align-items-center mb-1">
-          <span class="me-2" style="width:6px;height:22px;background:#1d4ed8;border-radius:4px;"></span>
-          Gestión de Empleados
-        </h2>
-        <p class="page-subtitle text-muted mb-0">Administra y gestiona la información de todos los empleados</p>
+  <div class="ge-topbar">
+    <div class="ge-brand">
+      <img *ngIf="businessLogo" class="ge-logo" [src]="businessLogo" [alt]="businessName || 'Empresa'" />
+      <nav class="ge-crumb">
+        <a [routerLink]="['/usuario', businessRuc || '', 'welcome']">Home</a>
+        <span>/</span>
+        <span class="ge-crumb-module">Talento Humano</span>
+        <span>/</span>
+        <strong>Gestión de Empleados</strong>
+      </nav>
+    </div>
+    <div class="ge-user" (click)="toggleClosureMenu()">
+      <div class="ge-user-text">
+        <div>{{ currentUserEmail || businessEmail || '—' }}</div>
+        <div class="ge-user-biz">{{ businessName || currentUserName || 'Empresa' }}</div>
       </div>
-      <div class="d-flex align-items-center position-relative">
-        <i class="far fa-bell text-muted me-3 position-relative" title="Notificaciones">
-          <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"
-                style="width:8px;height:8px;"></span>
-        </i>
-        <span class="border-end mx-2" style="height:24px;"></span>
-        <div class="d-flex align-items-center" (click)="toggleClosureMenu()" style="cursor:pointer;">
-          <div class="text-end me-2">
-            <div class="text-muted small">{{ currentUserEmail || businessEmail || '—' }}</div>
-            <div class="fw-semibold">{{ businessName || currentUserName || 'Empresa' }}</div>
+      <div class="ge-user-avatar">{{ (currentUserName || businessName || 'E').slice(0, 1) }}</div>
+    </div>
+    <div *ngIf="showClosureMenu" class="card shadow-sm ge-closure">
+      <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <strong>Rangos de Cierre</strong>
+        <button class="btn btn-sm btn-outline-secondary" (click)="hideClosureMenu()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="list-group list-group-flush" style="max-height: 320px; overflow:auto;">
+        <div class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let c of closures">
+          <div>
+            <div class="fw-semibold">{{ formatMonthLabel(c.year, c.month) }}</div>
+            <small class="text-muted">Estado: {{ c.status }}</small>
           </div>
-          <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary text-white"
-               style="width:36px;height:36px;">
-            <i class="fas fa-user"></i>
-          </div>
-          <i class="fas fa-chevron-down text-muted ms-2"></i>
+          <button class="btn btn-sm btn-primary" [disabled]="!canClose(c)" (click)="$event.stopPropagation(); closePeriod(c)">Cerrar</button>
         </div>
-
-        <!-- Dropdown de cierres -->
-        <div *ngIf="showClosureMenu" class="card shadow-sm position-absolute end-0 mt-2" style="top:42px; min-width: 320px; z-index: 20;">
-          <div class="card-header d-flex justify-content-between align-items-center py-2">
-            <strong><i class="fas fa-lock me-2"></i>Rangos de Cierre</strong>
-            <button class="btn btn-sm btn-outline-secondary" (click)="hideClosureMenu()"><i class="fas fa-times"></i></button>
-          </div>
-          <div class="list-group list-group-flush" style="max-height: 320px; overflow:auto;">
-            <div class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let c of closures">
-              <div>
-                <div class="fw-semibold">{{ formatMonthLabel(c.year, c.month) }}</div>
-                <small class="text-muted">Estado: {{ c.status }}</small>
-              </div>
-              <div class="d-flex align-items-center gap-2">
-                <span class="badge" [ngClass]="{
-                  'bg-secondary': (c.status||'').toUpperCase() === 'OPEN',
-                  'bg-info': (c.status||'').toUpperCase() === 'CLOSED',
-                  'bg-success': (c.status||'').toUpperCase() === 'APPROVED'
-                }">{{ (c.status||'').toUpperCase() }}</span>
-                <button class="btn btn-sm btn-primary" [disabled]="!canClose(c) || (closingTarget && closingTarget.year===c.year && closingTarget.month===c.month)" (click)="$event.stopPropagation(); closePeriod(c)">
-                  <ng-container *ngIf="!(closingTarget && closingTarget.year===c.year && closingTarget.month===c.month); else closingSpn">
-                    Cerrar
-                  </ng-container>
-                  <ng-template #closingSpn><i class="fas fa-spinner fa-spin"></i></ng-template>
-                </button>
-              </div>
-            </div>
-            <div class="list-group-item text-muted small" *ngIf="closures?.length===0 && !closuresLoading">No hay periodos registrados.</div>
-            <div class="list-group-item text-muted small" *ngIf="closuresLoading"><i class="fas fa-spinner fa-spin me-1"></i>Cargando…</div>
-            <div class="list-group-item text-danger small" *ngIf="closuresError">{{ closuresError }}</div>
-          </div>
-          <div class="card-footer d-flex justify-content-between align-items-center py-2">
-            <span class="text-muted small">Opciones</span>
-            <button class="btn btn-sm btn-outline-danger" (click)="$event.stopPropagation(); logoutNow()">
-              <i class="fas fa-sign-out-alt me-1"></i> Cerrar sesión
-            </button>
-          </div>
-        </div>
+        <div class="list-group-item text-muted small" *ngIf="closures?.length===0 && !closuresLoading">No hay periodos registrados.</div>
+        <div class="list-group-item text-muted small" *ngIf="closuresLoading">Cargando…</div>
+        <div class="list-group-item text-danger small" *ngIf="closuresError">{{ closuresError }}</div>
+      </div>
+      <div class="card-footer py-2 text-end">
+        <button class="btn btn-sm btn-outline-danger" (click)="$event.stopPropagation(); logoutNow()">Cerrar sesión</button>
       </div>
     </div>
-    <div class="d-flex align-items-center gap-2">
-      <button
-        class="btn btn-outline-secondary btn-lg btn-modern-ghost"
-        (click)="goBackToWelcome()">
-        <i class="fas fa-arrow-left me-2"></i>
-        Volver
-      </button>
-      <button 
-        *ngIf="canWrite"
-        class="btn btn-primary btn-lg btn-modern-primary shadow-sm"
-        (click)="openCreateModal()">
-        <i class="fas fa-plus me-2"></i>
-        Nuevo Empleado
-      </button>
+  </div>
+
+  <div class="ge-heading">
+    <div>
+      <h2 class="page-title"><span class="ge-bar"></span>Gestión de Empleados</h2>
+      <p class="page-subtitle">Administra la información, contratos y expedientes de los colaboradores.</p>
+    </div>
+    <div class="ge-actions">
+      <button class="btn btn-modern-ghost" (click)="goBackToWelcome()"><i class="fas fa-arrow-left"></i> Volver</button>
+      <button *ngIf="canWrite" class="btn btn-modern-primary" (click)="openCreateModal()"><i class="fas fa-plus"></i> Nuevo Empleado</button>
     </div>
   </div>
 

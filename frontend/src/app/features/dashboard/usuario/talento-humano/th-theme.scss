@@ -30,18 +30,19 @@
   transition: background-color .2s ease, color .2s ease;
 }
 
-.talento-humano-container.th-theme-dark {
+.talento-humano-container.th-theme-dark,
+.talento-humano-container.th-theme-indigo {
   color-scheme: dark;
-  --th-primary: #b6c6ef;
-  --th-secondary: #adc6ff;
-  --th-on-surface: #f2f0f3;
-  --th-on-variant: #c5c6cf;
-  --th-outline: #44474e;
-  --th-surface: #1c1e26;
-  --th-surface-low: #252833;
-  --th-surface-high: #2e3140;
-  --th-bg: #12141a;
-  --th-primary-fixed: #1a2b4b;
+  --th-primary: #38bdf8;
+  --th-secondary: #60a5fa;
+  --th-on-surface: #f1f5f9;
+  --th-on-variant: #94a3b8;
+  --th-outline: #1f2d47;
+  --th-surface: #131b2e;
+  --th-surface-low: #0d1322;
+  --th-surface-high: #1b2740;
+  --th-bg: #090d16;
+  --th-primary-fixed: #162036;
   --th-inverse: #031635;
   --th-warn: #fbbf24;
   --th-warn-bg: #3f2f12;
@@ -184,7 +185,40 @@
 }
 
 /* Modales CDK viven en body, fuera del contenedor del módulo */
-html:has(.talento-humano-container.th-theme-dark) {
+.talento-humano-container.th-theme-indigo {
+  --th-primary: #c7d2fe;
+  --th-secondary: #818cf8;
+  --th-on-surface: #eef2ff;
+  --th-on-variant: #c7d2fe;
+  --th-outline: #312e81;
+  --th-surface: #1a1740;
+  --th-surface-low: #12102c;
+  --th-surface-high: #2e2a5e;
+  --th-bg: #0c0a1d;
+  --th-primary-fixed: #312e81;
+  --th-avatar-bg: #4338ca;
+  --page-bg: var(--th-bg);
+}
+
+.talento-humano-container.th-theme-panel {
+  color-scheme: light;
+  --th-primary: #1e3a5f;
+  --th-secondary: #1e3a5f;
+  --th-on-surface: #0f172a;
+  --th-on-variant: #64748b;
+  --th-outline: #e6ebf2;
+  --th-surface: #ffffff;
+  --th-surface-low: #f4f7fb;
+  --th-surface-high: #eef2f7;
+  --th-bg: #f4f7fb;
+  --th-primary-fixed: #e8eef6;
+  --page-bg: #f4f7fb;
+  background: #f4f7fb;
+  color: #0f172a;
+}
+
+html:has(.talento-humano-container.th-theme-dark),
+html:has(.talento-humano-container.th-theme-indigo) {
   .ed-modal__dialog,
   .ed-renew-panel .ed-modal__dialog {
     background: #1c1e26 !important;

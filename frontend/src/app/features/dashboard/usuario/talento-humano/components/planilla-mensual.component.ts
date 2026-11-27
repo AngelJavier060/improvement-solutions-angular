@@ -76,9 +76,6 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
   savingScheduleStart = false;
   scheduleStartError: string | null = null;
   scheduleStartDraft: string = '';
-  savingIngresoId: number | null = null;
-  ingresoErrorId: number | null = null;
-  ingresoError: string | null = null;
 
   // Histórico de jornadas
   scheduleHistory: WorkScheduleHistoryEntry[] = [];
@@ -498,7 +495,7 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
       return;
     }
     this.selectedRow = row;
-    this.scheduleStartDraft = row.workScheduleStartDate || '';
+    this.scheduleStartDraft = (row.workScheduleStartDate || row.fechaIngreso || '').slice(0, 10);
     this.scheduleStartError = null;
     this.showHistoryForm = false;
     this.historyFormError = null;
@@ -1188,36 +1185,6 @@ export class PlanillaMensualComponent implements OnInit, OnDestroy {
     if (!iso) return '';
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
     return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
-  }
-
-  ingresoInputValue(row: EmployeeSheetRow): string {
-    const iso = row.fechaIngreso || '';
-    const m = /^(\d{4}-\d{2}-\d{2})/.exec(iso);
-    return m ? m[1] : '';
-  }
-
-  saveFechaIngreso(row: EmployeeSheetRow, event: Event): void {
-    if (!this.businessId) return;
-    const input = event.target as HTMLInputElement | null;
-    const value = (input?.value || '').trim();
-    const current = this.ingresoInputValue(row);
-    if (!value || value === current) return;
-    this.savingIngresoId = row.employeeId;
-    this.ingresoErrorId = null;
-    this.ingresoError = null;
-    this.attendanceService.setFechaIngreso(this.businessId, row.employeeId, value).subscribe({
-      next: () => {
-        this.savingIngresoId = null;
-        row.fechaIngreso = value;
-        this.loadData();
-      },
-      error: (err) => {
-        this.savingIngresoId = null;
-        this.ingresoErrorId = row.employeeId;
-        this.ingresoError = err?.error?.error || 'No se pudo guardar la fecha de ingreso.';
-        if (input) input.value = current;
-      }
-    });
   }
 
   isLocked(row: EmployeeSheetRow, dayIdx: number): boolean {

@@ -1,27 +1,66 @@
 .gestion-empleados-container {
-  padding: 1.25rem 1.5rem;
-  background-color: #f8f9fa;
+  padding: 0 0 2rem;
+  background: #f8fafc;
   min-height: 100vh;
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
+  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  color: #0f172a;
 }
 
-.page-header {
-  margin-bottom: 2rem;
+.ge-topbar {
+  height: 72px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 8;
 }
+.ge-brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.ge-logo { display: none; }
+.ge-crumb { display: flex; gap: 12px; align-items: center; font-size: 20px; color: #64748b; }
+.ge-crumb a { color: #64748b; text-decoration: none; font-weight: 600; }
+.ge-crumb a:hover { color: #1d4ed8; }
+.ge-crumb .ge-crumb-module { color: #1e3a8a; font-weight: 700; font-size: 22px; }
+.ge-crumb strong { color: #0f172a; font-size: 22px; font-weight: 800; }
+.ge-user { display: flex; align-items: center; gap: 10px; cursor: pointer; position: relative; }
+.ge-user-text { text-align: right; font-size: 12px; font-weight: 600; }
+.ge-user-biz { font-size: 10px; color: #1d4ed8; letter-spacing: .04em; }
+.ge-user-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #2563eb; color: #fff; display: grid; place-items: center; font-weight: 700;
+}
+.ge-closure { position: absolute; right: 2rem; top: 58px; min-width: 320px; z-index: 20; }
+.ge-heading {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  padding: 1.5rem 2rem 0;
+}
+.ge-bar { width: 8px; height: 28px; border-radius: 99px; background: #2563eb; display: inline-block; margin-right: 10px; }
+.ge-actions { display: flex; gap: 8px; }
+.page-title { font-size: 1.6rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; margin: 0; }
+.page-subtitle { font-size: .9rem; color: #64748b; margin: 6px 0 0 18px; }
 
-.page-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
+.th-modern .employees-section { padding: 0 2rem; }
+.th-modern .employees-section > .card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04);
+  overflow: hidden;
 }
-
-.page-subtitle {
-  font-size: 1rem;
-  margin-bottom: 0;
+.th-modern .table { font-size: 12px; }
+.th-modern .table thead th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e2e8f0;
 }
+.th-modern .employee-row:hover { background: #eff6ff; }
+.th-modern .avatar-placeholder, .th-modern .avatar-img { width: 32px; height: 32px; font-size: 11px; }
+.th-modern .employee-avatar { width: 32px; height: 32px; }
 
 /* Stats Cards */
 .stats-card {
@@ -369,35 +408,61 @@
 }
 
 .btn-modern-primary {
-  background: linear-gradient(90deg, #0ea5e9, #0284c7);
+  background: #2563eb;
   border: none;
+  border-radius: 8px;
+  font-size: .8rem;
+  font-weight: 700;
 }
-.btn-modern-primary:hover {
-  background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+.btn-modern-primary:hover { background: #1d4ed8; }
+.btn-modern-ghost {
+  border-radius: 8px;
+  font-size: .8rem;
+  font-weight: 600;
 }
 
 /* KPI cards inspired by Tailwind sample */
 .kpi-card {
-  border: none;
-  border-left: 4px solid transparent;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0,0,0,.06);
-  transition: box-shadow .2s ease, transform .2s ease;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04);
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s ease, box-shadow .2s ease;
 }
-.kpi-card:hover { box-shadow: 0 8px 20px rgba(2,132,199,.18); transform: translateY(-2px); }
-.kpi-card .kpi-value { font-size: 1.75rem; font-weight: 800; margin: 0; }
-.kpi-card .kpi-label { font-size: .9rem; color: #64748b; margin: 0; }
+.kpi-card:hover { box-shadow: 0 8px 20px rgba(15, 23, 42, .06); }
+.kpi-card .kpi-value { font-size: 1.85rem; font-weight: 800; margin: 0; color: #0f172a; }
+.kpi-card .kpi-label {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin: 0 0 .25rem;
+}
 .kpi-card .kpi-icon {
-  width: 48px; height: 48px; border-radius: 999px;
+  width: 48px; height: 48px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
 }
-.kpi-card .kpi-icon i { font-size: 22px; }
+.kpi-card .kpi-icon i { font-size: 20px; }
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+}
 
-.kpi-blue   { border-left-color: #3b82f6; }
-.kpi-green  { border-left-color: #22c55e; }
-.kpi-yellow { border-left-color: #eab308; }
-.kpi-cyan   { border-left-color: #06b6d4; cursor: pointer; }
+.kpi-blue   { }
+.kpi-green  { }
+.kpi-yellow { }
+.kpi-cyan   { cursor: pointer; }
+.kpi-blue::after { background: #3b82f6; }
+.kpi-green::after { background: #10b981; }
+.kpi-yellow::after { background: #f59e0b; }
+.kpi-cyan::after { background: #06b6d4; }
+.kpi-green .kpi-value { color: #059669; }
+.kpi-cyan .kpi-value { color: #0891b2; }
 
 .kpi-blue  .kpi-icon { background: #dbeafe; color: #3b82f6; }
 .kpi-green .kpi-icon { background: #dcfce7; color: #22c55e; }
@@ -558,4 +623,91 @@
   .employee-name-cell .name-text {
     max-width: 80vw;
   }
+}
+
+@mixin ge-night-surfaces {
+  .gestion-empleados-container {
+    background: var(--th-bg, #090d16);
+    color: var(--th-on-surface, #f1f5f9);
+  }
+  .ge-topbar {
+    background: var(--th-surface-low, #0d1322);
+    border-bottom-color: var(--th-outline, #1f2d47);
+    color: var(--th-on-surface, #f1f5f9);
+  }
+  .kpi-card,
+  .th-modern .employees-section > .card,
+  .card {
+    background: var(--th-surface, #131b2e);
+    border-color: var(--th-outline, #1f2d47);
+    color: var(--th-on-surface, #f1f5f9);
+  }
+  .ge-crumb,
+  .ge-crumb a,
+  .page-subtitle,
+  .ge-user-text,
+  .kpi-card .kpi-label { color: #94a3b8 !important; }
+  .ge-crumb .ge-crumb-module,
+  .ge-crumb strong,
+  .ge-user-biz,
+  .page-title,
+  .employee-name-cell .name-text,
+  .employee-info h6,
+  h6.text-primary,
+  .text-primary { color: #ffffff !important; }
+  .kpi-card .kpi-value { color: #ffffff !important; }
+  .kpi-green .kpi-value { color: #34d399 !important; }
+  .kpi-yellow .kpi-value { color: #fbbf24 !important; }
+  .kpi-cyan .kpi-value { color: #38bdf8 !important; }
+  .kpi-blue { box-shadow: 0 0 25px -5px rgba(59, 130, 246, 0.08); }
+  .kpi-green { box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.08); }
+  .kpi-yellow { box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.08); }
+  .kpi-cyan { box-shadow: 0 0 25px -5px rgba(14, 165, 233, 0.08); }
+  .th-modern .table thead th {
+    background: var(--th-surface-low, #0e1627);
+    color: #94a3b8;
+    border-color: var(--th-outline, #1f2d47);
+  }
+  .table,
+  .table tbody td {
+    color: #cbd5e1;
+    border-color: #1b273d;
+    background: transparent;
+  }
+  .th-modern .employee-row:hover,
+  .table tbody tr:hover { background: rgba(30, 41, 59, 0.4); }
+  .btn-modern-ghost {
+    background: rgba(30, 41, 59, 0.8);
+    color: #e2e8f0;
+    border-color: #334155;
+  }
+  .btn-modern-primary {
+    background: linear-gradient(90deg, #2563eb, #4f46e5);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  }
+}
+
+:host-context(.th-theme-dark) { @include ge-night-surfaces; }
+
+:host-context(.th-theme-panel) {
+  .gestion-empleados-container { background: #f4f7fb; color: #0f172a; }
+  .ge-topbar { background: #fff; border-bottom-color: #e6ebf2; height: 72px; }
+  .ge-logo { display: block; height: 40px; width: auto; object-fit: contain; }
+  .ge-crumb,
+  .ge-crumb a,
+  .ge-crumb .ge-crumb-module,
+  .ge-crumb strong { font-size: 22px !important; font-weight: 700 !important; }
+  .page-title { color: #0f172a; font-size: 1.85rem; }
+  .page-subtitle { color: #64748b; }
+  .btn-modern-primary,
+  .btn-modern-primary i { background: #1e3a5f; color: #fff !important; border-radius: 12px; }
+  .btn-modern-ghost { border-radius: 12px; background: #fff; }
+  .kpi-card { border-radius: 16px; border-color: #e6ebf2; background: #fff; }
+  .kpi-card .kpi-value { color: #0f172a !important; }
+  .kpi-yellow .kpi-value { color: #f59e0b !important; }
+  .employees-section > .card { border-radius: 16px; border-color: #e6ebf2; box-shadow: 0 10px 30px rgba(15, 23, 42, .04); }
+  .btn-group .btn.active.btn-outline-primary { background: #1e3a5f; border-color: #1e3a5f; color: #fff; border-radius: 12px; }
+  .btn-group .btn { border-radius: 12px; }
+  h6.text-primary, .name-text { color: #0f172a !important; }
+  .badge-success { background: #ecfdf5; color: #059669; border-radius: 999px; }
 }

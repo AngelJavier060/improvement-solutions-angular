@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
-export type ThTheme = 'light' | 'dark';
+export type ThTheme = 'light' | 'dark' | 'panel';
 
 const STORAGE_KEY = 'talentoHumano_theme';
 
@@ -23,7 +23,7 @@ export class TalentoHumanoThemeService {
   }
 
   set(theme: ThTheme): void {
-    if (theme !== 'light' && theme !== 'dark') return;
+    if (theme !== 'light' && theme !== 'dark' && theme !== 'panel') return;
     this.themeSubject.next(theme);
     try {
       localStorage.setItem(STORAGE_KEY, theme);
@@ -33,7 +33,7 @@ export class TalentoHumanoThemeService {
   private readStoredTheme(): ThTheme {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === 'dark' || stored === 'light') return stored;
+      if (stored === 'dark' || stored === 'light' || stored === 'panel') return stored;
     } catch { /* ignore */ }
     return 'light';
   }

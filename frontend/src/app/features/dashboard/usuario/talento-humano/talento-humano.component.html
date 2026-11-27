@@ -1,4 +1,4 @@
-<div class="talento-humano-container" [class.th-theme-dark]="isDark">
+<div class="talento-humano-container" [class.th-theme-dark]="theme === 'dark'" [class.th-theme-panel]="theme === 'panel'">
   <div class="d-flex layout-row">
 
     <!-- Toggle button -->
@@ -13,20 +13,20 @@
     <aside class="sidebar-talento shadow-lg" [class.collapsed]="isCollapsed">
 
       <!-- Cabecera -->
-      <div class="sidebar-header pt-4 pb-2">
-        <div class="sidebar-icon mb-2">
-          <span class="material-symbols-outlined filled">group</span>
+      <div class="sidebar-brand">
+        <img *ngIf="businessLogoUrl" class="brand-seal" [src]="businessLogoUrl" [alt]="businessName" (error)="businessLogoUrl = null" />
+        <div *ngIf="!businessLogoUrl" class="brand-mark" aria-hidden="true">
+          <span class="material-symbols-outlined">apartment</span>
         </div>
-        <h4 class="sidebar-title" *ngIf="!isCollapsed">Talento Humano</h4>
-      </div>
-
-      <!-- Empresa activa (solo informativo, sin colapso) -->
-      <div class="sidebar-business-info" *ngIf="!isCollapsed">
-        <span class="biz-name">{{ businessName }}</span>
+        <div class="brand-copy" *ngIf="!isCollapsed">
+          <div class="brand-kicker">Talento Humano</div>
+          <div class="brand-name">{{ businessName }}</div>
+        </div>
       </div>
 
       <!-- Navegación principal -->
       <nav class="sidebar-nav mt-2">
+        <div class="nav-section" *ngIf="!isCollapsed">Gestión Operativa</div>
         <ul>
 
           <!-- Inicio -->
@@ -37,7 +37,7 @@
                class="nav-link"
                title="Inicio">
               <span class="material-symbols-outlined">home</span>
-              <span class="nav-label" *ngIf="!isCollapsed">Inicio</span>
+              <span class="nav-label">Inicio</span>
             </a>
           </li>
 
@@ -48,7 +48,7 @@
                class="nav-link"
                title="Gestión de Empleados">
               <span class="material-symbols-outlined">group</span>
-              <span class="nav-label" *ngIf="!isCollapsed">Gestión de Empleados</span>
+              <span class="nav-label">Gestión de Empleados</span>
             </a>
           </li>
 
@@ -60,7 +60,7 @@
                [class.active]="isDocumentosCertificacionesActive()"
                title="Documentos y Certificaciones">
               <span class="material-symbols-outlined">description</span>
-              <span class="nav-label" *ngIf="!isCollapsed">Documentos y Certificaciones</span>
+              <span class="nav-label">Documentos y Certificaciones</span>
             </a>
           </li>
 
@@ -73,20 +73,19 @@
                     title="Control de Asistencia"
                     type="button">
               <span class="material-symbols-outlined">calendar_today</span>
-              <span class="nav-label" *ngIf="!isCollapsed">Control de Asistencia</span>
-              <span *ngIf="!isCollapsed"
-                    class="material-symbols-outlined nav-chevron ms-auto">{{ isAttendanceExpanded ? 'expand_less' : 'expand_more' }}</span>
+              <span class="nav-label">Control de Asistencia</span>
+              <span class="material-symbols-outlined nav-chevron">{{ isAttendanceExpanded ? 'expand_less' : 'expand_more' }}</span>
             </button>
 
             <!-- Sub-items -->
-            <ul class="nav-submenu" *ngIf="isAttendanceExpanded && !isCollapsed">
+            <ul class="nav-submenu" *ngIf="isAttendanceExpanded || isCollapsed">
               <li>
                 <a routerLink="planilla-mensual"
                    routerLinkActive="active"
                    class="nav-link nav-sublink"
                    title="Planilla Mensual">
                   <i class="fas fa-table"></i>
-                  <span>Planilla Mensual</span>
+                  <span class="nav-label">Planilla Mensual</span>
                 </a>
               </li>
               <li>
@@ -95,7 +94,7 @@
                    class="nav-link nav-sublink"
                    title="Días y horas extras">
                   <i class="fas fa-clock"></i>
-                  <span>Días y horas extras</span>
+                  <span class="nav-label">Días y horas extras</span>
                 </a>
               </li>
               <li>
@@ -104,7 +103,7 @@
                    class="nav-link nav-sublink"
                    title="Vacaciones Anuales">
                   <i class="fas fa-umbrella-beach"></i>
-                  <span>Vacaciones Anuales</span>
+                  <span class="nav-label">Vacaciones Anuales</span>
                 </a>
               </li>
               <li>
@@ -113,7 +112,7 @@
                    class="nav-link nav-sublink"
                    title="Permisos">
                   <i class="fas fa-file-signature"></i>
-                  <span>Permisos</span>
+                  <span class="nav-label">Permisos</span>
                 </a>
               </li>
               <li>
@@ -122,7 +121,7 @@
                    class="nav-link nav-sublink"
                    title="Accidentes">
                   <i class="fas fa-exclamation-triangle"></i>
-                  <span>Accidentes</span>
+                  <span class="nav-label">Accidentes</span>
                 </a>
               </li>
             </ul>
@@ -132,14 +131,17 @@
       </nav>
 
       <div class="sidebar-theme">
-        <button type="button"
-                class="th-theme-toggle"
-                (click)="toggleTheme()"
-                [attr.title]="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
-                [attr.aria-label]="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
-                [attr.aria-pressed]="isDark">
-          <span class="material-symbols-outlined">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
-          <span class="nav-label" *ngIf="!isCollapsed">{{ isDark ? 'Modo claro' : 'Modo oscuro' }}</span>
+        <button type="button" class="th-theme-toggle" [class.active]="theme === 'light'" (click)="setTheme('light')" title="Modo claro">
+          <span class="material-symbols-outlined">light_mode</span>
+          <span class="nav-label">Claro</span>
+        </button>
+        <button type="button" class="th-theme-toggle" [class.active]="theme === 'dark'" (click)="setTheme('dark')" title="Modo oscuro">
+          <span class="material-symbols-outlined">dark_mode</span>
+          <span class="nav-label">Oscuro</span>
+        </button>
+        <button type="button" class="th-theme-toggle" [class.active]="theme === 'panel'" (click)="setTheme('panel')" title="Diseño enviado">
+          <span class="material-symbols-outlined">dashboard</span>
+          <span class="nav-label">Panel</span>
         </button>
       </div>
     </aside>
@@ -147,8 +149,8 @@
     <!-- ── Contenido principal ── -->
     <div class="flex-grow-1 d-flex flex-column content-col"
          [class.full]="isCollapsed"
-         [style.margin-left.px]="isCollapsed ? 64 : 260"
-         [style.width]="isCollapsed ? 'calc(100% - 64px)' : 'calc(100% - 260px)'">
+         [style.margin-left.px]="isCollapsed ? 76 : 288"
+         [style.width]="isCollapsed ? 'calc(100% - 76px)' : 'calc(100% - 288px)'">
       <div class="alert alert-info m-3 mb-0 py-2 small" *ngIf="isConsulta" role="status">
         <i class="fas fa-eye me-1"></i>
         Modo <strong>solo consulta</strong>: puedes ver la información, pero no crear, editar ni eliminar.

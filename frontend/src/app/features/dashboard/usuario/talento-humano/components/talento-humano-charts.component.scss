@@ -464,6 +464,55 @@
   }
 }
 
+:host-context(.th-theme-dark) {
+  .talento-humano-charts,
+  .th-tile,
+  .tile-body,
+  .tile-header,
+  .chart-svg-container,
+  .summary-card,
+  .no-data-container {
+    background: #131b2e;
+    border-color: #1f2d47;
+    color: #f1f5f9;
+  }
+  .chart-title,
+  .tile-title,
+  .card-title,
+  .role-count,
+  .role-name,
+  .pyramid-label { color: #ffffff; }
+  .form-label,
+  .card-text,
+  .gender-label,
+  .role-category { color: #94a3b8; }
+  .role-category,
+  .role-progress { background: #1b2740; }
+  .tile-header { background: #0d1322; }
+  .business-row:hover { background: #1b2740; }
+  th { color: #94a3b8; border-color: #1f2d47; }
+}
+
+:host-context(.th-theme-panel) {
+  .talento-humano-charts { background: transparent; box-shadow: none; }
+  .th-tile,
+  .tile-body,
+  .chart-svg-container {
+    background: #ffffff;
+    border: 1px solid #e6ebf2;
+    border-radius: 16px;
+    box-shadow: none;
+  }
+  .tile-header { background: #f4f7fb; border-color: #e6ebf2; }
+  .tile-title,
+  .chart-title,
+  .role-count,
+  .role-name { color: #0f172a; }
+  .tile-total { background: #1e3a5f; box-shadow: none; }
+  .role-category { background: #f4f7fb; color: #64748b; }
+  .role-percentage { color: #1e3a5f; }
+}
+
 @media (max-width: 768px) {
   .job-role-item {
     gap: 6px;

@@ -5,6 +5,7 @@ import { BusinessContextService } from '../../../../core/services/business-conte
 import { AuthService } from '../../../../core/services/auth.service';
 import { EmployeeService } from './services/employee.service';
 import { TalentoHumanoThemeService } from './services/talento-humano-theme.service';
+import { BusinessService } from '../../../../services/business.service';
 
 @Component({
   selector: 'app-talento-humano',
@@ -14,9 +15,11 @@ import { TalentoHumanoThemeService } from './services/talento-humano-theme.servi
 export class TalentoHumanoComponent implements OnInit, OnDestroy {
   isCollapsed = false;
   isAttendanceExpanded = false;
-  businessName = 'Improvement Solutions';
+  businessName = '';
   businessRuc = '';
+  businessLogoUrl: string | null = null;
   isDark = false;
+  theme: 'light' | 'dark' | 'panel' = 'light';
   /** Fase C: Usuario consulta = solo lectura */
   isConsulta = false;
   private themeSub?: Subscription;
@@ -30,9 +33,11 @@ export class TalentoHumanoComponent implements OnInit, OnDestroy {
     private businessContext: BusinessContextService,
     private employeeService: EmployeeService,
     private themeService: TalentoHumanoThemeService,
-    private authService: AuthService
+    private authService: AuthService,
+    private businessService: BusinessService
   ) {
-    this.isDark = this.themeService.isDark;
+    this.theme = this.themeService.current;
+    this.isDark = this.theme === 'dark';
   }
 
   logout(): void {
@@ -63,22 +68,48 @@ export class TalentoHumanoComponent implements OnInit, OnDestroy {
   }
 
   private loadBusinessInfo(): void {
-    // Get RUC from route
     let r: any = this.route;
     while (r) {
       const ruc = r.snapshot?.params?.['ruc'] || r.snapshot?.params?.['businessRuc'];
       if (ruc) {
-        this.businessRuc = ruc;
+        this.businessRuc = String(ruc);
         break;
       }
       r = r.parent;
     }
 
-    // Try to get business name from context
     const ctx = this.businessContext.getActiveBusiness();
-    if (ctx?.name) {
+    const ruc = this.businessRuc || (ctx?.ruc ? String(ctx.ruc) : '');
+    if (!this.businessRuc && ruc) this.businessRuc = ruc;
+    if (ctx?.name && ctx.ruc && String(ctx.ruc) === this.businessRuc) {
       this.businessName = ctx.name;
     }
+    if (!ruc) return;
+
+    this.businessService.getByRuc(ruc).subscribe({
+      next: (b) => this.applyBusiness(b),
+      error: () => {
+        if (ctx?.id && String(ctx.ruc) === ruc) {
+          this.businessService.getById(ctx.id).subscribe({
+            next: (b) => this.applyBusiness(b)
+          });
+        }
+      }
+    });
+  }
+
+  private applyBusiness(b: { name?: string; logo?: string } | null): void {
+    if (b?.name) this.businessName = b.name;
+    this.businessLogoUrl = this.resolveLogo(b?.logo || '');
+  }
+
+  private resolveLogo(raw: string): string | null {
+    const value = (raw || '').trim();
+    if (!value) return null;
+    if (/^https?:\/\//i.test(value)) return value;
+    if (value.startsWith('logos/')) return `/api/files/${value}`;
+    if (value.startsWith('uploads/')) return `/api/files/${value.replace(/^uploads\//, '')}`;
+    return `/api/files/logos/${value}`;
   }
 
   ngOnInit(): void {
@@ -86,6 +117,7 @@ export class TalentoHumanoComponent implements OnInit, OnDestroy {
     this.loadSavedState();
     this.loadBusinessInfo();
     this.themeSub = this.themeService.theme$.subscribe(theme => {
+      this.theme = theme;
       this.isDark = theme === 'dark';
     });
   }
@@ -94,8 +126,8 @@ export class TalentoHumanoComponent implements OnInit, OnDestroy {
     this.themeSub?.unsubscribe();
   }
 
-  toggleTheme(): void {
-    this.themeService.toggle();
+  setTheme(theme: 'light' | 'dark' | 'panel'): void {
+    this.themeService.set(theme);
   }
 
   isDocumentosCertificacionesActive(): boolean {

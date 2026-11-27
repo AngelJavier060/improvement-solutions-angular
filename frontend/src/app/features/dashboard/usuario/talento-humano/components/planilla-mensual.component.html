@@ -289,15 +289,6 @@
                   <span class="pm-badge-inactive" *ngIf="row.active === false" title="Colaborador inactivo (histórico)">Inactivo</span>
                 </div>
                 <div class="pm-emp-cargo">{{ row.position || 'Sin cargo' }}</div>
-                <label class="pm-ingreso-edit" (click)="$event.stopPropagation()"
-                       title="Los días anteriores a esta fecha quedan bloqueados. Cámbiala aquí para poder marcarlos.">
-                  <span>Ingreso</span>
-                  <input type="date"
-                         [value]="ingresoInputValue(row)"
-                         (change)="saveFechaIngreso(row, $event)"
-                         [disabled]="savingIngresoId === row.employeeId" />
-                </label>
-                <div class="pm-form-error" *ngIf="ingresoErrorId === row.employeeId">{{ ingresoError }}</div>
               </td>
               <td class="pm-td-day"
                   [class.pm-td-day--selected]="isEditing(row.employeeId, i)"
@@ -448,7 +439,8 @@
             <label>INICIO DE JORNADA (DIRECTO)</label>
             <input type="date" [(ngModel)]="scheduleStartDraft" />
             <div class="pm-field-hint pm-field-hint--block">
-              Primera fecha desde la que se puede marcar la planilla. Si el ingreso de la ficha es posterior, los días desde este inicio igual se desbloquean. Los días anteriores quedan en blanco, salvo lo ya guardado.
+              Esta fecha es el ingreso del trabajador. Al guardar, se actualiza la ficha y se desbloquean los días desde aquí. Los días anteriores quedan bloqueados, salvo lo ya guardado.
+              <span *ngIf="selectedRow.fechaIngreso"> Ingreso actual en la ficha: {{ formatSheetDate(selectedRow.fechaIngreso) }}.</span>
             </div>
           </div>
           <div class="pm-field-actions">

@@ -4,6 +4,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { TalentoHumanoStatsService, StatsAggregationDto, AgeGenderRangeDto, JobRoleDto, EducationLevelDto } from '../services/talento-humano-stats.service';
 import { AuthService } from '../../../../../core/services/auth.service';
+import { TalentoHumanoThemeService } from '../services/talento-humano-theme.service';
 
 @Component({
   selector: 'app-talento-humano-charts',
@@ -37,10 +38,19 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private statsService: TalentoHumanoStatsService,
-    private authService: AuthService
+    private authService: AuthService,
+    private themeService: TalentoHumanoThemeService
   ) {}
 
+  private get chartDark(): boolean {
+    return this.themeService.current === 'dark';
+  }
+  private get ink(): string { return this.chartDark ? '#f1f5f9' : '#1f2937'; }
+  private get muted(): string { return this.chartDark ? '#94a3b8' : '#6b7280'; }
+  private get line(): string { return this.chartDark ? '#1f2d47' : '#e5e7eb'; }
+
   ngOnInit(): void {
+    this.themeService.theme$.pipe(takeUntil(this.destroy$)).subscribe(() => this.scheduleRender());
     // Obtener el RUC de la ruta (buscando en toda la jerarquía) y convertirlo a business ID
     this.route.params.pipe(takeUntil(this.destroy$)).subscribe(params => {
       const directRuc = params['ruc'];
@@ -126,11 +136,11 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
               min: -safeMax,
               max: safeMax,
               splitNumber: 8,
-              axisLabel: { formatter: (v: number) => Math.abs(v), color: '#6b7280' },
-              axisLine: { show: true, lineStyle: { color: '#e5e7eb' } },
-              splitLine: { show: true, lineStyle: { color: '#e5e7eb' } }
+              axisLabel: { formatter: (v: number) => Math.abs(v), color: this.muted },
+              axisLine: { show: true, lineStyle: { color: this.line } },
+              splitLine: { show: true, lineStyle: { color: this.line } }
             }],
-            yAxis: [{ type: 'category', data: labels, axisTick: { show: false }, inverse: true, axisLabel: { color: '#6b7280' }, splitLine: { show: false } }],
+            yAxis: [{ type: 'category', data: labels, axisTick: { show: false }, inverse: true, axisLabel: { color: this.muted }, splitLine: { show: false } }],
             series: [
               { 
                 name: 'Mujeres',
@@ -399,7 +409,7 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
       title: {
         text: `Distribución de Personal - ${chartData.title}`,
         left: 'center',
-        textStyle: { fontSize: 14, fontWeight: 'bold', color: '#1f2937' }
+        textStyle: { fontSize: 14, fontWeight: 'bold', color: this.ink }
       },
       tooltip: {
         trigger: 'item',
@@ -409,12 +419,15 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
       xAxis: {
         type: 'category',
         data: categories,
-        axisLabel: { interval: 0 }
+        axisLabel: { interval: 0, color: this.muted },
+        axisLine: { lineStyle: { color: this.line } }
       },
       yAxis: {
         type: 'value',
         name: 'Número de Empleados',
-        nameTextStyle: { color: '#6b7280', fontSize: 11 }
+        nameTextStyle: { color: this.muted, fontSize: 11 },
+        axisLabel: { color: this.muted },
+        splitLine: { lineStyle: { color: this.line } }
       },
       series: [
         {
@@ -429,7 +442,7 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
             position: 'top',
             fontSize: 14,
             fontWeight: 'bold',
-            color: '#1f2937'
+            color: this.ink
           }
         }
       ]
@@ -462,10 +475,10 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
                 formatter: () => `${discPct}%\nTotal ${totalDiscBase}`,
                 fontSize: 16,
                 fontWeight: 'bold',
-                color: '#111827'
+                color: this.ink
               }
             },
-            { value: noDisc, name: 'Sin discapacidad', itemStyle: { color: '#E0E7FF' } }
+            { value: noDisc, name: 'Sin discapacidad', itemStyle: { color: this.chartDark ? '#1f2d47' : '#E0E7FF' } }
           ]
         }
       ]
@@ -499,10 +512,10 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
       tooltip: { 
         trigger: 'item', 
         formatter: '{b}: {c} ({d}%)',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderColor: '#E5E7EB',
+        backgroundColor: this.chartDark ? '#131b2e' : 'rgba(255, 255, 255, 0.95)',
+        borderColor: this.chartDark ? '#1f2d47' : '#E5E7EB',
         borderWidth: 1,
-        textStyle: { color: '#1F2937' }
+        textStyle: { color: this.ink }
       },
       legend: { 
         bottom: 8,
@@ -511,7 +524,7 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
         itemWidth: 10,
         itemHeight: 10,
         textStyle: { 
-          color: '#374151',
+          color: this.chartDark ? '#94a3b8' : '#374151',
           fontSize: 11,
           fontWeight: 500
         },
@@ -530,13 +543,13 @@ export class TalentoHumanoChartsComponent implements OnInit, OnDestroy {
             formatter: '{d}%',
             fontSize: 11,
             fontWeight: 'bold',
-            color: '#1F2937'
+            color: this.ink
           },
           labelLine: { 
             show: true,
             length: 8,
             length2: 8,
-            lineStyle: { color: '#D1D5DB' }
+            lineStyle: { color: this.line }
           },
           emphasis: {
             itemStyle: {

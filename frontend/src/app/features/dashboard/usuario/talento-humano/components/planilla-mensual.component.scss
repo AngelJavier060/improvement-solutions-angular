@@ -620,27 +620,6 @@
   }
   .pm-emp-cargo { font-size: 11px; color: #94a3b8; font-weight: 500; margin-top: 2px; }
 
-  .pm-ingreso-edit {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 4px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #475569;
-    cursor: pointer;
-
-    input[type='date'] {
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      padding: 2px 4px;
-      font-size: 11px;
-      color: #0f172a;
-      background: #fff;
-      max-width: 132px;
-    }
-  }
-
   .pm-td-day   { padding: 2px; width: 32px; vertical-align: middle; }
   .pm-td-day--selected { z-index: 4; }
   .pm-td-total {
@@ -1855,4 +1834,141 @@ $pm-ad-border-subtle: #e5e7eb;
   .pm-table-card { border: none; box-shadow: none; }
   .pm-table  { min-width: unset; }
   .pm-th-name, .pm-td-name { position: static !important; }
+}
+
+:host-context(.th-theme-dark) {
+  .pm-root { background: #090d16; color: #f1f5f9; }
+  .pm-heading h1,
+  .pm-emp-name,
+  .pm-detail-name,
+  .pm-kpi-val,
+  .pm-closures-title h3,
+  .pm-td-total,
+  .pm-th-total { color: #ffffff; }
+  .pm-sub,
+  .pm-breadcrumb,
+  .pm-kpi-lbl,
+  .pm-detail-sub,
+  .pm-emp-cargo,
+  .pm-closures-title p,
+  .pm-fgroup label,
+  .pm-th-name,
+  .pm-th-day { color: #94a3b8; }
+  .pm-breadcrumb span { color: #1f2d47; }
+  .pm-kpi,
+  .pm-closures-card,
+  .pm-filters-card,
+  .pm-table-card,
+  .pm-detail,
+  .pm-history-card,
+  .pm-btn--outline,
+  .pm-btn--upload,
+  .pm-note-pop { background: #131b2e; border-color: #1f2d47; color: #f1f5f9; }
+  .pm-kpi,
+  .pm-closures-card,
+  .pm-filters-card,
+  .pm-table-card,
+  .pm-detail { box-shadow: none; }
+  .pm-btn--primary { background: #2563eb; color: #ffffff; box-shadow: none; }
+  .pm-btn--primary:hover { background: #1d4ed8; }
+  .pm-btn--outline { color: #f1f5f9; }
+  .pm-btn--upload { color: #38bdf8; border-color: #1f2d47; }
+  .pm-search-wrap,
+  .pm-fgroup select,
+  .pm-fgroup input[type="text"],
+  .pm-fgroup input[type="date"] {
+    background: #0d1322;
+    border-color: #1f2d47;
+    color: #f1f5f9;
+  }
+  .pm-search-wrap input { color: #f1f5f9; }
+  .pm-search-wrap:focus-within,
+  .pm-fgroup select:focus,
+  .pm-fgroup input:focus { border-color: #38bdf8; background: #0d1322; }
+  .pm-table .pm-th-name,
+  .pm-table .pm-th-day,
+  .pm-table .pm-th-total { background: #0d1322; border-color: #1f2d47; }
+  .pm-table .pm-td-name { background: #131b2e; border-right-color: #1f2d47; }
+  .pm-table .pm-td-total { background: #0d1322; border-left-color: #1f2d47; }
+  .pm-table tbody tr { border-bottom-color: #1f2d47; }
+  .pm-table tbody tr:hover td,
+  .pm-table tbody tr:hover td.pm-td-name { background: #1b2740; }
+  .pm-table tbody tr.pm-row-selected td,
+  .pm-table tbody tr.pm-row-selected td.pm-td-name { background: #1b2740 !important; }
+  .pm-table tfoot .pm-tfoot-row,
+  .pm-tf-label,
+  .pm-tf-val { background: #0d1322; color: #ffffff; }
+  .day-blank { background: #0d1322; border-color: #1f2d47; }
+  .pm-badge-inactive { background: #3f2f12; color: #fbbf24; border-color: #92400e; }
+  .pm-status-approved { background: #14532d; color: #34d399; border-color: #166534; }
+  .pm-detail-avatar { background: #2563eb; }
+  .pm-legend { border-top-color: #1f2d47; }
+  .pm-table-scroll::-webkit-scrollbar-track { background: #0d1322; }
+  .pm-table-scroll::-webkit-scrollbar-thumb { background: #1f2d47; }
+}
+
+:host-context(.th-theme-panel) {
+  .pm-root { background: #f4f7fb; color: #0f172a; }
+  .pm-heading h1,
+  .pm-emp-name,
+  .pm-detail-name,
+  .pm-kpi-val,
+  .pm-closures-title h3,
+  .pm-th-total,
+  .pm-td-total { color: #0f172a; }
+  .pm-sub,
+  .pm-kpi-lbl,
+  .pm-detail-sub,
+  .pm-emp-cargo,
+  .pm-closures-title p,
+  .pm-fgroup label,
+  .pm-th-name,
+  .pm-th-day { color: #64748b; }
+  .pm-breadcrumb,
+  .pm-breadcrumb span { color: #1e3a5f; }
+  .pm-kpi,
+  .pm-closures-card,
+  .pm-filters-card,
+  .pm-table-card,
+  .pm-detail,
+  .pm-history-card,
+  .pm-btn--outline {
+    background: #ffffff;
+    border: 1px solid #e6ebf2;
+    border-radius: 16px;
+    box-shadow: none;
+    color: #0f172a;
+  }
+  .pm-btn--primary,
+  .pm-btn--primary .material-symbols-outlined { background: #1e3a5f; color: #ffffff; box-shadow: none; }
+  .pm-btn--primary:hover { background: #16304f; }
+  .pm-btn--upload { background: #ffffff; color: #1e3a5f; border-color: #e6ebf2; }
+  .pm-search-wrap,
+  .pm-fgroup select,
+  .pm-fgroup input[type="text"],
+  .pm-fgroup input[type="date"] {
+    background: #f4f7fb;
+    border-color: #e6ebf2;
+    color: #0f172a;
+  }
+  .pm-search-wrap:focus-within,
+  .pm-fgroup select:focus,
+  .pm-fgroup input:focus { border-color: #1e3a5f; background: #ffffff; }
+  .pm-table .pm-th-name,
+  .pm-table .pm-th-day { background: #f4f7fb; border-color: #e6ebf2; }
+  .pm-table .pm-th-total { background: #e8eef6; border-color: #e6ebf2; color: #1e3a5f; }
+  .pm-table .pm-td-name { background: #ffffff; border-right-color: #e6ebf2; }
+  .pm-table .pm-td-total { background: #f4f7fb; border-left-color: #e6ebf2; }
+  .pm-table tbody tr { border-bottom-color: #e6ebf2; }
+  .pm-table tbody tr:hover td,
+  .pm-table tbody tr:hover td.pm-td-name { background: #f4f7fb; }
+  .pm-table tbody tr.pm-row-selected td,
+  .pm-table tbody tr.pm-row-selected td.pm-td-name { background: #e8eef6 !important; }
+  .pm-table tfoot .pm-tfoot-row,
+  .pm-tf-label,
+  .pm-tf-val { background: #1e3a5f; color: #ffffff; }
+  .pm-detail-avatar { background: #1e3a5f; }
+  .pm-badge-inactive { background: #fff7ed; color: #f59e0b; border-color: #fde68a; }
+  .pm-status-approved { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+  .pm-legend { border-top-color: #e6ebf2; }
 }
