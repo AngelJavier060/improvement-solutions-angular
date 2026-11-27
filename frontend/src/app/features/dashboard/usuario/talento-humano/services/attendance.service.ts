@@ -237,6 +237,7 @@ export interface SafetyIndicesSummary {
   year: number;
   ytd: SafetyIndicesKpis;
   months: SafetyIndicesMonth[];
+  activeEmployees?: number;
 }
 
 // ─────────────── Service ───────────────

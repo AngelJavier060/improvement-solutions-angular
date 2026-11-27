@@ -105,41 +105,35 @@ export class IndiceRiesgoComponent implements OnInit {
   }
 
   private applyData(data: SafetyIndicesSummary): void {
-    this.diasPerdidosYtd = data.ytd.diasPerdidos;
-    this.lesionesYtd     = data.ytd.lesiones;
-    // TR actual por requerimiento: TR = IG / IF
-    this.trActual        = data.ytd.if > 0 ? data.ytd.ig / data.ytd.if : 0;
-
     const F = 200000;
-    const maxTr = data.months.reduce((mx, m) => {
+    const months = data.months.filter(m => (m.horasHombre || 0) > 0);
+    const filas = months.map(m => {
       const dpSumInc = (m.incidentes ?? []).reduce((s, it: any) => s + (it.lostDays || 0), 0);
-      const dp       = Math.max(m.diasPerdidos || 0, dpSumInc);
+      const dp = Math.max(m.diasPerdidos || 0, dpSumInc);
       const ifC = m.horasHombre > 0 ? (m.lesiones / m.horasHombre) * F : 0;
-      const igC = m.horasHombre > 0 ? (dp         / m.horasHombre) * F : 0;
-      const trC = ifC > 0 ? igC / ifC : 0;
-      return Math.max(mx, trC);
-    }, 0.001);
-    this.barrasMensuales = data.months.map(m => {
-      const dpSumInc = (m.incidentes ?? []).reduce((s, it: any) => s + (it.lostDays || 0), 0);
-      const dp       = Math.max(m.diasPerdidos || 0, dpSumInc);
-      const ifC = m.horasHombre > 0 ? (m.lesiones / m.horasHombre) * F : 0;
-      const igC = m.horasHombre > 0 ? (dp         / m.horasHombre) * F : 0;
-      const trC = ifC > 0 ? igC / ifC : 0;
-      return { label: m.label, emp: Math.round((trC / maxTr) * 100) };
+      const igC = m.horasHombre > 0 ? (dp / m.horasHombre) * F : 0;
+      return { m, dp, ifC, igC, trC: ifC > 0 ? igC / ifC : 0 };
     });
 
-    this.tablaMensual = data.months.map(m => {
-      const dpSumInc = (m.incidentes ?? []).reduce((s, it: any) => s + (it.lostDays || 0), 0);
-      const dp       = Math.max(m.diasPerdidos || 0, dpSumInc);
-      const ifC = m.horasHombre > 0 ? (m.lesiones / m.horasHombre) * F : 0;
-      const igC = m.horasHombre > 0 ? (dp         / m.horasHombre) * F : 0;
-      return {
-        mes:   m.mesAnio,
-        igEmp: Math.round(igC * 10) / 10,
-        ifEmp: Math.round(ifC * 10) / 10,
-        trEmp: ifC > 0 ? igC / ifC : 0
-      };
-    });
+    this.diasPerdidosYtd = filas.reduce((s, r) => s + r.dp, 0);
+    this.lesionesYtd = filas.reduce((s, r) => s + (r.m.lesiones || 0), 0);
+    const horas = filas.reduce((s, r) => s + (r.m.horasHombre || 0), 0);
+    const ifYtd = horas > 0 ? (this.lesionesYtd / horas) * F : 0;
+    const igYtd = horas > 0 ? (this.diasPerdidosYtd / horas) * F : 0;
+    this.trActual = ifYtd > 0 ? igYtd / ifYtd : 0;
+
+    const maxTr = filas.reduce((mx, r) => Math.max(mx, r.trC), 0.001);
+    this.barrasMensuales = filas.map(r => ({
+      label: r.m.label,
+      emp: Math.round((r.trC / maxTr) * 100)
+    }));
+
+    this.tablaMensual = filas.map(r => ({
+      mes: r.m.mesAnio,
+      igEmp: Math.round(r.igC * 10) / 10,
+      ifEmp: Math.round(r.ifC * 10) / 10,
+      trEmp: r.trC
+    }));
 
     this.loading = false;
   }

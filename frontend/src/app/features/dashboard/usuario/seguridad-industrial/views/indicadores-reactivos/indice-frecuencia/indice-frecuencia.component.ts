@@ -127,14 +127,13 @@ export class IndiceFrecuenciaComponent implements OnInit {
     this.totalLesionesYtd = data.ytd.lesiones;
     this.totalHorasYtd    = data.ytd.horasHombre;
 
-    const labels = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    const byMonth = new Map(data.months.map(m => [m.month, m]));
-    this.mesesGrafico = labels.map((label, i) => {
-      const m = byMonth.get(i + 1);
-      return { label, ifReal: m ? m.if : 0 };
-    });
+    const conHoras = data.months.filter(m => (m.horasHombre || 0) > 0);
+    this.mesesGrafico = conHoras.map(m => ({
+      label: m.label,
+      ifReal: m.if
+    }));
 
-    this.tablaEmpresaRaw = data.months.map(m => ({
+    this.tablaEmpresaRaw = conHoras.map(m => ({
       mes: m.mesAnio,
       lesiones: m.lesiones,
       horas: m.horasHombre

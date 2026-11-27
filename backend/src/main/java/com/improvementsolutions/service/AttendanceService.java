@@ -1453,19 +1453,15 @@ public class AttendanceService {
                     .merge(otDC, o.getHoursTotal(), Double::sum);
         }
 
-        // ── 2. Días T/EX desde planilla mensual (saved + auto-generados por jornada) ──
-        // Usa la misma lógica que getMonthlySheet para garantizar consistencia con el
-        // "Detalle de Registro de Asistencia" de Talento Humano.
+        // ── 2. Días T/EX guardados en planilla (sin horario automático) ──
         double[] ordHoursByMonth   = new double[13];
         double[] exDayHoursByMonth = new double[13];
         Map<String, Double> ordHoursByDeptYear  = new LinkedHashMap<>();
         Map<String, Double> exHoursByDeptYear   = new LinkedHashMap<>();
 
-        // Acumuladores por mes/depto para tabla de detalle
         Map<Integer, Map<String, Double>>      ordHoursMD  = new HashMap<>();
         Map<Integer, Map<String, Double>>      exHoursMD   = new HashMap<>();
         Map<Integer, Map<String, Set<Long>>>   colabMD     = new HashMap<>();
-        // Acumuladores por mes/depto+cargo (tabla detallada)
         Map<Integer, Map<String, Double>>      ordHoursMDC = new HashMap<>();
         Map<Integer, Map<String, Double>>      exHoursMDC  = new HashMap<>();
         Map<Integer, Map<String, Integer>>     exCountMDC  = new HashMap<>();
@@ -1475,51 +1471,58 @@ public class AttendanceService {
                 java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.forLanguageTag("es-EC"));
 
         LocalDate today = LocalDate.now();
-        for (int month = 1; month <= 12; month++) {
-            // No procesar meses futuros (el horario auto-genera T-days aunque no hayan ocurrido)
-            if (LocalDate.of(year, month, 1).isAfter(today)) continue;
-            List<Map<String, Object>> monthSheet = getMonthlySheet(businessId, year, month);
-            for (Map<String, Object> empRow : monthSheet) {
-                Object empIdObj = empRow.get("employeeId");
-                Long empId = (empIdObj instanceof Number) ? ((Number) empIdObj).longValue() : null;
-                String dept  = (String) empRow.getOrDefault("departmentName", "Sin departamento");
-                String pos   = (String) empRow.get("position");
+        LocalDate sheetEnd = year == today.getYear()
+                ? YearMonth.from(today).atEndOfMonth()
+                : yEnd;
+        List<BusinessEmployee> roster = employeeRepository.findByBusinessId(businessId);
+        Map<Long, BusinessEmployee> rosterById = roster.stream()
+                .collect(Collectors.toMap(BusinessEmployee::getId, e -> e, (a, b) -> a));
+        List<Long> inactiveNeedingMovementExit = roster.stream()
+                .filter(e -> !Boolean.TRUE.equals(e.getActive()))
+                .filter(e -> e.getFechaSalida() == null)
+                .map(BusinessEmployee::getId)
+                .collect(Collectors.toList());
+        Map<Long, LocalDate> movementExitByEmployeeId = loadMovementExitDates(inactiveNeedingMovementExit);
+
+        if (!yStart.isAfter(today)) {
+            List<EmployeeWorkDay> savedYear = workDayRepository.findWithEmployeeByBusinessIdAndDateBetween(
+                    businessId, yStart, sheetEnd);
+            for (EmployeeWorkDay wd : savedYear) {
+                if (wd.getWorkDate() == null || wd.getEmployee() == null || wd.getDayType() == null) continue;
+                int month = wd.getWorkDate().getMonthValue();
+                if (LocalDate.of(year, month, 1).isAfter(today)) continue;
+                BusinessEmployee loaded = wd.getEmployee();
+                BusinessEmployee emp = rosterById.getOrDefault(loaded.getId(), loaded);
+                YearMonth ym = YearMonth.of(year, month);
+                if (!shouldIncludeEmployeeInMonthlySheet(emp, ym.atDay(1), ym.atEndOfMonth(), movementExitByEmployeeId)) {
+                    continue;
+                }
+                String dt = wd.getDayType().trim().toUpperCase(Locale.ROOT);
+                if (!"T".equals(dt) && !"EX".equals(dt)) continue;
+                String dept = departmentName(loaded);
+                String pos = loaded.getPosition() != null ? loaded.getPosition() : emp.getPosition();
                 String cargo = (pos != null && !pos.isBlank()) ? pos : "Sin cargo";
                 String deptCargo = dept + "|" + cargo;
-                String shiftName = (String) empRow.get("workShiftName");
+                String shiftName = loaded.getWorkShift() != null ? loaded.getWorkShift().getName() : null;
                 double daily = inferDailyHoursFromShiftName(shiftName);
-
-                @SuppressWarnings("unchecked")
-                Map<String, Integer> totals = (Map<String, Integer>) empRow.get("totals");
-                int tDays  = totals != null ? totals.getOrDefault("T",  0) : 0;
-                int exDays = totals != null ? totals.getOrDefault("EX", 0) : 0;
-
-                if (tDays > 0) {
-                    double ordH = tDays * daily;
-                    ordHoursByMonth[month]          += ordH;
-                    ordHoursByDeptYear.merge(dept, ordH, Double::sum);
-                    ordHoursMD.computeIfAbsent(month, k -> new HashMap<>()).merge(dept, ordH, Double::sum);
-                    ordHoursMDC.computeIfAbsent(month, k -> new HashMap<>()).merge(deptCargo, ordH, Double::sum);
-                    if (empId != null) {
-                        colabMD.computeIfAbsent(month, k -> new HashMap<>())
-                               .computeIfAbsent(dept, k -> new HashSet<>()).add(empId);
-                        colabMDC.computeIfAbsent(month, k -> new HashMap<>())
-                                .computeIfAbsent(deptCargo, k -> new HashSet<>()).add(empId);
-                    }
+                Long empId = emp.getId();
+                if ("T".equals(dt)) {
+                    ordHoursByMonth[month] += daily;
+                    ordHoursByDeptYear.merge(dept, daily, Double::sum);
+                    ordHoursMD.computeIfAbsent(month, k -> new HashMap<>()).merge(dept, daily, Double::sum);
+                    ordHoursMDC.computeIfAbsent(month, k -> new HashMap<>()).merge(deptCargo, daily, Double::sum);
+                } else {
+                    exDayHoursByMonth[month] += daily;
+                    exHoursByDeptYear.merge(dept, daily, Double::sum);
+                    exHoursMD.computeIfAbsent(month, k -> new HashMap<>()).merge(dept, daily, Double::sum);
+                    exHoursMDC.computeIfAbsent(month, k -> new HashMap<>()).merge(deptCargo, daily, Double::sum);
+                    exCountMDC.computeIfAbsent(month, k -> new HashMap<>()).merge(deptCargo, 1, Integer::sum);
                 }
-                if (exDays > 0) {
-                    double exH = exDays * daily;
-                    exDayHoursByMonth[month]        += exH;
-                    exHoursByDeptYear.merge(dept, exH, Double::sum);
-                    exHoursMD.computeIfAbsent(month, k -> new HashMap<>()).merge(dept, exH, Double::sum);
-                    exHoursMDC.computeIfAbsent(month, k -> new HashMap<>()).merge(deptCargo, exH, Double::sum);
-                    exCountMDC.computeIfAbsent(month, k -> new HashMap<>()).merge(deptCargo, exDays, Integer::sum);
-                    if (empId != null) {
-                        colabMD.computeIfAbsent(month, k -> new HashMap<>())
-                               .computeIfAbsent(dept, k -> new HashSet<>()).add(empId);
-                        colabMDC.computeIfAbsent(month, k -> new HashMap<>())
-                                .computeIfAbsent(deptCargo, k -> new HashSet<>()).add(empId);
-                    }
+                if (empId != null) {
+                    colabMD.computeIfAbsent(month, k -> new HashMap<>())
+                           .computeIfAbsent(dept, k -> new HashSet<>()).add(empId);
+                    colabMDC.computeIfAbsent(month, k -> new HashMap<>())
+                            .computeIfAbsent(deptCargo, k -> new HashSet<>()).add(empId);
                 }
             }
         }
@@ -1581,24 +1584,29 @@ public class AttendanceService {
         double extraHoursTotal = exDayHoursYtd + totalOtHours;
         double totalHours      = ordinaryHours + extraHoursTotal;
 
-        // ── 5. Año anterior (misma lógica: planilla mensual saved + auto-generados) ──
+        // ── 5. Año anterior: solo días guardados ──
         double prevOrdinary = 0.0;
         double prevExtra    = 0.0;
         if (year > 2000) {
             List<EmployeeOvertime> otPrev = overtimeRepository.findByBusinessAndDateRangeWithEmployee(
                     businessId, pStart, pEnd);
             double prevOt = otPrev.stream().mapToDouble(EmployeeOvertime::getHoursTotal).sum();
-            for (int m = 1; m <= 12; m++) {
-                List<Map<String, Object>> prevSheet = getMonthlySheet(businessId, year - 1, m);
-                for (Map<String, Object> empRow : prevSheet) {
-                    String shiftName = (String) empRow.get("workShiftName");
-                    double daily = inferDailyHoursFromShiftName(shiftName);
-                    @SuppressWarnings("unchecked")
-                    Map<String, Integer> totals = (Map<String, Integer>) empRow.get("totals");
-                    if (totals == null) continue;
-                    prevOrdinary += totals.getOrDefault("T",  0) * daily;
-                    prevExtra    += totals.getOrDefault("EX", 0) * daily;
+            List<EmployeeWorkDay> prevDays = workDayRepository.findWithEmployeeByBusinessIdAndDateBetween(
+                    businessId, pStart, pEnd);
+            for (EmployeeWorkDay wd : prevDays) {
+                if (wd.getWorkDate() == null || wd.getEmployee() == null || wd.getDayType() == null) continue;
+                int month = wd.getWorkDate().getMonthValue();
+                BusinessEmployee emp = rosterById.getOrDefault(wd.getEmployee().getId(), wd.getEmployee());
+                YearMonth ym = YearMonth.of(year - 1, month);
+                if (!shouldIncludeEmployeeInMonthlySheet(emp, ym.atDay(1), ym.atEndOfMonth(), movementExitByEmployeeId)) {
+                    continue;
                 }
+                String dt = wd.getDayType().trim().toUpperCase(Locale.ROOT);
+                String shiftName = wd.getEmployee().getWorkShift() != null
+                        ? wd.getEmployee().getWorkShift().getName() : null;
+                double daily = inferDailyHoursFromShiftName(shiftName);
+                if ("T".equals(dt)) prevOrdinary += daily;
+                else if ("EX".equals(dt)) prevExtra += daily;
             }
             prevExtra += prevOt;
         }
@@ -1612,7 +1620,7 @@ public class AttendanceService {
                 ? totalHours / monthsWithData.size() : 0.0;
         double extraSharePct   = totalHours > 0.001 ? (extraHoursTotal / totalHours) * 100.0 : 0.0;
 
-        long activeEmployees = employeeRepository.findWithRelationsByBusinessId(businessId).stream()
+        long activeEmployees = roster.stream()
                 .filter(e -> Boolean.TRUE.equals(e.getActive())).count();
 
         // ── 7. Distribución por área ───────────────────────────────────────────
@@ -1698,34 +1706,74 @@ public class AttendanceService {
     public Map<String, Object> getSafetyIndicesSummary(Long businessId, int year) {
         requireBusiness(businessId);
 
-        // ── 1. HHTT por mes (planilla, misma lógica que consolidado) ──────────
+        // ── 1. HHTT por mes: solo días guardados en planilla (T y EX) + horas extra ──
+        // No usa el horario automático. Así coincide con el HHTT del detalle de asistencia
+        // y el mes aparece en cero hasta que se registre.
         LocalDate today = LocalDate.now();
-        double[] hhttByMonth = new double[13]; // index 1-12
-        int[]    accDaysByMonth = new int[13]; // días perdidos por accidentes desde planilla (A)
-        for (int month = 1; month <= 12; month++) {
-            if (LocalDate.of(year, month, 1).isAfter(today)) continue;
-            List<Map<String, Object>> sheet = getMonthlySheet(businessId, year, month);
-            for (Map<String, Object> row : sheet) {
-                String shiftName = (String) row.get("workShiftName");
-                double daily = inferDailyHoursFromShiftName(shiftName);
-                @SuppressWarnings("unchecked")
-                Map<String, Integer> totals = (Map<String, Integer>) row.get("totals");
-                if (totals == null) continue;
-                int tDays  = totals.getOrDefault("T",  0);
-                int aDays  = totals.getOrDefault("A",  0); // accidentes
-                // Para índices de seguridad: horas base SOLO de días T; las horas extra (EX)
-                // se suman explícitamente desde el repositorio de overtime más abajo.
-                hhttByMonth[month] += tDays * daily;
-                accDaysByMonth[month] += aDays;
+        double[] hhttByMonth = new double[13];
+        int[]    accDaysByMonth = new int[13];
+        LocalDate yearStart = LocalDate.of(year, 1, 1);
+        YearMonth currentYm = YearMonth.from(today);
+        LocalDate rangeEnd = year == today.getYear()
+                ? currentYm.atEndOfMonth()
+                : LocalDate.of(year, 12, 31);
+        if (rangeEnd.isBefore(yearStart)) {
+            rangeEnd = yearStart;
+        }
+
+        Map<Long, BusinessEmployee> empById = new HashMap<>();
+        List<EmployeeWorkDay> savedDays = yearStart.isAfter(today)
+                ? List.of()
+                : workDayRepository.findWithEmployeeByBusinessIdAndDateBetween(businessId, yearStart, rangeEnd);
+        List<com.improvementsolutions.model.EmployeeOvertime> ot = yearStart.isAfter(today)
+                ? List.of()
+                : overtimeRepository.findByBusinessAndDateRangeWithEmployee(businessId, yearStart, rangeEnd);
+        for (EmployeeWorkDay wd : savedDays) {
+            if (wd.getEmployee() != null && wd.getEmployee().getId() != null) {
+                empById.putIfAbsent(wd.getEmployee().getId(), wd.getEmployee());
             }
-            // añadir horas extra registradas (tabla employee_overtime)
-            List<com.improvementsolutions.model.EmployeeOvertime> ot =
-                    overtimeRepository.findByBusinessAndDateRangeWithEmployee(
-                            businessId,
-                            LocalDate.of(year, month, 1),
-                            LocalDate.of(year, month, 1).withDayOfMonth(
-                                    java.time.YearMonth.of(year, month).lengthOfMonth()));
+        }
+        for (com.improvementsolutions.model.EmployeeOvertime o : ot) {
+            if (o.getEmployee() != null && o.getEmployee().getId() != null) {
+                empById.putIfAbsent(o.getEmployee().getId(), o.getEmployee());
+            }
+        }
+        List<Long> inactiveNeedingMovementExit = empById.values().stream()
+                .filter(e -> !Boolean.TRUE.equals(e.getActive()))
+                .filter(e -> e.getFechaSalida() == null)
+                .map(BusinessEmployee::getId)
+                .collect(Collectors.toList());
+        Map<Long, LocalDate> movementExitByEmployeeId = loadMovementExitDates(inactiveNeedingMovementExit);
+
+        if (!yearStart.isAfter(today)) {
+            for (EmployeeWorkDay wd : savedDays) {
+                if (wd.getWorkDate() == null || wd.getEmployee() == null) continue;
+                int month = wd.getWorkDate().getMonthValue();
+                if (LocalDate.of(year, month, 1).isAfter(today)) continue;
+                BusinessEmployee emp = empById.getOrDefault(wd.getEmployee().getId(), wd.getEmployee());
+                YearMonth ym = YearMonth.of(year, month);
+                if (!shouldIncludeEmployeeInMonthlySheet(emp, ym.atDay(1), ym.atEndOfMonth(), movementExitByEmployeeId)) {
+                    continue;
+                }
+                String dt = wd.getDayType() == null ? "" : wd.getDayType().trim().toUpperCase(Locale.ROOT);
+                String shiftName = emp.getWorkShift() != null ? emp.getWorkShift().getName() : null;
+                double daily = inferDailyHoursFromShiftName(shiftName);
+                if ("T".equals(dt) || "EX".equals(dt)) {
+                    hhttByMonth[month] += daily;
+                } else if ("A".equals(dt)) {
+                    accDaysByMonth[month]++;
+                }
+            }
+
             for (com.improvementsolutions.model.EmployeeOvertime o : ot) {
+                if (o.getOvertimeDate() == null || o.getEmployee() == null) continue;
+                int month = o.getOvertimeDate().getMonthValue();
+                if (LocalDate.of(year, month, 1).isAfter(today)) continue;
+                BusinessEmployee emp = empById.getOrDefault(o.getEmployee().getId(), o.getEmployee());
+                YearMonth ym = YearMonth.of(year, month);
+                if (!shouldIncludeEmployeeInMonthlySheet(emp, ym.atDay(1), ym.atEndOfMonth(), movementExitByEmployeeId)) {
+                    continue;
+                }
                 hhttByMonth[month] += o.getHoursTotal();
             }
         }
@@ -1836,9 +1884,14 @@ public class AttendanceService {
         ytd.put("tr",           Math.round(ytdTr   * 100.0) / 100.0);
 
         Map<String, Object> out = new LinkedHashMap<>();
+        long activeEmployees = employeeRepository.findByBusinessId(businessId).stream()
+                .filter(e -> Boolean.TRUE.equals(e.getActive()))
+                .count();
+
         out.put("year",   year);
         out.put("ytd",    ytd);
         out.put("months", months);
+        out.put("activeEmployees", activeEmployees);
         return out;
     }
 

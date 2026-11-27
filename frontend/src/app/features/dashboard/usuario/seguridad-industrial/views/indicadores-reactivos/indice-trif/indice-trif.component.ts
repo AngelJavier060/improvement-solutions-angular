@@ -104,19 +104,22 @@ export class IndiceTrifComponent implements OnInit {
   }
 
   private applyData(data: SafetyIndicesSummary): void {
-    this.lesionesYtd = data.ytd.lesiones;
-    this.horasYtd    = data.ytd.horasHombre;
-    this.trifActual  = data.ytd.trif;
+    const months = data.months.filter(m => (m.horasHombre || 0) > 0);
+    const lesiones = months.reduce((s, m) => s + (m.lesiones || 0), 0);
+    const horas = months.reduce((s, m) => s + (m.horasHombre || 0), 0);
+    this.lesionesYtd = lesiones;
+    this.horasYtd = horas;
+    this.trifActual = horas > 0 ? (lesiones / horas) * this.factorTrif : 0;
 
-    const maxTrif = data.months.reduce((mx, m) => Math.max(mx, m.trif), 0.001);
-    this.barrasMensuales = data.months.map(m => ({
+    const maxTrif = months.reduce((mx, m) => Math.max(mx, m.trif), 0.001);
+    this.barrasMensuales = months.map(m => ({
       label:     m.label,
       h:         Math.round((m.trif / maxTrif) * 100),
-      highlight: m.trif === maxTrif
+      highlight: m.trif === maxTrif && m.trif > 0
     }));
 
     let acum = 0;
-    const rows: typeof this.tablaRows = data.months.map(m => {
+    const rows: typeof this.tablaRows = months.map(m => {
       acum += m.horasHombre;
       return {
         mes:       m.mesAnio,
@@ -129,15 +132,15 @@ export class IndiceTrifComponent implements OnInit {
     });
     rows.push({
       mes:      'Total YTD',
-      lesiones:  data.ytd.lesiones,
-      horasMes:  data.ytd.horasHombre,
+      lesiones,
+      horasMes: horas,
       horasAcum: 0,
-      trif:      data.ytd.trif,
-      esTotal:   true
+      trif:     this.trifActual,
+      esTotal:  true
     });
     this.tablaRows = rows;
 
-    this.lineaTrifPath = this.buildLinePath(data.months.map(m => m.trif));
+    this.lineaTrifPath = this.buildLinePath(months.map(m => m.trif));
 
     const now = new Date();
     this.cierreDatos = `Datos actualizados al ${now.toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' })}`;

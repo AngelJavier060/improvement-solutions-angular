@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { BusinessService } from '../../../../../../services/business.service';
-import { AttendanceService, SafetyIndicesSummary, ConsolidadoHhttSummary } from '../../../talento-humano/services/attendance.service';
+import { AttendanceService, SafetyIndicesSummary } from '../../../talento-humano/services/attendance.service';
 
 /**
  * Panel principal de Indicadores Reactivos / Proactivos (maquetación alineada al HTML de referencia Orientoil SSO).
@@ -16,20 +16,17 @@ export class IndicadoresReactivosDashboardComponent implements OnInit {
   /** Circunferencia del aro r=40 (2πr) */
   readonly ringLen = 2 * Math.PI * 40;
 
-  centroTrabajo = 'Centro de Trabajo Alpha';
+  centroTrabajo = '';
 
   empresa = {
-    razonSocial: 'ORIENTOIL S.A.',
-    ruc: '1791808398001',
+    razonSocial: '',
+    ruc: '',
     representanteLegal: '—',
-    totalTrabajadores: 265
+    totalTrabajadores: 0
   };
 
-  indiceGestionPct = 98;
-  indiceEficaciaPct = 100;
-  indiceEficaciaDelta = '+0.0%';
   anioFiscal = new Date().getFullYear();
-  trimestreLabel = 'Q1';
+  trimestreLabel = 'Q' + (Math.floor(new Date().getMonth() / 3) + 1);
   trimestreEstado = 'Activo';
 
   /** IF / IG con datos reales del backend */
@@ -38,7 +35,7 @@ export class IndicadoresReactivosDashboardComponent implements OnInit {
   /** Porcentaje de avance del aro (hacia la meta, cap 100) */
   indiceFrecuenciaPct = 0;
   indiceGravedadValor = 0.0;
-  indiceGravedadBadge = 'OPTIMAL';
+  indiceGravedadBadge = 'SIN DATOS';
   /** Porcentaje de avance del aro IG */
   indiceGravedadPct = 0;
   tasaRiesgoDisplay = '—';
@@ -67,7 +64,8 @@ export class IndicadoresReactivosDashboardComponent implements OnInit {
         const id = empresa?.id;
         if (!id) return;
         this.businessId = Number(id);
-        this.empresa.razonSocial   = empresa.name        ?? this.empresa.razonSocial;
+        this.centroTrabajo = empresa.name ?? '';
+        this.empresa.razonSocial   = empresa.name        ?? '';
         this.empresa.ruc           = empresa.ruc         ?? ruc!;
         this.empresa.representanteLegal = (
           (empresa as any).legalRepresentative ??
@@ -75,12 +73,7 @@ export class IndicadoresReactivosDashboardComponent implements OnInit {
           (empresa as any).legal_representative ??
           '—'
         );
-        // Fallback rápido si viene en el modelo
-        if (typeof empresa.employeesCount === 'number') {
-          this.empresa.totalTrabajadores = empresa.employeesCount;
-        }
         this.fetchIndices();
-        this.fetchTotalTrabajadores();
       },
       error: () => { /* silent – use fallback mock */ }
     });
@@ -105,6 +98,10 @@ export class IndicadoresReactivosDashboardComponent implements OnInit {
         this.indiceGravedadBadge = this.indiceGravedadValor === 0 ? 'OPTIMAL'
           : this.indiceGravedadValor < this.metaIg ? 'DENTRO META' : 'SUPERA META';
 
+        if (typeof data.activeEmployees === 'number') {
+          this.empresa.totalTrabajadores = data.activeEmployees;
+        }
+
         if (ytd.horasHombre > 0 && ytd.if > 0) {
           this.tasaRiesgoDisplay = (ytd.ig / ytd.if).toFixed(2);
         } else {
@@ -115,29 +112,14 @@ export class IndicadoresReactivosDashboardComponent implements OnInit {
     });
   }
 
-  /** Obtiene el total de trabajadores activos desde Talento Humano (Consolidado HHTT) */
-  private fetchTotalTrabajadores(): void {
-    if (!this.businessId) return;
-    const year = this.anioFiscal;
-    this.attendanceService.getConsolidadoHhtt(this.businessId, year).subscribe({
-      next: (sum: ConsolidadoHhttSummary) => {
-        const total = sum?.activeEmployees ?? 0;
-        if (total >= 0) {
-          this.empresa.totalTrabajadores = total;
-        }
-      },
-      error: () => { /* mantener valor actual si falla */ }
-    });
-  }
-
   proactivos = {
-    iart: 92.98,
-    opas: 99.2,
-    idps: 98.0,
-    ids: 99.6,
-    ients: 100.0,
-    osea: 99.9,
-    icai: 100.0
+    iart: 0,
+    opas: 0,
+    idps: 0,
+    ids: 0,
+    ients: 0,
+    osea: 0,
+    icai: 0
   };
 
   dashOffset(porcentajeAvance: number): number {

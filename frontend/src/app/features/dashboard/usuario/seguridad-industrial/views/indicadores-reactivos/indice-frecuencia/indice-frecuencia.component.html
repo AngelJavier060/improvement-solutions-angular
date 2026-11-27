@@ -164,6 +164,9 @@
                 </tr>
               </thead>
               <tbody>
+                <tr *ngIf="tablaEmpresa.length === 0">
+                  <td colspan="4" class="text-center">Todavía no hay horas hombre registradas. El mes aparece cuando se guarda la planilla.</td>
+                </tr>
                 <tr *ngFor="let r of tablaEmpresa">
                   <td>{{ r.mes }}</td>
                   <td class="text-center">{{ r.lesiones }}</td>

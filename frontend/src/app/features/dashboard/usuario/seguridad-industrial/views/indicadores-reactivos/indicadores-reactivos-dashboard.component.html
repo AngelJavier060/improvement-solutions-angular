@@ -58,26 +58,24 @@
         <div class="ir-kpi-deco-icon" aria-hidden="true">
           <span class="material-symbols-outlined">verified_user</span>
         </div>
-        <p class="ir-kpi-label ir-kpi-label--on-dark">Índice de Gestión</p>
+        <p class="ir-kpi-label ir-kpi-label--on-dark">Índice de frecuencia</p>
         <div class="ir-kpi-value-row">
-          <span class="ir-kpi-big ir-kpi-big--white">{{ indiceGestionPct | number : '1.1-1' }}%</span>
-          <span class="material-symbols-outlined ir-trend-up">trending_up</span>
+          <span class="ir-kpi-big ir-kpi-big--white">{{ indiceFrecuenciaValor | number : '1.2-2' }}</span>
         </div>
-        <p class="ir-kpi-foot ir-kpi-foot--muted-white">Cumplimiento global de seguridad industrial</p>
+        <p class="ir-kpi-foot ir-kpi-foot--muted-white">Calculado con las horas hombre de la planilla</p>
       </div>
 
       <div class="ir-kpi ir-kpi--eficacia">
         <div class="ir-kpi-eficacia-head">
-          <p class="ir-kpi-label">Índice de Eficacia</p>
+          <p class="ir-kpi-label">Índice de gravedad</p>
           <div class="ir-kpi-round-icon">
             <span class="material-symbols-outlined">target</span>
           </div>
         </div>
         <div class="ir-kpi-value-row">
-          <span class="ir-kpi-big">{{ indiceEficaciaPct | number : '1.1-1' }}%</span>
-          <span class="ir-kpi-delta-pos">{{ indiceEficaciaDelta }}</span>
+          <span class="ir-kpi-big">{{ indiceGravedadValor | number : '1.2-2' }}</span>
         </div>
-        <p class="ir-kpi-foot">Ejecución perfecta de protocolos preventivos</p>
+        <p class="ir-kpi-foot">Días perdidos sobre las horas hombre registradas</p>
       </div>
 
       <div class="ir-kpi ir-kpi--periodo">
@@ -249,8 +247,8 @@
         <div class="ir-info-footer">
           <span class="material-symbols-outlined ir-info-ico">info</span>
           <p class="ir-info-text">
-            Los indicadores proactivos muestran un <span class="ir-info-strong">alto nivel de cumplimiento</span> operativo.
-            Se recomienda mantener la rigurosidad en los Diálogos Periódicos para sostener el 98% de IDPS.
+            Los índices proactivos quedan en cero hasta que existan registros de gestión preventiva.
+            Frecuencia, gravedad y tasa de riesgo salen de la planilla y de los accidentes cargados.
           </p>
         </div>
       </section>

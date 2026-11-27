@@ -162,7 +162,9 @@ export class IndiceGravedadComponent implements OnInit {
     this.horasTrabajadasYtd = data.ytd.horasHombre;
 
     // Normalizar días perdidos por mes tomando la suma de incidentes si está disponible
-    const monthsNorm = data.months.map(m => {
+    const monthsNorm = data.months
+      .filter(m => (m.horasHombre || 0) > 0)
+      .map(m => {
       const sumInc = (m.incidentes ?? []).reduce((s, it) => s + (it.lostDays || 0), 0);
       const dp = Math.max(m.diasPerdidos || 0, sumInc);
       const igCalc = m.horasHombre > 0 ? (dp / m.horasHombre) * this.factorIg : 0;
@@ -172,6 +174,7 @@ export class IndiceGravedadComponent implements OnInit {
 
     // YTD de días perdidos confiable (suma mensual)
     this.diasPerdidosYtd = monthsNorm.reduce((s, m) => s + (m.diasPerdidos || 0), 0);
+    this.horasTrabajadasYtd = monthsNorm.reduce((s, m) => s + (m.horasHombre || 0), 0);
 
     const maxIg = monthsNorm.reduce((mx, m) => Math.max(mx, m.ig), 0.001);
     this.barrasMensuales = monthsNorm.map(m => ({
